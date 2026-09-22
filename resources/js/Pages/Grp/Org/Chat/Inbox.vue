@@ -17,7 +17,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -1675,11 +1675,11 @@ onUnmounted(() => {
                 :class="phoneCallState.call
                     ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
                     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'">
-                <FontAwesomeIcon :icon="faPhone" class="text-base" />
+                <FontAwesomeIcon :icon="faPhone" class="text-base" fixed-width />
             </button>
             <button v-if="!isReadOnly" type="button" v-tooltip="ctrans('Chat settings')" @click="openChatSettings"
                 class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
-                <FontAwesomeIcon :icon="faCog" class="text-base" />
+                <FontAwesomeIcon :icon="faCog" class="text-base" fixed-width />
             </button>
         </template>
     </PageHeading>
@@ -1710,8 +1710,8 @@ onUnmounted(() => {
                 </button>
                 <button type="button" @click="toggleRail"
                     v-tooltip="railCollapsed ? ctrans('Expand') : ctrans('Collapse')"
-                    class="p-1 rounded hover:bg-gray-200 text-gray-400">
-                    <FontAwesomeIcon :icon="railCollapsed ? faAngleRight : faAngleLeft" class="text-xs" />
+                    class="py-1 px-2 rounded hover:bg-gray-200 text-gray-600">
+                    <FontAwesomeIcon :icon="railCollapsed ? faAngleRight : faAngleLeft" class="text-xs" fixed-width />
                 </button>
             </div>
 
@@ -1744,7 +1744,7 @@ onUnmounted(() => {
                         </div>
                         <FontAwesomeIcon v-if="!railCollapsed && supervisor" :icon="faCircleCheck"
                             class="shrink-0 text-sm transition-colors"
-                            :class="shopIsOn(inbox.id) ? 'text-green-500' : 'text-gray-300'" />
+                            :class="shopIsOn(inbox.id) ? 'text-green-500' : 'text-gray-300'" fixed-width />
                         <span v-if="!railCollapsed" class="flex-1 truncate text-sm text-left">{{ inbox.name }}</span>
                         <span v-if="!railCollapsed && inboxUnread[inbox.id]"
                             v-tooltip="ctrans('Customers waiting')"
@@ -1774,7 +1774,7 @@ onUnmounted(() => {
                                     class="font-normal pb-0.5 border-b border-slate-100">
                                     <FontAwesomeIcon :icon="channel.key === 'whatsapp' ? faWhatsapp : channel.key === 'email' ? faEnvelope : faGlobe"
                                         class="text-[12px]"
-                                        :class="channel.available === false ? 'text-slate-300' : channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-500'" />
+                                        :class="channel.available === false ? 'text-slate-300' : channel.key === 'whatsapp' ? 'text-green-600' : channel.key === 'email' ? 'text-blue-500' : 'text-gray-500'" fixed-width />
                                 </th>
                                 <!-- A call being taken right now belongs to neither row until it
                                      is filed, so it is said once here rather than guessed into
@@ -1785,7 +1785,7 @@ onUnmounted(() => {
                                         : ctrans('Phone calls finished today')">
                                     <span class="relative inline-flex items-center justify-center">
                                         <FontAwesomeIcon :icon="faPhone" class="text-[12px]"
-                                            :class="inbox.phone?.in_progress ? 'text-emerald-600' : 'text-gray-500'" />
+                                            :class="inbox.phone?.in_progress ? 'text-emerald-600' : 'text-gray-500'" fixed-width />
                                         <span v-if="inbox.phone?.in_progress" class="absolute -top-0.5 -right-1 flex h-1.5 w-1.5">
                                             <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                                             <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -1796,9 +1796,10 @@ onUnmounted(() => {
                         </thead>
                         <tbody>
                             <tr v-for="kind in KINDS" :key="kind.key">
-                                <td class="text-[9px] font-bold text-center border-r border-slate-100"
+                                <td v-tooltip="kind.label" class="text-[9px] font-bold text-center border-r border-slate-100"
                                     :class="kind.key === 'customer' ? 'text-green-500' : 'text-blue-400'">
-                                    {{ kind.initial }}
+                                    <FontAwesomeIcon v-if="kind.key === 'customer'" :icon="faUser" class="text-[10px]" fixed-width aria-hidden="true" />
+                                    <template v-else>{{ kind.initial }}</template>
                                 </td>
                                 <td v-for="channel in inbox.channels" :key="channel.key"
                                     class="border border-slate-100">
@@ -1868,7 +1869,7 @@ onUnmounted(() => {
                     <span class="w-2 h-2 rounded-full shrink-0" :class="PRESENCE_DOT[agent.presence]" />
                     <span class="flex-1 truncate" :class="agent.presence === 'offline' ? 'text-gray-400' : ''">{{ agent.name }}</span>
                     <FontAwesomeIcon v-if="agent.on_call" :icon="faPhone" class="text-[11px] text-emerald-600 shrink-0"
-                        v-tooltip="ctrans('On a phone call, taking no new conversations')" />
+                        v-tooltip="ctrans('On a phone call, taking no new conversations')" fixed-width />
                     <span class="text-[11px] tabular-nums" :class="agent.open >= agent.max ? 'text-red-500 font-semibold' : 'text-gray-400'">
                         {{ agent.open }}/{{ agent.max }}
                     </span>
@@ -1911,7 +1912,7 @@ onUnmounted(() => {
                          initials; beside it there is no width for both. -->
                     <span class="relative shrink-0">
                         <FontAwesomeIcon :icon="faBell" class="text-sm"
-                            :class="unclaimedCount ? 'text-red-500' : unclaimedView ? 'text-gray-600' : ''" />
+                            :class="unclaimedCount ? 'text-red-500' : unclaimedView ? 'text-gray-600' : ''" fixed-width />
                         <span v-if="railCollapsed && unclaimedCount"
                             class="absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-center text-[9px] font-semibold leading-4 text-white ring-2 ring-gray-50">
                             {{ unclaimedCount }}
@@ -1935,7 +1936,7 @@ onUnmounted(() => {
                         spamView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="spamView ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" />
+                    <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" fixed-width />
                     <span v-if="!railCollapsed">{{ ctrans("Spam") }}</span>
                 </button>
                 <button type="button" @click="selectRubbish"
@@ -1946,7 +1947,7 @@ onUnmounted(() => {
                         rubbishView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="rubbishView ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faArchive" class="text-sm shrink-0" :class="rubbishView ? 'text-gray-600' : ''" />
+                    <FontAwesomeIcon :icon="faArchive" class="text-sm shrink-0" :class="rubbishView ? 'text-gray-600' : ''" fixed-width />
                     <span v-if="!railCollapsed">{{ ctrans("Ignored") }}</span>
                 </button>
                 <button type="button" @click="selectTrash"
@@ -1957,7 +1958,7 @@ onUnmounted(() => {
                         trashView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="trashView ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faTrash" class="text-sm shrink-0" :class="trashView ? 'text-red-500' : ''" />
+                    <FontAwesomeIcon :icon="faTrash" class="text-sm shrink-0" :class="trashView ? 'text-red-500' : ''" fixed-width />
                     <span v-if="!railCollapsed">{{ ctrans("Trash") }}</span>
                 </button>
             </div>
@@ -1972,7 +1973,7 @@ onUnmounted(() => {
                         highlightView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="highlightView ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" :class="highlightView ? 'text-amber-400' : ''" />
+                    <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" :class="highlightView ? 'text-amber-400' : ''" fixed-width />
                     <span v-if="!railCollapsed">{{ ctrans("Highlighted") }}</span>
                 </button>
             </div>
@@ -2014,7 +2015,7 @@ onUnmounted(() => {
                             :class="viewMode === 'team' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'team'">
                             {{ ctrans("Colleagues' Chats") }}
-                            <span v-if="colleaguesChatsCount" class="tabular-nums text-gray-500">{{ colleaguesChatsCount }}</span>
+                            <span class="tabular-nums text-gray-500">{{ colleaguesChatsCount }}</span>
                             <span v-if="teamUnreadForShop"
                                 v-tooltip="ctrans('Unread chats held by colleagues in this inbox — take over to reply')"
                                 class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center bg-amber-500">
@@ -2028,7 +2029,7 @@ onUnmounted(() => {
                         v-tooltip="ctrans('New WhatsApp chat')"
                         class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-green-600 text-[11px] font-medium"
                         @click="newChatVisible = true">
-                        <FontAwesomeIcon :icon="faPlus" class="text-xs" />
+                        <FontAwesomeIcon :icon="faPlus" class="text-xs" fixed-width />
                         {{ ctrans("New chat") }}
                     </button>
 
@@ -2037,7 +2038,7 @@ onUnmounted(() => {
                         <button type="button" v-tooltip="ctrans('Filter by agent')"
                             class="relative p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
                             @click="showAgentFilter = !showAgentFilter">
-                            <FontAwesomeIcon :icon="faFilter" class="text-xs" />
+                            <FontAwesomeIcon :icon="faFilter" class="text-xs" fixed-width />
                             <span v-if="selectedAgentIds.length"
                                 class="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 px-0.5 text-[8px] font-semibold leading-[14px] text-white rounded-full text-center"
                                 :style="{ backgroundColor: 'var(--theme-color-4)' }">
@@ -2074,7 +2075,7 @@ onUnmounted(() => {
                     </div>
 
                     <button class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500" @click="toggleSearch">
-                        <FontAwesomeIcon :icon="showSearch ? faTimes : faSearch" class="text-xs" />
+                        <FontAwesomeIcon :icon="showSearch ? faTimes : faSearch" class="text-xs" fixed-width />
                     </button>
                 </div>
             </div>
@@ -2130,7 +2131,7 @@ onUnmounted(() => {
                                 class="absolute top-1/2 right-2 -translate-y-1/2 z-30 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 shadow-md ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
                                 :class="{ '!opacity-100': openMenuUlid === c.ulid }"
                                 @click.stop="toggleRowMenu(c.ulid, $event)">
-                                <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" />
+                                <FontAwesomeIcon :icon="faEllipsisVertical" class="text-sm" fixed-width />
                             </button>
 
                             <div class="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -2153,7 +2154,7 @@ onUnmounted(() => {
                                 <div class="flex items-center gap-2 text-[10px] text-gray-400 min-w-0">
                                     <span v-if="(spamView || trashView || highlightView || unclaimedView || agentView || selectedShopIds.length > 1) && c.shop?.name"
                                         class="flex items-center gap-1 min-w-0 truncate">
-                                        <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
+                                        <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" fixed-width />
                                         <span class="truncate">{{ c.shop.name }}</span>
                                     </span>
                                     <span v-if="c.agent?.name" class="truncate">
@@ -2176,14 +2177,14 @@ onUnmounted(() => {
                                         v-tooltip="ctrans('Report spam')"
                                         class="shrink-0 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                                         @click.stop="markSpam(c, true)">
-                                        <FontAwesomeIcon :icon="faBan" class="text-[11px]" />
+                                        <FontAwesomeIcon :icon="faBan" class="text-[11px]" fixed-width />
                                     </button>
                                     <button v-if="!trashView && !isReadOnly" type="button"
                                         v-tooltip="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
                                         class="shrink-0 flex items-center justify-center transition-opacity"
                                         :class="c.is_highlighted ? 'text-amber-400 opacity-100' : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-400'"
                                         @click.stop="toggleHighlight(c)">
-                                        <FontAwesomeIcon :icon="faStarSolid" class="text-[11px]" />
+                                        <FontAwesomeIcon :icon="faStarSolid" class="text-[11px]" fixed-width />
                                     </button>
                                     <span v-if="c.unread && !onlyClosed"
                                         v-tooltip="ctrans('Unread messages')"
@@ -2196,7 +2197,7 @@ onUnmounted(() => {
                                     <FontAwesomeIcon
                                         :icon="c.channel === 'whatsapp' ? faWhatsapp : c.channel === 'email' ? faEnvelope : faGlobe"
                                         class="shrink-0 text-xs"
-                                        :class="c.channel === 'whatsapp' ? 'text-green-600' : c.channel === 'email' ? 'text-blue-500' : 'text-gray-400'" />
+                                        :class="c.channel === 'whatsapp' ? 'text-green-600' : c.channel === 'email' ? 'text-blue-500' : 'text-gray-400'" fixed-width />
                                 </div>
                             </div>
                         </div>
@@ -2264,7 +2265,7 @@ onUnmounted(() => {
                         <button type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="restoreChat(menuContact)">
-                            <FontAwesomeIcon :icon="faTrashArrowUp" class="text-[10px]" /> {{ ctrans("Restore") }}
+                            <FontAwesomeIcon :icon="faTrashArrowUp" class="text-[10px]" fixed-width /> {{ ctrans("Restore") }}
                         </button>
                     </template>
 
@@ -2272,11 +2273,11 @@ onUnmounted(() => {
                         <div class="relative group/prio">
                             <button type="button"
                                 class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100">
-                                <FontAwesomeIcon :icon="priorityMeta(menuContact.priority).icon" class="text-[11px] w-3.5" :style="{ color: priorityMeta(menuContact.priority).color }" />
+                                <FontAwesomeIcon :icon="priorityMeta(menuContact.priority).icon" class="text-[11px] w-3.5" :style="{ color: priorityMeta(menuContact.priority).color }" fixed-width />
                                 <span>{{ ctrans("Priority") }}</span>
                                 <span class="ml-auto flex items-center gap-1 text-[10px] text-gray-500">
                                     {{ ctrans(priorityMeta(menuContact.priority).label) }}
-                                    <FontAwesomeIcon :icon="faChevronRight" class="text-[8px] text-gray-400" />
+                                    <FontAwesomeIcon :icon="faChevronRight" class="text-[8px] text-gray-400" fixed-width />
                                 </span>
                             </button>
                             <div class="absolute left-full top-0 hidden group-hover/prio:block w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1">
@@ -2284,7 +2285,7 @@ onUnmounted(() => {
                                     class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100"
                                     :class="menuContact.priority === p.value ? 'font-semibold text-gray-900' : 'text-gray-700'"
                                     @click="setPriority(menuContact, p.value)">
-                                    <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" />
+                                    <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" fixed-width />
                                     <span>{{ ctrans(p.label) }}</span>
                                     <span v-if="menuContact.priority === p.value" class="ml-auto text-[11px]" :style="{ color: p.color }">✓</span>
                                 </button>
@@ -2296,7 +2297,7 @@ onUnmounted(() => {
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="toggleHighlight(menuContact)">
                             <FontAwesomeIcon :icon="faStar" class="text-[10px]"
-                                :class="menuContact.is_highlighted ? 'text-amber-400' : ''" />
+                                :class="menuContact.is_highlighted ? 'text-amber-400' : ''" fixed-width />
                             {{ menuContact.is_highlighted ? ctrans("Remove highlight") : ctrans("Highlight") }}
                         </button>
                         <div class="border-t border-gray-100 my-1"></div>
@@ -2310,30 +2311,30 @@ onUnmounted(() => {
                             <button v-for="reason in (ignoreReasons ?? [])" :key="reason.value" type="button"
                                 class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                                 @click="markRubbish(menuContact, true, reason.value)">
-                                <FontAwesomeIcon :icon="faArchive" class="text-[10px] text-gray-400" />
+                                <FontAwesomeIcon :icon="faArchive" class="text-[10px] text-gray-400" fixed-width />
                                 {{ reason.label }}
                             </button>
                         </template>
                         <button v-else-if="menuContact.channel !== 'whatsapp'" type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="markRubbish(menuContact, false)">
-                            <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" /> {{ ctrans("Not ignored") }}
+                            <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" fixed-width /> {{ ctrans("Not ignored") }}
                         </button>
 
                         <button v-if="!menuContact.is_spam" type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="markSpam(menuContact, true)">
-                            <FontAwesomeIcon :icon="faBan" class="text-[10px]" /> {{ ctrans("Report spam") }}
+                            <FontAwesomeIcon :icon="faBan" class="text-[10px]" fixed-width /> {{ ctrans("Report spam") }}
                         </button>
                         <button v-else type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
                             @click="markSpam(menuContact, false)">
-                            <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" /> {{ ctrans("Not spam") }}
+                            <FontAwesomeIcon :icon="faRotateLeft" class="text-[10px]" fixed-width /> {{ ctrans("Not spam") }}
                         </button>
                         <button type="button"
                             class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
                             @click="trashChat(menuContact)">
-                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" /> {{ ctrans("Move to trash") }}
+                            <FontAwesomeIcon :icon="faTrash" class="text-[10px]" fixed-width /> {{ ctrans("Move to trash") }}
                         </button>
                     </template>
                 </div>

@@ -395,7 +395,7 @@ onUnmounted(() => {
             <FontAwesomeIcon
                 icon="far fa-chevron-left"
                 class="h-3 lg:h-[10px] leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
-                aria-hidden="true"
+                fixed-width aria-hidden="true"
                 :class="layout.messagingSidebar.show ? 'rotate-180' : ''" />
         </div>
 
@@ -646,7 +646,7 @@ onUnmounted(() => {
                         {{ coworker.name }}
                         <FontAwesomeIcon v-if="coworker.on_call" icon="fas fa-phone"
                             class="text-[9px] text-[var(--chat-green)] shrink-0"
-                            v-tooltip="ctrans('On a phone call')" aria-hidden="true" />
+                            v-tooltip="ctrans('On a phone call')" fixed-width aria-hidden="true" />
                     </span>
                     <template v-if="getCurrentPage(coworker.id)?.label">
                         <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[var(--chat-label)] truncate hover:underline">

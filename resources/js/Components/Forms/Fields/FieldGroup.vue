@@ -84,18 +84,18 @@ const onEnter = (event: KeyboardEvent, key: string, type: string) => {
 							v-if="forms[key].processing"
 							icon="fad fa-spinner-third"
 							class="h-8 animate-spin text-gray-400"
-							aria-hidden="true" />
+							fixed-width aria-hidden="true" />
 						<FontAwesomeIcon
 							v-else-if="forms[key].isDirty"
 							icon="fad fa-save"
 							class="h-8"
 							:style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
-							aria-hidden="true" />
+							fixed-width aria-hidden="true" />
 						<FontAwesomeIcon
 							v-else
 							icon="fal fa-save"
 							class="h-8 text-gray-300"
-							aria-hidden="true" />
+							fixed-width aria-hidden="true" />
 					</button>
 				</div>
 			</div>

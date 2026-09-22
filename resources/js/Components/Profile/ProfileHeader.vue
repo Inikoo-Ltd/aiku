@@ -226,7 +226,7 @@ onMounted(async () => {
                         class="group inline-flex h-9 w-9 items-center justify-center gap-x-2 rounded-full bg-white/15 text-sm font-medium text-white ring-1 ring-inset ring-white/30 backdrop-blur-sm transition hover:bg-white hover:text-[color:var(--profile-accent)] sm:h-9 sm:w-32 sm:px-4">
                         <FontAwesomeIcon icon="fal fa-user-clock" fixed-width aria-hidden="true" />
                         <span class="hidden sm:inline">{{ trans('Clocking') }}</span>
-                        <FontAwesomeIcon icon="fal fa-arrow-right" class="hidden text-xs transition-transform group-hover:translate-x-0.5 sm:inline-block" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-arrow-right" class="hidden text-xs transition-transform group-hover:translate-x-0.5 sm:inline-block" fixed-width aria-hidden="true" />
                     </button>
 
                     <Popover class="relative">
@@ -277,7 +277,7 @@ onMounted(async () => {
                             :class="isUploadingAvatar ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'">
                             <LoadingIcon v-if="isUploadingAvatar" />
                             <template v-else>
-                                <FontAwesomeIcon icon="fal fa-camera" class="text-lg" aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-camera" class="text-lg" fixed-width aria-hidden="true" />
                                 {{ trans('Change') }}
                             </template>
                         </span>
@@ -294,12 +294,12 @@ onMounted(async () => {
                                 </h2>
                                 <span class="inline-flex items-center gap-x-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset"
                                     :class="isActive ? 'bg-green-50 text-green-700 ring-green-600/20' : 'bg-red-50 text-red-700 ring-red-600/20'">
-                                    <FontAwesomeIcon :icon="isActive ? 'fas fa-check-circle' : 'fas fa-times-circle'" class="text-[10px]" aria-hidden="true" />
+                                    <FontAwesomeIcon :icon="isActive ? 'fas fa-check-circle' : 'fas fa-times-circle'" class="text-[10px]" fixed-width aria-hidden="true" />
                                     {{ profile?.status?.tooltip }}
                                 </span>
                             </div>
                             <div class="mt-0.5 flex items-center gap-x-1 text-sm text-gray-500">
-                                <FontAwesomeIcon icon="fal fa-at" class="text-xs" aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-at" class="text-xs" fixed-width aria-hidden="true" />
                                 {{ profile?.username }}
                             </div>
                         </div>

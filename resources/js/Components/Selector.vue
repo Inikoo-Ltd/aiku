@@ -120,7 +120,7 @@ defineExpose({ open })
         <FontAwesomeIcon 
           v-if="isSelected(item.id)"
           icon="fas fa-check-circle"
-          class="absolute top-2 right-2 text-green-500"
+          class="absolute top-2 right-2 text-green-500" fixed-width
         />
 
         <Image 

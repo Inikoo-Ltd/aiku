@@ -1155,7 +1155,7 @@ const handleClickOutside = (e: MouseEvent) => {
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
             <button @click="$emit('back')" :aria-label="ctrans('Back')">
-                <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
+                <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
 
             <div class="flex-1 min-w-0 cursor-pointer" @click="onViewMessageDetails">
@@ -1173,7 +1173,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         v-tooltip="isCustomer ? ctrans('Customer') : ctrans('Guest')">
                         {{ isCustomer ? 'C' : 'G' }}
                     </span>
-                    <FontAwesomeIcon :icon="channelIcon" class="shrink-0 text-[11px]" :class="channelIconClass" />
+                    <FontAwesomeIcon :icon="channelIcon" class="shrink-0 text-[11px]" :class="channelIconClass" fixed-width />
                     <!-- Narrow, only the age survives: it is what a waiting conversation is
                          judged by, and the full date crowded out the buttons beside it. -->
                     <span v-if="lastMessageStamp" class="shrink-0 text-[11px] text-gray-400"
@@ -1204,7 +1204,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
                         :class="isMyChat ? '' : 'border border-gray-300 text-gray-600 hover:bg-gray-100'"
                         :style="isMyChat ? { backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' } : {}">
-                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
+                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" fixed-width />
                         {{ ctrans("End chat") }}
                     </button>
                 </template>
@@ -1215,7 +1215,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <button v-if="canIgnore && (session as any)?.is_rubbish" type="button" :disabled="isSpamMarking"
                 class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
                 @click="markRubbish(false)">
-                <FontAwesomeIcon :icon="faRotateLeft" class="text-[11px]" />
+                <FontAwesomeIcon :icon="faRotateLeft" class="text-[11px]" fixed-width />
                 {{ ctrans("Not ignored") }}
             </button>
 
@@ -1224,9 +1224,9 @@ const handleClickOutside = (e: MouseEvent) => {
                     v-tooltip="ctrans('Nothing to answer here. Only this conversation, and it can be undone.')"
                     class="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
                     @click.stop="isIgnoreMenuOpen = !isIgnoreMenuOpen">
-                    <FontAwesomeIcon :icon="faArchive" class="text-[11px]" />
+                    <FontAwesomeIcon :icon="faArchive" class="text-[11px]" fixed-width />
                     {{ ctrans("Ignore") }}
-                    <FontAwesomeIcon :icon="faAngleDown" class="text-[9px] text-gray-400" />
+                    <FontAwesomeIcon :icon="faAngleDown" class="text-[9px] text-gray-400" fixed-width />
                 </button>
 
                 <div v-if="isIgnoreMenuOpen" class="absolute right-0 mt-1 w-56 bg-white border rounded-md shadow z-50 py-1">
@@ -1247,7 +1247,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
                 class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                 @click="markSpam(!(session as any)?.is_spam)">
-                <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" class="text-[11px]" />
+                <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" class="text-[11px]" fixed-width />
                 {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
             </button>
 
@@ -1258,33 +1258,33 @@ const handleClickOutside = (e: MouseEvent) => {
                 class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border transition"
                 :class="blockingTicketsCount ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-gray-300 text-gray-600 hover:bg-gray-100'"
                 @click="onViewTickets">
-                <FontAwesomeIcon :icon="blockingTicketsCount ? faLock : faLifeRing" class="text-[11px]" />
+                <FontAwesomeIcon :icon="blockingTicketsCount ? faLock : faLifeRing" class="text-[11px]" fixed-width />
                 {{ openTicketsCount }}
             </button>
 
             <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
                 class="inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
                 @click="onViewUserProfile">
-                <FontAwesomeIcon :icon="faUser" class="text-[11px]" />
+                <FontAwesomeIcon :icon="faUser" class="text-[11px]" fixed-width />
             </button>
 
             <div class="relative" ref="menuRef">
                 <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="ctrans('Toggle menu')">
-                    <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" />
+                    <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" fixed-width />
                 </button>
 
                 <div v-if="isMenuOpen && !isClosed && !isTrashed"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <button class="menu-item" @click="onViewUserProfile">
-                        <FontAwesomeIcon :icon="faUser" /> {{ ctrans("View Profile") }}
+                        <FontAwesomeIcon :icon="faUser" fixed-width /> {{ ctrans("View Profile") }}
                     </button>
 
                     <button class="menu-item" @click="translateConversation">
-                        <FontAwesomeIcon :icon="faLanguage" /> {{ ctrans("Translate conversation") }}
+                        <FontAwesomeIcon :icon="faLanguage" fixed-width /> {{ ctrans("Translate conversation") }}
                     </button>
 
                     <button class="menu-item" @click="onViewMessageDetails">
-                        <FontAwesomeIcon :icon="faMessage" /> {{ ctrans("Message Details") }}
+                        <FontAwesomeIcon :icon="faMessage" fixed-width /> {{ ctrans("Message Details") }}
                     </button>
 
                     <template v-if="!readOnly">
@@ -1295,10 +1295,10 @@ const handleClickOutside = (e: MouseEvent) => {
                                  dark, or the two shapes read as one blot at this size. -->
                             <FontAwesomeLayers class="h-4 w-4 shrink-0">
                                 <FontAwesomeIcon :icon="faEnvelope" class="text-[0.9em]"
-                                    :class="isEmailNotif ? 'text-green-400' : 'text-red-300'" />
-                                <FontAwesomeIcon :icon="faCircle" class="text-[0.7em] text-white translate-x-[0.5em] -translate-y-[0.4em]" />
+                                    :class="isEmailNotif ? 'text-green-400' : 'text-red-300'" fixed-width />
+                                <FontAwesomeIcon :icon="faCircle" class="text-[0.7em] text-white translate-x-[0.5em] -translate-y-[0.4em]" fixed-width />
                                 <FontAwesomeIcon :icon="faExclamationCircle" class="text-[0.55em] translate-x-[0.5em] -translate-y-[0.4em]"
-                                    :class="isEmailNotif ? 'text-green-700' : 'text-red-600'" />
+                                    :class="isEmailNotif ? 'text-green-700' : 'text-red-600'" fixed-width />
                             </FontAwesomeLayers>
                             {{ ctrans("Email notification:") }}
                             <span :class="isEmailNotif ? 'font-medium text-green-600' : 'text-gray-500'">
@@ -1308,11 +1308,11 @@ const handleClickOutside = (e: MouseEvent) => {
 
                         <button class="menu-item disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canDispose"
                             v-tooltip="canDispose ? undefined : heldByAnotherAgent" @click="openTicketModal">
-                            <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" /> {{ ctrans("Create Ticket") }}
+                            <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width /> {{ ctrans("Create Ticket") }}
                         </button>
 
                         <button class="menu-item" @click="openSlackModal">
-                            <FontAwesomeIcon :icon="faSlack" class="text-purple-600" /> {{ ctrans("Share to Slack") }}
+                            <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width /> {{ ctrans("Share to Slack") }}
                         </button>
 
                     </template>
@@ -1325,7 +1325,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
                 <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
-                    <FontAwesomeIcon v-if="isLoadingMore" :icon="faSpinner" class="animate-spin text-[10px]" />
+                    <FontAwesomeIcon v-if="isLoadingMore" :icon="faSpinner" class="animate-spin text-[10px]" fixed-width />
                     <span>
                         {{ isLoadingMore ? 'Loading messages…' : 'Load older messages' }}
                     </span>
@@ -1363,13 +1363,13 @@ const handleClickOutside = (e: MouseEvent) => {
                 <template v-if="attachment.isImage && attachment.previewUrl">
                     <img :src="attachment.previewUrl" class="h-24 rounded-lg border object-cover" />
                     <button @click="removeAttachment(index)" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1" :aria-label="ctrans('Remove image')">
-                        <FontAwesomeIcon :icon="faXmark" />
+                        <FontAwesomeIcon :icon="faXmark" fixed-width />
                     </button>
                 </template>
 
                 <div v-else class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0 max-w-[220px]">
                     <div class="text-2xl">
-                        <FontAwesomeIcon :icon="faFilePdf" />
+                        <FontAwesomeIcon :icon="faFilePdf" fixed-width />
                     </div>
                     <div class="flex-1 min-w-0 overflow-hidden">
                         <div class="text-sm font-medium truncate">
@@ -1380,7 +1380,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         </div>
                     </div>
                     <button @click="removeAttachment(index)" class="text-gray-400 hover:text-red-500 shrink-0 ml-2" :aria-label="ctrans('Remove file')">
-                        <FontAwesomeIcon :icon="faXmark" />
+                        <FontAwesomeIcon :icon="faXmark" fixed-width />
                     </button>
                 </div>
             </div>
@@ -1486,18 +1486,18 @@ const handleClickOutside = (e: MouseEvent) => {
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="ctrans('Upload image')">
-                            <FontAwesomeIcon :icon="faImage" class="text-sm" />
+                            <FontAwesomeIcon :icon="faImage" class="text-sm" fixed-width />
                         </button>
                         <button @click="fileInput?.click()"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="ctrans('Upload file')">
-                            <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
+                            <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
                         </button>
                         <div ref="emojiPickerContainer" class="relative">
                             <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                                 :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
                                 :title="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
-                                <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                                <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                             </button>
 
                             <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1 z-30">
@@ -1506,7 +1506,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         </div>
                         <button @click="openTicketModal"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
-                            <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
+                            <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
                     </div>
                     <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="ctrans('Send message')"></Button>
@@ -1536,7 +1536,7 @@ const handleClickOutside = (e: MouseEvent) => {
         <div v-if="isDraggingFile"
             class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/75 p-6">
             <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-sky-400 bg-white px-10 py-8 shadow-sm">
-                <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-sky-500" />
+                <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-sky-500" fixed-width />
                 <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the files here") }}</div>
                 <div class="text-xs text-gray-400">
                     {{ ctrans("Images, PDF and spreadsheets, up to 10 at a time, 10MB each") }}

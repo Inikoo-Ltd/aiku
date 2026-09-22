@@ -5,10 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { ref, inject } from "vue"
+import { ref, inject, provide, watch } from "vue"
 import { get, set, cloneDeep } from "lodash-es"
 import { trans } from "laravel-vue-i18n"
 import { getComponent } from "@/Composables/getBannerFields"
+import { useBlueprintFieldFocus } from "@/Composables/useBlueprintFieldFocus"
 
 // icon
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -20,6 +21,8 @@ library.add(faImage, faExpandArrows, faAlignCenter, faTrash, faStopwatch)
 const props = defineProps<{
   modelValue: any
   blueprint: any[]
+  focusField?: string | null
+  focusToken?: number
 }>()
 
 const emit = defineEmits(["update:modelValue"])
@@ -28,6 +31,21 @@ const current = ref(0);
 const setCurrent = (key: number) => {
   current.value = key
 }
+
+const fieldsContainer = ref<HTMLElement | null>(null)
+const { highlightedPath, focusState, focusFieldPath } = useBlueprintFieldFocus(
+    fieldsContainer,
+    () => props.blueprint,
+    current
+)
+
+provide('bannerFieldFocus', focusState)
+
+watch(
+    () => props.focusToken,
+    () => focusFieldPath(props.focusField),
+    { immediate: true }
+)
 
 const getValue = (fieldData: string | string[]) => {
     const rawVal = get(props.modelValue, fieldData.name)
@@ -85,7 +103,7 @@ defineExpose({
                             ? 'bg-gray-200 sm:border-l-4 sm:border-amber-300 text-gray-600 transition-all duration-100 ease-in-out'
                             : 'hover:bg-gray-100 text-gray-400 hover:text-gray-500 transition-all duration-100 ease-in-out',
                         ]" :aria-current="key === current ? 'page' : undefined">
-                        <FontAwesomeIcon v-if="item.icon" aria-hidden="true"
+                        <FontAwesomeIcon v-if="item.icon" fixed-width aria-hidden="true"
                             class="flex-shrink-0 sm:-ml-1 sm:mr-3 h-6 w-6 text-gray-500 sm:text-gray-400 sm:group-hover:text-gray-500"
                             :icon="item.icon" />
                         <span class="hidden sm:inline truncate">{{ trans(item.title) }}</span>
@@ -96,9 +114,13 @@ defineExpose({
 
         <!-- Content of forms -->
         <div class="px-4 sm:px-6 md:px-4 pt-6 xl:pt-4 col-span-9 flex flex-grow justify-center">
-            <div class="flex flex-col w-full gap-y-3">
+            <div ref="fieldsContainer" class="flex flex-col w-full gap-y-3">
                 <dl v-for="(fieldData, index) in blueprint[current].fields" :key="index"
-                    class="pb-4 sm:pb-5 sm:gap-4 w-full">
+                    :data-field-path="Array.isArray(fieldData.name) ? fieldData.name.join('.') : fieldData.name"
+                    class="pb-4 sm:pb-5 sm:gap-4 w-full rounded transition-colors duration-300"
+                    :class="highlightedPath === (Array.isArray(fieldData.name) ? fieldData.name.join('.') : fieldData.name)
+                        ? 'ring-2 ring-amber-400 bg-amber-50/60'
+                        : ''">
                     <!-- Title -->
                     <dt v-if="fieldData.name != 'image_source' && fieldData.label"
                         class="text-sm font-medium text-gray-500">

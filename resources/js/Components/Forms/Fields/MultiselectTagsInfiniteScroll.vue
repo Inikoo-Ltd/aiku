@@ -74,7 +74,7 @@ const findTagById = (id: number | string) => {
                         @click="formSelectedTags = formSelectedTags.filter((id) => id !== tagId)"
                         class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm"
                     >
-                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" fixed-width aria-hidden="true" />
                     </div>
                 </template>
             </Tag>

@@ -253,8 +253,8 @@ onMounted(() => {
 					<FontAwesomeIcon
 						v-if="selectedFilters[elementScope]?.includes(elementKey)"
 						icon="fal fa-check-square"
-						aria-hidden="true" />
-					<FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
+						fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-else icon="fal fa-square" fixed-width aria-hidden="true" />
 					<div
 						:class="[
 							selectedFilters[elementScope]?.includes(elementKey)
@@ -309,8 +309,8 @@ onMounted(() => {
 							<FontAwesomeIcon
 								v-if="selectedFilters[elementScope]?.includes(elementKey)"
 								icon="fal fa-check-square"
-								aria-hidden="true" />
-							<FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
+								fixed-width aria-hidden="true" />
+							<FontAwesomeIcon v-else icon="fal fa-square" fixed-width aria-hidden="true" />
 							<div
 								:class="[
 									selectedFilters[elementScope]?.includes(elementKey)
@@ -352,8 +352,8 @@ onMounted(() => {
 					<FontAwesomeIcon
 						v-if="selectedFilters[selectedGroup]?.includes(element)"
 						icon="fal fa-check-square"
-						aria-hidden="true" />
-					<FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
+						fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-else icon="fal fa-square" fixed-width aria-hidden="true" />
 					<div
 						class="space-x-1"
 						:class="[
@@ -388,7 +388,7 @@ onMounted(() => {
 								icon="fal fa-chevron-down"
 								class="transition-all duration-200 ease-in-out"
 								:class="[open ? 'rotate-180' : '']"
-								aria-hidden="true" />
+								fixed-width aria-hidden="true" />
 						</span>
 						<span class="px-4 text-nowrap">{{ elements[selectedGroup].label }}</span>
 					</MenuButton>

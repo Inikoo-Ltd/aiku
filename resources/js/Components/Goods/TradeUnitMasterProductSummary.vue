@@ -174,7 +174,7 @@ library.add(
 					<!-- Section: Barcode -->
 					<div class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Barcode") }}
-							<FontAwesomeIcon :icon="faBarcode" />
+							<FontAwesomeIcon :icon="faBarcode" fixed-width />
 						</dt>
 						<dd class="font-medium">
 							{{ data?.barcode }}

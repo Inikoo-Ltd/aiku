@@ -134,7 +134,7 @@ const getStatusText = (status: string, valid: boolean) => {
                         <span class="text-xs h-full mr-1 hidden md:inline">
                             {{ trans('View History') }}
                         </span>
-                        <FontAwesomeIcon :icon="faHistory"/>
+                        <FontAwesomeIcon :icon="faHistory" fixed-width/>
                     </span>
                 </div>
             </div>

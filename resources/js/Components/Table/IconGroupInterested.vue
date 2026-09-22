@@ -13,9 +13,9 @@ const props = defineProps<{
 
 <template>
     <div>
-        <FontAwesomeIcon v-if="columnValue == 'customer'" icon="fas fa-check-circle" class="text-green-500" title="Paid" />
-        <FontAwesomeIcon v-else-if="columnValue == 'interested'" icon="fal fa-check-circle" class="text-green-500" title="Interested"/>
-        <FontAwesomeIcon v-else-if="columnValue == 'not_interested'" icon="fal fa-times-circle" class="text-red-500" title="Not interested"/>
-        <FontAwesomeIcon v-else icon="far fa-circle" class="text-gray-500" title="Not sure" />
+        <FontAwesomeIcon v-if="columnValue == 'customer'" icon="fas fa-check-circle" class="text-green-500" title="Paid" fixed-width />
+        <FontAwesomeIcon v-else-if="columnValue == 'interested'" icon="fal fa-check-circle" class="text-green-500" title="Interested" fixed-width/>
+        <FontAwesomeIcon v-else-if="columnValue == 'not_interested'" icon="fal fa-times-circle" class="text-red-500" title="Not interested" fixed-width/>
+        <FontAwesomeIcon v-else icon="far fa-circle" class="text-gray-500" title="Not sure" fixed-width />
     </div>
 </template>

@@ -274,7 +274,7 @@ watch(() => weekTimes, () => {
 
               <div @click="group[section.key].closed = !group[section.key].closed"
                 class="text-gray-400 hover:text-gray-700">
-                <FontAwesomeIcon :icon="group[section.key].closed ? faChevronCircleDown : faChevronCircleUp" />
+                <FontAwesomeIcon :icon="group[section.key].closed ? faChevronCircleDown : faChevronCircleUp" fixed-width />
               </div>
             </div>
 
@@ -309,7 +309,7 @@ watch(() => weekTimes, () => {
 
                 <div @click="removeBreak(group[section.key], i)"
                   class="cursor-pointer text-gray-400 hover:text-red-600">
-                  <FontAwesomeIcon :icon="faTrash" />
+                  <FontAwesomeIcon :icon="faTrash" fixed-width />
                 </div>
               </div>
             </div>
@@ -317,7 +317,7 @@ watch(() => weekTimes, () => {
             <div class="border-t px-3 py-2 pl-5">
               <div @click="addBreak(group[section.key])"
                 class="inline-flex items-center gap-1 text-xs cursor-pointer text-gray-500 hover:text-gray-800">
-                <FontAwesomeIcon :icon="faPlus" />
+                <FontAwesomeIcon :icon="faPlus" fixed-width />
                 {{ trans('Add break') }}
               </div>
             </div>
@@ -363,7 +363,7 @@ watch(() => weekTimes, () => {
 
                   <div @click="removeBreak(weekTimes[d], i)"
                     class="cursor-pointer text-gray-400 hover:text-red-600">
-                    <FontAwesomeIcon :icon="faTrash" />
+                    <FontAwesomeIcon :icon="faTrash" fixed-width />
                   </div>
                 </div>
               </div>
@@ -371,7 +371,7 @@ watch(() => weekTimes, () => {
               <div class="px-3 py-1 pl-5">
                 <div @click="addBreak(weekTimes[d])"
                   class="inline-flex items-center gap-1 text-xs cursor-pointer text-gray-500 hover:text-gray-800">
-                  <FontAwesomeIcon :icon="faPlus" />
+                  <FontAwesomeIcon :icon="faPlus" fixed-width />
                   {{ trans('Add break') }}
                 </div>
               </div>

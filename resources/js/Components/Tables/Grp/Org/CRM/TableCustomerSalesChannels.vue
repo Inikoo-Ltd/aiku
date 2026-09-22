@@ -275,7 +275,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
 
     <ConfirmPopup>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500"/>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width/>
         </template>
     </ConfirmPopup>
 </template>

@@ -141,7 +141,7 @@ const getValueColumn4Transleted = (value: string) => {
                 <a :href="`https://wa.me/${modelValue?.whatsapp?.number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(modelValue?.whatsapp?.message || '')}`"
                     class="flex gap-x-2 items-center">
                     <!--                  This icon cause an error-->
-                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
+                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" fixed-width />
                     WA: <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
                 </a>
             </div>
@@ -192,7 +192,7 @@ const getValueColumn4Transleted = (value: string) => {
                                                 </span>
                                                 <div>
                                                     <FontAwesomeIcon :icon="faTriangle"
-                                                        :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" />
+                                                        :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" fixed-width />
                                                 </div>
                                             </div>
                                         </DisclosureButton>
@@ -248,7 +248,7 @@ const getValueColumn4Transleted = (value: string) => {
                                                 </span>
                                                 <div>
                                                     <FontAwesomeIcon :icon="faTriangle"
-                                                        :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" />
+                                                        :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" fixed-width />
                                                 </div>
                                             </div>
                                         </DisclosureButton>
@@ -304,7 +304,7 @@ const getValueColumn4Transleted = (value: string) => {
                                                 </span>
                                                 <div>
                                                     <FontAwesomeIcon :icon="faTriangle"
-                                                        :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" />
+                                                        :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" fixed-width />
                                                 </div>
                                             </div>
                                         </DisclosureButton>

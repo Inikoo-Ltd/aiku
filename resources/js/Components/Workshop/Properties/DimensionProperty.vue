@@ -58,7 +58,7 @@ const customWidthEnabled = ref(false)
       </div>
 
       <div class="grid grid-cols-12 items-center gap-3">
-        <FontAwesomeIcon icon="fad fa-border-outer" class="text-gray-400 text-base col-span-1" />
+        <FontAwesomeIcon icon="fad fa-border-outer" class="text-gray-400 text-base col-span-1" fixed-width />
         <Slider
           :modelValue="get(model, 'height.value', 0)"
           @update:modelValue="newVal => (set(model, 'height.value', newVal), emits('update:modelValue', {...model}))"
@@ -125,7 +125,7 @@ const customWidthEnabled = ref(false)
       </div>
 
       <div class="grid grid-cols-12 items-center gap-3">
-        <FontAwesomeIcon icon="fad fa-border-outer" class="text-gray-400 text-base col-span-1" />
+        <FontAwesomeIcon icon="fad fa-border-outer" class="text-gray-400 text-base col-span-1" fixed-width />
         <Slider
           :modelValue="get(model, 'width.value', 0)"
           @update:modelValue="newVal => (set(model, 'width.value', newVal), emits('update:modelValue', {...model}))"

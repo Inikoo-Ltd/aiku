@@ -49,7 +49,7 @@ const allowMove = () => false
   <!-- Dialog konfirmasi -->
   <Dialog v-model:visible="showDialog" header="Confirm Change" modal :closable="false" style="width: 450px">
     <p class="mb-2">
-      <FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500 mr-2" />
+      <FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500 mr-2" fixed-width />
       {{ trans('Are you sure you want to switch to this template?') }}
     </p>
     <p class="text-sm text-red-500 mb-4 ">

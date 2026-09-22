@@ -177,7 +177,7 @@ const toggleSubscription = async (task: any) => {
                             <span class="flex items-center gap-x-1 min-w-0">
                                 <span class="h-5 w-5 rounded-full overflow-hidden bg-gray-200 shrink-0">
                                     <Image v-if="task.assignee?.avatar" :src="task.assignee.avatar" :alt="task.assignee.name" image-cover />
-                                    <FontAwesomeIcon v-else icon="fal fa-user" class="h-full w-full p-0.5 text-gray-400" aria-hidden="true" />
+                                    <FontAwesomeIcon v-else icon="fal fa-user" class="h-full w-full p-0.5 text-gray-400" fixed-width aria-hidden="true" />
                                 </span>
                                 <span class="truncate">{{ task.assignee?.name ?? task.department_label ?? '—' }}</span>
                             </span>

@@ -151,7 +151,7 @@ const onLogoutAuth = () => {
                 <FontAwesomeIcon
                     icon="far fa-chevron-left"
                     class="h-[10px] leading-none"
-                    aria-hidden="true"
+                    fixed-width aria-hidden="true"
                     :class="layout.leftSidebar.show ? '-translate-x-[1px]' : ''" />
             </div>
         </div>

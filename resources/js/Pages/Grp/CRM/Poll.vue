@@ -81,7 +81,7 @@ const component = computed(() => {
         <template #afterTitle2>
             <div v-if="props.data.in_registration_required"
                 class="flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm text-red-600">
-                <FontAwesomeIcon :icon="faExclamationCircle" class="animate-pulse" />
+                <FontAwesomeIcon :icon="faExclamationCircle" class="animate-pulse" fixed-width />
                 <span>{{ trans("Required in registration") }}</span>
             </div>
         </template>
@@ -130,7 +130,7 @@ const component = computed(() => {
                 <!-- Label -->
                 <div class="mb-3 flex items-start gap-2">
                     <FontAwesomeIcon v-if="data.in_registration_required" icon="fas fa-asterisk"
-                        class="mt-1 text-[9px] text-red-500" />
+                        class="mt-1 text-[9px] text-red-500" fixed-width />
 
                     <label class="text-sm font-medium leading-5 text-gray-800">
                         {{ data.label }}

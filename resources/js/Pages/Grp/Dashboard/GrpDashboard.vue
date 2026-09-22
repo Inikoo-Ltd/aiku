@@ -326,7 +326,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		/>
 
 		<div v-if="!props.dashboard?.super_blocks?.length" class="flex flex-col items-center justify-center px-4 py-24" role="status">
-			<FontAwesomeIcon icon="fal fa-chart-line" class="mb-4 text-6xl text-gray-300" aria-hidden="true" />
+			<FontAwesomeIcon icon="fal fa-chart-line" class="mb-4 text-6xl text-gray-300" fixed-width aria-hidden="true" />
 			<h3 class="mb-2 text-center text-lg font-medium text-gray-500">
 				{{ trans('No sales data to show') }}
 			</h3>

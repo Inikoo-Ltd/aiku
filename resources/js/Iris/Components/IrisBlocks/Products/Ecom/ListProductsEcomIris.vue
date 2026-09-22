@@ -447,7 +447,7 @@ watch(
     <div :id="fieldValue?.id ? fieldValue?.id : 'list-products-ecom-iris'" component="list-products-ecom-iris" class="">
         <ConfirmDialog>
             <template #icon>
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
             </template>
         </ConfirmDialog>
         <div class="flex flex-col lg:flex-row" :style="{

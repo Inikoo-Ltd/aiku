@@ -180,7 +180,7 @@ const organisationPositionCounts = ref<{
                         <div class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-100 transition-all duration-200 ease-in-out">
                             <!-- Section: Department label -->
                             <div class="flex items-center gap-x-1.5">
-                                <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400 fixed-width" aria-hidden="true" />
+                                <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400" fixed-width aria-hidden="true" />
                                 {{ jobGroup.department }}
                             </div>
 

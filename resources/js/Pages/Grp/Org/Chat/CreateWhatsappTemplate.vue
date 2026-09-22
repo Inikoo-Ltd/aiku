@@ -552,7 +552,7 @@ const themeActiveCard = {
                                 <span v-if="form.category === category.value"
                                     class="absolute top-3 right-3 w-4 h-4 rounded-full flex items-center justify-center text-white"
                                     :style="{ backgroundColor: 'var(--theme-color-4)' }">
-                                    <FontAwesomeIcon :icon="faCheck" class="text-[8px]" />
+                                    <FontAwesomeIcon :icon="faCheck" class="text-[8px]" fixed-width />
                                 </span>
                                 <div class="text-sm font-medium text-gray-800 pr-6">{{ category.label }}</div>
                                 <div class="text-xs text-gray-500 mt-1 leading-snug">{{ category.hint }}</div>
@@ -591,13 +591,13 @@ const themeActiveCard = {
                             class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs transition disabled:opacity-40 disabled:cursor-not-allowed"
                             :class="form.header_format === format.value ? 'font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'"
                             :style="form.header_format === format.value ? { ...themeActiveCard, ...themeText } : {}">
-                            <FontAwesomeIcon v-if="format.icon" :icon="format.icon" class="text-[11px]" />
+                            <FontAwesomeIcon v-if="format.icon" :icon="format.icon" class="text-[11px]" fixed-width />
                             {{ format.label }}
                         </button>
                     </div>
 
                     <p v-if="!canUploadMedia" class="flex items-start gap-1.5 text-xs text-gray-400">
-                        <FontAwesomeIcon :icon="faCircleInfo" class="mt-0.5" />
+                        <FontAwesomeIcon :icon="faCircleInfo" class="mt-0.5" fixed-width />
                         {{ trans("Media headers need WHATSAPP_APP_ID configured, so only text headers are available right now.") }}
                     </p>
 
@@ -612,7 +612,7 @@ const themeActiveCard = {
                     <div v-else-if="form.header_format !== 'NONE'" class="space-y-2">
                         <label
                             class="flex items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-6 text-xs text-gray-500 cursor-pointer hover:border-gray-400 hover:text-gray-600 transition">
-                            <FontAwesomeIcon :icon="faUpload" class="text-sm" />
+                            <FontAwesomeIcon :icon="faUpload" class="text-sm" fixed-width />
                             {{ form.header_media
                                 ? form.header_media.name
                                 : reusedHeaderMedia
@@ -661,7 +661,7 @@ const themeActiveCard = {
                                     v-tooltip="trans('Emoji')"
                                     class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 transition-colors"
                                     :class="showEmojiPicker ? 'bg-gray-200 text-gray-700' : 'text-gray-500'">
-                                    <FontAwesomeIcon :icon="faFaceSmile" class="text-xs" />
+                                    <FontAwesomeIcon :icon="faFaceSmile" class="text-xs" fixed-width />
                                 </button>
 
                                 <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1.5 z-30">
@@ -682,7 +682,7 @@ const themeActiveCard = {
                                 <button type="button" @click.stop="isTagPickerOpen = !isTagPickerOpen"
                                     class="inline-flex items-center gap-1 px-2 h-7 rounded text-xs hover:bg-gray-200 transition-colors"
                                     :style="themeText">
-                                    <FontAwesomeIcon :icon="faPlus" class="text-[9px]" />
+                                    <FontAwesomeIcon :icon="faPlus" class="text-[9px]" fixed-width />
                                     {{ trans("Add variable") }}
                                 </button>
 
@@ -776,7 +776,7 @@ const themeActiveCard = {
                         <button v-for="type in BUTTON_TYPES" :key="type.value" type="button" @click="addButton(type.value)"
                             v-tooltip="type.hint"
                             class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3.5 py-1.5 text-xs text-gray-600 hover:border-gray-300 transition">
-                            <FontAwesomeIcon :icon="type.icon" class="text-[11px] text-gray-400" />
+                            <FontAwesomeIcon :icon="type.icon" class="text-[11px] text-gray-400" fixed-width />
                             {{ type.label }}
                         </button>
                     </div>
@@ -801,16 +801,16 @@ const themeActiveCard = {
                                 <button type="button" @click="moveButton(index, -1)" :disabled="index === 0"
                                     v-tooltip="trans('Move up')"
                                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent">
-                                    <FontAwesomeIcon :icon="faArrowUp" class="text-[10px]" />
+                                    <FontAwesomeIcon :icon="faArrowUp" class="text-[10px]" fixed-width />
                                 </button>
                                 <button type="button" @click="moveButton(index, 1)"
                                     :disabled="index === form.buttons.length - 1" v-tooltip="trans('Move down')"
                                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30 disabled:hover:bg-transparent">
-                                    <FontAwesomeIcon :icon="faArrowDown" class="text-[10px]" />
+                                    <FontAwesomeIcon :icon="faArrowDown" class="text-[10px]" fixed-width />
                                 </button>
                                 <button type="button" @click="removeButton(index)" v-tooltip="trans('Remove')"
                                     class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500">
-                                    <FontAwesomeIcon :icon="faXmark" class="text-xs" />
+                                    <FontAwesomeIcon :icon="faXmark" class="text-xs" fixed-width />
                                 </button>
                             </div>
                         </div>
@@ -909,7 +909,7 @@ const themeActiveCard = {
                 </span>
                 <code class="text-xs text-gray-500 whitespace-nowrap">{{ row.syntax }}</code>
                 <FontAwesomeIcon :icon="faCopy"
-                    class="justify-self-end text-xs text-gray-300 group-hover:text-gray-500 transition-colors" />
+                    class="justify-self-end text-xs text-gray-300 group-hover:text-gray-500 transition-colors" fixed-width />
             </button>
         </div>
     </Dialog>

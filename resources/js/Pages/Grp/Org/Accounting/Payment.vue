@@ -266,7 +266,7 @@ const openSingleTopUpReceipt = () => {
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
         <template #afterTitle>
-            <FontAwesomeIcon :icon="faFileTimes" class="text-red-500" v-tooltip="trans('This payment is cancelled')" v-if="is_cancelled"/>
+            <FontAwesomeIcon :icon="faFileTimes" class="text-red-500" v-tooltip="trans('This payment is cancelled')" v-if="is_cancelled" fixed-width/>
         </template>
         <template #other>
             <ModalConfirmation
@@ -288,7 +288,7 @@ const openSingleTopUpReceipt = () => {
 						class="text-sm" :type="'negative'"
 						@click="changeModel"
 					>
-                        <FontAwesomeIcon :icon="faFileTimes" class="text-red-500"/>
+                        <FontAwesomeIcon :icon="faFileTimes" class="text-red-500" fixed-width/>
                         {{ trans('Cancel Payment') }}
 					</Button>
 				</template>

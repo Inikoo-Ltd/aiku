@@ -363,7 +363,7 @@ const isFormInvalid = computed(() => {
 					<label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
 						<FontAwesomeIcon
 							icon="fas fa-asterisk"
-							class="font-light text-xs text-red-400 align-middle" />
+							class="font-light text-xs text-red-400 align-middle" fixed-width />
 
 						{{ trans("Voucher code") }}:
 					</label>
@@ -376,7 +376,7 @@ const isFormInvalid = computed(() => {
 					<p
 						v-if="hasVoucherWhitespace"
 						class="text-sm text-red-500 flex items-center gap-x-1">
-						<FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
+						<FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" fixed-width />
 						{{ ctrans("Voucher code cannot contain spaces") }}
 					</p>
 					<p
@@ -388,13 +388,13 @@ const isFormInvalid = computed(() => {
 					<p
 						v-else-if="voucherExists === true"
 						class="text-sm text-red-500 flex items-center gap-x-1">
-						<FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" />
+						<FontAwesomeIcon icon="fas fa-times-circle" class="text-xs" fixed-width />
 						{{ ctrans("Voucher code already exists") }}
 					</p>
 					<p
 						v-else-if="voucherExists === false"
 						class="text-sm text-green-600 flex items-center gap-x-1">
-						<FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" />
+						<FontAwesomeIcon icon="fas fa-check-circle" class="text-xs" fixed-width />
 						{{ ctrans("Voucher code is available") }}
 					</p>
 				</div>
@@ -403,7 +403,7 @@ const isFormInvalid = computed(() => {
 					<label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
 						<FontAwesomeIcon
 							icon="fas fa-asterisk"
-							class="font-light text-xs text-red-400 align-middle" />
+							class="font-light text-xs text-red-400 align-middle" fixed-width />
 
 						{{ trans("Offer name") }}
 						<InformationIcon
@@ -420,7 +420,7 @@ const isFormInvalid = computed(() => {
 					<label class="font-medium mb-2 flex items-center gap-x-1">
 						<FontAwesomeIcon
 							icon="fas fa-asterisk"
-							class="font-light text-xs text-red-400 align-middle" />
+							class="font-light text-xs text-red-400 align-middle" fixed-width />
 						{{ trans("Minimum purchase amount") }}:
 					</label>
 
@@ -480,7 +480,7 @@ const isFormInvalid = computed(() => {
 						<label class="font-semibold">
 							<FontAwesomeIcon
 								icon="fas fa-asterisk"
-								class="font-light text-xs text-red-400 align-middle" />
+								class="font-light text-xs text-red-400 align-middle" fixed-width />
 							{{ trans("Target") }}
 						</label>
 
@@ -547,7 +547,7 @@ const isFormInvalid = computed(() => {
 					<label class="font-semibold flex items-center gap-x-1">
 						<FontAwesomeIcon
 							icon="fas fa-asterisk"
-							class="font-light text-xs text-red-400 align-middle" />
+							class="font-light text-xs text-red-400 align-middle" fixed-width />
 						{{ trans("Voucher type") }}
 					</label>
 
@@ -576,7 +576,7 @@ const isFormInvalid = computed(() => {
 						<div class="font-medium mb-2 flex items-center gap-x-1">
 							<FontAwesomeIcon
 								icon="fas fa-asterisk"
-								class="font-light text-xs text-red-400 align-middle" />
+								class="font-light text-xs text-red-400 align-middle" fixed-width />
 							{{ trans("Discount") }}:
 						</div>
 
@@ -595,7 +595,7 @@ const isFormInvalid = computed(() => {
 						<div class="font-medium mb-2 flex items-center gap-x-1">
 							<FontAwesomeIcon
 								icon="fas fa-asterisk"
-								class="font-light text-xs text-red-400 align-middle" />
+								class="font-light text-xs text-red-400 align-middle" fixed-width />
 							{{ trans("Amount off") }}:
 							<InformationIcon
 								:information="trans('Fixed amount deducted from the order (before tax). Requires a minimum purchase amount.')" />
@@ -631,7 +631,7 @@ const isFormInvalid = computed(() => {
 						<div class="space-y-2">
 							<div class="font-medium mb-2 flex items-center gap-x-1">
 								<FontAwesomeIcon icon="fas fa-asterisk"
-									class="font-light text-xs text-red-400 align-middle" />
+									class="font-light text-xs text-red-400 align-middle" fixed-width />
 								{{ trans('Quantity product') }}:
 							</div>
 
@@ -640,7 +640,7 @@ const isFormInvalid = computed(() => {
 						</div>
 						<div class="space-y-2">
 							<label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
-								<FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+								<FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
 
 								{{ trans('Select product') }}:
 							</label>

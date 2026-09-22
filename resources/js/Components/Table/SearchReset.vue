@@ -17,7 +17,7 @@ const emit = defineEmits(['resetSearch'])
     aria-haspopup="true"
     @click="emit('resetSearch', true)"
   >
-    <FontAwesomeIcon icon="fal fa-times"  class="h-5 w-5 mr-2" aria-hidden="true" />
+    <FontAwesomeIcon icon="fal fa-times"  class="h-5 w-5 mr-2" fixed-width aria-hidden="true" />
     <span class="">Reset</span>
   </button>
 </template>

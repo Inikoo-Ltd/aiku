@@ -165,7 +165,7 @@ const countWords = (value?: string | null) => {
           <div class="h-6 w-6 flex items-center justify-center
            rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
             <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
-              class="h-3.5 w-3.5" />
+              class="h-3.5 w-3.5" fixed-width />
           </div>
 
           <!-- Content -->
@@ -179,7 +179,7 @@ const countWords = (value?: string | null) => {
           <div class="h-6 w-6 flex items-center justify-center
            rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
             <FontAwesomeIcon :icon="faOctopusDeploy" v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
-              class="h-3.5 w-3.5" />
+              class="h-3.5 w-3.5" fixed-width />
           </div>
         </div>
 
@@ -214,7 +214,7 @@ const countWords = (value?: string | null) => {
               h-6 w-6 flex items-center justify-center
               rounded-md bg-white text-gray-600 button-primary
               shadow-sm" v-tooltip="ctrans('Already reviewed by user')">
-              <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5" />
+              <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5" fixed-width />
             </button>
 
             <button v-if="fieldData.main" type="button" class="h-6 w-6 flex items-center justify-center
@@ -224,7 +224,7 @@ const countWords = (value?: string | null) => {
               v-tooltip="trans('Get translation from AI')"
             >
               <LoadingIcon v-if="loading" class="h-3.5 w-3.5 animate-spin" />
-              <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" />
+              <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" fixed-width />
             </button>
 
           </div>

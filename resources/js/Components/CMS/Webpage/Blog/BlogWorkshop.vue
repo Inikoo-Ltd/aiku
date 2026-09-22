@@ -69,7 +69,7 @@ const displayDate = computed(() => {
       class="w-full mb-8 rounded-xl shadow-md overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center">
       <Image v-if="modelValue?.image?.source" :src="modelValue?.image?.source" :alt="modelValue?.image.alt"
         :imageCover="true" class="w-full h-full object-cover" />
-      <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-400 text-6xl" />
+      <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-400 text-6xl" fixed-width />
     </div>
 
     <!-- Content Editor -->

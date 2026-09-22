@@ -795,7 +795,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 
 	<ConfirmDialog group="stock-delivery">
 		<template #icon>
-			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" fixed-width />
 		</template>
 	</ConfirmDialog>
 </template>

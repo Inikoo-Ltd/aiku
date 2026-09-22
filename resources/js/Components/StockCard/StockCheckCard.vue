@@ -84,10 +84,10 @@ const updateQuantity = (location : Datum) => {
                                 class='text-2xl animate-spin' fixed-width aria-hidden='true' />
                             <!-- Show save icon -->
                             <FontAwesomeIcon v-else :icon="faSave" class="h-8"
-                                :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                                :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                         </button>
                         <!-- Gray out save icon if no changes -->
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                     </span>
                 </div>
             </div>

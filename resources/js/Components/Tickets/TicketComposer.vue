@@ -208,19 +208,19 @@ const onPick = (event: Event) => {
         </div>
         <div class="flex items-center gap-2 px-2 py-1.5 border-t border-gray-200">
             <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5" :title="trans('Attach images, videos, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
-                <FontAwesomeIcon :icon="faPaperclip" /> {{ trans("Attach") }}
+                <FontAwesomeIcon :icon="faPaperclip" fixed-width /> {{ trans("Attach") }}
             </button>
             <span class="text-xs text-gray-400">{{ trans("or paste / drop") }}</span>
             <input ref="fileInput" type="file" accept="image/*,.mp4,.webm,.mov,.pdf,.docx,.xls,.xlsx,.csv,.zip,.rar,.7z" multiple class="hidden" @change="onPick" />
             <div v-if="previews.length" class="ml-auto flex gap-1.5">
                 <div v-for="(preview, index) in previews" :key="preview.url" class="relative">
                     <div v-if="preview.attachment" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center" :class="preview.attachment.class" :title="preview.name">
-                        <FontAwesomeIcon :icon="preview.attachment.icon" class="text-lg" />
+                        <FontAwesomeIcon :icon="preview.attachment.icon" class="text-lg" fixed-width />
                         <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ preview.name }}</span>
                     </div>
                     <img v-else :src="preview.url" alt="" class="h-12 w-12 rounded object-cover border border-gray-200" />
                     <button type="button" class="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-gray-700 text-white text-[10px] flex items-center justify-center" @click="removeImage(index)">
-                        <FontAwesomeIcon :icon="faTimes" />
+                        <FontAwesomeIcon :icon="faTimes" fixed-width />
                     </button>
                 </div>
             </div>

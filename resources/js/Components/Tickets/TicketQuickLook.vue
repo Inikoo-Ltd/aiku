@@ -183,7 +183,7 @@ const close = () => {
                             <TicketControls v-bind="controls" @updated="loadControls(ticket.id)" />
                         </TicketControlPanel>
                         <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
-                        <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ ctrans("Loading") }}</p>
+                        <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" fixed-width />{{ ctrans("Loading") }}</p>
                     </template>
                         </div>
                         <div class="lg:min-h-0 lg:flex-1 lg:overflow-y-auto pr-1 pt-3">
@@ -216,7 +216,7 @@ const close = () => {
                     <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
                         <TicketControls v-if="controls" v-bind="controls" @updated="loadControls(ticket.id)" />
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
-                        <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" />{{ ctrans("Loading") }}</p>
+                        <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" fixed-width />{{ ctrans("Loading") }}</p>
                     </aside>
                 </div>
             </div>

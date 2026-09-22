@@ -70,11 +70,11 @@ const statusClass = computed(() => {
     <!-- Count Labels with Icons -->
     <div class="flex justify-between text-xs gap-4">
       <span class="flex items-center gap-1 text-lime-600">
-        <FontAwesomeIcon :icon="faCheck" class="w-3.5 h-3.5" v-tooltip="'success to upload'"/>
+        <FontAwesomeIcon :icon="faCheck" class="w-3.5 h-3.5" v-tooltip="'success to upload'" fixed-width/>
         {{ success }}
       </span>
       <span class="flex items-center gap-1 text-red-500">
-        <FontAwesomeIcon :icon="faTimes" class="w-3.5 h-3.5" v-tooltip="'failed to upload'"/>
+        <FontAwesomeIcon :icon="faTimes" class="w-3.5 h-3.5" v-tooltip="'failed to upload'" fixed-width/>
         {{ fails }}
       </span>
     </div>

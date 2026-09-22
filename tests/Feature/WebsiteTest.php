@@ -2918,3 +2918,25 @@ test('locked webpage edit access can be requested, allowed temporarily and decli
     get(route('grp.org.shops.show.web.webpages.workshop', [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
 })->depends('create webpage');
+
+test('iris page render data is cached deflated and entries written before that still read', function () {
+    config(['iris.cache.webpage.ttl' => 60]);
+    $key = 'iris_webpage_cache_test_out_1';
+    cache()->forget($key);
+
+    $pageData = ['status' => 'ok', 'web_blocks' => array_fill(0, 200, ['type' => 'family', 'layout' => ['title' => 'Bath bombs']])];
+
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => $pageData))->toBe($pageData)
+        ->and(cache()->get($key))->toBeString()
+        ->and(strlen(cache()->get($key)))->toBeLessThan(strlen(serialize($pageData)) / 4)
+        ->and(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe($pageData);
+
+    cache()->put($key, ['status' => 'written before'], 60);
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe(['status' => 'written before']);
+
+    cache()->put($key, 'not a deflated page', 60);
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe(['status' => 'rebuilt'])
+        ->and(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'again']))->toBe(['status' => 'rebuilt']);
+
+    cache()->forget($key);
+});

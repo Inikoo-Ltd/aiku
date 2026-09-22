@@ -173,7 +173,7 @@ function formatFileSize(bytes: number | null): string {
                                         isFromAgent(msg) ? 'text-white/90' : 'text-indigo-600'
                                     ]"
                                 >
-                                    <FontAwesomeIcon icon="fal fa-paperclip" />
+                                    <FontAwesomeIcon icon="fal fa-paperclip" fixed-width />
                                     <span>{{ attachment.file_name || 'Download file' }}</span>
                                     <span v-if="attachment.file_size" class="text-xs opacity-60">
                                         ({{ formatFileSize(attachment.file_size) }})
@@ -201,8 +201,8 @@ function formatFileSize(bytes: number | null): string {
 
                 <div v-else class="flex justify-center">
                     <span class="text-xs text-gray-400 bg-gray-50 rounded-full px-3 py-1 border border-gray-100">
-                        <FontAwesomeIcon v-if="msg.is_ai" icon="fal fa-robot" class="mr-1" />
-                        <FontAwesomeIcon v-else icon="fal fa-cog" class="mr-1" />
+                        <FontAwesomeIcon v-if="msg.is_ai" icon="fal fa-robot" class="mr-1" fixed-width />
+                        <FontAwesomeIcon v-else icon="fal fa-cog" class="mr-1" fixed-width />
                         {{ msg.message_text }}
                     </span>
                 </div>

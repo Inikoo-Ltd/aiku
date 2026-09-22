@@ -160,7 +160,7 @@ const formatMetadataValue = (value: unknown): string => {
     <div class="p-4 max-w-3xl mx-auto">
         <!-- Filter Bar -->
         <div class="mb-6 flex flex-wrap items-center gap-2">
-            <FontAwesomeIcon :icon="['fal', 'fa-filter']" class="text-gray-400 text-sm" />
+            <FontAwesomeIcon :icon="['fal', 'fa-filter']" class="text-gray-400 text-sm" fixed-width />
             <button
                 v-for="filter in filterOptions"
                 :key="String(filter.key)"
@@ -177,7 +177,7 @@ const formatMetadataValue = (value: unknown): string => {
         <!-- Empty State -->
         <div v-if="filteredEvents.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
             <div class="mb-4 animate-pulse">
-                <FontAwesomeIcon :icon="['fal', 'fa-code-branch']" class="text-gray-300 text-5xl" />
+                <FontAwesomeIcon :icon="['fal', 'fa-code-branch']" class="text-gray-300 text-5xl" fixed-width />
             </div>
             <p class="text-gray-500 text-base font-medium">{{ ctrans('No activity found') }}</p>
             <p class="text-gray-400 text-sm mt-1">
@@ -204,7 +204,7 @@ const formatMetadataValue = (value: unknown): string => {
                         <FontAwesomeIcon
                             :icon="event.icon"
                             class="text-sm"
-                            :class="getColorClasses(event.color).icon"
+                            :class="getColorClasses(event.color).icon" fixed-width
                         />
                     </div>
 
@@ -252,7 +252,7 @@ const formatMetadataValue = (value: unknown): string => {
                                 >
                                     <FontAwesomeIcon
                                         :icon="expandedIds.has(event.id) ? ['fal', 'fa-chevron-up'] : ['fal', 'fa-chevron-down']"
-                                        class="text-xs"
+                                        class="text-xs" fixed-width
                                     />
                                 </button>
                             </div>
@@ -271,7 +271,7 @@ const formatMetadataValue = (value: unknown): string => {
 
                                 <template v-else-if="['page_view', 'product_view'].includes(event.type)">
                                     <span v-if="event.metadata?.duration_seconds" class="flex gap-2" v-tooltip="ctrans('Browsed for :_durationSeconds seconds', {_durationSeconds: event.metadata?.duration_seconds})">
-                                        <FontAwesomeIcon :icon="faStopwatch" class="self-center" /> 
+                                        <FontAwesomeIcon :icon="faStopwatch" class="self-center" fixed-width /> 
                                         <span  class="self-center">
                                             {{ event.metadata?.duration_seconds }} {{ ctrans('Seconds') }}
                                         </span>

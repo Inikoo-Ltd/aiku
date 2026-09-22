@@ -40,7 +40,7 @@ watch(value, (v) => {
       class="flex items-center justify-center bg-gray-100 rounded p-2 ring-1 ring-gray-300 cursor-pointer"
       :class="value === option.value ? 'bg-gray-300' : 'hover:bg-gray-200'"
     >
-      <FontAwesomeIcon :icon="option.icon" />
+      <FontAwesomeIcon :icon="option.icon" fixed-width />
     </div>
   </div>
 </div>

@@ -152,7 +152,7 @@ const robotFlags = computed(() => [
 							<div v-if="previewTab === 'whatsapp'" class="h-16 w-16 shrink-0 overflow-hidden rounded bg-gray-100">
 								<img v-if="shareImage" :src="shareImage" :alt="seo?.share_image?.alt" class="h-full w-full object-cover" />
 								<div v-else class="flex h-full w-full items-center justify-center text-gray-400">
-									<FontAwesomeIcon :icon="faImage" aria-hidden="true" />
+									<FontAwesomeIcon :icon="faImage" fixed-width aria-hidden="true" />
 								</div>
 							</div>
 

@@ -36,7 +36,7 @@ const showPassword = ref(true);
             
         <button type="button" @click="showPassword = !showPassword" :id="'show-password-' + name"
             class="w-min px-3 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500">
-            <FontAwesomeIcon aria-hidden="true" class="h-5 w-5 text-gray-400"
+            <FontAwesomeIcon fixed-width aria-hidden="true" class="h-5 w-5 text-gray-400"
                 :icon="showPassword ? 'fas fa-eye' : 'fas fa-eye-slash'" />
         </button>
     </div>

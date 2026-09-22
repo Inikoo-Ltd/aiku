@@ -66,7 +66,7 @@ const openDisclosure = async (index: number) => {
             </div>
 
             <DisclosureButton class="ml-2 flex h-8 w-8 items-center justify-center transition">
-              <font-awesome-icon :icon="open ? 'minus' : 'plus'" />
+              <font-awesome-icon :icon="open ? 'minus' : 'plus'" fixed-width />
             </DisclosureButton>
           </dt>
 

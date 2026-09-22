@@ -947,7 +947,7 @@ const warningMsg = computed(() => {
                         class="mr-3"
                     >
                         <FontAwesomeIcon
-                            :icon="faStopCircle"
+                            :icon="faStopCircle" fixed-width
                         />
                         x
                         <FractionDisplay 
@@ -963,7 +963,7 @@ const warningMsg = computed(() => {
                         class="mr-3"
                     >
                         <FontAwesomeIcon
-                            :icon="faBox"
+                            :icon="faBox" fixed-width
                         />
                         x
                         <FractionDisplay 

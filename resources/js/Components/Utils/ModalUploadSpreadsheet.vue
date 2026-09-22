@@ -182,7 +182,7 @@ const closeModal = () => {
 								<FontAwesomeIcon
 									icon="fal fa-file"
 									class="h-5 w-5 text-gray-300"
-									aria-hidden="true" />
+									fixed-width aria-hidden="true" />
 								{{ selectedFile?.name }}
 							</div>
 							<Button

@@ -526,7 +526,7 @@ const copyChatId = async () => {
                 </button>
             </template>
             <button class="px-3 text-gray-400 hover:text-gray-600" @click="emit('close')" aria-label="Close">
-                <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" />
+                <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" fixed-width />
             </button>
         </div>
 
@@ -544,7 +544,7 @@ const copyChatId = async () => {
                                 class="inline-flex items-center gap-1 hover:underline"
                                 :style="{ color: themePrimary }">
                                 {{ session.contact_name || '-' }}
-                                <FontAwesomeIcon :icon="['fal', 'fa-external-link-alt']" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="['fal', 'fa-external-link-alt']" class="text-[10px]" fixed-width />
                             </a>
                             <span v-else>{{ session.contact_name || '-' }}</span>
                         </div>
@@ -607,7 +607,7 @@ const copyChatId = async () => {
                                 class="inline-flex items-center gap-1 text-[11px] font-medium rounded border px-1.5 py-0.5 transition-colors disabled:opacity-60 hover:bg-gray-50"
                                 :style="{ color: themePrimary, borderColor: themePrimary }"
                                 @click="syncGuest">
-                                <FontAwesomeIcon :icon="['fal', 'fa-link']" class="text-[9px]" />
+                                <FontAwesomeIcon :icon="['fal', 'fa-link']" class="text-[9px]" fixed-width />
                                 {{ isSyncing ? 'Matching…' : 'Match to Aiku customer' }}
                             </button>
                             <p v-if="syncError" class="text-[10px] text-amber-600 mt-1">{{ syncError }}</p>
@@ -622,7 +622,7 @@ const copyChatId = async () => {
                         <div class="col-span-2 flex items-center gap-1">
                             <code class="text-[11px] font-mono text-gray-700 bg-gray-100 rounded px-1.5 py-0.5 truncate">{{ session.ulid }}</code>
                             <button class="shrink-0 text-gray-400 hover:text-gray-600" @click="copyChatId" aria-label="Copy chat ID">
-                                <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" />
+                                <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" fixed-width />
                             </button>
                         </div>
                     </div>
@@ -671,7 +671,7 @@ const copyChatId = async () => {
                 <div v-if="customerProfile.previous_chats?.length" class="px-4 py-3 space-y-2">
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                         {{ ctrans("Previous contact") }}
-                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-gray-300" :title="ctrans('Written by AI from the conversation. Open it to check.')" />
+                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-gray-300" :title="ctrans('Written by AI from the conversation. Open it to check.')" fixed-width />
                     </p>
                     <p v-if="customerProfile.chat_topics?.length" class="text-xs text-gray-500">
                         {{ ctrans("Last 12 months:") }}
@@ -685,7 +685,7 @@ const copyChatId = async () => {
                         <span class="flex items-center gap-1.5">
                             <FontAwesomeIcon
                                 :icon="chat.channel === 'whatsapp' ? faWhatsapp : chat.channel === 'email' ? faEnvelope : faGlobe"
-                                class="shrink-0" :class="chat.channel === 'whatsapp' ? 'text-green-500' : 'text-blue-500'" />
+                                class="shrink-0" :class="chat.channel === 'whatsapp' ? 'text-green-500' : 'text-blue-500'" fixed-width />
                             <span class="font-medium text-gray-800 truncate">{{ chat.topic }}</span>
                             <span v-if="chat.status === 'pending'" class="shrink-0 text-amber-600">{{ ctrans("Unresolved") }}</span>
                             <span class="ml-auto shrink-0 text-gray-500">{{ formatStatDate(chat.date) }}</span>
@@ -713,9 +713,9 @@ const copyChatId = async () => {
                                 class="w-full flex items-center gap-2 rounded-md border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50 disabled:opacity-60"
                                 :disabled="isSavingPriority"
                                 @click="isPriorityOpen = !isPriorityOpen">
-                                <FontAwesomeIcon v-if="currentPriority" :icon="currentPriority.icon" class="text-[11px]" :style="{ color: currentPriority.color }" />
+                                <FontAwesomeIcon v-if="currentPriority" :icon="currentPriority.icon" class="text-[11px]" :style="{ color: currentPriority.color }" fixed-width />
                                 <span class="font-medium text-gray-800">{{ currentPriority?.label ?? 'Set priority' }}</span>
-                                <FontAwesomeIcon :icon="faChevronDown" class="ml-auto text-[9px] text-gray-400" />
+                                <FontAwesomeIcon :icon="faChevronDown" class="ml-auto text-[9px] text-gray-400" fixed-width />
                             </button>
                             <div v-if="isPriorityOpen"
                                 class="absolute right-0 z-30 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1">
@@ -723,7 +723,7 @@ const copyChatId = async () => {
                                     class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100"
                                     :class="effectivePriority === p.value ? 'font-semibold text-gray-900' : 'text-gray-700'"
                                     @click="updatePriority(p.value)">
-                                    <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" />
+                                    <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" fixed-width />
                                     <span>{{ p.label }}</span>
                                     <span v-if="effectivePriority === p.value" class="ml-auto text-[11px]" :style="{ color: p.color }">✓</span>
                                 </button>
@@ -746,7 +746,7 @@ const copyChatId = async () => {
                     <div v-else-if="customerProfile.tags.length" class="flex flex-wrap gap-1.5">
                         <span v-for="tag in customerProfile.tags" :key="tag.id"
                             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium bg-indigo-50 text-indigo-700 border-indigo-200">
-                            <FontAwesomeIcon :icon="['fal', 'fa-tag']" class="text-[9px] opacity-70" />
+                            <FontAwesomeIcon :icon="['fal', 'fa-tag']" class="text-[9px] opacity-70" fixed-width />
                             {{ tag.name }}
                         </span>
                     </div>
@@ -755,7 +755,7 @@ const copyChatId = async () => {
 
                 <div v-if="session.ai_summary?.summary" class="px-4 py-3">
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" />
+                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" fixed-width />
                         AI Summary
                         <span v-if="session.ai_summary.sentiment"
                             class="ml-auto text-[10px] font-medium capitalize px-1.5 py-0.5 rounded-full"
@@ -785,7 +785,7 @@ const copyChatId = async () => {
             <div v-if="activeTab === 'statistics'" class="p-4">
                 <div v-if="isLoadingProfile" class="flex items-center justify-center py-10 text-gray-400 text-xs">Loading...</div>
                 <div v-else-if="!customerProfile.stats" class="flex flex-col items-center justify-center py-10 text-gray-400">
-                    <FontAwesomeIcon :icon="['fal', 'fa-chart-line']" class="text-2xl mb-2 opacity-30" />
+                    <FontAwesomeIcon :icon="['fal', 'fa-chart-line']" class="text-2xl mb-2 opacity-30" fixed-width />
                     <p class="text-xs">No statistics available</p>
                 </div>
                 <div v-else class="space-y-2.5">
@@ -832,7 +832,7 @@ const copyChatId = async () => {
                     <div class="h-12 bg-gray-100 rounded animate-pulse w-5/6" />
                 </div>
                 <div v-else-if="!tickets.length" class="flex flex-col items-center justify-center py-10 text-gray-400">
-                    <FontAwesomeIcon :icon="['fal', 'fa-life-ring']" class="text-2xl mb-2 opacity-30" />
+                    <FontAwesomeIcon :icon="['fal', 'fa-life-ring']" class="text-2xl mb-2 opacity-30" fixed-width />
                     <p class="text-xs">No tickets yet</p>
                 </div>
                 <ul v-else class="space-y-2">
@@ -850,7 +850,7 @@ const copyChatId = async () => {
                                         ? ctrans('This was holding the chat open. It is settled, so it no longer does.')
                                         : ctrans('This chat cannot be closed until this ticket is resolved or cancelled.')"
                                     class="text-[11px]"
-                                    :class="isTicketSettled(ticket) ? 'text-gray-300' : 'text-amber-600'" />
+                                    :class="isTicketSettled(ticket) ? 'text-gray-300' : 'text-amber-600'" fixed-width />
                                 <Icon v-if="ticket.priority_icon" :data="ticket.priority_icon" class="ml-auto" />
                             </div>
                             <p class="mt-1 line-clamp-2 text-xs font-medium text-gray-800">{{ ticket.subject }}</p>
@@ -875,7 +875,7 @@ const copyChatId = async () => {
                 <template v-if="!selectedHistory">
                     <div v-if="!isLoadingHistory && !historySessions.length"
                         class="flex flex-col items-center justify-center py-10 text-gray-400">
-                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-2xl mb-2 opacity-30" />
+                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-2xl mb-2 opacity-30" fixed-width />
                         <p class="text-xs">No previous chats</p>
                     </div>
                     <HistoryChatList v-else :data="historySessions" :loading="isLoadingHistory"

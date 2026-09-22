@@ -143,7 +143,7 @@ onBeforeUnmount(() => {
                 <span>{{ trans('Choose variant') }}</span>
 
                 <font-awesome-icon :icon="faChevronDown"
-                    class="text-gray-400 transition-transform duration-200 group-open:rotate-180" />
+                    class="text-gray-400 transition-transform duration-200 group-open:rotate-180" fixed-width />
             </summary>
 
             <div class="px-3 py-2 space-y-2">
@@ -159,7 +159,7 @@ onBeforeUnmount(() => {
 
                     <span v-if="variant.stock === 0" class="flex items-center gap-1 text-xs text-gray-400">
                         {{ trans('Out of stock') }}
-                        <font-awesome-icon :icon="faEnvelope" class="text-[10px]" />
+                        <font-awesome-icon :icon="faEnvelope" class="text-[10px]" fixed-width />
                     </span>
 
                 </label>
@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
             <LoadingIcon v-if="isLoadingRemindBackInStock" />
 
             <FontAwesomeIcon v-else :icon="selectedProduct?.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                :class="selectedProduct?.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+                :class="selectedProduct?.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
 
             <span class="whitespace-normal">
                 {{ selectedProduct?.is_back_in_stock ? trans('Notified') : trans('Remind me') }}

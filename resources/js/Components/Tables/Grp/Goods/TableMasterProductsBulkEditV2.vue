@@ -335,7 +335,7 @@ const onSave = async (presetValue: string) => {
                             v-if="sameNameAs(item).length"
                             :icon="faExclamationTriangle"
                             class="mt-1.5 h-3 w-3 shrink-0 text-amber-500"
-                            v-tooltip="trans('Same name as :codes', { codes: sameNameAs(item).join(', ') })" />
+                            v-tooltip="trans('Same name as :codes', { codes: sameNameAs(item).join(', ') })" fixed-width />
                         <button
                             v-if="isFieldDirty(item, 'name')"
                             type="button"
@@ -343,7 +343,7 @@ const onSave = async (presetValue: string) => {
                             @click="revertFields(item, ['name'])"
                             v-tooltip="trans('Undo')"
                             class="mt-1.5 text-amber-600 hover:text-amber-800">
-                            <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                            <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" fixed-width />
                         </button>
                     </div>
                     <span class="px-1.5 text-xs text-gray-400">
@@ -390,7 +390,7 @@ const onSave = async (presetValue: string) => {
                     @click="revertFields(item, [field])"
                     v-tooltip="trans('Undo')"
                     class="mt-1.5 text-amber-600 hover:text-amber-800">
-                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" fixed-width />
                 </button>
             </div>
         </template>
@@ -417,7 +417,7 @@ const onSave = async (presetValue: string) => {
                     @click="revertFields(item, ['unit'])"
                     v-tooltip="trans('Undo')"
                     class="mt-1.5 text-amber-600 hover:text-amber-800">
-                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" fixed-width />
                 </button>
             </div>
         </template>
@@ -434,9 +434,9 @@ const onSave = async (presetValue: string) => {
                     <div class="flex items-center justify-between text-xs mb-1">
                         <span class="flex items-center gap-1" :class="sweepRunning ? 'text-indigo-700' : 'text-green-700'">
                             <template v-if="sweptTransitions[item.id]">
-                                <FontAwesomeIcon :icon="taxPresetIcon(sweptTransitions[item.id].from)" class="h-3 w-3" />
-                                <FontAwesomeIcon :icon="faArrowRight" class="h-2.5 w-2.5 text-gray-400" />
-                                <FontAwesomeIcon :icon="taxPresetIcon(sweptTransitions[item.id].to)" class="h-3 w-3" />
+                                <FontAwesomeIcon :icon="taxPresetIcon(sweptTransitions[item.id].from)" class="h-3 w-3" fixed-width />
+                                <FontAwesomeIcon :icon="faArrowRight" class="h-2.5 w-2.5 text-gray-400" fixed-width />
+                                <FontAwesomeIcon :icon="taxPresetIcon(sweptTransitions[item.id].to)" class="h-3 w-3" fixed-width />
                             </template>
                             {{ sweepRunning ? trans("Retaxing…") : trans("Done") }}
                         </span>
@@ -458,10 +458,10 @@ const onSave = async (presetValue: string) => {
                     :disabled="sweepRunning"
                     class="group inline-flex w-48 items-center gap-2 rounded-lg border border-gray-300 bg-white py-1.5 pl-1.5 pr-3 shadow-sm transition-all hover:bg-gray-50 hover:border-indigo-300 disabled:opacity-60 disabled:cursor-not-allowed">
                     <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 group-hover:bg-indigo-100 group-hover:text-indigo-600">
-                        <FontAwesomeIcon :icon="presetMeta(item.tax_preset).icon" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon :icon="presetMeta(item.tax_preset).icon" class="h-3.5 w-3.5" fixed-width />
                     </span>
                     <span class="flex-1 text-left text-sm text-gray-700">{{ presetMeta(item.tax_preset).title }}</span>
-                    <FontAwesomeIcon :icon="faPencil" class="h-3 w-3 text-gray-300 group-hover:text-indigo-500" />
+                    <FontAwesomeIcon :icon="faPencil" class="h-3 w-3 text-gray-300 group-hover:text-indigo-500" fixed-width />
                 </button>
             </div>
         </template>

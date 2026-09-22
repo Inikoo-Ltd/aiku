@@ -663,7 +663,7 @@ provide("listError", listError.value)
 			<div class="flex items-start gap-3">
 				<FontAwesomeIcon
 					:icon="faExclamationTriangle"
-					class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+					class="text-yellow-500 w-4 h-4 flex-shrink-0" fixed-width />
 
 				<div class="flex gap-2 flex-wrap items-center">
 					<div class="text-sm font-medium">

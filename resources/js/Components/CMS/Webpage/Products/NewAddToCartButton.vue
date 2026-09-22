@@ -447,7 +447,7 @@ watch(
                 class="md:hidden group-hover:flex w-9 h-9 md:w-6 md:h-6 text-gray-100 hover:bg-gray-100 text-xs items-center justify-center  rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
                 <FontAwesomeIcon :icon="faMinus" :style="{
                     color: hoveredButton === 'minus' ? 'black' : buttonStyleHover?.color
-                }"  />
+                }" fixed-width  />
             </button>
 
             <!-- Quantity display (always visible) -->
@@ -462,7 +462,7 @@ watch(
                 class="md:hidden group-hover:flex w-9 h-9 md:w-6 md:h-6 text-gray-100 hover:bg-gray-100 text-xs items-center justify-center  rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{
                     color: hoveredButton === 'plus' ? 'black' : buttonStyleHover?.color
-                }" />
+                }" fixed-width />
             </button>
         </div>
     </div>

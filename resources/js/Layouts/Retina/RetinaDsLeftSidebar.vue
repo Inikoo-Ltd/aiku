@@ -50,7 +50,7 @@ const handleToggleLeftBar = () => {
                     @click="useCopyText(layout?.iris_variables?.reference)" 
                     icon="far fa-copy"
                     class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-                    v-tooltip="trans('Copy reference to clipboard')"
+                    v-tooltip="trans('Copy reference to clipboard')" fixed-width
                 />
             </div>
         </div>
@@ -85,7 +85,7 @@ const handleToggleLeftBar = () => {
                         @click="useCopyText(layout?.iris_variables?.reference)" 
                         icon="far fa-copy"
                         class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-                        v-tooltip="trans('Copy reference to clipboard')"
+                        v-tooltip="trans('Copy reference to clipboard')" fixed-width
                     />
                 </div>
             </div>
@@ -101,7 +101,7 @@ const handleToggleLeftBar = () => {
                 <div class="flex items-center justify-center transition-all duration-300 ease-in-out"
                     :class="{'rotate-180': !layout.leftSidebar.show}"
                 >
-                    <FontAwesomeIcon icon='far fa-chevron-left' class='h-[10px] leading-none' aria-hidden='true'
+                    <FontAwesomeIcon icon='far fa-chevron-left' class='h-[10px] leading-none' fixed-width aria-hidden='true'
                         :class="layout.leftSidebar.show ? '-translate-x-[1px]' : ''"
                     />
                 </div>

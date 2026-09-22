@@ -94,7 +94,7 @@ const copyLink = async () => {
 
                 <div v-if="kioskUrl" class="space-y-2">
                     <div class="flex items-center gap-x-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                        <FontAwesomeIcon icon="fal fa-link" class="text-gray-400" />
+                        <FontAwesomeIcon icon="fal fa-link" class="text-gray-400" fixed-width />
                         <a
                             :href="kioskUrl"
                             target="_blank"

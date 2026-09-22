@@ -303,7 +303,7 @@ resetForm()
 
                 <div class="space-y-2" v-if="!props.product_id">
                     <label class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Select product') }}:
                     </label>
                     <PureMultiselectInfiniteScroll v-model="productId" :fetchRoute="productFetchRoute"
@@ -341,7 +341,7 @@ resetForm()
 
                 <div class="space-y-2">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer name') }}:
                     </label>
 
@@ -352,7 +352,7 @@ resetForm()
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <div class="font-medium flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ trans('Discount steps') }}
                             <InformationIcon :information="isPackedProduct
                                 ? trans('Quantity is counted in Outers (1 Outer = :units :unit). The more a customer buys, the bigger the discount they get', { units: String(productUnits), unit: productUnitLabel })
@@ -391,7 +391,7 @@ resetForm()
 
                                 <button type="button" @click="removeStep(index)" :disabled="steps.length <= 1"
                                     class="mt-6 h-12 w-12 shrink-0 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:border-red-300 hover:text-red-500 disabled:opacity-40 disabled:cursor-not-allowed">
-                                    <FontAwesomeIcon icon="fas fa-trash" />
+                                    <FontAwesomeIcon icon="fas fa-trash" fixed-width />
                                 </button>
                             </div>
 
@@ -406,7 +406,7 @@ resetForm()
                                     :class="index === popularStepIndex
                                         ? 'border-green-500 bg-green-500 text-white font-semibold'
                                         : 'border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-600'">
-                                    <FontAwesomeIcon icon="fas fa-fire" />
+                                    <FontAwesomeIcon icon="fas fa-fire" fixed-width />
                                     {{ index === popularStepIndex ? trans('Popular') : trans('Mark as popular') }}
                                 </button>
                             </div>
@@ -415,7 +415,7 @@ resetForm()
 
                     <button type="button" @click="addStep"
                         class="w-full flex items-center justify-center gap-x-2 rounded-lg border border-dashed border-gray-300 py-2 text-sm text-gray-500 transition-colors hover:border-green-400 hover:text-green-600">
-                        <FontAwesomeIcon icon="fas fa-plus" />
+                        <FontAwesomeIcon icon="fas fa-plus" fixed-width />
                         {{ trans('Add step') }}
                     </button>
                 </div>
@@ -423,7 +423,7 @@ resetForm()
                 <!-- Section: Offer Duration -->
                 <div class="space-y-3">
                     <div class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer Duration') }}:
                     </div>
 
@@ -461,7 +461,7 @@ resetForm()
                         <div class="space-y-2">
                             <label class="font-medium block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
-                                    class="font-light text-xs text-red-400 align-middle" />
+                                    class="font-light text-xs text-red-400 align-middle" fixed-width />
                                 {{ trans('Start Date') }}
                                 <InformationIcon
                                     :information="trans('If start date is empty, will start immediately')" />:

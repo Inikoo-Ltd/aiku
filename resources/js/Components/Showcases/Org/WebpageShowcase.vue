@@ -103,7 +103,7 @@ const visitRedirect = () => {
         <FontAwesomeIcon
           v-tooltip="ctrans('Click here to view page')"
           :icon="faExternalLink"
-          class="ml-1 !no-underline"
+          class="ml-1 !no-underline" fixed-width
         />
       </span>
     </div>
@@ -116,7 +116,7 @@ const visitRedirect = () => {
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-3">
           <!-- Logged In / Logged Out Switch -->
           <div class="flex items-center gap-3">
-            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" class="text-gray-500" />
+            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" class="text-gray-500" fixed-width />
             <ToggleSwitch v-model="filterBlock" :true-value="true" :false-value="false" />
             <span class="text-sm font-medium text-gray-800">
               {{ filterBlock ? ctrans('Logged In') : ctrans('Logged Out') }}
@@ -128,7 +128,7 @@ const visitRedirect = () => {
               class="p-button-outlined">
               <template #option="slotProps">
                 <div class="flex items-center gap-2">
-                  <FontAwesomeIcon :icon="slotProps.option.icon" />
+                  <FontAwesomeIcon :icon="slotProps.option.icon" fixed-width />
                   <span>{{ slotProps.option.label }}</span>
                 </div>
               </template>

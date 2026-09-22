@@ -105,7 +105,7 @@ const openBundlePanel = (product:any) => {
 
                 <div v-if="props?.fieldValue?.product?.is_single_trade_unit && product?.tags?.length" class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in product.tags" :key="index">
-                        <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
+                        <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" fixed-width />
                         <div v-else class="aspect-square w-full h-[15px]">
                             <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
                                 class="w-full h-full object-cover" />
@@ -135,7 +135,7 @@ const openBundlePanel = (product:any) => {
                                 <div v-if="layout?.iris?.is_logged_in"
                                     class="flex items-center gap-2 text-sm text-gray-600">
                                     <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                        :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                        :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
                                     <span>
                                         {{
                                             product?.stock >= 250
@@ -158,7 +158,7 @@ const openBundlePanel = (product:any) => {
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="product?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="product?.back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+                                    :class="product?.back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                                 <span>{{ product?.back_in_stock ? ctrans("Notified") : ctrans("Remind me") }}</span>
                             </button>
                         </div>
@@ -184,7 +184,7 @@ const openBundlePanel = (product:any) => {
                                     <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
                                         :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
                                     <FontAwesomeIcon v-else :icon="faImage"
-                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                        class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                                 </div>
 
                                 <!-- VARIANT LABEL -->
@@ -278,7 +278,7 @@ const openBundlePanel = (product:any) => {
         <div v-if="props?.fieldValue?.product?.is_single_trade_unit && product?.tags?.length" class="flex flex-wrap gap-2 mt-4">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
                 :key="index">
-                <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
+                <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" fixed-width />
                 <div v-else class="aspect-square w-full h-[15px]">
                     <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`" class="w-full h-full object-cover" />
                 </div>
@@ -312,7 +312,7 @@ const openBundlePanel = (product:any) => {
                             <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
                                 :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
                             <FontAwesomeIcon v-else :icon="faImage"
-                                class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                         </div>
 
                         <!-- VARIANT LABEL -->

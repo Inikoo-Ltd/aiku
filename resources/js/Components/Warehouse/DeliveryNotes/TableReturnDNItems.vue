@@ -594,10 +594,10 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         :step="proxyItem.to_refund.original_item_net_price"
                     >
                         <template #decrementicon>
-                            <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faMinus" fixed-width aria-hidden="true" />
                         </template>
                         <template #incrementicon>
-                            <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
                         </template>
                     </InputNumber>
                     <button
@@ -637,10 +637,10 @@ const findLocation = (locationsList: { location_code: string }[], locationCode: 
                         :step="1"
                     >
                         <template #decrementicon>
-                            <FontAwesomeIcon :icon="faMinus" aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faMinus" fixed-width aria-hidden="true" />
                         </template>
                         <template #incrementicon>
-                            <FontAwesomeIcon :icon="faPlus" aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
                         </template>
                     </InputNumber>
                     <button

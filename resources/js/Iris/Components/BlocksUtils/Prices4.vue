@@ -307,7 +307,7 @@ const onHideStepsPopover = () => {
                 <div v-if="layout?.iris?.is_logged_in && !product.is_coming_soon"
                     v-tooltip="trans('Available product stocks')" class="flex items-center">
                     <FontAwesomeIcon :icon="faCircle" class="text-[8px]"
-                        :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" />
+                        :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" fixed-width />
                 </div>
 
                 <LabelComingSoon v-else-if="product.is_coming_soon" :product="product" />
@@ -384,7 +384,7 @@ const onHideStepsPopover = () => {
 
                     <div v-if="!isDiscountedPriceActive" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
                         <div class="flex text-xs items-center justify-center rounded-full ">
-                            <FontAwesomeIcon :icon="faCheck" />
+                            <FontAwesomeIcon :icon="faCheck" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -403,7 +403,7 @@ const onHideStepsPopover = () => {
                         off: displayStep.percentage_off_label,
                     })" aria-haspopup="true" @click.stop.prevent="onToggleStepsPopover">
                     <FontAwesomeIcon :icon="faBadgePercent" class="text-lg"
-                        :class="activeStep ? 'step-discount-text' : 'step-discount-text-muted'" />
+                        :class="activeStep ? 'step-discount-text' : 'step-discount-text-muted'" fixed-width />
 
                     <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none whitespace-nowrap text-white transform transition-all duration-150"
                         :class="activeStep ? 'step-discount-bg' : 'step-discount-bg-muted border border-transparent'">
@@ -484,7 +484,7 @@ const onHideStepsPopover = () => {
                 <div v-if="isDiscountedPriceActive" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
                     <div class="flex text-xs items-center justify-center rounded-full"
                         :class="displayStep ? 'step-discount-text' : offerAccentClass">
-                        <FontAwesomeIcon :icon="faCheck" />
+                        <FontAwesomeIcon :icon="faCheck" fixed-width />
                     </div>
                 </div>
             </div>

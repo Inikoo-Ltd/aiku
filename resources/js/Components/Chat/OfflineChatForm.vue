@@ -128,7 +128,7 @@ const submitOffline = async () => {
                 @click="submitOffline" />
 
             <span v-if="success" class="text-green-600 text-sm text-center gap-2 flex items-center">
-                <FontAwesomeIcon :icon="faMessage" class="text-base" />
+                <FontAwesomeIcon :icon="faMessage" class="text-base" fixed-width />
                 <span>
                     {{ ctrans("Your message has been sent. We'll contact you soon.") }}
                 </span>

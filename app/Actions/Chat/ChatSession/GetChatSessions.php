@@ -200,9 +200,8 @@ class GetChatSessions
             if ($currentAgent) {
                 $shopIds = $this->shopIdsWorkedBy($userId);
 
-                $requestedStatuses = (array) ($filters['statuses'] ?? ($filters['status'] ? [$filters['status']] : []));
-                $isClosed          = in_array('closed', $requestedStatuses);
-                $assignmentStatus  = $isClosed
+                $isClosed         = in_array('closed', $statuses);
+                $assignmentStatus = $isClosed
                     ? ChatAssignmentStatusEnum::RESOLVED->value
                     : ChatAssignmentStatusEnum::ACTIVE->value;
 

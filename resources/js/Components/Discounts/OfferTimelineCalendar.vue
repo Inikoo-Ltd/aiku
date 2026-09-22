@@ -941,7 +941,7 @@ watch(
                         v-if="campaignTypeIcon(legend.type)"
                         :icon="campaignTypeIcon(legend.type)!"
                         :class="campaignTypeIconClass(legend.type)"
-                        v-tooltip.top="campaignTypeIconTooltip(legend.type)"
+                        v-tooltip.top="campaignTypeIconTooltip(legend.type)" fixed-width
                     />
                     <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: legend.color }" />
                     <span>{{ legend.label }}</span>
@@ -971,7 +971,7 @@ watch(
                             <FontAwesomeIcon
                                 v-if="campaignTypeIcon(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null)"
                                 :icon="campaignTypeIcon(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null)!"
-                                :class="campaignTypeIconClass(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null)"
+                                :class="campaignTypeIconClass(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null)" fixed-width
                             />
                             <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: selectedItem.color }" />
                             <span>{{ campaignTypeLabel(selectedItem.details?.campaign?.type ?? selectedItem.campaignType ?? null) }}</span>

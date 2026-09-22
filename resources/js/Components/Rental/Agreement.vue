@@ -165,7 +165,7 @@ const onSavedAgreement = (updateAll: boolean) => {
                         <LoadingIcon v-if="form.processing" class="text-[23px]" />
                         <!-- <Popover v-else-if="form.isDirty && updateRoute?.name">
                             <template #button="{ open }"> -->
-                                <FontAwesomeIcon @click="() => onSavedAgreement(false)" v-else-if="form.isDirty && updateRoute?.name" icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                                <FontAwesomeIcon @click="() => onSavedAgreement(false)" v-else-if="form.isDirty && updateRoute?.name" icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                             <!-- </template>
                             
                             <template #content="{ close: closed }">
@@ -182,7 +182,7 @@ const onSavedAgreement = (updateAll: boolean) => {
                                 </div>
                             </template>
                         </Popover> -->
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                     </div>
                 </div>
                 

@@ -140,7 +140,7 @@ const onChangeProperty = debounce(updateProperty, 500);
                     v-if="can_delete" 
                     :icon="faTrashAlt" 
                     class="text-red-500 hover:text-red-700 transition-colors duration-200"
-                    @click.stop="removeValue(index)" 
+                    @click.stop="removeValue(index)" fixed-width 
                   />
                 </div>
               </div>

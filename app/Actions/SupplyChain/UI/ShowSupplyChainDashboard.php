@@ -108,6 +108,14 @@ class ShowSupplyChainDashboard extends OrgAction
                 'emerald',
                 'grp.supply-chain.shopping_list.board'
             ),
+            $this->dashboardCard(
+                __('PO Journey'),
+                __('Track purchase orders end to end'),
+                'fal fa-route',
+                null,
+                'indigo',
+                'grp.supply-chain.po_journey.dashboard'
+            ),
         ];
     }
 

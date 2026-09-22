@@ -136,7 +136,7 @@ onMounted(() => {
                         <div class="text-[15px] font-semibold capitalize">{{trans("Prospects last contacted (within interval)")}}
                         </div>
                     </div>
-                    <FontAwesomeIcon :icon="form[fieldName].query ? faCheckCircle : faCircle" class="text-xl" />
+                    <FontAwesomeIcon :icon="form[fieldName].query ? faCheckCircle : faCircle" class="text-xl" fixed-width />
                 </div>
                 <div @contextmenu="toggle">
                     <div class="text-2xl font-bold capitalize">{{ queryData?.day ?? 1 }} {{ queryData?.range ?? 'week' }}</div>
@@ -163,7 +163,7 @@ onMounted(() => {
                     <div>
                         <div class="text-[15px] font-semibold capitalize">{{trans("Prospects not contacted")}}</div>
                     </div>
-                    <FontAwesomeIcon :icon="!form[fieldName].query ? faCheckCircle : faCircle" class="text-xl" />
+                    <FontAwesomeIcon :icon="!form[fieldName].query ? faCheckCircle : faCircle" class="text-xl" fixed-width />
                 </div>
                 <div>
                     <div class="text-2xl font-bold">-</div>
@@ -289,7 +289,7 @@ onMounted(() => {
                     <template #suffix>
                         <div
                             class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100">
-                            <FontAwesomeIcon :icon="faSearch" />
+                            <FontAwesomeIcon :icon="faSearch" fixed-width />
                         </div>
                     </template>
                 </PureInput>
@@ -301,7 +301,7 @@ onMounted(() => {
                     <template #suffix>
                         <div
                             class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100">
-                            <FontAwesomeIcon :icon="faSearch" />
+                            <FontAwesomeIcon :icon="faSearch" fixed-width />
                         </div>
                     </template>
                 </PureInput>

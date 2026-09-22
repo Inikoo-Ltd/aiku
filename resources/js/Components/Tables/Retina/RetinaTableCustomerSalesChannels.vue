@@ -148,11 +148,11 @@ async function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChan
                     class="hover:bg-gray-100 ring-1 ring-gray-200"
                     :key="0"
                 >
-                    <FontAwesomeIcon icon="sync-alt" />
+                    <FontAwesomeIcon icon="sync-alt" fixed-width />
                 </Button>
 
                 <span class="text-red-500" v-if="customerSalesChannel.is_down && customerSalesChannel.platform_code === 'woocommerce'" v-tooltip="trans('The selected WooCommerce Website is down')">
-                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" />
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width />
                 </span>
             </div>
         </template>
