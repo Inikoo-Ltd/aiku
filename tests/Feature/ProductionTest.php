@@ -864,8 +864,15 @@ test('closing short can finish the job or carry the shortfall to a new job order
         ->and($carried->id)->not->toBe($jobOrder->id)
         ->and($carried->state)->toBe(JobOrderStateEnum::CONFIRMED)
         ->and($carried->jobOrderItems()->first()->quantity)->toBe(15)
+        ->and($carried->reference)->toBe($jobOrder->reference.'a')
         ->and((float)$carried->jobOrderItems()->first()->tasks()->first()->quantity_required)->toBe(15.0);
 
+    $carriedTask    = $carried->jobOrderItems()->first()->tasks()->first();
+    $carriedSession = StartManufactureTaskSession::make()->action($user, $carriedTask);
+    CloseManufactureTaskSession::make()->action($carriedSession, ['quantity_made' => 5, 'outcome' => 'carry_over']);
+    $carriedAgain = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+
+    expect($carriedAgain->reference)->toBe($jobOrder->reference.'b');
 });
 
 test('historic job orders do not generate a work queue', function () {
