@@ -39,6 +39,8 @@ use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
 use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
+use Illuminate\Http\Client\ConnectionException;
+use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Maintenance\Dropshipping\RepairWooChannelReconnects;
@@ -482,6 +484,25 @@ test('re-authorisation writes the new keys on the existing user', function () {
     expect($wooCommerceUser->fresh()->consumer_key)->toBe('ck_new')
         ->and($wooCommerceUser->fresh()->consumer_secret)->toBe('cs_new')
         ->and($wooCommerceUser->customerSalesChannel->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED);
+});
+
+test('re-authorisation answers WooCommerce without waiting for the store', function () {
+    Queue::fake();
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $token = ReAuthorizeRetinaWooCommerceUser::make()->storeWooAuthorizationToken(['woo_commerce_user_id' => $wooCommerceUser->id]);
+
+    $timedOut = fn () => throw new ConnectionException('cURL error 28: Connection timed out');
+    wooFake(['GET settings' => $timedOut, 'GET orders' => $timedOut]);
+
+    postJson(route('webhooks.woo.callback'), [
+        'user_id'         => $token,
+        'consumer_key'    => 'ck_slow',
+        'consumer_secret' => 'cs_slow',
+        'key_permissions' => 'read_write',
+    ])->assertSuccessful();
+
+    expect($wooCommerceUser->fresh()->consumer_key)->toBe('ck_slow');
+    CheckWooChannel::assertPushed(fn (CheckWooChannel $job, array $arguments) => $arguments[0]->id === $wooCommerceUser->id);
 });
 
 test('the order webhook only queues a fetch, its payload is never trusted', function () {
