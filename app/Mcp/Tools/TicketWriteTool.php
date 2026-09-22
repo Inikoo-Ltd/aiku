@@ -11,6 +11,7 @@ namespace App\Mcp\Tools;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
+use App\Actions\Helpers\Ticket\UpdateTicketComment;
 use App\Http\Resources\Helpers\TicketResource;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
@@ -23,7 +24,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), correct a comment you already posted by passing its comment_id with the rewritten comment instead of posting a follow-up, rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -38,6 +39,7 @@ class TicketWriteTool extends Tool
             'subject'     => ['required_without:reference', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'comment'     => ['sometimes', 'string'],
+            'comment_id'  => ['sometimes', 'integer'],
             'internal'    => ['sometimes', 'boolean'],
             'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,pending_deploy,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
@@ -137,6 +139,22 @@ class TicketWriteTool extends Tool
             $ticket = UpdateTicket::make()->action($ticket, $changes);
         }
 
+        if ($request->filled('comment_id')) {
+            if (!$request->filled('comment')) {
+                return Response::error('Pass the rewritten text in comment when editing comment_id.');
+            }
+            $ticketComment = $ticket->comments()->find($request->integer('comment_id'));
+            if (!$ticketComment) {
+                return Response::error('No comment '.$request->integer('comment_id').' on '.$ticket->reference.'.');
+            }
+            if (!$ticketComment->isAuthoredBy($user)) {
+                return Response::error('You can only edit a comment you wrote yourself.');
+            }
+            UpdateTicketComment::make()->action($ticketComment, ['body' => $request->string('comment')->toString()]);
+
+            return Response::json(['updated' => $ticket->reference, 'changes' => array_keys($changes), 'edited' => $ticketComment->id, 'ticket' => TicketResource::make($ticket->fresh())->resolve()]);
+        }
+
         $attachments = $this->decodeAttachments($request->get('attachments', []));
         if ($attachments === null) {
             return Response::error('An attachment is not valid base64.');
@@ -185,7 +203,8 @@ class TicketWriteTool extends Tool
             'reference'   => $schema->string()->description('Ticket to change, e.g. HELP-3074. Omit to create a new HELP ticket'),
             'subject'     => $schema->string()->description('Subject: for a new ticket, or to rewrite it on an existing one'),
             'description' => $schema->string()->description('Description: for a new ticket, or to rewrite it on an existing one'),
-            'comment'     => $schema->string()->description('Comment to add to the ticket, posted as you'),
+            'comment'     => $schema->string()->description('Comment to add to the ticket, posted as you. With comment_id, the text that replaces that comment'),
+            'comment_id'  => $schema->integer()->description('Id of one of your own comments on this ticket: its text is replaced by comment, rather than a new comment being added. Use it to correct something you already posted instead of following it with a correction'),
             'internal'    => $schema->boolean()->description('true = internal comment, visible to the help desk only. Use it for technical notes (ids repaired, commands run, root cause) so the public thread stays readable for the reporter'),
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),

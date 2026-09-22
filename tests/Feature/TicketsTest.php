@@ -761,6 +761,20 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
 
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'attachments' => [['name' => 'hack.exe', 'base64' => $png]]])->assertHasErrors();
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'attachments' => [['name' => 'proof.png', 'base64' => '***']]])->assertHasErrors();
+
+    $commentsBefore = $ticket->comments()->count();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'comment_id' => $proofComment->id, 'comment' => 'Screenshot as proof, dispatched count corrected'])->assertOk();
+    expect($proofComment->refresh()->body)->toBe('Screenshot as proof, dispatched count corrected')
+        ->and($ticket->comments()->count())->toBe($commentsBefore);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'comment_id' => $proofComment->id])->assertHasErrors();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'comment_id' => 999999, 'comment' => 'Nope'])->assertHasErrors();
+
+    $otherEngineer = User::factory()->create(['group_id' => $this->group->id]);
+    $otherEngineer->assignRole('help-desk-supervisor');
+    $otherEngineer->forgetWildcardPermissionIndex();
+    AikuServer::actingAs($otherEngineer)->tool(TicketWriteTool::class, ['reference' => $reference, 'comment_id' => $proofComment->id, 'comment' => 'Not mine to edit'])->assertHasErrors();
+    expect($proofComment->refresh()->body)->toBe('Screenshot as proof, dispatched count corrected');
 });
 
 test('new tickets post one alert in the Slack tickets channel and edit it as status and assignee change', function () {
