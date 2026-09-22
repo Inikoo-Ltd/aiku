@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithBarcodeChoice;
+use App\Actions\Traits\WithDuplicatedBarcodeProducts;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
@@ -31,6 +32,7 @@ class EditProduct extends OrgAction
     use WithProductNavigation;
     use WithUnitsChangeConfirmation;
     use WithBarcodeChoice;
+    use WithDuplicatedBarcodeProducts;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -264,6 +266,19 @@ class EditProduct extends OrgAction
     {
         $barcodeChoice = $this->getBarcodeChoice($product);
         $followsMasterBarcode = $product->masterProduct && !$product->independent_barcode;
+
+        /*
+         * The same item listed in several pack sizes shares one trade unit, so all of them mirror
+         * its barcode. Correct as data, refused by the shop: one of them keeps the GTIN and the
+         * others publish without, which only a person can decide, so the field opens here.
+         */
+        $barcodeSharedWith = $product->barcode
+            ? $this->duplicatedBarcodeProducts($product->shop)
+                ->where('products.barcode', $product->barcode)
+                ->where('products.id', '!=', $product->id)
+                ->pluck('products.code')
+                ->all()
+            : [];
         $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
 
         $canEditNotForSale = $product->state != ProductStateEnum::DISCONTINUED;
@@ -705,12 +720,15 @@ class EditProduct extends OrgAction
                                 'information' => __('The GTIN is chosen once on the master composition. Enabling this lets this shop publish a different one.'),
                             ] : null,
                             'barcode'              => [
-                                'type'     => 'barcode_choice',
-                                'label'    => __('Barcode'),
-                                'value'    => $product->barcode,
+                                'type'        => 'barcode_choice',
+                                'label'       => __('Barcode'),
+                                'value'       => $product->barcode,
                                 /* One trade unit mirrors it, and a child following its master is decided there. */
-                                'readonly' => !$barcodeChoice['hasChoice'] || $followsMasterBarcode,
-                                'options'  => $barcodeChoice,
+                                'readonly'    => (!$barcodeChoice['hasChoice'] || $followsMasterBarcode) && !$barcodeSharedWith,
+                                'options'     => $barcodeChoice,
+                                'information' => $barcodeSharedWith
+                                    ? __('This barcode is also on :listings in this shop. A shop accepts it on one listing only.', ['listings' => implode(', ', $barcodeSharedWith)])
+                                    : null,
                             ],
 
 

@@ -8,6 +8,9 @@
 
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UI\EditProduct;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithDuplicatedBarcode;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Goods\Barcode\StoreBarcode;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
@@ -27,6 +30,7 @@ use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -187,4 +191,67 @@ test('the product edit screen labels each barcode with its trade unit', function
     expect($barcodeField['type'])->toBe('barcode_choice')
         ->and(collect($barcodeField['options']['options'])->pluck('code')->all())
         ->toContain($this->fitting->code);
+});
+
+test('two listings in one shop sharing a barcode are counted and listed', function () {
+    $second = StoreProduct::make()->action(
+        $this->product->family,
+        array_merge(Product::factory()->definition(), [
+            'code'  => 'BCP'.substr(uniqid(), -8),
+            'price' => 10,
+        ])
+    );
+
+    $this->product->updateQuietly(['barcode' => $this->lampBarcode]);
+    $second->updateQuietly(['barcode' => $this->lampBarcode]);
+
+    ShopHydrateProductsWithDuplicatedBarcode::run($this->shop);
+
+    $listed = IndexProductsWithDuplicatedBarcode::make()->handle($this->shop)->pluck('id')->all();
+
+    expect($listed)->toContain($this->product->id, $second->id)
+        ->and($this->shop->refresh()->stats->number_products_with_duplicated_barcode)->toBe(count($listed));
+});
+
+test('a listing sharing a barcode can be edited and names the other listing', function () {
+    $second = StoreProduct::make()->action(
+        $this->product->family,
+        array_merge(Product::factory()->definition(), [
+            'code'  => 'BCP'.substr(uniqid(), -8),
+            'price' => 10,
+        ])
+    );
+
+    $this->product->updateQuietly(['barcode' => $this->lampBarcode]);
+    $second->updateQuietly(['barcode' => $this->lampBarcode]);
+
+    $barcodeField = collect(EditProduct::make()->getBlueprint($this->product->refresh()))
+        ->firstWhere('label', __('Properties'))['fields']['barcode'];
+
+    expect($barcodeField['readonly'])->toBeFalse()
+        ->and($barcodeField['information'])->toContain($second->code);
+});
+
+test('a barcode already on another listing in the shop is refused', function () {
+    $second = StoreProduct::make()->action(
+        $this->product->family,
+        array_merge(Product::factory()->definition(), [
+            'code'  => 'BCP'.substr(uniqid(), -8),
+            'price' => 10,
+        ])
+    );
+
+    $this->product->updateQuietly(['barcode' => $this->lampBarcode]);
+
+    UpdateProduct::make()->action($second, ['barcode' => $this->lampBarcode]);
+})->throws(Illuminate\Validation\ValidationException::class);
+
+test('a person choosing no barcode keeps the hydrator away from that listing', function () {
+    $this->product->updateQuietly(['barcode' => $this->lampBarcode]);
+
+    patch(route('grp.models.product.update', $this->product->id), ['barcode' => null])
+        ->assertRedirect();
+
+    expect($this->product->refresh()->barcode)->toBeNull()
+        ->and($this->product->independent_barcode)->toBeTrue();
 });

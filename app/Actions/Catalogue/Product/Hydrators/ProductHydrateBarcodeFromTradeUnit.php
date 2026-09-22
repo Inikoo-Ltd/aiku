@@ -10,6 +10,7 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Traits\Hydrators\WithWeightFromTradeUnits;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -40,6 +41,8 @@ class ProductHydrateBarcodeFromTradeUnit implements ShouldBeUnique
 
         $product->update(['barcode' => $barcode]);
         $product->portfolios()->update(['barcode' => $barcode]);
+
+        ShopHydrateProductsWithDuplicatedBarcode::dispatch($product->shop)->delay(2);
     }
 
 }

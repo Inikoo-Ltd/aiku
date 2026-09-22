@@ -14,6 +14,7 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
@@ -247,6 +248,11 @@ class UpdateProduct extends OrgAction
             Event::dispatch(new AuditCustom($product));
         }
 
+        if (Arr::has($changed, 'barcode')) {
+            $product->portfolios()->update(['barcode' => $product->barcode]);
+            ShopHydrateProductsWithDuplicatedBarcode::dispatch($product->shop)->delay($this->hydratorsDelay);
+        }
+
         if (Arr::has($changed, 'description_title')) {
             UpdateProductAndMasterTranslations::make()->action($product, [
                 'translations' => [
@@ -460,7 +466,20 @@ class UpdateProduct extends OrgAction
                 'string',
                 'max:255',
                 Rule::exists('barcodes', 'number')
-                    ->whereNull('deleted_at')
+                    ->whereNull('deleted_at'),
+                /*
+                 * Within one shop a barcode belongs to at most one listing: WooCommerce and Wix
+                 * refuse the second one outright. The collisions already in the catalogue are
+                 * worked through by hand, this only stops new ones being written.
+                 */
+                Rule::unique('products', 'barcode')
+                    ->ignore($this->product->id)
+                    ->where(fn ($query) => $query
+                        ->where('shop_id', $this->shop->id)
+                        ->where('is_main', true)
+                        ->whereNull('exclusive_for_customer_id')
+                        ->whereNull('deleted_at')
+                        ->where('state', '<>', ProductStateEnum::DISCONTINUED->value)),
             ],
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
@@ -561,7 +580,7 @@ class UpdateProduct extends OrgAction
         $this->product = $product;
         $this->initialisationFromShop($product->shop, $request);
 
-        return $this->handle($product, $this->markWrittenTextAsReviewed($this->validatedData));
+        return $this->handle($product, $this->markBarcodeAsChosen($this->markWrittenTextAsReviewed($this->validatedData)));
     }
 
     /**
@@ -581,6 +600,25 @@ class UpdateProduct extends OrgAction
             if (Arr::has($modelData, $field)) {
                 data_set($modelData, $reviewFlag, true, false);
             }
+        }
+
+        return $modelData;
+    }
+
+    /**
+     * A barcode reaching here was picked by a person, so no hydrator may write over it again.
+     * Like markWrittenTextAsReviewed this belongs to the controller: the cascade from the master
+     * calls handle() directly and must not raise the flag, or the first cascade would orphan
+     * every child from the next one.
+     *
+     * @param array<string, mixed> $modelData
+     *
+     * @return array<string, mixed>
+     */
+    private function markBarcodeAsChosen(array $modelData): array
+    {
+        if (Arr::has($modelData, 'barcode')) {
+            data_set($modelData, 'independent_barcode', true);
         }
 
         return $modelData;
