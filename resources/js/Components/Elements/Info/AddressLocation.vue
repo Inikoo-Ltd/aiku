@@ -9,9 +9,10 @@ import { computed } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 
 const props = withDefaults(defineProps<{
-    data: string[]
+    data?: string[] | null
     use_flag?: boolean
 }>(), {
+    data: null,
     use_flag: true
 })
 
