@@ -4584,7 +4584,8 @@ test('a late pick on a blocked note tells the order transaction what was picked'
 test('cancelling with create return raises a cancellation return and leaves the picked stock off the shelf (HELP-2693)', function () {
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
 
-    $pickingId = $deliveryNoteItem->pickings()->first()->id;
+    $pickingId         = $deliveryNoteItem->pickings()->first()->id;
+    $originalReference = $deliveryNote->reference;
 
     $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
         ->action($deliveryNote, $this->user, true, false, null, true);
@@ -4596,6 +4597,8 @@ test('cancelling with create return raises a cancellation return and leaves the 
     $returnDeliveryNote = $cancelled->returnedDeliveryNote()->first();
 
     expect($returnDeliveryNote)->not->toBeNull()
+        ->and($returnDeliveryNote->reference)->toBe($originalReference.'-cancel-pick')
+        ->and($returnDeliveryNote->reference)->not->toContain('CANCELLED')
         ->and($returnDeliveryNote->type)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum::CANCELLATION)
         ->and($returnDeliveryNote->state)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RECEIVED)
         ->and((float)$returnDeliveryNote->returnDeliveryNoteItem()->first()->total_expected_qty)

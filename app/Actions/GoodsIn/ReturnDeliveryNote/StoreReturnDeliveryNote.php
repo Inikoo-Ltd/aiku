@@ -31,8 +31,20 @@ class StoreReturnDeliveryNote extends OrgAction
 
         // The counter spans both types so a note that was cancelled and later returned cannot collide.
         $previousReturns = $deliveryNote->returnedDeliveryNote()->withTrashed()->count();
-        $token           = $this->type === ReturnDeliveryNoteTypeEnum::CANCELLATION ? '-can' : '-ret';
-        data_set($modelData, 'reference', $deliveryNote->reference.$token.($previousReturns ? $previousReturns + 1 : ''));
+        $counter         = $previousReturns ? $previousReturns + 1 : '';
+
+        if ($this->type === ReturnDeliveryNoteTypeEnum::CANCELLATION) {
+            /**
+             * The note is renamed to <reference>-CANCELLED before the return is raised, and
+             * carrying that through reads as GB585339-CANCELLED-can.
+             */
+            $baseReference = preg_replace('/-CANCELLED(-\d+)?$/', '', $deliveryNote->reference);
+            $reference     = $baseReference.'-cancel-pick'.$counter;
+        } else {
+            $reference = $deliveryNote->reference.'-ret'.$counter;
+        }
+
+        data_set($modelData, 'reference', $reference);
 
         return $deliveryNote->returnedDeliveryNote()->create($modelData);
     }
