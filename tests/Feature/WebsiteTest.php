@@ -2029,6 +2029,21 @@ test('ads testing webpage metrics are read from the page views already recorded'
         ->and($metrics['timed_page_views'])->toBe(1)
         ->and($metrics['avg_time_on_page'])->toBe(40)
         ->and($metrics['days'])->toBe(PruneWebsitePageViews::RETENTION_DAYS);
+
+    // The chart is drawn from a row per day, including the days nothing happened on, and the last
+    // one is today: a rate is left empty on a day with no views rather than drawn as nought.
+    $today     = collect($metrics['history'])->last();
+    $yesterday = collect($metrics['history'])->firstWhere('date', now()->subDay()->toDateString());
+
+    expect($metrics['history'])->toHaveCount(PruneWebsitePageViews::RETENTION_DAYS)
+        ->and($today['date'])->toBe(now()->toDateString())
+        ->and($today['page_views'])->toBe(2)
+        ->and($today['conversion_rate'])->toBe(50.0)
+        ->and($today['bounce_rate'])->toBe(50.0)
+        ->and($today['avg_time_on_page'])->toBe(40)
+        ->and($yesterday['page_views'])->toBe(0)
+        ->and($yesterday['conversion_rate'])->toBeNull()
+        ->and($yesterday['avg_time_on_page'])->toBeNull();
 })->depends('launch website');
 
 test('the website page speed history averages every measured webpage of the website per day', function (Website $website) {
