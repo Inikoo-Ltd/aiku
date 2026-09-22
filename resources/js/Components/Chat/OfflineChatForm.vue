@@ -5,7 +5,7 @@ import { Textarea, InputText } from "primevue"
 import Button from "../Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMessage, faPaperPlane } from "@fortawesome/free-solid-svg-icons"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps({
     isOnline: Boolean,
@@ -55,9 +55,12 @@ const submitOffline = async () => {
             sender_type: props.isLoggedIn ? "user" : "guest",
             language_id: 68,
 
-            name: form.name,
-            email: form.email,
             message: form.message,
+        }
+
+        if (!props.isLoggedIn) {
+            payload.name = form.name
+            payload.email = form.email
         }
         const res = await axios.post(`${baseUrl}/app/api/chats/offline-message`, payload)
 
@@ -107,10 +110,13 @@ const submitOffline = async () => {
         <!-- Form -->
         <div class="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-3">
 
-            <InputText v-model="form.name" type="text" class="text-base" :placeholder="ctrans('Your name')" required />
+            <template v-if="!isLoggedIn">
+                <InputText v-model="form.name" type="text" class="text-base" :placeholder="ctrans('Your name')"
+                    required />
 
-            <InputText v-model="form.email" type="email" class="text-base" :placeholder="ctrans('Your email')"
-                required />
+                <InputText v-model="form.email" type="email" class="text-base" :placeholder="ctrans('Your email')"
+                    required />
+            </template>
 
             <Textarea v-model="form.message" class="text-base" :placeholder="ctrans('Your message')" rows="4"
                 required />
@@ -124,7 +130,7 @@ const submitOffline = async () => {
             <Button type="save" :label="loading
                 ? ctrans('Sending')
                 : ctrans('Send offline message')" :icon="faPaperPlane"
-                :disabled="loading || !form.name || !form.email || !form.message" class="justify-center"
+                :disabled="loading || !form.message || (!isLoggedIn && (!form.name || !form.email))" class="justify-center"
                 @click="submitOffline" />
 
             <span v-if="success" class="text-green-600 text-sm text-center gap-2 flex items-center">

@@ -6104,3 +6104,40 @@ test('an offline message becomes an email conversation only when the shop asks f
 
     expect(Arr::get($this->shop->refresh()->settings, 'chat.email_offline_replies'))->toBeFalse();
 });
+
+test('a logged in customer is never asked for the name and email we already hold', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $organisation = Organisation::first() ?? Organisation::factory()->create();
+    $website      = Website::first() ?? Website::factory()->create();
+    $customer     = Customer::first() ?? Customer::factory()->create();
+    $group        = createGroup();
+
+    /** @var \App\Models\CRM\WebUser $webUser */
+    $webUser = WebUser::factory()->create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $group->id,
+        'website_id'      => $website->id,
+        'customer_id'     => $customer->id,
+        'type'            => WebUserTypeEnum::WEB->value,
+        'contact_name'    => 'Known Customer',
+        'email'           => 'known@example.com',
+    ]);
+
+    $settings = $this->shop->settings ?? [];
+    data_set($settings, 'gmail.email', 'help@example.com');
+    data_set($settings, 'chat.email_offline_replies', true);
+    $this->shop->updateQuietly(['settings' => $settings]);
+
+    $session = StoreOfflineMessage::make()->handle($this->shop->refresh(), [
+        'message'     => 'Nobody was on, please write back',
+        'language_id' => 68,
+        'sender_type' => ChatSenderTypeEnum::USER->value,
+        'web_user_id' => $webUser->id,
+    ]);
+
+    expect($session->metadata['name'])->toBe('Known Customer')
+        ->and($session->metadata['email'])->toBe('known@example.com')
+        ->and($session->channel)->toBe(ChatChannelEnum::EMAIL)
+        ->and($session->metadata['email_from'])->toBe('known@example.com');
+});

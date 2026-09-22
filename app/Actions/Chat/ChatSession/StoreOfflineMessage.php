@@ -18,6 +18,7 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
+use App\Models\CRM\WebUser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,8 @@ class StoreOfflineMessage
 
     public function handle(Shop $shop, array $data): ChatSession
     {
+        $data = $this->withWebUserContact($data);
+
         return DB::transaction(function () use ($shop, $data) {
             $session = $this->findSession($shop, $data['session_ulid'] ?? null);
 
@@ -48,6 +51,24 @@ class StoreOfflineMessage
 
             return $session;
         });
+    }
+
+    /**
+     * A logged in customer is already known to us, so the form does not ask them to type their
+     * name and email again; whatever they left blank is taken from their account.
+     */
+    private function withWebUserContact(array $data): array
+    {
+        $webUser = blank($data['web_user_id'] ?? null) ? null : WebUser::find($data['web_user_id']);
+
+        if (!$webUser) {
+            return $data;
+        }
+
+        $data['name']  = $data['name']  ?? $webUser->contact_name ?? $webUser->username;
+        $data['email'] = $data['email'] ?? $webUser->email;
+
+        return $data;
     }
 
     private function findSession(Shop $shop, ?string $ulid): ?ChatSession
@@ -94,8 +115,8 @@ class StoreOfflineMessage
             'reopened_at' => now()->toISOString(),
             'session_previous_status' => $session->getOriginal('status'),
             'session_new_status' => $session->status->value,
-            'name' => $data['name'],
-            'email' => $data['email'],
+            'name' => $data['name'] ?? null,
+            'email' => $data['email'] ?? null,
             'message' => $data['message'],
             'is_offline_message' => true,
         ];
@@ -145,6 +166,10 @@ class StoreOfflineMessage
         $settings = $session->shop?->settings ?? [];
 
         if (!Arr::get($settings, 'chat.email_offline_replies') || blank(Arr::get($settings, 'gmail.email'))) {
+            return;
+        }
+
+        if (blank($data['email'] ?? null)) {
             return;
         }
 
@@ -205,8 +230,18 @@ class StoreOfflineMessage
 
             'shop_id' => ['required', 'exists:shops,id'],
             'session_ulid' => ['nullable', 'string'],
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:150'],
+            'name' => [
+                Rule::requiredIf(fn () => blank($request->input('web_user_id'))),
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'email' => [
+                Rule::requiredIf(fn () => blank($request->input('web_user_id'))),
+                'nullable',
+                'email',
+                'max:150',
+            ],
             'message' => ['required', 'string', 'max:5000'],
             'language_id' => ['required', 'exists:languages,id'],
             'sender_type' => [
