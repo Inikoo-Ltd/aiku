@@ -41,6 +41,7 @@ class StockDeliveryItemResource extends JsonResource
             ->get();
 
         $warehouseSlugByLocation = $locations->pluck('warehouse_slug', 'location_id');
+        $warehouse               = $item->organisation?->warehouses()->first();
 
         $sowings = $item->sowings()
             ->where('type', SowingTypeEnum::SOW)
@@ -141,6 +142,14 @@ class StockDeliveryItemResource extends JsonResource
             'locations'             => $locations,
             'warehouse_area'        => $warehouseArea,
             'warehouse_slug'        => $locations->first()?->warehouse_slug,
+            'searchLocationsRoute'  => $warehouse ? [
+                'name'       => 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock',
+                'parameters' => [
+                    'organisation' => $item->organisation->slug,
+                    'warehouse'    => $warehouse->slug,
+                    'orgStock'     => $item->orgStock?->slug,
+                ],
+            ] : null,
             'sowings'               => $sowings,
             'placedRoute'           => $canPlace ? [
                 'name'       => 'grp.models.stock-delivery-item.place',
