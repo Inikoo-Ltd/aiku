@@ -4725,3 +4725,64 @@ test('incoming stock tells the customer when an out of stock product is expected
         ->and($incoming[0]['eta'])->toBe($expectedEta)
         ->and(GetProductIncomingStock::make()->earliestEta($product))->toBe($expectedEta);
 });
+
+test('a partly delivered purchase order still shows the lines that are not in the delivery', function () {
+    $orderedOrgStock   = $this->orgStocks[1];
+    $deliveredOrgStock = $this->orgStocks[2];
+
+    $supplier    = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $orgSupplierProducts = [];
+    foreach ([$orderedOrgStock, $deliveredOrgStock] as $index => $orgStock) {
+        $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+            'code'             => 'PARTIAL-'.$index,
+            'name'             => 'Partial asset '.$index,
+            'cost'             => 100,
+            'stock_id'         => $orgStock->stock_id,
+            'units_per_pack'   => 10,
+            'units_per_carton' => 100,
+        ]);
+        $orgSupplierProducts[$index] = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    }
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $orgSupplierProducts[0]->supplierProduct->historicSupplierProduct,
+        $orderedOrgStock,
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 90])
+    );
+    StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $orgSupplierProducts[1]->supplierProduct->historicSupplierProduct,
+        $deliveredOrgStock,
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 50])
+    );
+    UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder);
+
+    $stockDelivery = StoreStockDelivery::make()->action($orgSupplier, [
+        'reference' => 'PARTIAL-DEL-1',
+        'date'      => date('Y-m-d'),
+    ]);
+    StoreStockDeliveryItem::make()->action(
+        $stockDelivery,
+        $orgSupplierProducts[1]->supplierProduct->historicSupplierProduct,
+        $deliveredOrgStock,
+        array_merge(StockDeliveryItem::factory()->definition(), ['unit_quantity' => 50])
+    );
+    $stockDelivery->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
+
+    [, $product] = createProduct(StoreShop::run($this->organisation, Shop::factory()->definition()));
+    $product->orgStocks()->syncWithoutDetaching([$orderedOrgStock->id => ['quantity' => 1]]);
+    $product->load('orgStocks');
+
+    $incoming = GetProductIncomingStock::run($product);
+
+    $ordered = collect($incoming)->firstWhere('reference', $purchaseOrder->reference);
+
+    expect($ordered)->not->toBeNull()
+        ->and($ordered['type'])->toBe('purchase_order')
+        ->and($ordered['quantity'])->toBe(90.0)
+        ->and(collect($incoming)->where('org_stock_code', $deliveredOrgStock->code)->count())->toBe(0);
+});

@@ -300,7 +300,7 @@ const getTooltips = () => {
 			</div>
 
 			<!-- Section: On its way -->
-			<div v-if="data.incoming_stock?.length" class="mb-4 px-2">
+			<div class="mb-4 px-2">
 				<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{{ ctrans("On its way") }}</div>
 				<table class="w-full text-sm">
 					<tr v-for="incoming in data.incoming_stock" :key="incoming.type + incoming.reference + incoming.org_stock_code" class="border-b border-gray-100 last:border-0">
@@ -310,6 +310,7 @@ const getTooltips = () => {
 						<td class="py-1 text-right text-gray-500 whitespace-nowrap">{{ incoming.eta ? useFormatTime(incoming.eta, { formatTime: "mdy" }) : "—" }}</td>
 					</tr>
 				</table>
+				<div v-if="!data.incoming_stock?.length" class="text-sm text-gray-500">{{ ctrans("Nothing on order") }}</div>
 			</div>
 
 			<!-- Section: Price -->
