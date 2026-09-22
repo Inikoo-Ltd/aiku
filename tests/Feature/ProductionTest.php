@@ -3569,3 +3569,38 @@ test('a batch size change flags open jobs raised with the old one and their quan
 
     expect($item->refresh()->quantity)->toBe(480);
 });
+
+test('a discontinued SKO leaves the to produce board unless a job order already carries it', function () {
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'DISC-01', 'name' => 'Discontinued']);
+    $made->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $orgStocks[0]->stock_id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 5,
+    ]);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $backlog = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])->firstWhere('label', 'Backlog')['items'];
+    $listed = fn () => collect(get(route('grp.org.productions.show.to_produce.list', $routeParameters))
+        ->assertOk()->viewData('page')['props']['data']['data'])->pluck('stock_code')->all();
+
+    expect(collect($backlog())->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
+
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+    expect($backlog())->toBe([])
+        ->and($listed())->not->toContain($stocks[0]->code);
+
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
+    \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$line->id]);
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+    expect($listed())->toContain($stocks[0]->code);
+});
