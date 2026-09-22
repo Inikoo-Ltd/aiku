@@ -48,6 +48,8 @@ class MarkChatSessionAsRubbish
                 'rubbish_reason'        => $rubbish ? $reason?->value : null,
             ]);
 
+            ClassifyChatSessionNoise::humanDecided($chatSession, $rubbish);
+
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,
                 eventType: $rubbish ? ChatEventTypeEnum::RUBBISH : ChatEventTypeEnum::NOT_RUBBISH,
@@ -98,6 +100,13 @@ class MarkChatSessionAsRubbish
             return response()->json([
                 'success' => false,
                 'message' => 'Only authenticated agents can mark chats as rubbish',
+            ], 403);
+        }
+
+        if (!$this->userCanDisposeOfChat($agent->user, $chatSession)) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
             ], 403);
         }
 

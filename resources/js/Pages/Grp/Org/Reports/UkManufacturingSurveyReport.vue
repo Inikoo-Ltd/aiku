@@ -130,7 +130,7 @@ const selectedRangeText = computed(() => {
             <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg p-5">
                 <div class="flex items-start gap-3">
                     <div class="flex-shrink-0 bg-slate-100 shadow ring-1 ring-slate-200 h-10 w-10 rounded-md flex justify-center items-center">
-                        <FontAwesomeIcon :icon="['fal', 'industry']" class="text-xl text-gray-500" />
+                        <FontAwesomeIcon :icon="['fal', 'industry']" class="text-xl text-gray-500" fixed-width />
                     </div>
                     <div class="flex-1 min-w-0">
                         <h2 class="text-base font-semibold text-gray-900 mb-1.5">
@@ -154,7 +154,7 @@ const selectedRangeText = computed(() => {
             <!-- Date Range -->
             <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg p-5">
                 <div class="flex items-center gap-2 mb-4">
-                    <FontAwesomeIcon :icon="['fal', 'calendar']" class="text-gray-400 text-sm" />
+                    <FontAwesomeIcon :icon="['fal', 'calendar']" class="text-gray-400 text-sm" fixed-width />
                     <h3 class="text-sm font-semibold text-gray-900">Select Date Range</h3>
                 </div>
 
@@ -219,11 +219,11 @@ const selectedRangeText = computed(() => {
                     :full="true"
                 >
                     <template v-if="!isDownloading">
-                        <FontAwesomeIcon :icon="['fal', 'file-excel']" class="mr-2" />
+                        <FontAwesomeIcon :icon="['fal', 'file-excel']" class="mr-2" fixed-width />
                         Download Excel Report
                     </template>
                     <template v-else>
-                        <FontAwesomeIcon :icon="['fal', 'download']" class="mr-2 animate-bounce" />
+                        <FontAwesomeIcon :icon="['fal', 'download']" class="mr-2 animate-bounce" fixed-width />
                         Generating Report...
                     </template>
                 </Button>

@@ -150,7 +150,7 @@ defineOptions({
                 <!-- TAGS -->
                 <div class="flex gap-x-10 text-gray-400 text-xs mb-6 mt-4">
                     <div v-for="(tag, index) in product.tags" :key="index" class="flex items-center gap-1">
-                        <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
+                        <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" fixed-width />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
                             class="w-[15px] h-[15px] object-cover" />
                         <span>{{ tag.name }}</span>
@@ -175,7 +175,7 @@ defineOptions({
                         <div v-if="layout?.iris?.is_logged_in" class="flex justify-between items-center">
                             <div class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
                                 <span>
                                     <span>
                                         {{ product?.is_on_demand
@@ -197,7 +197,7 @@ defineOptions({
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                                 <span>
                                     {{
                                         product.is_back_in_stock
@@ -217,8 +217,8 @@ defineOptions({
                                 ? onUnselectFavourite(product)
                                 : onAddFavourite(product)
                             ">
-                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" />
-                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" />
+                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" fixed-width />
+                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -292,7 +292,7 @@ defineOptions({
                                     <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
                                         :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
                                     <FontAwesomeIcon v-else :icon="faImage"
-                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                        class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                                 </div>
 
                                 <!-- VARIANT LABEL -->
@@ -374,7 +374,7 @@ defineOptions({
                         customerData?.is_favourite
                             ? onUnselectFavourite(product)
                             : onAddFavourite(product)
-                        " />
+                        " fixed-width />
 
             </div>
 
@@ -397,7 +397,7 @@ defineOptions({
         <div class="flex flex-wrap gap-2 mt-4">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
                 :key="index">
-                <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
+                <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" fixed-width />
                 <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`" class="w-[15px] h-[15px] object-cover" />
                 <span>{{ tag.name }}</span>
             </div>
@@ -436,7 +436,7 @@ defineOptions({
                             <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
                                 :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
                             <FontAwesomeIcon v-else :icon="faImage"
-                                class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                         </div>
 
                         <!-- VARIANT LABEL -->

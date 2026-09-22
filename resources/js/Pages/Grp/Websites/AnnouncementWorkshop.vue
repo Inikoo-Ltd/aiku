@@ -389,7 +389,7 @@ const onSectionSetting = () => {
 
                 <div class="py-1 px-2 cursor-pointer" title="template" v-tooltip="'Template'"
                      @click="isModalOpen = true">
-                    <FontAwesomeIcon icon="fas fa-th-large" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-th-large" fixed-width aria-hidden="true" />
                 </div>
             </div>
 

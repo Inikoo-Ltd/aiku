@@ -92,7 +92,7 @@ const SaveShowAndHide = (item) => {
                         <div class="w-12 h-12 bg-gray-100 flex items-center justify-center rounded-lg overflow-hidden">
                             <img v-if="item.image" :src="item.image" alt="Item Image"
                                 class="w-full h-full object-cover" />
-                            <FontAwesomeIcon v-else :icon="faImage" class="text-gray-400 text-xl" />
+                            <FontAwesomeIcon v-else :icon="faImage" class="text-gray-400 text-xl" fixed-width />
                         </div>
                         <div>
                             <div class="font-medium text-gray-800">{{ item.name }}</div>
@@ -102,7 +102,7 @@ const SaveShowAndHide = (item) => {
 
                     <div v-if="!disabled" class="text-gray-500 hover:text-primary cursor-pointer transition" title="Toggle visibility"
                         v-tooltip="'visibility'" @click="(e) => disabled ? null : confirmHideAndShow(e, item)">
-                        <FontAwesomeIcon :icon="item.show_in_website ? faEye : faEyeSlash" />
+                        <FontAwesomeIcon :icon="item.show_in_website ? faEye : faEyeSlash" fixed-width />
                     </div>
                 </li>
             </ul>
@@ -113,7 +113,7 @@ const SaveShowAndHide = (item) => {
 
     <ConfirmPopup group="confirm-hide">
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
         </template>
     </ConfirmPopup>
 </template>

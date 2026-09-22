@@ -938,7 +938,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 	<ConfirmDialog group="purchase-order">
 		<template #icon>
-			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" fixed-width />
 		</template>
 	</ConfirmDialog>
 
@@ -946,7 +946,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<template #message="{ message }">
 			<div class="flex w-full flex-col gap-4">
 				<div class="flex items-start gap-3">
-					<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl text-orange-500" />
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl text-orange-500" fixed-width />
 					<span>{{ message.message }}</span>
 				</div>
 

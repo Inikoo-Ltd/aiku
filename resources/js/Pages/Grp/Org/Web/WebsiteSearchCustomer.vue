@@ -75,7 +75,7 @@ const queryBlocks = [
                         >
                             <span class="text-gray-600 truncate min-w-0 hover:underline">{{ q.query }}</span>
                             <span class="shrink-0 tabular-nums font-medium">
-                                {{ q.searches }}<span v-if="block.showClicks" class="text-gray-400 font-normal"> / {{ q.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span>
+                                {{ q.searches }}<span v-if="block.showClicks" class="text-gray-400 font-normal"> / {{ q.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span>
                             </span>
                         </Link>
                         <p v-if="!insights[block.key]?.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>

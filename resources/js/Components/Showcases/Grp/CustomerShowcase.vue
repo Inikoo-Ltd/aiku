@@ -472,13 +472,13 @@ const submitNote = async () => {
                 <Link :href="route(data.approveRoute.name, data.approveRoute.parameters)" method="patch"
                       :data="{ status: 'approved' }">
                     <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
-                        <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
+                        <FontAwesomeIcon :icon="faCheck" @click="visible = false" fixed-width />
                         <span> {{ ctrans("Approve") }} </span>
                     </ButtonPrimeVue>
                 </Link>
 
                 <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined" @click="() => openRejectedModal(data.customer)">
-                    <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
+                    <FontAwesomeIcon :icon="faTimes" @click="visible = false" fixed-width />
                     <span> {{ ctrans("Reject") }} </span>
                 </ButtonPrimeVue>
             </div>
@@ -490,7 +490,7 @@ const submitNote = async () => {
         <div class="flex flex-wrap items-center gap-3">
             <BoxNote v-if="data.shop.type !== 'external'" :noteData="data.internal_note" :updateRoute="data.update_route" :alternativeStyle="true" class="h-full">
                 <template #mainIcon>
-                    <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
+                    <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" fixed-width />
                     {{ trans("Add Note") }}
                 </template>
             </BoxNote>
@@ -499,7 +499,7 @@ const submitNote = async () => {
                 :href="route(data.orders_route.name, data.orders_route.parameters)"
                 class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
-                <FontAwesomeIcon icon="fal fa-list-alt" class="text-indigo-500 text-xs" />
+                <FontAwesomeIcon icon="fal fa-list-alt" class="text-indigo-500 text-xs" fixed-width />
                 {{ trans("View Orders") }}
             </Link>
             <button
@@ -507,7 +507,7 @@ const submitNote = async () => {
                 @click="() => handleTabUpdate('timeline')"
                 class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
-                <FontAwesomeIcon icon="fal fa-code-branch" class="text-green-500 text-xs" />
+                <FontAwesomeIcon icon="fal fa-code-branch" class="text-green-500 text-xs" fixed-width />
                 {{ trans("Full Timeline") }}
             </button>
             <a
@@ -515,7 +515,7 @@ const submitNote = async () => {
                 :href="`mailto:${data.customer.email}`"
                 class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
-                <FontAwesomeIcon icon="fal fa-envelope" class="text-blue-500 text-xs" />
+                <FontAwesomeIcon icon="fal fa-envelope" class="text-blue-500 text-xs" fixed-width />
                 {{ trans("Send Email") }}
             </a>
             <button
@@ -523,7 +523,7 @@ const submitNote = async () => {
                 @click="() => (isModalNote = true)"
                 class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
-                <FontAwesomeIcon icon="fal fa-history" class="text-rose-500 text-xs" />
+                <FontAwesomeIcon icon="fal fa-history" class="text-rose-500 text-xs" fixed-width />
                 {{ trans("Add History Note") }}
             </button>
 
@@ -797,7 +797,7 @@ const submitNote = async () => {
                                     <FontAwesomeIcon
                                         :icon="getStatusIcon(data.customer.tax_number.status, data.customer.tax_number.valid)"
                                         :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid)"
-                                        class="text-sm" />
+                                        class="text-sm" fixed-width />
                                     <div class="space-y-2">
                                         <p class="text-sm text-gray-900">
                                             <span class="font-medium">
@@ -883,7 +883,7 @@ const submitNote = async () => {
             <div v-if="data.offers?.length" class="mt-6">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                        <FontAwesomeIcon icon="fal fa-badge-percent" class="text-indigo-400" />
+                        <FontAwesomeIcon icon="fal fa-badge-percent" class="text-indigo-400" fixed-width />
                         {{ trans("Offers") }}
                     </span>
                     <button
@@ -908,7 +908,7 @@ const submitNote = async () => {
                         >
                             <FontAwesomeIcon
                                 :icon="offer.type_icon?.icon || 'fal fa-badge-percent'"
-                                class="text-white text-sm"
+                                class="text-white text-sm" fixed-width
                             />
                             <span class="text-white font-bold text-center leading-tight" style="font-size: 9px;">
                                 {{ getAccentLabel(offer.label) }}
@@ -955,7 +955,7 @@ const submitNote = async () => {
             <div v-if="data?.stats" class="grid grid-cols-2 gap-3">
                 <!-- Card: Historic CLV -->
                 <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                    <FontAwesomeIcon icon="fal fa-chart-line" class="text-lg text-indigo-400 flex-shrink-0" />
+                    <FontAwesomeIcon icon="fal fa-chart-line" class="text-lg text-indigo-400 flex-shrink-0" fixed-width />
                     <div class="min-w-0">
                         <div class="text-xs text-gray-500">{{ trans("Lifetime Value") }}</div>
                         <div class="text-sm font-semibold text-gray-800 tabular-nums truncate">
@@ -972,7 +972,7 @@ const submitNote = async () => {
 
                 <!-- Card: Average Order Value -->
                 <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                    <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-lg text-blue-400 flex-shrink-0" />
+                    <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-lg text-blue-400 flex-shrink-0" fixed-width />
                     <div class="min-w-0">
                         <div class="text-xs text-gray-500">{{ trans("Avg Order Value") }}</div>
                         <div class="text-sm font-semibold text-gray-800 tabular-nums truncate">
@@ -990,7 +990,7 @@ const submitNote = async () => {
                 <!-- Card: Churn Risk -->
                 <div class="flex items-center gap-3 rounded-lg border px-3 py-3"
                      :class="[churnRiskLevel.bg, churnRiskLevel.border]">
-                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-lg flex-shrink-0" :class="churnRiskLevel.icon" />
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-lg flex-shrink-0" :class="churnRiskLevel.icon" fixed-width />
                     <div class="min-w-0">
                         <div class="text-xs text-gray-500">{{ trans("Churn Risk") }}</div>
                         <div class="text-sm font-semibold tabular-nums" :class="churnRiskLevel.color">
@@ -1007,7 +1007,7 @@ const submitNote = async () => {
                     class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3"
                     :class="{ 'hover:border-emerald-400 hover:bg-emerald-50 transition-colors cursor-pointer': data.orders_route }"
                 >
-                    <FontAwesomeIcon icon="fal fa-box-open" class="text-lg text-emerald-400 flex-shrink-0" />
+                    <FontAwesomeIcon icon="fal fa-box-open" class="text-lg text-emerald-400 flex-shrink-0" fixed-width />
                     <div class="min-w-0">
                         <div class="text-xs text-gray-500">{{ trans("Total Orders") }}</div>
                         <div class="text-sm font-semibold text-gray-800 tabular-nums">
@@ -1023,7 +1023,7 @@ const submitNote = async () => {
 
                 <!-- Card: Last Active (full width) -->
                 <div class="col-span-2 flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-3">
-                    <FontAwesomeIcon icon="fal fa-clock" class="text-lg text-gray-400 flex-shrink-0" />
+                    <FontAwesomeIcon icon="fal fa-clock" class="text-lg text-gray-400 flex-shrink-0" fixed-width />
                     <div class="min-w-0">
                         <div class="text-xs text-gray-500">{{ trans("Last Active") }}</div>
                         <div class="text-sm font-semibold text-gray-800 truncate">
@@ -1154,7 +1154,7 @@ const submitNote = async () => {
             <!-- Image picker -->
             <div class="mt-3">
                 <label class="inline-flex items-center gap-2 cursor-pointer text-sm text-indigo-600 hover:text-indigo-700">
-                    <FontAwesomeIcon icon="fal fa-paperclip" />
+                    <FontAwesomeIcon icon="fal fa-paperclip" fixed-width />
                     {{ trans("Attach images") }}
                     <input type="file" accept="image/*" multiple class="hidden" @change="onSelectNoteImages" />
                 </label>
@@ -1168,7 +1168,7 @@ const submitNote = async () => {
                             v-tooltip="trans('Remove')"
                             class="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600"
                         >
-                            <FontAwesomeIcon :icon="faTimes" />
+                            <FontAwesomeIcon :icon="faTimes" fixed-width />
                         </button>
                     </div>
                 </div>
@@ -1179,7 +1179,7 @@ const submitNote = async () => {
                     {{ trans("Cancel") }}
                 </ButtonPrimeVue>
                 <ButtonPrimeVue severity="info" size="small" :disabled="isSubmittingNote || !noteText.trim()" @click="submitNote">
-                    <FontAwesomeIcon v-if="isSubmittingNote" icon="fad fa-spinner-third" class="animate-spin mr-1" />
+                    <FontAwesomeIcon v-if="isSubmittingNote" icon="fad fa-spinner-third" class="animate-spin mr-1" fixed-width />
                     {{ trans("Save Note") }}
                 </ButtonPrimeVue>
             </div>

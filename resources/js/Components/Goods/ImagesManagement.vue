@@ -418,7 +418,7 @@ function onDeleteFilesInList(categoryBox: any) {
             <h3 class="mb-4 text-base font-semibold text-gray-700">
                 {{ trans("Media") }}
                 <FontAwesomeIcon v-if="data.bucket_images" :icon="faStarChristmas" class="text-yellow-400"
-                    v-tooltip="'Use images bucket'" />
+                    v-tooltip="'Use images bucket'" fixed-width />
             </h3>
 
             <TransitionGroup name="fade-move" tag="ul"
@@ -460,10 +460,10 @@ function onDeleteFilesInList(categoryBox: any) {
                             </label>
                             <FontAwesomeIcon v-if="categoryBox.type == 'audio' && categoryBox.audio && editable"
                                 :icon="faUnlink" @click.stop="() => onDeleteFilesInList(categoryBox)" class="text-xs"
-                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete audio')" />
+                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete audio')" fixed-width />
                             <FontAwesomeIcon v-if="(categoryBox.images || categoryBox.url) && editable" :icon="faUnlink"
                                 @click.stop="() => onDeletefilesInBox(categoryBox)" class="text-xs"
-                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete image')" />
+                                :class="loadingSubmit !== null ? 'text-gray-300 pointer-events-none' : 'text-red-600 cursor-pointer'" v-tooltip="trans('Delete image')" fixed-width />
                         </div>
                     </div>
 
@@ -475,7 +475,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         @dragend="(e)=> editable ? onEndDrag(e) : null">
                         <Image v-if="categoryBox.images" :src="categoryBox.images" :alt="categoryBox.label" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
-                            <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
+                            <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" fixed-width />
                             <span class="text-[12px] font-medium">{{ trans('Drop image here') }}</span>
                         </div>
 
@@ -491,7 +491,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         <AudioWaveform v-if="categoryBox.audio" :src="categoryBox.audio.url" />
                         <label v-else class="flex flex-col items-center justify-center text-gray-400"
                             :class="editable && data.upload_audio_route ? 'cursor-pointer' : ''">
-                            <FontAwesomeIcon :icon="faMusic" class="mb-1 text-2xl" />
+                            <FontAwesomeIcon :icon="faMusic" class="mb-1 text-2xl" fixed-width />
                             <span class="text-[12px] font-medium">{{ trans('Upload sound sample') }}</span>
                             <input v-if="editable && data.upload_audio_route" type="file"
                                 accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" class="hidden"
@@ -513,7 +513,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
 
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
-                            <FontAwesomeIcon :icon="faVideo" class="mb-1 text-2xl" />
+                            <FontAwesomeIcon :icon="faVideo" class="mb-1 text-2xl" fixed-width />
                             <span class="text-[12px] font-medium">
                                 {{ trans("Click to edit video here") }}
                             </span>
@@ -564,13 +564,13 @@ function onDeleteFilesInList(categoryBox: any) {
                 <!-- Overlay  drag -->
                 <div v-if="isDragOver && editable" class="absolute inset-0 z-10 flex flex-col items-center justify-center
              bg-blue-50/80 backdrop-blur-sm text-blue-500 pointer-events-none">
-                    <FontAwesomeIcon :icon="faUpload" class="text-3xl mb-2" />
+                    <FontAwesomeIcon :icon="faUpload" class="text-3xl mb-2" fixed-width />
                     <p class="text-sm font-medium">{{ trans("Drop files to upload") }}</p>
                 </div>
 
                 <!-- Loader -->
                 <div v-if="loadingSubmit === 'list'" class="flex justify-center p-6 text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-spinner-third" class="animate-spin mr-2" />
+                    <FontAwesomeIcon icon="fal fa-spinner-third" class="animate-spin mr-2" fixed-width />
                     {{ trans("Loading images...") }}
                 </div>
 
@@ -596,7 +596,7 @@ function onDeleteFilesInList(categoryBox: any) {
                                 <Image v-if="item?.image" :src="item?.image" :alt="item.alt"
                                     class="max-h-full max-w-full object-contain" />
                                 <div v-else class="text-gray-400">
-                                    <FontAwesomeIcon :icon="faImage" class="text-base" />
+                                    <FontAwesomeIcon :icon="faImage" class="text-base" fixed-width />
                                 </div>
                             </div>
 
@@ -624,7 +624,7 @@ function onDeleteFilesInList(categoryBox: any) {
                                         @click.stop="openEditAlt(item)"
                                         class="text-gray-400 hover:text-blue-600 transition"
                                         v-tooltip="trans('Edit alt text')">
-                                        <FontAwesomeIcon :icon="faPencil" class="text-[10px]" />
+                                        <FontAwesomeIcon :icon="faPencil" class="text-[10px]" fixed-width />
                                     </button>
                                 </div>
 
@@ -645,7 +645,7 @@ function onDeleteFilesInList(categoryBox: any) {
 
                         <!-- Delete -->
                         <button v-if="editable" @click.stop="onDeleteFilesInList(item)" :disabled="loadingSubmit !== null" class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent" v-tooltip="trans('Delete')">
-                            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
+                            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" fixed-width />
                         </button>
                     </article>
                 </div>

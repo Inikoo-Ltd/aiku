@@ -90,7 +90,7 @@ const addNotes = () => {
                   <template #handle="{ checked }">
                     <FontAwesomeIcon 
                       :icon="checked && faCheck" 
-                      class="text-green-500 text-xs" 
+                      class="text-green-500 text-xs" fixed-width 
                     />
                   </template>
                 </ToggleSwitch>

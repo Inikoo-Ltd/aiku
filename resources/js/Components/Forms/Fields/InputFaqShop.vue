@@ -360,7 +360,7 @@ const changeValue = async () => {
                     :icon="faTrashAlt"
                     class="cursor-pointer text-red-400 hover:text-red-600"
                     v-tooltip="trans('Remove')"
-                    @click="removeFaq(index)"
+                    @click="removeFaq(index)" fixed-width
                 />
             </div>
 
@@ -375,7 +375,7 @@ const changeValue = async () => {
                                 <FontAwesomeIcon
                                     :icon="faOctopusDeploy"
                                     v-tooltip="trans('Question of the Master')"
-                                    class="h-3.5 w-3.5"
+                                    class="h-3.5 w-3.5" fixed-width
                                 />
                             </div>
                             <div class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 px-4 py-1 rounded-md border">
@@ -384,7 +384,7 @@ const changeValue = async () => {
                         </template>
                         <template v-else>
                             <div class="h-6 w-6 flex items-center justify-center rounded-md bg-gray-100 text-gray-500 shrink-0">
-                                <FontAwesomeIcon :icon="faLanguage" v-tooltip="trans('Source text')" class="h-3.5 w-3.5" />
+                                <FontAwesomeIcon :icon="faLanguage" v-tooltip="trans('Source text')" class="h-3.5 w-3.5" fixed-width />
                             </div>
                             <div class="relative flex-1">
                                 <input
@@ -396,7 +396,7 @@ const changeValue = async () => {
                             </div>
                         </template>
                         <div class="h-6 w-6 flex items-center justify-center rounded-md bg-indigo-100 text-[#4B0082] shrink-0">
-                            <FontAwesomeIcon :icon="faArrowToRight" class="h-3.5 w-3.5" />
+                            <FontAwesomeIcon :icon="faArrowToRight" class="h-3.5 w-3.5" fixed-width />
                         </div>
                     </div>
 
@@ -424,7 +424,7 @@ const changeValue = async () => {
                                 v-tooltip="hasMaster ? trans('get translation from AI') : trans('translate this text with AI')"
                             >
                                 <LoadingIcon v-if="translatingCell === `${index}-question`" />
-                                <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" />
+                                <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" fixed-width />
                             </button>
                         </div>
 
@@ -435,14 +435,14 @@ const changeValue = async () => {
                             class="h-8 w-8 flex items-center justify-center shrink-0"
                             v-tooltip="trans('Save')"
                         >
-                            <FontAwesomeIcon v-if="isCellSaving(index, 'question')" :icon="faSpinnerThird" class="text-xl animate-spin" />
+                            <FontAwesomeIcon v-if="isCellSaving(index, 'question')" :icon="faSpinnerThird" class="text-xl animate-spin" fixed-width />
                             <FontAwesomeIcon
                                 v-else-if="isCellDirty(index, 'question')"
                                 :icon="fadSave"
                                 class="h-6"
-                                :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
+                                :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width
                             />
-                            <FontAwesomeIcon v-else :icon="falSave" class="h-6 text-gray-300" />
+                            <FontAwesomeIcon v-else :icon="falSave" class="h-6 text-gray-300" fixed-width />
                         </button>
                     </div>
                 </div>
@@ -459,7 +459,7 @@ const changeValue = async () => {
                                 <FontAwesomeIcon
                                     :icon="faOctopusDeploy"
                                     v-tooltip="trans('Answer of the Master')"
-                                    class="h-3.5 w-3.5"
+                                    class="h-3.5 w-3.5" fixed-width
                                 />
                             </div>
                             <div
@@ -469,7 +469,7 @@ const changeValue = async () => {
                         </template>
                         <template v-else>
                             <div class="h-6 w-6 flex items-center justify-center rounded-md bg-gray-100 text-gray-500 shrink-0 mt-1">
-                                <FontAwesomeIcon :icon="faLanguage" v-tooltip="trans('Source text')" class="h-3.5 w-3.5" />
+                                <FontAwesomeIcon :icon="faLanguage" v-tooltip="trans('Source text')" class="h-3.5 w-3.5" fixed-width />
                             </div>
                             <div class="flex-1 bg-gray-50 border rounded-md p-2">                                
                                 <EditorV2
@@ -488,7 +488,7 @@ const changeValue = async () => {
                             </div>
                         </template>
                         <div class="h-6 w-6 flex items-center justify-center rounded-md bg-indigo-100 text-[#4B0082] shrink-0 mt-1">
-                            <FontAwesomeIcon :icon="faArrowToRight" class="h-3.5 w-3.5" />
+                            <FontAwesomeIcon :icon="faArrowToRight" class="h-3.5 w-3.5" fixed-width />
                         </div>
                     </div>
 
@@ -526,7 +526,7 @@ const changeValue = async () => {
                                 v-tooltip="hasMaster ? trans('get translation from AI') : trans('translate this text with AI')"
                             >
                                 <LoadingIcon v-if="translatingCell === `${index}-answer`" />
-                                <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" />
+                                <FontAwesomeIcon v-else :icon="faLanguage" class="h-3.5 w-3.5" fixed-width />
                             </button>
 
                             <button
@@ -536,14 +536,14 @@ const changeValue = async () => {
                                 class="h-8 w-8 flex items-center justify-center"
                                 v-tooltip="trans('Save')"
                             >
-                                <FontAwesomeIcon v-if="isCellSaving(index, 'answer')" :icon="faSpinnerThird" class="text-xl animate-spin" />
+                                <FontAwesomeIcon v-if="isCellSaving(index, 'answer')" :icon="faSpinnerThird" class="text-xl animate-spin" fixed-width />
                                 <FontAwesomeIcon
                                     v-else-if="isCellDirty(index, 'answer')"
                                     :icon="fadSave"
                                     class="h-6"
-                                    :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
+                                    :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width
                                 />
-                                <FontAwesomeIcon v-else :icon="falSave" class="h-6 text-gray-300" />
+                                <FontAwesomeIcon v-else :icon="falSave" class="h-6 text-gray-300" fixed-width />
                             </button>
                         </div>
                     </div>

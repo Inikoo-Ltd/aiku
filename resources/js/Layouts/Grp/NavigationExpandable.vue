@@ -40,8 +40,8 @@ const navigationName = props.navKey.split('_')[0].slice(0, -1)  // shops_navigat
             :class="layout.leftSidebar.show ? 'pt-2 py-1 pl-4 pr-2' : open ? 'py-2 bg-indigo-600' : 'py-2 hover:bg-indigo-500'"
         >
             <div class="leading-none text-white font-bold pb-1 select-none flex items-center gap-x-1" :class="layout.leftSidebar.show ? '' : 'mx-auto'">
-                <FontAwesomeIcon v-if="navKey == 'shops_navigation'" icon='fal fa-store-alt' class='text-sm opacity-65' aria-hidden='true' />
-                <FontAwesomeIcon v-if="navKey == 'warehouses_navigation'" icon='fal fa-warehouse-alt' class='text-sm opacity-65' aria-hidden='true' />
+                <FontAwesomeIcon v-if="navKey == 'shops_navigation'" icon='fal fa-store-alt' class='text-sm opacity-65' fixed-width aria-hidden='true' />
+                <FontAwesomeIcon v-if="navKey == 'warehouses_navigation'" icon='fal fa-warehouse-alt' class='text-sm opacity-65' fixed-width aria-hidden='true' />
 
                 <span v-if="layout.leftSidebar.show">
                     <template v-if="layout.organisations.data.find(organisation => organisation.slug == layout.currentParams.organisation)?.[`authorised_${navigationName}s`].length === 1">
@@ -51,7 +51,7 @@ const navigationName = props.navKey.split('_')[0].slice(0, -1)  // shops_navigat
                 </span>
             </div>
             <FontAwesomeIcon v-if="layout.leftSidebar.show" icon='fal fa-chevron-down' class='text-white text-xs transition-all duration-200 ease-in-out'
-                :class="[open ? 'rotate-180' : '']" aria-hidden='true' />
+                :class="[open ? 'rotate-180' : '']" fixed-width aria-hidden='true' />
         </component>
 
         <!-- Looping: Subnav -->
@@ -93,12 +93,12 @@ const navigationName = props.navKey.split('_')[0].slice(0, -1)  // shops_navigat
                                             layout.leftSidebar.show ? 'ml-6' : 'text-indigo-500',
                                         ]" :aria-current="navigationShopWarehouse.slug === layout.currentModule ? 'page' : undefined">
                                             <div class="flex items-center gap-x-2">
-                                                <FontAwesomeIcon v-if="navigationShopWarehouse.icon" aria-hidden="true" class="flex-shrink-0 h-4 w-4" :icon="navigationShopWarehouse.icon" />
+                                                <FontAwesomeIcon v-if="navigationShopWarehouse.icon" fixed-width aria-hidden="true" class="flex-shrink-0 h-4 w-4" :icon="navigationShopWarehouse.icon" />
                                                 <span class="capitalize leading-none whitespace-nowrap">
                                                     {{ navigationShopWarehouse.name }}
                                                 </span>
                                             </div>
-                                            <FontAwesomeIcon v-if="layout.leftSidebar.show" icon='fal fa-chevron-down' class='text-white text-xxs transition-all duration-200 ease-in-out' :class="[subOpen ? 'rotate-180' : '']" aria-hidden='true' />
+                                            <FontAwesomeIcon v-if="layout.leftSidebar.show" icon='fal fa-chevron-down' class='text-white text-xxs transition-all duration-200 ease-in-out' :class="[subOpen ? 'rotate-180' : '']" fixed-width aria-hidden='true' />
                                         </div>
                                     </DisclosureButton>
 

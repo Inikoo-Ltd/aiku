@@ -139,12 +139,12 @@ const force2FA = async () => {
                 <span
                     v-if="data?.data?.status"
                     class="inline-block border rounded-md border-green-500 text-green-600 px-2 py-1 text-sm">
-                    <FontAwesomeIcon :icon="faCheck" /> {{ trans('Active') }}
+                    <FontAwesomeIcon :icon="faCheck" fixed-width /> {{ trans('Active') }}
                 </span>
                 <span
                     v-else
                     class="inline-block border rounded-md border-red-500 text-red-600 px-2 py-1 text-sm">
-                    <FontAwesomeIcon :icon="faTimes" /> {{ trans('Inactive') }}
+                    <FontAwesomeIcon :icon="faTimes" fixed-width /> {{ trans('Inactive') }}
                 </span>
             </div>
         </div>
@@ -255,16 +255,16 @@ const force2FA = async () => {
                 <dd class="pt-1 inline-grid w-full">
                     <div v-if="twoFAStatus?.has_2fa" class="w-full">
                         <span class="border rounded-md border-green-500 px-2 py-1">
-                            <FontAwesomeIcon :icon="faCheck" class="text-green-500"/> {{ trans('Enabled') }}
+                            <FontAwesomeIcon :icon="faCheck" class="text-green-500" fixed-width/> {{ trans('Enabled') }}
                         </span>
                         <span class="border rounded-md border-red-500 hover:border-red-300 active:border-red-700 text-red-500 hover:text-red-300 active:text-red-700 cursor-pointer px-2 py-1 ml-2" @click="disable2FA()">
                             <LoadingIcon v-if="isLoadingUpdate"/>
-                            <FontAwesomeIcon v-else :icon="faSkull"/>
+                            <FontAwesomeIcon v-else :icon="faSkull" fixed-width/>
                         </span>
                     </div>
                     <div v-else class="w-full">
                         <span class="border rounded-md border-red-500 px-2 py-1">
-                            <FontAwesomeIcon :icon="faTimes" class="text-red-500"/> {{ trans('Disabled') }}
+                            <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width/> {{ trans('Disabled') }}
                         </span>
                     </div>
                 </dd>

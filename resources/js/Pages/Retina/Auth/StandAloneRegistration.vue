@@ -212,7 +212,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 								<div class="mt-2">
 									<IconField class="w-full" :class="form.errors.email ? 'errorShake rounded-lg' : ''">
 										<InputIcon>
-											<FontAwesomeIcon :icon="faEnvelope" />
+											<FontAwesomeIcon :icon="faEnvelope" fixed-width />
 										</InputIcon>
 
 										<InputText
@@ -374,7 +374,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 				<div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
 					<div>
 						<div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100" >
-							<FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-red-500 text-4xl" fixed aria-hidden='true' />
+							<FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-red-500 text-4xl" fixed fixed-width aria-hidden='true' />
 						</div>
 						
 						<div class="mt-3 text-center sm:mt-3">
@@ -404,7 +404,7 @@ const isUserInputPassed = (dataToCheck: {}) => {
 				<div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
 					<div>
 						<div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100" >
-							<FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-amber-500 text-4xl" fixed aria-hidden='true' />
+							<FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-amber-500 text-4xl" fixed fixed-width aria-hidden='true' />
 						</div>
 						
 						<div class="mt-3 text-center sm:mt-3">

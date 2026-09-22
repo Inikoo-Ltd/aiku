@@ -175,10 +175,10 @@ onUnmounted(() => {
                             <FontAwesomeIcon v-if="form.processing || loadingValidation" icon="fad fa-spinner-third"
                                              class="text-2xl animate-spin" fixed-width aria-hidden="true" />
                             <FontAwesomeIcon v-else icon="fad fa-save" class="h-8"
-                                             :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                                             :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                         </div>
                     </template>
-                    <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                 </div>
             </div>
         </div>
@@ -210,7 +210,7 @@ onUnmounted(() => {
     <Dialog v-model:visible="showValidationDialog" :closable="false" modal :style="{ width: '28rem' }">
         <template #header>
             <div class="flex items-center gap-4 text-[20px]">
-                <FontAwesomeIcon :icon="faExclamationCircle" class="text-orange-500" />
+                <FontAwesomeIcon :icon="faExclamationCircle" class="text-orange-500" fixed-width />
                 <span class="font-medium ">{{ trans("Are you sure?") }}</span>
             </div>
         </template>

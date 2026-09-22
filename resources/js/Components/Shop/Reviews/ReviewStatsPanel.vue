@@ -116,7 +116,7 @@ const categoryRatings = computed(() => {
                 class="flex flex-col gap-2 rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
                 <div class="flex items-center gap-2.5 sm:gap-3">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10" :class="card.iconBg">
-                        <FontAwesomeIcon :icon="card.icon" :class="card.iconColor" />
+                        <FontAwesomeIcon :icon="card.icon" :class="card.iconColor" fixed-width />
                     </div>
                     <div class="min-w-0">
                         <div class="truncate text-xs text-gray-500">{{ card.label }}</div>

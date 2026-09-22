@@ -28,7 +28,7 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute } from "@fal"
@@ -38,6 +38,8 @@ import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/Tabl
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
@@ -68,6 +70,8 @@ const props = defineProps<{
     orders?: {}
     sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: string }>
     can_add_order: boolean
+    can_email_customer?: boolean
+    emailCustomerRoute?: routeType
     products?: {}
     dispatched_emails?: {}
     api_requests?: {}
@@ -112,6 +116,15 @@ const isModalUploadOpen = ref(false)
 const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
+const isEmailModalOpen = ref(false)
+const emailForm = useForm({
+    subject: '',
+    message: '',
+})
+const submitEmail = () => {
+    emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters))
+}
+
 const orderForm = useForm({
     sales_channel_id: null as number | null
 })
@@ -155,8 +168,8 @@ const layout = inject('layout')
         <template #button-delete-customer="{ action }">
             <ModalConfirmationDelete
                 :routeDelete="action.route"
-                :title="trans('Delete this customer?')"
-                :description="trans('The customer and their login will be permanently deleted. This can not be undone.')">
+                :title="ctrans('Delete this customer?')"
+                :description="ctrans('The customer and their login will be permanently deleted. This can not be undone.')">
                 <template #default="{ changeModel }">
                     <Button :style="'delete'" :icon="['far', 'fa-trash-alt']" v-tooltip="action.tooltip"
                         @click="changeModel" />
@@ -168,6 +181,8 @@ const layout = inject('layout')
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
+            <Button v-if="can_email_customer" @click="isEmailModalOpen = true" :label="ctrans('New email')" style="secondary"
+                icon="fal fa-envelope" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
                 icon="plus" />            
         </template>
@@ -223,6 +238,24 @@ const layout = inject('layout')
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
+
+    <Modal :show="isEmailModalOpen" @close="isEmailModalOpen = false" width="w-full max-w-2xl">
+        <div class="p-6 relative">
+            <LoadingOverlay :is-loading="emailForm.processing" position="absolute" />
+            <h2 class="text-lg font-medium text-gray-900">{{ ctrans('New email to this customer') }}</h2>
+            <p class="mt-1 text-sm text-gray-600">{{ ctrans('It opens a conversation in the chat inbox, and their reply comes back to it.') }}</p>
+            <div class="mt-4 space-y-3">
+                <PureInput v-model="emailForm.subject" :placeholder="ctrans('Subject')" />
+                <PureTextarea v-model="emailForm.message" :rows="8" :placeholder="ctrans('Message')" />
+                <p v-if="emailForm.errors.message" class="text-sm text-red-500">{{ emailForm.errors.message }}</p>
+                <p v-if="emailForm.errors.subject" class="text-sm text-red-500">{{ emailForm.errors.subject }}</p>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <Button :label="ctrans('Send')" style="primary" icon="fal fa-paper-plane" :loading="emailForm.processing"
+                    :disabled="!emailForm.subject || !emailForm.message" @click="submitEmail" />
+            </div>
+        </div>
+    </Modal>
 
     <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false" width="w-full max-w-5xl">
         <div class="p-6 relative">

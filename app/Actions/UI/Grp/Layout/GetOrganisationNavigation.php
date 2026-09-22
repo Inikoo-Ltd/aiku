@@ -140,6 +140,7 @@ class GetOrganisationNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
+                            'label' => __('Dashboard'),
                             'icon'  => ['fal', 'fa-chart-network'],
                             'root'  => 'grp.org.procurement.dashboard',
                             'route' => [

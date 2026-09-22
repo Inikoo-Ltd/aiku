@@ -535,10 +535,10 @@ const isOffersData = (offersData: any): boolean => {
                     <div v-else-if="item.model_type === 'Product'" class="text-gray-500 italic text-xs">
                         Stock: {{ locale.number(item.available_quantity || 0) }} available
                         <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
-                            <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-1" aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-1" fixed-width aria-hidden="true" />
                         </span>
                         <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
-                            <FontAwesomeIcon icon="fal fa-gift" class="text-green-500 not-italic mx-2" aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-gift" class="text-green-500 not-italic mx-2" fixed-width aria-hidden="true" />
                         </span>
                         <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}</div>
                         <div v-if="item.upcoming_transaction_private_notes">{{ item.upcoming_transaction_private_notes }}</div>
@@ -607,11 +607,11 @@ const isOffersData = (offersData: any): boolean => {
                             :key="proxyItem.is_cut_view + item.id"
                         >
                             <template #incrementbuttonicon>
-                                <FontAwesomeIcon :icon="faPlus" />
+                                <FontAwesomeIcon :icon="faPlus" fixed-width />
                             </template>
 
                             <template #decrementbuttonicon>
-                                  <FontAwesomeIcon :icon="faMinus" />
+                                  <FontAwesomeIcon :icon="faMinus" fixed-width />
                             </template>
                         </InputNumber>
 
@@ -709,11 +709,11 @@ const isOffersData = (offersData: any): boolean => {
                                 :key="proxyItem.is_cut_view + item.id"
                             >
                                 <template #incrementbuttonicon>
-                                    <FontAwesomeIcon :icon="faPlus" />
+                                    <FontAwesomeIcon :icon="faPlus" fixed-width />
                                 </template>
     
                                 <template #decrementbuttonicon>
-                                      <FontAwesomeIcon :icon="faMinus" />
+                                      <FontAwesomeIcon :icon="faMinus" fixed-width />
                                 </template>
                             </InputNumber>
     
@@ -812,11 +812,11 @@ const isOffersData = (offersData: any): boolean => {
                                         <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
                                             <FontAwesomeIcon
                                                 :icon="faTrash"
-                                                class="!text-lg !w-fit"
+                                                class="!text-lg !w-fit" fixed-width
                                             />
                                             <FontAwesomeIcon
                                                 :icon="faPercentage"
-                                                class="text-xs !top-[25%]"
+                                                class="text-xs !top-[25%]" fixed-width
                                             />
                                         </FontAwesomeLayers>
                                     </template>
@@ -854,7 +854,7 @@ const isOffersData = (offersData: any): boolean => {
                             v-tooltip="'Edit Product Order'"
                             @click="startEdit(item)"
                         >
-                            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700" aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700" fixed-width aria-hidden="true" />
                         </button>
                         <Button 
                             v-if="editingIds.has(item.id)" 

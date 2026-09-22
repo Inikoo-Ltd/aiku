@@ -7,6 +7,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Actions\Helpers\Country\GetCountryCodeFromPhone;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -79,6 +80,9 @@ class MetaChatSessionListResource extends JsonResource
                 'summary'     => Arr::get($summaryData, 'summary'),
                 'key_points'  => Arr::get($summaryData, 'key_points', []),
                 'sentiment'   => Arr::get($summaryData, 'sentiment', 'neutral'),
+                'status'      => Arr::get($summaryData, 'status'),
+                'topic'       => $this->topic,
+                'topic_label' => ChatTopicEnum::tryFrom((string) $this->topic)?->label(),
             ];
         }
 
@@ -149,6 +153,11 @@ class MetaChatSessionListResource extends JsonResource
                 ]
             ] : null,
 
+            'open_tickets_count'     => (int) ($this->open_tickets_count ?? 0),
+            'blocking_tickets_count' => (int) ($this->blocking_tickets_count ?? 0),
+
+            'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
+
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,
                 'user_id' => $activeAssignment->chatAgent?->user_id,
@@ -156,6 +165,8 @@ class MetaChatSessionListResource extends JsonResource
             ] : null,
 
             'is_spam'        => (bool) $this->is_spam,
+            'customer_suggestion' => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($this->resource),
+            'noise'          => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
 
             'unread_count' => (int) ($this->unread_count ?? 0),

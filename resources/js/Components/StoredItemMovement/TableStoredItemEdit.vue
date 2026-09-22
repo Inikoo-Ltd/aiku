@@ -155,7 +155,7 @@ defineExpose({
 
     <div v-if="editable && unlocatedPallet !== 0"
         class="flex justify-start flex-shrink-0 gap-4 bg-yellow-100 rounded-md border p-2 border-yellow-500 my-2">
-        <font-awesome-icon :icon="['fal', 'exclamation-triangle']" class="text-yellow-600" />
+        <font-awesome-icon :icon="['fal', 'exclamation-triangle']" class="text-yellow-600" fixed-width />
         <span class="text-xs text-yellow-600">{{trans("You have to set all unlocated items")}}</span>
     </div>
 

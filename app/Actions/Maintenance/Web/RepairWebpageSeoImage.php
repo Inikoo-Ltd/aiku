@@ -9,7 +9,6 @@
 
 namespace App\Actions\Maintenance\Web;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Actions\Web\Webpage\BreakWebpageCache;
@@ -22,6 +21,12 @@ use Symfony\Component\Console\Helper\ProgressBar;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use stdClass;
 
+/**
+ * No longer needed for what the public site renders: a webpage with no share image of its own
+ * now falls back to its model's image, and its alt text to the page title, at render time.
+ * This only pins that fallback into a stored copy, which then stops following the model, so run
+ * it only to freeze the share image of a page as it is today.
+ */
 class RepairWebpageSeoImage
 {
     use WithActionUpdate;
@@ -85,7 +90,6 @@ class RepairWebpageSeoImage
 
         $webpage->refresh();
         BreakWebpageCache::run($webpage, false);
-        ClearCacheByWildcard::run("irisData:website:{$webpage->website_id}:*");
     }
 
     public string $commandSignature = 'repair:webpage_seo_image {shop?} {--type= : Only repair this webpage type (catalogue or blog)}';

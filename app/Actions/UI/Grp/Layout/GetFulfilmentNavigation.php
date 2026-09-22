@@ -39,6 +39,7 @@ class GetFulfilmentNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
+                            'label'   => __("Dashboard"),
                             "tooltip" => __("Dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             "root"    => "grp.org.fulfilments.show.operations.dashboard",
@@ -48,6 +49,7 @@ class GetFulfilmentNavigation
                             ],
                         ],
                         [
+                            'label'   => __("Comms"),
                             "tooltip" => __("Comms"),
                             "icon"    => ["fal", "fa-satellite-dish"],
                             "root"    => "grp.org.fulfilments.show.operations.comms.dashboard",
@@ -57,6 +59,7 @@ class GetFulfilmentNavigation
                             ],
                         ],
                         [
+                            'label'   => __("Payments"),
                             "tooltip" => __("Payments"),
                             "icon"    => ["fal", "fa-coins"],
                             "root"    => "grp.org.fulfilments.show.operations.accounting.dashboard",
@@ -424,6 +427,7 @@ class GetFulfilmentNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            'label'   => __("Fulfilment Setting"),
                             "tooltip" => __("Fulfilment Setting"),
                             "icon"    => ["fal", "fa-sliders-h"],
                             'root'    => 'grp.org.fulfilments.show.settings.edit',

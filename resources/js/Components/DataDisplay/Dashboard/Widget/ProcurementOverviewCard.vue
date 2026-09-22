@@ -93,7 +93,7 @@ const tone = toneClasses[props.card.tone]
 				<FontAwesomeIcon
 					icon="fal fa-arrow-right"
 					class="text-xs text-gray-300 transition group-hover/card:translate-x-0.5 group-hover/card:text-gray-500"
-					aria-hidden="true" />
+					fixed-width aria-hidden="true" />
 			</div>
 
 			<div v-if="card.value !== null" class="mt-3 flex items-baseline gap-2">

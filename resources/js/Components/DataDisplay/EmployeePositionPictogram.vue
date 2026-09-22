@@ -478,7 +478,7 @@ watch(() => newForm, () => {
                             <div v-if="jobGroup.scope !== 'shop' && (departmentName === 'prod'  && productionsLength > 0) || departmentName !== 'prod'" class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-50 transition-all duration-200 ease-in-out">
                                 <!-- Section: Department label -->
                                 <div class="flex items-center gap-x-1.5">
-                                    <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class='text-gray-400 fixed-width' aria-hidden='true' />
+                                    <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class='text-gray-400' fixed-width aria-hidden='true' />
                                     {{ jobGroup.department }}
                                 </div>
             
@@ -607,7 +607,7 @@ watch(() => newForm, () => {
                                                 </div>
                                             </div>
                                             <div @click="openFineTune = ''" class="absolute top-1 right-2 w-fit px-1 text-slate-400 hover:text-slate-500 cursor-pointer">
-                                                <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
+                                                <FontAwesomeIcon icon='fal fa-times' class='' fixed-width aria-hidden='true' />
                                             </div>
                                         </div>
                                     </Transition>

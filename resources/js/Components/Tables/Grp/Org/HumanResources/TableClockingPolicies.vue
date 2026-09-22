@@ -682,7 +682,7 @@ const createPolicy = (): void => {
                             <Tag :label="modeLabel(rule.mode_override)" :class="modeTagClass(rule.mode_override)" />
                             <FontAwesomeIcon
                                 :icon="rule.is_active ? 'fal fa-check' : 'fal fa-times'"
-                                :class="rule.is_active ? 'text-green-600' : 'text-red-600'"
+                                :class="rule.is_active ? 'text-green-600' : 'text-red-600'" fixed-width
                             />
                         </div>
                     </div>
@@ -785,14 +785,14 @@ const createPolicy = (): void => {
                                 >
                                     <template #option="slotProps">
                                         <div class="flex items-center gap-2">
-                                            <FontAwesomeIcon :icon="slotProps.option.icon" />
+                                            <FontAwesomeIcon :icon="slotProps.option.icon" fixed-width />
                                             <span>{{ slotProps.option.label }}</span>
                                         </div>
                                     </template>
                                 </SelectButton>
                                 <div class="flex items-center gap-2">
                                     <FontAwesomeIcon :icon="rule.is_active ? 'fal fa-check' : 'fal fa-times'"
-                                        :class="rule.is_active ? 'text-green-600' : 'text-red-600'" />
+                                        :class="rule.is_active ? 'text-green-600' : 'text-red-600'" fixed-width />
                                 </div>
                             </div>
                             <Button type="negative" size="xs" :icon="faTrash" :label="trans('Delete')" @click="deleteRule(rule.id)" />
@@ -912,7 +912,7 @@ const createPolicy = (): void => {
                                 <div class="flex items-center gap-2">
                                     <FontAwesomeIcon
                                         :icon="rule.is_active ? 'fal fa-check' : 'fal fa-times'"
-                                        :class="rule.is_active ? 'text-green-600' : 'text-red-600'"
+                                        :class="rule.is_active ? 'text-green-600' : 'text-red-600'" fixed-width
                                     />
                                 </div>
                             </div>
@@ -981,7 +981,7 @@ const createPolicy = (): void => {
                             <span>{{ modeLabel(rule.mode_override) }}</span>
                             <FontAwesomeIcon
                                 :icon="rule.is_active ? 'fal fa-check' : 'fal fa-times'"
-                                :class="rule.is_active ? 'text-green-600' : 'text-red-600'"
+                                :class="rule.is_active ? 'text-green-600' : 'text-red-600'" fixed-width
                             />
                         </div>
                         <Button type="negative" size="xs" :icon="faTrash" :label="trans('Delete')" @click="removeHybridDraftRule(rule.day_of_week)" />

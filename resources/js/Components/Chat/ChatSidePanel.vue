@@ -418,14 +418,14 @@ onMounted(async () => {
 			class="fixed right-[25rem] top-[120px] z-[9999] w-[450px] h-[calc(100vh-180px)] bg-white flex flex-col rounded-xl shadow-2xl ring-1 ring-gray-200 overflow-hidden">
 			<div class="px-4 py-3 border-b relative">
 				<button class="absolute right-4 top-3 p-1 rounded hover:bg-gray-100" @click="emit('close')">
-					<FontAwesomeIcon :icon="faClose" class="text-base text-gray-400" />
+					<FontAwesomeIcon :icon="faClose" class="text-base text-gray-400" fixed-width />
 				</button>
 				<div class="flex flex-col items-center gap-2 text-center">
 					<div
 						class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100 text-gray-500">
 						<Image v-if="avatarUrl" :src="avatarUrl" class="w-full h-full rounded-full object-cover" />
 
-						<FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+						<FontAwesomeIcon v-else :icon="faUser" class="text-sm" fixed-width />
 					</div>
 
 					<div class="leading-tight">
@@ -612,7 +612,7 @@ onMounted(async () => {
 								:key="tag.id"
 								class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium bg-indigo-50 text-indigo-700 border-indigo-200"
 							>
-								<FontAwesomeIcon :icon="faTag" class="text-[9px] opacity-70" />
+								<FontAwesomeIcon :icon="faTag" class="text-[9px] opacity-70" fixed-width />
 								{{ tag.name }}
 							</span>
 						</div>
@@ -628,7 +628,7 @@ onMounted(async () => {
 						<button
 							class="w-full px-3 py-2 buttonPrimary rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50"
 							:disabled="isSyncing || !syncEmail" @click="onSyncByEmail">
-							<FontAwesomeIcon :icon="faSync" class="text-base text-white" />
+							<FontAwesomeIcon :icon="faSync" class="text-base text-white" fixed-width />
 							{{ isSyncing ? trans("Syncing...") : trans("Sync by email") }}
 						</button>
 						<AlertMessage v-if="syncEmailAlert" :alert="syncEmailAlert" />
@@ -649,7 +649,7 @@ onMounted(async () => {
 						<div class="text-gray-500 text-sm">{{ trans("Status") }}</div>
 						<div class="flex items-center text-sm">
 							<FontAwesomeIcon :icon="statusIcon(props.session?.status)" class="mr-1 text-sm"
-								:class="statusClass(props.session?.status)" />
+								:class="statusClass(props.session?.status)" fixed-width />
 							{{ capitalize(props.session?.status || "") }}
 						</div>
 					</div>
@@ -658,14 +658,14 @@ onMounted(async () => {
 						<div v-if="!isEditingPriority" class="flex items-center text-sm cursor-pointer"
 							@click="isEditingPriority = true">
 							<FontAwesomeIcon :icon="priorityIcon(currentPriority)" class="mr-1 text-sm"
-								:class="priorityClass(currentPriority)" />
+								:class="priorityClass(currentPriority)" fixed-width />
 							{{ capitalize(currentPriority || "") }}
 						</div>
 						<div v-else class="flex flex-wrap items-center gap-2">
 							<button v-for="opt in priorityOptions" :key="opt" :disabled="isUpdatingPriority"
 								class="items-center justify-center border px-2 py-0.5 rounded-sm text-[11px]"
 								:class="priorityClass(opt)" @click="updatePriority(opt)">
-								<FontAwesomeIcon :icon="priorityIcon(opt)" class="mr-1 text-xs" />
+								<FontAwesomeIcon :icon="priorityIcon(opt)" class="mr-1 text-xs" fixed-width />
 								{{ capitalize(opt) }}
 							</button>
 							<button class="px-2 py-1 text-xs border rounded" :disabled="isUpdatingPriority"
@@ -736,7 +736,7 @@ onMounted(async () => {
 						{{ trans("Loading...") }}
 					</div>
 					<div v-else-if="!customerProfile.stats" class="flex flex-col items-center justify-center py-10 text-gray-400">
-						<FontAwesomeIcon :icon="faChartLine" class="text-2xl mb-2 opacity-30" />
+						<FontAwesomeIcon :icon="faChartLine" class="text-2xl mb-2 opacity-30" fixed-width />
 						<p class="text-xs">{{ trans("No statistics available") }}</p>
 					</div>
 					<div v-else class="space-y-5">
@@ -802,7 +802,7 @@ onMounted(async () => {
 						<div class="h-4 bg-gray-100 rounded animate-pulse w-1/2" />
 					</div>
 					<div v-else-if="timelineError" class="flex flex-col items-center justify-center py-10 gap-2 text-center px-4">
-						<FontAwesomeIcon :icon="faClose" class="text-2xl text-red-300" />
+						<FontAwesomeIcon :icon="faClose" class="text-2xl text-red-300" fixed-width />
 						<p class="text-sm text-red-500">{{ timelineError }}</p>
 					</div>
 					<CustomerTimeline v-else :data="timelineData" />

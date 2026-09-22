@@ -128,6 +128,8 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
+use App\Actions\Helpers\Media\SaveModelImages;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Decorators\JobDecorator;
@@ -2677,3 +2679,61 @@ test('locked webpage edit access can be requested, allowed temporarily and decli
     get(route('grp.org.shops.show.web.webpages.workshop', [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
 })->depends('create webpage');
+
+test('iris page render data is cached deflated and entries written before that still read', function () {
+    config(['iris.cache.webpage.ttl' => 60]);
+    $key = 'iris_webpage_cache_test_out_1';
+    cache()->forget($key);
+
+    $pageData = ['status' => 'ok', 'web_blocks' => array_fill(0, 200, ['type' => 'family', 'layout' => ['title' => 'Bath bombs']])];
+
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => $pageData))->toBe($pageData)
+        ->and(cache()->get($key))->toBeString()
+        ->and(strlen(cache()->get($key)))->toBeLessThan(strlen(serialize($pageData)) / 4)
+        ->and(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe($pageData);
+
+    cache()->put($key, ['status' => 'written before'], 60);
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe(['status' => 'written before']);
+
+    cache()->put($key, 'not a deflated page', 60);
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe(['status' => 'rebuilt'])
+        ->and(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'again']))->toBe(['status' => 'rebuilt']);
+
+    cache()->forget($key);
+});
+
+test('a catalogue webpage with no share image of its own shares the image of its product', function (array $catalogue) {
+    Storage::fake('public');
+
+    $product        = $catalogue['product'];
+    $productWebpage = $catalogue['productWebpage'];
+
+    expect(GetWebpageSeo::run($productWebpage)['share_image']['url'])->toBeNull();
+
+    $fakeImage = UploadedFile::fake()->image('bath-bomb.jpg');
+    SaveModelImages::run(
+        model: $product,
+        mediaData: [
+            'path'         => Storage::disk('public')->path($fakeImage->store('photos', 'public')),
+            'originalName' => $fakeImage->getClientOriginalName(),
+        ],
+        mediaScope: 'product_images',
+        modelHasMediaData: ['scope' => 'photo']
+    );
+    $product->refresh();
+    $productWebpage->refresh();
+
+    $seo = GetWebpageSeo::run($productWebpage);
+
+    expect($seo['share_image']['url'])->not->toBeNull()
+        ->and($seo['share_image']['alt'])->toBe($seo['title'])
+        ->and(ShowIrisWebpage::make()->getWebpageData($productWebpage->id, [], false)['webpage_img'])->not->toBeEmpty();
+
+    $chosen = UpdateWebpage::make()->action($productWebpage, ['seo_image_url' => 'https://cdn.example.com/chosen.png', 'seo_image_alt' => 'Chosen by hand']);
+    $chosenSeo = GetWebpageSeo::run($chosen);
+
+    expect($chosenSeo['share_image']['url'])->toBe('https://cdn.example.com/chosen.png')
+        ->and($chosenSeo['share_image']['alt'])->toBe('Chosen by hand');
+
+    UpdateWebpage::make()->action($chosen, ['seo_image_url' => null]);
+})->depends('create catalogue webpages');

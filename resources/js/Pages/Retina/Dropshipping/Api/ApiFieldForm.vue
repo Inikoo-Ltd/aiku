@@ -108,7 +108,7 @@ defineExpose({
             <dt v-if="!fieldData.noTitle && fieldData.label" class="text-sm font-medium text-gray-400">
                 <div class="inline-flex items-start leading-none">
                     {{ fieldData.label }}
-                    <FontAwesomeIcon v-if="fieldData.required" icon="fas fa-asterisk" class="font-light text-[12px] text-red-400 mr-1"/>
+                    <FontAwesomeIcon v-if="fieldData.required" icon="fas fa-asterisk" class="font-light text-[12px] text-red-400 mr-1" fixed-width/>
                 </div>
             </dt>
 
@@ -128,7 +128,7 @@ defineExpose({
 
                     <!-- Verification: Label -->
                     <div v-if="labelVerification" class="mt-1" :class="classVerification">
-                        <FontAwesomeIcon icon='fal fa-info-circle' class='opacity-80' aria-hidden='true' />
+                        <FontAwesomeIcon icon='fal fa-info-circle' class='opacity-80' fixed-width aria-hidden='true' />
                         <span class="ml-1 font-medium">{{ labelVerification }}</span>
                     </div>
                 </div>
@@ -139,20 +139,20 @@ defineExpose({
                     <button v-if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
                         <template v-if="form.isDirty">
                             <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
-                            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                         </template>
                         <!-- <FontAwesomeIcon v-else-if="form.recentlySuccessful" icon="fas fa-check-circle" class="h-7 aspect-square text-green-500" aria-hidden="true" /> -->
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                     </button>
 
                     <!-- Verification: Button -->
                     <span v-else>
-                        <FontAwesomeIcon v-if="isVerificationLoading" icon='fad fa-spinner-third' class='animate-spin h-8 text-gray-500 hover:text-gray-600 cursor-pointer' aria-hidden='true' />
+                        <FontAwesomeIcon v-if="isVerificationLoading" icon='fad fa-spinner-third' class='animate-spin h-8 text-gray-500 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-else @click="isVerificationDirty ? checkVerification() : ''"
                             icon='fas fa-question'
                             class='h-8'
                             :class="isVerificationDirty ? 'text-gray-500 hover:text-gray-600 cursor-pointer' : 'text-gray-300'"
-                            aria-hidden='true' />
+                            fixed-width aria-hidden='true' />
                     </span>
                 </span>
             </dd>

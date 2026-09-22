@@ -75,7 +75,7 @@ const isUserMac = navigator.platform.includes('Mac')
             <button @click="showSearchDialog = !showSearchDialog" id="search"
                 class="h-7 w-fit flex items-center justify-center gap-x-3 ring-1 ring-gray-300 rounded-md px-3 text-gray-500 hover:bg-gray-200 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
                 <span class="sr-only">{{ trans("Search") }}</span>
-                <FontAwesomeIcon aria-hidden="true" size="sm" icon="fa-regular fa-search" />
+                <FontAwesomeIcon fixed-width aria-hidden="true" size="sm" icon="fa-regular fa-search" />
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
                     <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none text-xl rounded">⌘</span>
                     <span v-else class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0.5 text-xs rounded">Ctrl</span>
@@ -209,7 +209,7 @@ const isUserMac = navigator.platform.includes('Mac')
                     <Popover position="right-0 max-sm:fixed max-sm:inset-x-2 max-sm:top-12 max-sm:mt-0" width="w-auto">
                         <template #button>
                             <div tabindex="-1" class="relative text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                                <FontAwesomeIcon aria-hidden="true" icon="fa-regular fa-bell" size="lg" />
+                                <FontAwesomeIcon fixed-width aria-hidden="true" icon="fa-regular fa-bell" size="lg" />
                                 <FontAwesomeIcon v-if="layout?.notifications?.some(notif => !notif.read)" icon='fas fa-circle' class='animate-pulse text-blue-500 absolute top-[1px] -right-0.5 text-[6px]' fixed-width aria-hidden='true' />
                             </div>
                         </template>

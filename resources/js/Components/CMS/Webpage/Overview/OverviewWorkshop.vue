@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
 							}
 						"
 						style="position: absolute; top: 0; left: 10px; z-index: 10">
-						<FontAwesomeIcon :icon="faImage" class="text-lg h-4 text-indigo-500" />
+						<FontAwesomeIcon :icon="faImage" class="text-lg h-4 text-indigo-500" fixed-width />
 					</button>
 
 					<Image :src="image.sources" />

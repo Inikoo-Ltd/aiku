@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { get } from 'lodash-es'
 import DatePicker from 'primevue/datepicker'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
+import ToggleSwitch from 'primevue/toggleswitch'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPlus, faTrash, faChevronCircleDown, faChevronCircleUp } from '@fal'
@@ -81,7 +82,7 @@ const dayLabels: Record<number, string> = {
 const allIsos = [1, 2, 3, 4, 5, 6, 7]
 
 type BreakRow = { name: string; start: Date | null; end: Date | null; paid: boolean }
-type DayRow = { start: Date | null; end: Date | null; breaks: BreakRow[] }
+type DayRow = { start: Date | null; end: Date | null; breaks: BreakRow[]; working: boolean }
 type GroupKey = 'weekday' | 'weekend'
 
 const groupDefs: { key: GroupKey; label: string; isos: number[] }[] = [
@@ -90,8 +91,16 @@ const groupDefs: { key: GroupKey; label: string; isos: number[] }[] = [
 ]
 
 const days: Record<number, DayRow> = reactive(
-    Object.fromEntries(allIsos.map(iso => [iso, { start: null, end: null, breaks: [] }]))
+    Object.fromEntries(allIsos.map(iso => [iso, { start: null, end: null, breaks: [], working: true }]))
 )
+
+// The organisation's hours, shown until this employee is given their own.
+const isInherited = computed(() => !!props.form[props.fieldName]?.inherited)
+
+// Days the schedule already had something to say about, plus any the user switches by hand.
+// Anything else is left out of the payload, so opening the form does not mark it as edited
+// and a day nobody has an opinion on stays unwritten.
+const stated = reactive(new Set<number>())
 
 const ui = reactive<Record<GroupKey, boolean>>({ weekday: false, weekend: false })
 
@@ -110,22 +119,28 @@ let suppressNextHydrate = false
 let syncingGroupFromDays = false
 let syncingGroupBreaksFromDays = false
 
+// Only the days that are worked have a say in what the group row shows: a switched off Friday
+// should not blank out the Weekdays row for the four days that are worked.
+const workedIsos = (isos: number[]) => isos.filter(iso => days[iso].working)
+
 const syncGroupFromDays = (key: GroupKey, isos: number[]) => {
-    const first = days[isos[0]]
-    const consistent = isos.every(iso => sameTime(days[iso].start, first.start) && sameTime(days[iso].end, first.end))
+    const worked = workedIsos(isos)
+    const first = worked.length ? days[worked[0]] : null
+    const consistent = !!first && worked.every(iso => sameTime(days[iso].start, first.start) && sameTime(days[iso].end, first.end))
 
     syncingGroupFromDays = true
-    group[key].start = consistent ? first.start : null
-    group[key].end = consistent ? first.end : null
+    group[key].start = consistent ? first!.start : null
+    group[key].end = consistent ? first!.end : null
     setTimeout(() => syncingGroupFromDays = false)
 }
 
 const syncGroupBreaksFromDays = (key: GroupKey, isos: number[]) => {
-    const first = days[isos[0]].breaks
-    const consistent = isos.every(iso => breaksEqual(days[iso].breaks, first))
+    const worked = workedIsos(isos)
+    const first = worked.length ? days[worked[0]].breaks : null
+    const consistent = !!first && worked.every(iso => breaksEqual(days[iso].breaks, first))
 
     syncingGroupBreaksFromDays = true
-    groupBreaks[key] = consistent ? first.map(cloneBreak) : []
+    groupBreaks[key] = consistent ? first!.map(cloneBreak) : []
     setTimeout(() => syncingGroupBreaksFromDays = false)
 }
 
@@ -139,6 +154,12 @@ const initFromForm = (val: any) => {
 
         days[iso].start = parseTime(dayData?.s ?? null)
         days[iso].end = parseTime(dayData?.e ?? null)
+        // A day without hours is not a day that is worked, whether it was switched off or
+        // simply never filled in.
+        days[iso].working = dayData ? (dayData.w ?? true) && !!(dayData.s && dayData.e) : false
+        if (dayData) {
+            stated.add(iso)
+        }
         days[iso].breaks = Array.isArray(dayData?.b)
             ? dayData.b.map((b: any) => ({
                 name: b.n ?? '',
@@ -177,7 +198,7 @@ groupDefs.forEach(({ key, isos }) => {
     watch(() => [group[key].start, group[key].end], () => {
         if (hydrating || syncingGroupFromDays) return
 
-        isos.forEach(iso => {
+        workedIsos(isos).forEach(iso => {
             days[iso].start = group[key].start
             days[iso].end = group[key].end
         })
@@ -190,11 +211,24 @@ groupDefs.forEach(({ key, isos }) => {
     watch(() => groupBreaks[key], () => {
         if (hydrating || syncingGroupBreaksFromDays) return
 
-        isos.forEach(iso => {
+        workedIsos(isos).forEach(iso => {
             days[iso].breaks = groupBreaks[key].map(cloneBreak)
         })
     }, { deep: true })
 })
+
+// A group's switch reads as on only when every day under it is worked, and flipping it sets
+// all of them: the quick way to say "no weekends" or "this one does not work Fridays".
+const groupWorking = (key: GroupKey) => groupDefs.find(g => g.key === key)!.isos.every(iso => days[iso].working)
+
+const setGroupWorking = (key: GroupKey, working: boolean) => {
+    groupDefs.find(g => g.key === key)!.isos.forEach(iso => setDayWorking(iso, working))
+}
+
+const setDayWorking = (iso: number, working: boolean) => {
+    stated.add(iso)
+    days[iso].working = working
+}
 
 const addBreak = (iso: number) => {
     days[iso].breaks.push({ name: '', start: null, end: null, paid: false })
@@ -220,11 +254,18 @@ const buildPayload = () => {
         const s = formatTime(day.start)
         const e = formatTime(day.end)
 
-        if (!s && !e && day.breaks.length === 0) return
+        if (!day.working || !s || !e) {
+            if (stated.has(iso)) {
+                result.data[iso] = { s: null, e: null, w: false, b: [] }
+            }
+
+            return
+        }
 
         result.data[iso] = {
             s,
             e,
+            w: true,
             b: day.breaks
                 .filter(b => b.start && b.end)
                 .map(b => ({
@@ -254,6 +295,10 @@ watch(days, () => {
 
 <template>
     <div class="space-y-3">
+        <p v-if="isInherited" class="flex items-start gap-1.5 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            {{ trans("These are the organisation's hours. Saving gives this employee their own copy, which stops following the organisation's later changes.") }}
+        </p>
+
         <div class="border rounded-xl overflow-hidden bg-white">
             <div
                 class="items-center px-4 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wide border-b"
@@ -274,8 +319,14 @@ watch(days, () => {
                                 :aria-label="trans('Show individual days')"
                                 @click="ui[g.key] = !ui[g.key]"
                             >
-                                <FontAwesomeIcon :icon="ui[g.key] ? faChevronCircleUp : faChevronCircleDown" />
+                                <FontAwesomeIcon :icon="ui[g.key] ? faChevronCircleUp : faChevronCircleDown" fixed-width />
                             </button>
+                            <ToggleSwitch
+                                :modelValue="groupWorking(g.key)"
+                                v-tooltip="groupWorking(g.key) ? trans('Worked') : trans('Not worked')"
+                                :aria-label="trans('Worked')"
+                                @update:modelValue="setGroupWorking(g.key, $event)"
+                            />
                             {{ trans(g.label) }}
                         </div>
 
@@ -283,6 +334,7 @@ watch(days, () => {
                             <DatePicker
                                 v-model="group[g.key].start"
                                 timeOnly fluid :showClear="true"
+                                :disabled="!groupWorking(g.key)"
                                 :placeholder="trans('Start')"
                                 inputClass="text-sm"
                             />
@@ -292,13 +344,14 @@ watch(days, () => {
                             <DatePicker
                                 v-model="group[g.key].end"
                                 timeOnly fluid :showClear="true"
+                                :disabled="!groupWorking(g.key)"
                                 :placeholder="trans('Finish')"
                                 inputClass="text-sm"
                             />
                         </div>
                     </div>
 
-                    <div class="px-4 pb-3 space-y-2" :style="{ marginLeft: dayColumnWidth }">
+                    <div v-if="groupWorking(g.key)" class="px-4 pb-3 space-y-2" :style="{ marginLeft: dayColumnWidth }">
                         <div
                             v-for="(b, index) in groupBreaks[g.key]"
                             :key="index"
@@ -324,7 +377,7 @@ watch(days, () => {
                             class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 py-1"
                             @click="addGroupBreak(g.key)"
                         >
-                            <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" />
+                            <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" fixed-width />
                             {{ trans('Add break') }}
                         </button>
                     </div>
@@ -333,9 +386,17 @@ watch(days, () => {
                 <div v-if="ui[g.key]">
                     <div v-for="iso in g.isos" :key="iso" class="border-t">
                         <div class="items-center px-4 py-2.5" :style="gridStyle">
-                            <div class="text-sm text-gray-600 pl-6">{{ trans(dayLabels[iso]) }}</div>
+                            <div class="flex items-center gap-2 pl-6 text-sm" :class="days[iso].working ? 'text-gray-600' : 'text-gray-400'">
+                                <ToggleSwitch
+                                    :modelValue="days[iso].working"
+                                    v-tooltip="days[iso].working ? trans('Worked') : trans('Not worked')"
+                                    :aria-label="trans('Worked')"
+                                    @update:modelValue="setDayWorking(iso, $event)"
+                                />
+                                {{ trans(dayLabels[iso]) }}
+                            </div>
 
-                            <div class="pr-3">
+                            <div v-if="days[iso].working" class="pr-3">
                                 <DatePicker
                                     v-model="days[iso].start"
                                     timeOnly fluid :showClear="true"
@@ -344,7 +405,7 @@ watch(days, () => {
                                 />
                             </div>
 
-                            <div>
+                            <div v-if="days[iso].working">
                                 <DatePicker
                                     v-model="days[iso].end"
                                     timeOnly fluid :showClear="true"
@@ -352,9 +413,17 @@ watch(days, () => {
                                     inputClass="text-sm"
                                 />
                             </div>
+
+                            <div v-else class="col-span-2 text-sm italic text-gray-400">
+                                {{ trans('Not a working day') }}
+                            </div>
+
+                            <div v-if="days[iso].working && !(days[iso].start && days[iso].end)" class="col-span-3 pl-6 pt-1 text-xs text-gray-400">
+                                {{ trans('Without both a start and a finish this day is saved as not worked.') }}
+                            </div>
                         </div>
 
-                        <div class="px-4 pb-3 space-y-2" :style="{ marginLeft: dayColumnWidth }">
+                        <div v-if="days[iso].working" class="px-4 pb-3 space-y-2" :style="{ marginLeft: dayColumnWidth }">
                             <div
                                 v-for="(b, index) in days[iso].breaks"
                                 :key="index"
@@ -380,7 +449,7 @@ watch(days, () => {
                                 class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 py-1"
                                 @click="addBreak(iso)"
                             >
-                                <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" />
+                                <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" fixed-width />
                                 {{ trans('Add break') }}
                             </button>
                         </div>

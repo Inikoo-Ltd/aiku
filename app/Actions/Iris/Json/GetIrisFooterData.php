@@ -9,6 +9,7 @@
 namespace App\Actions\Iris\Json;
 
 use Throwable;
+use App\Actions\Web\MakeLayoutLinksRootRelative;
 use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Models\DevOps\AppDeployment;
 use App\Models\Web\Website;
@@ -42,8 +43,10 @@ class GetIrisFooterData
             $isFooterActive = Arr::get($footerLayout, 'status');
 
             return [
-                'footer' => RefreshGrpAssetUrls::run(
-                    $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
+                'footer' => MakeLayoutLinksRootRelative::run(
+                    RefreshGrpAssetUrls::run(
+                        $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
+                    )
                 ),
             ];
         };

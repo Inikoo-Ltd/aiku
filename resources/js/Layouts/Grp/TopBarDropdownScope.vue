@@ -340,7 +340,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
 <template>
     <div>
         <div class="flex items-center gap-x-1.5 px-1 mb-1">
-            <FontAwesomeIcon :icon="icon" class="text-gray-400 text-xxs" aria-hidden="true" />
+            <FontAwesomeIcon :icon="icon" class="text-gray-400 text-xxs" fixed-width aria-hidden="true" />
             <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ label }}</span>
             <hr class="w-full rounded-full border-slate-300">
         </div>
@@ -352,7 +352,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                     sortedMenuItems[0].slug == layout.currentParams?.organisation ? 'bg-slate-300 text-slate-600' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
                     'group flex gap-x-2 w-full justify-start items-center rounded pl-2 pr-4 py-2 text-sm cursor-pointer',
                 ]">
-                    <FontAwesomeIcon icon="fal fa-city" class="" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-city" class="" fixed-width aria-hidden="true" />
                     <div class="space-x-1 whitespace-nowrap">
                         <span class="font-semibold">{{ layout.group?.label }}</span>
                         <span class="text-[9px] leading-none text-gray-400">({{ trans("Group") }})</span>
@@ -405,7 +405,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                         class="text-xs flex-shrink-0 transition-colors"
                         :style="hoveredOrgSlug === item.slug && item.slug != layout.currentParams?.organisation ? { color: themeColor } : {}"
                         :class="item.slug == layout.currentParams?.organisation ? 'opacity-70' : hoveredOrgSlug === item.slug ? '' : 'text-gray-400'"
-                        aria-hidden="true"
+                        fixed-width aria-hidden="true"
                     />
                 </a>
                 </component>
@@ -445,7 +445,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 <!-- Section: Shops list -->
                 <template v-if="getShopsForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1">
-                        <FontAwesomeIcon icon="fal fa-store-alt" class="text-gray-400 text-xxs" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-store-alt" class="text-gray-400 text-xxs" fixed-width aria-hidden="true" />
                         <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ trans('Shops') }}</span>
                         <hr class="w-full rounded-full border-slate-300">
                     </div>
@@ -474,7 +474,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 <!-- Section: Fulfilment list -->
                 <template v-if="getFulfilmentsForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1" :class="getShopsForOrg(hoveredOrgSlug).length ? 'mt-2' : ''">
-                        <FontAwesomeIcon icon="fal fa-hand-holding-box" class="text-gray-400 text-xxs" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-hand-holding-box" class="text-gray-400 text-xxs" fixed-width aria-hidden="true" />
                         <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ trans('Fulfilments') }}</span>
                         <hr class="w-full rounded-full border-slate-300">
                     </div>
@@ -500,7 +500,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                 <!-- Section: Warehouse list -->
                 <template v-if="getWarehousesForOrg(hoveredOrgSlug).length">
                     <div class="flex items-center gap-x-1.5 px-1 mb-1" :class="getShopsForOrg(hoveredOrgSlug).length || getFulfilmentsForOrg(hoveredOrgSlug).length ? 'mt-2' : ''">
-                        <FontAwesomeIcon icon="fal fa-warehouse-alt" class="text-gray-400 text-xxs" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-warehouse-alt" class="text-gray-400 text-xxs" fixed-width aria-hidden="true" />
                         <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ trans('Warehouses') }}</span>
                         <hr class="w-full rounded-full border-slate-300">
                     </div>

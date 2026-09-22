@@ -168,7 +168,7 @@ const togglePopover = (event: Event, popoverRef: any) => {
           @click="(e) => deletePayment(e, index)"
           class="absolute top-2 right-2 text-xs p-1 focus:outline-none"
         >
-          <FontAwesomeIcon :icon="['fas','times']" class="text-red-500 text-sm" />
+          <FontAwesomeIcon :icon="['fas','times']" class="text-red-500 text-sm" fixed-width />
         </button>
 
         <img v-if="item.image" class="h-20 w-20 object-contain" :src="item.image" loading="lazy" decoding="async" />

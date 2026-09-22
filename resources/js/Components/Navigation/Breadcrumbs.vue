@@ -180,12 +180,12 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                 <div class="flex items-center">
                     <!-- Shorter Breadcrumb on Mobile size -->
                     <div v-if="breadcrumbs.length > 2 && breadcrumbIdx != 0" class="md:hidden flex items-center">
-                        <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
+                        <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" fixed-width aria-hidden="true" />
                         <span>...</span>
                     </div>
                     
                     <template v-if="breadcrumb.type === 'simple'">
-                        <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
+                        <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" fixed-width aria-hidden="true" />
                         <component
                             :is="breadcrumb.simple.url || breadcrumb.simple.route?.name ? Link : 'span'"
                             xclass="'' || ''"
@@ -204,15 +204,15 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     
                     <!-- Section: Create Model -->
                     <template v-else-if="breadcrumb.type === 'creatingModel'">
-                        <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-yellow-500 ml-2" icon="fas fa-sparkles" aria-hidden="true" />
+                        <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-yellow-500 ml-2" icon="fas fa-sparkles" fixed-width aria-hidden="true" />
                         <span class="text-yellow-600 opacity-75"> {{ breadcrumb.creatingModel.label }}</span>
                     </template>
                     <template v-else-if="breadcrumb.type === 'modelWithIndex'">
                         <div class="hidden md:inline-flex">
-                            <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50 place-self-center" icon="fa-regular fa-chevron-right" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50 place-self-center" icon="fa-regular fa-chevron-right" fixed-width aria-hidden="true" />
                             <component :is="breadcrumb.modelWithIndex?.index?.url || breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'"  class="hover:text-gray-700 grid grid-flow-col items-center"
                                 :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' ">
-                                <FontAwesomeIcon icon="fal fa-bars" class="flex-shrink-0 h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-bars" class="flex-shrink-0 h-3.5 w-3.5 mr-1" fixed-width aria-hidden="true" />
                                 <span>{{ breadcrumb.modelWithIndex.index.label }}</span> <span v-if="breadcrumb.modelWithIndex.index.suffix" class="ml-1 italic"> {{ breadcrumb.modelWithIndex.index.suffix }} </span>
                             </component>
                         </div>
@@ -246,10 +246,10 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             :style="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                         >
                             <!-- Icon Section -->
-                            <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx == 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx == 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" fixed-width aria-hidden="true" />
 
                             <!-- Icon Arrow -->
-                            <FontAwesomeIcon v-if="breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" fixed-width aria-hidden="true" />
                             <span v-if="breadcrumbIdx == 0 && !breadcrumb.simple.label" class="grid grid-flow-cols justify-center font-bold ml-2">
                                 DASHBOARD
                             </span>
@@ -258,7 +258,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             </span>
 
                             <!-- Icon List (Simple) -->
-                            <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" fixed-width aria-hidden="true" />
                         </component>
                     </template>
 
@@ -274,13 +274,13 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                                 :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' "
                                 :style="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                             >
-                                <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
+                                <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" fixed-width aria-hidden="true" />
                                 <span class="md:text-xs ml-4 mr-3">
                                     {{ breadcrumb.modelWithIndex.index.label }}
                                 </span>
 
                                 <!-- Icon List -->
-                                <FontAwesomeIcon :icon="['fal', 'bars']" class="flex-shrink-0 h-3.5 w-3.5" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="['fal', 'bars']" class="flex-shrink-0 h-3.5 w-3.5" fixed-width aria-hidden="true" />
                             </component>
 
                             <!-- Subpage -->
@@ -288,7 +288,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                                 :href="breadcrumb.modelWithIndex?.model.url ? breadcrumb.modelWithIndex?.model.url : breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'"
                                 :style="{ paddingLeft: 12 + (breadcrumbIdx + 1) * 7 + 'px', }"
                             >
-                                <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
+                                <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-gray-300" icon="fa fa-arrow-from-left" fixed-width aria-hidden="true" />
                                 <span class="ml-4 mr-3">
                                     {{ breadcrumb.modelWithIndex.model.label }}
                                 </span>
@@ -307,7 +307,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                 v-tooltip="trans('Guide') + ': ' + help.title"
                 :aria-label="trans('Guide') + ': ' + help.title"
             >
-                <FontAwesomeIcon icon="fal fa-question-circle" aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-question-circle" fixed-width aria-hidden="true" />
             </a>
 
             <!-- Button: Bookmark -->
@@ -319,7 +319,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             v-tooltip="isCurrentPageBookmarked ? trans('Remove bookmark') : trans('Bookmark this page')"
                         >
                             <LoadingIcon v-if="isSavingBookmarks" />
-                            <FontAwesomeIcon v-else :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" aria-hidden="true" />
+                            <FontAwesomeIcon v-else :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" fixed-width aria-hidden="true" />
                         </div>
                     </template>
 
@@ -329,7 +329,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                                 @click="toggleBookmarkCurrentPage"
                                 class="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer"
                             >
-                                <FontAwesomeIcon :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" class="flex-shrink-0 h-3.5 w-3.5" :class="isCurrentPageBookmarked ? 'text-indigo-500' : ''" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" class="flex-shrink-0 h-3.5 w-3.5" :class="isCurrentPageBookmarked ? 'text-indigo-500' : ''" fixed-width aria-hidden="true" />
                                 <span>{{ isCurrentPageBookmarked ? trans('Remove bookmark') : trans('Bookmark this page') }}</span>
                             </button>
 
@@ -348,7 +348,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                                         </div>
                                     </Link>
                                     <button @click="removeBookmark(bookmark)" class="flex-shrink-0 p-1 text-red-500 opacity-50 hover:opacity-100 cursor-pointer" v-tooltip="trans('Remove bookmark')">
-                                        <FontAwesomeIcon icon="fal fa-trash-alt" class="h-3 w-3" aria-hidden="true" />
+                                        <FontAwesomeIcon icon="fal fa-trash-alt" class="h-3 w-3" fixed-width aria-hidden="true" />
                                     </button>
                                 </div>
                             </div>
@@ -368,9 +368,9 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     :aria-label="ctrans('Previous')"
                 >
                     <LoadingIcon v-if="isLoading === 'bcBack'" />
-                    <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="" aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="" fixed-width aria-hidden="true" />
                 </Link>
-                <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="opacity-20" aria-hidden="true" />
+                <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="opacity-20" fixed-width aria-hidden="true" />
             </div>
             
             <!-- Button: Parent -->
@@ -384,7 +384,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     :aria-label="ctrans('Up')"
                 >
                     <LoadingIcon v-if="isLoading === 'bcUp'" />
-                    <FontAwesomeIcon v-else icon="fas fa-arrow-up" class="" aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fas fa-arrow-up" class="" fixed-width aria-hidden="true" />
                 </Link>
             </div>
 
@@ -399,9 +399,9 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >
                     <LoadingIcon v-if="isLoading === 'bcNext'" />
-                    <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="" aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="" fixed-width aria-hidden="true" />
                 </Link>
-                <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="opacity-20" aria-hidden="true" />
+                <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="opacity-20" fixed-width aria-hidden="true" />
             </div>
         </div>
     </nav>

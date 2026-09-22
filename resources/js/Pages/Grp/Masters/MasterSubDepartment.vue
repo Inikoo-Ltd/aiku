@@ -177,7 +177,7 @@ async function deleteItem() {
                                class="flex items-center gap-2 text-sm transition-colors duration-150" :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" fixed-width />
                         <span class="">{{ item.label || "-" }}</span>
                     </component>
                 </div>

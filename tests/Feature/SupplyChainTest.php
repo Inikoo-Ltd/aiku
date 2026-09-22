@@ -687,6 +687,20 @@ test('UI supply chain control', function () {
     });
 });
 
+test('UI supply chain PO journey', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.po_journey.dashboard'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/SupplyChainPurchaseOrderJourney')
+            ->has('title')
+            ->has('pageHead')
+            ->has('ribbons')
+            ->has('summary');
+    });
+});
+
 test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
     $supplier = Supplier::first();
@@ -979,4 +993,12 @@ test('UI get section route group supply chain index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.supply-chain.suppliers.index', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::GROUP_SUPPLY_CHAIN->value);
+});
+
+test('housekeep purchase orders flags legacy open orders and undo removes the flag', function () {
+    $flagged = \App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0);
+    expect($flagged)->toBeGreaterThanOrEqual(0);
+    $response = $this->get(route('grp.supply-chain.po_journey.dashboard'));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplyChainPurchaseOrderJourney'));
+    expect(\App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0, true))->toBe($flagged);
 });

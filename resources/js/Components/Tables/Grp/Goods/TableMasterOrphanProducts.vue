@@ -216,8 +216,8 @@ function onCancel(item) {
             </div>
         </template>
         <template #cell(status)="{ item: masterProduct }">
-            <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="trans('Active')" />
-            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="trans('Inactive')" />
+            <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="trans('Active')" fixed-width />
+            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="trans('Inactive')" fixed-width />
         </template>
 
         <template #cell(master_shop_code)="{ item: masterProduct }">
@@ -276,10 +276,10 @@ function onCancel(item) {
                     mode="currency" :currency="product.currency_code" :step="0.25" showButtons
                     button-layout="horizontal" inputClass="w-full text-xs">
                     <template #incrementbuttonicon>
-                        <FontAwesomeIcon :icon="faPlus" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
                     </template>
                     <template #decrementbuttonicon>
-                        <FontAwesomeIcon :icon="faMinus" />
+                        <FontAwesomeIcon :icon="faMinus" fixed-width />
                     </template>
                 </InputNumber>
                 <span v-else>
@@ -295,10 +295,10 @@ function onCancel(item) {
                     mode="currency" :currency="product.currency_code" :step="0.25" showButtons
                     button-layout="horizontal" inputClass="w-full text-xs">
                     <template #incrementbuttonicon>
-                        <FontAwesomeIcon :icon="faPlus" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
                     </template>
                     <template #decrementbuttonicon>
-                        <FontAwesomeIcon :icon="faMinus" />
+                        <FontAwesomeIcon :icon="faMinus" fixed-width />
                     </template>
                 </InputNumber>
 
@@ -312,7 +312,7 @@ function onCancel(item) {
             <div v-if="editable_table">
                 <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="()=>onEdit(item)">
                     <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
-                        aria-hidden="true" v-tooltip="'edit'" />
+                        fixed-width aria-hidden="true" v-tooltip="'edit'" />
                 </button>
 
                 <span v-else class="flex items-center space-x-3">
@@ -325,9 +325,9 @@ function onCancel(item) {
                             class="text-2xl animate-spin" fixed-width aria-hidden="true" />
 
                         <FontAwesomeIcon v-else-if="editingValues[item.id]" icon="fad fa-save" class="h-8"
-                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
 
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                     </button>
                 </span>
             </div>

@@ -27,6 +27,7 @@ use Illuminate\Support\Arr;
  * @property mixed $currency_code
  * @property mixed $currency_id
  * @property mixed $web_images
+ * @property mixed $marketing_ingredients
  */
 class ProductsApiResource extends JsonResource
 {
@@ -43,6 +44,7 @@ class ProductsApiResource extends JsonResource
             'ean_barcode'       => $this->barcode,
             'description'       => $this->description,
             'description_extra' => $this->description_extra,
+            'ingredients'       => $this->marketing_ingredients,
         ];
 
         if (isset($this->department_name)) {

@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed, inject, nextTick, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router, useForm } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { useTruncate } from "@/Composables/useTruncate"
@@ -155,8 +155,8 @@ const onPrintShipment = async (ship: (typeof props.shipments)[number]) => {
 
 		if (response.data.state === "queued") {
 			notify({
-				title: trans("Got it!"),
-				text: trans("Your shipment label is queued for printing."),
+				title: ctrans("Got it!"),
+				text: ctrans("Your shipment label is queued for printing."),
 				type: "info",
 			})
 		} else if (response.data.state === "error") {
@@ -164,10 +164,12 @@ const onPrintShipment = async (ship: (typeof props.shipments)[number]) => {
 		}
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong."),
-			text: trans(
-				"Failed to print shipment label. Please try again or contact administrator."
-			),
+			title: ctrans("Something went wrong."),
+			text:
+				error?.response?.data?.errors?.messages?.[0] ||
+				error?.response?.data?.message ||
+				error?.message ||
+				ctrans("Failed to print shipment label. Please try again or contact administrator."),
 			type: "error",
 		})
 	} finally {
@@ -206,8 +208,8 @@ const onOpenModalTrackingNumber = async () => {
 	} catch (error) {
 		console.error(error)
 		notify({
-			title: trans("Something went wrong."),
-			text: trans("Failed to retrieve shipper list"),
+			title: ctrans("Something went wrong."),
+			text: ctrans("Failed to retrieve shipper list"),
 			type: "error",
 		})
 	}
@@ -235,7 +237,7 @@ const onSubmitShipment = () => {
 					// const getNewShipmentData = get(q, 'props.box_stats.shipments', [])[q.props?.box_stats?.shipments?.length - 1]
 					// if (getNewShipmentData?.data.faire_feedback.status !== 'success') {
 					// 	notify({
-					// 		title: trans("Something went wrong"),
+					// 		title: ctrans("Something went wrong"),
 					// 		text: getNewShipmentData?.data.faire_feedback.msg,
 					// 		type: "error",
 					// 	})
@@ -262,7 +264,7 @@ const onSubmitShipment = () => {
 					}
 
 					notify({
-						title: trans("Something went wrong."),
+						title: ctrans("Something went wrong."),
 						text: errors.message,
 						type: "error",
 					})
@@ -315,10 +317,10 @@ const onSaveAddress = (submitShipment: Function) => {
 					}
 				}
 				notify({
-					title: trans("Something went wrong"),
+					title: ctrans("Something went wrong"),
 					text:
 						Object.values(e || {})[0] ||
-						trans("Failed to update the address, try again."),
+						ctrans("Failed to update the address, try again."),
 					type: "error",
 				})
 			},
@@ -341,18 +343,18 @@ const confirmdelete = (event: MouseEvent, shipment: (typeof props.shipments)[num
 	confirm.require({
 		target: event.currentTarget,
 		group: "confirm-delete",
-		message: trans("Are you sure you want to delete this shipment (:ship)?", {
+		message: ctrans("Are you sure you want to delete this shipment (:ship)?", {
 			ship: shipment.name,
 		}),
-		header: trans("Confirm Delete"),
+		header: ctrans("Confirm Delete"),
 		icon: "pi pi-exclamation-triangle",
 		rejectProps: {
-			label: trans("Cancel"),
+			label: ctrans("Cancel"),
 			severity: "secondary",
 			outlined: true,
 		},
 		acceptProps: {
-			label: trans("Yes, delete it"),
+			label: ctrans("Yes, delete it"),
 			severity: "danger",
 		},
 		accept: () => {
@@ -368,16 +370,16 @@ const confirmdelete = (event: MouseEvent, shipment: (typeof props.shipments)[num
 					},
 					onSuccess: () => {
 						notify({
-							title: trans("Success!"),
-							text: trans("Shipment has been deleted."),
+							title: ctrans("Success!"),
+							text: ctrans("Shipment has been deleted."),
 							type: "success",
 						})
 						emits("deleteSuccsess", shipment.id)
 					},
 					onError: () => {
 						notify({
-							title: trans("Something went wrong."),
-							text: trans(
+							title: ctrans("Something went wrong."),
+							text: ctrans(
 								"Failed to delete shipment. Please try again or contact administrator."
 							),
 							type: "error",
@@ -426,19 +428,19 @@ const toggleSection = (section: string) => {
 const confirmUnlockShipper = (section: string) => {
 	confirm.require({
 		group: "confirm-delete",
-		message: trans(
+		message: ctrans(
 			"This shipper is locked by :reason. Overriding it can send the parcel with the wrong carrier, and the customer may be charged the wrong price. Only continue if you are sure.",
-			{ reason: lockedByCustomer.value ? trans("the customer") : trans("the shipping rules") }
+			{ reason: lockedByCustomer.value ? ctrans("the customer") : ctrans("the shipping rules") }
 		),
-		header: trans("Override the locked shipper?"),
+		header: ctrans("Override the locked shipper?"),
 		icon: "pi pi-exclamation-triangle",
 		rejectProps: {
-			label: trans("Keep the locked shipper"),
+			label: ctrans("Keep the locked shipper"),
 			severity: "secondary",
 			outlined: true,
 		},
 		acceptProps: {
-			label: trans("Yes, override it"),
+			label: ctrans("Yes, override it"),
 			severity: "danger",
 		},
 		accept: () => {
@@ -510,7 +512,7 @@ const askCrmAboutShipment = async () => {
 			"DeliveryNote",
 			Number(deliveryNoteId.value),
 			"crm",
-			trans("Label could not be created with :shipper. The carrier answered: :error. Please advise.", {
+			ctrans("Label could not be created with :shipper. The carrier answered: :error. Please advise.", {
 				shipper: formTrackingNumber.shipping_id?.name ?? "",
 				error: apiShipmentError.value ?? "",
 			})
@@ -570,16 +572,16 @@ const onClickButtonShipmentPlatform = () => {
 			},
 			onSuccess: () => {
 				notify({
-					title: trans("Success"),
-					text: trans("Successfully submit the data"),
+					title: ctrans("Success"),
+					text: ctrans("Successfully submit the data"),
 					type: "success"
 				})
 				emits("addSuccsess", null)
 			},
 			onError: errors => {
 				notify({
-					title: trans("Something went wrong"),
-					text: trans("Failed to set location"),
+					title: ctrans("Something went wrong"),
+					text: ctrans("Failed to set location"),
 					type: "error"
 				})
 			},
@@ -597,7 +599,7 @@ const onClickButtonShipmentPlatform = () => {
 			<div
 				v-if="props.shipments_routes?.submit_route?.name"
 				class="leading-4 xtext-base flex justify-between w-full py-1">
-				<div>{{ trans("Shipments") }}</div>
+				<div>{{ ctrans("Shipments") }}</div>
 			</div>
 
 			<ul v-if="shipments.length" class="list-none">
@@ -641,7 +643,7 @@ const onClickButtonShipmentPlatform = () => {
 								:key="trackingIndex"
 								class="text-sm">
 								<a
-									v-tooltip="trans('Open tracking in new tab')"
+									v-tooltip="ctrans('Open tracking in new tab')"
 									:href="trackingItem.url"
 									target="_blank"
 									class="-ml-1 secondaryLink">
@@ -657,7 +659,7 @@ const onClickButtonShipmentPlatform = () => {
 
 						<a
 							v-if="shipment.combined_label_url"
-							v-tooltip="trans('Click to open file')"
+							v-tooltip="ctrans('Click to open file')"
 							target="_blank"
 							:href="shipment.combined_label_url"
 							class="w-fit text-gray-400 hover:text-blue-600">
@@ -670,7 +672,7 @@ const onClickButtonShipmentPlatform = () => {
 
 						<div
 							v-else-if="shipment.label && shipment.label_type === 'pdf'"
-							v-tooltip="trans('Click to download file')"
+							v-tooltip="ctrans('Click to download file')"
 							@click="base64ToPdf(shipment.label)"
 							class="group cursor-pointer hover:underline w-fit">
 							<span v-if="shipment.tracking" class="text-gray-400">
@@ -696,7 +698,7 @@ const onClickButtonShipmentPlatform = () => {
 						<div
 							v-else-if="isEditable"
 							class="cursor-pointer px-2 py-1 lg:py-0 lg:px-1 absolute top-0 right-0 text-red-400 hover:text-red-700"
-							v-tooltip="trans('Remove shipment')"
+							v-tooltip="ctrans('Remove shipment')"
 							@click="(e) => confirmdelete(e, shipment)">
 							<FontAwesomeIcon
 								icon="fal fa-trash-alt"
@@ -711,7 +713,7 @@ const onClickButtonShipmentPlatform = () => {
 						@click="(e) => onPrintShipment(shipment)"
 						:size="twBreakPoint().includes('lg') ? 'xs' : undefined"
 						icon="fal fa-print"
-						:label="trans('Print label')"
+						:label="ctrans('Print label')"
 						type="tertiary"
 						:loading="isLoadingPrint"
 					/>
@@ -737,7 +739,7 @@ const onClickButtonShipmentPlatform = () => {
 					<Button
 						@click="() => onCreateOneTapShipment()"
 						:loading="isLoadingButton == 'addTrackingNumber'"
-						:label="trans('Create :shipper shipping', { shipper: oneTapShipper.trade_as || oneTapShipper.name })"
+						:label="ctrans('Create :shipper shipping', { shipper: oneTapShipper.trade_as || oneTapShipper.name })"
 						icon="fal fa-print"
 						:size="twBreakPoint().includes('lg') ? 'xs' : undefined"
 					/>
@@ -745,7 +747,7 @@ const onClickButtonShipmentPlatform = () => {
 						v-if="canChooseOtherShipper"
 						type="button"
 						class="ml-px px-2 rounded bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
-						v-tooltip="trans('More shipping options')"
+						v-tooltip="ctrans('More shipping options')"
 						@click="isOtherShipperMenuOpen = !isOtherShipperMenuOpen">
 						<FontAwesomeIcon :icon="faChevronDown" fixed-width aria-hidden="true" />
 					</button>
@@ -757,7 +759,7 @@ const onClickButtonShipmentPlatform = () => {
 							type="button"
 							class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
 							@click="() => onChooseOtherShipper()">
-							{{ trans("Choose other shipper") }}
+							{{ ctrans("Choose other shipper") }}
 						</button>
 					</div>
 				</div>
@@ -765,7 +767,7 @@ const onClickButtonShipmentPlatform = () => {
 					v-else-if="!shipments.length && props.shipments_routes?.submit_route?.name"
 					:disabled="!props.shipments_routes?.submit_route?.name"
 					@click="() => ((isModalShipment = true), onOpenModalTrackingNumber())"
-					:label="trans('Shipment')"
+					:label="ctrans('Shipment')"
 					icon="fas fa-plus"
 					type="dashed"
 					:size="twBreakPoint().includes('lg') ? 'xs' : undefined"
@@ -790,7 +792,7 @@ const onClickButtonShipmentPlatform = () => {
 						class="mt-2"
 						type="tertiary"
 						icon="fal fa-comments"
-						:label="trans('Ask CRM about this')"
+						:label="ctrans('Ask CRM about this')"
 						:loading="isAskingCrm"
 						@click="askCrmAboutShipment()"
 					/>
@@ -798,7 +800,7 @@ const onClickButtonShipmentPlatform = () => {
 
 				<!-- Shipment Cost -->
 				<div v-if="external_shop?.engine_value === 'faire'" class="mt-3">
-					<span class="text-xs px-1 my-2">{{ trans("Shipment cost") }}: </span>
+					<span class="text-xs px-1 my-2">{{ ctrans("Shipment cost") }}: </span>
 					<InputNumber
 						v-model="formTrackingNumber.cost"
 						@input="(e) => formTrackingNumber.cost = e?.value || 0"
@@ -820,8 +822,8 @@ const onClickButtonShipmentPlatform = () => {
 				<div v-if="preferredShipper" class="mt-3">
 				<div v-if="lockedShipper" class="text-xs pb-2 italic text-gray-500">
 					{{ lockedByCustomer
-						? trans("Shipper chosen by customer — contact customer services to change")
-						: trans("Locked by shipping rules for :scope", { scope: shipper_directive?.locked_scope ?? "" }) }}
+						? ctrans("Shipper chosen by customer — contact customer services to change")
+						: ctrans("Locked by shipping rules for :scope", { scope: shipper_directive?.locked_scope ?? "" }) }}
 				</div>
 
 				<div class="grid grid-cols-2 gap-3">
@@ -854,7 +856,7 @@ const onClickButtonShipmentPlatform = () => {
 						<div v-if="!preferredShipper.api_shipper" class="ml-auto w-1/2 shrink-0" @click.stop>
 							<span class="text-xs">
 								<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500" fixed-width aria-hidden="true" />
-								{{ trans("Tracking number") }}:
+								{{ ctrans("Tracking number") }}:
 							</span>
 							<PureInput
 								v-model="preferredTrackingNumber"
@@ -883,7 +885,7 @@ const onClickButtonShipmentPlatform = () => {
 								<Button
 									:style="'save'"
 									:loading="isLoadingButton == 'addTrackingNumber'"
-									:label="trans('Save Shipping')"
+									:label="ctrans('Save Shipping')"
 									:disabled="!preferredTrackingNumber"
 									full
 									@click="() => onSavePreferredShipment()" />
@@ -910,10 +912,10 @@ const onClickButtonShipmentPlatform = () => {
 						class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-left transition-colors"
 						:class="isSectionLocked ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'"
 						:disabled="isSectionLocked && !canOverrideLock"
-						v-tooltip="isSectionLocked ? (lockedByCustomer ? trans('Shipper locked by the customer') : trans('Locked by shipping rules for :scope', { scope: shipper_directive?.locked_scope ?? '' })) : ''"
+						v-tooltip="isSectionLocked ? (lockedByCustomer ? ctrans('Shipper locked by the customer') : ctrans('Locked by shipping rules for :scope', { scope: shipper_directive?.locked_scope ?? '' })) : ''"
 						@click="toggleSection('create_label')">
 						<span class="flex items-center gap-2">
-							{{ trans("API powered Shippers") }}
+							{{ ctrans("API powered Shippers") }}
 							<span v-if="selectedShipment !== 'create_label'" class="flex items-center gap-1">
 								<img
 									v-for="shipper in optionsCreateLabel"
@@ -974,7 +976,7 @@ const onClickButtonShipmentPlatform = () => {
 									class="text-gray-500 absolute top-4 right-4 text-lg" />
 								<FontAwesomeIcon
 									v-else
-									v-tooltip="trans('Barcode print')"
+									v-tooltip="ctrans('Barcode print')"
 									icon="fal fa-print"
 									class="text-gray-500 absolute top-4 right-4 text-lg"
 									fixed-width
@@ -1013,10 +1015,10 @@ const onClickButtonShipmentPlatform = () => {
 					class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-left transition-colors"
 					:class="isSectionLocked ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'"
 					:disabled="isSectionLocked && !canOverrideLock"
-					v-tooltip="isSectionLocked ? (lockedByCustomer ? trans('Shipper locked by the customer') : trans('Locked by shipping rules for :scope', { scope: shipper_directive?.locked_scope ?? '' })) : ''"
+					v-tooltip="isSectionLocked ? (lockedByCustomer ? ctrans('Shipper locked by the customer') : ctrans('Locked by shipping rules for :scope', { scope: shipper_directive?.locked_scope ?? '' })) : ''"
 					@click="toggleSection('other_options')">
 					<span class="flex items-baseline gap-2 min-w-0">
-						{{ trans("Other shippers") }} ({{ otherShippers.length }})
+						{{ ctrans("Other shippers") }} ({{ otherShippers.length }})
 						<span v-if="otherShippers.length && selectedShipment !== 'other_options'" class="text-xs text-gray-400 font-normal truncate">
 							{{ otherShippers.slice(0, 4).map((shipper) => shipper.code || shipper.name).join(", ") }}<template v-if="otherShippers.length > 4">…</template>
 						</span>
@@ -1040,7 +1042,7 @@ const onClickButtonShipmentPlatform = () => {
 							:fetchRoute="shipments_routes.fetch_route"
 							required
 							:disabled="isLoadingButton == 'addTrackingNumber'"
-							:placeholder="trans('Select shipping')"
+							:placeholder="ctrans('Select shipping')"
 							object
 							@optionsList="(e) => (optionShippingList = e)"
 							:optionFunc="(option) => !option.api_shipper"
@@ -1074,7 +1076,7 @@ const onClickButtonShipmentPlatform = () => {
 						class="mt-3">
 						<span class="text-xs xpx-1 my-2">
 							<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500" fixed-width aria-hidden="true" />
-							{{ trans("Tracking number") }}:
+							{{ ctrans("Tracking number") }}:
 						</span>
 						<PureInput
 							v-model="formTrackingNumber.tracking_number"
@@ -1105,7 +1107,7 @@ const onClickButtonShipmentPlatform = () => {
 						<Button
 							:style="'save'"
 							:loading="isLoadingButton == 'addTrackingNumber'"
-							:label="trans('Save')"
+							:label="ctrans('Save')"
 							:disabled="
 								!formTrackingNumber.shipping_id ||
 								!(formTrackingNumber.shipping_id?.api_shipper
@@ -1140,7 +1142,7 @@ const onClickButtonShipmentPlatform = () => {
 		closeButton>
 		<div>
 			<div class="text-center font-bold mb-4 text-xl text-red-600">
-				{{ trans("Error on save create label") }}
+				{{ ctrans("Error on save create label") }}
 			</div>
 
 			<div
@@ -1164,14 +1166,14 @@ const onClickButtonShipmentPlatform = () => {
 					<div v-if="shipping_fields" class="col-span-2 mb-2">
 						<div class="flex justify-between items-center">
 							<label for="selectCountry" class="mb-1 block text-xs font-medium">
-								{{ trans("Company") }}
+								{{ ctrans("Company") }}
 							</label>
 
 							<div
 								v-if="customer?.company_name"
 								@click="() => onCopyDataCustomer('company_name')"
 								class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
-								{{ trans("Copy customer's Company") }}
+								{{ ctrans("Copy customer's Company") }}
 								<InformationIcon
 									:information="customer?.company_name"
 									class="opacity-100" />
@@ -1186,14 +1188,14 @@ const onClickButtonShipmentPlatform = () => {
 					<div v-if="shipping_fields" class="col-span-2 mb-2">
 						<div class="flex justify-between items-center">
 							<label for="selectCountry" class="mb-1 block text-xs font-medium">
-								{{ trans("Contact Name") }}
+								{{ ctrans("Contact Name") }}
 							</label>
 
 							<div
 								v-if="customer?.contact_name"
 								@click="() => onCopyDataCustomer('contact_name')"
 								class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
-								{{ trans("Copy customer's contact name") }}
+								{{ ctrans("Copy customer's contact name") }}
 								<InformationIcon
 									:information="customer?.contact_name"
 									class="opacity-100" />
@@ -1208,14 +1210,14 @@ const onClickButtonShipmentPlatform = () => {
 					<div v-if="shipping_fields" class="col-span-2 mb-2">
 						<div class="flex justify-between items-center">
 							<label for="selectCountry" class="mb-1 block text-xs font-medium">
-								{{ trans("Phone") }}
+								{{ ctrans("Phone") }}
 							</label>
 
 							<div
 								v-if="customer?.phone"
 								@click="() => onCopyDataCustomer('phone')"
 								class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
-								{{ trans("Copy customer's phone") }}
+								{{ ctrans("Copy customer's phone") }}
 								<InformationIcon
 									:information="customer?.phone"
 									class="opacity-100" />
@@ -1230,14 +1232,14 @@ const onClickButtonShipmentPlatform = () => {
 					<div v-if="shipping_fields" class="col-span-2 mb-2">
 						<div class="flex justify-between items-center">
 							<label for="selectCountry" class="mb-1 block text-xs font-medium">
-								{{ trans("Email") }}
+								{{ ctrans("Email") }}
 							</label>
 
 							<div
 								v-if="customer?.email"
 								@click="() => onCopyDataCustomer('email')"
 								class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
-								{{ trans("Copy customer's email") }}
+								{{ ctrans("Copy customer's email") }}
 								<InformationIcon
 									:information="customer?.email"
 									class="opacity-100" />
@@ -1289,7 +1291,7 @@ const onClickButtonShipmentPlatform = () => {
 
 	<ConfirmDialog :group="'confirm-delete'">
 		<template #icon>
-			<FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500" />
+			<FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500" fixed-width />
 		</template>
 	</ConfirmDialog>
 </template>

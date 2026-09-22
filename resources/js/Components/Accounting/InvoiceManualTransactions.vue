@@ -92,7 +92,7 @@ const locale = inject("locale", aikuLocaleStructure)
             {{ locale.currencyFormat(item.currency_code, item.historic_asset_price || 0) }}/{{ item.historic_asset_unit }}
             <Tag v-if="item['discount'] > 0" :theme="17" noHoverColor>
                 <template #label>
-                    <font-awesome-icon icon="fal fa-tag" class="text-xs text-emerald-700" />
+                    <font-awesome-icon icon="fal fa-tag" class="text-xs text-emerald-700" fixed-width />
                     {{ item["discount"] }}%
                 </template>
             </Tag>

@@ -8,7 +8,9 @@
 
 namespace App\Actions\Comms\Mailbox;
 
+use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\StoreChatSession;
+use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
@@ -25,7 +27,9 @@ use App\Models\CRM\WebUser;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use App\Services\HTMLSanitizer;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -33,9 +37,20 @@ class ProcessInboundEmail
 {
     use AsAction;
 
+    /**
+     * A sender who deletes their mail before we read it leaves an id Gmail still lists and no
+     * longer serves. Nothing here ever wrote a row for it, and a row is the only thing that
+     * stops it being fetched again, so it came back every couple of minutes all day.
+     */
+    private const int GONE_TTL_DAYS = 7;
+
     public function handle(Shop $shop, string $gmailMessageId): ?ChatMessage
     {
         if (ChatMessage::where('metadata->gmail_message_id', $gmailMessageId)->exists()) {
+            return null;
+        }
+
+        if (Cache::has($this->goneKey($shop, $gmailMessageId))) {
             return null;
         }
 
@@ -45,7 +60,17 @@ class ProcessInboundEmail
             return null;
         }
 
-        $raw = $client->getMessage($gmailMessageId);
+        try {
+            $raw = $client->getMessage($gmailMessageId);
+        } catch (RequestException $exception) {
+            if ($exception->response->status() !== 404) {
+                throw $exception;
+            }
+
+            Cache::put($this->goneKey($shop, $gmailMessageId), true, now()->addDays(self::GONE_TTL_DAYS));
+
+            return null;
+        }
 
         $from    = GmailMessageParser::fromAddress($raw);
         $subject = GmailMessageParser::header($raw, 'Subject');
@@ -77,7 +102,7 @@ class ProcessInboundEmail
 
         $webUser = $this->matchWebUser($shop, $from['address']);
 
-        if (! $webUser && $this->isAutomatedMail($from['address'], $subject)) {
+        if (! $webUser && self::isAutomatedMail($from['address'], $subject)) {
             $client->addLabel($gmailMessageId, 'aiku/filtered');
 
             return null;
@@ -103,7 +128,7 @@ class ProcessInboundEmail
         $attachments = ImportPendingGmailAttachments::make()
             ->download($client, $gmailMessageId, $raw, trusted: (bool) $webUser);
 
-        $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($raw, trusted: (bool) $webUser);
+        $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($client, $raw, trusted: (bool) $webUser);
 
         $session = $existing
             ? $this->reuseSession($existing, $from, $isAutoReply)
@@ -132,6 +157,11 @@ class ProcessInboundEmail
                 // Marked on the message rather than given a state of its own: it is kept so the
                 // history is honest, and shown for what it is so nobody reads it as an answer.
                 $isAutoReply ? ['auto_reply' => true] : [],
+                ['email_headers' => array_filter([
+                    'list_unsubscribe' => (bool) GmailMessageParser::header($raw, 'List-Unsubscribe'),
+                    'precedence'       => GmailMessageParser::header($raw, 'Precedence'),
+                    'auto_submitted'   => GmailMessageParser::header($raw, 'Auto-Submitted'),
+                ])],
                 $pendingAttachments ? ['gmail_pending_attachments' => $pendingAttachments] : []
             ),
         ]);
@@ -148,10 +178,85 @@ class ProcessInboundEmail
             @unlink($attachment->getPathname());
         }
 
+        if (! $webUser) {
+            SuggestChatSessionCustomer::dispatch($session);
+        }
+
+        if (! $existing && ! $webUser) {
+            ClassifyChatSessionNoise::dispatch($session);
+        }
+
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
         $client->addLabel($gmailMessageId, $label);
 
+        $this->importThreadHistory($client, $session, $threadId, $mailboxAddress, $webUser);
+
         return $message;
+    }
+
+    private function goneKey(Shop $shop, string $gmailMessageId): string
+    {
+        return "gmail-message-gone:{$shop->id}:$gmailMessageId";
+    }
+
+    /**
+     * The rest of the Gmail thread, so the conversation reads whole: what the customer wrote before
+     * and what we answered from Gmail itself. Written straight to the table at the time Gmail has
+     * for them, because these were already sent and read: nothing is mailed, broadcast or counted.
+     *
+     * ponytail: text and markup only, attachments of older mails stay in Gmail. An aiku reply whose
+     * send job has not yet stored its gmail id would come in twice; the job runs in seconds.
+     */
+    public function importThreadHistory(GmailClient $client, ChatSession $session, string $threadId, ?string $mailboxAddress, ?WebUser $webUser): int
+    {
+        $imported = 0;
+
+        $known = ChatMessage::where('chat_session_id', $session->id)
+            ->pluck('metadata')
+            ->map(fn ($metadata) => Arr::get($metadata, 'gmail_message_id'))
+            ->filter()
+            ->flip();
+
+        foreach ($client->getThreadMessages($threadId) as $raw) {
+            $labels = Arr::get($raw, 'labelIds', []);
+
+            if ($known->has(Arr::get($raw, 'id')) || array_intersect($labels, ['DRAFT', 'SPAM', 'TRASH'])) {
+                continue;
+            }
+
+            $from   = GmailMessageParser::fromAddress($raw)['address'];
+            $isOurs = in_array('SENT', $labels, true) || ($mailboxAddress && $from && strcasecmp($from, $mailboxAddress) === 0);
+            $sentAt = Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate'));
+            $html   = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
+            $text   = trim(strip_tags(GmailMessageParser::body($raw)));
+
+            ChatMessage::create([
+                'chat_session_id' => $session->id,
+                'message_type'    => ChatMessageTypeEnum::TEXT,
+                'sender_type'     => match (true) {
+                    $isOurs        => ChatSenderTypeEnum::AGENT,
+                    (bool) $webUser => ChatSenderTypeEnum::USER,
+                    default        => ChatSenderTypeEnum::GUEST,
+                },
+                'sender_id'       => $isOurs ? null : $webUser?->id,
+                'message_text'    => $text,
+                'original_text'   => $text,
+                'html_body'       => $html !== '' ? $html : null,
+                'is_read'         => true,
+                'created_at'      => $sentAt,
+                'updated_at'      => $sentAt,
+                'metadata'        => [
+                    'gmail_message_id'        => Arr::get($raw, 'id'),
+                    'gmail_header_message_id' => GmailMessageParser::header($raw, 'Message-ID'),
+                    'email_subject'           => GmailMessageParser::header($raw, 'Subject'),
+                    'gmail_thread_history'    => true,
+                ],
+            ]);
+
+            $imported++;
+        }
+
+        return $imported;
     }
 
     /**
@@ -208,15 +313,15 @@ class ProcessInboundEmail
      * bounces and alerts were 59% of it), so these never become chat sessions. Only applied to
      * senders that match no customer.
      */
-    private function isAutomatedMail(?string $address, ?string $subject): bool
+    public static function isAutomatedMail(?string $address, ?string $subject): bool
     {
-        $localPart = strtolower((string) strstr((string) $address, '@', true));
+        $localPart = str_replace(['-', '_', '.'], '', strtolower((string) strstr((string) $address, '@', true)));
         $subject   = strtolower(trim((string) $subject));
 
-        return $localPart === 'mailer-daemon'
+        return $localPart === 'mailerdaemon'
             || str_contains($localPart, 'noreply')
-            || str_contains($localPart, 'no-reply')
-            || str_starts_with($subject, 'report domain:')
+            || str_contains($localPart, 'donotreply')
+            || str_contains($subject, 'report domain:')
             || str_starts_with($subject, 'delivery status notification');
     }
 

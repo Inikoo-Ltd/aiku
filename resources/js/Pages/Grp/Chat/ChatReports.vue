@@ -26,6 +26,8 @@ import {
 	faUserHeadset,
 	faStore,
 	faReply,
+	faTags,
+	faFilter,
 } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -39,6 +41,8 @@ library.add(
 	faUserHeadset,
 	faStore,
 	faReply,
+	faTags,
+	faFilter,
 	faWhatsapp
 )
 
@@ -101,6 +105,10 @@ const props = defineProps<{
 		by_status: { status: string; label: string; color: string; total: number }[]
 		by_channel: ChannelRow[]
 		by_shop: ShopRow[]
+		by_topic: TopicRow[]
+		unclassified: number
+		customer_suggestions: { basis: string; suggested: number; confirmed: number; rejected: number }[]
+		noise: { source: string; noise: number; genuine: number; reversed: number }[]
 		agents: AgentRow[]
 		agents_total: {
 			name: string
@@ -258,11 +266,12 @@ const csatOptions = {
 	},
 }
 
-type TableMode = "agents" | "shops"
+type TableMode = "agents" | "shops" | "topics"
 
 const sortStates = ref<Record<TableMode, { key: string; direction: 1 | -1 }>>({
 	agents: { key: "", direction: -1 },
 	shops: { key: "", direction: -1 },
+	topics: { key: "", direction: -1 },
 })
 
 const sortArrow = (table: TableMode, key: string) =>
@@ -315,6 +324,18 @@ const shopColumns = [
 ]
 
 const sortedAgents = computed(() => sortRows(props.stats.agents, "agents"))
+const topicColumns = [
+	{ key: "label", label: ctrans("Topic") },
+	{ key: "conversations", label: ctrans("Conversations") },
+	{ key: "share", label: ctrans("Share") },
+	{ key: "unanswered", label: ctrans("Unanswered") },
+	{ key: "website", label: ctrans("Website") },
+	{ key: "email", label: ctrans("Email") },
+	{ key: "whatsapp", label: ctrans("WhatsApp") },
+	{ key: "median_reply_minutes", label: ctrans("Median reply") },
+]
+
+const sortedTopics = computed(() => sortRows(props.stats.by_topic, "topics"))
 const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 </script>
 
@@ -569,6 +590,128 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 							</td>
 						</tr>
 					</tfoot>
+				</table>
+			</div>
+		</DashboardWidgetBox>
+
+		<DashboardWidgetBox v-if="stats.noise.length" storageKey="chat_reports_noise_collapsed">
+			<template #header>
+				<span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+					<FontAwesomeIcon icon="fal fa-filter" class="text-gray-500" fixed-width aria-hidden="true" />
+					{{ ctrans("Noise check on strangers' first messages") }}
+				</span>
+				<span class="text-xs text-gray-400">
+					{{ ctrans("Reversed is what a person undid or overruled") }}
+				</span>
+			</template>
+			<div class="-mx-4 -mb-4 overflow-x-auto">
+				<table class="min-w-full text-sm tabular-nums">
+					<thead class="text-left text-xs text-gray-500">
+						<tr>
+							<th class="px-4 py-2">{{ ctrans("Decided by") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Noise") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Genuine") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Reversed") }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr v-for="row in stats.noise" :key="row.source" class="hover:bg-gray-50">
+							<td class="px-4 py-2">{{ row.source === "ai" ? ctrans("AI") : ctrans("Rule") }}</td>
+							<td class="px-4 py-2 text-right">{{ row.noise }}</td>
+							<td class="px-4 py-2 text-right">{{ row.genuine }}</td>
+							<td class="px-4 py-2 text-right font-medium">{{ row.reversed }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</DashboardWidgetBox>
+
+		<DashboardWidgetBox v-if="stats.customer_suggestions.length" storageKey="chat_reports_suggestions_collapsed">
+			<template #header>
+				<span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+					<FontAwesomeIcon icon="fal fa-user-headset" class="text-violet-600" fixed-width aria-hidden="true" />
+					{{ ctrans("Guests taken for a customer") }}
+				</span>
+				<span class="text-xs text-gray-400">
+					{{ ctrans("Suggested by the system, decided by an agent") }}
+				</span>
+			</template>
+			<div class="-mx-4 -mb-4 overflow-x-auto">
+				<table class="min-w-full text-sm tabular-nums">
+					<thead class="text-left text-xs text-gray-500">
+						<tr>
+							<th class="px-4 py-2">{{ ctrans("Went on") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Suggested") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Confirmed") }}</th>
+							<th class="px-4 py-2 text-right">{{ ctrans("Not them") }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr v-for="row in stats.customer_suggestions" :key="row.basis" class="hover:bg-gray-50">
+							<td class="px-4 py-2">
+								{{ row.basis === "email" ? ctrans("Email they gave") : row.basis === "phone" ? ctrans("Phone number") : ctrans("Order number") }}
+							</td>
+							<td class="px-4 py-2 text-right">{{ row.suggested }}</td>
+							<td class="px-4 py-2 text-right">{{ row.confirmed }}</td>
+							<td class="px-4 py-2 text-right font-medium">{{ row.rejected }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</DashboardWidgetBox>
+
+		<DashboardWidgetBox storageKey="chat_reports_topics_collapsed">
+			<template #header>
+				<span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+					<FontAwesomeIcon
+						icon="fal fa-tags"
+						class="text-amber-600"
+						fixed-width
+						aria-hidden="true" />
+					{{ ctrans("What customers wanted") }}
+				</span>
+				<span class="text-xs text-gray-400">
+					{{ ctrans("Classified by AI from each conversation") }}
+					<template v-if="stats.unclassified">
+						· {{ stats.unclassified }} {{ ctrans("not classified yet") }}
+					</template>
+				</span>
+			</template>
+			<div class="-mx-4 -mb-4 overflow-x-auto">
+				<table class="min-w-full text-sm tabular-nums">
+					<thead class="text-left text-xs text-gray-500">
+						<tr>
+							<th
+								v-for="(column, index) in topicColumns"
+								:key="column.key"
+								class="cursor-pointer select-none px-4 py-2 hover:text-gray-700"
+								:class="{ 'text-right': index > 0 }"
+								@click="toggleSort('topics', column.key)">
+								{{ column.label }}{{ sortArrow("topics", column.key) }}
+							</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-100">
+						<tr v-for="topic in sortedTopics" :key="topic.topic" class="hover:bg-gray-50">
+							<td class="px-4 py-2">{{ topic.label }}</td>
+							<td class="px-4 py-2 text-right font-medium">{{ topic.conversations }}</td>
+							<td class="px-4 py-2 text-right">{{ topic.share }}%</td>
+							<td class="px-4 py-2 text-right">{{ topic.unanswered }}</td>
+							<td class="px-4 py-2 text-right">{{ topic.website }}</td>
+							<td class="px-4 py-2 text-right">{{ topic.email }}</td>
+							<td class="px-4 py-2 text-right">{{ topic.whatsapp }}</td>
+							<td class="px-4 py-2 text-right">
+								{{ minutes(topic.median_reply_minutes) }}
+							</td>
+						</tr>
+						<tr v-if="!stats.by_topic.length">
+							<td
+								:colspan="topicColumns.length"
+								class="px-4 py-6 text-center text-gray-500">
+								{{ ctrans("No conversations classified in this period yet.") }}
+							</td>
+						</tr>
+					</tbody>
 				</table>
 			</div>
 		</DashboardWidgetBox>

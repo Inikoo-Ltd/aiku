@@ -326,7 +326,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                     </template>
                 </p>
                 <p v-if="latePurchaseOrders.length" class="mt-1 flex items-center gap-1.5 text-xs text-red-600">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                     {{ ctrans("worst delay :days days", { days: latePurchaseOrders[0].days_late }) }}
                 </p>
                 <p class="mt-1 text-xs text-gray-400">{{ ctrans(":total products in their catalogue", { total: locale.number(coverTotal) }) }}</p>
@@ -339,7 +339,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                     <button type="button" class="flex items-center gap-2 text-sm font-semibold text-gray-800" :aria-expanded="stockCoverOpen" @click="toggleStockCover">
                         <FontAwesomeIcon :icon="faLayerGroup" class="text-gray-400" fixed-width aria-hidden="true" />
                         {{ ctrans("Stock cover") }}
-                        <FontAwesomeIcon :icon="faChevronDown" class="text-[10px] text-gray-400 transition-transform" :class="{ '-rotate-90': !stockCoverOpen }" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-[10px] text-gray-400 transition-transform" :class="{ '-rotate-90': !stockCoverOpen }" fixed-width aria-hidden="true" />
                     </button>
                     <p class="mt-0.5 text-xs text-gray-500">
                         {{ ctrans(":total products in their catalogue, grouped by how long our stock lasts against a :days day lead time", { total: locale.number(coverTotal), days: leadTime.days }) }}
@@ -347,7 +347,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                 </div>
                 <Link :href="route(browseRoute.name, browseRoute.parameters)" class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500">
                     {{ ctrans("Browse catalogue") }}
-                    <FontAwesomeIcon :icon="faChevronRight" class="text-[10px]" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faChevronRight" class="text-[10px]" fixed-width aria-hidden="true" />
                 </Link>
             </div>
 
@@ -458,7 +458,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                         class="ml-auto inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-indigo-500"
                                         @click="openAutoFill(bucket)"
                                     >
-                                        <FontAwesomeIcon :icon="faMagic" aria-hidden="true" />
+                                        <FontAwesomeIcon :icon="faMagic" fixed-width aria-hidden="true" />
                                         {{ ctrans("Fill") }}
                                     </button>
                                 </div>
@@ -503,10 +503,10 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                         v-tooltip="ctrans('On the shopping list but not short of stock')"
                                         class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-medium text-red-700"
                                     >
-                                        <FontAwesomeIcon :icon="faExclamationTriangle" aria-hidden="true" />
+                                        <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                                         {{ bucket.on_list }} {{ ctrans("on list") }}
                                         <button type="button" class="ml-0.5 inline-flex items-center gap-1 rounded border border-red-300 px-1 text-[10px] hover:bg-red-100" @click="removeMisplaced(bucket.bucket)">
-                                            <FontAwesomeIcon :icon="faTrashAlt" aria-hidden="true" />
+                                            <FontAwesomeIcon :icon="faTrashAlt" fixed-width aria-hidden="true" />
                                             {{ ctrans("remove") }}
                                         </button>
                                     </span>
@@ -529,7 +529,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                 </div>
                 <Link :href="route(stockDeliveriesRoute.name, stockDeliveriesRoute.parameters)" class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500">
                     {{ ctrans("All stock deliveries") }}
-                    <FontAwesomeIcon :icon="faChevronRight" class="text-[10px]" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faChevronRight" class="text-[10px]" fixed-width aria-hidden="true" />
                 </Link>
             </div>
 
@@ -538,7 +538,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                     <div class="flex items-center justify-between gap-2 border-b border-gray-200 px-3 py-2">
                         <span class="flex min-w-0 items-center gap-2 text-xs font-semibold text-gray-700">
                             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white text-indigo-500 ring-1 ring-indigo-200">
-                                <FontAwesomeIcon :icon="faShoppingBasket" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="faShoppingBasket" fixed-width aria-hidden="true" />
                             </span>
                             <span class="truncate">{{ ctrans("On shopping list") }}</span>
                         </span>
@@ -552,7 +552,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                             <div class="text-sm font-semibold text-gray-900">{{ locale.number(stats.open_items_count) }} {{ ctrans("items") }}</div>
                             <div class="mt-0.5 text-xs text-gray-500">{{ locale.currencyFormat(orgPartner.currency, stats.estimated_total) }} {{ ctrans("waiting to be ordered") }}</div>
                             <div v-if="stats.oldest_item_at" class="mt-1.5 flex items-center gap-1 text-[11px] text-gray-400">
-                                <FontAwesomeIcon :icon="faClock" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="faClock" fixed-width aria-hidden="true" />
                                 {{ ctrans("oldest since") }} {{ useFormatTime(stats.oldest_item_at, { formatTime: "mdy" }) }}
                             </div>
                         </Link>
@@ -563,7 +563,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                     <div class="flex items-center justify-between gap-2 border-b border-gray-200 px-3 py-2">
                         <span class="flex min-w-0 items-center gap-2 text-xs font-semibold text-gray-700">
                             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md" :class="column.iconClasses">
-                                <FontAwesomeIcon :icon="column.icon" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="column.icon" fixed-width aria-hidden="true" />
                             </span>
                             <span class="truncate">{{ column.label }}</span>
                         </span>
@@ -597,7 +597,7 @@ const openAutoFill = (bucket: CoverBucket, rank: string | null = null) => {
                                 class="mt-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums"
                                 :class="sd.days_in_transit > 14 ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-600'"
                             >
-                                <FontAwesomeIcon :icon="faShippingFast" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="faShippingFast" fixed-width aria-hidden="true" />
                                 {{ sd.days_in_transit }} {{ ctrans("days in transit") }}
                             </div>
                         </Link>

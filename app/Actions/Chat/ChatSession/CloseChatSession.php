@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithBlockingTickets;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -31,6 +32,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CloseChatSession
 {
     use AsAction;
+    use WithBlockingTickets;
     use WithChatAgentAuthorisation;
 
     /**
@@ -42,6 +44,16 @@ class CloseChatSession
         ChatActorTypeEnum $actorType = ChatActorTypeEnum::AGENT,
         array $additionalData = []
     ): ChatSession {
+        if ($actorType === ChatActorTypeEnum::AGENT) {
+            $blockingTickets = $this->unresolvedBlockingTickets($chatSession);
+
+            if ($blockingTickets->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'message' => $this->blockingTicketsMessage($blockingTickets),
+                ]);
+            }
+        }
+
         return DB::transaction(function () use ($chatSession, $actorId, $actorType, $additionalData) {
 
             $closedBy = match ($actorType) {

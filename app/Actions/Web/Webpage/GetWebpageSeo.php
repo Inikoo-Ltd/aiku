@@ -44,7 +44,7 @@ class GetWebpageSeo
             'title_suffix'           => data_get($webpage->settings, 'webpage.title_suffix') ?: data_get($website->settings, 'webpage.title_suffix'),
             'share_image'            => [
                 'url' => Arr::get($imageSources, 'png') ?? Arr::get($imageSources, 'original') ?? Arr::get($imageSources, 'url'),
-                'alt' => Arr::get($webpage->seo_data, 'image_alt') ?: $title,
+                'alt' => $this->getWebpageShareImageAlt($webpage),
             ],
             'structured_data'        => $this->structuredData($webpage),
             'structured_data_types'  => $this->structuredDataTypes($webpage),

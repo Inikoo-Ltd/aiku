@@ -514,7 +514,7 @@ watch(
 											<FontAwesomeIcon
 												:icon="faTrashAlt"
 												class="text-red-500 hover:text-white w-4 h-4"
-												aria-hidden="true" />
+												fixed-width aria-hidden="true" />
 										</button>
 									</div>
 								</div>
@@ -683,7 +683,7 @@ watch(
 	<Modal :isOpen="showConfirmModal" @onClose="closeModal" :closeButton="true" width="max-w-sm">
 		<!-- Header with Icon -->
 		<div class="flex items-center space-x-2 px-6 pt-6 pb-4 border-b border-gray-200">
-			<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="w-5 h-5 text-red-600" />
+			<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="w-5 h-5 text-red-600" fixed-width />
 			<h3 class="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
 		</div>
 

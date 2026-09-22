@@ -43,7 +43,7 @@ function toggleDisclosure(index: number) {
             <FontAwesomeIcon
               :icon="faChevronDown"
               class="text-sm text-gray-500 transform transition-transform duration-200"
-              :class="{ 'rotate-180': openDisclosureId === index }"
+              :class="{ 'rotate-180': openDisclosureId === index }" fixed-width
             />
           </button>
 

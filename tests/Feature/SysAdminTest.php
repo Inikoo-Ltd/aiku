@@ -2364,3 +2364,37 @@ test('edit profile includes preferences sections', function (Guest $guest) {
     $channels = collect($blueprint)->firstWhere('label', __('Notifications'))['fields']['notifications']['channels'];
     expect(collect($channels)->pluck('value')->all())->toBe(['email', 'slack', 'browser']);
 })->depends('create guest');
+
+test('a guest with job positions and no phone is stored without a deprecation', function () {
+    $group = createGroup();
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $jobPosition = $group->jobPositions()->where('code', 'gp-sc')->first();
+
+    $guestData = Guest::factory()->definition();
+    data_set($guestData, 'contact_name', 'No Phone');
+    data_set($guestData, 'phone', null);
+    data_set($guestData, 'user.username', 'nophone');
+    data_set($guestData, 'user.password', 'secret-password');
+    data_set($guestData, 'positions', [
+        $jobPosition->slug => [
+            'slug'   => $jobPosition->slug,
+            'scopes' => []
+        ],
+    ]);
+
+    set_error_handler(
+        fn (int $severity, string $message) => throw new ErrorException($message, 0, $severity),
+        E_DEPRECATED | E_WARNING | E_NOTICE
+    );
+
+    try {
+        $guest = StoreGuest::make()->action($group, $guestData);
+    } finally {
+        restore_error_handler();
+    }
+
+    expect($guest->phone)->toBeNull()
+        ->and($guest->getUser()->username)->toBe('nophone');
+});

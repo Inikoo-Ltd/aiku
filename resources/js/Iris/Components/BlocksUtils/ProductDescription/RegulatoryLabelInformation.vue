@@ -144,7 +144,7 @@ onMounted(() => {
 	<div :key="renderKey" class="py-5 md:py-6 lg:py-12" :style="{ paddingTop:'3rem', paddingBottom:'3rem' }">
 	<div v-if="cards.length || rows.length" class="regulatory-panel" :style="containerStyle">
 		<div class="flex items-start gap-3">
-			<FontAwesomeIcon :icon="faShieldCheck" class="mt-1  text-primary " style="font-size: 40px;" />
+			<FontAwesomeIcon :icon="faShieldCheck" class="mt-1  text-primary " style="font-size: 40px;" fixed-width />
 			<div>
 				<h2 class="!mt-0 !mb-1 text-[16px] font-semibold text-[#22374a] md:text-[18px]">
 					{{ ctrans("Regulatory & Label Information") }}
@@ -164,7 +164,7 @@ onMounted(() => {
 				class="flex items-start gap-3 rounded-[8px] border panel-border bg-white px-3 py-3">
 				<span
 					class="flex h-7 w-7 shrink-0 items-center justify-center  text-primary">
-					<FontAwesomeIcon :icon="card.icon" class="text-[16px]" />
+					<FontAwesomeIcon :icon="card.icon" class="text-[16px]" fixed-width />
 				</span>
 
 				<div class="min-w-0">
@@ -178,7 +178,7 @@ onMounted(() => {
 								v-for="market in card.value"
 								:key="market.value"
 								class="inline-flex items-center gap-1 rounded border accent-chip px-1.5 py-0.5 text-[10px]">
-								<FontAwesomeIcon v-if="market.value === 'other'" :icon="faGlobe" class="text-[10px]" />
+								<FontAwesomeIcon v-if="market.value === 'other'" :icon="faGlobe" class="text-[10px]" fixed-width />
 								{{ market.label }}
 							</span>
 						</div>
@@ -230,12 +230,12 @@ onMounted(() => {
 					class="flex w-full items-center gap-3 px-3 py-3 text-left"
 					:aria-expanded="openRow === row.key"
 					@click="toggleRow(row.key)">
-					<FontAwesomeIcon :icon="row.icon" class="shrink-0 text-[12px] text-primary" />
+					<FontAwesomeIcon :icon="row.icon" class="shrink-0 text-[12px] text-primary" fixed-width />
 					<span class="flex-1 text-[12px] text-[#334155] md:text-[13px]">{{ row.label }}</span>
 					<FontAwesomeIcon
 						:icon="faChevronDown"
 						class="shrink-0 text-[11px] text-[#9a9a9a] transition-transform duration-200"
-						:class="{ 'rotate-180': openRow === row.key }" />
+						:class="{ 'rotate-180': openRow === row.key }" fixed-width />
 				</button>
 
 				<div
@@ -303,7 +303,7 @@ onMounted(() => {
 
 					<template v-else-if="isPresenceRow(row.key)">
 						<span class="inline-flex items-center gap-1 accent-text">
-							<FontAwesomeIcon :icon="faCheckCircle" class="text-[11px]" />
+							<FontAwesomeIcon :icon="faCheckCircle" class="text-[11px]" fixed-width />
 							{{ ctrans("Present on the label") }}
 						</span>
 					</template>

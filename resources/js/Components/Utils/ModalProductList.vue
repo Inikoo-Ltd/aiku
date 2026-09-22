@@ -466,7 +466,7 @@ watch(() => model.value, async (newValue) => {
 													@click="onClickProduct('products')"
 													icon="fal fa-compress-wide"
 													v-tooltip="'maximize '"
-													class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
+													class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" fixed-width />
 											</div>
 
 											<div class="flex items-center gap-2">

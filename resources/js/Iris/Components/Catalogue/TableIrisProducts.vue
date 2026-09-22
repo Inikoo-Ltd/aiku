@@ -108,7 +108,7 @@ const parentInfo = computed(() => {
         <template #cell(public_url)="{ item: item }">
             <div class="flex justify-center">
                 <a v-if="item.public_url" :href="item.public_url ?? item.iris_url" target="_blank">
-                    <FontAwesomeIcon :icon="faExternalLink" />
+                    <FontAwesomeIcon :icon="faExternalLink" fixed-width />
                 </a>
             </div>
         </template>
@@ -154,7 +154,7 @@ const parentInfo = computed(() => {
                 <a v-if="item.public_url" :href="item.public_url" target="_blank"
                     class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-primary-600"
                     title="Open public page">
-                    <FontAwesomeIcon :icon="faExternalLink" />
+                    <FontAwesomeIcon :icon="faExternalLink" fixed-width />
                 </a>
 
                 <div v-if="isLoggedIn" class="flex flex-shrink-0 items-center gap-1">

@@ -32,6 +32,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\Shipment;
@@ -829,6 +830,22 @@ test('picking the shop makes the channel ready and the check reads the shop name
         ->and($channel->name)->toBe('Maomao beauty shop');
     Http::assertSent(fn (Request $request) => str_contains($request->url(), '/logistics/202309/warehouses')
         && str_contains($request->url(), 'shop_cipher=GCP_XF90igAAAABh00qsWgtvOiGFNqyubMt3'));
+});
+
+test('picking a shop tiktok holds no warehouse for keeps the channel incomplete and tells the customer why', function () {
+    $tiktokUser = tiktokChannel($this->customer, ['tiktok_shop_id' => null, 'tiktok_shop_chiper' => null, 'tiktok_warehouse_id' => null]);
+    UpdateCustomerSalesChannel::run($tiktokUser->customerSalesChannel, ['state' => CustomerSalesChannelStateEnum::AUTHENTICATED, 'platform_status' => false]);
+
+    $channelResource = fn () => RetinaCustomerSalesChannelResource::make($tiktokUser->customerSalesChannel->refresh())->resolve();
+    expect($channelResource()['tiktok_shop_has_no_warehouse'])->toBeFalse();
+
+    fakeTiktok(array_merge(tiktokShopFixtures($tiktokUser), ['/logistics/' => tiktokOk([])]));
+    $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, ['tiktok_shop_id' => '7000714532876273420', 'tiktok_shop_chiper' => 'GCP_XF90igAAAABh00qsWgtvOiGFNqyubMt3']);
+
+    expect($tiktokUser->refresh()->tiktok_warehouse_id)->toBeNull()
+        ->and($tiktokUser->customerSalesChannel->refresh()->platform_status)->toBeFalse()
+        ->and($channelResource()['tiktok_shop_has_no_warehouse'])->toBeTrue()
+        ->and($channelResource()['platform_completion'])->toBeFalsy();
 });
 
 test('an expired access token is refreshed before the call and a failed refresh keeps the current tokens', function () {

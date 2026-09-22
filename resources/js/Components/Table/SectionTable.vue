@@ -90,7 +90,7 @@ const filteredData = computed(() => {
 									isSectionCollapsed(section.section)
 										? 'far fa-angle-up'
 										: 'far fa-angle-down'
-								" />
+								" fixed-width />
 						</button>
 					</div>
 
