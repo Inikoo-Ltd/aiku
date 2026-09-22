@@ -776,6 +776,28 @@ const selectedInbox = computed(() =>
 
 const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
+/* Two ways the rail can be folded, kept apart on purpose. The one above is what the user chose,
+   and it is remembered; the one below is this page folding it for them on a narrow screen, and
+   it lives only as long as the page - otherwise a phone would decide how their desktop opens. */
+const railAutoCollapsed = ref(false)
+
+const railCollapsed = computed(() => inboxRailCollapsed.value || railAutoCollapsed.value)
+
+const expandRail = () => {
+    railAutoCollapsed.value = false
+    inboxRailCollapsed.value = false
+}
+
+const toggleRail = () => {
+    if (railCollapsed.value) {
+        expandRail()
+
+        return
+    }
+
+    inboxRailCollapsed.value = true
+}
+
 /* The rail holds three lists, and which of them matters depends on the day: a supervisor lives
    in Agents, somebody clearing the queue lives in Folders. Each one folds away, and the two
    lower ones are dragged to the height their owner wants; Shops takes whatever is left. */
@@ -792,7 +814,100 @@ const railSectionHeight = useLocalStorage(`chat-rail-heights:${layout.user?.id ?
 
 const MIN_SECTION_HEIGHT = 72
 
+/* The chat is the page, so it runs from under the heading down to the footer. Two things make
+   that awkward to write as a calc: what sits above it varies (banner, breadcrumbs, sub nav), and
+   the layout holds back `pb-24` under every page for a footer that is fixed and a third of that
+   tall. So the height is measured against the window, and the negative margin below gives back
+   the padding the chat now covers - without it the page keeps that 96px and scrolls. */
+const chatArea = ref<HTMLElement | null>(null)
+const chatAreaHeight = ref<string>("calc(100vh - 10rem)")
+
+const fitChatArea = () => {
+    const element = chatArea.value
+
+    if (!element) {
+        return
+    }
+
+    const footer = document.querySelector("footer")
+    const footerHeight = footer ? footer.getBoundingClientRect().height : 0
+    const next = Math.max(320, window.innerHeight - element.getBoundingClientRect().top - footerHeight)
+
+    // Nothing moves unless it has to, or the observer below and this become a loop.
+    if (Math.abs(next - parseFloat(chatAreaHeight.value)) < 1) {
+        return
+    }
+
+    chatAreaHeight.value = `${next}px`
+}
+
+let chatAreaObserver: ResizeObserver | null = null
+
+onMounted(async () => {
+    await nextTick()
+    fitChatArea()
+    await nextTick()
+    fitChatArea()
+    window.addEventListener("resize", fitChatArea)
+
+    const main = chatArea.value?.closest("main")
+
+    if (main && typeof ResizeObserver !== "undefined") {
+        chatAreaObserver = new ResizeObserver(fitChatArea)
+        chatAreaObserver.observe(main)
+    }
+})
+
+onUnmounted(() => {
+    window.removeEventListener("resize", fitChatArea)
+    chatAreaObserver?.disconnect()
+})
+
 const railElement = ref<HTMLElement | null>(null)
+
+/* On a tablet or a phone the rail is a third of the screen, so it is opened to pick a shop and
+   then wants to be out of the way: four seconds after the last touch it folds itself back.
+   Anything the pointer or keyboard does inside it starts the count again, so it never closes
+   under somebody mid-scroll. On a desktop there is room for it, and folding a rail the user
+   left open would just be the page arguing with them. */
+const RAIL_IDLE_MS = 4000
+
+const narrowScreen = typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia("(max-width: 1023px)")
+    : null
+
+let railIdleTimer: ReturnType<typeof setTimeout> | null = null
+
+const clearRailIdle = () => {
+    if (railIdleTimer) {
+        clearTimeout(railIdleTimer)
+        railIdleTimer = null
+    }
+}
+
+const startRailIdle = () => {
+    clearRailIdle()
+
+    if (railCollapsed.value || !narrowScreen?.matches) {
+        return
+    }
+
+    railIdleTimer = setTimeout(() => {
+        railAutoCollapsed.value = true
+    }, RAIL_IDLE_MS)
+}
+
+watch(railCollapsed, startRailIdle)
+
+onMounted(() => {
+    startRailIdle()
+    narrowScreen?.addEventListener("change", startRailIdle)
+})
+
+onUnmounted(() => {
+    clearRailIdle()
+    narrowScreen?.removeEventListener("change", startRailIdle)
+})
 
 const startResize = (section: "agents" | "folders", event: PointerEvent) => {
     event.preventDefault()
@@ -834,8 +949,8 @@ const shopAvatarStyle = (inbox: { id: number }) => {
 // Picking a shop means picking its first channel: there is nothing left to unfold, since the
 // channels sit on the row itself.
 const selectInbox = (shopId: number) => {
-    if (inboxRailCollapsed.value) {
-        inboxRailCollapsed.value = false
+    if (railCollapsed.value) {
+        expandRail()
     }
 
     const inbox = props.inboxes?.find((i) => i.id === shopId)
@@ -1577,43 +1692,46 @@ onUnmounted(() => {
     <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
         @created="onWhatsappChatCreated" />
 
-    <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
+    <div ref="chatArea" :style="{ height: chatAreaHeight }"
+        class="relative flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
         <div ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
-            :class="inboxRailCollapsed ? 'w-16' : 'w-64'">
+            :class="railCollapsed ? 'w-16' : 'w-64'"
+            @pointerdown="startRailIdle" @pointermove="startRailIdle" @wheel="startRailIdle"
+            @focusin="startRailIdle" @keydown="startRailIdle">
             <!-- Header + collapse toggle -->
             <div class="border-b border-gray-200 flex items-center h-[41px]"
-                :class="inboxRailCollapsed ? 'justify-center' : 'justify-between px-3'">
-                <button v-if="!inboxRailCollapsed" type="button"
+                :class="railCollapsed ? 'justify-center' : 'justify-between px-3'">
+                <button v-if="!railCollapsed" type="button"
                     class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700"
                     @click="railSectionOpen = { ...railSectionOpen, shops: !railSectionOpen.shops }">
                     <FontAwesomeIcon :icon="railSectionOpen.shops ? faAngleDown : faAngleRight" class="text-[10px]" />
                     {{ supervisor ? ctrans("Shops") : ctrans("Inboxes") }}
                 </button>
-                <button type="button" @click="inboxRailCollapsed = !inboxRailCollapsed"
-                    v-tooltip="inboxRailCollapsed ? ctrans('Expand') : ctrans('Collapse')"
+                <button type="button" @click="toggleRail"
+                    v-tooltip="railCollapsed ? ctrans('Expand') : ctrans('Collapse')"
                     class="p-1 rounded hover:bg-gray-200 text-gray-400">
-                    <FontAwesomeIcon :icon="inboxRailCollapsed ? faAngleRight : faAngleLeft" class="text-xs" />
+                    <FontAwesomeIcon :icon="railCollapsed ? faAngleRight : faAngleLeft" class="text-xs" />
                 </button>
             </div>
 
             <!-- Shop list -->
-            <div v-if="!inboxRailCollapsed && !railSectionOpen.shops" class="flex-1" />
+            <div v-if="!railCollapsed && !railSectionOpen.shops" class="flex-1" />
 
-            <div v-show="inboxRailCollapsed || railSectionOpen.shops" class="flex-1 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300">
+            <div v-show="railCollapsed || railSectionOpen.shops" class="flex-1 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300">
                 <div v-for="inbox in inboxes" :key="inbox.id"
                     class="transition-colors border-b border-gray-200"
                     :class="shopIsOn(inbox.id) ? 'bg-white' : 'hover:bg-gray-100'">
                     <button type="button" @click="toggleShop(inbox.id)"
-                        v-tooltip="inboxRailCollapsed ? inbox.name : undefined"
+                        v-tooltip="railCollapsed ? inbox.name : undefined"
                         class="w-full flex items-center gap-2 min-w-0"
                         :class="[
-                            inboxRailCollapsed ? 'justify-center py-1' : 'px-2 py-1',
+                            railCollapsed ? 'justify-center py-1' : 'px-2 py-1',
                             shopIsOn(inbox.id) ? 'font-medium text-gray-800' : 'text-gray-700',
                         ]">
                         <!-- The initials only stand in for the name when the rail is folded and
                              there is no room for it; beside the name they said it twice. -->
-                        <div v-if="inboxRailCollapsed" class="relative shrink-0">
+                        <div v-if="railCollapsed" class="relative shrink-0">
                             <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold"
                                 :style="shopAvatarStyle(inbox)">
                                 {{ shopInitials(inbox.name) }}
@@ -1624,21 +1742,21 @@ onUnmounted(() => {
                                 {{ inboxUnread[inbox.id] }}
                             </span>
                         </div>
-                        <FontAwesomeIcon v-if="!inboxRailCollapsed && supervisor" :icon="faCircleCheck"
+                        <FontAwesomeIcon v-if="!railCollapsed && supervisor" :icon="faCircleCheck"
                             class="shrink-0 text-sm transition-colors"
                             :class="shopIsOn(inbox.id) ? 'text-green-500' : 'text-gray-300'" />
-                        <span v-if="!inboxRailCollapsed" class="flex-1 truncate text-sm text-left">{{ inbox.name }}</span>
-                        <span v-if="!inboxRailCollapsed && inboxUnread[inbox.id]"
+                        <span v-if="!railCollapsed" class="flex-1 truncate text-sm text-left">{{ inbox.name }}</span>
+                        <span v-if="!railCollapsed && inboxUnread[inbox.id]"
                             v-tooltip="ctrans('Customers waiting')"
                             class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500">
                             {{ inboxUnread[inbox.id] }}
                         </span>
-                        <span v-if="!inboxRailCollapsed && inboxGuestsWaiting[inbox.id]"
+                        <span v-if="!railCollapsed && inboxGuestsWaiting[inbox.id]"
                             v-tooltip="ctrans('Guests waiting')"
                             class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-amber-500">
                             {{ inboxGuestsWaiting[inbox.id] }}
                         </span>
-                        <span v-if="!inboxRailCollapsed && inboxActive[inbox.id]"
+                        <span v-if="!railCollapsed && inboxActive[inbox.id]"
                             v-tooltip="ctrans('Active')"
                             class="shrink-0 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-blue-500">
                             {{ inboxActive[inbox.id] }}
@@ -1648,7 +1766,7 @@ onUnmounted(() => {
                     <!-- A little table instead of a row of capsules: channels across, who is
                          on the other end down. Cells line up by construction, and a count of
                          zero holds its place so the eye can run down a column. -->
-                    <table v-if="!inboxRailCollapsed && shopIsOpen(inbox.id)" class="w-full text-[11px] tabular-nums mb-1">
+                    <table v-if="!railCollapsed && shopIsOpen(inbox.id)" class="w-full text-[11px] tabular-nums mb-1">
                         <thead>
                             <tr>
                                 <th class="w-4"></th>
@@ -1719,13 +1837,13 @@ onUnmounted(() => {
                         </tbody>
                     </table>
                 </div>
-                <div v-if="!inboxes.length && !inboxRailCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
+                <div v-if="!inboxes.length && !railCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
                     {{ ctrans("No inboxes assigned") }}
                 </div>
             </div>
 
             <!-- The people on these shops: who is there and what they are holding -->
-            <template v-if="supervisor && !inboxRailCollapsed">
+            <template v-if="supervisor && !railCollapsed">
                 <div v-if="railSectionOpen.agents" class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
                     v-tooltip="ctrans('Drag to resize')" @pointerdown="startResize('agents', $event)" />
 
@@ -1762,10 +1880,10 @@ onUnmounted(() => {
             </template>
 
             <!-- Everything that is not a shop: the group's queue and the places things are put -->
-            <div v-if="!inboxRailCollapsed && railSectionOpen.folders" class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
+            <div v-if="!railCollapsed && railSectionOpen.folders" class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
                 v-tooltip="ctrans('Drag to resize')" @pointerdown="startResize('folders', $event)" />
 
-            <div v-if="!inboxRailCollapsed" class="shrink-0 border-t border-gray-200">
+            <div v-if="!railCollapsed" class="shrink-0 border-t border-gray-200">
                 <button type="button"
                     class="flex w-full items-center gap-1.5 px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700"
                     @click="railSectionOpen = { ...railSectionOpen, folders: !railSectionOpen.folders }">
@@ -1777,15 +1895,15 @@ onUnmounted(() => {
                 </button>
             </div>
 
-            <div v-show="inboxRailCollapsed || railSectionOpen.folders"
+            <div v-show="railCollapsed || railSectionOpen.folders"
                 class="shrink-0 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300"
-                :style="inboxRailCollapsed ? {} : { height: railSectionHeight.folders + 'px' }">
+                :style="railCollapsed ? {} : { height: railSectionHeight.folders + 'px' }">
             <div class="py-1">
                 <button type="button" @click="selectUnclaimed"
                     v-tooltip="ctrans('Nobody has taken these yet, on any shop')"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
-                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
                         unclaimedView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="unclaimedView ? selectedItemStyle : {}">
@@ -1794,13 +1912,13 @@ onUnmounted(() => {
                     <span class="relative shrink-0">
                         <FontAwesomeIcon :icon="faBell" class="text-sm"
                             :class="unclaimedCount ? 'text-red-500' : unclaimedView ? 'text-gray-600' : ''" />
-                        <span v-if="inboxRailCollapsed && unclaimedCount"
+                        <span v-if="railCollapsed && unclaimedCount"
                             class="absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-center text-[9px] font-semibold leading-4 text-white ring-2 ring-gray-50">
                             {{ unclaimedCount }}
                         </span>
                     </span>
-                    <span v-if="!inboxRailCollapsed" class="flex-1 text-left">{{ ctrans("Unclaimed") }}</span>
-                    <span v-if="!inboxRailCollapsed && unclaimedCount"
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Unclaimed") }}</span>
+                    <span v-if="!railCollapsed && unclaimedCount"
                         class="text-[10px] font-semibold rounded-full px-1.5 py-0.5 bg-red-500 text-white shrink-0">
                         {{ unclaimedCount }}
                     </span>
@@ -1810,59 +1928,63 @@ onUnmounted(() => {
             <!-- Spam -->
             <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
                 <button type="button" @click="selectSpam"
-                    v-tooltip="inboxRailCollapsed ? ctrans('Spam') : undefined"
+                    v-tooltip="railCollapsed ? ctrans('Spam') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
-                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
                         spamView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="spamView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" />
-                    <span v-if="!inboxRailCollapsed">{{ ctrans("Spam") }}</span>
+                    <span v-if="!railCollapsed">{{ ctrans("Spam") }}</span>
                 </button>
                 <button type="button" @click="selectRubbish"
-                    v-tooltip="inboxRailCollapsed ? ctrans('Ignored') : undefined"
+                    v-tooltip="railCollapsed ? ctrans('Ignored') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
-                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
                         rubbishView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="rubbishView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faArchive" class="text-sm shrink-0" :class="rubbishView ? 'text-gray-600' : ''" />
-                    <span v-if="!inboxRailCollapsed">{{ ctrans("Ignored") }}</span>
+                    <span v-if="!railCollapsed">{{ ctrans("Ignored") }}</span>
                 </button>
                 <button type="button" @click="selectTrash"
-                    v-tooltip="inboxRailCollapsed ? ctrans('Trash') : undefined"
+                    v-tooltip="railCollapsed ? ctrans('Trash') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
-                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
                         trashView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="trashView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faTrash" class="text-sm shrink-0" :class="trashView ? 'text-red-500' : ''" />
-                    <span v-if="!inboxRailCollapsed">{{ ctrans("Trash") }}</span>
+                    <span v-if="!railCollapsed">{{ ctrans("Trash") }}</span>
                 </button>
             </div>
 
             <!-- Highlighted -->
             <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
                 <button type="button" @click="selectHighlight"
-                    v-tooltip="inboxRailCollapsed ? ctrans('Highlighted') : undefined"
+                    v-tooltip="railCollapsed ? ctrans('Highlighted') : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
-                        inboxRailCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
                         highlightView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="highlightView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" :class="highlightView ? 'text-amber-400' : ''" />
-                    <span v-if="!inboxRailCollapsed">{{ ctrans("Highlighted") }}</span>
+                    <span v-if="!railCollapsed">{{ ctrans("Highlighted") }}</span>
                 </button>
             </div>
             </div>
         </div>
 
-        <!-- PANEL 2: conversation list for the selected inbox -->
-        <div class="w-80 shrink-0 border-r border-gray-200 flex flex-col">
+        <!-- PANEL 2: conversation list for the selected inbox.
+             Narrow screens have room for one column, not three, so the list and the thread take
+             turns: the list until a conversation is picked, the thread after, with its own back
+             button to return. From lg up both stand side by side as before. -->
+        <div class="border-r border-gray-200 flex-col lg:w-80 lg:shrink-0 lg:flex-none"
+            :class="selectedSession ? 'hidden lg:flex' : 'flex flex-1 min-w-0'">
             <!-- Selected inbox + My/Team segmented toggle -->
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
@@ -1985,7 +2107,7 @@ onUnmounted(() => {
             </div>
 
             <!-- List (flat, for the selected inbox) -->
-            <div class="flex-1 overflow-y-auto">
+            <div class="flex-1 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300">
                 <div v-if="filteredContacts.length === 0"
                     class="h-full flex flex-col items-center justify-center gap-2 text-center px-4">
                     <div class="text-2xl">💬</div>
@@ -2093,7 +2215,7 @@ onUnmounted(() => {
         </div>
 
         <!-- CENTER: thread + composer -->
-        <div class="flex-1 min-w-0 relative">
+        <div class="flex-1 min-w-0 relative" :class="selectedSession ? '' : 'hidden lg:block'">
             <div v-if="!selectedSession"
                 class="h-full flex flex-col items-center justify-center gap-2 text-gray-400">
                 <div class="text-4xl">💬</div>
@@ -2125,6 +2247,9 @@ onUnmounted(() => {
         </div>
 
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
+        <div v-if="panelSession && sidePanelVisible" class="absolute inset-0 z-20 bg-black/20 xl:hidden"
+            @click="closeSidePanel" />
+
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
             :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
             @synced="onSessionSynced" @customer-synced="onCustomerSynced" />

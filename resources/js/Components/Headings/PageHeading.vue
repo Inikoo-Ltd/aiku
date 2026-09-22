@@ -358,7 +358,7 @@ const setError = (e) => {
 			<div
 				class="ml-auto flex items-center gap-x-2 rounded-md max-sm:w-full">
 				<div class="relative max-sm:min-w-0 max-sm:flex-1">
-				<div ref="actionScroller" class="flex items-center gap-x-2 max-sm:overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:justify-end sm:gap-y-1 [&>*]:shrink-0">
+				<div ref="actionScroller" class="flex items-center gap-x-2 max-sm:overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:justify-end sm:gap-y-1 [&>*]:shrink-0 max-sm:[&>*:first-child]:ml-auto">
 				<slot name="otherBefore" :dataPageHead="{ ...props }" />
 
 				<template v-for="(action, actIndex) in data.actions">
