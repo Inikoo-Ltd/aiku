@@ -190,6 +190,14 @@ const highlightView = ref(false)
 // it spans every shop and every channel and carries no my/team of its own.
 const unclaimedView = ref(false)
 const unclaimedCount = ref(0)
+const spamCount = ref(0)
+
+// Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
+const spamRailTooltip = computed(() =>
+    spamCount.value
+        ? ctrans("Spam (:count)", { count: String(spamCount.value) })
+        : ctrans("Spam")
+)
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
@@ -1291,6 +1299,7 @@ const fetchInboxNotifications = async () => {
         const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`)
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
         unclaimedCount.value = data?.data?.unclaimed ?? 0
+        spamCount.value = data?.data?.spam ?? 0
     } catch (e) {
         // silent — badges are non-critical
     }
@@ -1929,7 +1938,7 @@ onUnmounted(() => {
             <!-- Spam -->
             <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
                 <button type="button" @click="selectSpam"
-                    v-tooltip="railCollapsed ? ctrans('Spam') : undefined"
+                    v-tooltip="railCollapsed ? spamRailTooltip : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
                         railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
@@ -1937,7 +1946,12 @@ onUnmounted(() => {
                     ]"
                     :style="spamView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" fixed-width />
-                    <span v-if="!railCollapsed">{{ ctrans("Spam") }}</span>
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Spam") }}</span>
+                    <!-- Grey, unlike the unclaimed badge: what is in the bin is how much there is
+                         to clear out, never anything anybody has to hurry to. -->
+                    <span v-if="!railCollapsed && spamCount" class="text-[11px] tabular-nums text-gray-400 shrink-0">
+                        {{ spamCount }}
+                    </span>
                 </button>
                 <button type="button" @click="selectRubbish"
                     v-tooltip="railCollapsed ? ctrans('Ignored') : undefined"
