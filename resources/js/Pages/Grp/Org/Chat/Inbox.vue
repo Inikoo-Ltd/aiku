@@ -1600,7 +1600,7 @@ onUnmounted(() => {
             <!-- Shop list -->
             <div v-if="!inboxRailCollapsed && !railSectionOpen.shops" class="flex-1" />
 
-            <div v-show="inboxRailCollapsed || railSectionOpen.shops" class="flex-1 overflow-y-auto">
+            <div v-show="inboxRailCollapsed || railSectionOpen.shops" class="flex-1 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300">
                 <div v-for="inbox in inboxes" :key="inbox.id"
                     class="transition-colors border-b border-gray-200"
                     :class="shopIsOn(inbox.id) ? 'bg-white' : 'hover:bg-gray-100'">
@@ -1739,7 +1739,7 @@ onUnmounted(() => {
                     </button>
                 </div>
 
-                <div v-show="railSectionOpen.agents" class="shrink-0 overflow-y-auto"
+                <div v-show="railSectionOpen.agents" class="shrink-0 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300"
                     :style="{ height: railSectionHeight.agents + 'px' }">
                 <button v-for="agent in agents" :key="agent.id" type="button"
                     v-tooltip="ctrans('Show what they are holding')"
@@ -1778,7 +1778,7 @@ onUnmounted(() => {
             </div>
 
             <div v-show="inboxRailCollapsed || railSectionOpen.folders"
-                class="shrink-0 overflow-y-auto"
+                class="shrink-0 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300"
                 :style="inboxRailCollapsed ? {} : { height: railSectionHeight.folders + 'px' }">
             <div class="py-1">
                 <button type="button" @click="selectUnclaimed"
@@ -1789,10 +1789,18 @@ onUnmounted(() => {
                         unclaimedView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
                     ]"
                     :style="unclaimedView ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faBell" class="text-sm shrink-0"
-                        :class="unclaimedCount ? 'text-red-500' : unclaimedView ? 'text-gray-600' : ''" />
+                    <!-- Folded, the count rides on the bell the way the shops' does on their
+                         initials; beside it there is no width for both. -->
+                    <span class="relative shrink-0">
+                        <FontAwesomeIcon :icon="faBell" class="text-sm"
+                            :class="unclaimedCount ? 'text-red-500' : unclaimedView ? 'text-gray-600' : ''" />
+                        <span v-if="inboxRailCollapsed && unclaimedCount"
+                            class="absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-center text-[9px] font-semibold leading-4 text-white ring-2 ring-gray-50">
+                            {{ unclaimedCount }}
+                        </span>
+                    </span>
                     <span v-if="!inboxRailCollapsed" class="flex-1 text-left">{{ ctrans("Unclaimed") }}</span>
-                    <span v-if="unclaimedCount"
+                    <span v-if="!inboxRailCollapsed && unclaimedCount"
                         class="text-[10px] font-semibold rounded-full px-1.5 py-0.5 bg-red-500 text-white shrink-0">
                         {{ unclaimedCount }}
                     </span>
