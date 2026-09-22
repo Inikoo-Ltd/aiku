@@ -318,6 +318,9 @@ class ShowOrgChatInbox extends OrgAction
                 // Writing is decided shop by shop, never once for the page: the same person is
                 // an agent on one shop and only oversees another.
                 'is_read_only' => !$this->userCanActOnChatOnShop($user, $shop),
+                // A shop with no mailbox connected can send nothing, so the inbox does not offer
+                // to write from it. The customer still has to have an address of their own.
+                'can_start_email' => filled(Arr::get($shop->settings, 'gmail.email')),
             ];
         })->values()->all();
     }

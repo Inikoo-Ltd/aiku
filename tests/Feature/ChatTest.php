@@ -6238,3 +6238,24 @@ test('the widget goes offline on a bank holiday even though the week says open',
 
     \Illuminate\Support\Carbon::setTestNow();
 });
+
+test('the customer picker for a new email only offers customers with an address', function () {
+    createCustomer($this->shop)->update(['email' => 'reachable@example.com']);
+    createCustomer($this->shop)->update(['email' => null]);
+
+    actingAs($this->user);
+
+    $total = function (array $filters) {
+        $response = $this->get(route('grp.json.shop.customers', ['shop' => $this->shop->id] + $filters));
+        $response->assertOk();
+
+        return $response->json('total');
+    };
+
+    $withoutEmail = \App\Models\CRM\Customer::where('shop_id', $this->shop->id)
+        ->where(fn ($query) => $query->whereNull('email')->orWhere('email', ''))
+        ->count();
+
+    expect($withoutEmail)->toBeGreaterThan(0)
+        ->and($total([]) - $total(['filter[has_email]' => 1]))->toBe($withoutEmail);
+});

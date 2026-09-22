@@ -13,6 +13,7 @@ import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAre
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
 import SettingChat from "@/Components/Chat/SettingChat.vue"
 import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
+import NewEmailChatDialog from "@/Components/Chat/NewEmailChatDialog.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -39,6 +40,7 @@ const props = defineProps<{
         slug: string
         type: string | null
         is_read_only?: boolean
+        can_start_email?: boolean
         channels: Array<{
             key: string
             name: string
@@ -281,6 +283,7 @@ const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "slack">("general")
 
 const newChatVisible = ref(false)
+const newEmailVisible = ref(false)
 const openChatSettings = () => {
     settingInitialTab.value = "general"
     chatSettingVisible.value = true
@@ -782,6 +785,12 @@ const selectedInbox = computed(() =>
     props.inboxes?.find((i) => i.id === selectedShopId.value) ?? props.inboxes?.[0] ?? null
 )
 
+// Writing a fresh email needs one shop, its mailbox, and the right to answer on it.
+const canStartEmail = computed(
+    () => selectedChannel.value === "email" && !isReadOnly.value && !!selectedShopId.value
+        && selectedInbox.value?.can_start_email === true
+)
+
 const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
 /* Two ways the rail can be folded, kept apart on purpose. The one above is what the user chose,
@@ -996,6 +1005,7 @@ function afterSelectionChanged() {
     linkedContact.value = null
     messages.value = []
     newChatVisible.value = false
+    newEmailVisible.value = false
     selectedAgentIds.value = []
     agentView.value = false
 
@@ -1719,6 +1729,8 @@ onUnmounted(() => {
     <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
         @created="onWhatsappChatCreated" />
 
+    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" />
+
     <div ref="chatArea" :style="{ height: chatAreaHeight }"
         class="relative flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
@@ -2057,6 +2069,14 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
+                    <button v-if="canStartEmail" type="button"
+                        v-tooltip="ctrans('New email')"
+                        class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-indigo-600 text-[11px] font-medium"
+                        @click="newEmailVisible = true">
+                        <FontAwesomeIcon :icon="faPlus" class="text-xs" fixed-width />
+                        {{ ctrans("New email") }}
+                    </button>
+
                     <button v-if="selectedChannel === 'whatsapp' && !isReadOnly" type="button"
                         v-tooltip="ctrans('New WhatsApp chat')"
                         class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-green-600 text-[11px] font-medium"
