@@ -16,6 +16,7 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 
 function fakeWebpage(int $id = 1, ?string $canonicalUrl = 'https://www.example.com/shop/landing'): Webpage
 {
@@ -188,14 +189,9 @@ it('surfaces the PageSpeed Insights error message and does not cache or record i
     Http::assertSentCount(2);
 });
 
-it('re-measures both strategies straight away without waiting for a queue worker', function () {
+it('re-measures both strategies on the queue instead of inside the request', function () {
     Queue::fake();
-
-    Http::fake([
-        'www.googleapis.com/pagespeedonline/*' => Http::response(pageSpeedPayload()),
-    ]);
-
-    StoreWebpagePageSpeedTimeSeriesRecord::shouldRun()->twice();
+    Http::fake();
 
     $webpage = fakeWebpage(6);
 
@@ -204,35 +200,25 @@ it('re-measures both strategies straight away without waiting for a queue worker
 
     RefreshWebpagePageSpeed::run($webpage);
 
-    Queue::assertNothingPushed();
+    Http::assertNothingSent();
+    Queue::assertPushed(JobDecorator::class, 2);
 
-    Http::assertSentCount(2);
-    Http::assertSent(fn ($request) => $request['strategy'] === 'desktop');
-    Http::assertSent(fn ($request) => $request['strategy'] === 'mobile');
-
-    expect(cache()->get(GetWebpagePageSpeed::resultKey($webpage, 'desktop'))['scores'])->toHaveCount(4)
-        ->and(cache()->get(GetWebpagePageSpeed::resultKey($webpage, 'mobile'))['strategy'])->toBe('mobile')
-        ->and(cache()->has(GetWebpagePageSpeed::pendingKey($webpage, 'mobile')))->toBeFalse();
+    expect(cache()->has(GetWebpagePageSpeed::resultKey($webpage, 'desktop')))->toBeFalse();
 });
 
-it('measures both strategies while the request is served instead of queueing them', function () {
+it('queues both strategies and reports pending instead of measuring while the request is served', function () {
     Queue::fake();
-
-    Http::fake([
-        'www.googleapis.com/pagespeedonline/*' => Http::response(pageSpeedPayload()),
-    ]);
-
-    StoreWebpagePageSpeedTimeSeriesRecord::shouldRun()->twice();
+    Http::fake();
 
     $report = GetWebpagePageSpeedReport::run(fakeWebpage(7));
 
-    Queue::assertNothingPushed();
-    Http::assertSentCount(2);
+    Http::assertNothingSent();
 
     expect($report['status'])->toBe('ready')
+        ->and($report['pending'])->toBeTrue()
         ->and($report['refresh_route']['name'])->toBe('grp.models.webpage.pagespeed.refresh')
-        ->and($report['desktop']['scores'])->toHaveCount(4)
-        ->and($report['mobile']['strategy'])->toBe('mobile');
+        ->and($report['desktop']['pending'])->toBeTrue()
+        ->and($report['mobile']['pending'])->toBeTrue();
 });
 
 it('serves a measurement already in the cache without asking Google again', function () {
@@ -246,7 +232,8 @@ it('serves a measurement already in the cache without asking Google again', func
         cache()->put(GetWebpagePageSpeed::resultKey($webpage, $strategy), ['strategy' => $strategy, 'scores' => []]);
     }
 
-    expect(GetWebpagePageSpeedReport::run($webpage)['desktop']['strategy'])->toBe('desktop');
+    expect(GetWebpagePageSpeedReport::run($webpage)['desktop']['strategy'])->toBe('desktop')
+        ->and(GetWebpagePageSpeedReport::run($webpage)['pending'])->toBeFalse();
 
     Http::assertNothingSent();
 });

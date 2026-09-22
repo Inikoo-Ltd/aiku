@@ -287,7 +287,7 @@ resetForm()
 
                 <div class="space-y-2">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer name') }}:
                     </label>
 
@@ -296,7 +296,7 @@ resetForm()
 
                 <div class="space-y-2" v-if="!props.product_id">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
 
                         {{ trans('Select product') }}:
                     </label>
@@ -336,7 +336,7 @@ resetForm()
                 <!-- Section: Offer type -->
                     <div class="space-y-2">
                         <div class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ trans('Select offer type') }}:
                         </div>
 
@@ -379,7 +379,7 @@ resetForm()
                     <!-- Section: Allowance -->
                     <div class="space-y-3">
                         <div class="font-medium flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ trans('Allowance') }}:
                         </div>
 
@@ -429,7 +429,7 @@ resetForm()
                             <div v-if="!freeSameAsProduct" class="space-y-2">
                                 <label class="font-medium flex items-center gap-x-1">
                                     <FontAwesomeIcon icon="fas fa-asterisk"
-                                        class="font-light text-xs text-red-400 align-middle" />
+                                        class="font-light text-xs text-red-400 align-middle" fixed-width />
                                     {{ trans('Select free product') }}:
                                 </label>
 
@@ -471,7 +471,7 @@ resetForm()
                 <div class="space-y-3">
 
                     <div class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer Duration') }}:
                     </div>
 
@@ -508,7 +508,7 @@ resetForm()
                         <div class="space-y-2">
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
-                                    class="font-light text-xs text-red-400 align-middle" />
+                                    class="font-light text-xs text-red-400 align-middle" fixed-width />
                                 {{ trans('Start Date') }}
                                 <InformationIcon
                                     :information="trans('If start date is empty, will start immediately')" />:

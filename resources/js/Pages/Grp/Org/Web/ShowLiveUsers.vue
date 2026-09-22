@@ -190,7 +190,7 @@ const sinceLabel = (v: LiveVisitor) => {
                     class="rounded-md border-gray-300 py-1.5 pl-3 pr-9 text-sm focus:border-indigo-500 focus:ring-indigo-500 w-64"
                 >
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <FontAwesomeIcon :icon="faSearch" class="text-gray-400" />
+                    <FontAwesomeIcon :icon="faSearch" class="text-gray-400" fixed-width />
                 </div>
             </div>
 
@@ -267,7 +267,7 @@ const sinceLabel = (v: LiveVisitor) => {
                             <FontAwesomeIcon
                                 :icon="deviceIcon(visitor)"
                                 class="text-gray-400"
-                                :title="`${visitor.browser ?? ''} ${visitor.os ?? ''}`.trim()"
+                                :title="`${visitor.browser ?? ''} ${visitor.os ?? ''}`.trim()" fixed-width
                             />
                         </td>
                         <td class="px-3 py-2">
@@ -296,7 +296,7 @@ const sinceLabel = (v: LiveVisitor) => {
                         </td>
                         <td class="px-3 py-2">
                             <span class="flex items-center gap-2 text-gray-600 min-w-0">
-                                <FontAwesomeIcon :icon="pageIcon(visitor)" class="text-gray-400 shrink-0" />
+                                <FontAwesomeIcon :icon="pageIcon(visitor)" class="text-gray-400 shrink-0" fixed-width />
                                 <span class="truncate" :title="visitor.url">{{ pagePath(visitor) }}</span>
                             </span>
                         </td>

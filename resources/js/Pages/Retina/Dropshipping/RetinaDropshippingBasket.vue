@@ -639,7 +639,7 @@ const onChangeInsurance = async (val: boolean) => {
         <button @click="isModalProductListOpen = false" class="absolute top-3 right-3 z-50 flex items-center justify-center 
                w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 
                text-gray-600 hover:text-black transition">
-            <FontAwesomeIcon :icon="faTimes" />
+            <FontAwesomeIcon :icon="faTimes" fixed-width />
         </button>
 
         <ProductsSelectorAutoSelect :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"

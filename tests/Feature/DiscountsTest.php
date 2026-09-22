@@ -1425,6 +1425,30 @@ describe('calculate order discounts', function () {
         $order->shop->update(['type' => $originalType]);
     });
 
+    test('CalculateOrderDiscounts gives no shop offer to an intercompany order, a partner is not a customer to win', function () {
+        $order = Order::latest('id')->first();
+
+        $intercompany = \App\Models\Ordering\SalesChannel::where('group_id', $order->group_id)->where('code', 'intercompany')->first()
+            ?? \App\Actions\Ordering\SalesChannel\StoreSalesChannel::make()->action($order->group, [
+                'code' => 'intercompany',
+                'name' => 'Intercompany',
+                'type' => \App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum::OTHER,
+            ]);
+
+        $order->update(['sales_channel_id' => $intercompany->id]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe((float)$transaction->gross_amount);
+
+        expect(fn () => AddVoucherToOrder::run($order->refresh(), ['voucher' => 'ANYTHING']))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $order->update(['sales_channel_id' => null]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(80.0);
+    });
+
     test('Faire discount targets the invoice, never a credit note', function () {
         $order = Order::latest('id')->first();
 

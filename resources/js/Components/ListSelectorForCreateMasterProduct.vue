@@ -467,7 +467,7 @@ defineExpose({
                             </NumberWithButtonSave>
                             <button class="text-red-500 hover:text-red-700 px-4"
                                 @click="() => deleteFormCommited(item)">
-                                <FontAwesomeIcon :icon="faTrashAlt" />
+                                <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
                             </button>
                         </div>
                     </div>

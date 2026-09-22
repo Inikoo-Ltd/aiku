@@ -58,7 +58,7 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
                                 v-tooltip="data?.trade_unit.status"
                                 :icon="data?.trade_unit.status == 'active' ? faCheck : faTimes" 
                                 :class="data?.trade_unit.status == 'active' ? 'text-green-500' : 'text-red-500'"
-                                class="ml-1"
+                                class="ml-1" fixed-width
                             />
                         </span>
 					    <ImagePrime 

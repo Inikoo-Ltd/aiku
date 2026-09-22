@@ -150,7 +150,7 @@ onUnmounted(() => {
         <!-- Header -->
         <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-gray-100">
             <div v-if="!websiteId" class="flex items-center gap-2">
-                <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-gray-400" />
+                <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-gray-400" fixed-width />
                 <h3 class="text-sm font-semibold text-gray-700">Live Visitors</h3>
                 <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-gray-600">
                     {{ grandTotal.toLocaleString() }}
@@ -165,9 +165,9 @@ onUnmounted(() => {
                 <div v-for="s in STATUSES" :key="s" class="flex items-center gap-1">
                     <span v-if="s === 'browsing'" class="relative flex items-center justify-center w-3 h-3 shrink-0">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-60" />
-                        <FontAwesomeIcon :icon="['fal', 'fa-eye']" class="relative text-[10px] text-blue-400" />
+                        <FontAwesomeIcon :icon="['fal', 'fa-eye']" class="relative text-[10px] text-blue-400" fixed-width />
                     </span>
-                    <FontAwesomeIcon v-else :icon="['fal', STATUS[s].icon]" class="text-xs" :class="STATUS[s].iconColor" />
+                    <FontAwesomeIcon v-else :icon="['fal', STATUS[s].icon]" class="text-xs" :class="STATUS[s].iconColor" fixed-width />
                     <span class="text-xs text-gray-500">
                         {{ STATUS[s].label }}
                         <b class="font-semibold tabular-nums" :class="STATUS[s].textColor">{{ totals[s].toLocaleString() }}</b>
@@ -264,13 +264,13 @@ onUnmounted(() => {
                                 >
                                     <span v-if="chip.status === 'browsing'" class="relative flex items-center justify-center w-[10px] h-[10px] shrink-0">
                                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-60" />
-                                        <FontAwesomeIcon :icon="['fal', 'fa-eye']" class="relative text-[9px] text-blue-400" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-eye']" class="relative text-[9px] text-blue-400" fixed-width />
                                     </span>
                                     <FontAwesomeIcon
                                         v-else
                                         :icon="['fal', STATUS[chip.status].icon]"
                                         class="text-[12px]"
-                                        :class="STATUS[chip.status].iconColor"
+                                        :class="STATUS[chip.status].iconColor" fixed-width
                                     />
                                     <span class="text-[12px] font-semibold tabular-nums leading-none" :class="STATUS[chip.status].textColor">
                                         {{ formatCount(chip.count) }}
@@ -286,7 +286,7 @@ onUnmounted(() => {
 
             <!-- Empty data -->
             <div v-else class="flex flex-col items-center justify-center h-full text-gray-400">
-                <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-4xl mb-2 opacity-30" />
+                <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-4xl mb-2 opacity-30" fixed-width />
                 <p class="text-xs">No visitor data available</p>
             </div>
         </div>        

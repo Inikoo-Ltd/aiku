@@ -152,7 +152,7 @@ const loadMore = async () => {
                     <div v-for="change in getChanges(history)" :key="change.key" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                         <span class="font-medium text-gray-700">{{ change.label }}:</span>
                         <span v-if="change.oldValue" class="break-all text-gray-400 line-through">{{ change.oldValue }}</span>
-                        <FontAwesomeIcon v-if="change.oldValue && change.newValue" icon="fal fa-arrow-right" class="text-xs text-gray-400" aria-hidden="true" />
+                        <FontAwesomeIcon v-if="change.oldValue && change.newValue" icon="fal fa-arrow-right" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
                         <span v-if="change.newValue" class="break-all text-gray-900">{{ change.newValue }}</span>
                         <span v-else-if="change.oldValue" class="italic text-gray-400">{{ trans('removed') }}</span>
                     </div>
@@ -162,7 +162,7 @@ const loadMore = async () => {
         </ol>
 
         <div v-else class="flex flex-col items-center justify-center gap-y-2 py-16 text-gray-400">
-            <FontAwesomeIcon icon="fal fa-history" class="text-2xl" aria-hidden="true" />
+            <FontAwesomeIcon icon="fal fa-history" class="text-2xl" fixed-width aria-hidden="true" />
             <span class="text-sm italic">{{ trans('No history yet') }}</span>
         </div>
 

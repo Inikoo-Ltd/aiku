@@ -42,7 +42,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
         Content Status
         <FontAwesomeIcon
           :icon="faInfoCircle"
-          v-tooltip="'Filling all fields will improve page quality & SEO'"
+          v-tooltip="'Filling all fields will improve page quality & SEO'" fixed-width
         />
         :
       </div>
@@ -56,7 +56,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
           v-tooltip="'Review name'"
         >
           <FontAwesomeIcon
-            :icon="statusIcon(status.name)"
+            :icon="statusIcon(status.name)" fixed-width
           />
         </div>
 
@@ -69,7 +69,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
           v-tooltip="'Review description title'"
         >
           <FontAwesomeIcon
-            :icon="statusIcon(status.title)"
+            :icon="statusIcon(status.title)" fixed-width
           />
         </div>
 
@@ -82,7 +82,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
           v-tooltip="'Review description'"
         >
           <FontAwesomeIcon
-            :icon="statusIcon(status.description)"
+            :icon="statusIcon(status.description)" fixed-width
           />
         </div>
 
@@ -95,7 +95,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
           v-tooltip="'Review description extra'"
         >
           <FontAwesomeIcon
-            :icon="statusIcon(status.extra)"
+            :icon="statusIcon(status.extra)" fixed-width
           />
         </div>
       </div>

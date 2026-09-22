@@ -60,7 +60,7 @@ const changeScheme = (value:string) => {
           :style="`background-color:${color}`">
           <FontAwesomeIcon
             :icon="fieldData.icon?.length ? fieldData.icon : 'far fa-paint-brush-alt'"
-            class="text-gray-300 text-lg" />
+            class="text-gray-300 text-lg" fixed-width />
         </div>
       </PopoverButton>
 
@@ -111,7 +111,7 @@ const changeScheme = (value:string) => {
           <div
             class="border border-slate-300 rounded-full w-10 h-10 flex justify-center items-center"
             :class="`bg-${color}-500`">
-            <FontAwesomeIcon icon="far fa-text" class="text-gray-300 text-lg"/>
+            <FontAwesomeIcon icon="far fa-text" class="text-gray-300 text-lg" fixed-width/>
           </div>
         </slot>
       </PopoverButton>

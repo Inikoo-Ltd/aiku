@@ -27,7 +27,7 @@ const options = [
         >
             <template #option="slotProps">
                 <div class="w-full flex justify-center">
-                    <FontAwesomeIcon :icon="slotProps.option.icon" />
+                    <FontAwesomeIcon :icon="slotProps.option.icon" fixed-width />
                 </div>
             </template>
         </SelectButton>

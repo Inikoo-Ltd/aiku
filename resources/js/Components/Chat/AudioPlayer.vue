@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
             class="relative w-9 h-9 rounded-full shrink-0 flex items-center justify-center transition hover:opacity-80">
             <span class="absolute inset-0 rounded-full bg-current opacity-10"></span>
             <FontAwesomeIcon :icon="isPlaying ? faPause : faPlay"
-                class="relative text-[11px]" :class="isPlaying ? '' : 'ml-0.5'" />
+                class="relative text-[11px]" :class="isPlaying ? '' : 'ml-0.5'" fixed-width />
         </button>
 
         <div class="flex-1 min-w-0">
@@ -168,10 +168,10 @@ onBeforeUnmount(() => {
 
                 <span class="flex items-center gap-1.5 min-w-0">
                     <span v-if="label && !isVoice" class="opacity-60 truncate">{{ label }}</span>
-                    <FontAwesomeIcon v-if="isVoice" :icon="faMicrophone" class="opacity-60 text-[9px]" />
+                    <FontAwesomeIcon v-if="isVoice" :icon="faMicrophone" class="opacity-60 text-[9px]" fixed-width />
                     <button v-if="downloadUrl" type="button" @click.stop="download"
                         class="opacity-60 hover:opacity-100 shrink-0" :aria-label="'Download'">
-                        <FontAwesomeIcon :icon="faDownload" class="text-[9px]" />
+                        <FontAwesomeIcon :icon="faDownload" class="text-[9px]" fixed-width />
                     </button>
                     <button v-if="isPlaying || currentTime > 0" type="button" @click.stop="cycleRate"
                         class="relative rounded-full px-1.5 py-[1px] shrink-0 tabular-nums hover:opacity-80">

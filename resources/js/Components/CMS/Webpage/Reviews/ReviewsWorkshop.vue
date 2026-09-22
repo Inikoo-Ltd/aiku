@@ -70,7 +70,7 @@ function prev() {
       @click="prev"
       class="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow transition hover:bg-gray-100"
     >
-      <FontAwesomeIcon :icon="faChevronLeft" />
+      <FontAwesomeIcon :icon="faChevronLeft" fixed-width />
     </button>
 
     <!-- Right Arrow -->
@@ -78,7 +78,7 @@ function prev() {
       @click="next"
       class="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow transition hover:bg-gray-100"
     >
-      <FontAwesomeIcon :icon="faChevronRight" />
+      <FontAwesomeIcon :icon="faChevronRight" fixed-width />
     </button>
 
     <div class="flex flex-col gap-8 lg:flex-row">
@@ -94,7 +94,7 @@ function prev() {
             v-for="i in 5"
             :key="i"
             :icon="faStar"
-            class="text-3xl"
+            class="text-3xl" fixed-width
           />
         </div>
 
@@ -114,7 +114,7 @@ function prev() {
         >
           <FontAwesomeIcon
             :icon="faStar"
-            class="text-yellow-500"
+            class="text-yellow-500" fixed-width
           />
           REVIEWS.io
         </div>
@@ -137,7 +137,7 @@ function prev() {
                 v-for="i in review.rating"
                 :key="i"
                 :icon="faStar"
-                class="text-sm"
+                class="text-sm" fixed-width
               />
             </div>
           </div>

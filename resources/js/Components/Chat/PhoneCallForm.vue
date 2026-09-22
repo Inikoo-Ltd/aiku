@@ -207,7 +207,7 @@ watch(contactType, () => {
                     busy ? 'bg-gray-300 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700',
                 ]">
                 <LoadingIcon v-if="busy" />
-                <FontAwesomeIcon v-else :icon="faPhone" />
+                <FontAwesomeIcon v-else :icon="faPhone" fixed-width />
                 {{ ctrans("Start Phone Call") }}
             </button>
 
@@ -315,7 +315,7 @@ watch(contactType, () => {
             <div class="flex items-center justify-between gap-2 pt-1">
                 <button type="button" :disabled="busy" @click="onCancel"
                     class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
-                    <FontAwesomeIcon :icon="faTrash" class="text-xs" />
+                    <FontAwesomeIcon :icon="faTrash" class="text-xs" fixed-width />
                     {{ ctrans("Cancel call") }}
                 </button>
 
@@ -329,7 +329,7 @@ watch(contactType, () => {
                         class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-white transition-colors"
                         :class="!canSubmit ? 'bg-gray-300 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'">
                         <LoadingIcon v-if="busy" />
-                        <FontAwesomeIcon v-else :icon="faPhoneSlash" class="text-xs" />
+                        <FontAwesomeIcon v-else :icon="faPhoneSlash" class="text-xs" fixed-width />
                         {{ ctrans("End call") }}
                     </button>
                 </div>

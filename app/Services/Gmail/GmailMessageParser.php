@@ -137,6 +137,24 @@ class GmailMessageParser
         return $attachments;
     }
 
+    /**
+     * Photographs too large to attach are sent as Drive links, and Gmail writes them into the
+     * text as "[image: Image]" with a filename and nothing behind it. The links are only in the
+     * markup, so that is where they are read from.
+     *
+     * @return array<int, string>
+     */
+    public static function driveFileIds(?string $html): array
+    {
+        if (! $html) {
+            return [];
+        }
+
+        preg_match_all('#drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:[^"\'<>]*&)?id=)([A-Za-z0-9_-]{10,})#i', $html, $matches);
+
+        return array_values(array_unique($matches[1]));
+    }
+
     public static function decodeData(string $base64url): string
     {
         return self::decode($base64url);

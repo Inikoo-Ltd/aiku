@@ -90,7 +90,7 @@ function toggleOrg(orgSlug: string): void {
                     </span>
                     <FontAwesomeIcon
                         :icon="expandedOrgs.has(orgData.organisation.slug) ? 'fal fa-chevron-down' : 'fal fa-chevron-right'"
-                        class="text-gray-400 text-xs"
+                        class="text-gray-400 text-xs" fixed-width
                     />
                 </button>
 

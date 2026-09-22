@@ -69,7 +69,7 @@ const submitForm = async () => {
 					)
 				"
 				icon="fal fa-info-circle"
-				class="hidden md:block size-5 text-black" />
+				class="hidden md:block size-5 text-black" fixed-width />
 			<p v-if="errors?.message?.[0]" class="text-red-500">{{errors?.message?.[0]}}</p>
 		</div>
 		<hr class="w-full border-t" />

@@ -100,10 +100,6 @@ class StoreGuest extends OrgAction
             $this->set('phone', preg_replace('/[^0-9+]/', '', $this->get('phone')));
         }
 
-        if ($this->get('positions')) {
-            $this->set('phone', preg_replace('/[^0-9+]/', '', $this->get('phone')));
-        }
-
         $this->prepareJobPositionsForValidation();
     }
 

@@ -33,9 +33,9 @@ library.add(faHeart, faComputerClassic, faDiscord)
                 <Image class="h-4 select-none hidden md:inline" :src="logoSrc" alt="T-aiku" />
                 <span class="text-slate-400	text-xs hidden md:inline">
                     {{ trans('Made with') }}
-                    <FontAwesomeIcon icon='fas fa-heart' class="text-red-500 mx-1" aria-hidden='true' />
+                    <FontAwesomeIcon icon='fas fa-heart' class="text-red-500 mx-1" fixed-width aria-hidden='true' />
                     {{ trans('and') }}
-                    <FontAwesomeIcon icon='fas fa-computer-classic' class="mx-1" aria-hidden='true' /> {{ 'in KL|Bali' }}
+                    <FontAwesomeIcon icon='fas fa-computer-classic' class="mx-1" fixed-width aria-hidden='true' /> {{ 'in KL|Bali' }}
                 </span>
             </div>
 

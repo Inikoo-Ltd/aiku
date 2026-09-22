@@ -53,7 +53,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || [];
 			role="button"
 			@click="() => sendMessageToParent('activeBlock', props.indexBlock)"
 		>
-			<font-awesome-icon :icon="['fal', 'paperclip']" class="mx-auto h-12 w-12 text-gray-400" />
+			<font-awesome-icon :icon="['fal', 'paperclip']" class="mx-auto h-12 w-12 text-gray-400" fixed-width />
 			<span class="mt-2 block text-sm font-semibold text-gray-900">I Frame</span>
 		</div>
 

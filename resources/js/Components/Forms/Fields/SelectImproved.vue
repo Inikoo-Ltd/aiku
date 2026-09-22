@@ -175,7 +175,7 @@ const onRemoveValue = (value: string | number) => {
             >
                 <template #closeButton>
                     <div @click="() => onRemoveValue(value)" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
-                        <FontAwesomeIcon icon="fal fa-times" class="text-xs" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-times" class="text-xs" fixed-width aria-hidden="true" />
                     </div>
                 </template>
             </Tag>

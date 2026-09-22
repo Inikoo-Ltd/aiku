@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Http\Resources\Catalogue\OrderProductsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
@@ -41,7 +42,12 @@ class GetOrderProducts extends OrgAction
                 ->where('transactions.order_id', $order->id)
                 ->whereNull('transactions.deleted_at');
         });
-        $queryBuilder->where('products.shop_id', $order->shop_id)->where('products.is_for_sale', true);
+        $queryBuilder->where('products.shop_id', $order->shop_id);
+        if ($order->isPartnerOrder()) {
+            $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
+        } else {
+            $queryBuilder->where('products.is_for_sale', true);
+        }
         $queryBuilder
             ->defaultSort('products.code')
             ->select([

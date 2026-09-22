@@ -11,11 +11,11 @@ import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTicketAlt, faAt } from "@fal"
+import { faTicketAlt, faAt, faIdCard } from "@fal"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { ticketsRoute } from "@/Composables/useTicketsRoute"
 
-library.add(faTicketAlt, faAt)
+library.add(faTicketAlt, faAt, faIdCard)
 
 const props = withDefaults(defineProps<{
     name: string | null
@@ -23,9 +23,10 @@ const props = withDefaults(defineProps<{
     roles?: { key: string; label: string }[]
     username?: string | null
     reporterKey?: string | null
+    profileUrl?: string | null
     size?: "xs" | "sm" | "md" | "lg"
     canMention?: boolean
-}>(), { avatar: null, roles: () => [], username: null, reporterKey: null, size: "sm", canMention: true })
+}>(), { avatar: null, roles: () => [], username: null, reporterKey: null, profileUrl: null, size: "sm", canMention: true })
 
 const emit = defineEmits<{
     (e: "mention", username: string): void
@@ -85,7 +86,7 @@ const onMention = () => {
         <transition
             enter-active-class="transition duration-100 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100"
             leave-active-class="transition duration-75 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-            <span v-if="isOpen && (reportedWorkItemsUrl || (canMention && username))"
+            <span v-if="isOpen && (reportedWorkItemsUrl || profileUrl || (canMention && username))"
                 class="absolute left-0 top-full z-30 mt-1 w-56 rounded-md border border-gray-200 bg-white py-1 text-left shadow-lg">
                 <span class="block px-3 py-1.5 border-b border-gray-100">
                     <span class="block truncate text-sm font-semibold text-gray-800">{{ name || ctrans("Unknown") }}</span>
@@ -97,6 +98,14 @@ const onMention = () => {
                     <FontAwesomeIcon icon="fal fa-ticket-alt" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
                     {{ ctrans("Reported work items") }}
                 </Link>
+
+                <!-- Only sent by the server to somebody who may open it, so there is no link here
+                     that answers with a 403. -->
+                <a v-if="profileUrl" :href="profileUrl"
+                    class="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <FontAwesomeIcon icon="fal fa-id-card" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
+                    {{ ctrans("Their account") }}
+                </a>
 
                 <button v-if="canMention && username" type="button" @click="onMention"
                     class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50">

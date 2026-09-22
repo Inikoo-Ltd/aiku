@@ -71,7 +71,7 @@ const throttledValue = throttle((newValue) => {
                             <!-- Label: All failed -->
                             <span v-if="upload.done == upload.data.number_fails" class="text-red-600">
                                 {{ trans("Oops Award: No Bravos") }}
-                                <FontAwesomeIcon icon='fal fa-frown' class='' aria-hidden='true' />
+                                <FontAwesomeIcon icon='fal fa-frown' class='' fixed-width aria-hidden='true' />
                             </span>
 
                             <!-- Label: All success -->
@@ -82,7 +82,7 @@ const throttledValue = throttle((newValue) => {
                             <!-- Label: Fails is bigger -->
                             <span v-else-if="upload.data.number_success < upload.data.number_fails" class="text-gray-500">
                                 {{ trans("Oops, more fails than victories!") }}
-                                <FontAwesomeIcon icon='fal fa-meh' class='' aria-hidden='true' />
+                                <FontAwesomeIcon icon='fal fa-meh' class='' fixed-width aria-hidden='true' />
                             </span>
 
                             <!-- Label: Success is bigger -->
@@ -114,13 +114,13 @@ const throttledValue = throttle((newValue) => {
             </TransitionGroup>
         </template>
         <div v-else class="w-64 flex justify-center flex-col items-center gap-y-2 py-1 text-gray-500">
-            <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin' aria-hidden='true' />
+            <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin' fixed-width aria-hidden='true' />
             <div class="text-sm">{{ trans("Calculating data..") }}</div>
         </div>
 
 
         <div @click="closeModal" class="absolute top-0 right-1 px-2 py-1 cursor-pointer text-gray-500 hover:text-gray-600">
-            <FontAwesomeIcon icon='fal fa-times' class='text-xs' aria-hidden='true' />
+            <FontAwesomeIcon icon='fal fa-times' class='text-xs' fixed-width aria-hidden='true' />
         </div>
     </div>
 </template>

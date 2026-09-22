@@ -142,7 +142,7 @@ const toggleSubscription = async (task: any) => {
                     :key="option.value"
                     type="button"
                     class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                    :class="filters[group.key].includes(option.value) ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm' : option.value === 'urgent' ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+                    :class="filters[group.key].includes(option.value) ? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm' : option.value === 'urgent' ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                     @click="toggleFilter(group.key, option.value)">
                     <span class="capitalize">{{ option.label }}</span>
                     <span class="rounded-full px-1.5 text-xs tabular-nums" :class="filters[group.key].includes(option.value) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ option.count }}</span>
@@ -172,12 +172,12 @@ const toggleSubscription = async (task: any) => {
                             <span v-if="task.priority !== 'normal'" class="px-1.5 rounded-full" :class="task.priority === 'low' ? 'bg-gray-100 text-gray-500' : 'bg-orange-100 text-orange-700'">{{ task.priority }}</span>
                         </div>
                         <div class="text-gray-900 mt-0.5">{{ task.subject }}</div>
-                        <div v-if="task.model_label" class="text-xxs text-indigo-600 mt-0.5">{{ task.model_label }}</div>
+                        <div v-if="task.model_label" class="text-xxs text-[--app-accent] mt-0.5">{{ task.model_label }}</div>
                         <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
                             <span class="flex items-center gap-x-1 min-w-0">
                                 <span class="h-5 w-5 rounded-full overflow-hidden bg-gray-200 shrink-0">
                                     <Image v-if="task.assignee?.avatar" :src="task.assignee.avatar" :alt="task.assignee.name" image-cover />
-                                    <FontAwesomeIcon v-else icon="fal fa-user" class="h-full w-full p-0.5 text-gray-400" aria-hidden="true" />
+                                    <FontAwesomeIcon v-else icon="fal fa-user" class="h-full w-full p-0.5 text-gray-400" fixed-width aria-hidden="true" />
                                 </span>
                                 <span class="truncate">{{ task.assignee?.name ?? task.department_label ?? '—' }}</span>
                             </span>
@@ -189,11 +189,11 @@ const toggleSubscription = async (task: any) => {
                                 <button
                                     v-if="can_manage && task.requester?.id !== me && task.assignee?.id !== me"
                                     v-tooltip="task.is_subscribed ? trans('Stop notifications') : trans('Notify me about this task')"
-                                    :class="task.is_subscribed ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-600'"
+                                    :class="task.is_subscribed ? 'text-[--app-accent]' : 'text-gray-400 hover:text-[--app-accent]'"
                                     @click.stop="toggleSubscription(task)">
                                     <FontAwesomeIcon :icon="task.is_subscribed ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />
                                 </button>
-                                <button class="text-gray-400 hover:text-indigo-600" v-tooltip="trans('Open thread')" @click.stop="openThread(task)">
+                                <button class="text-gray-400 hover:text-[--app-accent]" v-tooltip="trans('Open thread')" @click.stop="openThread(task)">
                                     <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                                 </button>
                             </span>
@@ -207,7 +207,7 @@ const toggleSubscription = async (task: any) => {
     <div v-if="cancelFor" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40" @click.self="abortCancel">
         <div class="bg-white rounded-xl p-5 w-full max-w-md space-y-3">
             <h3 class="text-sm font-semibold text-gray-900">{{ trans(`Why can't :reference be done?`, { reference: cancelFor.task.reference }) }}</h3>
-            <textarea v-model="cancelNote" rows="3" autofocus class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <textarea v-model="cancelNote" rows="3" autofocus class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
             <div class="flex justify-end gap-x-2">
                 <button class="px-3 py-1.5 text-sm text-gray-600" @click="abortCancel">{{ trans('Back') }}</button>
                 <button :disabled="!cancelNote.trim()" class="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white disabled:opacity-40" @click="confirmCancel">{{ trans('Confirm') }}</button>

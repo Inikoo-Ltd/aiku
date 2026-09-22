@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Ordering\Order\UpdateState\InvoiceOrderFromDeliveryNoteFinalisation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -44,6 +45,9 @@ class FinaliseDeliveryNote extends OrgAction
             $deliveryNote->refresh();
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT && !$fromOrder) {
                 foreach ($deliveryNote->orders as $order) {
+                    if ($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->exists()) {
+                        continue;
+                    }
                     InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
                 }
             }

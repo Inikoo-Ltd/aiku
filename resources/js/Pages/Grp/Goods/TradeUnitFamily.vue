@@ -181,7 +181,7 @@ const handleMassAssign = () => {
     <!-- BRANDS -->
     <Message :severity="'warn'" xclosable="true" class="mb-3 !bg-yellow-100 !text-sm">
       <span class="!text-sm">
-        <FontAwesomeIcon :icon="faWarning" />
+        <FontAwesomeIcon :icon="faWarning" fixed-width />
         {{ trans('Modifying this value would affect all of the corresponding children Trade Units') }}
       </span>
     </Message>
@@ -197,7 +197,7 @@ const handleMassAssign = () => {
       <Tag v-for="tag in tags" :key="tag.id" :label="tag.name" stringToColor>
         <template #closeButton>
           <div class="cursor-pointer px-1 text-red-500" @click="tags = tags.filter(t => t.id !== tag.id)">
-            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" />
+            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" fixed-width />
           </div>
         </template>
       </Tag>
@@ -256,7 +256,7 @@ const handleMassAssign = () => {
                 class="text-red-500 hover:text-red-700 px-4"
                 @click="() => deleteFormCommited(item)"
               >
-                <FontAwesomeIcon :icon="faTrashAlt" />
+                <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
               </button>
             </div>
           </div>

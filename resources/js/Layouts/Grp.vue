@@ -327,7 +327,7 @@ const safeTheme = computed(() => {
                     icon="fas fa-exclamation"
                     class="text-orange-500 text-2xl"
                     fixed
-                    aria-hidden="true" />
+                    fixed-width aria-hidden="true" />
                 <FontAwesomeIcon
                     v-if="selectedModal?.status == 'info'"
                     icon="fas fa-info"

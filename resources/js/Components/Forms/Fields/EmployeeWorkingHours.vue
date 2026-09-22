@@ -319,7 +319,7 @@ watch(days, () => {
                                 :aria-label="trans('Show individual days')"
                                 @click="ui[g.key] = !ui[g.key]"
                             >
-                                <FontAwesomeIcon :icon="ui[g.key] ? faChevronCircleUp : faChevronCircleDown" />
+                                <FontAwesomeIcon :icon="ui[g.key] ? faChevronCircleUp : faChevronCircleDown" fixed-width />
                             </button>
                             <ToggleSwitch
                                 :modelValue="groupWorking(g.key)"
@@ -377,7 +377,7 @@ watch(days, () => {
                             class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 py-1"
                             @click="addGroupBreak(g.key)"
                         >
-                            <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" />
+                            <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" fixed-width />
                             {{ trans('Add break') }}
                         </button>
                     </div>
@@ -449,7 +449,7 @@ watch(days, () => {
                                 class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 py-1"
                                 @click="addBreak(iso)"
                             >
-                                <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" />
+                                <FontAwesomeIcon :icon="faPlus" class="w-2.5 h-2.5" fixed-width />
                                 {{ trans('Add break') }}
                             </button>
                         </div>

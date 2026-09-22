@@ -216,7 +216,7 @@ defineExpose({
                     <FontAwesomeIcon 
                         :icon="subscription.is_subscribed ? faCheck : faTimes"
                         :class="subscription.is_subscribed ? 'text-green-500' : 'text-red-500'"
-                        class="text-sm" 
+                        class="text-sm" fixed-width 
                     />
                     <span 
                         class="ml-1 text-xs"

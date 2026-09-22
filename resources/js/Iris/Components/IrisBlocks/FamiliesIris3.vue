@@ -202,7 +202,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
         <button v-if="props.screenType !== 'mobile' && !isBeginning" ref="prevEl"
           class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           @click.stop="scrollLeft" type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" />
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" class="text-4xl" fixed-width />
         </button>
 
         <div class="swiper-mask px-8">
@@ -256,7 +256,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
 
         <button v-if="props.screenType !== 'mobile' && swiperInstance?.allowSlideNext && !isEnd" ref="nextEl" class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full text-gray-800
            opacity-0 group-hover:opacity-100 transition-opacity duration-200" @click.stop="scrollRight" type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" class="text-4xl" />
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" class="text-4xl" fixed-width />
         </button>
 
       </div>

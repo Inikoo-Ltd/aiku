@@ -22,6 +22,6 @@ const props = defineProps<{
             <FontAwesomeIcon v-if="icon" :icon='icon' class='opacity-60 text-xs' fixed-width aria-hidden='true' />
             <span class="hidden sm:inline">{{ useTruncate(label || '', 20) }}</span>
         </div>
-        <FontAwesomeIcon icon='far fa-chevron-down' class='text-xs transition-all duration-200 ease-in-out' :class="[open ? 'rotate-180' : '']" aria-hidden='true' />
+        <FontAwesomeIcon icon='far fa-chevron-down' class='text-xs transition-all duration-200 ease-in-out' :class="[open ? 'rotate-180' : '']" fixed-width aria-hidden='true' />
     </MenuButton>
 </template>

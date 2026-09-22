@@ -170,7 +170,7 @@ const _breadcrumbPopover = ref()
                     <!-- Shorter Breadcrumb on Mobile size -->
                     <div v-if="breadcrumbs.length > 2 && breadcrumbIdx != 0" class="md:hidden flex items-center">
                         <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50"
-                            icon="fa-regular fa-chevron-right" aria-hidden="true" />
+                            icon="fa-regular fa-chevron-right" fixed-width aria-hidden="true" />
                         <span> {{
                             breadcrumbs[breadcrumbs.length - 2].type === 'simple'
                                 ? breadcrumbs[breadcrumbs.length - 2].simple.label || breadcrumbs[breadcrumbs.length -
@@ -179,7 +179,7 @@ const _breadcrumbPopover = ref()
                             }}</span>
                     </div> 
                     <template v-if="breadcrumb.type === 'simple'">
-                        <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
+                        <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" fixed-width aria-hidden="true" />
                         <component
                             :is="breadcrumb.simple.url || breadcrumb.simple.route?.name ? Link : 'span'"
                             :href="breadcrumb.simple.url ? breadcrumb.simple.url : breadcrumb.simple?.route?.name ? route( breadcrumb.simple.route.name, breadcrumb.simple.route.parameters ) : '#' "
@@ -198,15 +198,15 @@ const _breadcrumbPopover = ref()
                     
                     <!-- Section: Create Model -->
                     <template v-else-if="breadcrumb.type === 'creatingModel'">
-                        <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-yellow-500 ml-2" icon="fas fa-sparkles" aria-hidden="true" />
+                        <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-yellow-500 ml-2" icon="fas fa-sparkles" fixed-width aria-hidden="true" />
                         <span class="text-yellow-600 opacity-75"> {{ breadcrumb.creatingModel.label }}</span>
                     </template>
                     <template v-else-if="breadcrumb.type === 'modelWithIndex'">
                         <div class="hidden md:inline-flex">
-                            <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50 place-self-center" icon="fa-regular fa-chevron-right" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50 place-self-center" icon="fa-regular fa-chevron-right" fixed-width aria-hidden="true" />
                             <component :is="breadcrumb.modelWithIndex?.index?.url || breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'"  class="hover:text-gray-700 grid grid-flow-col items-center"
                                 :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' ">
-                                <FontAwesomeIcon icon="fal fa-bars" class="flex-shrink-0 h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-bars" class="flex-shrink-0 h-3.5 w-3.5 mr-1" fixed-width aria-hidden="true" />
                                 <span>{{ breadcrumb.modelWithIndex.index.label }}</span>
                             </component>
                         </div>
@@ -236,10 +236,10 @@ const _breadcrumbPopover = ref()
                             xstyle="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                         >
                             <!-- Icon Section -->
-                            <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx == 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx == 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" fixed-width aria-hidden="true" />
 
                             <!-- Icon Arrow -->
-                            <FontAwesomeIcon v-if="breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" fixed-width aria-hidden="true" />
                             <span v-if="breadcrumbIdx == 0 && !breadcrumb.simple.label" class="grid grid-flow-cols justify-center font-bold ml-2">
                                 {{ ctrans("Storefront") }}
                             </span>
@@ -248,7 +248,7 @@ const _breadcrumbPopover = ref()
                             </span>
 
                             <!-- Icon List (Simple) -->
-                            <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx != 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" fixed-width aria-hidden="true" />
                         </component>
                     </template>
 
@@ -264,13 +264,13 @@ const _breadcrumbPopover = ref()
                                 :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' "
                                 xstyle="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                             >
-                                <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
+                                <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" fixed-width aria-hidden="true" />
                                 <span class="md:text-xs ml-4 mr-3">
                                     {{ breadcrumb.modelWithIndex.index.label }}
                                 </span>
 
                                 <!-- Icon List -->
-                                <FontAwesomeIcon :icon="['fal', 'bars']" class="flex-shrink-0 h-3.5 w-3.5" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="['fal', 'bars']" class="flex-shrink-0 h-3.5 w-3.5" fixed-width aria-hidden="true" />
                             </component>
 
                             <!-- Subpage -->
@@ -278,7 +278,7 @@ const _breadcrumbPopover = ref()
                                 :href="breadcrumb.modelWithIndex?.model.url ? breadcrumb.modelWithIndex?.model.url : breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'"
                                 xstyle="{ paddingLeft: 12 + (breadcrumbIdx + 1) * 7 + 'px', }"
                             >
-                                <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
+                                <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-gray-300" icon="fa fa-arrow-from-left" fixed-width aria-hidden="true" />
                                 <span class="ml-4 mr-3">
                                     {{ breadcrumb.modelWithIndex.model.label }}
                                 </span>
@@ -301,9 +301,9 @@ const _breadcrumbPopover = ref()
                     :aria-label="ctrans('Previous')"
                 >
                     <LoadingIcon v-if="isLoading === 'bcBack'" />
-                    <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="" aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="" fixed-width aria-hidden="true" />
                 </Link>
-                <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="opacity-20" aria-hidden="true" />
+                <FontAwesomeIcon v-else icon="fas fa-arrow-left" class="opacity-20" fixed-width aria-hidden="true" />
             </div>
 
             <!-- Button: Next -->
@@ -317,9 +317,9 @@ const _breadcrumbPopover = ref()
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >
                     <LoadingIcon v-if="isLoading === 'bcNext'" />
-                    <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="" aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="" fixed-width aria-hidden="true" />
                 </Link>
-                <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="opacity-20" aria-hidden="true" />
+                <FontAwesomeIcon v-else icon="fas fa-arrow-right" class="opacity-20" fixed-width aria-hidden="true" />
             </div>
         </div>
     </nav>

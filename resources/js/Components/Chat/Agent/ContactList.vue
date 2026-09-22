@@ -452,7 +452,7 @@ onMounted(async () => {
 
             <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500" @click="openGlobalChatSettings"
                 title="Chat settings" :aria-label="trans('Chat settings')">
-                <FontAwesomeIcon :icon="faCog" class="text-sm" />
+                <FontAwesomeIcon :icon="faCog" class="text-sm" fixed-width />
             </button>
         </div>
 
@@ -503,7 +503,7 @@ onMounted(async () => {
                     class="p-1.5 rounded hover:bg-gray-100 transition-colors"
                     :class="showSearch ? 'text-indigo-500' : 'text-gray-400'"
                     :aria-label="trans('Toggle search')">
-                    <FontAwesomeIcon :icon="faSearch" class="text-xs" />
+                    <FontAwesomeIcon :icon="faSearch" class="text-xs" fixed-width />
                 </button>
             </div>
         </div>
@@ -512,7 +512,7 @@ onMounted(async () => {
         <Transition name="slide-down">
             <div v-if="showSearch" class="px-3 py-2 border-b bg-gray-50">
                 <div class="relative">
-                    <FontAwesomeIcon :icon="faSearch" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+                    <FontAwesomeIcon :icon="faSearch" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" fixed-width />
                     <input
                         v-model="searchQuery"
                         type="text"
@@ -525,7 +525,7 @@ onMounted(async () => {
                         @click="searchQuery = ''"
                         class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         :aria-label="trans('Clear search')">
-                        <FontAwesomeIcon :icon="faTimes" class="text-xs" />
+                        <FontAwesomeIcon :icon="faTimes" class="text-xs" fixed-width />
                     </button>
                 </div>
             </div>
@@ -559,7 +559,7 @@ onMounted(async () => {
                             <div class="flex items-center gap-2 min-w-0">
                                 <FontAwesomeIcon
                                     :icon="isInboxCollapsed(group.key) ? faChevronDown : faChevronUp"
-                                    class="text-[10px] text-gray-400 shrink-0" />
+                                    class="text-[10px] text-gray-400 shrink-0" fixed-width />
                                 <span class="text-xs font-semibold text-gray-700 truncate">{{ group.shopName }}</span>
                                 <span v-if="group.organisationName"
                                     class="text-[10px] text-gray-400 truncate">{{ group.organisationName }}</span>
@@ -594,7 +594,7 @@ onMounted(async () => {
                                 <Image v-if="c.avatar" :src="c.avatar"
                                     class="w-full h-full rounded-full object-cover" />
 
-                                <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+                                <FontAwesomeIcon v-else :icon="faUser" class="text-sm" fixed-width />
                             </div>
 
                             <!-- Main content -->
@@ -619,7 +619,7 @@ onMounted(async () => {
                                             :class="c.agent.name === layout?.user?.contact_name
                                                 ? 'border-green-400 text-green-500'
                                                 : 'border-indigo-300 text-indigo-400'">
-                                            <FontAwesomeIcon :icon="faUser" class="text-[9px]" />
+                                            <FontAwesomeIcon :icon="faUser" class="text-[9px]" fixed-width />
                                             {{ c.agent.name.split(' ')[0] }}
                                         </span>
                                     </div>

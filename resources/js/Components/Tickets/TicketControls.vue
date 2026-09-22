@@ -443,7 +443,7 @@ const update = (field: string, value: unknown, action: string = field) => {
             <p v-if="can_update && ticket.type === 'customer'" class="flex items-start gap-x-1.5 rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
                 <span>{{ trans("Mention the developers if it's a bug that needs to be fixed ASAP") }}</span>
                 <FontAwesomeIcon v-if="developers.length" icon="fal fa-question-circle" v-tooltip="developersTooltip"
-                    class="mt-0.5 shrink-0 text-amber-500" />
+                    class="mt-0.5 shrink-0 text-amber-500" fixed-width />
             </p>
             <label v-if="can_flag_confidential && !hideConfidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('is_confidential', ($event.target as HTMLInputElement).checked, 'confidential')" />

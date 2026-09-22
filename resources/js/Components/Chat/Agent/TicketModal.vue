@@ -157,7 +157,7 @@ const submit = async () => {
     <Modal :isOpen="isOpen" @onClose="emit('close')" width="w-full max-w-lg">
         <div class="flex items-center gap-3 mb-5">
             <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" />
+                <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width />
             </div>
             <div>
                 <h2 class="text-base font-semibold text-gray-800">{{ trans("Create ticket") }}</h2>
@@ -166,11 +166,11 @@ const submit = async () => {
         </div>
 
         <div v-if="created" class="flex flex-col items-center text-center py-6 px-4">
-            <FontAwesomeIcon :icon="faCheckCircle" class="text-emerald-500 text-3xl mb-3" />
+            <FontAwesomeIcon :icon="faCheckCircle" class="text-emerald-500 text-3xl mb-3" fixed-width />
             <p class="text-sm font-medium text-gray-700">{{ trans("Ticket created") }}</p>
             <a :href="created.url" target="_blank" rel="noopener" class="inline-flex items-center gap-2 mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
                 {{ created.key }}
-                <FontAwesomeIcon :icon="faExternalLink" class="text-xs" />
+                <FontAwesomeIcon :icon="faExternalLink" class="text-xs" fixed-width />
             </a>
             <p class="text-xs text-gray-400 mt-1">{{ created.summary }}</p>
             <Button class="mt-4" size="sm" :label="trans('Close')" @click="emit('close')" />
@@ -236,7 +236,7 @@ const submit = async () => {
                 <span class="text-xs">
                     <span class="flex items-center gap-1.5 font-medium" :class="form.blocksSource ? 'text-amber-800' : 'text-gray-700'">
                         {{ trans("Mark as blocked") }}
-                        <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="blockedTooltip" class="text-gray-400" />
+                        <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="blockedTooltip" class="text-gray-400" fixed-width />
                     </span>
                     <span class="mt-0.5 block" :class="form.blocksSource ? 'text-amber-700' : 'text-gray-400'">
                         {{ form.blocksSource
@@ -249,7 +249,7 @@ const submit = async () => {
                         <span>
                             <span class="flex items-center gap-1.5 font-medium text-amber-800">
                                 {{ trans("Let the developer close this chat when the ticket is settled") }}
-                                <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="closesTooltip" class="text-amber-400" />
+                                <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="closesTooltip" class="text-amber-400" fixed-width />
                             </span>
                             <span class="mt-0.5 block text-amber-700">
                                 {{ form.closesSource

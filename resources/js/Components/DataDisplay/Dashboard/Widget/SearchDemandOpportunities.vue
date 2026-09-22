@@ -37,10 +37,10 @@ defineProps<{
                 <span class="shrink-0 text-gray-500 tabular-nums whitespace-nowrap flex items-center gap-3">
                     <span v-tooltip="ctrans('Searches')">{{ item.searches }}</span>
                     <span v-tooltip="ctrans('Customers')">
-                        <FontAwesomeIcon icon="fal fa-users" class="text-gray-300" aria-hidden="true" /> {{ item.customers }}
+                        <FontAwesomeIcon icon="fal fa-users" class="text-gray-300" fixed-width aria-hidden="true" /> {{ item.customers }}
                     </span>
                     <span v-if="item.websites > 1" v-tooltip="ctrans('Websites')">
-                        <FontAwesomeIcon icon="fal fa-globe" class="text-gray-300" aria-hidden="true" /> {{ item.websites }}
+                        <FontAwesomeIcon icon="fal fa-globe" class="text-gray-300" fixed-width aria-hidden="true" /> {{ item.websites }}
                     </span>
                 </span>
             </div>

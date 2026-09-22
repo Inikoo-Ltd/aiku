@@ -165,17 +165,17 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         <span class="text-gray-500 text-sm">grams</span>
                     </div>
                     <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700 disabled:opacity-50">
-                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" />
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" />
+                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" fixed-width />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" fixed-width />
                     </button>
                     <button @click="onCancel(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-gray-400 hover:text-gray-600 disabled:opacity-50">
-                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" />
+                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" fixed-width />
                     </button>
                 </template>
                 <template v-else>
                     <span>{{ (savedValues[tradeUnit.id]?.net_weight ?? tradeUnit["net_weight"]) != null ? (savedValues[tradeUnit.id]?.net_weight ?? tradeUnit["net_weight"]) + ' g' : canEditWeight ? '' : '-' }}</span>
                     <button v-if="canEditWeight" @click="onEdit(tradeUnit, 'net_weight')" class="text-gray-400 hover:text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" fixed-width />
                     </button>
                 </template>
             </div>
@@ -191,17 +191,17 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         <span class="text-gray-500 text-sm">grams</span>
                     </div>
                     <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700 disabled:opacity-50">
-                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" />
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" />
+                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" fixed-width />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" fixed-width />
                     </button>
                     <button @click="onCancel(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-gray-400 hover:text-gray-600 disabled:opacity-50">
-                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" />
+                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" fixed-width />
                     </button>
                 </template>
                 <template v-else>
                     <span>{{ (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) != null ? (savedValues[tradeUnit.id]?.marketing_weight ?? tradeUnit["marketing_weight"]) + ' g' : canEditWeight ? '' : '-' }}</span>
                     <button v-if="canEditWeight" @click="onEdit(tradeUnit, 'marketing_weight')" class="text-gray-400 hover:text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" fixed-width />
                     </button>
                 </template>
             </div>
@@ -214,17 +214,17 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         <PureInputDimension v-model="editingDimensions[tradeUnit.id]" />
                     </div>
                     <button @click="onSave(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-green-500 hover:text-green-700 disabled:opacity-50">
-                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" />
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" />
+                        <FontAwesomeIcon v-if="loadingSave.includes(tradeUnit.id)" icon="fal fa-spinner-third" class="h-5 w-5 animate-spin" fixed-width />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-5 w-5" fixed-width />
                     </button>
                     <button @click="onCancel(tradeUnit)" :disabled="loadingSave.includes(tradeUnit.id)" class="text-gray-400 hover:text-gray-600 disabled:opacity-50">
-                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" />
+                        <FontAwesomeIcon icon="fal fa-times" class="h-5 w-5" fixed-width />
                     </button>
                 </template>
                 <template v-else>
                     <span>{{ savedValues[tradeUnit.id]?.marketing_dimensions ? formatDimensions(savedValues[tradeUnit.id]?.marketing_dimensions ?? tradeUnit["marketing_dimensions"]) : canEditDimensions ? '' : '-'}}</span>
                     <button v-if="canEditDimensions" @click="onEdit(tradeUnit, 'marketing_dimensions')" class="text-gray-400 hover:text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon icon="fal fa-pencil" class="h-3.5 w-3.5" fixed-width />
                     </button>
                 </template>
             </div>

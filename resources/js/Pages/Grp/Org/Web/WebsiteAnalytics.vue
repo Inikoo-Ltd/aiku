@@ -612,13 +612,13 @@ watch(value, handleSelectChange)
                                 <div class="flex ite	ms-center gap-2">
                                     <span class="font-bold">{{ data.conversion_rate }}%</span>
                                     <span v-if="data.trend.direction === 'up'" class="text-green-500" :title="`Up ${data.trend.value}% from ${data.trend.prev_rate}%`">
-                                        <font-awesome-icon :icon="['fal', 'arrow-up']" />
+                                        <font-awesome-icon :icon="['fal', 'arrow-up']" fixed-width />
                                     </span>
                                     <span v-else-if="data.trend.direction === 'down'" class="text-red-500" :title="`Down ${data.trend.value}% from ${data.trend.prev_rate}%`">
-                                        <font-awesome-icon :icon="['fal', 'arrow-down']" />
+                                        <font-awesome-icon :icon="['fal', 'arrow-down']" fixed-width />
                                     </span>
                                     <span v-else class="text-gray-400" title="No change">
-                                        <font-awesome-icon :icon="['fal', 'minus']" />
+                                        <font-awesome-icon :icon="['fal', 'minus']" fixed-width />
                                     </span>
                                 </div>
                             </template>

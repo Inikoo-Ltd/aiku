@@ -1552,7 +1552,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <Head :title="capitalize(title)" />
     <ConfirmDialog>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" fixed-width />
         </template>
     </ConfirmDialog>
 
@@ -2457,7 +2457,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     class="ml-auto h-6 mr-2 text-purple-400 hover:text-purple-600" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                     v-tooltip="ctrans('Apply discount to all products')">
                                     <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
-                                        class="h-4" />
+                                        class="h-4" fixed-width />
                                 </button>
                                 <button
                                     @click="() => {
@@ -2469,11 +2469,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
                                         <FontAwesomeIcon
                                             :icon="faTrash"
-                                            class="!text-lg !w-fit"
+                                            class="!text-lg !w-fit" fixed-width
                                         />
                                         <FontAwesomeIcon
                                             :icon="faPercentage"
-                                            class="text-xs !top-[25%]"
+                                            class="text-xs !top-[25%]" fixed-width
                                         />
                                     </FontAwesomeLayers>
                                 </button>
@@ -2481,7 +2481,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     class="ml-auto h-6 mr-2 text-red-500 hover:text-red-700" @click="restoreAllDiscount" aria-label="Edit Percentage"
                                     v-tooltip="ctrans('Restore original discount to all products')">
                                     <FontAwesomeIcon :icon="falUndo"
-                                        class="h-4" />
+                                        class="h-4" fixed-width />
                                 </button>
                             </template>
                         </dl>

@@ -209,8 +209,8 @@ const checkNumber = (event: KeyboardEvent) => {
             type="button"
             name="showPassword"
             class="-ml-px relative inline-flex items-center px-4 py-2 border-l border-gray-300 text-sm font-medium rounded-r-md text-gray-700 bg-gray-50 hover:bg-gray-200 ">
-            <FontAwesomeIcon v-show="showPassword == 'text'" aria-hidden="true" class="h-5 w-5 text-gray-400" icon="fa-regular fa-eye"/>
-            <FontAwesomeIcon v-show="showPassword == 'password'" aria-hidden="true" class="h-5 w-5 text-gray-400" icon="fa-regular fa-eye-slash"/>
+            <FontAwesomeIcon v-show="showPassword == 'text'" fixed-width aria-hidden="true" class="h-5 w-5 text-gray-400" icon="fa-regular fa-eye"/>
+            <FontAwesomeIcon v-show="showPassword == 'password'" fixed-width aria-hidden="true" class="h-5 w-5 text-gray-400" icon="fa-regular fa-eye-slash"/>
         </button>
     </div>
 </template>

@@ -31,12 +31,27 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     production?: boolean
     jumpToIndex?: string  // ulid
     data: BannerWorkshop
     view?: string
-}>()
+    ratio?: string
+    autoplay?: boolean
+}>(), {
+    autoplay: true
+})
+
+const autoplayOptions = computed(() => {
+    if (!props.autoplay) {
+        return false
+    }
+
+    return {
+        delay: props.data?.delay ?? 5000,
+        disableOnInteraction: false
+    }
+})
 
 const swiperRef = ref(null)
 const intSwiperKey = ref(0)
@@ -149,6 +164,28 @@ const getCardScale = computed(() => {
   return 1
 })
 
+
+/**
+ * Where the rendered card lives in the slide, so the workshop writes back to the
+ * same place it was read from instead of forking a per screen copy.
+ */
+const cardViewKey = (component: any) => {
+    const card = get(component, ['layout', 'card'])
+
+    if (!card) return null
+    if (!(card.desktop || card.tablet || card.mobile)) return null
+
+    const view = props.view || 'desktop'
+
+    return card[view] ? view : (card.desktop ? 'desktop' : null)
+}
+
+const cardModelPath = (component: any, key: string) => {
+    const viewKey = cardViewKey(component)
+
+    return viewKey ? `layout.card.${viewKey}.${key}` : `layout.card.${key}`
+}
+
 const contentAlignClasses: Record<string, string> = {
   top: 'justify-start',
   middle: 'justify-center',
@@ -212,10 +249,7 @@ onMounted(() => {
                 :slidesPerView="compSlidesPerView"
                 :centeredSlides="false"
                 :loop="visibleComponents.length > compSlidesPerView"
-                :autoplay="{
-                    delay: data.delay,
-                    disableOnInteraction: false,
-                }"
+                :autoplay="autoplayOptions"
                 :pagination="get(data, ['navigation', 'bottomNav', 'value'], false) && get(data, ['navigation', 'bottomNav', 'type', 'value'], false) == 'bullets' ? {  // Render Navigation (bullet)
                     clickable: true,
                     renderBullet: (index, className) => {
@@ -227,7 +261,7 @@ onMounted(() => {
                 class="mySwiper h-full w-full"
             >
                 <SwiperSlide v-for="(component, index) in visibleComponents" :key="component.id"
-                    class="h-full overflow-hidden aspect-square">
+                    :data-slide-ulid="component.ulid" class="h-full overflow-hidden aspect-square">
                     <!-- Section: image or background -->
                     <div v-if="get(component, ['layout', 'backgroundType',props.view || 'desktop'], 'image') === 'image'"
                         class="relative w-full h-full">
@@ -273,10 +307,10 @@ onMounted(() => {
                         class="absolute h-full w-full bg-gray-800/50 z-10 " />
                     <div class="z-[11] absolute left-7 flex flex-col gap-y-2">
                         <FontAwesomeIcon v-if="get(component, ['visibility'], true) === false" icon='fas fa-eye-slash'
-                            class=' text-orange-400 text-4xl' aria-hidden='true' />
+                            class=' text-orange-400 text-4xl' fixed-width aria-hidden='true' />
                         <span v-if="get(component, ['visibility'], true) === false"
                             class="text-orange-400/60 text-sm italic select-none" aria-hidden='true'>
-                            <FontAwesomeIcon icon='far fa-exclamation-triangle' class='' aria-hidden='true' />
+                            <FontAwesomeIcon icon='far fa-exclamation-triangle' class='' fixed-width aria-hidden='true' />
                             Not visible
                         </span>
                     </div>
@@ -308,6 +342,8 @@ onMounted(() => {
 
                                 <div
                                 class="relative pointer-events-auto"
+                                :data-editable="`card.${key}`" data-editable-scope="slide"
+                                :data-model-path="cardModelPath(component, key)"
                                 :style="{
                                     ...cardEdgeMargin(card),
                                     width: (card.width || 60) + '%',
@@ -356,10 +392,10 @@ onMounted(() => {
                     </template>
                     <CentralStage
                         v-if="component?.layout?.centralStage?.title || component?.layout?.centralStage?.subtitle"
-                        :data="component?.layout?.centralStage" />
+                        :data="component?.layout?.centralStage" scope="slide" />
                     <CentralStage
-                        v-if="data.common?.centralStage?.title || data.common?.centralStage?.subtitle"
-                        :data="data.common?.centralStage" />
+                        v-else-if="data.common?.centralStage?.title || data.common?.centralStage?.subtitle"
+                        :data="data.common?.centralStage" scope="common" />
                 </SwiperSlide>
                 <div v-if="data.navigation?.bottomNav?.value && data.navigation?.bottomNav?.type?.value == 'buttons'" class="absolute bottom-1 left-1/2 -translate-x-1/2 z-10">
                     <SlideControls :dataBanner="data" :swiperRef="swiperRef" />

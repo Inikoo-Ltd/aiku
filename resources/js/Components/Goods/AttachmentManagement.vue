@@ -148,7 +148,7 @@ const getIcon = (type: string) => {
     <div v-if="!editable" class="px-10 pt-4">
         <Message severity="warn" closable>
             <template #icon>
-                <FontAwesomeIcon :icon="faInfoCircle" />
+                <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
             </template>
             <span class="ml-2">
                 You can only view this attachment because of insufficient permissions.
@@ -186,7 +186,7 @@ const getIcon = (type: string) => {
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
                             <FontAwesomeIcon v-if="categoryBox.attachment && editable" :icon="faUnlink"
                                 @click.stop="() => onDeletefilesInBox(categoryBox)"
-                                class="text-red-600 cursor-pointer text-xs" />
+                                class="text-red-600 cursor-pointer text-xs" fixed-width />
                         </div>
                     </div>
 
@@ -197,7 +197,7 @@ const getIcon = (type: string) => {
                             <a :href="route(categoryBox.download_route.name, categoryBox.download_route.parameters)" target="_blank"
                                 class="flex flex-col items-center justify-center h-full text-green-700 bg-green-50  shadow-inner transition hover:bg-green-100 hover:scale-[1.02] cursor-pointer p-3">
                                 <FontAwesomeIcon :icon="getIcon(categoryBox.attachment.type)"
-                                    class="mb-2 text-3xl text-green-500 animate-pulse" />
+                                    class="mb-2 text-3xl text-green-500 animate-pulse" fixed-width />
                                 <span class="text-[13px] font-semibold text-green-700 text-center">
                                     {{ categoryBox.attachment.name || trans("Attachment uploaded") }}
                                 </span>
@@ -211,7 +211,7 @@ const getIcon = (type: string) => {
                         <template v-else>
                             <div @click="onClickBox(categoryBox)"
                                 class="flex flex-col items-center justify-center text-gray-400 h-full bg-gray-50  rounded-md hover:bg-gray-100 transition cursor-pointer p-3">
-                                <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" />
+                                <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" fixed-width />
                                 <span class="text-[12px] font-medium">
                                     {{ trans("Drop or click to upload") }}
                                 </span>
@@ -259,7 +259,7 @@ const getIcon = (type: string) => {
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
                             <FontAwesomeIcon v-if="categoryBox.attachment && editable" :icon="faUnlink"
                                 @click.stop="() => onDeletefilesInBox(categoryBox)"
-                                class="text-red-600 cursor-pointer text-xs" />
+                                class="text-red-600 cursor-pointer text-xs" fixed-width />
                         </div>
                     </div>
 
@@ -270,7 +270,7 @@ const getIcon = (type: string) => {
                             <a :href="route(categoryBox.download_route.name, categoryBox.download_route.parameters)" target="_blank"
                                 class="flex flex-col items-center justify-center h-full text-green-700 bg-green-50  shadow-inner transition hover:bg-green-100 hover:scale-[1.02] cursor-pointer p-3">
                                 <FontAwesomeIcon :icon="getIcon(categoryBox.attachment.type)"
-                                    class="mb-2 text-3xl text-green-500 animate-pulse" />
+                                    class="mb-2 text-3xl text-green-500 animate-pulse" fixed-width />
                                 <span class="text-[13px] font-semibold text-green-700 text-center">
                                     {{ categoryBox.attachment.name || trans("Attachment uploaded") }}
                                 </span>
@@ -284,7 +284,7 @@ const getIcon = (type: string) => {
                         <template v-else>
                             <div @click="onClickBox(categoryBox)"
                                 class="flex flex-col items-center justify-center text-gray-400 h-full bg-gray-50  rounded-md hover:bg-gray-100 transition cursor-pointer p-3">
-                                <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" />
+                                <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" fixed-width />
                                 <span class="text-[12px] font-medium">
                                     {{ trans("Drop or click to upload") }}
                                 </span>

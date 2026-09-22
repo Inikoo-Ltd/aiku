@@ -233,14 +233,14 @@ const autoSave = async (event?) => {
 
                     <button  class="px-2 py-1"   @click.stop="() => toggleNavigationVisibility(element, 'top')">
                         <FontAwesomeIcon :icon="element.hidden ? faEyeSlash : faEye"
-                            class="text-gray-400 hover:text-gray-700" />
+                            class="text-gray-400 hover:text-gray-700" fixed-width />
                     </button>
 
                     <!-- Delete Button -->
                     <button @click.stop="() => deleteNavigation(element, 'top')"
                         class="px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
                         title="Delete menu">
-                        <FontAwesomeIcon :icon="faTrash" />
+                        <FontAwesomeIcon :icon="faTrash" fixed-width />
                     </button>
                 </div>
             </template>
@@ -293,14 +293,14 @@ const autoSave = async (event?) => {
 
                     <button  class="px-2 py-1"   @click.stop="() => toggleNavigationVisibility(element, 'bottom')">
                         <FontAwesomeIcon :icon="element.hidden ? faEyeSlash : faEye"
-                            class="text-gray-400 hover:text-gray-700" />
+                            class="text-gray-400 hover:text-gray-700" fixed-width />
                     </button>
 
                     <!-- Delete Button -->
                     <button @click.stop="() => deleteNavigation(element, 'bottom')"
                         class="px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
                         title="Delete menu">
-                        <FontAwesomeIcon :icon="faTrash" />
+                        <FontAwesomeIcon :icon="faTrash" fixed-width />
                     </button>
                 </div>
             </template>
@@ -322,7 +322,7 @@ const autoSave = async (event?) => {
 
     <ConfirmPopup>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
         </template>
     </ConfirmPopup>
 </template>

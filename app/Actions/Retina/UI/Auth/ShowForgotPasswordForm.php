@@ -44,9 +44,7 @@ class ShowForgotPasswordForm
                 $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], false);
             } else {
                 $key         = config('iris.cache.webpage.prefix').'_'.$website->id.'_'.('out').'_'.$forgotPasswordPage->id;
-                $tempWebpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($forgotPasswordPage) {
-                    return ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], false);
-                });
+                $tempWebpageData = ShowIrisWebpage::make()->rememberCompressed($key, fn () => ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], false));
             }
 
             if (Arr::get($tempWebpageData, 'status', null) !== 'not_found') {

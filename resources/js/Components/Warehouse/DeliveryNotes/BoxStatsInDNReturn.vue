@@ -485,7 +485,7 @@ const replacementRoute = (replacement) => {
                 <div v-else class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
 
                 <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-md">
-                    <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" />
+                    <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" fixed-width />
                     {{ trans('Cash on Delivery') }}
                 </div>
 
@@ -493,7 +493,7 @@ const replacementRoute = (replacement) => {
                     {{ trans("Refund") }}
                 </div>
                 <div v-if="boxStats.refund" class="pl-2 w-max">
-                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1" fixed-width/>
                     <Link class="primaryLink" :href="refundRoute(boxStats.refund)">
                         {{ boxStats.refund.reference }}
                     </Link>
@@ -506,7 +506,7 @@ const replacementRoute = (replacement) => {
                     </span>
                 </div>
                 <div v-else-if="boxStats.state == 'done' && !boxStats.refund" class="pl-2 w-max">
-                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1" fixed-width/>
                     <span class="text-xs italic">
                         - {{ 'No Refund' }}
                     </span>
@@ -516,7 +516,7 @@ const replacementRoute = (replacement) => {
                     {{ trans("Replacement") }}
                 </div>
                 <div v-if="boxStats.replacement" class="pl-2 w-max">
-                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1" fixed-width/>
                     <Link class="primaryLink" :href="replacementRoute(boxStats.replacement)">
                         {{ boxStats.replacement.reference }}
                     </Link>
@@ -529,7 +529,7 @@ const replacementRoute = (replacement) => {
                     </span>
                 </div>
                 <div v-else-if="boxStats.state == 'done' && !boxStats.refund" class="pl-2 w-max">
-                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1"/>
+                    <FontAwesomeIcon :icon="faFileInvoice" class="pr-1" fixed-width/>
                     <span class="text-xs italic">
                         - {{ 'No Replacement' }}
                     </span>
@@ -543,7 +543,7 @@ const replacementRoute = (replacement) => {
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Delivery Note") }} 
                     <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.majordomo.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
-                        <FontAwesomeIcon :icon="faTruck"/>
+                        <FontAwesomeIcon :icon="faTruck" fixed-width/>
                         {{ boxStats.parentDeliveryNote?.reference }}
                     </Link>
                 </div>
@@ -568,7 +568,7 @@ const replacementRoute = (replacement) => {
                                 v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
                                 class="cursor-pointer focus:outline-none"
                                 :icon="allowActions ? faLockOpen : faLock"
-                                @click="assignSelfTemporarily()"
+                                @click="assignSelfTemporarily()" fixed-width
                             />
                             <Button @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
                         </template>
@@ -594,7 +594,7 @@ const replacementRoute = (replacement) => {
                                 v-tooltip="allowActions ? trans('Delivery note unlocked') : trans('Locked, only assigned picker can process this delivery note')"
                                 class="cursor-pointer focus:outline-none"
                                 :icon="allowActions ? faLockOpen : faLock"
-                                @click="assignSelfTemporarily()"
+                                @click="assignSelfTemporarily()" fixed-width
                             />
                             <Button @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
                         </template>

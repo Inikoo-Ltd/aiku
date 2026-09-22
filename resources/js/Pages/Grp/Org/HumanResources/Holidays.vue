@@ -237,7 +237,7 @@ watch(
                     <div>
                         <select
                             v-model="filterYear"
-                            class="mt-0.5 block w-28 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-0.5 block w-28 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
                         >
                             <option value="">
                                 {{ trans('All years') }}
@@ -255,7 +255,7 @@ watch(
 
                         <select
                             v-model="filterMonth"
-                            class="mt-0.5 block w-32 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-0.5 block w-32 rounded-md border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
                         >
                             <option value="">
                                 {{ trans('All months') }}
@@ -315,7 +315,7 @@ watch(
                 </label>
                 <select
                     v-model="form.type"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
                     <option value="">
                         {{ trans('Select type') }}
@@ -340,7 +340,7 @@ watch(
                 <input
                     v-model="form.label"
                     type="text"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="form.errors.label" class="mt-1 text-xs text-red-600">
                     {{ form.errors.label }}
@@ -354,7 +354,7 @@ watch(
                 <input
                     v-model="form.from"
                     type="date"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="form.errors.from" class="mt-1 text-xs text-red-600">
                     {{ form.errors.from }}
@@ -368,7 +368,7 @@ watch(
                 <input
                     v-model="form.to"
                     type="date"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                     @change="toTouchedCreate = true"
                 />
                 <div v-if="form.errors.to" class="mt-1 text-xs text-red-600">
@@ -381,7 +381,7 @@ watch(
                     id="is_recurring"
                     v-model="form.is_recurring"
                     type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <label for="is_recurring" class="text-sm text-gray-700">
                     {{ trans('Repeats every year (fixed holiday)') }}
@@ -414,7 +414,7 @@ watch(
                 <input
                     v-model="generateForm.year"
                     type="number"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                     min="2000"
                     max="2100"
                 />
@@ -452,7 +452,7 @@ watch(
                 </label>
                 <select
                     v-model="editForm.type"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
                     <option value="">
                         {{ trans('Select type') }}
@@ -477,7 +477,7 @@ watch(
                 <input
                     v-model="editForm.label"
                     type="text"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="editForm.errors.label" class="mt-1 text-xs text-red-600">
                     {{ editForm.errors.label }}
@@ -491,7 +491,7 @@ watch(
                 <input
                     v-model="editForm.from"
                     type="date"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="editForm.errors.from" class="mt-1 text-xs text-red-600">
                     {{ editForm.errors.from }}
@@ -505,7 +505,7 @@ watch(
                 <input
                     v-model="editForm.to"
                     type="date"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                     @change="toTouchedEdit = true"
                 />
                 <div v-if="editForm.errors.to" class="mt-1 text-xs text-red-600">
@@ -518,7 +518,7 @@ watch(
                     id="edit_is_recurring"
                     v-model="editForm.is_recurring"
                     type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <label for="edit_is_recurring" class="text-sm text-gray-700">
                     {{ trans('Repeats every year (fixed holiday)') }}

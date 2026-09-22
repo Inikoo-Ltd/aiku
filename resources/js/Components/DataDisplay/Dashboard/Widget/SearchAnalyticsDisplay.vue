@@ -133,7 +133,7 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                 class="text-xs text-indigo-600 hover:underline whitespace-nowrap"
             >
                 {{ logsLabel ?? ctrans("All searches & per-user stats") }}
-                <FontAwesomeIcon icon="fal fa-arrow-right" aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
             </Link>
         </div>
 
@@ -173,7 +173,7 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                         >
                             <div class="flex justify-between gap-2">
                                 <span class="text-gray-600 truncate min-w-0" :class="queryUrl ? 'hover:underline' : ''">{{ q.query }}</span>
-                                <span class="shrink-0 tabular-nums font-medium">{{ q.searches }}<span class="text-gray-400 font-normal"> / {{ q.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span></span>
+                                <span class="shrink-0 tabular-nums font-medium">{{ q.searches }}<span class="text-gray-400 font-normal"> / {{ q.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span></span>
                             </div>
                             <MiniBar :value="q.searches" :max="maxTopQueries" color="bg-indigo-400" />
                         </component>
@@ -250,7 +250,7 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                         >
                             <div class="flex justify-between gap-2">
                                 <span class="text-gray-600 truncate min-w-0" :class="searcherHref(searcher) ? 'hover:underline' : ''">{{ searcher.username }}</span>
-                                <span class="shrink-0 tabular-nums font-medium">{{ searcher.searches }}<span class="text-gray-400 font-normal"> / {{ searcher.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span></span>
+                                <span class="shrink-0 tabular-nums font-medium">{{ searcher.searches }}<span class="text-gray-400 font-normal"> / {{ searcher.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span></span>
                             </div>
                             <MiniBar :value="searcher.searches" :max="maxSearchers" color="bg-indigo-400" />
                         </component>
@@ -264,7 +264,7 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                             <div class="flex justify-between gap-2">
                                 <Link v-if="props.pageUrl" :href="props.pageUrl(page.clicked_url)" class="text-gray-600 truncate min-w-0 hover:underline" :title="page.clicked_url">{{ pagePath(page.clicked_url) }}</Link>
                                 <a v-else :href="page.clicked_url" target="_blank" class="text-gray-600 truncate min-w-0 hover:underline" :title="page.clicked_url">{{ pagePath(page.clicked_url) }}</a>
-                                <span class="shrink-0 tabular-nums font-medium">{{ page.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' class="text-gray-400" /></span>
+                                <span class="shrink-0 tabular-nums font-medium">{{ page.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' class="text-gray-400" /></span>
                             </div>
                             <MiniBar :value="page.clicks" :max="maxClickedPages" color="bg-emerald-400" />
                         </div>
@@ -279,7 +279,7 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                                 <span class="text-gray-600 truncate min-w-0">{{ source.label }}</span>
                                 <span class="shrink-0 tabular-nums font-medium">
                                     {{ source.share }}%
-                                    <span class="text-gray-400 font-normal">{{ source.searches }} / {{ source.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span>
+                                    <span class="text-gray-400 font-normal">{{ source.searches }} / {{ source.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span>
                                 </span>
                             </div>
                             <MiniBar :value="source.share" :max="100" color="bg-indigo-400" />
@@ -293,7 +293,7 @@ const zeroResultsColor = computed(() => stats.value.zero_results_rate <= 5 ? 'te
                         <div v-for="device in widget.devices" :key="device.device" class="py-1">
                             <div class="flex justify-between gap-2">
                                 <span class="text-gray-600 truncate min-w-0 capitalize">{{ device.device }}</span>
-                                <span class="shrink-0 tabular-nums font-medium">{{ device.searches }}<span class="text-gray-400 font-normal"> / {{ device.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span></span>
+                                <span class="shrink-0 tabular-nums font-medium">{{ device.searches }}<span class="text-gray-400 font-normal"> / {{ device.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span></span>
                             </div>
                             <MiniBar :value="device.searches" :max="maxDevices" color="bg-sky-400" />
                         </div>

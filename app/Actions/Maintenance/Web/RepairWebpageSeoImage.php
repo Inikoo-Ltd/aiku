@@ -9,7 +9,6 @@
 
 namespace App\Actions\Maintenance\Web;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Actions\Web\Webpage\BreakWebpageCache;
@@ -85,7 +84,6 @@ class RepairWebpageSeoImage
 
         $webpage->refresh();
         BreakWebpageCache::run($webpage, false);
-        ClearCacheByWildcard::run("irisData:website:{$webpage->website_id}:*");
     }
 
     public string $commandSignature = 'repair:webpage_seo_image {shop?} {--type= : Only repair this webpage type (catalogue or blog)}';

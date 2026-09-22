@@ -201,7 +201,7 @@ onMounted(() => {
 
                         <template #label>
                             <div class="flex gap-2">
-                                <FontAwesomeIcon :icon="data.data.status_icon.icon"></FontAwesomeIcon>
+                                <FontAwesomeIcon :icon="data.data.status_icon.icon" fixed-width></FontAwesomeIcon>
                                 <div>{{ data.data.status }}</div>
                             </div>
                         </template>
@@ -225,7 +225,7 @@ onMounted(() => {
                             class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
                             <div>{{ trans("No customer reference barcode") }}</div>
                             <div>
-                                <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" />
+                                <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" fixed-width />
                             </div>
                         </div>
                         <!-- Hover Buttons -->
@@ -249,7 +249,7 @@ onMounted(() => {
                             class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
                             <div>{{ trans("No customer reference barcode available") }}</div>
                             <div>
-                                <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" />
+                                <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" fixed-width />
                             </div>
                         </div>
 

@@ -542,7 +542,7 @@ defineExpose({
                     <FontAwesomeIcon :icon="faStar" :class="n <= (selectedRating ?? rating ?? 0)
                         ? 'text-yellow-400'
                         : 'text-gray-300'
-                        " />
+                        " fixed-width />
                 </button>
             </div>
 
@@ -551,7 +551,7 @@ defineExpose({
                     borderColor: layout.app.theme[4],
                     color: layout.app.theme[4],
                 }">
-                <FontAwesomeIcon :icon="faPlus" />
+                <FontAwesomeIcon :icon="faPlus" fixed-width />
                 {{ trans("New Chat") }}
             </button>
         </div>
@@ -561,13 +561,13 @@ defineExpose({
                 <template v-if="attachment.isImage && attachment.previewUrl">
                     <img :src="attachment.previewUrl" class="h-24 rounded-lg border object-cover" />
                     <button @click="removeAttachment(index)" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
-                        <FontAwesomeIcon :icon="faXmark" />
+                        <FontAwesomeIcon :icon="faXmark" fixed-width />
                     </button>
                 </template>
 
                 <div v-else class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0 max-w-[220px]">
                     <div class="text-2xl">
-                        <FontAwesomeIcon :icon="faFilePdf" />
+                        <FontAwesomeIcon :icon="faFilePdf" fixed-width />
                     </div>
                     <div class="flex-1 min-w-0 overflow-hidden">
                         <div class="text-sm font-medium truncate">
@@ -578,7 +578,7 @@ defineExpose({
                         </div>
                     </div>
                     <button @click="removeAttachment(index)" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
-                        <FontAwesomeIcon :icon="faXmark" />
+                        <FontAwesomeIcon :icon="faXmark" fixed-width />
                     </button>
                 </div>
             </div>
@@ -602,13 +602,13 @@ defineExpose({
                             <button @click="imageInput?.click()"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                                 :title="trans('Upload image')">
-                                <FontAwesomeIcon :icon="faImage" class="text-sm" />
+                                <FontAwesomeIcon :icon="faImage" class="text-sm" fixed-width />
                             </button>
 
                             <button @click="fileInput?.click()"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                                 :title="trans('Upload file')">
-                                <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
+                                <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
                             </button>
 
                             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
@@ -622,7 +622,7 @@ defineExpose({
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                             :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
                             :title="trans('Emoji')">
-                            <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                            <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                         </button>
 
                         <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1 z-30 max-w-[calc(100vw-2rem)]">

@@ -289,7 +289,7 @@ const routeOrder = (order) => {
 
                     <div class="flex items-center justify-between">
                         <dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-                            <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
+                            <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width />
                             {{ trans('Date') }}
                         </dt>
                         <dd class="text-sm">
@@ -335,7 +335,7 @@ const routeOrder = (order) => {
 							<button @click="openAccountModal"
 								class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
 								v-tooltip="trans('View Account Information')">
-								<FontAwesomeIcon icon="fal fa-eye" class="w-4 h-4" />
+								<FontAwesomeIcon icon="fal fa-eye" class="w-4 h-4" fixed-width />
 							</button>
 							{{ normalizedShowcase.paymentServiceProvider.name }}
 						</dd>
@@ -365,7 +365,7 @@ const routeOrder = (order) => {
 			<div v-if="normalizedShowcase.order_data?.data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: themeColors.buttonBg }" />
+						<FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: themeColors.buttonBg }" fixed-width />
 						{{ trans('Order Information') }}
 					</h3>
 					<div>
@@ -398,7 +398,7 @@ const routeOrder = (order) => {
 							{{ trans('Payment Status') }}
 							<FontAwesomeIcon
 								:icon="normalizedShowcase.order_data.data.is_fully_paid ? 'fal fa-check-circle' : 'fal fa-times-circle'"
-								:class="normalizedShowcase.order_data.data.is_fully_paid ? 'text-green-500' : 'text-red-500'" />
+								:class="normalizedShowcase.order_data.data.is_fully_paid ? 'text-green-500' : 'text-red-500'" fixed-width />
 						</dt>
 						<dd class="text-sm font-medium"
 							:class="normalizedShowcase.order_data.data.is_fully_paid ? 'text-green-700' : 'text-red-700'">
@@ -437,7 +437,7 @@ const routeOrder = (order) => {
 					<div class="border-t border-gray-200 pt-4 space-y-3">
 						<div v-if="normalizedShowcase.order_data.data.created_at" class="flex items-center justify-between">
 							<dt v-tooltip="trans('Date of order created')" class="text-sm font-medium text-gray-600 flex items-center gap-2">
-								<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
+								<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width />
 								{{ trans('Created') }}
 							</dt>
 							<dd class="text-sm">
@@ -448,7 +448,7 @@ const routeOrder = (order) => {
 						<div v-if="normalizedShowcase.order_data.data.cancelled_at"
 							class="flex items-center justify-between">
 							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-								<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400" />
+								<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400" fixed-width />
 								{{ trans('Cancelled') }}
 							</dt>
 							<dd class="text-sm text-red-600">
@@ -465,7 +465,7 @@ const routeOrder = (order) => {
 			<div v-if="normalizedShowcase.invoice_data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-file-invoice-dollar" :style="{ color: themeColors.buttonBg }" />
+						<FontAwesomeIcon icon="fal fa-file-invoice-dollar" :style="{ color: themeColors.buttonBg }" fixed-width />
 						{{ trans('Invoice Information') }}
 					</h3>
 				</div>
@@ -509,7 +509,7 @@ const routeOrder = (order) => {
 			<div v-if="normalizedShowcase.creditTransaction?.type == 'Top up' && normalizedShowcase.customer.name" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200 flex">
 					<h3 class="text-lg font-medium flex items-center gap-2  w-full">
-						<FontAwesomeIcon icon="fal fa-user" :style="{ color: themeColors.buttonBg }" />
+						<FontAwesomeIcon icon="fal fa-user" :style="{ color: themeColors.buttonBg }" fixed-width />
 						{{ trans('Associated Customer Detail') }}
 					</h3>
 					<Link v-if=" normalizedShowcase.customer.organisation_slug && normalizedShowcase.customer.shop_slug && normalizedShowcase.customer.slug" 
@@ -520,7 +520,7 @@ const routeOrder = (order) => {
 					})">
 						<FontAwesomeIcon :icon="faSquareArrowUpRight" 
 						:style="{ color: themeColors.buttonBg }" 
-						class="hover:animate-pulse cursor-pointer justify-self-end self-center text-xl" />
+						class="hover:animate-pulse cursor-pointer justify-self-end self-center text-xl" fixed-width />
 					</Link>
 				</div>
 				<dl class="px-6 py-4 space-y-4">
@@ -560,7 +560,7 @@ const routeOrder = (order) => {
 				class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-piggy-bank" :style="{ color: themeColors.buttonBg }" />
+						<FontAwesomeIcon icon="fal fa-piggy-bank" :style="{ color: themeColors.buttonBg }" fixed-width />
 						{{ trans('Associated Credit Transaction') }}
 					</h3>
 				</div>
@@ -585,7 +585,7 @@ const routeOrder = (order) => {
 					<!-- Transaction Date -->
 					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
+							<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width />
 							{{ trans('Transaction Date') }}
 						</dt>
 						<dd class="text-sm">
@@ -608,11 +608,11 @@ const routeOrder = (order) => {
 			<!-- Modal Header -->
 			<div class="flex items-center justify-between p-6 border-b">
 				<h3 class="text-lg font-semibold flex items-center gap-2">
-					<FontAwesomeIcon icon="fal fa-building" />
+					<FontAwesomeIcon icon="fal fa-building" fixed-width />
 					{{ trans('Account Information') }}
 				</h3>
 				<button @click="closeAccountModal" class="hover:opacity-70 transition-opacity">
-					<FontAwesomeIcon icon="fal fa-times" class="w-5 h-5" />
+					<FontAwesomeIcon icon="fal fa-times" class="w-5 h-5" fixed-width />
 				</button>
 			</div>
 

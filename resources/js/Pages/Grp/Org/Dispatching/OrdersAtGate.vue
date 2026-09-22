@@ -254,13 +254,13 @@ function release(item: { id: number }) {
                     v-if="item.pay_status === 'paid'"
                     :icon="['fas', 'check-circle']"
                     class="text-green-600"
-                    :title="trans('Paid')"
+                    :title="trans('Paid')" fixed-width
                 />
                 <FontAwesomeIcon
                     v-else
                     :icon="['fal', 'circle']"
                     class="text-amber-500"
-                    :title="trans('Unpaid')"
+                    :title="trans('Unpaid')" fixed-width
                 />
                 <span class="tabular-nums">{{ useLocaleStore().currencyFormat(item.currency_code, Number(item.net_amount)) }}</span>
             </span>

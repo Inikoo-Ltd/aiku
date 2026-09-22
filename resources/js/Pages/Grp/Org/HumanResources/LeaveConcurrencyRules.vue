@@ -208,9 +208,9 @@ const modalTitle = computed(() =>
 				<span
 					v-for="target in item.targets.slice(0, 3)"
 					:key="target.id"
-					class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+					class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[--app-accent-soft] text-[--app-accent-deep]">
 					{{ target.target_type === "Employee" ? employees.find((e) => e.value === target.target_id)?.label ?? target.target_id : jobPositions.find((j) => j.value === target.target_id)?.label ?? target.target_id }}
-					<span v-if="target.role" class="ml-1 text-indigo-600">({{ target.role }})</span>
+					<span v-if="target.role" class="ml-1 text-[--app-accent]">({{ target.role }})</span>
 				</span>
 				<span
 					v-if="item.targets.length > 3"
@@ -275,7 +275,7 @@ const modalTitle = computed(() =>
 				<input
 					v-model="form.name"
 					type="text"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 				<div v-if="form.errors.name" class="mt-1 text-sm text-red-600">
 					{{ form.errors.name }}
 				</div>
@@ -287,7 +287,7 @@ const modalTitle = computed(() =>
 				</label>
 				<select
 					v-model="form.rule_type"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
+					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]">
 					<option
 						v-for="option in props.ruleTypeOptions"
 						:key="option.value"
@@ -309,7 +309,7 @@ const modalTitle = computed(() =>
 						v-model.number="form.limit"
 						type="number"
 						min="1"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 					<div v-if="form.errors.limit" class="mt-1 text-sm text-red-600">
 						{{ form.errors.limit }}
 					</div>
@@ -323,7 +323,7 @@ const modalTitle = computed(() =>
 						v-model.number="form.max_overlap_days"
 						type="number"
 						min="0"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 					<div v-if="form.errors.max_overlap_days" class="mt-1 text-sm text-red-600">
 						{{ form.errors.max_overlap_days }}
 					</div>
@@ -335,7 +335,7 @@ const modalTitle = computed(() =>
 					id="is_active"
 					v-model="form.is_active"
 					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+					class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 				<label for="is_active" class="ml-2 block text-sm text-gray-700">
 					{{ trans("Active") }}
 				</label>
@@ -365,7 +365,7 @@ const modalTitle = computed(() =>
 					</label>
 					<select
 						v-model="targetForm.target_type"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]">
 						<option value="" disabled>
 							{{ trans("Select target type") }}
 						</option>
@@ -416,7 +416,7 @@ const modalTitle = computed(() =>
 				</label>
 				<select
 					v-model="targetForm.role"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
+					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]">
 					<option value="">
 						{{ trans("Select role") }}
 					</option>
@@ -475,7 +475,7 @@ const modalTitle = computed(() =>
 						<span v-else class="ml-2 text-gray-500">ID: {{ target.target_id }}</span>
 						<span
 							v-if="target.role"
-							class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+							class="ml-2 px-2 py-1 bg-[--app-accent-soft] text-[--app-accent-deep] rounded-full text-xs">
 							{{ target.role }}
 						</span>
 					</div>

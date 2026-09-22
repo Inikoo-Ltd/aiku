@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
                     :aria-current="key === currentTab ? 'page' : undefined"
                 >
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
-                        <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
+                        <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true" :icon="sectionData.icon"
                             class="flex-shrink-0 mr-3 h-5 w-5"
                             :class="[
                                 key === currentTab ? 'text-gray-400' : 'text-gray-500',

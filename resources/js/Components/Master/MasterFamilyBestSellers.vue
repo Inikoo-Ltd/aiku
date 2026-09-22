@@ -64,7 +64,7 @@ const rankColor = (index: number) => {
                     class="w-10 h-10 object-cover rounded"
                 />
                 <div v-else class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded">
-                    <FontAwesomeIcon :icon="faImage" class="text-gray-400" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faImage" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
 
                 <div class="min-w-0 flex-1">

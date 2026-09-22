@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithUnclaimedChatSessions;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -22,6 +23,7 @@ class GetAgentChatNotifications
 {
     use AsAction;
     use WithChatAgentAuthorisation;
+    use WithUnclaimedChatSessions;
 
     private array $visitorSenderTypes = [
         ChatSenderTypeEnum::GUEST->value,
@@ -32,11 +34,19 @@ class GetAgentChatNotifications
     {
         $shopIds = collect($this->shopIdsWorkedBy($agent->user_id));
 
+        // Counted across every shop, not this agent's: the point of the unclaimed queue is that
+        // somebody who does not work the shop is the one who ends up noticing.
+        $unclaimed = $this->unclaimedChatSessions()->count()
+            + $this->unclaimedMetaChatSessions()->count();
+
         if ($shopIds->isEmpty()) {
-            return ['team_unread' => []];
+            return ['team_unread' => [], 'unclaimed' => $unclaimed];
         }
 
-        return ['team_unread' => $this->teamUnreadByShop($agent, $shopIds)];
+        return [
+            'team_unread' => $this->teamUnreadByShop($agent, $shopIds),
+            'unclaimed'   => $unclaimed,
+        ];
     }
 
     /**
@@ -96,7 +106,7 @@ class GetAgentChatNotifications
             return response()->json([
                 'success' => true,
                 'message' => 'User is not a chat agent',
-                'data'    => ['team_unread' => (object) []],
+                'data'    => ['team_unread' => (object) [], 'unclaimed' => 0],
             ]);
         }
 

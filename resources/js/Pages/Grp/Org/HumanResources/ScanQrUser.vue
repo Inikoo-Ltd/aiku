@@ -422,7 +422,7 @@ const trackFunction = () => ({
 					<div
 						class="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-full flex items-center justify-center"
 						:class="hasLocation ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'">
-						<FontAwesomeIcon :icon="faMapMarkerAlt" class="text-base sm:text-lg" />
+						<FontAwesomeIcon :icon="faMapMarkerAlt" class="text-base sm:text-lg" fixed-width />
 					</div>
 					<div class="min-w-0 flex-1">
 						<p
@@ -524,7 +524,7 @@ const trackFunction = () => ({
 				v-if="showSuccessModal"
 				class="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-6 px-6 text-center text-white"
 				:class="clockType === 'clock_out' ? 'bg-sky-600' : 'bg-green-600'">
-				<FontAwesomeIcon :icon="faCheck" class="text-[7rem] sm:text-[9rem]" />
+				<FontAwesomeIcon :icon="faCheck" class="text-[7rem] sm:text-[9rem]" fixed-width />
 				<div class="text-4xl sm:text-6xl font-extrabold uppercase tracking-wide">
 					{{ clockType === "clock_out" ? trans("Clocked out") : trans("Clocked in") }}
 				</div>

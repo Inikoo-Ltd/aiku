@@ -136,7 +136,7 @@ const onSelectStep = (step: StepDiscountStep) => {
                 @click="onSelectStep(step)"
                 >
                 <span v-if="isPopularStep(step)" class="popular-badge">
-                    <FontAwesomeIcon :icon="faFire" />
+                    <FontAwesomeIcon :icon="faFire" fixed-width />
                     {{ trans("Popular") }}
                 </span>
 

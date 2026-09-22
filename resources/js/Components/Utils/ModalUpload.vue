@@ -288,7 +288,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                             <a v-if="upload_spreadsheet?.route?.download?.name" :href="route(upload_spreadsheet?.route?.download?.name, upload_spreadsheet?.route?.download?.parameters)"
                                 class="group text-xs text-gray-600 cursor-pointer px-2 -mr-1.5 w-fit" download>
                                 <span class="text-xs text-gray-400 group-hover:text-gray-600">
-                                    <FontAwesomeIcon icon='fas fa-file-download' class='text-gray-400 group-hover:text-gray-600' aria-hidden='true' />
+                                    <FontAwesomeIcon icon='fas fa-file-download' class='text-gray-400 group-hover:text-gray-600' fixed-width aria-hidden='true' />
                                     {{ upload_spreadsheet?.template?.label || trans(`Download template .xlsx`) }}
                                 </span>
                             </a>
@@ -309,7 +309,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                         <div v-if="selectedFile" class="text-gray-500 flex flex-col items-center gap-y-2">
                             <div class="flex items-center gap-x-1">
                                 <FontAwesomeIcon icon="fal fa-file" class="mx-auto h-5 w-5 text-gray-300"
-                                    aria-hidden="true" />
+                                    fixed-width aria-hidden="true" />
                                 {{ selectedFile?.name }}
                             </div>
                             <Button @click="() => clearAll()" label="Remove file" type="negative" size="s" />

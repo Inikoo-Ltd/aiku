@@ -247,7 +247,7 @@ watch(
 							v-if="activity?.event_type === 'ticket' && activity?.details?.ticket_key"
 							class="mt-2 rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2">
 							<div class="flex items-center gap-2">
-								<FontAwesomeIcon :icon="faLifeRing" class="text-blue-600 text-xs" />
+								<FontAwesomeIcon :icon="faLifeRing" class="text-blue-600 text-xs" fixed-width />
 								<component
 									:is="activity?.details?.ticket_url ? 'a' : 'span'"
 									:href="activity?.details?.ticket_url || undefined"
@@ -259,7 +259,7 @@ watch(
 									<FontAwesomeIcon
 										v-if="activity?.details?.ticket_url"
 										:icon="faArrowUpRightFromSquare"
-										class="ml-0.5 text-[10px]" />
+										class="ml-0.5 text-[10px]" fixed-width />
 								</component>
 							</div>
 							<div
@@ -275,7 +275,7 @@ watch(
 									class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-white text-gray-600 border border-blue-100">
 									<FontAwesomeIcon
 										:icon="ticketPriorityVisual(activity.details.priority_name).icon"
-										:class="ticketPriorityVisual(activity.details.priority_name).color" />
+										:class="ticketPriorityVisual(activity.details.priority_name).color" fixed-width />
 									{{ activity.details.priority_name }}
 								</span>
 							</div>

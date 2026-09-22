@@ -2070,6 +2070,41 @@ test('increase and decrease customer credit', function () {
     expect($customer->balance)->toBe('400.00');
 });
 
+test('accounting clerk without crm edit can decrease customer balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    \App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount' => 220.43,
+        'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'type'   => CreditTransactionTypeEnum::COMPENSATION->value,
+    ]);
+
+    setPermissionsTeamId($this->group->id);
+    $guest = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    );
+    $user = $guest->getUser();
+    $user->givePermissionTo(\Spatie\Permission\Models\Permission::findByName("accounting.{$this->organisation->id}.edit"));
+    $user->refresh();
+    actingAs($user);
+
+    $response = patch(
+        route('grp.models.credit_transaction.decrease', $customer->id),
+        [
+            'amount' => -220.43,
+            'notes'  => 'Refund of excess payment',
+            'type'   => CreditTransactionTypeEnum::RETURN->value,
+            'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::MONEY_BACK->value,
+        ]
+    );
+
+    $response->assertSuccessful();
+    expect((float)$customer->refresh()->balance)->toBe(0.0);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Actions: MIT saved card store + update

@@ -183,7 +183,6 @@ const {
   selectedProduct: selected_product,
   loadDetail: loadProductDetail,
   selectProduct,
-  applyBlockProduct,
 } = useSelectedProductDetail({
   initialProduct: props.fieldValue.product,
   fetchDetail: fetchProductDetail,
@@ -296,7 +295,7 @@ watch(
 
 watch(
   () => props.fieldValue.product,
-  product => applyBlockProduct(product),
+  product => selectProduct(product),
   { deep: true }
 )
 

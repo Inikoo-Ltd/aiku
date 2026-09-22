@@ -32,7 +32,7 @@ const listTheme = [
             <div v-for="(theme,index) of listTheme" :key="index" @click="selectedTheme = theme.title"
                 class="w-6 h-6 rounded-full cursor-pointer grid justify-center items-center"
                 :class="{ 'ring-2 ring-slate-600 ring-offset-2': selectedTheme === theme.title }, theme.colorPreview">
-                <FontAwesomeIcon v-if="selectedTheme === theme.title" aria-hidden="true" icon="fa-light fa-check"
+                <FontAwesomeIcon v-if="selectedTheme === theme.title" fixed-width aria-hidden="true" icon="fa-light fa-check"
                     class="text-xs text-slate-800" />
             </div>
         </div>

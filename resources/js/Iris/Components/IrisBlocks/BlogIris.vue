@@ -169,7 +169,7 @@ const screenType = inject("screenType", "desktop")
         <Image v-if="fieldValue.image?.source" :src="fieldValue.image.source" :alt="fieldValue.image.alt"
           :imageCover="true" class="w-full h-full object-cover" />
        
-        <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-300 text-6xl" />
+        <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-300 text-6xl" fixed-width />
       </div>
 
       <!-- Article Content -->

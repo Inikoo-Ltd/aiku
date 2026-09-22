@@ -173,7 +173,7 @@ onMounted(() => {
                 <div class="flex gap-x-2 items-center">
                     <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
                         :icon="data.iconRight?.icon || data.iconRight" class="align-top" :class="data.iconRight.class"
-                        aria-hidden="true" :color="data.iconRight.color" :rotation="data?.iconRight?.icon_rotation" />
+                        fixed-width aria-hidden="true" :color="data.iconRight.color" :rotation="data?.iconRight?.icon_rotation" />
                     <span v-if="data.titleRight" class="text-lg">{{ data.titleRight }}</span>
                     <div v-if="data.afterTitle" class="font-normal text-lg leading-none">
                         {{ data.afterTitle.label }}
@@ -182,12 +182,12 @@ onMounted(() => {
             </component>
             <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
                 <FontAwesomeIcon
-                    icon="fal fa-atom"
+                    icon="fal fa-atom" fixed-width
                 />
             </Link>
             <!-- TODO PLEASE CHANGE TO HAVE LINK TO MASTER VARIANT -->
             <Link v-if="masterVariant" :href="routeVariant()" v-tooltip="trans('Go to Master Variant')">
-                <FontAwesomeIcon  :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+                <FontAwesomeIcon  :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" fixed-width />
             </Link>
         </template>
         
@@ -196,7 +196,7 @@ onMounted(() => {
                 v-if="mismatch_detected" 
                 :icon="faWarning" 
                 class="text-red-500" 
-                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')" fixed-width
             />
         </template>
 
@@ -217,7 +217,7 @@ onMounted(() => {
                         :href="item.to ? route(item.to.name, item.to.parameters) : undefined" :title="item.title"
                         class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to ? 'text-gray-500' : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" fixed-width />
                         <span>{{ item.label || '-' }}</span>
                     </component>
                 </div>

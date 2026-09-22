@@ -41,6 +41,31 @@ class ShowIrisWebpage
         return $webpageData?->canonical_url;
     }
 
+    /**
+     * Page render data averages 345KB and reaches 20MB, and 80k of them are live at once, so it is
+     * stored deflated. An array is an entry written before this was introduced.
+     */
+    public function rememberCompressed(string $key, \Closure $build): array
+    {
+        $cached = cache()->get($key);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        if (is_string($cached)) {
+            $webpageData = @unserialize((string) @gzuncompress($cached));
+            if (is_array($webpageData)) {
+                return $webpageData;
+            }
+        }
+
+        $webpageData = $build();
+        cache()->put($key, gzcompress(serialize($webpageData)), config('iris.cache.webpage.ttl'));
+
+        return $webpageData;
+    }
+
     public function getWebpageData($webpageID, array $parentPaths, bool $loggedIn): array
     {
         $webpage = Webpage::find($webpageID);
@@ -179,9 +204,7 @@ class ShowIrisWebpage
             $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
             $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
-            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths, $loggedIn) {
-                return $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
-            });
+            $webpageData = $this->rememberCompressed($key, fn () => $this->getWebpageData($webpageID, $parentPaths, $loggedIn));
         }
 
         if (Arr::get($webpageData, 'status') != 'ok') {
