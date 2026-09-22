@@ -19,11 +19,13 @@ import {
     faLock,
     faExclamationCircle,
     faCircle,
+    faShare,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
+import ForwardToColleagueModal from "@/Components/Chat/Agent/ForwardToColleagueModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
@@ -149,6 +151,12 @@ const isTicketModalOpen = ref(false)
 const openTicketModal = () => {
     isMenuOpen.value = false
     isTicketModalOpen.value = true
+}
+
+const isForwardModalOpen = ref(false)
+const openForwardModal = () => {
+    isMenuOpen.value = false
+    isForwardModalOpen.value = true
 }
 
 const isSlackModalOpen = ref(false)
@@ -1322,6 +1330,10 @@ const handleClickOutside = (e: MouseEvent) => {
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width /> {{ ctrans("Create Ticket") }}
                         </button>
 
+                        <button class="menu-item" @click="openForwardModal">
+                            <FontAwesomeIcon :icon="faShare" class="text-teal-600" fixed-width /> {{ ctrans("Forward to a colleague") }}
+                        </button>
+
                         <button class="menu-item" @click="openSlackModal">
                             <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width /> {{ ctrans("Share to Slack") }}
                         </button>
@@ -1533,6 +1545,13 @@ const handleClickOutside = (e: MouseEvent) => {
             :organisation="currentOrganisation"
             @created="onTicketCreated"
             @close="isTicketModalOpen = false"
+        />
+
+        <ForwardToColleagueModal
+            :is-open="isForwardModalOpen"
+            :organisation="currentOrganisation"
+            :session-ulid="session?.ulid"
+            @close="isForwardModalOpen = false"
         />
 
         <SlackShareModal

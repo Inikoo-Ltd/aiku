@@ -47,6 +47,8 @@ enum ChatEventTypeEnum: string
 
     case REDACT = 'redact';
 
+    case FORWARD = 'forward';
+
     case PHONE_CALL = 'phone_call';
 
     /**
@@ -66,6 +68,7 @@ enum ChatEventTypeEnum: string
             self::TRASH->value,
             self::RESTORE->value,
             self::REDACT->value,
+            self::FORWARD->value,
             self::PRIORITY->value,
             self::TRANSFER->value,
             self::TRANSFER_ACCEPT->value,
@@ -104,6 +107,7 @@ enum ChatEventTypeEnum: string
             'phone_call' => __('Phone Call'),
             'reopen' => __('Chat Reopened'),
             'ticket'      => __('Ticket Created'),
+            'forward'     => __('Forwarded to a Colleague'),
         ];
     }
 
@@ -194,6 +198,11 @@ enum ChatEventTypeEnum: string
                 'tooltip' => __('Chat Reopened'),
                 'icon' => 'fas fa-redo',
                 'class' => 'text-green-500',
+            ],
+            'forward' => [
+                'tooltip' => __('Forwarded to a Colleague'),
+                'icon' => 'fas fa-share',
+                'class' => 'text-teal-600',
             ],
             'ticket' => [
                 'tooltip' => __('Ticket Created'),

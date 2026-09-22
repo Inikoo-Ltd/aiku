@@ -6663,3 +6663,68 @@ test('an email reply does not also send a chat notification, and carries the sho
             && collect($parts)->contains(fn ($part) => str_contains($part, '<img src="https://media.aiku.io/logo.png"'));
     });
 });
+
+
+test('forwarding a conversation to a colleague opens one staff thread and optionally mails them', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+        'metadata'         => ['email_subject' => 'Invoice for October'],
+    ]);
+
+    $session->messages()->create([
+        'message_type' => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::GUEST->value,
+        'message_text' => 'Who do I send the paperwork to?',
+    ]);
+
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    $management = User::factory()->create(['group_id' => $this->organisation->group_id, 'email' => 'management@example.com']);
+    $warehouse  = User::factory()->create(['group_id' => $this->organisation->group_id, 'email' => 'warehouse@example.com']);
+
+    $conversation = \App\Actions\Chat\ChatSession\ForwardChatSessionToColleague::make()->handle($session, $agent, [
+        'user_ids'   => [$management->id],
+        'note'       => 'This one is for you to decide',
+        'also_email' => true,
+    ]);
+
+    expect($conversation->context_type)->toBe('ChatSession')
+        ->and($conversation->context_id)->toBe($session->id)
+        ->and($conversation->participants->pluck('id'))->toContain($management->id, $user->id)
+        ->and($conversation->messages()->first()->body)->toContain('This one is for you to decide')
+        ->and($conversation->messages()->first()->body)->toContain('Invoice for October');
+
+    \Illuminate\Support\Facades\Notification::assertSentTo($management, \App\Notifications\ForwardedChatSessionNotification::class);
+
+    // The second colleague joins the thread that already exists instead of getting a bare new one,
+    // and asking for no mail sends none.
+    $again = \App\Actions\Chat\ChatSession\ForwardChatSessionToColleague::make()->handle($session, $agent, [
+        'user_ids'   => [$warehouse->id],
+        'also_email' => false,
+    ]);
+
+    expect($again->id)->toBe($conversation->id)
+        ->and($again->messages()->count())->toBe(2)
+        ->and($again->participants()->count())->toBe(3);
+
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($warehouse, \App\Notifications\ForwardedChatSessionNotification::class);
+
+    $event = $session->chatEvents()->where('event_type', 'forward')->latest('id')->first();
+    expect($event->payload['recipient_user_ids'])->toBe([$warehouse->id])
+        ->and($event->payload['also_emailed'])->toBeFalse();
+});
