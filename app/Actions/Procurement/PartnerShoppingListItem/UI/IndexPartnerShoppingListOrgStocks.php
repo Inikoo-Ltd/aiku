@@ -44,6 +44,7 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                 $join->on('buyer_org_stocks.stock_id', 'org_stocks.stock_id')
                     ->where('buyer_org_stocks.organisation_id', $buyerId);
             })
+            ->leftJoin('org_stock_stats as buyer_org_stock_stats', 'buyer_org_stock_stats.org_stock_id', 'buyer_org_stocks.id')
             ->leftJoin('partner_shopping_list_items', function ($join) use ($orgPartner) {
                 $join->on('partner_shopping_list_items.stock_id', 'org_stocks.stock_id')
                     ->where('partner_shopping_list_items.org_partner_id', $orgPartner->id)
@@ -60,6 +61,8 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                 'org_stocks.quantity_available as available_quantity',
                 'buyer_org_stocks.id as buyer_org_stock_id',
                 'buyer_org_stocks.quantity_available as buyer_quantity_available',
+                'buyer_org_stock_stats.days_of_cover as buyer_days_of_cover',
+                'buyer_org_stock_stats.predicted_out_of_stock_at as buyer_out_of_stock_at',
                 'partner_shopping_list_items.id as shopping_list_item_id',
                 'partner_shopping_list_items.quantity as quantity_ordered',
                 DB::raw('(select recommended_batch_size from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.recommended_batch_size is not null limit 1) as batch_size'),
@@ -71,7 +74,8 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
             ->withQueryString();
 
         $paginator->getCollection()->transform(function ($row) {
-            $row->order_quantum = BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size);
+            $row->order_quantum        = BatchedUnitsForDemand::make()->quantumInSkos($row->packed_in, $row->batch_size);
+            $row->buyer_days_of_cover  = $row->buyer_days_of_cover !== null ? (int) $row->buyer_days_of_cover : null;
 
             return $row;
         });

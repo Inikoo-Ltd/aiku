@@ -3997,6 +3997,24 @@ test('batch size is hinted to the partner buyer and to the factory board', funct
     expect($rows->firstWhere('id', $orgStock->id)['batch_size'])->toBe(45);
 });
 
+test('the partner stock picker shows how long the buyer own stock lasts', function () {
+    $partnerOrgStock = OrgStock::where('organisation_id', $this->orgPartner->partner_id)->first();
+    $buyerOrgStock   = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)
+        ->where('stock_id', $partnerOrgStock->stock_id)->first()
+        ?? createOrgStocks($this->orgPartner->organisation, [$partnerOrgStock->stock])[0];
+
+    $buyerOrgStock->stats->update([
+        'days_of_cover'             => 9.6,
+        'predicted_out_of_stock_at' => now()->addDays(9)->toDateString(),
+    ]);
+
+    $row = collect($this->get(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]))->json('data'))
+        ->firstWhere('id', $partnerOrgStock->id);
+
+    expect($row['buyer_days_of_cover'])->toBe(9)
+        ->and($row['buyer_out_of_stock_at'])->toBe(now()->addDays(9)->toDateString());
+});
+
 test('to produce item moves backlog to preparing and back', function () {
     $production = Production::first() ?? StoreProduction::make()->action($this->organisation, ['code' => 'PART', 'name' => 'Partner factory']);
     $orgStock   = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->first() ?? createOrgStocks($this->orgPartner->organisation, [Stock::first()])[0];
@@ -4785,4 +4803,48 @@ test('a partly delivered purchase order still shows the lines that are not in th
         ->and($ordered['type'])->toBe('purchase_order')
         ->and($ordered['quantity'])->toBe(90.0)
         ->and(collect($incoming)->where('org_stock_code', $deliveredOrgStock->code)->count())->toBe(0);
+});
+
+test('sko showcase shows days of cover and the purchase orders still to arrive', function () {
+    $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
+    $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $this->group->id])->id]);
+    $orgStock = $this->orgStocks[0];
+
+    $orgStock->stats->update([
+        'days_of_cover'             => 12.4,
+        'predicted_out_of_stock_at' => now()->addDays(12)->toDateString(),
+        'predicted_daily_usage'     => 3.5,
+    ]);
+
+    $orgSupplier        = $this->orgSupplier;
+    $supplierProduct    = StoreSupplierProduct::make()->action($orgSupplier->supplier, [
+        'code'     => 'cover-product',
+        'name'     => 'Cover product',
+        'cost'             => 10,
+        'stock_id'         => $orgStock->stock_id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, [
+        ...PurchaseOrder::factory()->definition(),
+        'reference' => 'PO-COVER-'.PurchaseOrder::max('id'),
+    ], strict: false);
+    StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $orgStock,
+        [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 40]
+    );
+    UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder);
+
+    $showcase = $this->get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', [
+        $this->organisation->slug, $warehouse->slug, $orgStock->slug,
+    ]))->assertOk()->viewData('page')['props']['showcase'];
+
+    expect($showcase['stocks_management']['cover']['days'])->toBe(12)
+        ->and($showcase['stocks_management']['cover']['daily_usage'])->toBe(3.5)
+        ->and(collect($showcase['future_orders'])->pluck('reference'))->toContain($purchaseOrder->reference)
+        ->and((float) collect($showcase['future_orders'])->firstWhere('reference', $purchaseOrder->reference)['quantity'])->toBe(40.0);
 });

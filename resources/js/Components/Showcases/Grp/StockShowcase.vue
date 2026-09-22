@@ -100,6 +100,16 @@ const props = defineProps < {
             reason_label: string | null
         }[]
         stock_history_route?: routeType
+        future_orders?: {
+            id: number
+            reference: string
+            supplier_name: string | null
+            delivery_state_label: string
+            estimated_received_at: string | null
+            quantity: string | number
+            quantity_fractional?: [number, [number, number]]
+            route: routeType
+        }[]
     }
     reasons?: {
         increase: [],
@@ -417,6 +427,43 @@ const saveBarcode = (value: string | null) => {
 
                     </div>
                 </template>
+            </div>
+
+            <!-- Future orders -->
+            <div v-if="data.future_orders?.length" class="mt-6 rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                    <span class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        {{ ctrans("Future orders") }}
+                    </span>
+                    <span class="text-xs text-gray-400">
+                        {{ ctrans("bought, not yet on the shelf") }}
+                    </span>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    <Link v-for="futureOrder in data.future_orders" :key="futureOrder.id"
+                        :href="route(futureOrder.route.name, futureOrder.route.parameters)"
+                        class="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
+                        <Icon :data="{ icon: 'fal fa-truck-loading' }" class="w-4 shrink-0 text-gray-400" />
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate font-medium text-gray-700">
+                                {{ futureOrder.reference }}
+                                <span v-if="futureOrder.supplier_name" class="font-normal text-gray-500">· {{ futureOrder.supplier_name }}</span>
+                            </div>
+                            <div class="truncate text-xs text-gray-400">
+                                {{ futureOrder.delivery_state_label }}
+                                <span v-if="futureOrder.estimated_received_at">
+                                    · {{ ctrans("expected") }} {{ useFormatTime(futureOrder.estimated_received_at) }}
+                                </span>
+                                <span v-else>· {{ ctrans("no expected date") }}</span>
+                            </div>
+                        </div>
+                        <div class="font-semibold tabular-nums text-green-600 flex items-center">
+                            +
+                            <FractionDisplay v-if="futureOrder.quantity_fractional" :fractionData="futureOrder.quantity_fractional" />
+                            <template v-else>{{ futureOrder.quantity }}</template>
+                        </div>
+                    </Link>
+                </div>
             </div>
 
             <!-- Latest movements -->
