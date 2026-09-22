@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
-import { ref, computed } from "vue"
+import { ref, computed, inject, watch } from "vue"
 import { get, isNull, cloneDeep } from "lodash-es"
 import { faLock } from "@fas"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import CornersType from "./CornersType.vue"
+import type { BlueprintFieldFocus } from "@/Composables/useBlueprintFieldFocus"
 
 library.add(faLock, faTimes)
 
@@ -88,6 +89,30 @@ const cornerSideClick = (value: any) => {
     section.value = cloneDeep(value)
 }
 
+const isCornerLocked = (id: string) => {
+    return Boolean(props.common && get(props.common, ["corners", id]) && !isNull(props.common.corners[id]))
+}
+
+/**
+ * Opens the corner the user clicked on the banner instead of leaving them to
+ * find it in the grid.
+ */
+const fieldFocus = inject<BlueprintFieldFocus | null>("bannerFieldFocus", null)
+
+watch(
+    () => fieldFocus?.token,
+    () => {
+        const cornerId = fieldFocus?.path?.split(".").pop()
+        if (!cornerId) return
+
+        const corner = cornersSection.value.find((item) => item.id === cornerId)
+        if (!corner || isCornerLocked(corner.id)) return
+
+        cornerSideClick(corner)
+    },
+    { immediate: true }
+)
+
 const updateFormValue = (newValue: any) => {
     if (!section.value) return;
     const newCorners = {
@@ -115,28 +140,14 @@ const clear = (sec: any) => {
                 <div v-for="cornerSection in cornersSection" :key="cornerSection.id"
                     class="relative flex items-center justify-center rounded-lg border text-sm font-medium h-20 transition-all duration-150 select-none"
                     :class="[
-                        common &&
-                            get(common, ['corners', cornerSection.id]) &&
-                            !isNull(common.corners[cornerSection.id])
+                        isCornerLocked(cornerSection.id)
                             ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-70'
                             : get(section, 'id') === cornerSection.id
                                 ? 'bg-amber-100 border-amber-400 text-amber-700 shadow-inner'
                                 : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-amber-50 hover:border-amber-300 hover:text-gray-700 cursor-pointer'
-                    ]" @click="
-                        () => {
-                            common &&
-                                get(common, ['corners', cornerSection.id]) &&
-                                !isNull(common.corners[cornerSection.id])
-                                ? null
-                                : cornerSideClick(cornerSection)
-                        }
-                    ">
+                    ]" @click="isCornerLocked(cornerSection.id) ? null : cornerSideClick(cornerSection)">
                     <!-- locked -->
-                    <div v-if="
-                        common &&
-                        get(common, ['corners', cornerSection.id]) &&
-                        !isNull(common.corners[cornerSection.id])
-                    " class="flex flex-col items-center gap-1 text-xs">
+                    <div v-if="isCornerLocked(cornerSection.id)" class="flex flex-col items-center gap-1 text-xs">
                         <font-awesome-icon :icon="['fas', 'lock']" class="text-gray-400" fixed-width />
                         <span class="italic">Used in common</span>
                     </div>

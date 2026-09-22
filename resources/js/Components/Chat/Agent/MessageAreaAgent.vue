@@ -1174,8 +1174,12 @@ const handleClickOutside = (e: MouseEvent) => {
                         {{ isCustomer ? 'C' : 'G' }}
                     </span>
                     <FontAwesomeIcon :icon="channelIcon" class="shrink-0 text-[11px]" :class="channelIconClass" fixed-width />
-                    <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
-                        {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
+                    <!-- Narrow, only the age survives: it is what a waiting conversation is
+                         judged by, and the full date crowded out the buttons beside it. -->
+                    <span v-if="lastMessageStamp" class="shrink-0 text-[11px] text-gray-400"
+                        v-tooltip="ctrans('Last message') + ': ' + lastMessageStamp.time">
+                        <span class="hidden xl:inline">{{ lastMessageStamp.time }} </span>
+                        <span class="text-gray-300">{{ lastMessageStamp.age }}</span>
                     </span>
                     <span v-if="showShop && session?.shop?.name" class="text-[11px] text-gray-400 truncate">
                         {{ session.shop.name }}

@@ -12,16 +12,20 @@ import { routeType } from "@/types/route"
 import CommonSlidesBluprint from "./Blueprint/CommonSlidesBluprint"
 import SlidesBluprint from "./Blueprint/SlidesBluprint"
 import IndexSlidesControl from "./SlidesWorkshop/IndexSlidesControl.vue"
-import { cloneDeep } from "lodash-es"
+import { cloneDeep, isEqual } from "lodash-es"
 
 type SlideWorkshopData = any
 
 const props = defineProps<{
   modelValue: any
   imagesUploadRoute: routeType
-  user: string
+  user?: string
   screenView: string
   isOpen?: Object
+  focusField?: string | null
+  focusScope?: "slide" | "common"
+  focusSlideUlid?: string | null
+  focusToken?: number
   galleryRoute: {
     stock_images: routeType
     uploaded_images: routeType
@@ -82,6 +86,42 @@ watch(
     emits("jumpToIndex", val.ulid)
   },
   { deep: true }
+)
+
+/**
+ * Keeps the editor copy in step with the banner when the change came from
+ * somewhere else: the canvas overlay, an undo or a redo. Without it the stale
+ * copy would be written back over the restored slide on the next field edit.
+ */
+watch(
+  () => getComponents().find((slide: any) => slide.ulid === currentComponentBeenEdited.value?.ulid),
+  (slide) => {
+    if (!slide || !currentComponentBeenEdited.value) return
+    if (isEqual(slide, currentComponentBeenEdited.value)) return
+
+    currentComponentBeenEdited.value = cloneDeep(slide)
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.focusToken,
+  () => {
+    if (props.focusScope === "common") {
+      currentComponentBeenEdited.value = null
+      commonEditActive.value = true
+      return
+    }
+
+    const ulid = props.focusSlideUlid
+    if (!ulid) return
+
+    const slide = getComponents().find((item: any) => item.ulid === ulid)
+    if (!slide) return
+
+    commonEditActive.value = false
+    currentComponentBeenEdited.value = cloneDeep(slide)
+  }
 )
 
 const removeComponent = (slide: SlideWorkshopData) => {
@@ -167,6 +207,8 @@ const data = computed<BannerWorkshop>({
                 ref="_SlideWorkshop" 
                 v-model="data"
                 :blueprint="CommonBlueprint" 
+                :focusField="focusScope === 'common' ? focusField : null"
+                :focusToken="focusToken"
             />
         </div>
 
@@ -180,6 +222,8 @@ const data = computed<BannerWorkshop>({
                 :blueprint="ComponentsBlueprint"
                 :remove="removeComponent"  
                 :uploadRoutes="imagesUploadRoute" 
+                :focusField="focusScope === 'common' ? null : focusField"
+                :focusToken="focusToken"
                 :ratio
             />
         </div>

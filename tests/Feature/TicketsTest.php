@@ -37,6 +37,7 @@ use App\Models\Chat\ChatAgent;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Mcp\Servers\AikuServer;
 use App\Models\SysAdmin\User;
+use App\Mcp\Tools\TicketAttachmentTool;
 use App\Mcp\Tools\TicketsTool;
 use App\Mcp\Tools\TicketWriteTool;
 use App\Http\Resources\Helpers\TicketResource;
@@ -2851,4 +2852,42 @@ test('the link to somebody account is only offered to those who may open it', fu
     expect($admin->authTo('sysadmin.view'))->toBeTrue()
         ->and($asAdmin['reporter'])->toBe(route('grp.sysadmin.users.show', ['user' => $reporter->slug]))
         ->and($asAdmin['author'])->toBe(route('grp.sysadmin.users.show', ['user' => $reporter->slug]));
+});
+
+test('assistant reads ticket attachments through MCP, within the ticket visibility rules', function () {
+    $pdf = new Mpdf\Mpdf(['tempDir' => sys_get_temp_dir()]);
+    $pdf->WriteHTML('<p>Invoice total 42.50 GBP</p>');
+
+    $directory = sys_get_temp_dir().'/ticket_mcp_'.uniqid();
+    mkdir($directory);
+    $docx = new ZipArchive();
+    $docx->open("$directory/notes.docx", ZipArchive::CREATE);
+    $docx->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>');
+    $docx->addFromString('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Customer &amp; wants</w:t></w:r></w:p><w:p><w:r><w:t>a refund</w:t></w:r></w:p></w:body></w:document>');
+    $docx->close();
+    $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save("$directory/stock.xlsx");
+
+    $ticket  = StoreTicket::make()->action($this->group, ['subject' => 'Read my files', 'images' => [UploadedFile::fake()->createWithContent('invoice.pdf', $pdf->OutputBinaryData())]]);
+    $comment = StoreTicketComment::make()->action($ticket, $this->user, ['images' => [new UploadedFile("$directory/notes.docx", 'notes.docx', null, null, true), UploadedFile::fake()->image('shot.png', 4, 4)]]);
+    $comment->update(['is_lead_only' => true]);
+    $stock = StoreTicketComment::make()->action($ticket, $this->user, ['images' => [new UploadedFile("$directory/stock.xlsx", 'stock.xlsx', null, null, true)]]);
+
+    $tool = fn (User $user, string $attachment) => AikuServer::actingAs($user)->tool(TicketAttachmentTool::class, ['reference' => strtolower($ticket->reference), 'attachment' => $attachment]);
+
+    $tool($this->user, 'invoice.pdf')->assertOk()->assertSee('Invoice total 42.50 GBP');
+    $tool($this->user, $ticket->getMedia('ticket_attachments')->first()->ulid)->assertOk()->assertSee('invoice.pdf');
+    $tool($this->user, 'notes.docx')->assertOk()->assertSee(json_encode("Customer & wants\na refund"));
+    $tool($this->user, 'shot.png')->assertOk()->assertSee(base64_encode(Storage::disk($comment->getMedia('ticket_images')->first()->disk)->get($comment->getMedia('ticket_images')->first()->getPathRelativeToRoot())));
+    $tool($this->user, 'stock.xlsx')->assertHasErrors(['Cannot extract text from .xlsx files.']);
+    $tool($this->user, 'missing.pdf')->assertHasErrors(['Attachment not found on this ticket.']);
+
+    $qa = User::factory()->create(['group_id' => $this->group->id]);
+    $qa->assignRole('qa');
+    $tool($qa, 'invoice.pdf')->assertOk();
+    $tool($qa, 'notes.docx')->assertHasErrors(['Attachment not found on this ticket.']);
+
+    $ticket->update(['is_confidential' => true]);
+    $tool($qa, 'invoice.pdf')->assertHasErrors(['Ticket not found or not visible to you.']);
+    expect($stock)->toBeInstanceOf(TicketComment::class);
 });
