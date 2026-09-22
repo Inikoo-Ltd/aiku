@@ -5576,6 +5576,55 @@ test('a website guest who gave a customer\'s email is suggested, never linked, u
     expect($outcomes['confirmed'])->toBeGreaterThanOrEqual(1)->and($outcomes['rejected'])->toBeGreaterThanOrEqual(1);
 });
 
+test('an agent links a customer by hand to one conversation, and the next email from that address is only suggested', function () {
+    actingAs($this->user);
+    StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $this->customer->update(['email' => 'buyer@janesgifts.test', 'searchable_text' => 'jane buyer janesgifts']);
+
+    $guest = fn () => ChatSession::create([
+        'ulid'     => (string) Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING,
+        'channel'  => ChatChannelEnum::WEBSITE,
+        'shop_id'  => $this->shop->id,
+        'metadata' => ['email' => 'jane.personal@gmail.com'],
+    ]);
+
+    $first = $guest();
+    $base  = '/app/api/chats/sessions/'.$first->ulid;
+
+    expect($this->getJson($base.'/customer-candidates?q=jane')->assertOk()->json('0.id'))->toBe($this->customer->id);
+    $this->putJson($base.'/customer', ['customer_id' => 999999999])->assertStatus(422);
+    $this->putJson($base.'/customer', ['customer_id' => $this->customer->id])->assertOk();
+
+    expect($first->refresh()->webUser->customer_id)->toBe($this->customer->id)
+        ->and($first->suggestion_basis)->toBe('manual')
+        ->and($this->customer->refresh()->email)->toBe('buyer@janesgifts.test')
+        ->and($first->audits()->where('event', 'updated')->latest('id')->first()->new_values['web_user_id'])->toBe($first->web_user_id)
+        ->and($first->audits()->latest('id')->first()->user_id)->toBe($this->user->id)
+        ->and($this->customer->audits()->where('event', 'chat_linked')->latest('id')->first()->new_values['chat_session'])->toBe($first->ulid);
+
+    $mistake = $guest();
+    $this->putJson('/app/api/chats/sessions/'.$mistake->ulid.'/customer', ['customer_id' => $this->customer->id])->assertOk();
+    $this->deleteJson('/app/api/chats/sessions/'.$mistake->ulid.'/customer')->assertOk();
+    $this->deleteJson('/app/api/chats/sessions/'.$mistake->ulid.'/customer')->assertStatus(422);
+
+    expect($mistake->refresh()->web_user_id)->toBeNull()
+        ->and($this->customer->audits()->where('event', 'chat_unlinked')->latest('id')->first()->user_id)->toBe($this->user->id)
+        ->and(\App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle($mistake)->refresh()->suggested_customer_id)->toBeNull();
+
+    $second = \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle($guest())->refresh();
+
+    expect($second->web_user_id)->toBeNull()
+        ->and($second->suggested_customer_id)->toBe($this->customer->id)
+        ->and($second->suggestion_basis)->toBe('previous_link');
+
+    $stranger = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), ['email' => 'jane.personal@gmail.com']));
+    StoreWebUser::make()->action($stranger, WebUser::factory()->definition());
+    $third = \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle($guest())->refresh();
+
+    expect($third->suggested_customer_id)->toBe($stranger->id)->and($third->suggestion_basis)->toBe('email');
+});
+
 test('a WhatsApp guest is suggested by the number they write from, whatever way it was stored', function () {
     config(['chat.noise.greet_bare_hello' => false]);
     $this->customer->update(['phone' => '07500 111222']);

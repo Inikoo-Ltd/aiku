@@ -5,7 +5,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout";
 import { faPlus, faMinus } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowRight, faPlusCircle, faPenSquare, faTrashAlt, faUndo, faExchange, faRocketLaunch } from '@fal';
+import { faArrowRight, faPlusCircle, faPenSquare, faTrashAlt, faUndo, faExchange, faRocketLaunch, faLink, faUnlink } from '@fal';
 import { trans } from 'laravel-vue-i18n';
 import { useFormatTime } from '@/Composables/useFormatTime';
 import Modal from '@/Components/Utils/Modal.vue';
@@ -18,6 +18,8 @@ const eventIcons: Record<string, any> = {
     restored: faUndo,
     migration: faExchange,
     published: faRocketLaunch,
+    chat_linked: faLink,
+    chat_unlinked: faUnlink,
 };
 
 const describeAgent = (userAgent?: string): string => {

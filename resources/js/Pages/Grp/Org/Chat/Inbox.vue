@@ -1158,6 +1158,24 @@ const onSessionSynced = (webUser: { id: number; name: string; email: string | nu
     }
 }
 
+const onSessionUnlinked = () => {
+    if (!selectedSession.value) return
+    const ulid = selectedSession.value.ulid
+    const guestName = (selectedSession.value as any).metadata?.name || (selectedSession.value as any).guest_profile?.name || selectedSession.value.guest_identifier || "Guest"
+    selectedSession.value = {
+        ...selectedSession.value,
+        web_user: null,
+        web_user_id: null,
+        is_guest: true,
+        contact_name: guestName,
+    } as SessionAPI
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) {
+        found.webUser = null
+        found.name = guestName
+    }
+}
+
 const onCustomerSynced = (customer: { id: number; name: string; email: string | null; phone: string | null }) => {
     if (!selectedSession.value || !customer) return
     const ulid = selectedSession.value.ulid
@@ -2267,7 +2285,7 @@ onUnmounted(() => {
 
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
             :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
-            @synced="onSessionSynced" @customer-synced="onCustomerSynced" />
+            @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
         <Teleport to="body">
