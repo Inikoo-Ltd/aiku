@@ -39,6 +39,8 @@ use App\Mcp\Tools\OffersOverviewTool;
 use App\Mcp\Tools\OrderFunnelTool;
 use App\Mcp\Tools\OrderStatusTool;
 use App\Mcp\Tools\OrgFamilySalesTool;
+use App\Mcp\Tools\OrgStockDiscontinuePreviewTool;
+use App\Mcp\Tools\OrgStockDiscontinueTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\ProductsWithoutImagesTool;
 use App\Mcp\Tools\PaymentMethodsTool;
@@ -62,6 +64,7 @@ use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Guest;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\McpRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -1492,5 +1495,72 @@ describe('discord message tool', function () {
         ])->assertHasErrors(['No aiku user with username']);
 
         Http::assertNothingSent();
+    });
+});
+
+describe('org stock discontinue tools', function () {
+    beforeEach(function () {
+        createStocks($this->group);
+        $this->orgStocks = createOrgStocks($this->organisation, $this->group->stocks()->orderBy('id')->limit(3)->get()->all());
+        $this->user->update(['can_use_mcp_discontinue' => true]);
+    });
+
+    test('a user not enrolled is refused and told not to retry', function () {
+        $this->user->update(['can_use_mcp_discontinue' => false]);
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinuePreviewTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$this->orgStocks[0]->code],
+        ])->assertHasErrors(['Discontinuing SKOs is not enabled for this user']);
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinueTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$this->orgStocks[0]->code],
+            'state'        => 'discontinued',
+            'reason'       => 'x',
+            'request_text' => 'discontinue it',
+        ])->assertHasErrors(['Discontinuing SKOs is not enabled for this user']);
+
+        expect($this->orgStocks[0]->refresh()->state)->not->toBe(OrgStockStateEnum::DISCONTINUED);
+    });
+
+    test('preview lists what hangs off the sko and names unknown codes', function () {
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinuePreviewTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$this->orgStocks[0]->code, 'NOPE-999'],
+        ])->assertOk()
+            ->assertSee('"not_found":["NOPE-999"]')
+            ->assertSee('"code":"'.$this->orgStocks[0]->code.'"')
+            ->assertSee('"purchase_orders"')
+            ->assertSee('"updated_at"');
+    });
+
+    test('confirm changes the state with the request text in the audit and refuses a stale sko', function () {
+        $orgStock = $this->orgStocks[1];
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinueTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code],
+            'state'        => 'discontinuing',
+            'reason'       => 'Supplier closed',
+            'request_text' => 'please discontinue '.$orgStock->code,
+        ])->assertOk()->assertSee('"changed":1');
+
+        $audit = $orgStock->audits()->where('event', 'state_change')->latest('id')->first();
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING)
+            ->and($audit->new_values['source'])->toBe('mcp')
+            ->and($audit->new_values['request_text'])->toBe('please discontinue '.$orgStock->code)
+            ->and($audit->new_values['requested_by'])->toBe($this->user->username);
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinueTool::class, [
+            'organisation'        => $this->organisation->code,
+            'codes'               => [$orgStock->code],
+            'state'               => 'active',
+            'request_text'        => 'back to active',
+            'expected_updated_at' => [$orgStock->code => now()->subDay()->toIso8601String()],
+        ])->assertHasErrors(['changed since the preview']);
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
     });
 });

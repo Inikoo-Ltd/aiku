@@ -187,7 +187,7 @@ class DiscontinueOrgStocks extends OrgAction
             }
         }
 
-        if ($this->user) {
+        if ($this->user && !$this->asAction) {
             foreach (array_keys(Arr::get($input, 'organisation_states', [])) as $organisationCode) {
                 $organisation = Organisation::where('code', $organisationCode)->first();
                 if (!$organisation || !$this->user->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($organisation))) {

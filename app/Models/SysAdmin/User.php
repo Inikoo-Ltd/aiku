@@ -87,6 +87,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_bot
  * @property bool $can_use_mcp
  * @property bool $can_use_mcp_sql
+ * @property bool $can_use_mcp_discontinue
  * @property int|null $timezone_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
