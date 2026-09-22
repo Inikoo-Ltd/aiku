@@ -7156,3 +7156,46 @@ test('the inbox sweep never reaches back past the day the mailbox was connected'
             && str_contains(urldecode($request->url()), 'in:inbox after:2026/09/16');
     });
 });
+
+test('filing an imported mail away writes down whether it was unread', function () {
+    $original          = $this->shop->settings ?? [];
+    $settings          = $original;
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                        => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/u1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'u1',
+            'threadId' => 'tu1',
+            'labelIds' => ['INBOX', 'UNREAD'],
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Unread Sender <unread@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Still unread'],
+                    ['name' => 'Message-ID', 'value' => '<u1@example.com>'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode('Hello there'), '+/', '-_'), '=')],
+            ],
+            'internalDate' => '1758500000000',
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'      => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                             => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    \Illuminate\Support\Facades\Log::spy();
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'u1'))->not->toBeNull();
+
+    \Illuminate\Support\Facades\Log::shouldHaveReceived('info')
+        ->withArgs(fn ($message, $context = []) => $message === 'gmail-file-away'
+            && $context['message'] === 'u1'
+            && $context['was_unread'] === true
+            && $context['was_inbox'] === true);
+
+    $this->shop->update(['settings' => $original]);
+});

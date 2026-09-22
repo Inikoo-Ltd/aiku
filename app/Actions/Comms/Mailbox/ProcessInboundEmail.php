@@ -115,20 +115,20 @@ class ProcessInboundEmail
         // Filed away like anything else we decide not to take in: left in the inbox it would be
         // offered again by every sweep, and read as mail that never came through.
         if ($mailboxAddress && $from['address'] && strcasecmp($from['address'], $mailboxAddress) === 0) {
-            $client->fileAway($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
 
         if ($this->isOneOfOurs($from['address'])) {
-            $client->fileAway($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
 
         $blocked = Arr::get($shop->settings, 'gmail.blocked_senders', []);
         if ($from['address'] && in_array(strtolower($from['address']), array_map('strtolower', $blocked), true)) {
-            $client->fileAway($gmailMessageId, 'aiku/spam');
+            $client->fileAway($gmailMessageId, 'aiku/spam', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
@@ -136,7 +136,7 @@ class ProcessInboundEmail
         $webUser = $this->matchWebUser($shop, $from['address']);
 
         if (! $webUser && self::isAutomatedMail($from['address'], $subject)) {
-            $client->fileAway($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
@@ -150,7 +150,7 @@ class ProcessInboundEmail
         // On its own it is not a conversation at all: answering a mail we never sent leaves
         // nobody to reply to, so it is filtered rather than opened as new work.
         if (! $existing && $isAutoReply) {
-            $client->fileAway($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
@@ -226,7 +226,7 @@ class ProcessInboundEmail
         }
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
-        $client->fileAway($gmailMessageId, $label);
+        $client->fileAway($gmailMessageId, $label, Arr::get($raw, 'labelIds', []));
 
         $this->importThreadHistory($client, $session, $threadId, $mailboxAddress, $webUser);
 

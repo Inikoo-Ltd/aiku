@@ -237,10 +237,24 @@ final class GmailClient
     /**
      * Label the message and take it out of the inbox: once it is in Aiku the mailbox has nothing
      * left to do with it, and an inbox that keeps every handled mail unread confuses whoever opens it.
+     *
+     * @param  array<int, string>  $priorLabelIds  the message's labels as they were read, so a
+     *                                             wrong import can be undone from the log
      */
-    public function fileAway(string $messageId, string $labelName): void
+    public function fileAway(string $messageId, string $labelName, array $priorLabelIds = []): void
     {
         $labelId = $this->labelId($labelName);
+
+        // Written down before it is taken away: an import that should never have happened
+        // leaves mail read that nobody read, and nothing else remembers which of them were
+        // unread. The line is what a restore reads back.
+        Log::info('gmail-file-away', [
+            'shop'       => $this->shop->slug,
+            'message'    => $messageId,
+            'label'      => $labelName,
+            'was_unread' => in_array('UNREAD', $priorLabelIds, true),
+            'was_inbox'  => in_array('INBOX', $priorLabelIds, true),
+        ]);
 
         Http::withToken($this->accessToken())
             ->throw()
