@@ -1710,7 +1710,7 @@ onUnmounted(() => {
                 </button>
                 <button type="button" @click="toggleRail"
                     v-tooltip="railCollapsed ? ctrans('Expand') : ctrans('Collapse')"
-                    class="p-1 rounded hover:bg-gray-200 text-gray-400">
+                    class="py-1 px-2 rounded hover:bg-gray-200 text-gray-600">
                     <FontAwesomeIcon :icon="railCollapsed ? faAngleRight : faAngleLeft" class="text-xs" fixed-width />
                 </button>
             </div>
