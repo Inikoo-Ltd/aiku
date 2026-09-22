@@ -17,6 +17,7 @@ use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsRubbish;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\RedactChatMessage;
+use App\Actions\Chat\ChatSession\ReleaseChatSession;
 use App\Actions\Chat\ChatSession\ReopenChatSession;
 use App\Actions\Chat\ChatSession\RetractChatMessage;
 use App\Actions\Chat\ChatSession\RestoreChatSession;
@@ -94,6 +95,7 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/sessions/{chatSession:ulid}/highlight', ToggleChatSessionHighlight::class)->name('sessions.highlight');
     Route::delete('/sessions/{chatSession:ulid}/trash', TrashChatSession::class)->name('sessions.trash');
     Route::patch('/sessions/{chatSession:ulid}/restore', RestoreChatSession::class)->name('sessions.restore')->withTrashed();
+    Route::patch('/sessions/{chatSession:ulid}/release', ReleaseChatSession::class)->name('sessions.release');
     Route::post('/sessions/{chatSession:ulid}/forward', ForwardChatSessionToColleague::class)->name('sessions.forward');
     Route::post('/sessions/{chatSession:ulid}/ticket', StoreTicketFromChatSession::class)->name('sessions.ticket');
     Route::post('/whatsapp/{metaChatSession:ulid}/ticket', [StoreTicketFromChatSession::class, 'inMetaChatSession'])

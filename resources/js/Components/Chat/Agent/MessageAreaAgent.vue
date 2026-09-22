@@ -153,6 +153,39 @@ const openTicketModal = () => {
     isTicketModalOpen.value = true
 }
 
+// Putting a conversation down again. Opening one takes it, and an agent who cannot answer it —
+// wrong language, not their decision — was left holding it while it looked answered to everyone else.
+const isReleasing = ref(false)
+const canRelease = computed(() =>
+    !props.readOnly && !isClosed.value && !isTrashed.value && !isWaiting.value && isMyChat.value
+)
+const releaseChat = async () => {
+    if (!props.session?.ulid || isReleasing.value) return
+    isMenuOpen.value = false
+    isReleasing.value = true
+    try {
+        await axios.patch(
+            route("grp.org.chat.agents.sessions.release", [currentOrganisation.value, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "waiting"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent = null
+        }
+        emit("assign-self-success")
+        notify({ title: ctrans("Given back"), text: ctrans("Anybody can pick this up now"), type: "success" })
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to give this conversation back"),
+            type: "error",
+        })
+    } finally {
+        isReleasing.value = false
+    }
+}
+
 const isForwardModalOpen = ref(false)
 const openForwardModal = () => {
     isMenuOpen.value = false
@@ -1328,6 +1361,11 @@ const handleClickOutside = (e: MouseEvent) => {
                         <button class="menu-item disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canDispose"
                             v-tooltip="canDispose ? undefined : heldByAnotherAgent" @click="openTicketModal">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width /> {{ ctrans("Create Ticket") }}
+                        </button>
+
+                        <button v-if="canRelease" class="menu-item" :disabled="isReleasing" @click="releaseChat">
+                            <FontAwesomeIcon :icon="faRotateLeft" class="text-amber-600" fixed-width />
+                            {{ ctrans("Give it back to the queue") }}
                         </button>
 
                         <button class="menu-item" @click="openForwardModal">

@@ -6859,3 +6859,61 @@ test('an agent can hand a conversation to another named agent', function () {
     expect($event->payload['to_agent_id'])->toBe($colleague->id)
         ->and($event->payload['from_agent_id'])->toBe($agent->id);
 });
+
+test('an agent can give a conversation back to the queue', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    \App\Models\Chat\ChatAssignment::create([
+        'chat_session_id' => $session->id,
+        'chat_agent_id'   => $agent->id,
+        'status'          => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => \App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    \App\Actions\Chat\ChatSession\ReleaseChatSession::make()->handle($session, $agent, 'Cannot answer in Slovak');
+
+    // Waiting is what puts it back in front of the other agents, and no active assignment is left
+    // holding it.
+    expect($session->fresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and(\App\Models\Chat\ChatAssignment::where('chat_session_id', $session->id)
+            ->where('status', \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(0);
+
+    $event = $session->chatEvents()->where('event_type', 'released')->latest('id')->first();
+    expect($event->payload['from_agent_id'])->toBe($agent->id)
+        ->and($event->payload['reason'])->toBe('agent_released')
+        ->and($event->payload['note'])->toBe('Cannot answer in Slovak');
+
+    // A closed conversation released by HR revoking someone's access stays closed: released is
+    // not reopened.
+    $closed = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::CLOSED->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    \App\Actions\Chat\ChatSession\ReleaseChatSession::make()->handle($closed, $agent, null, 'permission_revoked');
+
+    expect($closed->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($closed->chatEvents()->where('event_type', 'released')->first()->payload['reason'])->toBe('permission_revoked');
+});
