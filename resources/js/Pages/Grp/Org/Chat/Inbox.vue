@@ -170,6 +170,25 @@ const statusCapsules = computed(() =>
 
 const onlyClosed = computed(() => selectedStatuses.value.length === 1 && selectedStatuses.value[0] === "closed")
 
+// Closed conversations are kept forever, so the list has to say how far back it reaches. Today
+// is what the capsule counts and what the queue means by closed; the longer periods are
+// somebody going back through the history, which is the same pair the tickets board uses.
+const closedPeriods: { key: string; label: string }[] = [
+    { key: "today", label: ctrans("Today") },
+    { key: "24h", label: ctrans("24h") },
+    { key: "1w", label: ctrans("1 week") },
+    { key: "1m", label: ctrans("1 month") },
+    { key: "1y", label: ctrans("1 year") },
+    { key: "all", label: ctrans("All") },
+]
+
+const closedPeriod = ref("today")
+
+const setClosedPeriod = (period: string) => {
+    closedPeriod.value = period
+    afterSelectionChanged()
+}
+
 // Nobody is waiting on a colleague's chat, so the team view drops that state and keeps
 // whatever else was picked, falling back to active rather than to nothing.
 const dropWaitingInTeamView = (): boolean => {
@@ -399,6 +418,7 @@ const storeSelection = () => {
             shopIds: selectedShopIds.value,
             cells: selectedCells.value,
             statuses: selectedStatuses.value,
+            closedPeriod: closedPeriod.value,
         }))
     } catch {
         // A private window, or storage turned off. Losing the choice is not worth an error.
@@ -433,6 +453,10 @@ const restoreSelection = (): boolean => {
 
     if (statuses.length) {
         selectedStatuses.value = statuses as ChatStatus[]
+    }
+
+    if (closedPeriods.some((p) => p.key === stored.closedPeriod)) {
+        closedPeriod.value = stored.closedPeriod
     }
 
     return true
@@ -542,6 +566,7 @@ const buildParams = (page: number) => ({
                     : highlightView.value
                         ? { highlighted: 1, statuses: selectedStatuses.value }
                         : { statuses: selectedStatuses.value }),
+    ...(isStatusOn("closed") ? { closed_period: closedPeriod.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
     page,
@@ -2155,6 +2180,19 @@ onUnmounted(() => {
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] rounded-full text-center"
                             :class="isStatusOn(capsule.key) ? 'text-white' : 'text-gray-600 bg-gray-200'"
                             :style="isStatusOn(capsule.key) ? { backgroundColor: 'var(--theme-color-4)' } : {}">{{ capsule.count }}</span>
+                    </button>
+                </div>
+
+                <!-- How far back the closed list reaches. Only on when closed is being looked
+                     at: waiting and active are open work and have no period. -->
+                <div v-if="isStatusOn('closed')" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
+                    <span class="uppercase tracking-wide text-gray-400">{{ ctrans("Closed") }}</span>
+                    <button v-for="period in closedPeriods" :key="period.key" type="button"
+                        class="px-1.5 py-0.5 rounded transition-colors"
+                        :class="closedPeriod === period.key ? 'font-semibold text-white' : 'hover:bg-gray-100'"
+                        :style="closedPeriod === period.key ? { backgroundColor: 'var(--theme-color-4)' } : {}"
+                        @click="setClosedPeriod(period.key)">
+                        {{ period.label }}
                     </button>
                 </div>
             </div>

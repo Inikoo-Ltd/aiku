@@ -4930,13 +4930,60 @@ test('the closed list only holds what was closed today', function () {
     $today     = $closedSession(now());
     $lastMonth = $closedSession(now()->subMonth());
 
-    $ulids = collect(GetChatSessions::make()->handle([
-        'statuses' => [ChatSessionStatusEnum::CLOSED->value],
+    $mixed = collect(GetChatSessions::make()->handle([
+        'statuses' => [ChatSessionStatusEnum::ACTIVE->value, ChatSessionStatusEnum::CLOSED->value],
         'shop_id'  => $this->shop->id,
     ])->items())->pluck('ulid');
 
-    expect($ulids)->toContain($today->ulid)
-        ->and($ulids)->not->toContain($lastMonth->ulid);
+    expect($mixed)->toContain($today->ulid)
+        ->and($mixed)->not->toContain($lastMonth->ulid);
+});
+
+test('the closed list reaches back as far as the period asked for, newest first', function () {
+    $closedSession = function (\Carbon\Carbon $closedAt) {
+        $session = ChatSession::create([
+            'ulid'             => (string) Str::ulid(),
+            'status'           => ChatSessionStatusEnum::CLOSED,
+            'guest_identifier' => 'guest_'.Str::random(5),
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $this->shop->id,
+            'closed_at'        => $closedAt,
+            'created_at'       => $closedAt,
+            'updated_at'       => $closedAt,
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'thanks',
+            'created_at'      => $closedAt,
+            'updated_at'      => $closedAt,
+        ]);
+
+        return $session;
+    };
+
+    $today     = $closedSession(now());
+    $lastMonth = $closedSession(now()->subMonth());
+
+    $ulids = collect(GetChatSessions::make()->handle([
+        'statuses'      => [ChatSessionStatusEnum::CLOSED->value],
+        'closed_period' => 'all',
+        'shop_id'       => $this->shop->id,
+    ])->items())->pluck('ulid');
+
+    $thisWeek = collect(GetChatSessions::make()->handle([
+        'statuses'      => [ChatSessionStatusEnum::CLOSED->value],
+        'closed_period' => '1w',
+        'shop_id'       => $this->shop->id,
+    ])->items())->pluck('ulid');
+
+    expect($ulids)->toContain($lastMonth->ulid)
+        ->and($thisWeek)->toContain($today->ulid)
+        ->and($thisWeek)->not->toContain($lastMonth->ulid)
+        ->and($ulids->search($today->ulid))->toBeLessThan($ulids->search($lastMonth->ulid));
 });
 
 test('GetChatSessions limits the list to the shops asked for', function () {
