@@ -4,6 +4,7 @@ namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -33,6 +34,17 @@ class OrganisationHydrateReturnDeliveryNotes implements ShouldBeUnique
             model: 'return_delivery_notes',
             field: 'state',
             enum: ReturnDeliveryNoteStateEnum::class,
+            models: ReturnDeliveryNote::class,
+            where: function ($q) use ($organisation) {
+                $q->whereNull('deleted_at')
+                    ->where('organisation_id', $organisation->id);
+            }
+        ));
+
+        $stats = array_merge($stats, $this->getEnumStats(
+            model: 'return_delivery_notes',
+            field: 'type',
+            enum: ReturnDeliveryNoteTypeEnum::class,
             models: ReturnDeliveryNote::class,
             where: function ($q) use ($organisation) {
                 $q->whereNull('deleted_at')
