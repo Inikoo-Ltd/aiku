@@ -231,23 +231,19 @@ final class GmailClient
             ->json();
     }
 
-    public function addLabel(string $messageId, string $labelName): void
+    /**
+     * Label the message and take it out of the inbox: once it is in Aiku the mailbox has nothing
+     * left to do with it, and an inbox that keeps every handled mail unread confuses whoever opens it.
+     */
+    public function fileAway(string $messageId, string $labelName): void
     {
         $labelId = $this->labelId($labelName);
 
         Http::withToken($this->accessToken())
             ->throw()
             ->post(self::API_BASE_URL."users/me/messages/$messageId/modify", [
-                'addLabelIds' => [$labelId],
-            ]);
-    }
-
-    public function removeFromInbox(string $messageId): void
-    {
-        Http::withToken($this->accessToken())
-            ->throw()
-            ->post(self::API_BASE_URL."users/me/messages/$messageId/modify", [
-                'removeLabelIds' => ['INBOX'],
+                'addLabelIds'    => [$labelId],
+                'removeLabelIds' => ['INBOX', 'UNREAD'],
             ]);
     }
 

@@ -91,14 +91,14 @@ class ProcessInboundEmail
         }
 
         if ($this->isOneOfOurs($from['address'])) {
-            $client->addLabel($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered');
 
             return null;
         }
 
         $blocked = Arr::get($shop->settings, 'gmail.blocked_senders', []);
         if ($from['address'] && in_array(strtolower($from['address']), array_map('strtolower', $blocked), true)) {
-            $client->addLabel($gmailMessageId, 'aiku/spam');
+            $client->fileAway($gmailMessageId, 'aiku/spam');
 
             return null;
         }
@@ -106,7 +106,7 @@ class ProcessInboundEmail
         $webUser = $this->matchWebUser($shop, $from['address']);
 
         if (! $webUser && self::isAutomatedMail($from['address'], $subject)) {
-            $client->addLabel($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered');
 
             return null;
         }
@@ -120,7 +120,7 @@ class ProcessInboundEmail
         // On its own it is not a conversation at all: answering a mail we never sent leaves
         // nobody to reply to, so it is filtered rather than opened as new work.
         if (! $existing && $isAutoReply) {
-            $client->addLabel($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered');
 
             return null;
         }
@@ -196,7 +196,7 @@ class ProcessInboundEmail
         }
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
-        $client->addLabel($gmailMessageId, $label);
+        $client->fileAway($gmailMessageId, $label);
 
         $this->importThreadHistory($client, $session, $threadId, $mailboxAddress, $webUser);
 

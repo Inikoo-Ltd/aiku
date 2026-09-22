@@ -3396,7 +3396,7 @@ test('inbound gmail from an unknown sender becomes a guest email session and a s
 
     expect(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders'))->toBe(['stranger@example.com'])
         ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop->fresh(), 'g2'))->toBeNull();
-    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g2/modify') && $request['addLabelIds'] === ['L2']);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g2/modify') && $request['addLabelIds'] === ['L2'] && $request['removeLabelIds'] === ['INBOX', 'UNREAD']);
 });
 
 test('a campaign send closes the promo-only session but leaves one an agent is handling open', function () {
