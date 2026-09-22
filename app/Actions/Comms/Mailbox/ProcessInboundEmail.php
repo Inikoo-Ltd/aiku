@@ -32,6 +32,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessInboundEmail
@@ -45,7 +46,32 @@ class ProcessInboundEmail
      */
     private const int GONE_TTL_DAYS = 7;
 
+    /**
+     * The row carrying the gmail id is what stops a message being taken in twice, but it is only
+     * written once the message has been taken in. Two jobs starting inside that window both read
+     * no row and both import, which is how one mailbox answered by two shops produced every mail
+     * twice. The claim closes the window, is not scoped to a shop, and is given back when the job
+     * fails so a retry is still allowed to import.
+     *
+     * ponytail: a claim, not an invariant. A unique index on the id would be one, at the price of
+     * the losing job having already opened a chat session and its events to unpick.
+     */
     public function handle(Shop $shop, string $gmailMessageId): ?ChatMessage
+    {
+        if (! Cache::add($this->claimKey($gmailMessageId), true, now()->addMinutes(10))) {
+            return null;
+        }
+
+        try {
+            return $this->import($shop, $gmailMessageId);
+        } catch (Throwable $exception) {
+            Cache::forget($this->claimKey($gmailMessageId));
+
+            throw $exception;
+        }
+    }
+
+    private function import(Shop $shop, string $gmailMessageId): ?ChatMessage
     {
         if (ChatMessage::where('metadata->gmail_message_id', $gmailMessageId)->exists()) {
             return null;
@@ -242,6 +268,11 @@ class ProcessInboundEmail
         return $html;
     }
 
+    private function claimKey(string $gmailMessageId): string
+    {
+        return "gmail-message-claim:$gmailMessageId";
+    }
+
     private function goneKey(Shop $shop, string $gmailMessageId): string
     {
         return "gmail-message-gone:{$shop->id}:$gmailMessageId";
@@ -252,20 +283,38 @@ class ProcessInboundEmail
      * and what we answered from Gmail itself. Written straight to the table at the time Gmail has
      * for them, because these were already sent and read: nothing is mailed, broadcast or counted.
      *
-     * ponytail: text and markup only, attachments of older mails stay in Gmail. An aiku reply whose
-     * send job has not yet stored its gmail id would come in twice; the job runs in seconds.
+     * ponytail: text and markup only, attachments of older mails stay in Gmail.
+     *
+     * What has already come in is asked of every message rather than of this conversation's own,
+     * because a thread that was ever split across two conversations would otherwise have its
+     * history written into both.
      */
     public function importThreadHistory(GmailClient $client, ChatSession $session, string $threadId, ?string $mailboxAddress, ?WebUser $webUser): int
     {
+        $thread = $client->getThreadMessages($threadId);
+
+        // Two mails of one thread arriving together used to read the same empty history and both
+        // write it. Held across the reading and the writing rather than left on each message, so
+        // a history that is deleted afterwards can still be fetched again.
+        return Cache::lock("gmail-thread-history:$threadId", 60)->get(
+            fn () => $this->writeThreadHistory($thread, $session, $mailboxAddress, $webUser)
+        ) ?: 0;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $thread
+     */
+    private function writeThreadHistory(array $thread, ChatSession $session, ?string $mailboxAddress, ?WebUser $webUser): int
+    {
         $imported = 0;
 
-        $known = ChatMessage::where('chat_session_id', $session->id)
+        $known = ChatMessage::whereIn('metadata->gmail_message_id', array_filter(array_column($thread, 'id')))
             ->pluck('metadata')
             ->map(fn ($metadata) => Arr::get($metadata, 'gmail_message_id'))
             ->filter()
             ->flip();
 
-        foreach ($client->getThreadMessages($threadId) as $raw) {
+        foreach ($thread as $raw) {
             $labels = Arr::get($raw, 'labelIds', []);
 
             if ($known->has(Arr::get($raw, 'id')) || array_intersect($labels, ['DRAFT', 'SPAM', 'TRASH'])) {
