@@ -7070,3 +7070,89 @@ test('a letter whose second byte looks like a line break survives the quoted rep
     expect($message->message_text)->toBe("Dzień dobry,\n\njestem zainteresowana Państwa ofertą produktów 📅")
         ->and(mb_check_encoding($message->message_text, 'UTF-8'))->toBeTrue();
 });
+
+test('thread history already taken in under another conversation is not written a second time', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $original          = $this->shop->settings ?? [];
+    $settings          = $original;
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $body = fn (string $text) => rtrim(strtr(base64_encode($text), '+/', '-_'), '=');
+    $mail = fn (string $id, string $subject, string $text) => [
+        'id'       => $id,
+        'threadId' => 't3',
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => 'Split Sender <split@example.com>'],
+                ['name' => 'Subject', 'value' => $subject],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => $body($text)],
+        ],
+        'internalDate' => '1758500000000',
+    ];
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                        => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/m3*' => \Illuminate\Support\Facades\Http::response($mail('m3', 'Second mail', 'The newer one')),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/t3*'  => \Illuminate\Support\Facades\Http::response([
+            'messages' => [$mail('old3', 'First mail', 'The older one'), $mail('m3', 'Second mail', 'The newer one')],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'      => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                             => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    // The same thread already read under another conversation, which is what a mailbox shared by
+    // two shops left behind: its history must not be written into this one as well.
+    $elsewhere = StoreChatSession::run([
+        'shop_id'     => $this->shop->id,
+        'language_id' => $this->shop->language_id,
+        'priority'    => \App\Enums\CRM\Livechat\ChatPriorityEnum::NORMAL,
+        'channel'     => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+    ]);
+    $elsewhere->messages()->create([
+        'message_text' => 'The older one',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::GUEST,
+        'metadata'     => ['gmail_message_id' => 'old3'],
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm3');
+
+    expect($message)->not->toBeNull()
+        ->and($message->chatSession->messages()->count())->toBe(1)
+        ->and(ChatMessage::where('metadata->gmail_message_id', 'old3')->count())->toBe(1);
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('the inbox sweep never reaches back past the day the mailbox was connected', function () {
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'connected_at'  => '2026-09-16T09:00:00+00:00',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/*'      => \Illuminate\Support\Facades\Http::response(['messages' => [], 'historyId' => '9']),
+    ]);
+
+    \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop);
+
+    // Years of mail predate the connection and were never offered to Aiku. Sweeping them would
+    // open a conversation dated today for every one of them.
+    \Illuminate\Support\Facades\Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'users/me/messages')
+            && str_contains(urldecode($request->url()), 'in:inbox after:2026/09/16');
+    });
+});

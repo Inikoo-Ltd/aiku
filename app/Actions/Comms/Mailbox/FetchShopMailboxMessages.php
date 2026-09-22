@@ -14,6 +14,7 @@ use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailHistoryExpiredException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -48,7 +49,7 @@ class FetchShopMailboxMessages
             $newHistoryId = $client->profile()['historyId'];
         }
 
-        $messageIds = array_unique(array_merge($messageIds, $client->listInboxMessageIds('in:inbox', 100)));
+        $messageIds = array_unique(array_merge($messageIds, $client->listInboxMessageIds($this->sweepQuery($shop), 100)));
 
         $dispatched = 0;
 
@@ -68,6 +69,23 @@ class FetchShopMailboxMessages
         $this->updateGmailSettings($shop, $newHistoryId);
 
         return $dispatched;
+    }
+
+    /**
+     * Never further back than the day the mailbox was connected. A shared mailbox has years of
+     * mail in it that nobody ever offered to Aiku, and an unbounded sweep does not take back what
+     * was lost, it claims the lot: every old message opens a conversation dated today and lands in
+     * the queue as work. Only what arrived after we started answering this mailbox is ours.
+     */
+    private function sweepQuery(Shop $shop): string
+    {
+        $connectedAt = Arr::get($shop->settings, 'gmail.connected_at');
+
+        if (! $connectedAt) {
+            return 'in:inbox newer_than:1d';
+        }
+
+        return 'in:inbox after:'.Carbon::parse($connectedAt)->format('Y/m/d');
     }
 
     /**
