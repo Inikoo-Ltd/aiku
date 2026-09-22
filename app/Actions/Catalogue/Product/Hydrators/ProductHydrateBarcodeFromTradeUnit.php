@@ -27,9 +27,11 @@ class ProductHydrateBarcodeFromTradeUnit implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
-        $barcode = $product->is_single_trade_unit
-            ? $product->tradeUnits()->first()?->barcode
-            : null;
+        if (!$product->is_single_trade_unit) {
+            return;
+        }
+
+        $barcode = $product->tradeUnits()->first()?->barcode;
 
         if ($product->barcode === $barcode) {
             return;
