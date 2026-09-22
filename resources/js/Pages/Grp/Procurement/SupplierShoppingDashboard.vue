@@ -216,7 +216,7 @@ const rankClasses: Record<string, string> = {
                         {{ useLocaleStore().currencyFormat(orgSupplier.currency, bucket.stock_value) }}
                     </span>
                     <span v-if="shouldNotBeOrdered(bucket)" class="text-xs font-medium tabular-nums text-red-600" :title="trans('On the shopping list but not short of stock')">
-                        <FontAwesomeIcon :icon="faExclamationTriangle" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                         {{ bucket.on_list }} {{ trans("on list") }}
                         <button type="button" class="ml-0.5 rounded border border-red-300 px-1 text-[10px] hover:bg-red-100" @click.prevent.stop="removeMisplaced(bucket.bucket)">
                             {{ trans("remove") }}

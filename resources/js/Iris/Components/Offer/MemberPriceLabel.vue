@@ -59,7 +59,7 @@ const webpage_data = inject("webpage_data", null)
         aria-haspopup="true">
 
         <GoldenProductBadge v-if="isGoldenProduct" class="shrink-0 scale-[0.8]" :class="active ? '' : 'grayscale opacity-60'" />
-        <FontAwesomeIcon v-else :icon="faMedal" class="text-lg" :class="active ? 'text-[#E87928]' : 'text-[#b3b3b3]'"/>
+        <FontAwesomeIcon v-else :icon="faMedal" class="text-lg" :class="active ? 'text-[#E87928]' : 'text-[#b3b3b3]'" fixed-width/>
 
         <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none cursor-pointer text-white transform transition-all duration-150 "
         :class="[ active ? 'bg-[#E87928] ' : 'bg-[#b3b3b3] border border-transparent ' ]" tabindex="0" aria-haspopup="true">

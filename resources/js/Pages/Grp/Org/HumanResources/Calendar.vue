@@ -424,7 +424,7 @@ const goNext = () => {
                     <template v-if="useHolidayYearPeriod && allHolidayYears && allHolidayYears.length">
                         <select
                             v-model="filterHolidayYear"
-                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm min-w-[200px]"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm min-w-[200px]"
                         >
                             <option
                                 v-for="hy in allHolidayYears"
@@ -439,7 +439,7 @@ const goNext = () => {
                         <select
                             v-model="filterYear"
                             @change="applyFilters"
-                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                         >
                             <option
                                 v-for="option in yearOptions"
@@ -453,7 +453,7 @@ const goNext = () => {
                         <select
                             v-model="filterMonth"
                             @change="applyFilters"
-                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                         >
                             <option value="">
                                 {{ trans('All months') }}

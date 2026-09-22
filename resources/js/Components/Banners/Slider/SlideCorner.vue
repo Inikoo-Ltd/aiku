@@ -80,7 +80,8 @@ const getComponent = (componentName: any) => {
 </script>
 
 <template>
-    <div :class="positionClasses" class="absolute" :style="`width : ${get(corner,['data','width'])}%`">
+    <div :class="positionClasses" class="absolute" :data-editable="`corners.${position}`"
+        :style="`width : ${get(corner,['data','width'])}%`">
         <!-- {{ positionClasses }} -->
         <component :is="getComponent(corner.type)" :data="{...corner.data, position}" :swiperRef="swiperRef" />
     </div>

@@ -367,7 +367,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                 v-tooltip="trans('Unknown weight')"
                 icon="fas fa-exclamation-circle"
                 class="text-orange-500"
-                aria-hidden="true"
+                fixed-width aria-hidden="true"
             />
         </template>
 
@@ -378,7 +378,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                 v-tooltip="trans('Unknown CBM')"
                 icon="fas fa-exclamation-circle"
                 class="text-orange-500"
-                aria-hidden="true"
+                fixed-width aria-hidden="true"
             />
         </template>
 

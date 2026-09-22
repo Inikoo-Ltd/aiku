@@ -47,6 +47,8 @@ enum ChatEventTypeEnum: string
 
     case REDACT = 'redact';
 
+    case PHONE_CALL = 'phone_call';
+
     /**
      * Events shown as chips inside the conversation. Close and reopen are absent on
      * purpose: both channels already store a system message for them, which the thread
@@ -71,6 +73,7 @@ enum ChatEventTypeEnum: string
             self::TRANSFER_TO_AGENT->value,
             self::ASSIGNMENT_TO_SELF->value,
             self::RELEASED->value,
+            self::PHONE_CALL->value,
         ];
     }
 
@@ -98,6 +101,7 @@ enum ChatEventTypeEnum: string
             'Assignment_to_self' => __('Assignment to Self'),
             'priority' => __('Priority Updated'),
             'guest_profile' => __('Guest Profile'),
+            'phone_call' => __('Phone Call'),
             'reopen' => __('Chat Reopened'),
             'ticket'      => __('Ticket Created'),
         ];
@@ -180,6 +184,11 @@ enum ChatEventTypeEnum: string
                 'tooltip' => __('Guest Profile'),
                 'icon' => 'fas fa-user',
                 'class' => 'text-purple-500',
+            ],
+            'phone_call' => [
+                'tooltip' => __('Phone Call'),
+                'icon' => 'fas fa-phone',
+                'class' => 'text-emerald-600',
             ],
             'reopen' => [
                 'tooltip' => __('Chat Reopened'),

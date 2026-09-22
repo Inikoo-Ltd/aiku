@@ -95,7 +95,7 @@ const exportExcel = () => {
 
         <template #cell(is_credit_customer)="{ item }">
             <div class="flex justify-center gap-2">
-                <FontAwesomeIcon :icon="item.is_credit_customer.icon" :color="item.is_credit_customer.color" />
+                <FontAwesomeIcon :icon="item.is_credit_customer.icon" :color="item.is_credit_customer.color" fixed-width />
             </div>
         </template>
 

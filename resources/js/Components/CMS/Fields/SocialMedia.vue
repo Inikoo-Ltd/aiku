@@ -109,7 +109,7 @@ const handleDisclosureToggle = (index) => {
                 <div class="grid grid-cols-1 md:cursor-default space-y-2 border-b pb-3 md:border-none">
                     <div class="flex items-center text-xl font-semibold leading-6">
                         <!-- Drag Handle Icon -->
-                        <FontAwesomeIcon icon="fal fa-bars" class="handle cursor-grab pr-3 mr-2 text-gray-500" />
+                        <FontAwesomeIcon icon="fal fa-bars" class="handle cursor-grab pr-3 mr-2 text-gray-500" fixed-width />
 
                         <div class="relative w-full">
                             <!-- Toggle Button -->
@@ -119,7 +119,7 @@ const handleDisclosureToggle = (index) => {
                                 <span class="font-medium">{{ item.type }}</span>
                                 <FontAwesomeIcon :icon="['fas', 'times']"
                                     class="text-red-500 p-1 hover:text-red-600 transition duration-150"
-                                    @click.stop="(e) => deleteSocial(e, index)" />
+                                    @click.stop="(e) => deleteSocial(e, index)" fixed-width />
                             </button>
 
                             <!-- Disclosure Content -->
@@ -131,7 +131,7 @@ const handleDisclosureToggle = (index) => {
                                         <span class="block text-xs font-semibold text-gray-500">Icon:</span>
                                         <Button type="dashed" @click="toggle" :full="true"
                                             class="w-full mt-1 text-center bg-white border border-gray-300 rounded-lg shadow-sm">
-                                            <FontAwesomeIcon :icon="item.icon" />
+                                            <FontAwesomeIcon :icon="item.icon" fixed-width />
                                         </Button>
                                         <Popover ref="op"
                                             class="p-2 bg-white border border-gray-300 rounded-lg shadow-lg">
@@ -140,7 +140,7 @@ const handleDisclosureToggle = (index) => {
                                                     @click="() => changeIcon(icon, item, index)"
                                                     class="cursor-pointer flex flex-col items-center p-2 border border-gray-200 rounded-lg hover:bg-gray-100 transition duration-200">
                                                     <FontAwesomeIcon :icon="icon.value"
-                                                        class="text-xl mb-1 text-gray-600 hover:text-gray-800 transition duration-150" />
+                                                        class="text-xl mb-1 text-gray-600 hover:text-gray-800 transition duration-150" fixed-width />
                                                     <span class="text-xs font-medium text-gray-600">{{ icon.type
                                                         }}</span>
                                                 </div>
@@ -166,7 +166,7 @@ const handleDisclosureToggle = (index) => {
             <div class="grid grid-cols-3 gap-6 p-1">
                 <div v-for="icon in icons" :key="icon.type" @click="() => AddItem(icon)"
                     class="cursor-pointer flex flex-col items-center p-4 border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-200">
-                    <FontAwesomeIcon :icon="icon.value" class="text-xl mb-2"></FontAwesomeIcon>
+                    <FontAwesomeIcon :icon="icon.value" class="text-xl mb-2" fixed-width></FontAwesomeIcon>
                     <span class="text-xs font-medium text-gray-700">{{ icon.type }}</span>
                 </div>
             </div>

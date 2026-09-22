@@ -388,7 +388,7 @@ const offerRoute = (offer: { slug: string }, extraParams?: {}) => {
             <template #cell(created_by)="{ item }">
                 <Link :href="offerRoute(item, {tab: 'history'})" class="hover:opacity-80 transition text-black primaryLink">
                     <FontAwesomeIcon
-                        :icon="faClock"
+                        :icon="faClock" fixed-width
                     />
                 </Link>
                 {{ item.created_by ?? ctrans('System') }}

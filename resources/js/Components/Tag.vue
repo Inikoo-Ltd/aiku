@@ -70,7 +70,7 @@ const compTheme = () => {
             <div v-if="closeButton"
                 @click="(event) => {emits('onClose', event)}"
                 class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 rounded-sm">
-                <FontAwesomeIcon icon='fal fa-times' class='' aria-hidden='true' />
+                <FontAwesomeIcon icon='fal fa-times' class='' fixed-width aria-hidden='true' />
             </div>
         </slot>
     </div>

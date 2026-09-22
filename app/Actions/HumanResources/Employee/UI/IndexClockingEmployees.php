@@ -17,7 +17,6 @@ use App\Http\Resources\HumanResources\TimesheetsResource;
 use App\Http\Resources\HumanResources\LeaveResource;
 use App\Http\Resources\HumanResources\LeaveBalanceResource;
 use App\Http\Resources\HumanResources\AttendanceAdjustmentResource;
-use App\Models\HumanResources\WorkSchedule;
 use App\Models\HumanResources\QrScanLog;
 use App\Models\HumanResources\TimeTracker;
 use App\Models\HumanResources\Clocking;
@@ -1004,14 +1003,9 @@ class IndexClockingEmployees extends OrgAction
             $invalidScanCount = $invalidQuery->count();
         }
 
-        $schedule = null;
-        if ($organisationId) {
-            $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
-                ->where('schedulable_id', $organisationId)
-                ->where('is_active', true)
-                ->with('days')
-                ->first();
-        }
+        // This employee's own week when they have one, the organisation's otherwise: somebody on
+        // a four day week is neither late nor absent on the day they do not work.
+        $schedule = $employee->getEffectiveWorkSchedule()?->load('days');
 
         if (!$schedule) {
             return [
@@ -1126,11 +1120,7 @@ class IndexClockingEmployees extends OrgAction
             return;
         }
 
-        $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
-            ->where('schedulable_id', $organisationId)
-            ->where('is_active', true)
-            ->with('days')
-            ->first();
+        $schedule = $employee->getEffectiveWorkSchedule()?->load('days');
 
         if (!$schedule) {
             return;

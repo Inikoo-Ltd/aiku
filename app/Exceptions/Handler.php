@@ -115,7 +115,11 @@ class Handler extends ExceptionHandler
                     }
 
 
-                    if ($e instanceof ModelNotFoundException) {
+                    /**
+                     * The fallback routes live on the grp domain, so sending a retina customer
+                     * to one signs them out of their own shop and drops them on the admin login.
+                     */
+                    if ($e instanceof ModelNotFoundException && $app == 'grp') {
                         if (Str::startsWith($request->route()->getName(), 'grp.org')) {
                             $fallbackPlaceholder = explode('/', Request::path());
                             $fallbackPlaceholder = array_slice($fallbackPlaceholder, 2);

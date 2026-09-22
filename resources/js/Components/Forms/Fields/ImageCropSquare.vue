@@ -191,7 +191,7 @@ watch(isOpenModalCrop, (val) => {
                 <!-- Empty state -->
                 <label v-else :for="inputId"
                     class="absolute inset-0 flex flex-col items-center justify-center gap-1.5 cursor-pointer text-gray-400 group-hover:text-indigo-500 transition-colors duration-200">
-                    <FontAwesomeIcon :icon="['fal', 'image']" class="text-2xl" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="['fal', 'image']" class="text-2xl" fixed-width aria-hidden="true" />
                     <span class="text-xs font-medium">{{ trans("Upload image") }}</span>
                 </label>
 
@@ -200,14 +200,14 @@ watch(isOpenModalCrop, (val) => {
                     class="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
                     <label :for="inputId" v-tooltip="trans('Change image')"
                         class="flex items-center justify-center h-9 w-9 rounded-full bg-white/90 text-gray-700 hover:bg-white hover:text-indigo-600 shadow cursor-pointer transition-colors duration-150">
-                        <FontAwesomeIcon :icon="['fal', 'pen']" class="text-sm" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="['fal', 'pen']" class="text-sm" fixed-width aria-hidden="true" />
                         <span class="sr-only">{{ trans("Change image") }}</span>
                     </label>
 
                     <button v-if="fieldData.required == false" @click="deleteImage" type="button"
                         v-tooltip="trans('Delete image')"
                         class="flex items-center justify-center h-9 w-9 rounded-full bg-white/90 text-gray-700 hover:bg-red-500 hover:text-white shadow transition-colors duration-150">
-                        <FontAwesomeIcon :icon="['fal', 'trash-alt']" class="text-sm" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="['fal', 'trash-alt']" class="text-sm" fixed-width aria-hidden="true" />
                         <span class="sr-only">{{ trans("Delete image") }}</span>
                     </button>
                 </div>
@@ -274,11 +274,11 @@ watch(isOpenModalCrop, (val) => {
 
         <!-- Status -->
         <p v-if="form.errors[fieldName]" class="flex items-center gap-x-1.5 text-red-600 text-sm mt-2">
-            <FontAwesomeIcon :icon="['fas', 'exclamation-circle']" class="h-4 w-4" aria-hidden="true" />
+            <FontAwesomeIcon :icon="['fas', 'exclamation-circle']" class="h-4 w-4" fixed-width aria-hidden="true" />
             {{ form.errors[fieldName] }}
         </p>
         <p v-else-if="form.recentlySuccessful" class="flex items-center gap-x-1.5 text-green-600 text-sm mt-2">
-            <FontAwesomeIcon :icon="['fas', 'check-circle']" class="h-4 w-4" aria-hidden="true" />
+            <FontAwesomeIcon :icon="['fas', 'check-circle']" class="h-4 w-4" fixed-width aria-hidden="true" />
             {{ trans("Saved") }}
         </p>
     </div>

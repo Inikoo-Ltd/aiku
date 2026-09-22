@@ -275,15 +275,15 @@ const syncOrderCancellationShopify = async (order) => {
                 class="py-2 px-3 border border-solid border-gray-500 rounded-md cursor-pointer font-medium" 
             >
                 <LoadingIcon v-if="isLoadingSyncStatus" />
-                <FontAwesomeIcon v-else :icon="faSync" />
+                <FontAwesomeIcon v-else :icon="faSync" fixed-width />
             </span>
             <span v-if="order?.data.state == 'cancelled'" :class="order?.data.state_icon.class" class="py-2 px-3 border border-solid border-red-500 rounded-md cursor-default font-medium" v-tooltip="trans('Order is cancelled')">
-                <FontAwesomeIcon :icon="order?.data.state_icon.icon"/>
+                <FontAwesomeIcon :icon="order?.data.state_icon.icon" fixed-width/>
                 {{ order?.data.state_label }}
             </span>
             <!-- To display if order have missing items / items that are not picked -->
             <span v-if="order?.data.state == 'dispatched' && hasModified" class="py-2 px-3 border border-solid text-purple-500 border-purple-500 rounded-md cursor-default font-medium" v-tooltip="trans('Some items are not being sent. Excessed payments have been refunded automatically')">
-                <FontAwesomeIcon :icon="order?.data.state_icon.icon"/>
+                <FontAwesomeIcon :icon="order?.data.state_icon.icon" fixed-width/>
                 {{ order?.data.state_label }} | Modified
             </span>
         </template>

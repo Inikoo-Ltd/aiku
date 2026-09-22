@@ -63,7 +63,7 @@ const updateValue = (value) => {
                 v-if="props.node.attrs.type == 'internal'" 
                 @click.stop="openWorkshop"
                 :icon="faDraftingCompass" 
-                class="icon" 
+                class="icon" fixed-width 
             />
         </span>
         <a v-else :href="props.node.attrs.url" target="_blank" >{{ props.node.attrs.content }}</a>

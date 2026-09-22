@@ -98,7 +98,7 @@ watch(phone, (val) => {
             >
                 <template v-if="phoneError">
                     <b>{{ props.fieldData.value }}</b>
-                    <FontAwesomeIcon icon="fas fa-exclamation-circle" class="h-3 w-3  ml-2 mr-1 text-red-500" aria-hidden="true"/>
+                    <FontAwesomeIcon icon="fas fa-exclamation-circle" class="h-3 w-3  ml-2 mr-1 text-red-500" fixed-width aria-hidden="true"/>
                     <span> {{ phoneError }}</span>
                 </template>
             
@@ -106,8 +106,8 @@ watch(phone, (val) => {
         </div>
 
         <div v-if="form.errors[fieldName] || form.recentlySuccessful " class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]" class="h-5 w-5 text-red-500" aria-hidden="true"/>
-            <FontAwesomeIcon icon="fas fa-check-circle" v-if="form.recentlySuccessful" class="mt-1.5  h-5 w-5 text-green-500" aria-hidden="true"/>
+            <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]" class="h-5 w-5 text-red-500" fixed-width aria-hidden="true"/>
+            <FontAwesomeIcon icon="fas fa-check-circle" v-if="form.recentlySuccessful" class="mt-1.5  h-5 w-5 text-green-500" fixed-width aria-hidden="true"/>
         </div>
     </div>
     <p v-if="form.errors[fieldName]" class="mt-2 text-sm text-red-600" id="email-error">{{ form.errors[fieldName] }}</p>

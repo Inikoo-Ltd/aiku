@@ -114,7 +114,7 @@ const submit = async () => {
 
                 <div class="space-y-2">
                     <label for="clocking_machine_name" class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Name') }}:
                     </label>
 
@@ -140,7 +140,7 @@ const submit = async () => {
                                 : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'"
                             @click="machineType = option.value"
                         >
-                            <FontAwesomeIcon :icon="option.icon" />
+                            <FontAwesomeIcon :icon="option.icon" fixed-width />
                             {{ option.label }}
                         </button>
                     </div>
@@ -148,7 +148,7 @@ const submit = async () => {
 
                 <div v-if="hasWorkplaceChoice" class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Workplace') }}:
                     </label>
 

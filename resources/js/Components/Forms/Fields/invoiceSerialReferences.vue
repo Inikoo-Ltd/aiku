@@ -34,7 +34,7 @@ const props = defineProps<{
         <ToggleSwitch v-model="form[fieldName][option.type.key_value]" :true-value="true" :false-value="false"
           aria-label="Toggle Option">
           <template #handle="{ checked }">
-            <FontAwesomeIcon :icon="checked ? faCheck : faTimes" :class="checked ? 'text-green-500' : 'text-red-500'" class="h-3 w-3"/>
+            <FontAwesomeIcon :icon="checked ? faCheck : faTimes" :class="checked ? 'text-green-500' : 'text-red-500'" class="h-3 w-3" fixed-width/>
           </template>
         </ToggleSwitch>
       </div>

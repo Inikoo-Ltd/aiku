@@ -462,6 +462,9 @@ class CallApiApcGbShipping extends OrgAction
                 $content = '';
             }
             $count++;
+            if (empty($content) && $count < 3) {
+                sleep(2);
+            }
         } while (empty($content) && $count < 3);
 
         return $content;

@@ -152,7 +152,7 @@ const removeFaq = (index: number) => {
                 <FontAwesomeIcon
                     :icon="faTrashAlt"
                     class="cursor-pointer text-red-500"
-                    @click="removeFaq(index)"
+                    @click="removeFaq(index)" fixed-width
                 />
             </div>
         </div>

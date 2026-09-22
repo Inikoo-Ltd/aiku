@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, inject, nextTick, onMounted, onUnmounted, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube } from "@fal"
 import { faStar as faStarSolid } from "@fas"
@@ -51,30 +51,30 @@ const stripBadgeGroups = computed(() => [
     {
         key: "tickets",
         icon: "fal fa-life-ring",
-        label: trans("Tickets"),
+        label: ctrans("Tickets"),
         counts: [
-            { key: "queue", label: trans("Tickets assigned to me"), class: "text-lime-300", value: layout.ticket_badges?.queue ? sumBadgeCounts(layout.ticket_badges.queue, ["assigned_to_me", "collaborating"]) : 0 },
-            { key: "mine", label: trans("My tickets"), class: "text-lime-100", value: sumBadgeCounts(layout.ticket_badges?.mine, ["to_do", "in_progress", "waiting"]) },
+            { key: "queue", label: ctrans("Tickets assigned to me"), class: "text-lime-300", value: layout.ticket_badges?.queue ? sumBadgeCounts(layout.ticket_badges.queue, ["assigned_to_me", "collaborating"]) : 0 },
+            { key: "mine", label: ctrans("My tickets"), class: "text-lime-100", value: sumBadgeCounts(layout.ticket_badges?.mine, ["to_do", "in_progress", "waiting"]) },
         ],
     },
     {
         key: "orders",
         icon: "fal fa-shopping-cart",
-        label: trans("Orders"),
+        label: ctrans("Orders"),
         counts: [
-            { key: "dispatching", label: trans("Orders waiting in the warehouse"), class: "text-amber-300", value: layout?.dispatching_waiting_count ?? 0 },
-            { key: "crm_waiting", label: trans("Orders waiting in CRM"), class: "text-purple-300", value: layout?.crm_waiting_count ?? 0 },
-            { key: "crm_return", label: trans("Orders with returns"), class: "text-blue-300", value: layout?.crm_return_count ?? 0 },
-            { key: "faire", label: trans("Faire orders not imported"), class: "text-sky-300", value: layout?.faire_skipped_count ?? 0 },
+            { key: "dispatching", label: ctrans("Orders waiting in the warehouse"), class: "text-amber-300", value: layout?.dispatching_waiting_count ?? 0 },
+            { key: "crm_waiting", label: ctrans("Orders waiting in CRM"), class: "text-purple-300", value: layout?.crm_waiting_count ?? 0 },
+            { key: "crm_return", label: ctrans("Orders with returns"), class: "text-blue-300", value: layout?.crm_return_count ?? 0 },
+            { key: "faire", label: ctrans("Faire orders not imported"), class: "text-sky-300", value: layout?.faire_skipped_count ?? 0 },
         ],
     },
     {
         key: "catalogue",
         icon: "fal fa-cube",
-        label: trans("Catalogue"),
+        label: ctrans("Catalogue"),
         counts: [
-            { key: "master", label: trans("Prices not matching master"), class: "text-rose-300", value: layout?.master_updated_count ?? 0 },
-            { key: "review", label: trans("Master text changed"), class: "text-emerald-300", value: layout?.products_need_review_count ?? 0 },
+            { key: "master", label: ctrans("Prices not matching master"), class: "text-rose-300", value: layout?.master_updated_count ?? 0 },
+            { key: "review", label: ctrans("Master text changed"), class: "text-emerald-300", value: layout?.products_need_review_count ?? 0 },
         ],
     },
 ].map((group) => ({ ...group, counts: group.counts.filter((count) => count.value > 0) })).filter((group) => group.counts.length))
@@ -192,7 +192,7 @@ const orgOnlineCount = computed(() => (nowTick.value, coworkers.value.filter((c)
 const teamOnlineCount = computed(() => (nowTick.value, teamOnlineCoworkers.value.filter((c) => c.id !== myId.value).length))
 
 const showInput = computed(() => plusOpened.value)
-const searchPlaceholder = computed(() => trans('Find a coworker…'))
+const searchPlaceholder = computed(() => ctrans('Find a coworker…'))
 const query = computed(() => search.value.trim().toLowerCase())
 const clientFilterActive = computed(() => !plusOpened.value && query.value.length > 0)
 const filteredTeamCoworkers = computed(() =>
@@ -230,7 +230,7 @@ const selectedOrgId = ref<number | null>(null)
 const orgPickerOpen = ref(false)
 const selectedOrg = computed(() => myOrgs.value.find((o: any) => o.id === selectedOrgId.value) || myOrgs.value[0])
 
-const orgTooltip = computed(() => selectedOrg.value?.slug || trans('Online in my organisation'))
+const orgTooltip = computed(() => selectedOrg.value?.slug || ctrans('Online in my organisation'))
 
 const inSelectedOrg = (c: StaffCoworker) => selectedOrg.value
     ? (c.organisation_ids || []).includes(selectedOrg.value.id)
@@ -278,10 +278,10 @@ const filteredPeopleList = computed(() => {
 })
 
 const tabHeader = computed(() => {
-    if (activeTab.value === "all") return `${trans('Online now')} (${filteredPeopleList.value.length})`
-    if (activeTab.value === "org") return `${selectedOrg.value?.slug ?? trans('My organisation')} (${filteredPeopleList.value.length})`
-    if (activeTab.value === "team") return `${trans('My team')} (${teamOnlineCount.value}/${teamCoworkers.value.length} ${trans('online')})`
-    return `${trans('Messages')} (${conversationsSummary.value.total}, ${conversationsSummary.value.unread} ${trans('unread')})`
+    if (activeTab.value === "all") return `${ctrans('Online now')} (${filteredPeopleList.value.length})`
+    if (activeTab.value === "org") return `${selectedOrg.value?.slug ?? ctrans('My organisation')} (${filteredPeopleList.value.length})`
+    if (activeTab.value === "team") return `${ctrans('My team')} (${teamOnlineCount.value}/${teamCoworkers.value.length} ${ctrans('online')})`
+    return `${ctrans('Messages')} (${conversationsSummary.value.total}, ${conversationsSummary.value.unread} ${ctrans('unread')})`
 })
 
 const conversationsSummary = computed(() => ({
@@ -290,10 +290,10 @@ const conversationsSummary = computed(() => ({
 }))
 
 const tabs = computed(() => [
-    { key: "all" as SideBarTab, icon: "fal fa-gopuram", color: "text-[var(--chat-green)]", label: trans('Everyone online'), count: allOnlineCount.value },
-    { key: "org" as SideBarTab, icon: "fal fa-home-alt", color: "text-[var(--chat-cyan)]", label: trans('Online in my organisation'), count: orgOnlineCount.value },
-    { key: "team" as SideBarTab, icon: "fal fa-heart", color: "text-[var(--chat-accent)]", label: trans('My team'), count: teamOnlineCount.value },
-    { key: "messages" as SideBarTab, icon: "fal fa-comments", color: "text-[var(--chat-label)]", label: trans('Messages'), count: conversationsSummary.value.total, badge: store.totalUnread },
+    { key: "all" as SideBarTab, icon: "fal fa-gopuram", color: "text-[var(--chat-green)]", label: ctrans('Everyone online'), count: allOnlineCount.value },
+    { key: "org" as SideBarTab, icon: "fal fa-home-alt", color: "text-[var(--chat-cyan)]", label: ctrans('Online in my organisation'), count: orgOnlineCount.value },
+    { key: "team" as SideBarTab, icon: "fal fa-heart", color: "text-[var(--chat-accent)]", label: ctrans('My team'), count: teamOnlineCount.value },
+    { key: "messages" as SideBarTab, icon: "fal fa-comments", color: "text-[var(--chat-label)]", label: ctrans('Messages'), count: conversationsSummary.value.total, badge: store.totalUnread },
 ])
 
 const conversationUserIds = computed(() => new Set(
@@ -395,12 +395,12 @@ onUnmounted(() => {
             <FontAwesomeIcon
                 icon="far fa-chevron-left"
                 class="h-3 lg:h-[10px] leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
-                aria-hidden="true"
+                fixed-width aria-hidden="true"
                 :class="layout.messagingSidebar.show ? 'rotate-180' : ''" />
         </div>
 
         <!-- MICRO: super-thin strip with the counts; click to grow back to the rail -->
-        <div v-if="isMicro" class="flex-1 flex flex-col items-center gap-y-2 pt-14 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="trans('Show messaging bar')" @click="handleToggle">
+        <div v-if="isMicro" class="flex-1 flex flex-col items-center gap-y-2 pt-14 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="ctrans('Show messaging bar')" @click="handleToggle">
             <template v-for="group in stripBadgeGroups" :key="'micro-badges-' + group.key">
                 <FontAwesomeIcon :icon="group.icon" class="text-[8px] text-[var(--chat-muted)]" fixed-width :title="group.label" aria-hidden="true" />
                 <span v-for="count in group.counts" :key="count.key" :class="count.class" :title="count.label">{{ count.value > 99 ? 99 : count.value }}</span>
@@ -428,7 +428,7 @@ onUnmounted(() => {
             <!-- Pending customer (CRM) chats: pinned near the bottom, where the rail keeps them -->
             <span
                 v-if="layout?.user?.is_agent"
-                v-tooltip="trans('Customer chats')"
+                v-tooltip="ctrans('Customer chats')"
                 class="mt-auto mb-9"
                 :class="crmUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : 'text-[var(--chat-label)]'">{{ crmUnread > 99 ? 99 : crmUnread }}</span>
         </div>
@@ -485,16 +485,16 @@ onUnmounted(() => {
 
         <!-- Messaging button -->
         <div v-if="!layout.messagingSidebar.show" class="pt-2 flex justify-center items-center">
-            <button class="h-9 w-9 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]" v-tooltip="trans('Open messaging')" @click="openFullMessaging">
+            <button class="h-9 w-9 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]" v-tooltip="ctrans('Open messaging')" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
         </div>
         <div v-else-if="activeTab === 'messages'" class="pt-2 pb-1 px-3 flex items-center justify-between">
             <button class="flex items-center gap-x-3 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
-                <span class="text-xs text-[var(--chat-text)]">{{ trans('Messaging') }}</span>
+                <span class="text-xs text-[var(--chat-text)]">{{ ctrans('Messaging') }}</span>
             </button>
-            <button v-if="!plusOpened" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="openPlusSearch" v-tooltip="trans('New message')">
+            <button v-if="!plusOpened" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="openPlusSearch" v-tooltip="ctrans('New message')">
                 <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
             </button>
         </div>
@@ -511,19 +511,19 @@ onUnmounted(() => {
                 @click="openUser(item.coworker.id)">
                 <Image v-if="item.coworker.avatar" :src="item.coworker.avatar" :alt="item.coworker.name" image-cover />
                 <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(item.coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(item.coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(item.coworker) === 'idle' ? trans('Idle') : ''" />
+                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(item.coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(item.coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(item.coworker) === 'idle' ? ctrans('Idle') : ''" />
                 <span v-if="unreadForUser(item.coworker.id) > 0" class="absolute -top-1 -right-1 bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ unreadForUser(item.coworker.id) }}</span>
             </button>
             <button
                 v-if="railOverflowCount > 0"
                 class="relative h-7 w-7 rounded-full bg-[var(--chat-line)] shrink-0 flex items-center justify-center text-xxs text-[var(--chat-text)]"
-                v-tooltip="trans('Show all')"
+                v-tooltip="ctrans('Show all')"
                 @click="expandSidebar">
                 +{{ railOverflowCount }}
             </button>
             <button
                 class="h-9 w-9 rounded-full bg-transparent border border-dashed border-[var(--chat-muted)] shrink-0 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)] hover:border-[var(--chat-text)]"
-                v-tooltip="trans('New message')"
+                v-tooltip="ctrans('New message')"
                 @click="openNewMessageFromCollapsed">
                 <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
             </button>
@@ -560,7 +560,7 @@ onUnmounted(() => {
                     <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
                         <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
                         <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
-                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
+                        <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
                     </div>
                     <div class="flex-1 flex flex-col min-w-0">
                         <span class="text-xs truncate text-[var(--chat-text)]">{{ coworker.name }}</span>
@@ -573,7 +573,7 @@ onUnmounted(() => {
                             </span>
                         </template>
                     </div>
-                    <span role="button" tabindex="0" class="shrink-0" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? trans('In my team') : trans('Add to my team')">
+                    <span role="button" tabindex="0" class="shrink-0" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? ctrans('In my team') : ctrans('Add to my team')">
                         <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[var(--chat-yellow)]' : 'text-[var(--chat-muted)]'" fixed-width aria-hidden="true" />
                     </span>
                 </div>
@@ -605,12 +605,12 @@ onUnmounted(() => {
                     <span
                         role="button" tabindex="0"
                         class="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
-                        v-tooltip="trans('Archive chat')"
+                        v-tooltip="ctrans('Archive chat')"
                         @click.stop="store.closeConversation(conversation.ulid)">
                         <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                     </span>
                 </button>
-                <div v-if="!sortedConversations.length" class="px-3 py-2 text-xxs text-[var(--chat-muted)]">{{ trans('No conversations yet') }}</div>
+                <div v-if="!sortedConversations.length" class="px-3 py-2 text-xxs text-[var(--chat-muted)]">{{ ctrans('No conversations yet') }}</div>
             </template>
 
             <!-- PEOPLE views: all / org / team -->
@@ -618,14 +618,14 @@ onUnmounted(() => {
             <div class="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[var(--chat-muted)]">
                 <span class="truncate">{{ tabHeader }}</span>
                 <span v-if="activeTab === 'team'" class="shrink-0 flex items-center gap-x-1.5">
-                    <button class="text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="isManageTeamOpen = true" v-tooltip="trans('Edit my team')">
+                    <button class="text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="isManageTeamOpen = true" v-tooltip="ctrans('Edit my team')">
                         <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
                     </button>
-                    <button class="text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="isManageTeamOpen = true" v-tooltip="trans('Add to my team')">
+                    <button class="text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="isManageTeamOpen = true" v-tooltip="ctrans('Add to my team')">
                         <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
                     </button>
                 </span>
-                <button v-else-if="activeTab === 'org' && myOrgs.length > 1" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="orgPickerOpen = !orgPickerOpen" v-tooltip="trans('Change organisation')">
+                <button v-else-if="activeTab === 'org' && myOrgs.length > 1" class="shrink-0 text-[var(--chat-accent)] hover:text-[var(--chat-text)]" @click="orgPickerOpen = !orgPickerOpen" v-tooltip="ctrans('Change organisation')">
                     <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
                 </button>
             </div>
@@ -639,10 +639,15 @@ onUnmounted(() => {
                 <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
                     <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
                     <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
-                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? trans('Idle') : ''" />
+                    <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
                 </div>
                 <div class="flex-1 flex flex-col min-w-0">
-                    <span class="text-xs truncate text-[var(--chat-text)]">{{ coworker.name }}</span>
+                    <span class="text-xs truncate text-[var(--chat-text)] flex items-center gap-x-1">
+                        {{ coworker.name }}
+                        <FontAwesomeIcon v-if="coworker.on_call" icon="fas fa-phone"
+                            class="text-[9px] text-[var(--chat-green)] shrink-0"
+                            v-tooltip="ctrans('On a phone call')" fixed-width aria-hidden="true" />
+                    </span>
                     <template v-if="getCurrentPage(coworker.id)?.label">
                         <a v-if="getCurrentPage(coworker.id)?.url" :href="getCurrentPage(coworker.id)?.url" @click.stop class="text-xxs text-[var(--chat-label)] truncate hover:underline">
                             {{ useTruncate(getCurrentPage(coworker.id)?.label, 28) }}
@@ -653,15 +658,15 @@ onUnmounted(() => {
                     </template>
                 </div>
                 <span v-if="unreadForUser(coworker.id) > 0" class="bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ unreadForUser(coworker.id) }}</span>
-                <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click.stop="store.openWithUser(coworker.id)" v-tooltip="trans('Message')">
+                <span role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click.stop="store.openWithUser(coworker.id)" v-tooltip="ctrans('Message')">
                     <FontAwesomeIcon icon="fal fa-comment" class="text-[var(--chat-muted)] hover:text-[var(--chat-text)]" fixed-width aria-hidden="true" />
                 </span>
-                <span v-if="activeTab !== 'team'" role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? trans('In my team') : trans('Add to my team')">
+                <span v-if="activeTab !== 'team'" role="button" tabindex="0" class="shrink-0 opacity-0 group-hover:opacity-100" @click="toggleTeam(coworker, $event)" v-tooltip="coworker.in_team ? ctrans('In my team') : ctrans('Add to my team')">
                     <FontAwesomeIcon :icon="coworker.in_team ? 'fas fa-star' : 'fal fa-star'" :class="coworker.in_team ? 'text-[var(--chat-yellow)]' : 'text-[var(--chat-muted)]'" fixed-width aria-hidden="true" />
                 </span>
             </div>
             <div v-if="!filteredPeopleList.length" class="px-3 py-2 text-xxs text-[var(--chat-muted)]">
-                {{ activeTab === 'team' && !teamCoworkers.length ? trans('No team members yet') : trans('Nobody online') }}
+                {{ activeTab === 'team' && !teamCoworkers.length ? ctrans('No team members yet') : ctrans('Nobody online') }}
             </div>
             </template>
         </div>
@@ -675,20 +680,20 @@ onUnmounted(() => {
                 <button
                     v-if="!layout.messagingSidebar.show"
                     class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
-                    v-tooltip="trans('Expand messaging bar')"
+                    v-tooltip="ctrans('Expand messaging bar')"
                     @click="expandSidebar">
                     <FontAwesomeIcon icon="fal fa-chevron-double-left" fixed-width aria-hidden="true" />
                 </button>
                 <button
                     v-else
                     class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
-                    v-tooltip="trans('Collapse messaging bar')"
+                    v-tooltip="ctrans('Collapse messaging bar')"
                     @click="handleToggle">
                     <FontAwesomeIcon icon="far fa-chevron-left" class="rotate-180" fixed-width aria-hidden="true" />
                 </button>
                 <button
                     class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
-                    v-tooltip="trans('Hide messaging bar')"
+                    v-tooltip="ctrans('Hide messaging bar')"
                     @click="enterMicro">
                     <FontAwesomeIcon icon="fal fa-chevron-double-right" fixed-width aria-hidden="true" />
                 </button>

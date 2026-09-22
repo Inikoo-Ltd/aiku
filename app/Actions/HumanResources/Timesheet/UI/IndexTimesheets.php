@@ -40,6 +40,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\HumanResources\WorkSchedule;
+use App\Models\HumanResources\WorkScheduleDay;
 use App\Models\HumanResources\QrScanLog;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Carbon;
@@ -297,6 +298,49 @@ class IndexTimesheets extends OrgAction
         return $selects;
     }
 
+    /**
+     * Day rows keyed by ISO weekday, for the organisation and for each employee who has hours of
+     * their own. A timesheet is read against its own subject's week: somebody on a four day week
+     * is not late, or absent, on the day they do not work.
+     *
+     * @return array{org: \Illuminate\Support\Collection, byEmployee: array<int, \Illuminate\Support\Collection>}
+     */
+    protected function scheduleDayMaps(?int $organisationId, array $employeeIds): array
+    {
+        $organisationSchedule = $organisationId
+            ? WorkSchedule::where('schedulable_type', 'Organisation')
+                ->where('schedulable_id', $organisationId)
+                ->where('is_active', true)
+                ->with('days')
+                ->first()
+            : null;
+
+        $byEmployee = WorkSchedule::where('schedulable_type', 'Employee')
+            ->whereIn('schedulable_id', $employeeIds)
+            ->where('type', 'default')
+            ->where('is_active', true)
+            ->with('days')
+            ->get()
+            ->filter(fn (WorkSchedule $schedule) => $schedule->days->isNotEmpty())
+            ->keyBy('schedulable_id')
+            ->map(fn (WorkSchedule $schedule) => $schedule->days->keyBy('day_of_week'))
+            ->all();
+
+        return [
+            'org'        => $organisationSchedule ? $organisationSchedule->days->keyBy('day_of_week') : collect(),
+            'byEmployee' => $byEmployee,
+        ];
+    }
+
+    protected function scheduleDayFor(array $maps, Timesheet $timesheet): ?WorkScheduleDay
+    {
+        $map = $timesheet->subject_type === 'Employee'
+            ? ($maps['byEmployee'][$timesheet->subject_id] ?? $maps['org'])
+            : $maps['org'];
+
+        return $map->get($timesheet->date->dayOfWeekIso);
+    }
+
     protected function getStatistics(): array
     {
         if (!$this->statsQuery) {
@@ -341,17 +385,16 @@ class IndexTimesheets extends OrgAction
         }
 
 
-        $schedule = null;
-        if ($organisationId) {
-            $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
-                ->where('schedulable_id', $organisationId)
-                ->where('is_active', true)
-                ->with('days')
-                ->first();
-        }
+        $employeeIds = (clone $baseQuery)
+            ->setEagerLoads([])
+            ->where('timesheets.subject_type', 'Employee')
+            ->distinct()
+            ->pluck('timesheets.subject_id')
+            ->all();
 
+        $scheduleMaps = $this->scheduleDayMaps($organisationId, $employeeIds);
 
-        if (!$schedule) {
+        if ($scheduleMaps['org']->isEmpty() && $scheduleMaps['byEmployee'] === []) {
             return [
                 'on_time' => 0,
                 'late_clock_in' => 0,
@@ -363,19 +406,16 @@ class IndexTimesheets extends OrgAction
             ];
         }
 
-        $scheduleMap = $schedule->days->keyBy('day_of_week');
-
         $timesheets = (clone $baseQuery)
             ->setEagerLoads([])
-            ->select(['timesheets.date', 'timesheets.start_at', 'timesheets.end_at', 'timesheets.number_open_time_trackers']);
+            ->select(['timesheets.date', 'timesheets.start_at', 'timesheets.end_at', 'timesheets.number_open_time_trackers', 'timesheets.subject_type', 'timesheets.subject_id']);
         $lateClockIn = 0;
         $earlyClockOut = 0;
         $onTime = 0;
 
         foreach ($timesheets->cursor() as $ts) {
 
-            $dayOfWeek = $ts->date->dayOfWeekIso;
-            $daySchedule = $scheduleMap->get($dayOfWeek);
+            $daySchedule = $this->scheduleDayFor($scheduleMaps, $ts);
 
             if (!$daySchedule || !$daySchedule->is_working_day) {
                 continue;
@@ -856,18 +896,6 @@ class IndexTimesheets extends OrgAction
             return;
         }
 
-        $schedule = WorkSchedule::where('schedulable_type', 'Organisation')
-            ->where('schedulable_id', $organisationId)
-            ->where('is_active', true)
-            ->with('days')
-            ->first();
-
-        if (!$schedule) {
-            return;
-        }
-
-        $scheduleMap = $schedule->days->keyBy('day_of_week');
-
         $baseQuery = $query->clone()
             ->setEagerLoads([])
             ->select([
@@ -876,13 +904,26 @@ class IndexTimesheets extends OrgAction
                 'timesheets.start_at',
                 'timesheets.end_at',
                 'timesheets.number_open_time_trackers',
+                'timesheets.subject_type',
+                'timesheets.subject_id',
             ]);
+
+        $employeeIds = (clone $baseQuery)
+            ->where('timesheets.subject_type', 'Employee')
+            ->distinct()
+            ->pluck('timesheets.subject_id')
+            ->all();
+
+        $scheduleMaps = $this->scheduleDayMaps($organisationId, $employeeIds);
+
+        if ($scheduleMaps['org']->isEmpty() && $scheduleMaps['byEmployee'] === []) {
+            return;
+        }
 
         $matchingIds = [];
 
         foreach ($baseQuery->cursor() as $ts) {
-            $dayOfWeek = $ts->date->dayOfWeekIso;
-            $daySchedule = $scheduleMap->get($dayOfWeek);
+            $daySchedule = $this->scheduleDayFor($scheduleMaps, $ts);
 
             if (!$daySchedule || !$daySchedule->is_working_day) {
                 continue;

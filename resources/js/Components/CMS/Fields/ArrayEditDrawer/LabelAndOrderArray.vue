@@ -89,7 +89,7 @@ const openEditor = (index: number) => {
               icon="fal fa-trash"
               class="text-red-500 hover:text-red-700 cursor-pointer"
               title="Delete"
-              @click.stop="removeValue(index)"
+              @click.stop="removeValue(index)" fixed-width
             />
           </div>
         </div>

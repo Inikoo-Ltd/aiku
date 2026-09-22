@@ -138,6 +138,13 @@ class ShowOrgStock extends OrgAction
                         ],
                         [
                             'type'  => 'button',
+                            'style' => 'negative',
+                            'key'   => 'discontinue',
+                            'label' => __('Discontinue'),
+                            'icon'  => ['fal', 'fa-ban'],
+                        ],
+                        [
+                            'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Packing'),
                             'icon'  => ['fal', 'fa-atom'],
@@ -170,6 +177,21 @@ class ShowOrgStock extends OrgAction
                     'transfer'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
                 ],
                 'org_stock_id'  => $orgStock->id,
+                'discontinue_preview_route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue_preview',
+                    'parameters' => [
+                        'organisation' => $orgStock->organisation->slug,
+                        'warehouse'    => $this->warehouse->slug,
+                    ]
+                ],
+                'discontinue_route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue',
+                    'parameters' => [
+                        'organisation' => $orgStock->organisation->slug,
+                        'warehouse'    => $this->warehouse->slug,
+                    ],
+                    'method'     => 'post',
+                ],
 
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)

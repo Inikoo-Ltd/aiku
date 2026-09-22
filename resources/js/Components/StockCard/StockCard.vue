@@ -83,7 +83,7 @@ watch(() => props.data?.locations?.data?.length, (newLength) => {
         <div class="font-semibold flex gap-3">
             <span v-if="!activeMenu">{{ trans("Total Quantity:") }} {{ parseInt(data?.quantity_locations) }}</span>
             <div class="text-xs my-auto" v-if="activeMenu">
-                <FontAwesomeIcon :icon="activeMenu.icon" class="mr-2" aria-hidden="true" />
+                <FontAwesomeIcon :icon="activeMenu.icon" class="mr-2" fixed-width aria-hidden="true" />
                 <span>{{ activeMenu.label }}</span>
             </div>
         </div>
@@ -94,7 +94,7 @@ watch(() => props.data?.locations?.data?.length, (newLength) => {
                 <MenuButton
                     @mouseover="activeMenu = null"
                     class="inline-flex w-full justify-center rounded-md px-4 py-2 text-sm font-medium hover:bg-indigo-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
-                    <FontAwesomeIcon :icon="faPencil" />
+                    <FontAwesomeIcon :icon="faPencil" fixed-width />
                 </MenuButton>
             </div>
 
@@ -110,7 +110,7 @@ watch(() => props.data?.locations?.data?.length, (newLength) => {
                         <MenuItem>
                             <button @click="() => activeMenu = item"
                                 :class="['text-gray-900 group flex w-full items-start rounded-md px-2 py-2 text-sm']">
-                                <FontAwesomeIcon :icon="item.icon" class="mr-2 h-5 w-5" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="item.icon" class="mr-2 h-5 w-5" fixed-width aria-hidden="true" />
                                 {{ item.label }}
                             </button>
                         </MenuItem>

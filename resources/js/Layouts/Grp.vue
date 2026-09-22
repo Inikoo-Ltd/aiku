@@ -19,6 +19,7 @@ import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import MessagingSideBar from "@/Layouts/Grp/MessagingSideBar.vue"
 import MessagingDock from "@/Components/Messaging/MessagingDock.vue"
+import PhoneCallDock from "@/Components/Chat/PhoneCallDock.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -264,6 +265,12 @@ const safeTheme = computed(() => {
             <MessagingDock />
         </Teleport>
 
+        <!-- A call running is kept in front of whoever is on it, on every page, because the only
+             thing that ends it is somebody remembering they are on it. -->
+        <Teleport to="body">
+            <PhoneCallDock />
+        </Teleport>
+
         <!-- Sidebar: Right -->
         <Teleport to="body">
             <RightSideBar
@@ -320,7 +327,7 @@ const safeTheme = computed(() => {
                     icon="fas fa-exclamation"
                     class="text-orange-500 text-2xl"
                     fixed
-                    aria-hidden="true" />
+                    fixed-width aria-hidden="true" />
                 <FontAwesomeIcon
                     v-if="selectedModal?.status == 'info'"
                     icon="fas fa-info"

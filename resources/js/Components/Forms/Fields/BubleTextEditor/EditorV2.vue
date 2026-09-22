@@ -714,12 +714,12 @@ onMounted(async () => {
                             <TiptapToolbarButton v-if="toggle.includes('undo')" label="Undo"
                                 @click="editorInstance?.chain().focus().undo().run()"
                                 :disabled="!editorInstance?.can().chain().focus().undo().run()">
-                                <FontAwesomeIcon :icon="faUndo" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faUndo" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
                             <TiptapToolbarButton v-if="toggle.includes('redo')" label="Redo"
                                 @click="editorInstance?.chain().focus().redo().run()"
                                 :disabled="!editorInstance?.can().chain().focus().redo().run()">
-                                <FontAwesomeIcon :icon="faRedo" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faRedo" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
                         </TiptapToolbarGroup>
 
@@ -730,11 +730,11 @@ onMounted(async () => {
                                 :menu-height="240"
                                 :is-active="!!editorInstance?.getAttributes('textStyle').fontFamily">
                                 <template #trigger>
-                                    <FontAwesomeIcon :icon="faFont" class="h-4 w-4" />
+                                    <FontAwesomeIcon :icon="faFont" class="h-4 w-4" fixed-width />
                                     <span class="max-w-[5.5rem] truncate text-xs">
                                         {{ editorInstance?.getAttributes('textStyle').fontFamily || ctrans('Font') }}
                                     </span>
-                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" />
+                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" fixed-width />
                                 </template>
                                 <template #menu="{ close }">
                                     <div class="max-h-56 w-48 overflow-y-auto">
@@ -760,12 +760,12 @@ onMounted(async () => {
                                 :menu-height="240"
                                 :is-active="!!editorInstance?.getAttributes('textStyle').fontSize">
                                 <template #trigger>
-                                    <FontAwesomeIcon :icon="faTextSize" class="h-4 w-4" />
+                                    <FontAwesomeIcon :icon="faTextSize" class="h-4 w-4" fixed-width />
                                     <span v-if="editorInstance?.getAttributes('textStyle').fontSize"
                                         class="text-xs font-semibold">
                                         {{ convertRemToPx(editorInstance?.getAttributes('textStyle').fontSize) }}
                                     </span>
-                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" />
+                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" fixed-width />
                                 </template>
                                 <template #menu="{ close }">
                                     <div class="max-h-56 w-28 overflow-y-auto">
@@ -793,8 +793,8 @@ onMounted(async () => {
                                 :is-active="!!activeHeadingOption">
                                 <template #trigger>
                                     <FontAwesomeIcon :icon="activeHeadingOption?.icon ?? faHeading"
-                                        class="h-4 w-4" />
-                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" />
+                                        class="h-4 w-4" fixed-width />
+                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" fixed-width />
                                 </template>
                                 <template #menu="{ close }">
                                     <div class="flex items-center gap-0.5 px-1">
@@ -806,7 +806,7 @@ onMounted(async () => {
                                                 ? 'bg-blue-100 text-blue-800'
                                                 : 'text-gray-600 hover:bg-blue-50'"
                                             @click="editorInstance?.chain().focus().toggleHeading({ level: option.level }).run(); close()">
-                                            <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" />
+                                            <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" fixed-width />
                                         </button>
                                     </div>
                                 </template>
@@ -818,8 +818,8 @@ onMounted(async () => {
                             <TiptapToolbarDropdown :label="ctrans('Lists')" :menu-height="60"
                                 :is-active="!!activeListOption">
                                 <template #trigger>
-                                    <FontAwesomeIcon :icon="activeListOption?.icon ?? faList" class="h-4 w-4" />
-                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" />
+                                    <FontAwesomeIcon :icon="activeListOption?.icon ?? faList" class="h-4 w-4" fixed-width />
+                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" fixed-width />
                                 </template>
                                 <template #menu="{ close }">
                                     <div class="flex items-center gap-0.5 px-1">
@@ -831,7 +831,7 @@ onMounted(async () => {
                                                 ? 'bg-blue-100 text-blue-800'
                                                 : 'text-gray-600 hover:bg-blue-50'"
                                             @click="toggleList(option.value); close()">
-                                            <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" />
+                                            <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" fixed-width />
                                         </button>
                                     </div>
                                 </template>
@@ -845,25 +845,25 @@ onMounted(async () => {
                             <TiptapToolbarButton v-if="toggle.includes('bold')" label="Bold"
                                 :is-active="editorInstance?.isActive('bold')"
                                 @click="editorInstance?.chain().focus().toggleBold().run()">
-                                <FontAwesomeIcon :icon="faBold" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faBold" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('italic')" label="Italic"
                                 :is-active="editorInstance?.isActive('italic')"
                                 @click="editorInstance?.chain().focus().toggleItalic().run()">
-                                <FontAwesomeIcon :icon="faItalic" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faItalic" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('underline')" label="Underline"
                                 :is-active="editorInstance?.isActive('underline')"
                                 @click="editorInstance?.chain().focus().toggleUnderline().run()">
-                                <FontAwesomeIcon :icon="faUnderline" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faUnderline" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('strikethrough')" label="Strikethrough"
                                 :is-active="editorInstance?.isActive('strike')"
                                 @click="editorInstance?.chain().focus().toggleStrike().run()">
-                                <FontAwesomeIcon :icon="faStrikethrough" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faStrikethrough" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('color')" label="Text Color" :preserve-selection="false">
@@ -873,7 +873,7 @@ onMounted(async () => {
                                         <div class="flex h-5 w-5 cursor-pointer items-center justify-center rounded"
                                             :aria-label="ctrans('Text Color')"
                                             :style="{ color: editorInstance.getAttributes('textStyle').color || 'gray' }">
-                                            <FontAwesomeIcon :icon="faTint" class="text-sm" />
+                                            <FontAwesomeIcon :icon="faTint" class="text-sm" fixed-width />
                                         </div>
                                     </template>
                                 </EditorColorPicker>
@@ -886,7 +886,7 @@ onMounted(async () => {
                                         <div class="flex h-5 w-5 cursor-pointer items-center justify-center rounded"
                                             :aria-label="ctrans('Text highlight')"
                                             :style="{ backgroundColor: editorInstance?.getAttributes('highlight').color }">
-                                            <FontAwesomeIcon :icon="faPaintBrushAlt" class="text-sm" />
+                                            <FontAwesomeIcon :icon="faPaintBrushAlt" class="text-sm" fixed-width />
                                         </div>
                                     </template>
                                 </EditorColorPicker>
@@ -898,8 +898,8 @@ onMounted(async () => {
                             <TiptapToolbarDropdown :label="ctrans('Text alignment')" :menu-height="60"
                                 :is-active="!!activeAlignOption">
                                 <template #trigger>
-                                    <FontAwesomeIcon :icon="activeAlignOption?.icon ?? faAlignLeft" class="h-4 w-4" />
-                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" />
+                                    <FontAwesomeIcon :icon="activeAlignOption?.icon ?? faAlignLeft" class="h-4 w-4" fixed-width />
+                                    <FontAwesomeIcon :icon="faChevronDown" class="h-2.5 w-2.5 opacity-60" fixed-width />
                                 </template>
                                 <template #menu="{ close }">
                                     <div class="flex items-center gap-0.5 px-1">
@@ -911,7 +911,7 @@ onMounted(async () => {
                                                 ? 'bg-blue-100 text-blue-800'
                                                 : 'text-gray-600 hover:bg-blue-50'"
                                             @click="editorInstance?.chain().focus().setTextAlign(option.value).run(); close()">
-                                            <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" />
+                                            <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" fixed-width />
                                         </button>
                                     </div>
                                 </template>
@@ -923,19 +923,19 @@ onMounted(async () => {
                             class="px-1 first:pl-0">
                             <TiptapToolbarButton v-if="toggle.includes('link')" label="Link" @click="openLinkDialog"
                                 :is-active="editorInstance?.isActive('link')">
-                                <FontAwesomeIcon :icon="faLink" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faLink" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton v-if="toggle.includes('customLink')"
                                 label="Link Internal & External" @click="openLinkDialogCustom"
                                 :is-active="editorInstance?.isActive('link')">
-                                <FontAwesomeIcon :icon="faLink" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faLink" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
 
                             <TiptapToolbarButton label="Unlink"
                                 @click="editorInstance.chain().focus().unsetLink().run()"
                                 :disabled="!editorInstance?.isActive('link')">
-                                <FontAwesomeIcon :icon="faUnlink" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faUnlink" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
                         </TiptapToolbarGroup>
 
@@ -943,7 +943,7 @@ onMounted(async () => {
                         <TiptapToolbarGroup v-if="toggle.includes('clear')" class="px-1 first:pl-0">
                             <TiptapToolbarButton :label="ctrans('Clear formatting')"
                                 @click="editorInstance?.chain().focus().unsetAllMarks().run()">
-                                <FontAwesomeIcon :icon="faEraser" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faEraser" class="h-4 w-4" fixed-width />
                             </TiptapToolbarButton>
                         </TiptapToolbarGroup>
 
@@ -952,7 +952,7 @@ onMounted(async () => {
                             <TiptapToolbarDropdown :label="ctrans('More options')" align-menu="right"
                                 :menu-height="320">
                                 <template #trigger>
-                                    <FontAwesomeIcon :icon="faEllipsisH" class="h-4 w-4" />
+                                    <FontAwesomeIcon :icon="faEllipsisH" class="h-4 w-4" fixed-width />
                                 </template>
                                 <template #menu="{ close }">
                                     <div class="max-h-80 w-52 overflow-y-auto">
@@ -1017,7 +1017,7 @@ onMounted(async () => {
                             <button type="button" v-tooltip="ctrans('Close toolbar')"
                                 :aria-label="ctrans('Close toolbar')" @mousedown.prevent @click="closeBubble"
                                 class="inline-flex h-7 w-7 items-center justify-center rounded text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600">
-                                <FontAwesomeIcon :icon="faTimes" class="h-4 w-4" />
+                                <FontAwesomeIcon :icon="faTimes" class="h-4 w-4" fixed-width />
                             </button>
                         </div>
                     </section>

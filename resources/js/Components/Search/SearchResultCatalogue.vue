@@ -108,7 +108,7 @@ const collectionHref = (collection: { id: number }) => route('grp.majordomo.redi
                                 v-tooltip="searchBookmark?.isBookmarked(categoryHref(category)) ? ctrans('Remove bookmark') : ctrans('Add bookmark')"
                                 @click="searchBookmark?.toggleBookmark({ label: category.name, url: categoryHref(category) })"
                             >
-                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(categoryHref(category)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(categoryHref(category)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" fixed-width aria-hidden="true" />
                             </button>
                         </div>
                     </template>
@@ -146,7 +146,7 @@ const collectionHref = (collection: { id: number }) => route('grp.majordomo.redi
                                 v-tooltip="searchBookmark?.isBookmarked(collectionHref(collection)) ? ctrans('Remove bookmark') : ctrans('Add bookmark')"
                                 @click="searchBookmark?.toggleBookmark({ label: collection.name, url: collectionHref(collection) })"
                             >
-                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(collectionHref(collection)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(collectionHref(collection)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" fixed-width aria-hidden="true" />
                             </button>
                         </div>
                     </template>
@@ -202,7 +202,7 @@ const collectionHref = (collection: { id: number }) => route('grp.majordomo.redi
                                             class="text-[6px] shrink-0"
                                             :class="productStateColor[product.state] ?? 'text-gray-300'"
                                             v-tooltip="product.state"
-                                            aria-hidden="true"
+                                            fixed-width aria-hidden="true"
                                         />
                                         <span class="truncate">{{ product.code }}</span>
                                         <span
@@ -224,7 +224,7 @@ const collectionHref = (collection: { id: number }) => route('grp.majordomo.redi
                                 v-tooltip="searchBookmark?.isBookmarked(productHref(product)) ? ctrans('Remove bookmark') : ctrans('Add bookmark')"
                                 @click="searchBookmark?.toggleBookmark({ label: product.name, url: productHref(product) })"
                             >
-                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(productHref(product)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="searchBookmark?.isBookmarked(productHref(product)) ? 'fas fa-bookmark' : 'fal fa-bookmark'" fixed-width aria-hidden="true" />
                             </button>
                         </div>
                     </div>

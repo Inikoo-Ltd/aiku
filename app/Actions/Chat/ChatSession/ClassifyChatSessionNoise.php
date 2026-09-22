@@ -23,6 +23,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\HumanResources\Employee;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -52,6 +53,24 @@ class ClassifyChatSessionNoise
     public const string SOURCE_RULE = 'rule';
     public const string SOURCE_AI = 'ai';
 
+    /** How the mailbox software of each of our shop languages opens an out of office, without accents. */
+    private const array AUTO_REPLY_SUBJECTS = [
+        'automatic reply', 'auto reply', 'autoreply', 'auto-reply', 'out of office', 'out of the office',
+        'automatische antwort', 'automatisch antwoord', 'abwesenheitsnotiz',
+        'respuesta automatica', 'ausente de la oficina',
+        'resposta automatica',
+        'reponse automatique', 'absence du bureau',
+        'risposta automatica',
+        'automaticka odpoved', 'mimo kancelariu', 'mimo kancelar',
+        'automatyczna odpowiedz',
+        'raspuns automat',
+        'automatiska atbilde',
+        'automatiskt svar', 'franvarande',
+    ];
+
+    /** Addresses reserved by the mail standards for machines. Never a person with a question. */
+    private const array MACHINE_LOCAL_PARTS = ['postmaster', 'abuse', 'emailabuse', 'mailerdaemon'];
+
     public function handle(ChatSession|MetaChatSession $chatSession): ChatSession|MetaChatSession
     {
         if (!self::isCandidate($chatSession)) {
@@ -80,6 +99,12 @@ class ClassifyChatSessionNoise
             $overrulableLater = $rule['verdict'] === ChatNoiseVerdictEnum::SUPPLIER_CIRCULAR && $chatSession instanceof MetaChatSession;
 
             return $this->record($chatSession, $rule['verdict'], self::SOURCE_RULE, $overrulableLater ? null : 100, $rule['note'], true);
+        }
+
+        // The model is never told about somebody we know. Only a machine's own reply gets this far
+        // with a customer behind it, and the rules above have already settled that one.
+        if (self::isKnownCustomer($chatSession)) {
+            return $chatSession;
         }
 
         $answer = $this->askModel($chatSession, $text);
@@ -120,11 +145,49 @@ class ClassifyChatSessionNoise
 
     public static function isCandidate(ChatSession|MetaChatSession $chatSession): bool
     {
-        $knownCustomer = $chatSession instanceof ChatSession ? $chatSession->web_user_id : $chatSession->customer_id;
+        if (self::isKnownCustomer($chatSession) && !self::isAutoReplyEmail($chatSession)) {
+            return false;
+        }
 
-        return !$knownCustomer
-            && !$chatSession->last_agent_message_at
+        return !$chatSession->last_agent_message_at
             && (self::isProvisional($chatSession) || (!$chatSession->noise_checked_at && !$chatSession->is_spam && !$chatSession->is_rubbish));
+    }
+
+    private static function isKnownCustomer(ChatSession|MetaChatSession $chatSession): bool
+    {
+        return (bool) ($chatSession instanceof ChatSession ? $chatSession->web_user_id : $chatSession->customer_id);
+    }
+
+    /**
+     * A conversation that opens with an out of office is a machine answering our newsletter, so
+     * it is read whoever's mailbox it came from. A customer's own address is no reason to leave
+     * it in the queue: the customer is not the one writing, and there is nothing to answer.
+     *
+     * The wording is different in every language our shops write in, so the headers are tried
+     * first and the subject is only matched against the fixed openings of the mailbox software
+     * itself, never free text a person could have typed.
+     */
+    public static function isAutoReplyEmail(ChatSession|MetaChatSession $chatSession): bool
+    {
+        if (!$chatSession instanceof ChatSession || $chatSession->channel !== ChatChannelEnum::EMAIL) {
+            return false;
+        }
+
+        $firstMessage = $chatSession->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->oldest('id')->first();
+
+        if (data_get($firstMessage?->metadata, 'auto_reply')) {
+            return true;
+        }
+
+        $subject = Str::lower(Str::ascii(trim((string) data_get($chatSession->metadata, 'email_subject'))));
+
+        foreach (self::AUTO_REPLY_SUBJECTS as $opening) {
+            if (str_starts_with($subject, $opening)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -207,8 +270,14 @@ class ClassifyChatSessionNoise
         $firstMessage = $chatSession->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->oldest('id')->first();
         $headers      = (array) data_get($firstMessage?->metadata, 'email_headers', []);
 
-        if (data_get($firstMessage?->metadata, 'auto_reply') || preg_match('/^(automatic reply|auto(matic)?[- ]?reply|out of (the )?office)\b/i', trim($subject))) {
+        if (self::isAutoReplyEmail($chatSession)) {
             return ['verdict' => ChatNoiseVerdictEnum::OUT_OF_OFFICE, 'note' => 'Answers by itself'];
+        }
+
+        $localPart = str_replace(['-', '_', '.'], '', Str::lower((string) strstr((string) $from, '@', true)));
+
+        if (in_array($localPart, self::MACHINE_LOCAL_PARTS, true)) {
+            return ['verdict' => ChatNoiseVerdictEnum::AUTOMATED_NOTIFICATION, 'note' => 'Sent by a machine: '.$from];
         }
 
         if (ProcessInboundEmail::isAutomatedMail($from, $subject)) {

@@ -134,18 +134,18 @@ watch(
     <Modal :isOpen="isOpen" @onClose="close" width="w-full max-w-md">
         <div class="p-5 flex flex-col gap-4">
             <div class="flex items-center gap-2">
-                <FontAwesomeIcon :icon="faSlack" class="text-purple-600" />
+                <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width />
                 <h3 class="text-base font-semibold text-gray-800">
                     {{ mode === "session" ? trans("Share session to Slack") : trans("Forward message to Slack") }}
                 </h3>
             </div>
 
             <div v-if="isLoading" class="flex items-center justify-center py-8 text-gray-400">
-                <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-lg" />
+                <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-lg" fixed-width />
             </div>
 
             <div v-else-if="!isConfigured" class="flex flex-col items-center gap-3 py-6 text-center">
-                <FontAwesomeIcon :icon="faCircleInfo" class="text-2xl text-amber-500" />
+                <FontAwesomeIcon :icon="faCircleInfo" class="text-2xl text-amber-500" fixed-width />
                 <p class="text-sm text-gray-600">
                     {{ trans("Slack is not configured yet. Add a bot token and at least one channel or person first.") }}
                 </p>

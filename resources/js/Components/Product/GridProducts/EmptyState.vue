@@ -9,7 +9,7 @@
             <FontAwesomeIcon 
                 :icon="currentIcon" 
                 class="text-gray-300 text-6xl"
-                :aria-hidden="true"
+                fixed-width :aria-hidden="true"
             />
         </div>
         

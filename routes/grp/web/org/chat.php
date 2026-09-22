@@ -8,6 +8,7 @@ use App\Actions\Chat\ChatSession\UI\ShowChatConversations;
 use App\Actions\Chat\ChatSession\UI\ShowChatDashboard;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatConversation;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatInbox;
+use App\Actions\Chat\PhoneCall\UI\ShowOrgChatPhoneCalls;
 use App\Actions\Chat\UI\ShowChatSettings;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,7 @@ Route::get('/supervision', [ShowOrgChatInbox::class, 'supervision'])->name('supe
 Route::get('/supervision/{chatSession:ulid}', [ShowOrgChatInbox::class, 'supervisionInConversation'])
     ->name('supervision.conversation')
     ->withoutScopedBindings();
+Route::get('/phone-calls', ShowOrgChatPhoneCalls::class)->name('phone_calls.index');
 Route::get('/settings', ShowChatSettings::class)->name('settings');
 Route::get('/conversations', ShowChatConversations::class)->name('conversations.show');
 Route::get('/conversations/export', ExportChatConversations::class)->name('conversations.export');

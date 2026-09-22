@@ -76,14 +76,14 @@ const getViewportStyle = () => {
 			<!-- Browser Header -->
 			<div class="flex items-center bg-gray-100 px-3 py-1 space-x-2">
 				<div class="flex space-x-1">
-					<FontAwesomeIcon icon="fas fa-circle" class="text-red-400" />
-					<FontAwesomeIcon icon="fas fa-circle" class="text-yellow-400" />
-					<FontAwesomeIcon icon="fas fa-circle" class="text-green-400" />
+					<FontAwesomeIcon icon="fas fa-circle" class="text-red-400" fixed-width />
+					<FontAwesomeIcon icon="fas fa-circle" class="text-yellow-400" fixed-width />
+					<FontAwesomeIcon icon="fas fa-circle" class="text-green-400" fixed-width />
 				</div>
 				<div
 					class="flex items-center gap-x-2 border border-gray-300 rounded-full px-4 py-0.5 bg-white max-w-48 w-full">
 					<div class="flex items-center space-x-2 truncate min-w-0">
-						<FontAwesomeIcon :icon="tab?.icon || 'fab fa-chrome'" />
+						<FontAwesomeIcon :icon="tab?.icon || 'fab fa-chrome'" fixed-width />
 						<span class="truncate text-sm font-medium">{{
 							tab?.label || trans("New Tab")
 						}}</span>
@@ -92,7 +92,7 @@ const getViewportStyle = () => {
 						class="ml-auto cursor-pointer opacity-50 hover:opacity-100"
 						@click="() => keyIconTimes++">
 						<Transition name="spin-to-right">
-							<FontAwesomeIcon :key="keyIconTimes" icon="far fa-times" />
+							<FontAwesomeIcon :key="keyIconTimes" icon="far fa-times" fixed-width />
 						</Transition>
 					</div>
 				</div>
@@ -105,10 +105,10 @@ const getViewportStyle = () => {
 				<div class="flex items-center space-x-3 shrink-0">
 					<FontAwesomeIcon
 						icon="far fa-arrow-left"
-						class="text-gray-500 cursor-pointer" />
+						class="text-gray-500 cursor-pointer" fixed-width />
 					<FontAwesomeIcon
 						icon="far fa-arrow-right"
-						class="text-gray-500 cursor-pointer" />
+						class="text-gray-500 cursor-pointer" fixed-width />
 					<Transition name="spin-to-right">
 						<FontAwesomeIcon
 							v-if="!isLoadingRefreshPage"
@@ -128,7 +128,7 @@ const getViewportStyle = () => {
 				<!-- Search Bar -->
 				<div class="flex-1 min-w-0">
 					<div class="flex items-center bg-gray-100 px-4 py-1 rounded-full w-full">
-						<FontAwesomeIcon icon="fal fa-globe" class="text-xs shrink-0" />
+						<FontAwesomeIcon icon="fal fa-globe" class="text-xs shrink-0" fixed-width />
 						<span class="truncate text-sm ml-2 text-gray-700">
 							<template v-if="url?.page && url.page.includes('http')">
 								{{ url.page }}
@@ -141,14 +141,14 @@ const getViewportStyle = () => {
 						<FontAwesomeIcon
 							:icon="isStar ? 'fas fa-star' : 'fal fa-star'"
 							class="ml-auto text-yellow-500 cursor-pointer"
-							@click="isStar = !isStar" />
+							@click="isStar = !isStar" fixed-width />
 					</div>
 				</div>
 
 				<!-- Menu Controls -->
 				<div class="flex items-center space-x-2 shrink-0">
-					<FontAwesomeIcon icon="fas fa-puzzle-piece" />
-					<FontAwesomeIcon icon="fal fa-ellipsis-v" />
+					<FontAwesomeIcon icon="fas fa-puzzle-piece" fixed-width />
+					<FontAwesomeIcon icon="fal fa-ellipsis-v" fixed-width />
 				</div>
 			</div>
 

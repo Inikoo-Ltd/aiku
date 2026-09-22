@@ -12,12 +12,18 @@ use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
+use App\Actions\Ordering\Order\SaveOrderModification;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
+use App\Actions\Ordering\Order\StoreFollowUpOrder;
 use App\Actions\Helpers\Address\GetFormattedAddress;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use App\Models\Ordering\Order;
 
 class GetChatCustomerProfile
@@ -65,13 +71,18 @@ class GetChatCustomerProfile
     }
 
     /**
-     * @return array{company_name: ?string, phone: ?string, location: ?array{0: ?string, 1: ?string, 2: ?string}, address: ?string, last_orders: array<int, array{reference: string, date: ?string, state: string, total: string, url: ?string}>}
+     * @return array{company_name: ?string, phone: ?string, location: ?array{0: ?string, 1: ?string, 2: ?string}, address: ?string, last_orders: array<int, array{reference: string, date: ?string, state: string, total: string, url: ?string, add_items: ?array{products: array, save: array}, follow_up: ?array, payment_link: ?array}>}
      */
     public function contactAndLastOrders(Customer $customer): array
     {
         $stateLabels  = OrderStateEnum::labels();
         $organisation = $customer->organisation;
         $shop         = $customer->shop;
+        $canEditOrders = $shop && (bool)request()->user()?->authTo(["orders.{$shop->id}.edit"]);
+        $takesPaymentLinks = $canEditOrders && $shop->paymentAccountShops()
+            ->where('state', PaymentAccountShopStateEnum::ACTIVE)
+            ->where('type', PaymentAccountTypeEnum::CHECKOUT)
+            ->exists();
         $location     = is_string($customer->location) ? json_decode($customer->location, true) : $customer->location;
 
         return [
@@ -83,7 +94,9 @@ class GetChatCustomerProfile
                 ->where('state', '!=', OrderStateEnum::CREATING)
                 ->latest('date')
                 ->limit(5)
-                ->get(['id', 'slug', 'reference', 'date', 'state', 'total_amount'])
+                ->with('platform')
+                ->get()
+                ->each->setRelation('shop', $shop)
                 ->map(fn (Order $order) => [
                     'reference' => $order->reference,
                     'date'      => $order->date?->toIso8601String(),
@@ -92,8 +105,56 @@ class GetChatCustomerProfile
                     'url'       => $organisation && $shop
                         ? route('grp.org.shops.show.crm.customers.show.orders.show', [$organisation->slug, $shop->slug, $customer->slug, $order->slug])
                         : null,
+                    'add_items' => $canEditOrders && SaveOrderModification::acceptsNewProducts($order)
+                        ? [
+                            'products' => ['name' => 'grp.json.order.products_for_modify', 'parameters' => ['order' => $order->id]],
+                            'save'     => ['name' => 'grp.models.order.modification.save', 'parameters' => ['order' => $order->id]],
+                        ]
+                        : null,
+                    'follow_up' => $canEditOrders && StoreFollowUpOrder::offersFollowUp($order)
+                        ? ['name' => 'grp.models.order.follow_up.store', 'parameters' => ['order' => $order->id]]
+                        : null,
+                    'payment_link' => $takesPaymentLinks && $order->state != OrderStateEnum::CANCELLED && StoreOrderPaymentLink::amountDue($order) > 0
+                        ? ['name' => 'grp.models.order.payment_link.store', 'parameters' => ['order' => $order->id]]
+                        : null,
                 ])->all(),
         ];
+    }
+
+    /**
+     * Every conversation this customer has had with us over the last year on every channel,
+     * newest first, leaving out the one being looked at. WhatsApp lives in its own table, so
+     * the two are read separately and merged. Identity is the customer's own web users and
+     * customer id: an email address a guest typed into the widget is unverified and never
+     * matched on, because the failure mode is showing one person another person's letters.
+     *
+     * @return Collection<int, ChatSession|MetaChatSession>
+     */
+    public function conversationsWith(Customer $customer, ChatSession|MetaChatSession $current): Collection
+    {
+        $columns = ['id', 'ulid', 'topic', 'status', 'metadata', 'created_at', 'closed_at', 'last_visitor_message_at', 'last_agent_message_at'];
+
+        return ChatSession::query()
+            ->whereIn('web_user_id', $customer->webUsers()->select('id'))
+            ->where('is_rubbish', false)
+            ->where('is_spam', false)
+            ->where('created_at', '>=', now()->subYear())
+            ->get([...$columns, 'channel'])
+            ->concat(
+                MetaChatSession::query()
+                    ->where('customer_id', $customer->id)
+                    ->where('is_spam', false)
+                    ->where('created_at', '>=', now()->subYear())
+                    ->get($columns)
+            )
+            ->reject(fn (ChatSession|MetaChatSession $chatSession) => $chatSession->is($current))
+            ->sortByDesc('created_at')
+            ->values();
+    }
+
+    public static function channelOf(ChatSession|MetaChatSession $chatSession): string
+    {
+        return $chatSession instanceof MetaChatSession ? 'whatsapp' : ($chatSession->channel?->value ?? 'website');
     }
 
     /**
@@ -106,25 +167,8 @@ class GetChatCustomerProfile
      */
     public function previousContact(Customer $customer, ChatSession|MetaChatSession $current): array
     {
-        $columns = ['id', 'ulid', 'topic', 'metadata', 'created_at'];
-
-        $chatSessions = ChatSession::query()
-            ->whereIn('web_user_id', $customer->webUsers()->select('id'))
-            ->where('is_rubbish', false)
-            ->where('is_spam', false)
-            ->whereNotNull('topic')
-            ->where('created_at', '>=', now()->subYear())
-            ->get([...$columns, 'channel'])
-            ->concat(
-                MetaChatSession::query()
-                    ->where('customer_id', $customer->id)
-                    ->where('is_spam', false)
-                    ->whereNotNull('topic')
-                    ->where('created_at', '>=', now()->subYear())
-                    ->get($columns)
-            )
-            ->reject(fn (ChatSession|MetaChatSession $chatSession) => $chatSession->is($current))
-            ->sortByDesc('created_at')
+        $chatSessions = $this->conversationsWith($customer, $current)
+            ->filter(fn (ChatSession|MetaChatSession $chatSession) => $chatSession->topic !== null)
             ->values();
 
         $topicLabels = ChatTopicEnum::labels();
@@ -132,7 +176,7 @@ class GetChatCustomerProfile
         return [
             'previous_chats' => $chatSessions->take(3)->map(fn (ChatSession|MetaChatSession $chatSession) => [
                 'ulid'    => $chatSession->ulid,
-                'channel' => $chatSession instanceof MetaChatSession ? 'whatsapp' : ($chatSession->channel?->value ?? 'website'),
+                'channel' => self::channelOf($chatSession),
                 'date'    => $chatSession->created_at?->toIso8601String(),
                 'topic'   => $topicLabels[$chatSession->topic] ?? null,
                 'summary' => Arr::get($chatSession->metadata ?? [], 'ai_summary.summary'),

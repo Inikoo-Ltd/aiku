@@ -247,7 +247,7 @@ const toggleFavorite = (product: Product) => {
 
             <!-- Placeholder when no image -->
             <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
-                <FontAwesomeIcon icon="fal fa-image" class="text-gray-400 text-3xl" :aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-image" class="text-gray-400 text-3xl" fixed-width :aria-hidden="true" />
                 <span class="sr-only">{{ trans('No image available') }}</span>
             </div>
         </div>

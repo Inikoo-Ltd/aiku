@@ -84,7 +84,7 @@ const pagePath = (url: string) => {
                             :class="customerUrl(searcher) ? 'hover:bg-slate-50 cursor-pointer' : ''"
                         >
                             <span class="text-gray-600 truncate min-w-0" :class="customerUrl(searcher) ? 'hover:underline' : ''">{{ searcher.username }}</span>
-                            <span class="shrink-0 tabular-nums font-medium">{{ searcher.searches }}<span class="text-gray-400 font-normal"> / {{ searcher.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' aria-hidden='true' /></span></span>
+                            <span class="shrink-0 tabular-nums font-medium">{{ searcher.searches }}<span class="text-gray-400 font-normal"> / {{ searcher.clicks }} <FontAwesomeIcon icon='fal fa-mouse-pointer' fixed-width aria-hidden='true' /></span></span>
                         </component>
                         <p v-if="!insights.top_searchers?.length" class="py-1 text-gray-400">{{ ctrans("No data yet") }}</p>
                     </div>

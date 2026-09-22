@@ -169,7 +169,7 @@ const submit = () => {
 
         <div class="space-y-2">
             <label class="font-medium flex items-center gap-x-1 text-sm text-gray-700">
-                <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                 {{ trans("Select product") }}
             </label>
 
@@ -215,7 +215,7 @@ const submit = () => {
             <div v-if="productId" class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                 <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-white ring-1 ring-gray-200 flex items-center justify-center">
                     <Image v-if="productImage" :src="productImage" alt="Product image" imageCover />
-                    <FontAwesomeIcon v-else icon="fal fa-cubes" class="text-gray-300 text-lg" />
+                    <FontAwesomeIcon v-else icon="fal fa-cubes" class="text-gray-300 text-lg" fixed-width />
                 </div>
                 <div class="min-w-0">
                     <div class="text-sm font-semibold text-gray-800 truncate">{{ productCode }}</div>
@@ -226,7 +226,7 @@ const submit = () => {
 
         <div class="space-y-2">
             <label for="upcoming_quantity" class="font-medium flex items-center gap-x-1 text-sm text-gray-700">
-                <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                 {{ trans("Quantity") }}
             </label>
 
@@ -279,7 +279,7 @@ const submit = () => {
 
         <div class="space-y-2">
             <div class="font-medium flex items-center gap-x-1 text-sm text-gray-700">
-                <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                 {{ trans("Transaction type") }}
             </div>
 
@@ -299,7 +299,7 @@ const submit = () => {
                     />
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                            <FontAwesomeIcon :icon="option.icon" :class="option.iconClass" />
+                            <FontAwesomeIcon :icon="option.icon" :class="option.iconClass" fixed-width />
                             <span>{{ trans(option.label) }}</span>
                         </div>
                         <p class="mt-1 text-xs font-normal text-gray-500">{{ trans(option.description) }}</p>

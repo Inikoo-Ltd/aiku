@@ -733,7 +733,7 @@ watch(
                                 @click="handleBack"
                                 class="flex items-center gap-2 text-gray-600 hover:text-black"
                             >
-                                <FontAwesomeIcon icon="fal fa-arrow-left" />
+                                <FontAwesomeIcon icon="fal fa-arrow-left" fixed-width />
                                 <span class="text-sm">Back</span>
                             </button>
 
@@ -761,7 +761,7 @@ watch(
                             @click="handleClose"
                             class="shrink-0 text-gray-500 hover:text-red-500"
                         >
-                            <FontAwesomeIcon icon="fal fa-times" class="text-lg" />
+                            <FontAwesomeIcon icon="fal fa-times" class="text-lg" fixed-width />
                         </button>
 
                     </div>
@@ -850,7 +850,7 @@ watch(
                                 <button
                                     class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-100 md:opacity-0 md:group-hover:opacity-100"
                                     @click="removeMedia(img)">
-                                    <FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" />
+                                    <FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" fixed-width />
                                 </button>
                             </div>
                         </div>
@@ -993,7 +993,7 @@ watch(
                                     :icon="message.data?.type === 'danger'
                                         ? 'fas fa-exclamation-triangle'
                                         : 'fas fa-question-circle'"
-                                    class="text-3xl text-red-500"
+                                    class="text-3xl text-red-500" fixed-width
                                 />
                             </div>
 

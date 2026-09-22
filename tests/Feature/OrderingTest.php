@@ -31,6 +31,7 @@ use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
+use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
@@ -52,6 +53,7 @@ use App\Actions\Ordering\Adjustment\UpdateAdjustment;
 use App\Actions\Billables\Charge\DeleteCharge;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Ordering\Order\CalculateOrderHangingCharges;
+use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\HydrateOrders;
@@ -108,6 +110,7 @@ use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
@@ -145,6 +148,7 @@ use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Helpers\Country;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
@@ -165,6 +169,7 @@ use App\Models\Dropshipping\PlatformSalesChannelTimeSeriesRecord;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
+use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Ordering\ShippingCountry;
 use App\Models\Ordering\Transaction;
@@ -369,6 +374,30 @@ test('get order products', function (Order $order) {
     return $order;
 })->depends('create order');
 
+
+test('order products picker offers not for sale products to partners only', function (Order $order) {
+    $this->product->update(['is_for_sale' => false]);
+
+    $offered = fn () => collect(GetOrderProducts::make()->handle($order)->items())->pluck('id')
+        ->merge(collect(GetOrderProductsForModification::make()->handle($order)->items())->pluck('id'));
+
+    expect($offered())->not->toContain($this->product->id);
+
+    $orgPartner = OrgPartner::create([
+        'group_id'        => $order->group_id,
+        'organisation_id' => $order->organisation_id,
+        'partner_id'      => $order->organisation_id,
+        'customer_id'     => $order->customer_id,
+    ]);
+
+    expect($order->isPartnerOrder())->toBeTrue()
+        ->and($offered())->toContain($this->product->id);
+
+    $orgPartner->delete();
+    $this->product->update(['is_for_sale' => true]);
+
+    return $order;
+})->depends('create order');
 
 test('delete previous transaction', function (Order $order) {
     $transaction = $order->transactions()->first();
@@ -586,6 +615,34 @@ test('small order charge configured through the UI applies to an order', functio
         ->and((int) $chargeTransactions()->first()->gross_amount)->toBe(255);
 
     $order->goods_amount = 3000;
+    CalculateOrderHangingCharges::run($order);
+
+    expect($chargeTransactions()->count())->toBe(0);
+})->depends('create order');
+
+test('removing the small order charge keeps it off the order', function (Order $order) {
+    $charge = $order->shop->charges()
+        ->where('type', ChargeTypeEnum::HANGING)
+        ->where('state', ChargeStateEnum::ACTIVE)
+        ->firstOrFail();
+
+    $order->update(['charges_engine' => OrderChargesEngineEnum::AUTO]);
+    $order->goods_amount = 1000;
+    CalculateOrderHangingCharges::run($order);
+
+    $chargeTransactions = fn () => $order->transactions()
+        ->where('model_type', 'Charge')
+        ->where('model_id', $charge->id);
+
+    expect($chargeTransactions()->count())->toBe(1);
+
+    DeleteTransaction::make()->action($chargeTransactions()->first());
+
+    $order->refresh();
+    expect($order->charges_engine)->toBe(OrderChargesEngineEnum::MANUAL)
+        ->and($chargeTransactions()->count())->toBe(0);
+
+    $order->goods_amount = 1000;
     CalculateOrderHangingCharges::run($order);
 
     expect($chargeTransactions()->count())->toBe(0);
@@ -4207,4 +4264,88 @@ test('discontinued products are removed from baskets only when run live, submitt
         ->and(Transaction::find($keptLine->id))->not->toBeNull()
         ->and(Transaction::find($submittedLine->id))->not->toBeNull()
         ->and(RemoveDiscontinuedProductsFromBaskets::run($this->shop, false))->toBe(0);
+});
+
+test('a packed order shipped by us offers the invoice button once the packer recorded parcels', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    /** These tests are about the invoice button, not shipping: the zones earlier tests in this file create are random */
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $order->refresh()->update(['state' => OrderStateEnum::PACKED, 'is_shipping_by_external' => false]);
+
+    $hasInvoice = fn (Order $order) => collect(\App\Actions\Ordering\Order\UI\GetEcomOrderActions::run($order, true))
+        ->contains(fn ($action) => ($action['key'] ?? null) === 'action');
+
+    expect($hasInvoice($order->fresh()))->toBeFalse();
+
+    $deliveryNote->update(['parcels' => [['weight' => 11.01, 'dimensions' => [39, 39, 57]]]]);
+
+    expect($hasInvoice($order->fresh()))->toBeTrue();
+
+    /** Export orders are invoiced before the carrier label exists: the note waits packed, then finalises without invoicing twice */
+    $order = FinaliseOrder::make()->action($order->fresh());
+    expect($order->state)->toBe(OrderStateEnum::FINALISED)
+        ->and($deliveryNote->fresh()->state)->not->toBe(DeliveryNoteStateEnum::FINALISED);
+
+    $shipper = StoreShipper::make()->action($order->organisation, ['code' => 'exp3220', 'name' => 'exp3220', 'trade_as' => 'exp3220']);
+    StoreShipment::make()->action($deliveryNote->fresh(), $shipper, ['reference' => 'exp3220', 'tracking' => 'exp3220']);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->fresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::FINALISED)
+        ->and($order->invoices()->count())->toBe(1);
+});
+
+test('the shop orders list flags a partner order and the channel filter separates it from direct ones', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    /** The orders index only lists open shops, the fixture shop is still in process */
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $intercompany = SalesChannel::where('group_id', $this->group->id)->where('code', 'intercompany')->first()
+        ?? StoreSalesChannel::make()->action($this->group, [
+            'code' => 'intercompany',
+            'name' => 'Intercompany',
+            'type' => SalesChannelTypeEnum::OTHER,
+        ]);
+
+    $partnerOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        [...Order::factory()->definition(), 'sales_channel_id' => $intercompany->id]
+    );
+    $directOrder = StoreOrder::make()->action(
+        freshCustomerLike($this->shop, $this->customer),
+        Order::factory()->definition()
+    );
+
+    $url = route('grp.org.shops.show.ordering.orders.index', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ]);
+
+    $flagsIn = function (string $query) use ($url) {
+        $response = get($url.$query);
+        $response->assertOk();
+
+        return collect($response->viewData('page')['props']['data']['data'])
+            ->pluck('is_intercompany', 'reference');
+    };
+
+    $unfiltered = $flagsIn('');
+    expect($unfiltered->get($partnerOrder->reference))->toBeTrue()
+        ->and($unfiltered->get($directOrder->reference))->toBeFalse();
+
+    $partnerOnly = $flagsIn('?orders_elements[channel]=partner');
+    expect($partnerOnly->get($partnerOrder->reference))->toBeTrue()
+        ->and($partnerOnly->has($directOrder->reference))->toBeFalse();
+
+    $directOnly = $flagsIn('?orders_elements[channel]=direct');
+    expect($directOnly->get($directOrder->reference))->toBeFalse()
+        ->and($directOnly->has($partnerOrder->reference))->toBeFalse();
 });

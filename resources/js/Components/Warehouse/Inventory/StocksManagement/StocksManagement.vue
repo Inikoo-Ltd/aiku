@@ -520,7 +520,7 @@ const onAddLocationShow = () => {
                 </h2>
             </span>
             <div v-if="data.is_quantity_excess" v-tooltip="ctrans('Excess stock')" class="text-gray-500 hover:text-gray-700">
-                <FontAwesomeIcon :icon="faPlusCircle" class="text-xl"></FontAwesomeIcon>
+                <FontAwesomeIcon :icon="faPlusCircle" class="text-xl" fixed-width></FontAwesomeIcon>
             </div>
         </div>
 

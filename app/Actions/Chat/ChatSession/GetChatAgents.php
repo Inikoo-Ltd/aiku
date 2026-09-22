@@ -28,7 +28,7 @@ class GetChatAgents
      */
     public function handle(): array
     {
-        $agents = ChatAgent::with('user')->get()
+        $agents = ChatAgent::with(['user', 'activePhoneCall'])->get()
             ->filter(fn (ChatAgent $agent) => $agent->user && $agent->user->status);
 
         $shopsByUser = $this->shopsByUser($agents->pluck('user_id')->all());

@@ -166,16 +166,32 @@ const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.
 const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
 const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting", "pending_deploy"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
 
-const qaPopover = ref()
+// Asking for a check is a question, and a question with nothing said about what changed makes
+// QA guess. The note is optional, since sometimes the ticket already says it.
+const isQaRequestOpen = ref(false)
+const qaRequestNote = ref("")
+const qaRequestUserId = ref<number | null>(null)
 
-const askQa = (qaUserId: number | null) => {
-    qaPopover.value?.hide()
-    router.patch(route(props.routes.update.name, props.routes.update.parameters), { qa_status: "requested", qa_user_id: qaUserId }, {
-        preserveScroll: true,
-        onStart: () => (pendingAction.value = "qa:request"),
-        onFinish: () => (pendingAction.value = null),
-        onSuccess: () => emit("updated"),
-    })
+const openQaRequest = () => {
+    qaRequestNote.value = ""
+    qaRequestUserId.value = null
+    isQaRequestOpen.value = true
+}
+
+const askQa = () => {
+    router.patch(
+        route(props.routes.update.name, props.routes.update.parameters),
+        { qa_status: "requested", qa_user_id: qaRequestUserId.value, qa_note: qaRequestNote.value.trim() },
+        {
+            preserveScroll: true,
+            onStart: () => (pendingAction.value = "qa:request"),
+            onFinish: () => (pendingAction.value = null),
+            onSuccess: () => {
+                isQaRequestOpen.value = false
+                emit("updated")
+            },
+        }
+    )
 }
 
 const collaboratorPopover = ref()
@@ -344,23 +360,7 @@ const update = (field: string, value: unknown, action: string = field) => {
                             <button v-tooltip="trans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
                             <button v-tooltip="trans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
                         </template>
-                        <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="qaPopover.toggle($event)"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
-                        <Popover v-if="canAskQa" ref="qaPopover">
-                            <div class="flex w-60 flex-col text-sm">
-                                <button type="button" class="mb-1 rounded bg-amber-50 p-2 text-left font-medium text-amber-700 transition duration-200 hover:bg-amber-100 active:!bg-amber-200" @click="askQa(null)">
-                                    {{ trans("Anyone in QA") }}
-                                </button>
-                                <button
-                                    v-for="qaUser in options.qa_users ?? []"
-                                    :key="qaUser.value"
-                                    type="button"
-                                    class="flex items-center gap-2 rounded p-2 text-left transition duration-200 hover:bg-gray-100 active:!bg-gray-200"
-                                    @click="askQa(qaUser.value)">
-                                    <TicketUserAvatar :name="qaUser.label" :avatar="qaUser.avatar" size="sm" />
-                                    <span class="truncate">{{ qaUser.label }}</span>
-                                </button>
-                            </div>
-                        </Popover>
+                        <button v-if="canAskQa" v-tooltip="ticket.qa_status ? trans('Ask QA to check again') : trans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
                         <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
                 </div>
                 </div>
@@ -443,7 +443,7 @@ const update = (field: string, value: unknown, action: string = field) => {
             <p v-if="can_update && ticket.type === 'customer'" class="flex items-start gap-x-1.5 rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
                 <span>{{ trans("Mention the developers if it's a bug that needs to be fixed ASAP") }}</span>
                 <FontAwesomeIcon v-if="developers.length" icon="fal fa-question-circle" v-tooltip="developersTooltip"
-                    class="mt-0.5 shrink-0 text-amber-500" />
+                    class="mt-0.5 shrink-0 text-amber-500" fixed-width />
             </p>
             <label v-if="can_flag_confidential && !hideConfidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('is_confidential', ($event.target as HTMLInputElement).checked, 'confidential')" />
@@ -451,6 +451,40 @@ const update = (field: string, value: unknown, action: string = field) => {
                 <FontAwesomeIcon v-if="isPending('confidential')" :icon="'fal fa-spinner'" spin fixed-width class="text-gray-400" />
             </label>
             </template>
+    <Dialog v-model:visible="isQaRequestOpen" modal :header="trans('Ask QA to check')" :style="{ width: '32rem' }">
+        <div class="space-y-4 text-sm">
+            <div>
+                <p class="mb-1 text-xs text-gray-500">{{ trans("What should they look at?") }} <span class="text-gray-400">{{ trans("(optional)") }}</span></p>
+                <textarea v-model="qaRequestNote" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="trans('e.g. rounding on the invoice totals, worth trying a voucher order too')" />
+                <p class="mt-1 text-xs text-gray-400">{{ trans("Posted as a comment on the ticket.") }}</p>
+            </div>
+
+            <div>
+                <p class="mb-1 text-xs text-gray-500">{{ trans("Who should check it?") }}</p>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button"
+                        class="rounded-md border px-2.5 py-1.5 text-sm transition duration-200"
+                        :class="qaRequestUserId === null ? 'border-amber-300 bg-amber-50 font-medium text-amber-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                        @click="qaRequestUserId = null">
+                        {{ trans("Anyone in QA") }}
+                    </button>
+                    <button v-for="qaUser in options.qa_users ?? []" :key="qaUser.value" type="button"
+                        class="flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition duration-200"
+                        :class="qaRequestUserId === qaUser.value ? 'border-amber-300 bg-amber-50 font-medium text-amber-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+                        @click="qaRequestUserId = qaUser.value">
+                        <TicketUserAvatar :name="qaUser.label" :avatar="qaUser.avatar" size="sm" />
+                        <span class="truncate">{{ qaUser.label }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <Button type="tertiary" :label="trans('Cancel')" @click="isQaRequestOpen = false" />
+                <Button :label="trans('Ask QA')" icon="fal fa-vial" :loading="isPending('qa:request')" @click="askQa" />
+            </div>
+        </div>
+    </Dialog>
+
     <Dialog v-model:visible="isQaVerdictOpen" modal :header="qaVerdict === 'passed' ? trans('QA passed') : trans('QA failed')" :style="{ width: '32rem' }">
         <div class="space-y-4 text-sm">
             <div>
@@ -469,6 +503,7 @@ const update = (field: string, value: unknown, action: string = field) => {
         :status="statusNoteAction"
         :update-route="routes.update"
         :can-wait-for-deployment="can_update && ticket.status !== 'pending_deploy'"
+        :closes-conversation="ticket.closes_source"
         @updated="emit('updated')" />
     </div>
 </template>

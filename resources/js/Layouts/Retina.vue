@@ -11,7 +11,7 @@ import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
 import { faPlug, faStoreAltSlash, faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSnooze, faSkull } from '@fal'
-import { onBeforeMount, onMounted, provide, ref, watch } from 'vue'
+import { defineAsyncComponent, onBeforeMount, onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
@@ -20,8 +20,6 @@ import { notify } from "@kyvg/vue3-notification"
 import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
-
-import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle, faCheckCircle as falCheckCircle, faHeart, faSparkles, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote, faInboxIn, faAppleCrate, faGift, faMedal, faExternalLinkAlt } from "@fal"
@@ -35,7 +33,7 @@ import { faSearch, faBell, faPlus, faLayerGroup } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal, faSave as fadSave } from '@fad'
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
-import ChatButton from '@/Components/Chat/Customer/ChatButton.vue'
+const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
 import { pushServerGtmEvent, pushServerGtmEventOnce } from "@/Composables/useGtm"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
@@ -74,8 +72,9 @@ const defaults = {
     zIndex: 100,
 };
 
-const shootConfetti = () => {
-    // console.log('1x')
+type ConfettiFn = typeof import('@tsparticles/confetti')['confetti']
+
+const shootConfetti = (confetti: ConfettiFn) => {
     confetti('retina-confetti', {
         ...defaults,
         particleCount: 40,
@@ -91,12 +90,14 @@ const shootConfetti = () => {
     });
 }
 
-const shootMultipleConfetti = () => {
+const shootMultipleConfetti = async () => {
+    const { confetti } = await import('@tsparticles/confetti')
+
     setTimeout(() => {
-        setTimeout(() => shootConfetti(), 0)
-        setTimeout(() => shootConfetti(), 100)
-        setTimeout(() => shootConfetti(), 200)
-        setTimeout(() => shootConfetti(), 300)
+        setTimeout(() => shootConfetti(confetti), 0)
+        setTimeout(() => shootConfetti(confetti), 100)
+        setTimeout(() => shootConfetti(confetti), 200)
+        setTimeout(() => shootConfetti(confetti), 300)
     }, 500);
 }
 
@@ -327,7 +328,7 @@ useAppAccentVariables(() => safeTheme.value)
                     >
                         <FontAwesomeIcon v-if="selectedModal?.status == 'error' || selectedModal?.status == 'failure'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
 

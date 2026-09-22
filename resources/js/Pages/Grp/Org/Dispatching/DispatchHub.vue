@@ -215,16 +215,16 @@ const trolleyRoute = (trolley: { slug: string }) =>
                             </span>
                             <InputNumber v-model="stagingQuantity[stagingKey(task)]" :min="0" :maxFractionDigits="3" showButtons buttonLayout="horizontal" inputClass="w-16 text-center" class="mr-2">
                                 <template #incrementbuttonicon>
-                                    <FontAwesomeIcon :icon="faPlus" />
+                                    <FontAwesomeIcon :icon="faPlus" fixed-width />
                                 </template>
                                 <template #decrementbuttonicon>
-                                    <FontAwesomeIcon :icon="faMinus" />
+                                    <FontAwesomeIcon :icon="faMinus" fixed-width />
                                 </template>
                             </InputNumber>
                         </template>
                         <button v-if="can_edit && task.from_locations.length" type="button" class="relative rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-80" :disabled="stagingInProgress !== null" @click="stage(task)">
                             <span :class="{ invisible: stagingInProgress === stagingKey(task) }">{{ trans("Set as Moved") }}</span>
-                            <FontAwesomeIcon v-if="stagingInProgress === stagingKey(task)" :icon="faSpinnerThird" spin class="absolute inset-0 m-auto" />
+                            <FontAwesomeIcon v-if="stagingInProgress === stagingKey(task)" :icon="faSpinnerThird" spin class="absolute inset-0 m-auto" fixed-width />
                         </button>
                         <button v-if="can_edit && task.org_stock_id" type="button" class="ml-2 rounded border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-80 dark:border-gray-600 dark:text-gray-200" :disabled="stagingInProgress !== null" @click="release(task)">
                             {{ trans("Back to production") }}
@@ -247,18 +247,18 @@ const trolleyRoute = (trolley: { slug: string }) =>
                 <div v-for="destination in item.destinations" :key="destinationKey(item, destination)" class="flex items-center justify-between gap-x-6 py-0.5">
                     <div>
                         <div v-if="destination.type === 'partner'" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="trans('Goods out bay of partner :partner', { partner: destination.label })">
-                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-hands-helping" class="text-indigo-500" aria-hidden="true" /></span>
+                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-hands-helping" class="text-indigo-500" fixed-width aria-hidden="true" /></span>
                             {{ putAwayLocation[destinationKey(item, destination)] }}
                         </div>
                         <div v-else-if="destination.locations.length === 1" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="trans('The only location of this stock')">
-                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" aria-hidden="true" /></span>
+                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" /></span>
                             {{ putAwayLocation[destinationKey(item, destination)] }}
                         </div>
                         <div v-else-if="destination.locations.length > 1" class="relative w-fit">
                             <Popover position="left-0" width="w-64">
                                 <template #button>
                                     <div class="flex items-center gap-x-2 font-mono text-base hover:text-indigo-700" v-tooltip="trans('This stock has :count locations, choose one', { count: String(destination.locations.length) })">
-                                        <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-chevron-down" class="text-gray-400" aria-hidden="true" /></span>
+                                        <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-chevron-down" class="text-gray-400" fixed-width aria-hidden="true" /></span>
                                         {{ putAwayLocation[destinationKey(item, destination)] }}
                                     </div>
                                 </template>

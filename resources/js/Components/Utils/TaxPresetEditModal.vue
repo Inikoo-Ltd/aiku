@@ -100,13 +100,13 @@ const progressPct = computed(() =>
                     v-if="fromPreset"
                     class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500"
                     v-tooltip="fromPreset">
-                    <FontAwesomeIcon :icon="taxPresetIcon(fromPreset)" class="h-4 w-4" />
+                    <FontAwesomeIcon :icon="taxPresetIcon(fromPreset)" class="h-4 w-4" fixed-width />
                 </span>
-                <FontAwesomeIcon :icon="faArrowRight" class="h-3.5 w-3.5 text-gray-400" />
+                <FontAwesomeIcon :icon="faArrowRight" class="h-3.5 w-3.5 text-gray-400" fixed-width />
                 <span
                     class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600"
                     v-tooltip="toPreset">
-                    <FontAwesomeIcon :icon="taxPresetIcon(toPreset)" class="h-4 w-4" />
+                    <FontAwesomeIcon :icon="taxPresetIcon(toPreset)" class="h-4 w-4" fixed-width />
                 </span>
             </div>
 

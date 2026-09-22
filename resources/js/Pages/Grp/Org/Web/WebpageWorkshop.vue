@@ -971,7 +971,7 @@ console.log('props_workshop',props)
 
     <template #other>
       <div class="px-2 cursor-pointer" v-tooltip="trans('Go to website')" @click="openWebsite">
-        <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
+        <FontAwesomeIcon :icon="faExternalLink" size="xl" fixed-width aria-hidden="true" />
       </div>
     </template>
   </PageHeading>
@@ -979,7 +979,7 @@ console.log('props_workshop',props)
 
   <ConfirmDialog group="alert-publish">
     <template #icon>
-      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" />
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" fixed-width />
     </template>
   </ConfirmDialog>
 
@@ -1032,7 +1032,7 @@ console.log('props_workshop',props)
                bg-white text-slate-500 hover:text-slate-900 rounded-r-md
                shadow-md hover:shadow-lg transition-all duration-200 ease-in-out
                border border-l-0 border-slate-200 hover:border-slate-300">
-        <FontAwesomeIcon :icon="!isSidebarCollapsed ? faChevronLeft : faChevronRight" class="text-xs" />
+        <FontAwesomeIcon :icon="!isSidebarCollapsed ? faChevronLeft : faChevronRight" class="text-xs" fixed-width />
       </button>
     </div>
 

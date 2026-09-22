@@ -1986,7 +1986,7 @@ const layout = inject("layout", layoutStructure)
 								<FontAwesomeIcon
 									icon="fas fa-spinner"
 									class="animate-spin"
-									aria-hidden="true" />
+									fixed-width aria-hidden="true" />
 								<span>{{ trans("Preparing...") }}</span>
 							</div>
 						</div>
@@ -2112,7 +2112,7 @@ const layout = inject("layout", layoutStructure)
 								<FontAwesomeIcon
 									icon="fas fa-spinner"
 									class="animate-spin"
-									aria-hidden="true" />
+									fixed-width aria-hidden="true" />
 								<span>{{ trans("Preparing...") }}</span>
 							</div>
 						</div>
@@ -2228,7 +2228,7 @@ const layout = inject("layout", layoutStructure)
 								<FontAwesomeIcon
 									icon="fas fa-spinner"
 									class="animate-spin"
-									aria-hidden="true" />
+									fixed-width aria-hidden="true" />
 								<span>{{ trans("Preparing...") }}</span>
 							</div>
 						</div>
@@ -2337,14 +2337,14 @@ const layout = inject("layout", layoutStructure)
 									<FontAwesomeIcon
 										:icon="faCheck"
 										class="w-3.5 h-3.5"
-										v-tooltip="'success to upload'" />
+										v-tooltip="'success to upload'" fixed-width />
 									{{ uploadProgressData.done }}
 								</span>
 								<span class="flex items-center gap-1 text-red-500">
 									<FontAwesomeIcon
 										:icon="faTimes"
 										class="w-3.5 h-3.5"
-										v-tooltip="'failed to upload'" />
+										v-tooltip="'failed to upload'" fixed-width />
 									{{ uploadProgressData.data.number_fails }}
 								</span>
 							</div>

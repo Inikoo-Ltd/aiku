@@ -97,7 +97,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 								{{ idx + 1 }}
 							</span>
 
-							<FontAwesomeIcon v-if="modelValue.timeline.bullet.type === 'icon'" :icon="step.icon" />
+							<FontAwesomeIcon v-if="modelValue.timeline.bullet.type === 'icon'" :icon="step.icon" fixed-width />
 							<span v-if="modelValue.timeline.bullet.type === 'text'">
 								<Editor v-model="step.text_bullet" @update:modelValue="() => emits('autoSave')" />
 							</span>

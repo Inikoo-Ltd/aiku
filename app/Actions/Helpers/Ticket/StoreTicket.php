@@ -61,6 +61,7 @@ class StoreTicket extends OrgAction
             'tags'            => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
             'blocks_source'   => ['sometimes', 'boolean'],
+            'closes_source'   => ['sometimes', 'boolean'],
             'tags.*'            => ['string', 'max:64'],
             'priority'        => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'assignee_id'     => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],

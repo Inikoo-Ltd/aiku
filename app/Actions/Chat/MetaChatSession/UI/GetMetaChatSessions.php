@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\MetaChatSession\UI;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithUnclaimedChatSessions;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -25,6 +26,7 @@ class GetMetaChatSessions
 {
     use AsAction;
     use WithChatAgentAuthorisation;
+    use WithUnclaimedChatSessions;
 
     public function rules(): array
     {
@@ -44,6 +46,7 @@ class GetMetaChatSessions
             'pairs'          => ['sometimes', 'array'],
             'pairs.*'        => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'highlighted'    => ['sometimes', 'boolean'],
+            'unclaimed'      => ['sometimes', 'boolean'],
             'trashed'        => ['sometimes', 'boolean'],
             'include_spam'   => ['sometimes', 'boolean'],
             'view_team'       => ['sometimes', 'boolean'],
@@ -129,7 +132,7 @@ class GetMetaChatSessions
                         ->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
                 },
             ])
-            ->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) DESC');
+            ->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) '.(GetChatSessions::oldestFirst($filters) ? 'ASC' : 'DESC'));
 
         $requestedStatuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
 
@@ -172,13 +175,17 @@ class GetMetaChatSessions
             $query->where('is_spam', $isSpamView);
         }
 
+        if (!empty($filters['unclaimed'])) {
+            $this->scopeUnclaimedMetaChatSessions($query);
+        }
+
         // Additive: keeps the normal status and assignment filters, just narrows to
         // the highlighted threads.
         if (!empty($filters['highlighted'])) {
             $query->where('is_highlighted', true);
         }
 
-        if (!$isSpamView && !$isTrashView && !empty($filters['assigned_to_me'])) {
+        if (!$isSpamView && !$isTrashView && empty($filters['unclaimed']) && !empty($filters['assigned_to_me'])) {
             $userId       = (int) $filters['assigned_to_me'];
             $currentAgent = ChatAgent::where('user_id', $userId)->first();
 

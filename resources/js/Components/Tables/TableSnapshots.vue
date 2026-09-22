@@ -136,7 +136,7 @@ const recycleUnpublished = async (id) => {
                     {{ useFormatTime(user['published_at'], { localeCode: locale.language.code, formatTime: 'hm' }) }}
                 </Link>
                 <FontAwesomeIcon v-if="display_apply_button" :icon="faSignal" class="ml-2 text-green-500 cursor-pointer"
-                    @click="doThis(user.id)" />
+                    @click="doThis(user.id)" fixed-width />
             </div>
         </template>
 

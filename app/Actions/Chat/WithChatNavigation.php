@@ -33,6 +33,7 @@ trait WithChatNavigation
         $reports     = $section('Reports', ['fal', 'fa-chart-line'], 'reports');
         $inbox       = $section('Customer Inbox', ['fal', 'fa-inbox'], 'inbox');
         $supervision = $section('Supervision', ['fal', 'fa-user-headset'], 'supervision');
+        $phoneCalls  = $section('Phone calls', ['fal', 'fa-phone'], 'phone_calls.index');
         $settings    = $section('Settings', ['fal', 'fa-sliders-h'], 'settings');
 
         return [
@@ -44,6 +45,7 @@ trait WithChatNavigation
                 'subSections' => array_values(array_filter([
                     $isChatAgent ? $inbox : null,
                     $isChatSupervisor || !$isChatAgent ? $supervision : null,
+                    $phoneCalls,
                     $reports,
                     $settings,
                 ])),

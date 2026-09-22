@@ -1,3 +1,4 @@
+import { Icon } from "@/types/Utils/Icon"
 import { Images } from "@/types/Images"
 
 export type BannerScreenView = "desktop" | "tablet" | "mobile"
@@ -103,4 +104,25 @@ export interface BannerWorkshop {
     delay: number
     type: string
     navigation?: BannerNavigation
+    published_hash?: string
+}
+
+// Banner model as served to the workshop (BannerResourceForWorkshop)
+export interface BannerWorkshopResource {
+    id: number
+    ulid: string
+    slug: string
+    name: string
+    type: string
+    state: string
+    state_value: string
+    state_label: string
+    state_icon: Icon
+    ratio: string
+    compiled_layout: BannerWorkshop
+    created_at: string
+    updated_at: string
+    last_saved_at: string
+    delivery_url: string
+    views?: number
 }

@@ -294,7 +294,7 @@ onMounted(() => {
                             </th>
 
                             <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold min-w-16">
-                                <FontAwesomeIcon icon="fas fa-edit" />
+                                <FontAwesomeIcon icon="fas fa-edit" fixed-width />
                             </th>
                         </tr>
                     </thead>
@@ -362,7 +362,7 @@ onMounted(() => {
                             <td class="whitespace-nowrap px-3 py-4 text-sm">
                                 <!-- <Button label="Reset" type="negative" @click="() => deleteRow(index)" /> -->
                                 <FontAwesomeIcon icon="far fa-trash" class="text-red-400 cursor-pointer hover:text-red-600"
-                                    @click="() => deleteRow(index)" />
+                                    @click="() => deleteRow(index)" fixed-width />
                             </td>
                         </tr>
                     </tbody>

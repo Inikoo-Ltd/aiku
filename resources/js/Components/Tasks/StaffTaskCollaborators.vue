@@ -83,11 +83,11 @@ const remove = (person: Person) => emit("update:modelValue", props.modelValue.fi
             v-model="query"
             type="text"
             :placeholder="trans('Search colleague…')"
-            class="px-2 py-0.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            class="px-2 py-0.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]"
             @input="onInput"
             @keydown.esc.stop="isSearching = false"
             @blur="isSearching = false" />
-        <button v-else type="button" v-tooltip="trans('Add a colleague to work on this too')" class="flex items-center gap-x-1 text-xs text-gray-400 hover:text-indigo-600" @click="startSearching">
+        <button v-else type="button" v-tooltip="trans('Add a colleague to work on this too')" class="flex items-center gap-x-1 text-xs text-gray-400 hover:text-[--app-accent]" @click="startSearching">
             <FontAwesomeIcon icon="fal fa-user-plus" fixed-width aria-hidden="true" />
             <span v-if="!compact">{{ trans('Add colleague') }}</span>
         </button>

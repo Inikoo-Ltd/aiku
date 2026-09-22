@@ -370,6 +370,7 @@ watch(
         v-model:visible="isStatusNoteOpen"
         :status="statusNoteAction"
         :update-route="updateRouteFor(statusNoteItem)"
-        :can-wait-for-deployment="statusNoteItem.status !== 'pending_deploy'" />
+        :can-wait-for-deployment="statusNoteItem.status !== 'pending_deploy'"
+        :closes-conversation="statusNoteItem.closes_source" />
     <TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>

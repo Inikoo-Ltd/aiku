@@ -9,7 +9,7 @@
 namespace App\Actions\Accounting\CreditTransaction;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithCustomerBalanceAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
@@ -20,7 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DecreaseCreditTransactionCustomer extends OrgAction
 {
-    use WithCRMEditAuthorisation;
+    use WithCustomerBalanceAuthorisation;
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithCreditTransactionRules;

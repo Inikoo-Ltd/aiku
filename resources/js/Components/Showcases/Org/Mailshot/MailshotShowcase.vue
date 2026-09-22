@@ -225,7 +225,7 @@ const effectiveOtherShopTemplates = computed(() =>
                     <div class="bg-white p-4 rounded-lg shadow relative overflow-auto">
                         <button @click="previewOpen = true"
                             class="absolute top-4 right-3 bg-gray-300 text-white px-2 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                            <FontAwesomeIcon :icon="faExpand" />
+                            <FontAwesomeIcon :icon="faExpand" fixed-width />
                         </button>
                         <div v-if="data.compiled_layout" v-html="data.compiled_layout"></div>
                         <EmptyState v-else :data="{ title: 'You don’t have any preview' }" />

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Dispatching\Printer;
 
+use App\Actions\Dispatching\Shipment\FetchShipmentLabel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithPrintNode;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
@@ -26,6 +27,14 @@ class PrintShipmentLabel extends OrgAction
     {
         $printerId = Arr::get($user->settings, 'preferred_printer_id');
         $this->ensureClientInitialized();
+
+        $shipment = FetchShipmentLabel::run($shipment);
+
+        if (!$shipment->label && !$shipment->combined_label_url) {
+            throw ValidationException::withMessages([
+                'messages' => __('The carrier has not given us the label for this shipment yet, please try again in a minute.'),
+            ]);
+        }
 
         try {
             if ($shipment->combined_label_url) {

@@ -178,13 +178,13 @@ const tabIconClass = function (
 							<FontAwesomeIcon
 								v-if="tabLoading"
 								icon="fad fa-spinner-third"
-								class="animate-spin mr-2 h-5 w-5" />
+								class="animate-spin mr-2 h-5 w-5" fixed-width />
 
 							<!-- Icon -->
 							<FontAwesomeIcon
 								v-else-if="navigation[currentTab]?.icon"
 								:icon="navigation[currentTab].icon"
-								class="mr-2 h-5 w-5" />
+								class="mr-2 h-5 w-5" fixed-width />
 
 							<!-- Title -->
 							<span class="block truncate">
@@ -212,13 +212,13 @@ const tabIconClass = function (
 									<FontAwesomeIcon
 										v-if="tabLoading === tabSlug"
 										icon="fad fa-spinner-third"
-										class="animate-spin mr-2 h-5 w-5" />
+										class="animate-spin mr-2 h-5 w-5" fixed-width />
 
 									<!-- Icon -->
 									<FontAwesomeIcon
 										v-else-if="tab.icon"
 										:icon="tab.icon"
-										class="mr-2 h-5 w-5" />
+										class="mr-2 h-5 w-5" fixed-width />
 
 									<!-- Title -->
 									<span
@@ -259,7 +259,7 @@ const tabIconClass = function (
 										tab.iconClass || ''
 									)
 								"
-								aria-hidden="true" />
+								fixed-width aria-hidden="true" />
 							<FontAwesomeIcon
 								v-else-if="tab.icon"
 								:icon="tab.icon"
@@ -271,7 +271,7 @@ const tabIconClass = function (
 										tab.iconClass || ''
 									)
 								"
-								aria-hidden="true"
+								fixed-width aria-hidden="true"
 								:rotation="tab.icon_rotation" />
 							<span class="relative">
 								{{ tab.title }}
@@ -324,12 +324,12 @@ const tabIconClass = function (
 								v-if="tabLoading === tabSlug"
 								icon="fad fa-spinner-third"
 								class="animate-spin h-5 w-5"
-								aria-hidden="true" />
+								fixed-width aria-hidden="true" />
 							<FontAwesomeIcon
 								v-else-if="tab.icon"
 								:icon="tab.icon"
 								class="h-5 w-5"
-								aria-hidden="true"
+								fixed-width aria-hidden="true"
 								:class="
 									tabIconClass(
 										tabSlug === currentTab,

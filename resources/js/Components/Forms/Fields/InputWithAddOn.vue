@@ -48,13 +48,13 @@ defineProps<{
                     v-if="form.errors[fieldName]"
                     icon="fas fa-exclamation-circle"
                     class="h-5 w-5 text-red-500"
-                    aria-hidden="true"
+                    fixed-width aria-hidden="true"
                 />
                 <FontAwesomeIcon
                     v-if="form.recentlySuccessful"
                     icon="fas fa-check-circle"
                     class="h-5 w-5 text-green-500"
-                    aria-hidden="true"
+                    fixed-width aria-hidden="true"
                 />
             </div>
         </PureInputWithAddOn>

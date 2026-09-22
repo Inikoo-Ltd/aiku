@@ -452,7 +452,7 @@ const noLeader = computed(() => {
                     optionRefs[vi][oi] = el
                   }" />
                 <button class="text-red-500" @click="removeOption(vi, oi)">
-                  <FontAwesomeIcon :icon="faTimes" />
+                  <FontAwesomeIcon :icon="faTimes" fixed-width />
                 </button>
               </div>
             </div>

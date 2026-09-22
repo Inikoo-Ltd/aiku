@@ -127,7 +127,7 @@ function clientRoute(order) {
           <Icon :data="order['type_icon']" class="px-1" />
           <TagPallet :stateIcon="order.state_icon" /> 
           <!-- To display if order have missing items / items that are not picked -->
-          <FontAwesomeIcon v-if="order.has_modified" :icon="faCircleExclamation" class="ms-2 text-yellow-500 text-lg" v-tooltip="trans('Some items in the order are not being dispatched/picked. Excessive payments have already been automatically refunded')"/>
+          <FontAwesomeIcon v-if="order.has_modified" :icon="faCircleExclamation" class="ms-2 text-yellow-500 text-lg" v-tooltip="trans('Some items in the order are not being dispatched/picked. Excessive payments have already been automatically refunded')" fixed-width/>
         </div>
       </template>
 

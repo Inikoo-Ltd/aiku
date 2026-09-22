@@ -103,7 +103,7 @@ const selectedCountryCode = computed(
         <div class="mt-2">
             <IconField :class="form.errors.contact_name ? 'errorShake' : ''">
                 <InputIcon>
-                    <FontAwesomeIcon :icon="faUser" />
+                    <FontAwesomeIcon :icon="faUser" fixed-width />
                 </InputIcon>
                 <InputText
                     v-model="form.contact_name"
@@ -151,7 +151,7 @@ const selectedCountryCode = computed(
         <div class="mt-2">
             <IconField class="w-full" :class="form.errors.company_name ? 'errorShake' : ''">
                 <InputIcon>
-                    <FontAwesomeIcon :icon="faBuilding" />
+                    <FontAwesomeIcon :icon="faBuilding" fixed-width />
                 </InputIcon>
                 <InputText
                     v-model="form.company_name"
@@ -180,7 +180,7 @@ const selectedCountryCode = computed(
         <div class="mt-2">
             <IconField class="w-full" :class="form.errors.contact_website ? 'errorShake' : ''">
                 <InputIcon>
-                    <FontAwesomeIcon :icon="faGlobe" />
+                    <FontAwesomeIcon :icon="faGlobe" fixed-width />
                 </InputIcon>
                 <InputText v-model="form.contact_website" @update:model-value="form.clearErrors('contact_website')" class="w-full" />
             </IconField>

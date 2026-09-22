@@ -41,7 +41,7 @@ const onPinTab = () => {
                 :class="[layout.rightSidebar[tabName]?.show ? 'text-white' : 'text-white/50  hover:text-white/75' ]"
                 v-tooltip="'Pin to right side bar'"
             >
-                <FontAwesomeIcon icon="fas fa-thumbtack" class="h-3" title="Pin tab to right side layout" aria-hidden="true" />
+                <FontAwesomeIcon icon="fas fa-thumbtack" class="h-3" title="Pin tab to right side layout" fixed-width aria-hidden="true" />
             </div>
         </div>
 

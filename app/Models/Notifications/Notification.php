@@ -29,4 +29,10 @@ use Illuminate\Database\Eloquent\Model;
 class Notification extends Model
 {
     protected $guarded = [];
+
+    /* The table's key is the uuid Laravel's own notifications carry. Left to its defaults,
+       Eloquent casts it to an integer and every notification reports an id of 0. */
+    public $incrementing = false;
+
+    protected $keyType = 'string';
 }

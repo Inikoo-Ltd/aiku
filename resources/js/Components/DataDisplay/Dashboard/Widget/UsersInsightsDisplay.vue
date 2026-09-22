@@ -60,7 +60,7 @@ const deviceIcon = (device: string) => {
                 class="text-xs text-indigo-600 hover:underline whitespace-nowrap"
             >
                 {{ ctrans("All users") }}
-                <FontAwesomeIcon icon="fal fa-arrow-right" aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
             </Link>
         </div>
 
