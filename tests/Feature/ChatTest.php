@@ -6964,3 +6964,33 @@ test('a mail that is not utf8 still comes through, and one left in the inbox is 
 
     expect($message->message_text)->toBe('Où est ma commande ?');
 });
+
+test('a mailbox already belonging to another shop is refused rather than connected to a second one', function () {
+    $other = \App\Models\Catalogue\Shop::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->organisation->group_id,
+        'settings'        => ['gmail' => ['email' => 'kundservice@shop.test']],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response([
+            'access_token'  => 'at',
+            'refresh_token' => 'rt',
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/profile'       => \Illuminate\Support\Facades\Http::response([
+            'emailAddress' => 'kundservice@shop.test',
+            'historyId'    => '7',
+        ]),
+    ]);
+
+    $state = ['shop_id' => $this->shop->id, 'user_id' => 1, 'return' => '/back'];
+
+    $response = \App\Actions\Comms\Mailbox\CallbackShopMailbox::make()->handle('code', $state);
+
+    // Refused, and nothing written: the second shop never gets a token, so it never fetches the
+    // same inbox and the mail is taken in once.
+    expect(session('notification')['status'])->toBe('error')
+        ->and(session('notification')['description'])->toContain($other->name)
+        ->and(Arr::get($this->shop->fresh()->settings, 'gmail'))->toBeNull()
+        ->and($response->getTargetUrl())->toContain('/back');
+});
