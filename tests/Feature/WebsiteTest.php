@@ -64,7 +64,10 @@ use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Webpage\GetWebpagePageSpeed;
+use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
 use App\Actions\Web\Webpage\GetWebpageSeo;
+use App\Actions\Web\Website\PruneWebsitePageViews;
+use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Helpers\Audit\AuditEventEnum;
@@ -1938,12 +1941,94 @@ test('UI show ads testing webpage does not offer page speed', function (Website 
     $adsTestingPage = $showPage($adsTestingWebpage);
     $contentPage    = $showPage($contentWebpage);
 
-    // The showcase moves the detail up beside the preview when there is no page speed to show.
+    // The showcase moves the detail up beside the preview when there is no page speed to show, and
+    // shows how the visitors the advert is bought for behaved instead.
     expect($adsTestingPage['props']['pagespeed'])->toBeNull()
         ->and($adsTestingPage['deferredProps'] ?? [])->not->toHaveKey('pagespeed')
+        ->and($adsTestingPage['deferredProps'] ?? [])->toHaveKey('engagement')
         ->and($adsTestingPage['props']['showcase']['is_hidden_from_search_engines'])->toBeTrue()
         ->and($contentPage['deferredProps'] ?? [])->toHaveKey('pagespeed')
+        ->and($contentPage['deferredProps'] ?? [])->not->toHaveKey('engagement')
+        ->and($contentPage['props']['engagement'])->toBeNull()
         ->and($contentPage['props']['showcase']['is_hidden_from_search_engines'])->toBeFalse();
+})->depends('launch website');
+
+test('ads testing webpage metrics are read from the page views already recorded', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+
+    $storeVisitor = fn () => DB::table('website_visitors')->insertGetId([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $website->id,
+        'session_id'      => 'sess-'.Str::random(10),
+        'visitor_hash'    => Str::random(16),
+        'device_type'     => 'desktop',
+        'os'              => 'linux',
+        'browser'         => 'firefox',
+        'user_agent'      => 'test-agent',
+        'ip_hash'         => Str::random(16),
+        'first_seen_at'   => now(),
+        'last_seen_at'    => now(),
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $storePageView = fn (int $visitorId, ?int $webpageId, string $path, int $duration = 0) => DB::table('website_page_views')->insert([
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $visitorId,
+        'webpage_id'         => $webpageId,
+        'page_url'           => 'https://test'.$path,
+        'page_path'          => $path,
+        'view_date'          => now()->toDateString(),
+        'duration_seconds'   => $duration,
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]);
+
+    $adsTestingPath = '/'.$adsTestingWebpage->url;
+
+    // A session that saw the advert page and nothing else: a bounce, and one the server cannot time.
+    $storePageView($storeVisitor(), $adsTestingWebpage->id, $adsTestingPath);
+
+    // A session that read the page for 40 seconds and went on somewhere else: not a bounce.
+    $engagedVisitor = $storeVisitor();
+    $storePageView($engagedVisitor, $adsTestingWebpage->id, $adsTestingPath, 40);
+    $storePageView($engagedVisitor, null, '/elsewhere');
+
+    DB::table('website_conversion_events')->insert([
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $engagedVisitor,
+        'webpage_id'         => $adsTestingWebpage->id,
+        'event_type'         => WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value,
+        'quantity'           => 1,
+        'page_url'           => 'https://test'.$adsTestingPath,
+        'page_path'          => $adsTestingPath,
+        'event_date'         => now()->toDateString(),
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]);
+
+    $metrics = GetWebpageEngagementMetrics::run($adsTestingWebpage);
+
+    expect($metrics['page_views'])->toBe(2)
+        ->and($metrics['visitors'])->toBe(2)
+        ->and($metrics['add_to_baskets'])->toBe(1)
+        ->and($metrics['conversion_rate'])->toBe(50.0)
+        ->and($metrics['bounces'])->toBe(1)
+        ->and($metrics['bounce_rate'])->toBe(50.0)
+        ->and($metrics['timed_page_views'])->toBe(1)
+        ->and($metrics['avg_time_on_page'])->toBe(40)
+        ->and($metrics['days'])->toBe(PruneWebsitePageViews::RETENTION_DAYS);
 })->depends('launch website');
 
 test('the website page speed history averages every measured webpage of the website per day', function (Website $website) {

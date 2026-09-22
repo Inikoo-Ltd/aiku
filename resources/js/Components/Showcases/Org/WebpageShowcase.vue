@@ -23,6 +23,7 @@ import { router } from "@inertiajs/vue3"
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
 import PageSpeedInsights from '@/Components/DataDisplay/PageSpeedInsights.vue'
 import WebpageSeo from '@/Components/DataDisplay/WebpageSeo.vue'
+import WebpageEngagement from '@/Components/DataDisplay/WebpageEngagement.vue'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -53,6 +54,7 @@ const props = defineProps<{
     url?: string
   },
   pagespeed?: any,
+  engagement?: any,
   seo?: any
 }>()
 
@@ -188,6 +190,8 @@ const visitRedirect = () => {
 
           <PageSpeedInsights v-if="pagespeed !== null" embedded :pagespeed="pagespeed" />
         </div>
+
+        <WebpageEngagement v-if="detailBesidePreview" :engagement="engagement" />
 
         <WebpageSeo v-if="detailBesidePreview" :seo="seo" stacked />
       </div>
