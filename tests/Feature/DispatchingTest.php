@@ -4655,3 +4655,51 @@ test('putting away a cancellation return writes cancel picked, a real return wri
 
     expect($reversal->type)->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PICKED);
 });
+
+test('pickings only read as returned once the cancellation return is walked back (HELP-2693)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+
+    $returnDeliveryNote = $cancelled->returnedDeliveryNote()->first();
+
+    $isReturned = fn () => \App\Models\GoodsIn\ReturnDeliveryNoteItem::query()
+        ->where('delivery_note_items_id', $deliveryNoteItem->id)
+        ->whereHas(
+            'returnDeliveryNote',
+            fn ($query) => $query
+                ->where('type', \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum::CANCELLATION)
+                ->whereIn('state', [
+                    \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED,
+                    \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::DONE,
+                ])
+        )
+        ->exists();
+
+    expect($isReturned())->toBeFalse();
+
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+
+    expect($isReturned())->toBeTrue();
+});
+
+test('a cancelled delivery note row reports its pickings as returned to location (HELP-2693)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+
+    request()->setRouteResolver(fn () => (new Route('GET', 'test', []))->name('test'));
+
+    $row = fn () => \App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems::make()
+        ->handle($cancelled->refresh())
+        ->first();
+
+    expect((bool)$row()->is_returned_to_location)->toBeFalse();
+
+    $cancelled->returnedDeliveryNote()->first()
+        ->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+
+    expect((bool)$row()->is_returned_to_location)->toBeTrue();
+});
