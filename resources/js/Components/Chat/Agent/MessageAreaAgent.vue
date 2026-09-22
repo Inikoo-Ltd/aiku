@@ -531,6 +531,17 @@ interface SelectedAttachment {
 const selectedFiles = ref<SelectedAttachment[]>([])
 const isEmailNotif = ref(false)
 
+const isEmailChat = computed(() => (props.session as any)?.channel === "email")
+
+// An email is written, not chatted: Enter opens a line and the message goes when it is finished.
+// A live chat is the other way round, a line at a time, so Enter still sends there.
+const onEnterKey = (event: KeyboardEvent) => {
+    if (isEmailChat.value) return
+
+    event.preventDefault()
+    sendMessage()
+}
+
 // Only worth offering where there is somebody to email and something to say: an email
 // conversation is already an email, and a stranger who left no address cannot be written to.
 const canEmailNotify = computed(() => {
@@ -1479,7 +1490,9 @@ const handleClickOutside = (e: MouseEvent) => {
                         isTyping = false
                         sendTypingStatus(false)
                     }
-                " @paste="onPasteAttachment" @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
+                " @paste="onPasteAttachment" @keydown.enter.exact="onEnterKey"
+                    @keydown.enter.meta.prevent="sendMessage" @keydown.enter.ctrl.prevent="sendMessage" rows="1"
+                    :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : 'Type message...'"
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
