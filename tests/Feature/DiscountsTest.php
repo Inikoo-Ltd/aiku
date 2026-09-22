@@ -80,6 +80,8 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\SysAdmin\User;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -742,6 +744,21 @@ test('store gifts offers', function () {
 
     return $offer;
 });
+
+test('a discounts clerk can open the gift offer edit page', function (Offer $offer) {
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    setPermissionsTeamId($this->organisation->group_id);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::DISCOUNTS_CLERK->value, $this->shop));
+    actingAs($clerk);
+
+    $response = get(route('grp.org.shops.show.discounts.campaigns.gift.edit', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $offer->offerCampaign->slug,
+        $offer->slug,
+    ]));
+    $response->assertOk();
+})->depends('store gifts offers');
 
 test('store product offers no-op', function () {
     StoreProductOffers::make()->handle([]);
