@@ -4768,6 +4768,21 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         ->and($result['by_topic'][0])->toMatchArray(['topic' => 'order_status', 'conversations' => 1, 'share' => 100.0, 'website' => 1, 'unanswered' => 0])
         ->and($result['unclassified'])->toBe(1)
         ->and($widgetOnlyOpened->exists)->toBeTrue();
+
+    $agent = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]);
+    foreach ([4, 5] as $rating) {
+        $rated = $session('website', $reportShop->id);
+        $message($rated, ChatSenderTypeEnum::GUEST->value, 50);
+        $message($rated, ChatSenderTypeEnum::AGENT->value, 40)->update(['sender_id' => $agent->id]);
+        $message($rated, ChatSenderTypeEnum::AGENT->value, 30)->update(['sender_id' => $agent->id]);
+        $rated->update(['rating' => $rating]);
+    }
+
+    $result = GetChatReports::make()->handle(collect([$reportShop->id]), '1w');
+
+    expect($result['agents'][0])->toMatchArray(['rating' => 4.5, 'ratings' => 2])
+        ->and($result['agents'][0])->not->toHaveKey('rated_sessions')
+        ->and($result['agents_total'])->toMatchArray(['rating' => 4.5, 'ratings' => 2]);
 });
 
 test('empty widget sessions are not counted open and the sweep closes them quietly', function () {

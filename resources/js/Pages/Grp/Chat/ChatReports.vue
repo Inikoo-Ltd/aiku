@@ -67,6 +67,8 @@ type AgentRow = {
 	email: number
 	whatsapp: number
 	median_reply_minutes: number | null
+	rating: number | null
+	ratings: number
 }
 
 type ShopRow = {
@@ -118,6 +120,8 @@ const props = defineProps<{
 			email: number
 			whatsapp: number
 			median_reply_minutes: number | null
+			rating: number | null
+			ratings: number
 		}
 	}
 }>()
@@ -310,6 +314,7 @@ const agentColumns = [
 	{ key: "email", label: ctrans("Email") },
 	{ key: "whatsapp", label: ctrans("WhatsApp") },
 	{ key: "median_reply_minutes", label: ctrans("Median reply") },
+	{ key: "rating", label: ctrans("Average rating") },
 ]
 
 const shopColumns = [
@@ -564,6 +569,10 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 							<td class="px-4 py-2 text-right">
 								{{ minutes(agent.median_reply_minutes) }}
 							</td>
+							<td class="px-4 py-2 text-right">
+								<template v-if="agent.rating !== null">{{ agent.rating }}<span class="text-gray-400">/5 ({{ agent.ratings }})</span></template>
+								<template v-else>-</template>
+							</td>
 						</tr>
 						<tr v-if="!stats.agents.length">
 							<td
@@ -587,6 +596,10 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 							<td class="px-4 py-2 text-right">{{ stats.agents_total.whatsapp }}</td>
 							<td class="px-4 py-2 text-right">
 								{{ minutes(stats.agents_total.median_reply_minutes) }}
+							</td>
+							<td class="px-4 py-2 text-right">
+								<template v-if="stats.agents_total.rating !== null">{{ stats.agents_total.rating }}<span class="text-gray-400">/5 ({{ stats.agents_total.ratings }})</span></template>
+								<template v-else>-</template>
 							</td>
 						</tr>
 					</tfoot>
