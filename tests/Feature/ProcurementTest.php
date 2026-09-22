@@ -4028,6 +4028,20 @@ test('partner shopping list org stocks json feed', function () {
         ->and($row['deleteRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.destroy');
 });
 
+test('partner shopping list org stocks search matches a word inside the name', function () {
+    $seller = $this->orgPartner->partner;
+
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    $sellerOrgStock->update(['name' => 'ActivaWrap Honeycombe paper, 90gsm']);
+
+    $response = $this->getJson(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id, 'filter[global]' => 'Honeycombe']));
+
+    $response->assertOk();
+    expect(collect($response->json('data'))->firstWhere('id', $sellerOrgStock->id))->not->toBeNull();
+});
+
 test('auto-fill suggests shopping list within budget from usage history', function () {
     $seller = $this->orgPartner->partner;
     $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
