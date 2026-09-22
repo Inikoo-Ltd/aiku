@@ -776,6 +776,48 @@ const selectedInbox = computed(() =>
 
 const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
+/* The rail holds three lists, and which of them matters depends on the day: a supervisor lives
+   in Agents, somebody clearing the queue lives in Folders. Each one folds away, and the two
+   lower ones are dragged to the height their owner wants; Shops takes whatever is left. */
+const railSectionOpen = useLocalStorage(`chat-rail-sections:${layout.user?.id ?? "anonymous"}`, {
+    shops: true,
+    agents: true,
+    folders: true,
+})
+
+const railSectionHeight = useLocalStorage(`chat-rail-heights:${layout.user?.id ?? "anonymous"}`, {
+    agents: 180,
+    folders: 176,
+})
+
+const MIN_SECTION_HEIGHT = 72
+
+const railElement = ref<HTMLElement | null>(null)
+
+const startResize = (section: "agents" | "folders", event: PointerEvent) => {
+    event.preventDefault()
+
+    const startY = event.clientY
+    const startHeight = railSectionHeight.value[section]
+    const limit = Math.max(MIN_SECTION_HEIGHT, (railElement.value?.clientHeight ?? 600) * 0.6)
+
+    const onMove = (move: PointerEvent) => {
+        // The handle sits above the section, so dragging up makes it taller.
+        const next = startHeight + (startY - move.clientY)
+        railSectionHeight.value = { ...railSectionHeight.value, [section]: Math.min(limit, Math.max(MIN_SECTION_HEIGHT, next)) }
+    }
+
+    const onUp = () => {
+        window.removeEventListener("pointermove", onMove)
+        window.removeEventListener("pointerup", onUp)
+        document.body.style.userSelect = ""
+    }
+
+    document.body.style.userSelect = "none"
+    window.addEventListener("pointermove", onMove)
+    window.addEventListener("pointerup", onUp)
+}
+
 const SHOP_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"]
 
 const shopInitials = (name: string) => {
@@ -1537,15 +1579,17 @@ onUnmounted(() => {
 
     <div class="flex border-t border-gray-200 h-[calc(100vh-10rem)] bg-white">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
-        <div class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
+        <div ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
             :class="inboxRailCollapsed ? 'w-16' : 'w-64'">
             <!-- Header + collapse toggle -->
             <div class="border-b border-gray-200 flex items-center h-[41px]"
                 :class="inboxRailCollapsed ? 'justify-center' : 'justify-between px-3'">
-                <span v-if="!inboxRailCollapsed"
-                    class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                <button v-if="!inboxRailCollapsed" type="button"
+                    class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700"
+                    @click="railSectionOpen = { ...railSectionOpen, shops: !railSectionOpen.shops }">
+                    <FontAwesomeIcon :icon="railSectionOpen.shops ? faAngleDown : faAngleRight" class="text-[10px]" />
                     {{ supervisor ? ctrans("Shops") : ctrans("Inboxes") }}
-                </span>
+                </button>
                 <button type="button" @click="inboxRailCollapsed = !inboxRailCollapsed"
                     v-tooltip="inboxRailCollapsed ? ctrans('Expand') : ctrans('Collapse')"
                     class="p-1 rounded hover:bg-gray-200 text-gray-400">
@@ -1554,7 +1598,9 @@ onUnmounted(() => {
             </div>
 
             <!-- Shop list -->
-            <div class="flex-1 overflow-y-auto">
+            <div v-if="!inboxRailCollapsed && !railSectionOpen.shops" class="flex-1" />
+
+            <div v-show="inboxRailCollapsed || railSectionOpen.shops" class="flex-1 overflow-y-auto">
                 <div v-for="inbox in inboxes" :key="inbox.id"
                     class="transition-colors border-b border-gray-200"
                     :class="shopIsOn(inbox.id) ? 'bg-white' : 'hover:bg-gray-100'">
@@ -1679,10 +1725,22 @@ onUnmounted(() => {
             </div>
 
             <!-- The people on these shops: who is there and what they are holding -->
-            <div v-if="supervisor && !inboxRailCollapsed" class="border-t border-gray-200 max-h-[40%] overflow-y-auto">
-                <div class="px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    {{ ctrans("Agents") }}
+            <template v-if="supervisor && !inboxRailCollapsed">
+                <div v-if="railSectionOpen.agents" class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
+                    v-tooltip="ctrans('Drag to resize')" @pointerdown="startResize('agents', $event)" />
+
+                <div class="shrink-0 border-t border-gray-200">
+                    <button type="button"
+                        class="flex w-full items-center gap-1.5 px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700"
+                        @click="railSectionOpen = { ...railSectionOpen, agents: !railSectionOpen.agents }">
+                        <FontAwesomeIcon :icon="railSectionOpen.agents ? faAngleDown : faAngleRight" class="text-[10px]" />
+                        {{ ctrans("Agents") }}
+                        <span class="ml-auto font-normal normal-case tabular-nums text-gray-400">{{ agents?.length ?? 0 }}</span>
+                    </button>
                 </div>
+
+                <div v-show="railSectionOpen.agents" class="shrink-0 overflow-y-auto"
+                    :style="{ height: railSectionHeight.agents + 'px' }">
                 <button v-for="agent in agents" :key="agent.id" type="button"
                     v-tooltip="ctrans('Show what they are holding')"
                     class="w-full flex items-center gap-2 px-3 py-1 text-sm text-left"
@@ -1697,13 +1755,32 @@ onUnmounted(() => {
                         {{ agent.open }}/{{ agent.max }}
                     </span>
                 </button>
-                <div v-if="!agents?.length" class="px-3 py-3 text-xs text-gray-400">
-                    {{ ctrans("Nobody is on these shops") }}
+                    <div v-if="!agents?.length" class="px-3 py-3 text-xs text-gray-400">
+                        {{ ctrans("Nobody is on these shops") }}
+                    </div>
                 </div>
+            </template>
+
+            <!-- Everything that is not a shop: the group's queue and the places things are put -->
+            <div v-if="!inboxRailCollapsed && railSectionOpen.folders" class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
+                v-tooltip="ctrans('Drag to resize')" @pointerdown="startResize('folders', $event)" />
+
+            <div v-if="!inboxRailCollapsed" class="shrink-0 border-t border-gray-200">
+                <button type="button"
+                    class="flex w-full items-center gap-1.5 px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700"
+                    @click="railSectionOpen = { ...railSectionOpen, folders: !railSectionOpen.folders }">
+                    <FontAwesomeIcon :icon="railSectionOpen.folders ? faAngleDown : faAngleRight" class="text-[10px]" />
+                    {{ ctrans("Folders") }}
+                    <span v-if="unclaimedCount" class="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold normal-case text-white">
+                        {{ unclaimedCount }}
+                    </span>
+                </button>
             </div>
 
-            <!-- Unclaimed: the group's queue, shown to everybody including whoever only oversees -->
-            <div class="border-t border-gray-200 py-1">
+            <div v-show="inboxRailCollapsed || railSectionOpen.folders"
+                class="shrink-0 overflow-y-auto"
+                :style="inboxRailCollapsed ? {} : { height: railSectionHeight.folders + 'px' }">
+            <div class="py-1">
                 <button type="button" @click="selectUnclaimed"
                     v-tooltip="ctrans('Nobody has taken these yet, on any shop')"
                     class="w-full flex items-center text-sm transition-colors"
@@ -1772,6 +1849,7 @@ onUnmounted(() => {
                     <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" :class="highlightView ? 'text-amber-400' : ''" />
                     <span v-if="!inboxRailCollapsed">{{ ctrans("Highlighted") }}</span>
                 </button>
+            </div>
             </div>
         </div>
 
