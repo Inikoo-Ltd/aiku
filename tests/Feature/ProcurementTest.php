@@ -1569,6 +1569,37 @@ test('UI index purchase orders for supplier shows supplier-specific columns and 
     });
 });
 
+test('purchase orders search matches a reference from the middle and the supplier name', function () {
+    $purchaseOrder = StorePurchaseOrder::make()->action(
+        $this->orgSupplier,
+        array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'Equinox00162']),
+        strict: false,
+    );
+
+    foreach (['00162', $purchaseOrder->parent_name] as $search) {
+        $this->get(route('grp.org.procurement.purchase_orders.index', [
+            $this->organisation->slug,
+            'filter[global]' => $search,
+        ]))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => $rows->firstWhere('slug', $purchaseOrder->slug) !== null)
+            ->etc());
+    }
+});
+
+test('stock deliveries search matches a reference from the middle and the supplier name', function () {
+    $stockDelivery = $this->stockDelivery;
+    $stockDelivery->update(['reference' => 'Equinox00161']);
+
+    foreach (['00161', $stockDelivery->parent_name] as $search) {
+        $this->get(route('grp.org.procurement.stock_deliveries.index', [
+            $this->organisation->slug,
+            'filter[global]' => $search,
+        ]))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => $rows->firstWhere('slug', $stockDelivery->slug) !== null)
+            ->etc());
+    }
+});
+
 test('UI show purchase order', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $this->purchaseOrder->slug]));
