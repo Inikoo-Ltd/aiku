@@ -186,17 +186,20 @@ final class GmailClient
      *
      * @return array{name: string, mimeType: string, size: int}|null
      */
+    public ?string $lastDriveError = null;
+
     public function driveFile(string $fileId): ?array
     {
         $response = Http::withToken($this->accessToken())
             ->get(self::DRIVE_BASE_URL."files/$fileId", ['fields' => 'name,mimeType,size']);
 
         if (! $response->successful()) {
+            $this->lastDriveError = $response->status().' '.$response->json('error.message', $response->body());
+
             Log::warning('Drive file not readable', [
                 'shop'    => $this->shop->slug,
                 'file_id' => $fileId,
-                'status'  => $response->status(),
-                'reason'  => $response->json('error.message'),
+                'error'   => $this->lastDriveError,
             ]);
 
             return null;

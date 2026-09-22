@@ -12,6 +12,7 @@ use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatMessage;
 use App\Services\Gmail\GmailClient;
+use App\Services\Gmail\GmailMessageParser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -98,10 +99,11 @@ class BackfillEmailAttachments extends Command
                 $gmailMessageId = Arr::get($message->metadata, 'gmail_message_id');
 
                 try {
+                    $raw   = $client->getMessage($gmailMessageId);
                     $files = ImportPendingGmailAttachments::make()->download(
                         $client,
                         $gmailMessageId,
-                        $client->getMessage($gmailMessageId),
+                        $raw,
                         trusted: (bool) $session->web_user_id
                     );
                 } catch (Throwable $e) {
@@ -120,6 +122,9 @@ class BackfillEmailAttachments extends Command
                     if ($this->output->isVerbose()) {
                         $this->newLine();
                         $this->line('Message '.$message->id.' ('.$gmailMessageId.'): nothing to import');
+                        $this->line('  attachments in mail: '.count(GmailMessageParser::attachments(Arr::get($raw, 'payload', []))));
+                        $this->line('  drive links in html: '.(implode(', ', GmailMessageParser::driveFileIds(GmailMessageParser::htmlBody($raw))) ?: 'none'));
+                        $this->line('  last drive error: '.($client->lastDriveError ?? 'none'));
                     }
 
                     continue;
