@@ -296,6 +296,16 @@ class ShowWebpage extends OrgAction
         $tabsNavigation = WebpageTabsEnum::navigation();
         data_set($tabsNavigation, 'redirects.number', $webpage->stats->number_redirects);
 
+        /**
+         * A page kept out of the index is never measured: nobody tunes an advert page for search
+         * results, so its report is not offered and no PageSpeed run is spent on it.
+         */
+        $pagespeed = match (true) {
+            (bool)$webpage->sub_type?->isHiddenFromSearchEngines() => null,
+            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed'),
+            default => Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+        };
+
         return Inertia::render(
             'Org/Web/Webpage',
             [
@@ -357,9 +367,7 @@ class ShowWebpage extends OrgAction
                     fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
                     : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
 
-                'pagespeed' => in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value])
-                    ? Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed')
-                    : Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+                'pagespeed' => $pagespeed,
 
                 'seo' => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => GetWebpageSeo::run($webpage)

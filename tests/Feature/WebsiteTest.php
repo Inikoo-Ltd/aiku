@@ -135,6 +135,7 @@ use Lorisleiva\Actions\Decorators\JobDecorator;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\post;
 
 beforeAll(function () {
@@ -235,6 +236,84 @@ test('create webpage', function (Website $website) {
 
     return $webpage;
 })->depends('create b2b website');
+
+test('create ads testing webpage is hidden from search engines', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+
+    $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    expect($adsTestingWebpage->sub_type)->toBe(WebpageSubTypeEnum::ADS_TESTING)
+        ->and($adsTestingWebpage->index_page)->toBeFalse()
+        ->and($adsTestingWebpage->follow_link)->toBeFalse()
+        ->and($contentWebpage->index_page)->toBeTrue()
+        ->and($contentWebpage->follow_link)->toBeTrue();
+
+    return $adsTestingWebpage;
+})->depends('create b2b website');
+
+test('ads testing webpage cannot be put back in the index', function (Webpage $adsTestingWebpage) {
+    $adsTestingWebpage = UpdateWebpage::make()->action($adsTestingWebpage, [
+        'index_page'  => true,
+        'follow_link' => true,
+    ]);
+
+    expect($adsTestingWebpage->index_page)->toBeFalse()
+        ->and($adsTestingWebpage->follow_link)->toBeFalse()
+        ->and(GetWebpageSeo::run($adsTestingWebpage)['robots'])->toBe('noindex, nofollow');
+})->depends('create ads testing webpage is hidden from search engines');
+
+test('internal link options leave out ads testing pages', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+    $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    foreach ([$adsTestingWebpage, $contentWebpage] as $webpage) {
+        $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    }
+
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    // Searched by code because the options are paginated and a content page sorts last.
+    $optionCodes = fn (string $routeName, array $parameters, string $code) => collect(
+        getJson(route($routeName, $parameters).'?'.http_build_query(['filter' => ['global' => $code]]))
+            ->assertOk()
+            ->json('data')
+    )->pluck('code');
+
+    $workshopSelect = 'grp.json.webpages_for_workshop_select';
+    $webpagesIndex  = 'grp.org.shops.show.web.webpages.index';
+    $redirectOption = 'grp.org.shops.show.web.webpages.index.redirect-options';
+
+    expect($optionCodes($workshopSelect, ['website' => $website->slug], $contentWebpage->code))->toContain($contentWebpage->code)
+        ->and($optionCodes($workshopSelect, ['website' => $website->slug], $adsTestingWebpage->code))->toBeEmpty()
+        ->and($optionCodes($webpagesIndex, $routeParams, $contentWebpage->code))->toContain($contentWebpage->code)
+        ->and($optionCodes($webpagesIndex, $routeParams, $adsTestingWebpage->code))->toBeEmpty()
+        ->and($optionCodes($redirectOption, array_merge($routeParams, [$contentWebpage->slug]), $adsTestingWebpage->code))
+        ->toContain($adsTestingWebpage->code);
+})->depends('launch website');
+
+test('UI edit ads testing webpage does not offer the indexing settings', function (Website $website, Webpage $adsTestingWebpage) {
+    $response = get(route('grp.org.shops.show.web.webpages.edit', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $adsTestingWebpage->slug,
+    ]));
+
+    $response->assertOk();
+
+    $fieldKeys = collect($response->original->getData()['page']['props']['formData']['blueprint'])
+        ->flatMap(fn (array $section) => array_keys($section['fields'] ?? []));
+
+    expect($fieldKeys)->not->toContain('index_page')
+        ->and($fieldKeys)->not->toContain('follow_link')
+        ->and($response->original->getData()['page']['props']['warning']['title'])->toBe('Hidden from search engines');
+})->depends('create b2b website', 'create ads testing webpage is hidden from search engines');
 
 test('create model has web block', function (Webpage $webpage) {
     /** @var WebBlockType $webBlockType */
@@ -501,6 +580,21 @@ test('UI show website exposes showcase props the component actually reads', func
         ->etc());
 
     expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('pagespeed_history');
+})->depends('launch website');
+
+test('UI show website showcase offers the ads testing card', function (Website $website) {
+    $response = get(route('grp.org.shops.show.web.websites.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+    ]));
+
+    $adsTestingCard = collect($response->original->getData()['page']['props']['showcase']['content_blog_stats'])
+        ->firstWhere('label', 'Ads Testing');
+
+    expect($adsTestingCard)->not->toBeNull()
+        ->and($adsTestingCard['route']['name'])->toBe('grp.org.shops.show.web.webpages.index.sub_type.ads_testing')
+        ->and($adsTestingCard['value'])->toBe($website->webStats->number_webpages_sub_type_ads_testing);
 })->depends('launch website');
 
 test('UI index websites in organisation', function () {
@@ -1350,6 +1444,7 @@ test('UI smoke catalogue webpage routes', function (Website $website, array $cat
         'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families'    => $subDept,
         'grp.org.shops.show.web.webpages.index.sub_type.sub_department.products'    => $subDept,
         'grp.org.shops.show.web.webpages.index.type.content'                        => $base,
+        'grp.org.shops.show.web.webpages.index.sub_type.ads_testing'                => $base,
         'grp.org.shops.show.web.webpages.index.type.info'                           => $base,
         'grp.org.shops.show.web.webpages.index.type.operations'                     => $base,
         'grp.org.shops.show.web.webpages.index.redirect-options'                    => [$org, $shop, $w, $cat['departmentWebpage']->slug],
@@ -1507,6 +1602,25 @@ test('save website sitemap', function (Website $website) {
     $count = SaveWebsiteSitemap::run($website);
 
     expect($count)->toBeInt()->toBeGreaterThanOrEqual(0);
+})->depends('launch website');
+
+test('save website sitemap leaves out ads testing pages', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+    $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    foreach ([$adsTestingWebpage, $contentWebpage] as $webpage) {
+        $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    }
+
+    SaveWebsiteSitemap::run($website);
+
+    $sitemap = Storage::disk('local')->get("sitemaps/contents_$website->id.xml");
+
+    expect($sitemap)->toContain($contentWebpage->canonical_url)
+        ->not->toContain($adsTestingWebpage->canonical_url);
 })->depends('launch website');
 
 test('robots txt is generated on demand with absolute sitemap urls', function (Website $website) {
@@ -1782,6 +1896,7 @@ test('the daily pagespeed crawl queues every department and the best performing 
     $productPage   = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::PRODUCT, 99);
     $closedFamily  = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 99);
     $closedFamily->update(['state' => WebpageStateEnum::CLOSED]);
+    $adsTestingPage = $storePageSpeedWebpage(WebpageTypeEnum::CONTENT, WebpageSubTypeEnum::ADS_TESTING, null);
 
     Queue::fake();
 
@@ -1802,7 +1917,33 @@ test('the daily pagespeed crawl queues every department and the best performing 
         ->and($queuedWebpageIds)->toContain($department->id)
         ->and($queuedWebpageIds)->not->toContain($slowFamily->id)
         ->and($queuedWebpageIds)->not->toContain($productPage->id)
-        ->and($queuedWebpageIds)->not->toContain($closedFamily->id);
+        ->and($queuedWebpageIds)->not->toContain($closedFamily->id)
+        ->and($queuedWebpageIds)->not->toContain($adsTestingPage->id);
+})->depends('launch website');
+
+test('UI show ads testing webpage does not offer page speed', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+    $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    $showPage = fn (Webpage $webpage) => get(route('grp.org.shops.show.web.webpages.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $webpage->slug,
+    ]))->assertOk()->original->getData()['page'];
+
+    $adsTestingPage = $showPage($adsTestingWebpage);
+    $contentPage    = $showPage($contentWebpage);
+
+    // The showcase moves the detail up beside the preview when there is no page speed to show.
+    expect($adsTestingPage['props']['pagespeed'])->toBeNull()
+        ->and($adsTestingPage['deferredProps'] ?? [])->not->toHaveKey('pagespeed')
+        ->and($adsTestingPage['props']['showcase']['is_hidden_from_search_engines'])->toBeTrue()
+        ->and($contentPage['deferredProps'] ?? [])->toHaveKey('pagespeed')
+        ->and($contentPage['props']['showcase']['is_hidden_from_search_engines'])->toBeFalse();
 })->depends('launch website');
 
 test('the website page speed history averages every measured webpage of the website per day', function (Website $website) {
