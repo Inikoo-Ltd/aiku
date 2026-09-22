@@ -10,6 +10,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\HumanResources\Employee;
@@ -40,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $slug
  * @property string $reference
  * @property ReturnDeliveryNoteStateEnum $state
+ * @property ReturnDeliveryNoteTypeEnum $type
  * @property string|null $customer_notes
  * @property string|null $public_notes
  * @property string|null $internal_notes
@@ -88,6 +90,7 @@ class ReturnDeliveryNote extends Model implements Auditable
 
     protected $casts = [
         'state'        => ReturnDeliveryNoteStateEnum::class,
+        'type'         => ReturnDeliveryNoteTypeEnum::class,
         'returning_at' => 'datetime',
         'returned_at'  => 'datetime',
         'done_at'      => 'datetime',
@@ -102,6 +105,7 @@ class ReturnDeliveryNote extends Model implements Auditable
 
     protected array $auditInclude = [
         'state',
+        'type',
         'reference',
         'returning_at',
         'returned_at',

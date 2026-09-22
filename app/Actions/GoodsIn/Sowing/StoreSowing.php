@@ -11,6 +11,7 @@ namespace App\Actions\GoodsIn\Sowing;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
@@ -48,7 +49,15 @@ class StoreSowing extends OrgAction
             data_set($modelData, 'shop_id', $parent->shop_id);
             data_set($modelData, 'return_id', $parent->return_delivery_note_id);
             data_set($modelData, 'return_item_id', $parent->id);
-            $orgStockMovement = OrgStockMovementTypeEnum::RETURN_PICKED;
+
+            /**
+             * A cancellation puts back goods that were picked but never dispatched, so the ledger
+             * entry is the same CANCEL_PICKED the legacy cancel path used to fire at cancellation
+             * time. Only goods that actually left the building are a RETURN_PICKED.
+             */
+            $orgStockMovement = $parent->returnDeliveryNote?->type === ReturnDeliveryNoteTypeEnum::CANCELLATION
+                ? OrgStockMovementTypeEnum::CANCEL_PICKED
+                : OrgStockMovementTypeEnum::RETURN_PICKED;
         } else {
             data_set($modelData, 'stock_delivery_id', $parent->stock_delivery_id);
             $orgStockMovement = OrgStockMovementTypeEnum::PURCHASE;

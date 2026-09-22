@@ -4580,3 +4580,75 @@ test('a late pick on a blocked note tells the order transaction what was picked'
     expect((float)$transaction->refresh()->quantity_picked)
         ->toBe((float)$transaction->quantity_ordered + (float)$transaction->quantity_bonus);
 });
+
+test('cancelling with create return raises a cancellation return and leaves the picked stock off the shelf (HELP-2693)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $pickingId = $deliveryNoteItem->pickings()->first()->id;
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+
+    expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and($cancelled->is_returned)->toBeFalsy()
+        ->and(\App\Models\Dispatching\Picking::find($pickingId))->not->toBeNull();
+
+    $returnDeliveryNote = $cancelled->returnedDeliveryNote()->first();
+
+    expect($returnDeliveryNote)->not->toBeNull()
+        ->and($returnDeliveryNote->type)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum::CANCELLATION)
+        ->and($returnDeliveryNote->state)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RECEIVED)
+        ->and((float)$returnDeliveryNote->returnDeliveryNoteItem()->first()->total_expected_qty)
+        ->toBe((float)$deliveryNoteItem->refresh()->quantity_picked);
+});
+
+test('cancelling without create return keeps the legacy credit back (HELP-2693)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $pickingId = $deliveryNoteItem->pickings()->first()->id;
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user);
+
+    expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and(\App\Models\Dispatching\Picking::find($pickingId))->toBeNull()
+        ->and($cancelled->returnedDeliveryNote()->count())->toBe(0);
+});
+
+test('cancelling with nothing picked does not raise a return and still cancels (HELP-2693)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this, 0);
+
+    $deliveryNote->deliveryNoteItems()->update(['quantity_picked' => 0]);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote->refresh(), $this->user, true, false, null, true);
+
+    expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and($cancelled->returnedDeliveryNote()->count())->toBe(0);
+});
+
+test('putting away a cancellation return writes cancel picked, a real return writes return picked (HELP-2693)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+
+    $returnItem = $cancelled->returnedDeliveryNote()->first()->returnDeliveryNoteItem()->first();
+
+    $sowing = \App\Actions\GoodsIn\Sowing\StoreSowing::make()->action($returnItem, $this->user, [
+        'quantity'              => 1,
+        'location_org_stock_id' => $locationOrgStock->id,
+    ]);
+
+    expect($sowing->orgStockMovement->type)
+        ->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::CANCEL_PICKED);
+
+    \App\Actions\GoodsIn\Sowing\DeleteSowing::make()->handle($sowing, $this->user);
+
+    $reversal = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->orderByDesc('id')->first();
+
+    expect($reversal->type)->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PICKED);
+});
