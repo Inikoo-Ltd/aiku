@@ -14,6 +14,7 @@ use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailHistoryExpiredException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -47,10 +48,16 @@ class FetchShopMailboxMessages
             $newHistoryId = $client->profile()['historyId'];
         }
 
+        $messageIds = array_unique(array_merge($messageIds, $client->listInboxMessageIds('in:inbox', 100)));
+
         $dispatched = 0;
 
         foreach ($messageIds as $messageId) {
             if (ChatMessage::where('metadata->gmail_message_id', $messageId)->exists()) {
+                continue;
+            }
+
+            if (! Cache::add($this->dispatchedKey($shop, $messageId), true, now()->addMinutes(30))) {
                 continue;
             }
 
@@ -61,6 +68,20 @@ class FetchShopMailboxMessages
         $this->updateGmailSettings($shop, $newHistoryId);
 
         return $dispatched;
+    }
+
+    /**
+     * History is read once and never again: a message whose job died took its only chance with
+     * it, and nothing said so, because a failure writes no row and applies no label. Anything
+     * taken in leaves the inbox, so what is still sitting there is exactly what has not arrived,
+     * and sweeping it is the only honest answer to "did everything come through".
+     *
+     * ponytail: a message that fails every time is retried twice an hour rather than every
+     * minute; if that ever becomes noise, file the repeat offenders under a label instead.
+     */
+    private function dispatchedKey(Shop $shop, string $messageId): string
+    {
+        return "gmail-message-dispatched:{$shop->id}:$messageId";
     }
 
     private function updateGmailSettings(Shop $shop, string $historyId): void

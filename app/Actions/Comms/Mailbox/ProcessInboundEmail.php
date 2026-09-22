@@ -86,7 +86,11 @@ class ProcessInboundEmail
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
 
         $mailboxAddress = Arr::get($shop->settings, 'gmail.email');
+        // Filed away like anything else we decide not to take in: left in the inbox it would be
+        // offered again by every sweep, and read as mail that never came through.
         if ($mailboxAddress && $from['address'] && strcasecmp($from['address'], $mailboxAddress) === 0) {
+            $client->fileAway($gmailMessageId, 'aiku/filtered');
+
             return null;
         }
 

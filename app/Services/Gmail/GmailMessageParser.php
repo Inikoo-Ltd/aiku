@@ -56,12 +56,12 @@ class GmailMessageParser
 
         $plain = self::findPart($payload, 'text/plain');
         if ($plain !== null) {
-            return self::trimQuotedHistory(self::decode($plain));
+            return self::trimQuotedHistory(self::decodeText($plain));
         }
 
         $html = self::findPart($payload, 'text/html');
         if ($html !== null) {
-            return self::trimQuotedHistory(self::htmlToText(self::decode($html)));
+            return self::trimQuotedHistory(self::htmlToText(self::decodeText($html)));
         }
 
         return '';
@@ -75,7 +75,7 @@ class GmailMessageParser
     {
         $html = self::findPart(Arr::get($raw, 'payload', []), 'text/html');
 
-        return $html !== null ? self::decode($html) : null;
+        return $html !== null ? self::decodeText($html) : null;
     }
 
     /**
@@ -183,12 +183,13 @@ class GmailMessageParser
         return $disposition !== null && str_starts_with(strtolower(trim($disposition)), 'inline');
     }
 
-    private static function findPart(array $part, string $mimeType): ?string
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function findPart(array $part, string $mimeType): ?array
     {
         if (Arr::get($part, 'mimeType') === $mimeType) {
-            $data = Arr::get($part, 'body.data');
-
-            return $data ?: null;
+            return Arr::get($part, 'body.data') ? $part : null;
         }
 
         foreach (Arr::get($part, 'parts', []) as $child) {
@@ -204,6 +205,56 @@ class GmailMessageParser
     private static function decode(string $base64url): string
     {
         return (string) base64_decode(str_replace(['-', '_'], ['+', '/'], $base64url));
+    }
+
+    /**
+     * @param  array<string, mixed>  $part
+     */
+    private static function decodeText(array $part): string
+    {
+        return self::toUtf8(
+            self::decode((string) Arr::get($part, 'body.data')),
+            self::charset($part)
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $part
+     */
+    private static function charset(array $part): ?string
+    {
+        $contentType = (string) self::header(['payload' => $part], 'Content-Type');
+
+        return preg_match('/charset\s*=\s*"?([A-Za-z0-9_\-]+)"?/i', $contentType, $matches) ? $matches[1] : null;
+    }
+
+    /**
+     * Mail does not have to be UTF-8, and does not always say honestly what it is. Stored as it
+     * arrived, a Latin body is bytes Postgres refuses outright, and the whole message was lost
+     * with it: the job failed, nothing was written and nothing labelled it, so it stayed unread
+     * in the inbox with no sign it had ever been offered to Aiku.
+     */
+    private static function toUtf8(string $text, ?string $charset): string
+    {
+        if ($charset !== null && ! in_array(strtolower($charset), ['utf-8', 'utf8', 'us-ascii', 'ascii'], true)) {
+            try {
+                $converted = mb_convert_encoding($text, 'UTF-8', $charset);
+
+                if (mb_check_encoding($converted, 'UTF-8')) {
+                    return $converted;
+                }
+            } catch (\ValueError) {
+                // An encoding name we do not know is no better than none: fall through.
+            }
+        }
+
+        if (mb_check_encoding($text, 'UTF-8')) {
+            return $text;
+        }
+
+        // Last resort for a body that lied about its charset or arrived damaged: readable and
+        // stored beats correct and discarded, and Windows-1252 maps every byte to something.
+        return mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
     }
 
     // ponytail: quoted-reply trimming is a heuristic (first "On ... wrote:" or leading ">" block), good enough until real threads misbehave

@@ -6917,3 +6917,50 @@ test('an agent can give a conversation back to the queue', function () {
     expect($closed->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
         ->and($closed->chatEvents()->where('event_type', 'released')->first()->payload['reason'])->toBe('permission_revoked');
 });
+
+test('a mail that is not utf8 still comes through, and one left in the inbox is swept up', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    // Written in Latin-1 and labelled as such: stored as it arrived these are bytes Postgres
+    // refuses, and the whole mail used to be lost on the way in.
+    $latin1 = mb_convert_encoding('Où est ma commande ?', 'ISO-8859-1', 'UTF-8');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/u1?*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'u1',
+            'threadId' => 'tu1',
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Stranger <stranger@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Commande'],
+                    ['name' => 'Content-Type', 'value' => 'text/plain; charset="ISO-8859-1"'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode($latin1), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*'    => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'u1']]]),
+        'gmail.googleapis.com/gmail/v1/users/me/history*'      => \Illuminate\Support\Facades\Http::response(['history' => [], 'historyId' => '2']),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    // History knows nothing about it, which is the case for every mail whose job died: the inbox
+    // sweep is what still finds it.
+    Bus::fake();
+    expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop))->toBe(1);
+    Bus::assertDispatched(\Lorisleiva\Actions\Decorators\JobDecorator::class);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::make()->handle($this->shop->fresh(), 'u1');
+
+    expect($message->message_text)->toBe('Où est ma commande ?');
+});
