@@ -16,7 +16,9 @@ import "floating-vue/dist/style.css"
 import PrimeVue from "primevue/config"
 import Aura from "@primevue/themes/aura"
 import { definePreset } from "@primevue/themes"
+import { i18nVue } from "laravel-vue-i18n"
 import { ctrans } from "@/Composables/useTrans"
+import { irisI18nOptions, loadLocaleMessages, normalizeLocale } from "@/Composables/useIrisTranslations"
 import IrisLayout from "@/Layouts/Iris.vue"
 import cluster from "node:cluster"
 
@@ -50,8 +52,11 @@ const MyPreset = definePreset(Aura, {
 })
 
 createServer(
-	(page) =>
-		createInertiaApp({
+	async (page) => {
+		const irisLocale = normalizeLocale(page.props?.iris?.locale)
+		const irisLocaleMessages = await loadLocaleMessages(irisLocale)
+
+		return createInertiaApp({
 			page,
 			render: renderToString,
 			title: (title) => `${title}`,
@@ -80,6 +85,7 @@ createServer(
 				app.config.globalProperties.ctrans = ctrans
 
 				return app
+					.use(i18nVue, irisI18nOptions(irisLocale, irisLocaleMessages))
 					.use(Notifications)
 					.use(FloatingVue)
 					.use(PrimeVue, {
@@ -99,7 +105,8 @@ createServer(
 						location: new URL(page.props.ziggy.location),
 					})
 			},
-		}),
+		})
+	},
 	{
 		port: import.meta.env.VITE_INERTIA_SSR_PORT ?? 13714,
 		cluster: true,
