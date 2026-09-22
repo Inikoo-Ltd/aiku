@@ -65,7 +65,7 @@ const removeImage = (index: number) => {
               <FontAwesomeIcon
                 :icon="faTrash"
                 class="text-red-500 hover:text-red-700"
-                @click.stop="removeImage(index)"
+                @click.stop="removeImage(index)" fixed-width
               />
             </DisclosureButton>
             <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">

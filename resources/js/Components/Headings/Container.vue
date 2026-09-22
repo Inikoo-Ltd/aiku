@@ -32,9 +32,9 @@ const props = defineProps<{
     </template> -->
     
     <!-- <template v-else> -->
-        <FontAwesomeIcon v-if="data?.icon" :icon="data?.icon" v-tooltip="capitalize(data?.tooltip)" aria-hidden="true"
+        <FontAwesomeIcon v-if="data?.icon" :icon="data?.icon" v-tooltip="capitalize(data?.tooltip)" fixed-width aria-hidden="true"
             size="xs" />
         <span class="leading-none mx-1">{{ data?.label }}</span>
-        <FontAwesomeIcon flip="horizontal" :icon="'fal fa-level-up'" :class="'mr-2'" />
+        <FontAwesomeIcon flip="horizontal" :icon="'fal fa-level-up'" :class="'mr-2'" fixed-width />
     <!-- </template> -->
 </template>

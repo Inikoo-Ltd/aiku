@@ -324,7 +324,7 @@ const decideSuggestion = async (suggestion: Suggestion, decision: 'approve' | 'd
                     {{ boost.code }}
                     <span class="text-indigo-400 text-xs">{{ ctrans(itemTypeLabels[boost.type]) }}</span>
                     <button type="button" @click="boostSelection = removeItem(boostSelection, boost)" :aria-label="ctrans('Remove')">
-                        <FontAwesomeIcon icon="fal fa-times" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                     </button>
                 </span>
             </div>
@@ -408,7 +408,7 @@ const decideSuggestion = async (suggestion: Suggestion, decision: 'approve' | 'd
                     {{ featuredItem.code }}
                     <span class="opacity-70 text-xs">{{ ctrans(itemTypeLabels[featuredItem.type]) }}</span>
                     <button type="button" @click="featuredSelection = removeItem(featuredSelection, featuredItem)" :aria-label="ctrans('Remove')" class="text-red-600 hover:text-red-700">
-                        <FontAwesomeIcon icon="fal fa-times" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                     </button>
                 </span>
             </div>
@@ -493,7 +493,7 @@ const decideSuggestion = async (suggestion: Suggestion, decision: 'approve' | 'd
 
             <div v-if="suggestions.length" class="mb-4">
                 <p class="text-xs text-gray-400 mb-1">
-                    <FontAwesomeIcon icon="fal fa-sparkles" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-sparkles" fixed-width aria-hidden="true" />
                     {{ ctrans("AI suggestions from failed searches, approve or dismiss:") }}
                 </p>
                 <div class="divide-y divide-gray-100 rounded-md border border-gray-200">
@@ -514,7 +514,7 @@ const decideSuggestion = async (suggestion: Suggestion, decision: 'approve' | 'd
                                 :aria-label="ctrans('Approve')"
                                 @click="decideSuggestion(suggestion, 'approve')"
                             >
-                                <FontAwesomeIcon icon="fal fa-check" aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
                             </button>
                             <button
                                 type="button"
@@ -523,7 +523,7 @@ const decideSuggestion = async (suggestion: Suggestion, decision: 'approve' | 'd
                                 :aria-label="ctrans('Dismiss')"
                                 @click="decideSuggestion(suggestion, 'dismiss')"
                             >
-                                <FontAwesomeIcon icon="fal fa-times" aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                             </button>
                         </span>
                     </div>
@@ -566,7 +566,7 @@ const decideSuggestion = async (suggestion: Suggestion, decision: 'approve' | 'd
                             :aria-label="ctrans('Delete')"
                             @click="deleteSynonym(entry)"
                         >
-                            <FontAwesomeIcon icon="fal fa-times" aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                         </button>
                     </div>
                 </template>

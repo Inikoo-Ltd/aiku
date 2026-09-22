@@ -321,10 +321,10 @@ onBeforeUnmount(() => {
                             class="absolute h-full w-full bg-gray-800/50 z-10 " />
                         <div class="z-[11] absolute left-7 flex flex-col gap-y-2">
                             <FontAwesomeIcon v-if="get(component, ['visibility'], true) === false"
-                                icon='fas fa-eye-slash' class=' text-orange-400 text-4xl' aria-hidden='true' />
+                                icon='fas fa-eye-slash' class=' text-orange-400 text-4xl' fixed-width aria-hidden='true' />
                             <span v-if="get(component, ['visibility'], true) === false"
                                 class="text-orange-400/60 text-sm italic select-none" aria-hidden='true'>
-                                <FontAwesomeIcon icon='far fa-exclamation-triangle' class='' aria-hidden='true' />
+                                <FontAwesomeIcon icon='far fa-exclamation-triangle' class='' fixed-width aria-hidden='true' />
                                 Not visible
                             </span>
                         </div>

@@ -358,7 +358,7 @@ onMounted(async () => {
                         hover:bg-gray-100 hover:border-gray-300
                     ">
                         <FontAwesomeIcon :icon="faArrowToBottom"
-                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" fixed-width />
 
                         <span class="
                             font-medium text-sm text-gray-800
@@ -403,7 +403,7 @@ onMounted(async () => {
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                                 <span>
                                     {{
                                         product.is_back_in_stock
@@ -423,8 +423,8 @@ onMounted(async () => {
                                 ? onUnselectFavourite(product)
                                 : onAddFavourite(product)
                             ">
-                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" />
-                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" />
+                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" fixed-width />
+                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -532,12 +532,12 @@ onMounted(async () => {
                     <div class="group/variants relative px-5">
                         <button v-show="!isVariantSwiperLocked" ref="variantPrevEl" type="button"
                             class="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
-                            <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" />
+                            <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" fixed-width />
                         </button>
 
                         <button v-show="!isVariantSwiperLocked" ref="variantNextEl" type="button"
                             class="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
-                            <FontAwesomeIcon :icon="faChevronRight" class="text-sm" />
+                            <FontAwesomeIcon :icon="faChevronRight" class="text-sm" fixed-width />
                         </button>
 
                         <Swiper :modules="[Navigation]" :navigation="variantNavigation" :space-between="8"
@@ -562,7 +562,7 @@ onMounted(async () => {
                          group-hover:scale-110" />
 
                                         <FontAwesomeIcon v-else :icon="faImage"
-                                            class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                            class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                                     </div>
 
                                     <div v-if="item.variant_label" class="p-1">
@@ -584,7 +584,7 @@ onMounted(async () => {
                     <div
                         class="group flex items-center gap-3 py-2 px-4 mt-4 w-full border rounded-lg bg-[#f9f8f5] transition hover:bg-gray-100 hover:border-gray-300  my-2">
                         <FontAwesomeIcon :icon="faMapMarkerAlt"
-                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" fixed-width />
 
                         <span class="
                              font-medium text-sm underline text-gray-800
@@ -685,7 +685,7 @@ onMounted(async () => {
                                         class="text-xs font-thin text-blue-600 underline cursor-pointer flex items-center">
                                         <a :href="item.url" target="_blank" class="flex items-center">
                                             <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))"
-                                                class="mr-1" />
+                                                class="mr-1" fixed-width />
                                             {{ item.caption }}.{{ extractFileType(item.mime_type) }}
                                         </a>
                                     </div>
@@ -745,7 +745,7 @@ onMounted(async () => {
                                 customerData?.is_favourite
                                     ? onUnselectFavourite(product)
                                     : onAddFavourite(product)
-                                " />
+                                " fixed-width />
                 </div>
             </div>
 
@@ -834,7 +834,7 @@ onMounted(async () => {
                     : onAddBackInStock(product)
                 " class="flex items-center gap-2 px-3 py-2 rounded-full border bg-gray-100 text-sm">
                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" />
+                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
                 <span>
                     {{
                         product.is_back_in_stock
@@ -852,7 +852,7 @@ onMounted(async () => {
             <a :href="marketingMaterialUrl"
                 rel="nofollow"
                 class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-[#f9f8f5] ">
-                <FontAwesomeIcon :icon="faArrowToBottom" />
+                <FontAwesomeIcon :icon="faArrowToBottom" fixed-width />
                 <span class="text-sm font-medium truncate">
                     {{ ctrans('Download Marketing Materials for') }} {{ product.name }}
                 </span>
@@ -883,7 +883,7 @@ onMounted(async () => {
             <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment && fieldValue?.appointment_data?.link?.href"
                 :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type">
                 <div class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-[#f9f8f5]">
-                    <FontAwesomeIcon :icon="faMapMarkerAlt" />
+                    <FontAwesomeIcon :icon="faMapMarkerAlt" fixed-width />
                     <div v-html="fieldValue?.appointment_data?.text" class="text-sm underline" />
                 </div>
             </LinkIris>
@@ -974,7 +974,7 @@ onMounted(async () => {
                                         class="text-xs font-thin text-blue-600 underline cursor-pointer flex items-center">
                                         <a :href="item.url" target="_blank" class="flex items-center">
                                             <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))"
-                                                class="mr-1" />
+                                                class="mr-1" fixed-width />
                                             {{ item.caption }}.{{ extractFileType(item.mime_type) }}
                                         </a>
                                     </div>

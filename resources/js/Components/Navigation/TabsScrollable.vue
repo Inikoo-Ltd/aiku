@@ -101,12 +101,12 @@ onBeforeUnmount(() => {
     <div class="relative border-b border-gray-200" :style="{ '--tabs-accent': accentColor }">
         <button v-if="canScrollLeft" type="button" @click="scrollTabs(-1)" :aria-label="trans('Scroll tabs left')"
             class="absolute left-0 inset-y-0 z-10 flex w-10 items-center justify-start pl-2 text-gray-500 bg-gradient-to-r from-white via-white/90 to-transparent">
-            <FontAwesomeIcon icon="fal fa-chevron-left" class="text-sm" aria-hidden="true" />
+            <FontAwesomeIcon icon="fal fa-chevron-left" class="text-sm" fixed-width aria-hidden="true" />
         </button>
 
         <button v-if="canScrollRight" type="button" @click="scrollTabs(1)" :aria-label="trans('Scroll tabs right')"
             class="absolute right-0 inset-y-0 z-10 flex w-10 items-center justify-end pr-2 text-gray-500 bg-gradient-to-l from-white via-white/90 to-transparent">
-            <FontAwesomeIcon icon="fal fa-chevron-right" class="text-sm" aria-hidden="true" />
+            <FontAwesomeIcon icon="fal fa-chevron-right" class="text-sm" fixed-width aria-hidden="true" />
         </button>
 
         <nav ref="_scroller" @scroll.passive="updateScrollIndicators" aria-label="Tabs"
@@ -119,8 +119,8 @@ onBeforeUnmount(() => {
                     slug === currentTab ? 'tabActive' : 'tabIdle',
                     tab.align === 'right' ? 'sm:ml-auto' : '',
                 ]">
-                <FontAwesomeIcon v-if="loadingTab === slug" icon="fad fa-spinner-third" class="animate-spin h-5 w-5" aria-hidden="true" />
-                <FontAwesomeIcon v-else-if="tab.icon" :icon="tab.icon" class="h-5 w-5" aria-hidden="true" />
+                <FontAwesomeIcon v-if="loadingTab === slug" icon="fad fa-spinner-third" class="animate-spin h-5 w-5" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else-if="tab.icon" :icon="tab.icon" class="h-5 w-5" fixed-width aria-hidden="true" />
 
                 <span :class="tab.type === 'icon' ? 'sm:sr-only' : ''">{{ tab.title }}</span>
 

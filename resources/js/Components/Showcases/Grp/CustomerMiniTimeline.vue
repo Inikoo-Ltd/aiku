@@ -115,7 +115,7 @@ const formatMetadataValue = (value: unknown): string => {
         <!-- Empty State -->
         <div v-if="recentEvents.length === 0" class="flex flex-col items-center justify-center py-10 text-center">
             <div class="mb-3 animate-pulse">
-                <FontAwesomeIcon :icon="['fal', 'fa-code-branch']" class="text-gray-300 text-4xl" />
+                <FontAwesomeIcon :icon="['fal', 'fa-code-branch']" class="text-gray-300 text-4xl" fixed-width />
             </div>
             <p class="text-gray-500 text-sm font-medium">{{ trans('No activity found') }}</p>
             <p class="text-gray-400 text-xs mt-1">{{ trans('No activity in the last 12 months.') }}</p>
@@ -139,7 +139,7 @@ const formatMetadataValue = (value: unknown): string => {
                         <FontAwesomeIcon
                             :icon="event.icon"
                             class="text-xs"
-                            :class="getColorClasses(event.color).icon"
+                            :class="getColorClasses(event.color).icon" fixed-width
                         />
                     </div>
 
@@ -187,7 +187,7 @@ const formatMetadataValue = (value: unknown): string => {
                                 >
                                     <FontAwesomeIcon
                                         :icon="expandedIds.has(event.id) ? ['fal', 'fa-chevron-up'] : ['fal', 'fa-chevron-down']"
-                                        class="text-xs"
+                                        class="text-xs" fixed-width
                                     />
                                 </button>
                             </div>
@@ -205,7 +205,7 @@ const formatMetadataValue = (value: unknown): string => {
 
                                 <template v-else-if="['page_view', 'product_view'].includes(event.type)">
                                     <span v-if="event.metadata?.duration_seconds" class="flex gap-2" v-tooltip="trans('Browsed for :_durationSeconds seconds', {_durationSeconds: event.metadata?.duration_seconds})">
-                                        <FontAwesomeIcon :icon="faStopwatch" class="self-center" /> 
+                                        <FontAwesomeIcon :icon="faStopwatch" class="self-center" fixed-width /> 
                                         <span  class="self-center">
                                             {{ event.metadata?.duration_seconds }} {{ trans('Seconds') }}
                                         </span>

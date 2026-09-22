@@ -1007,7 +1007,7 @@ const stopSocketListener = () => {
 				<!-- Icon -->
 				<FontAwesomeIcon
 					:icon="faExclamationTriangle"
-					class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+					class="text-yellow-500 w-4 h-4 flex-shrink-0" fixed-width />
 
 				<!-- Main Content -->
 				<div class="flex gap-2 flex-wrap items-center">

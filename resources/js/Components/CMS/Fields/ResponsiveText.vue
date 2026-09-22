@@ -180,7 +180,7 @@ watch(
         v-tooltip="normalized.use_responsive
           ? 'Each screen has its own text. Changing the text on one view will not affect the others.'
           : 'Responsive mode is disabled. The desktop text will be used for all screens (tablet & mobile).'">
-        <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" />
+        <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" fixed-width />
         <span>{{ trans('Info') }}</span>
       </div>
 

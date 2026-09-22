@@ -98,7 +98,7 @@ function getOutboxNameDisplay(outbox: Outbox) {
                   <FontAwesomeIcon
                     v-if="getOutboxNameDisplay(outbox).showSchedule"
                     :icon="faInfoCircle"
-                    v-tooltip="getOutboxNameDisplay(outbox).scheduleTooltip"
+                    v-tooltip="getOutboxNameDisplay(outbox).scheduleTooltip" fixed-width
                 />
             </Link>
         </template>

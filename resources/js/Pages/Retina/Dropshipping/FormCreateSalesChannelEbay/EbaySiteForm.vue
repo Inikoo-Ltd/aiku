@@ -63,7 +63,7 @@
                 <Select v-model="form.marketplace" :options="sites" optionLabel="name" optionValue="value"
                         class="w-full"
                         @update:model-value="errors.marketplace = null "/>
-                <FontAwesomeIcon v-tooltip="trans('Select listing duration')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                <FontAwesomeIcon v-tooltip="trans('Select listing duration')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
             </div>
             <p v-if="errors.marketplace" class="text-sm text-red-600 mt-1">{{ errors.marketplace?.[0] }}</p>
         </div>

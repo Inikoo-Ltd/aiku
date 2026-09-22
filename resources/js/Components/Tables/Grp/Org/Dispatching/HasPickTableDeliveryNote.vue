@@ -224,7 +224,7 @@ const warehouseDaysClass = (days?: number | null) => {
                     {{ ctrans('Collection') }}
                     <FontAwesomeIcon 
                         :icon="faMapMarkerAlt"
-                        class="text-pink-500"
+                        class="text-pink-500" fixed-width
                     />
                 </span>
                 <template v-if="deliveryNote.picking_sessions_count > 0 && deliveryNote.picking_session_ids">

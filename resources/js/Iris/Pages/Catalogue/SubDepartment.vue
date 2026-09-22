@@ -106,7 +106,7 @@ const componentProps = computed(() => {
                             class="inline-flex items-center gap-2 whitespace-nowrap text-sm text-gray-500 transition-colors duration-150"
                             :class="{ 'cursor-default': !item.url }"
                         >
-                            <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="h-4 w-4 shrink-0" />
+                            <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="h-4 w-4 shrink-0" fixed-width />
                             <span>{{ item.label || '-' }}</span>
                         </component>
                     </template>

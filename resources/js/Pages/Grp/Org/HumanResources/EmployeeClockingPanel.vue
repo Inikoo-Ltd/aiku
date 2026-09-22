@@ -149,7 +149,7 @@ onUnmounted(() => {
 									: 'text-gray-500 hover:text-gray-700'
 							"
 							@click="selectedMethod = option.value">
-							<FontAwesomeIcon :icon="option.icon" class="w-4 shrink-0" />
+							<FontAwesomeIcon :icon="option.icon" class="w-4 shrink-0" fixed-width />
 							<span class="truncate">{{ option.label }}</span>
 						</button>
 					</div>
@@ -180,7 +180,7 @@ onUnmounted(() => {
 				<div class="flex justify-center">
 					<div
 						class="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center bg-green-100">
-						<FontAwesomeIcon :icon="faCheck" class="text-3xl sm:text-4xl text-green-600" />
+						<FontAwesomeIcon :icon="faCheck" class="text-3xl sm:text-4xl text-green-600" fixed-width />
 					</div>
 				</div>
 

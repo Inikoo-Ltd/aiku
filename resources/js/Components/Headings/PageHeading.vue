@@ -246,7 +246,7 @@ const setError = (e) => {
 										:icon="data.iconRight?.icon || data.iconRight"
 										class="align-top"
 										:class="data.iconRight.class"
-										aria-hidden="true"
+										fixed-width aria-hidden="true"
 										:color="data.iconRight.color"
 										:rotation="data?.iconRight?.icon_rotation" />
 									<span v-if="data.titleRight" class="text-lg">{{

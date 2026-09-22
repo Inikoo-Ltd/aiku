@@ -150,12 +150,12 @@ function noteColor(movement) {
               :icon="orgStockMovement.parent_type == 'DeliveryNote' ? faTruckLoading : (
                   orgStockMovement.parent_type == 'ReturnDeliveryNote' ? faRampLoading :
                   faShippingFast
-              )"
+              )" fixed-width
             />
             <FontAwesomeIcon
               v-if="orgStockMovement.type == 'cancel-return-picked' || orgStockMovement.type == 'cancel-picked' || orgStockMovement.type == 'cancel-purchase'"
               :icon="faHorizontalRule"
-              class="rotate-[45deg] text-red-500 text-md"
+              class="rotate-[45deg] text-red-500 text-md" fixed-width
             />
           </FontAwesomeLayers>
           {{ orgStockMovement.parent_reference }}
@@ -165,7 +165,7 @@ function noteColor(movement) {
         {{ ctrans('Migration Point') }}
         <FontAwesomeIcon
           :icon="faMapSigns"
-          class="text-blue-500 ml-1"
+          class="text-blue-500 ml-1" fixed-width
         />
       </span>
       <span v-else>
@@ -187,7 +187,7 @@ function noteColor(movement) {
           @click="() => {
             selectedMovement = orgStockMovement
             isNoteModalOpen = true
-          }"
+          }" fixed-width
         />
       </div>
     </template>
@@ -202,7 +202,7 @@ function noteColor(movement) {
           </span>
           <span v-else-if="orgStockMovement.flow == 'audit'" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
             <FontAwesomeIcon
-              :icon="faBoxFull"
+              :icon="faBoxFull" fixed-width
             />
             <FractionDisplay v-if="orgStockMovement.audited_quantity_fractional" :fractionData="orgStockMovement.audited_quantity_fractional" class="ml-1"/>
             <span v-else>
@@ -211,7 +211,7 @@ function noteColor(movement) {
           </span>
           <span v-else class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
             <FontAwesomeIcon
-              :icon="faBoxFull"
+              :icon="faBoxFull" fixed-width
             />
             <FractionDisplay v-if="orgStockMovement.running_quantity_fractional" :fractionData="orgStockMovement.running_quantity_fractional" class="ml-1"/>
             <span v-else>
@@ -229,9 +229,9 @@ function noteColor(movement) {
     </template>
 
     <template #cell(flow)="{ item: orgStockMovement }">
-      <FontAwesomeIcon v-if="orgStockMovement.flow == 'in'" v-tooltip="trans('Stock Coming In')" :icon="faInboxIn" class="text-green-500"/>
-      <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'out'" v-tooltip="trans('Stock Coming Out')" :icon="faInboxOut" class="text-red-500"/>
-      <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'audit'" v-tooltip="trans('Stock Audited')" :icon="faClipboardCheck" class="text-gray-500"/>
+      <FontAwesomeIcon v-if="orgStockMovement.flow == 'in'" v-tooltip="trans('Stock Coming In')" :icon="faInboxIn" class="text-green-500" fixed-width/>
+      <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'out'" v-tooltip="trans('Stock Coming Out')" :icon="faInboxOut" class="text-red-500" fixed-width/>
+      <FontAwesomeIcon v-else-if="orgStockMovement.flow == 'audit'" v-tooltip="trans('Stock Audited')" :icon="faClipboardCheck" class="text-gray-500" fixed-width/>
     </template>
 
     <template #cell(running_value)="{ item: orgStockMovement }">
@@ -244,7 +244,7 @@ function noteColor(movement) {
         <span v-else>
           {{ orgStockMovement.quantity ?? 0 }}
         </span>
-        <FontAwesomeIcon :icon="orgStockMovement.is_negative ? faArrowDown : faArrowUp" class="text-[10px] opacity-70" aria-hidden="true" />
+        <FontAwesomeIcon :icon="orgStockMovement.is_negative ? faArrowDown : faArrowUp" class="text-[10px] opacity-70" fixed-width aria-hidden="true" />
       </span>
       <span v-else>
       </span>
@@ -255,7 +255,7 @@ function noteColor(movement) {
       </span>
       <span v-else-if="orgStockMovement.flow == 'audit'" class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100" v-tooltip="ctrans('Audited quantity under this location')">
         <FontAwesomeIcon
-          :icon="faBoxFull"
+          :icon="faBoxFull" fixed-width
         />
         <FractionDisplay v-if="orgStockMovement.audited_quantity_fractional" :fractionData="orgStockMovement.audited_quantity_fractional" class="ml-1"/>
         <span v-else>
@@ -264,7 +264,7 @@ function noteColor(movement) {
       </span>
       <span v-else class="my-auto ml-auto px-2 py-[0.125rem] border rounded-md border-gray-400" v-tooltip="ctrans('Running quantity under this location')">
         <FontAwesomeIcon
-          :icon="faBoxFull"
+          :icon="faBoxFull" fixed-width
         />
         <FractionDisplay v-if="orgStockMovement.running_quantity_fractional" :fractionData="orgStockMovement.running_quantity_fractional" class="ml-1"/>
         <span v-else>
@@ -317,7 +317,7 @@ function noteColor(movement) {
           <div class="flex flex-row w-full text-md font-semibold truncate gap-x-2 text-center py-0.5 pl-3 pr-3" style="">
             <FontAwesomeIcon
               :icon="faNoteSticky"
-              class="my-auto"
+              class="my-auto" fixed-width
             />
             <span
               class="align-middle"
@@ -327,7 +327,7 @@ function noteColor(movement) {
               <span class="my-auto ml-2 px-2 py-[0.125rem] border rounded-md border-blue-300 text-blue-500 bg-blue-100 text-xs">
                 {{ selectedMovement.location_code }}
                 <FontAwesomeIcon
-                  :icon="faBoxFull"
+                  :icon="faBoxFull" fixed-width
                 />
                 <FractionDisplay v-if="selectedMovement.running_quantity_fractional" :fractionData="selectedMovement.running_quantity_fractional" class="ml-1"/>
                 <span v-else>
@@ -341,7 +341,7 @@ function noteColor(movement) {
             <FontAwesomeIcon
               :icon="faTimes"
               class="cursor-pointer"
-              @click="() => isNoteModalOpen = false"
+              @click="() => isNoteModalOpen = false" fixed-width
             />
           </div>
         </div>

@@ -94,7 +94,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 						<div :style="getStyles(modelValue?.timeline?.bullet.properties, screenType)"
 							class="bg-blue-600 text-white font-bold rounded-full w-14 h-14 flex items-center justify-center">
 							<span v-if="modelValue.timeline.bullet.type === 'number'">{{ idx + 1 }}</span>
-							<FontAwesomeIcon v-if="modelValue.timeline.bullet.type === 'icon'" :icon="step.icon" />
+							<FontAwesomeIcon v-if="modelValue.timeline.bullet.type === 'icon'" :icon="step.icon" fixed-width />
 						</div>
 					</div>
 

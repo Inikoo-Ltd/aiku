@@ -231,7 +231,7 @@ const isModalBalanceIncrease = ref(false)
               severity="success"
               size="small"
               variant="outlined">
-              <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
+              <FontAwesomeIcon :icon="faCheck" @click="visible = false" fixed-width />
               <span> Approve </span>
             </ButtonPrimeVue>
           </Link>
@@ -242,7 +242,7 @@ const isModalBalanceIncrease = ref(false)
             size="small"
             variant="outlined"
             @click="() => openRejectedModal(data.fulfilment_customer.customer)">
-            <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
+            <FontAwesomeIcon :icon="faTimes" @click="visible = false" fixed-width />
             <span> Reject </span>
           </ButtonPrimeVue>
         </div>

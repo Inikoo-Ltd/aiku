@@ -95,7 +95,7 @@ const getIcon = (type?: string) => {
     <!-- Private Attachments -->
     <div class="bg-white  shadow-sm border border-gray-200 overflow-hidden">
       <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
-        <FontAwesomeIcon :icon="faLock" class="text-red-500 text-base" />
+        <FontAwesomeIcon :icon="faLock" class="text-red-500 text-base" fixed-width />
         <h3 class="text-sm font-semibold text-gray-700 uppercase">Private Attachments</h3>
       </div>
 
@@ -112,7 +112,7 @@ const getIcon = (type?: string) => {
               :class="[
                 item.attachment ? 'text-green-500' : 'text-gray-400',
                 'transition'
-              ]"
+              ]" fixed-width
             />
             <span class="text-gray-700">{{ item.label }}</span>
           </div>
@@ -124,7 +124,7 @@ const getIcon = (type?: string) => {
                 target="_blank"
                 class="text-xs text-green-600 flex items-center gap-1 hover:underline"
               >
-                <FontAwesomeIcon :icon="faCheckCircle" class="text-green-500 text-xs" />
+                <FontAwesomeIcon :icon="faCheckCircle" class="text-green-500 text-xs" fixed-width />
                 {{ item.attachment.name }}
               </a>
             </template>

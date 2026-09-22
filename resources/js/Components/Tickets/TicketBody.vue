@@ -105,7 +105,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
         <div v-if="images?.length" class="mt-2 flex flex-wrap gap-2">
             <button v-for="(image, index) in images" :key="index" type="button" class="block cursor-zoom-in" @click="openPreview(index)">
                 <span class="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50">
-                    <FontAwesomeIcon v-show="!loadedImageUrls.includes(image.original)" icon="fal fa-image" class="text-3xl text-gray-300" />
+                    <FontAwesomeIcon v-show="!loadedImageUrls.includes(image.original)" icon="fal fa-image" class="text-3xl text-gray-300" fixed-width />
                     <Image
                         :src="image"
                         alt=""
@@ -147,8 +147,8 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
         </Teleport>
         <ul v-if="attachments?.length" class="mt-2 space-y-1 text-sm">
             <li v-for="file in attachments" :key="file.url">
-                <button v-if="isPreviewableAttachment(file)" type="button" class="text-left text-[--app-accent-strong] hover:underline break-all" @click="previewFileIndex = previewableFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</button>
-                <a v-else :href="file.url" :download="file.name" class="text-[--app-accent-strong] hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" />{{ file.name }}</a>
+                <button v-if="isPreviewableAttachment(file)" type="button" class="text-left text-[--app-accent-strong] hover:underline break-all" @click="previewFileIndex = previewableFiles.indexOf(file)"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" fixed-width />{{ file.name }}</button>
+                <a v-else :href="file.url" :download="file.name" class="text-[--app-accent-strong] hover:underline break-all"><FontAwesomeIcon icon="fal fa-paperclip" class="mr-1" fixed-width />{{ file.name }}</a>
             </li>
         </ul>
         <TicketAttachmentPreview v-model:index="previewFileIndex" :files="previewableFiles" />

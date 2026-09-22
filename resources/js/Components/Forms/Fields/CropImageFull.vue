@@ -164,12 +164,12 @@ watch(isOpenModalCrop, (val) => {
         <FontAwesomeIcon
           v-if="form.errors[fieldName]"
           :icon="['fas', 'exclamation-circle']"
-          class="h-5 w-5 text-red-500"
+          class="h-5 w-5 text-red-500" fixed-width
         />
         <FontAwesomeIcon
           v-else-if="form.recentlySuccessful"
           :icon="['fas', 'check-circle']"
-          class="h-5 w-5 text-green-500"
+          class="h-5 w-5 text-green-500" fixed-width
         />
       </div>
 
@@ -189,9 +189,9 @@ watch(isOpenModalCrop, (val) => {
         <div  class="h-9 align-bottom text-center cursor-pointer" :disabled="form.processing || !form.isDirty">
           <template v-if="form.isDirty">
             <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third" class="text-2xl animate-spin" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" @click="submit" />
+            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" @click="submit" />
           </template>
-          <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+          <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
         </div>
       </div>
 

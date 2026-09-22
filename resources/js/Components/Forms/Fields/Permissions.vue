@@ -245,7 +245,7 @@ const organisationPositionCounts = ref({})
                         <div class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-100 transition-all duration-200 ease-in-out">
                             <!-- Section: Department label -->
                             <div class="flex items-center gap-x-1.5">
-                                <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400 fixed-width" aria-hidden="true" />
+                                <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400" fixed-width aria-hidden="true" />
                                 {{ jobGroup.department }}
                             </div>
                             <!-- Section: Radio (the clickable area) -->
@@ -294,9 +294,9 @@ const organisationPositionCounts = ref({})
                 <div @click="submitGroupPermissions" class="h-9 align-bottom text-center cursor-pointer" :disabled="form.processing || !form.isDirty">
                     <template v-if="form.isDirty">
                         <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third" class="text-2xl animate-spin" fixed-width aria-hidden="true" />
-                        <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                     </template>
-                    <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                 </div>
             </div>
 

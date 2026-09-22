@@ -842,7 +842,7 @@ const closeRejectModal = () => {
 							type="radio"
 							value="xlsx"
 							class="text-[--app-accent] focus:ring-[--app-accent]" />
-						<FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" />
+						<FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" fixed-width />
 						<span class="text-sm">{{ trans("Excel (XLSX)") }}</span>
 					</label>
 					<label class="flex cursor-pointer items-center gap-2">
@@ -851,7 +851,7 @@ const closeRejectModal = () => {
 							type="radio"
 							value="csv"
 							class="text-[--app-accent] focus:ring-[--app-accent]" />
-						<FontAwesomeIcon icon="fal fa-file-csv" class="text-blue-600" />
+						<FontAwesomeIcon icon="fal fa-file-csv" class="text-blue-600" fixed-width />
 						<span class="text-sm">{{ trans("CSV") }}</span>
 					</label>
 				</div>

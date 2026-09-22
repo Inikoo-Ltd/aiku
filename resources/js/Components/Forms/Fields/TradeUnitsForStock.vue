@@ -195,7 +195,7 @@ const removeRow = (index: number) => rows.value.splice(index, 1)
                                                 v-if="product.pick.isPartial"
                                                 :icon="faExclamationTriangle"
                                                 class="text-amber-500"
-                                                v-tooltip="ctrans('Not a whole number of packs: either this product\'s pack size or this SKU packing is wrong')" />
+                                                v-tooltip="ctrans('Not a whole number of packs: either this product\'s pack size or this SKU packing is wrong')" fixed-width />
                                         </span>
                                     </div>
                                 </div>
@@ -216,14 +216,14 @@ const removeRow = (index: number) => rows.value.splice(index, 1)
             type="button"
             @click.stop.prevent="addRow"
             class="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-800">
-            <FontAwesomeIcon :icon="faPlus" class="h-3.5 w-3.5" />
+            <FontAwesomeIcon :icon="faPlus" class="h-3.5 w-3.5" fixed-width />
             {{ ctrans("Add trade unit") }}
         </button>
 
         <!-- Stocked locations: the editor decides what the stored counts mean under the new packing -->
         <div v-if="recountError" class="space-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
             <div class="flex items-start gap-2 font-medium text-amber-800">
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 shrink-0" />
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 shrink-0" fixed-width />
                 <span>{{ recountError }}</span>
             </div>
 
@@ -289,7 +289,7 @@ const removeRow = (index: number) => rows.value.splice(index, 1)
             v-else-if="impact?.to_be_modified?.length || impact?.to_be_affected?.length"
             class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
             <div class="flex items-center gap-2 font-medium text-amber-800">
-                <FontAwesomeIcon :icon="faExclamationTriangle" />
+                <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
                 {{ ctrans("Saving will change picking quantities") }}
             </div>
 

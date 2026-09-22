@@ -185,7 +185,7 @@ const layout = inject("layout", {})
             <div v-if="modelValue?.whatsapp?.number" @click="() => sendMessageToParent('panelOpen', 'whatsapp')"
                  class="relative group flex-1 flex gap-x-1.5 justify-center md:justify-start items-center hover-dashed">
                 <a class="flex gap-x-2 items-center">
-                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
+                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" fixed-width />
                     <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
                 </a>
             </div>
@@ -216,7 +216,7 @@ const layout = inject("layout", {})
                                     <div class="flex text-xl font-semibold leading-6"
                                          @contextmenu="onRightClickMenu($event, item, modelValue.columns['column_1']['data'], index)">
                                         <FontAwesomeIcon icon="fal fa-bars" v-if="!previewMode"
-                                                         class="handle text-white cursor-grab pr-3 mr-2" />
+                                                         class="handle text-white cursor-grab pr-3 mr-2" fixed-width />
                                         <div class="w-full">
                                             <Editor :key="editorKey" v-model="item.name" :editable="editable"
                                                     @onEditClick="selectAllEditor"
@@ -224,7 +224,7 @@ const layout = inject("layout", {})
                                         </div>
                                         <ContextMenu ref="menu" :model="Menuitems">
                                             <template #itemicon="item">
-                                                <FontAwesomeIcon :icon="item.item.icon" />
+                                                <FontAwesomeIcon :icon="item.item.icon" fixed-width />
                                             </template>
                                         </ContextMenu>
                                     </div>
@@ -237,7 +237,7 @@ const layout = inject("layout", {})
                                                 <div class="flex items-center w-full"
                                                      @contextmenu="onRightClickSubMenu($event, item, modelValue.columns['column_1']['data'], subIndex)">
                                                     <FontAwesomeIcon icon="fal fa-bars"
-                                                                     class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" />
+                                                                     class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" fixed-width />
                                                     <div class="w-full">
                                                         <Editor :key="editorKey" v-model="sub.name" :editable="editable"
                                                                 @onEditClick="selectAllEditor"
@@ -245,7 +245,7 @@ const layout = inject("layout", {})
                                                     </div>
                                                     <ContextMenu ref="subMenu" :model="subMenuitems">
                                                         <template #itemicon="item">
-                                                            <FontAwesomeIcon :icon="item.item.icon" />
+                                                            <FontAwesomeIcon :icon="item.item.icon" fixed-width />
                                                         </template>
                                                     </ContextMenu>
                                                 </div>
@@ -267,7 +267,7 @@ const layout = inject("layout", {})
                                                     </span>
                                                     <div>
                                                         <FontAwesomeIcon :icon="faTriangle"
-                                                                         :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" />
+                                                                         :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" fixed-width />
                                                     </div>
                                                 </div>
                                             </DisclosureButton>
@@ -288,7 +288,7 @@ const layout = inject("layout", {})
 
                     <div v-if="editable" @click="addMenuToColumn(modelValue.columns['column_1']['data'])"
                          class="border border-dashed w-[80%] p-2 rounded-xl flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all duration-300 ease-in-out cursor-pointer transform hover:scale-105 hidden hidden md:flex">
-                        <FontAwesomeIcon :icon="['fas', 'plus']" class="text-blue-600 text-2xl"></FontAwesomeIcon>
+                        <FontAwesomeIcon :icon="['fas', 'plus']" class="text-blue-600 text-2xl" fixed-width></FontAwesomeIcon>
                         <span class="text-gray-700 font-semibold text-lg">Add Menu</span>
                     </div>
                 </div>
@@ -307,14 +307,14 @@ const layout = inject("layout", {})
                                     <div class="flex text-xl font-semibold leading-6"
                                          @contextmenu="onRightClickMenu($event, item, modelValue.columns['column_2']['data'], index)">
                                         <FontAwesomeIcon icon="fal fa-bars" v-if="!previewMode"
-                                                         class="handle text-white cursor-grab pr-3 mr-2" />
+                                                         class="handle text-white cursor-grab pr-3 mr-2" fixed-width />
                                         <div class="w-full">
                                             <Editor :key="editorKey" v-model="item.name" :editable="editable" @onEditClick="selectAllEditor"
                                                     @update:model-value="(e) => { item.name = e; emits('update:modelValue', modelValue) }" />
                                         </div>
                                         <ContextMenu ref="menu" :model="Menuitems">
                                             <template #itemicon="item">
-                                                <FontAwesomeIcon :icon="item.item.icon" />
+                                                <FontAwesomeIcon :icon="item.item.icon" fixed-width />
                                             </template>
                                         </ContextMenu>
                                     </div>
@@ -327,14 +327,14 @@ const layout = inject("layout", {})
                                                 <div class="flex items-center w-full"
                                                      @contextmenu="onRightClickSubMenu($event, item, modelValue.columns['column_2']['data'], subIndex)">
                                                     <FontAwesomeIcon icon="fal fa-bars"
-                                                                     class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" />
+                                                                     class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" fixed-width />
                                                     <div class="w-full">
                                                         <Editor :key="editorKey" v-model="sub.name" :editable="editable" @onEditClick="selectAllEditor"
                                                                 @update:model-value="(e) => { sub.name = e; emits('update:modelValue', modelValue) }" />
                                                     </div>
                                                     <ContextMenu ref="subMenu" :model="subMenuitems">
                                                         <template #itemicon="item">
-                                                            <FontAwesomeIcon :icon="item.item.icon" />
+                                                            <FontAwesomeIcon :icon="item.item.icon" fixed-width />
                                                         </template>
                                                     </ContextMenu>
                                                 </div>
@@ -356,7 +356,7 @@ const layout = inject("layout", {})
                                                     </span>
                                                     <div>
                                                         <FontAwesomeIcon :icon="faTriangle"
-                                                                         :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" />
+                                                                         :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" fixed-width />
                                                     </div>
                                                 </div>
                                             </DisclosureButton>
@@ -376,7 +376,7 @@ const layout = inject("layout", {})
                     </draggable>
                     <div v-if="editable" @click="addMenuToColumn(modelValue.columns['column_2']['data'])"
                          class="border border-dashed w-[80%] p-2 rounded-xl flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all duration-300 ease-in-out cursor-pointer transform hover:scale-105 hidden md:flex">
-                        <FontAwesomeIcon :icon="['fas', 'plus']" class="text-blue-600 text-2xl"></FontAwesomeIcon>
+                        <FontAwesomeIcon :icon="['fas', 'plus']" class="text-blue-600 text-2xl" fixed-width></FontAwesomeIcon>
                         <span class="text-gray-700 font-semibold text-lg">Add Menu</span>
                     </div>
                 </div>
@@ -395,14 +395,14 @@ const layout = inject("layout", {})
                                     <div class="flex text-xl font-semibold leading-6"
                                          @contextmenu="onRightClickMenu($event, item, modelValue.columns['column_3']['data'], index)">
                                         <FontAwesomeIcon icon="fal fa-bars" v-if="!previewMode"
-                                                         class="handle text-white cursor-grab pr-3 mr-2" />
+                                                         class="handle text-white cursor-grab pr-3 mr-2" fixed-width />
                                         <div class="w-full">
                                             <Editor :key="editorKey" v-model="item.name" :editable="editable" @onEditClick="selectAllEditor"
                                                     @update:model-value="(e) => { item.name = e; emits('update:modelValue', modelValue) }" />
                                         </div>
                                         <ContextMenu ref="menu" :model="Menuitems">
                                             <template #itemicon="item">
-                                                <FontAwesomeIcon :icon="item.item.icon" />
+                                                <FontAwesomeIcon :icon="item.item.icon" fixed-width />
                                             </template>
                                         </ContextMenu>
                                     </div>
@@ -415,14 +415,14 @@ const layout = inject("layout", {})
                                                 <div class="flex items-center w-full"
                                                      @contextmenu="onRightClickSubMenu($event, item, modelValue.columns['column_3']['data'], subIndex)">
                                                     <FontAwesomeIcon icon="fal fa-bars"
-                                                                     class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" />
+                                                                     class="handle-sub text-sm text-white cursor-grab pr-3 mr-2" fixed-width />
                                                     <div class="w-full">
                                                         <Editor :key="editorKey" v-model="sub.name" :editable="editable" @onEditClick="selectAllEditor"
                                                                 @update:model-value="(e) => { sub.name = e; emits('update:modelValue', modelValue) }" />
                                                     </div>
                                                     <ContextMenu ref="subMenu" :model="subMenuitems">
                                                         <template #itemicon="item">
-                                                            <FontAwesomeIcon :icon="item.item.icon" />
+                                                            <FontAwesomeIcon :icon="item.item.icon" fixed-width />
                                                         </template>
                                                     </ContextMenu>
                                                 </div>
@@ -444,7 +444,7 @@ const layout = inject("layout", {})
                                                     </span>
                                                     <div>
                                                         <FontAwesomeIcon :icon="faTriangle"
-                                                                         :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" />
+                                                                         :class="['w-2 h-2 transition-transform', open ? 'rotate-180' : '']" fixed-width />
                                                     </div>
                                                 </div>
                                             </DisclosureButton>
@@ -465,7 +465,7 @@ const layout = inject("layout", {})
 
                     <div v-if="editable" @click="addMenuToColumn(modelValue.columns['column_3']['data'])"
                          class="border border-dashed w-[80%] p-2 rounded-xl flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all duration-300 ease-in-out cursor-pointer transform hover:scale-105 hidden md:flex">
-                        <FontAwesomeIcon :icon="['fas', 'plus']" class="text-blue-600 text-2xl"></FontAwesomeIcon>
+                        <FontAwesomeIcon :icon="['fas', 'plus']" class="text-blue-600 text-2xl" fixed-width></FontAwesomeIcon>
                         <span class="text-gray-700 font-semibold text-lg">Add Menu</span>
                     </div>
                 </div>

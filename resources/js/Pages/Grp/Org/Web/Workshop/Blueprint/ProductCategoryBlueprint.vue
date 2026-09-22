@@ -130,7 +130,7 @@ const confirmFollowMaster = (item) => {
 
     <ConfirmDialog group="follow-master">
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
         </template>
     </ConfirmDialog>
 </template>

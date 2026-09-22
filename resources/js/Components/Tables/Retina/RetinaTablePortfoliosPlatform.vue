@@ -597,7 +597,7 @@ const compTableFilterForSale = computed(() => {
 			@click="errorBluk = []"
 			class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
 			aria-label="Close">
-			<FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
+			<FontAwesomeIcon :icon="faTimes" class="w-4 h-4" fixed-width />
 		</button>
 
 		<!-- Message Content -->
@@ -865,15 +865,15 @@ const compTableFilterForSale = computed(() => {
 						trans('This product line has been discontinued. Please remove this item')
 					"
 					class="flex h-full w-full">
-					<FontAwesomeIcon :icon="faBan" class="text-2xl" />
-					<FontAwesomeIcon :icon="faCube" class="text-md text-center" />
+					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
+					<FontAwesomeIcon :icon="faCube" class="text-md text-center" fixed-width />
 				</FontAwesomeLayers>
 				<FontAwesomeLayers
 					v-else
 					v-tooltip="trans('This product line is currently not for sale')"
 					class="flex h-full w-full">
-					<FontAwesomeIcon :icon="faBan" class="text-2xl" />
-					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" />
+					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
+					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" fixed-width />
 				</FontAwesomeLayers>
 			</div>
 			<div
@@ -1455,7 +1455,7 @@ const compTableFilterForSale = computed(() => {
 					<FontAwesomeIcon
 						:icon="['fal', 'info-circle']"
 						class="text-gray-400 cursor-help"
-						v-tooltip="trans('Your eBay price is set relative to the base price (RRP): a percentage or an amount, up or down. When the base price changes, your eBay price follows this rule.')" />
+						v-tooltip="trans('Your eBay price is set relative to the base price (RRP): a percentage or an amount, up or down. When the base price changes, your eBay price follows this rule.')" fixed-width />
 				</label>
 				<div class="flex flex-row flex-wrap items-center gap-2">
 					<Button

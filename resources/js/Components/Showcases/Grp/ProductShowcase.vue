@@ -194,7 +194,7 @@ const getTooltips = () => {
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
 				:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
                 <span class="opacity-50"> {{ctrans('Procurement')}}:</span>	 {{ data.availability_status.product_state}}
-				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
+				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']" fixed-width/>
 			</span>
 
 			<span
@@ -205,17 +205,17 @@ const getTooltips = () => {
 				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
 			>
 			{{ data.availability_status.is_for_sale ? ctrans('For Sale') : ctrans('Not For Sale') }}
-				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'" fixed-width/>
 				<FontAwesomeIcon
 					v-if="data.availability_status?.from_master"
 					icon="fab fa-octopus-deploy"
 					:class="'ms-1'"
-					color="#4B0082"
+					color="#4B0082" fixed-width
 				/>
 				<FontAwesomeIcon
 					v-if="data.availability_status?.from_trade_unit"
 					icon="fal fa-atom"
-					:class="'ms-1'"
+					:class="'ms-1'" fixed-width
 				/>
 			</span>
 		</div>
@@ -248,7 +248,7 @@ const getTooltips = () => {
 				<div v-else>
 					<div
 						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
 						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 					</div>
 					<!-- <div class="mt-2 text-sm italic text-gray-500">
@@ -277,7 +277,7 @@ const getTooltips = () => {
 		<div class="min-w-0 bg-white h-fit mx-4 shadow-sm">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
 				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
 				<span>
 					{{
 					data?.product?.data?.stock > 0

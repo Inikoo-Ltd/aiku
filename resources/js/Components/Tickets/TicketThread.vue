@@ -131,7 +131,7 @@ const submit = () => {
                     @mention="mentionInReply" />
                 <span>· {{ useFormatTime(ticket.created_at, { formatTime: "PP, HH:mm:ss zzz" }) }}</span>
                 <span class="text-gray-400">({{ daysAgo(ticket.created_at) }})</span>
-                <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="ctrans('Raised from Slack')" :icon="faSlack" class="text-gray-500" />
+                <FontAwesomeIcon v-if="ticket.is_from_slack" v-tooltip="ctrans('Raised from Slack')" :icon="faSlack" class="text-gray-500" fixed-width />
             </div>
             <h2 class="text-lg font-semibold mb-3">{{ ticket.subject }}</h2>
             <a v-if="ticket.reference_url" :href="ticket.reference_url" target="_blank" rel="noopener" class="mb-3 block truncate text-sm text-[--app-accent-strong] hover:underline">{{ ticket.reference_url }}</a>

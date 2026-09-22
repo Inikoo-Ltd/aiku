@@ -80,19 +80,19 @@ const showWarningMessage = ref(true);
              <Link v-if="masterRoute" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="trans('Go to Master')">
                 <FontAwesomeIcon
                     icon="fab fa-octopus-deploy"
-                    color="#4B0082"
+                    color="#4B0082" fixed-width
                 />
             </Link>
             <FontAwesomeIcon 
                 v-if="!status"
                 v-tooltip="ctrans('Variant is disabled')"
                 :icon="faSkull"
-                class="text-red-500"
+                class="text-red-500" fixed-width
             />
     </template>
         <template #other>
             <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
-                <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
+                <FontAwesomeIcon :icon="faExternalLink" fixed-width aria-hidden="true" size="xl" />
             </a>
         </template>
     </PageHeading>
@@ -107,7 +107,7 @@ const showWarningMessage = ref(true);
                         getSeverity(warning.type) === 'success' ? 'text-green-800' :
                             getSeverity(warning.type) === 'error' ? 'text-red-800' :
                                 'text-blue-500'
-                ]" />
+                ]" fixed-width />
 
                 <!-- Content -->
                 <div class="flex flex-col">

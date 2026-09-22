@@ -385,13 +385,13 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         v-if="collection.products_status === 'discontinuing'"
                         :icon="faExclamationTriangle"
                         class="text-orange-500"
-                        v-tooltip="'Products are being discontinued'"
+                        v-tooltip="'Products are being discontinued'" fixed-width
                     />
                     <FontAwesomeIcon
                         v-else-if="collection.products_status === 'discontinued'"
                         :icon="faExclamationTriangle"
                         class="text-red-600"
-                        v-tooltip="'Products are discontinued'"
+                        v-tooltip="'Products are discontinued'" fixed-width
                     />
                 </template>
             </div>
@@ -483,8 +483,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(parents)="{ item: collection }">
 
             <template v-for="(parent, index) in collection.parents_data" :key="index">
-                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
-                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" />
+                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" fixed-width />
+                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" fixed-width />
                 <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
                     {{ parent.code && parent.code.length > 6 ? parent.code.substring(0, 6) + "..." : parent.code }}
                 </Link>&nbsp;
@@ -521,7 +521,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <div class="flex gap-x-2 gap-y-2">
                 <ConfirmPopup>
                     <template #icon>
-                        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+                        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
                     </template>
                 </ConfirmPopup>
                 <div v-if="item.webpage_state == 'live'">

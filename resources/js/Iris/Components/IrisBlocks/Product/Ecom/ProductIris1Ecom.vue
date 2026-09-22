@@ -268,7 +268,7 @@ onMounted(async () => {
                 <!-- TAGS -->
                 <div v-if="props?.fieldValue?.product?.is_single_trade_unit" class="flex gap-x-10 text-gray-400 text-xs mb-6 mt-4">
                     <div v-for="(tag, index) in product.tags" :key="index" class="flex items-center gap-1">
-                        <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
+                        <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" fixed-width />
                         <Image v-else :src="tag.image" :alt="`Thumbnail tag ${index}`"
                             class="w-[15px] h-[15px] object-cover" />
                         <span>{{ ctrans(tag?.label) || tag?.label }}</span>
@@ -313,7 +313,7 @@ onMounted(async () => {
                             <LabelComingSoon v-if="product.status === 'coming-soon'" :product="product" />
                             <div v-else class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="product.stock ? 'text-green-600' : 'text-red-600'" />
+                                    :class="product.stock ? 'text-green-600' : 'text-red-600'" fixed-width />
                                 <span>
                                     {{ product?.stock >= 250
                                         ? ctrans("Unlimited quantity available")
@@ -330,7 +330,7 @@ onMounted(async () => {
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="[customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600']" />
+                                    :class="[customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600']" fixed-width />
                                 <span>{{ customerData?.back_in_stock ? ctrans("Notified") : ctrans("Remind me") }}</span>
                             </button>
                         </div>
@@ -344,8 +344,8 @@ onMounted(async () => {
                                 ? onUnselectFavourite(product)
                                 : onAddFavourite(product)
                             ">
-                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" />
-                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" />
+                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" fixed-width />
+                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" fixed-width />
                         </div>
                     </div>
                 </div>       
@@ -466,12 +466,12 @@ onMounted(async () => {
                             class="absolute inset-0 pointer-events-none z-50 opacity-0 group-hover:opacity-100 transition-opacity">
                             <div ref="variantPrevEl"
                                 class="absolute left-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
-                                <FontAwesomeIcon :icon="faChevronCircleLeft" />
+                                <FontAwesomeIcon :icon="faChevronCircleLeft" fixed-width />
                             </div>
 
                             <div ref="variantNextEl"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
-                                <FontAwesomeIcon :icon="faChevronCircleRight" />
+                                <FontAwesomeIcon :icon="faChevronCircleRight" fixed-width />
                             </div>
                         </div>
 
@@ -487,7 +487,7 @@ onMounted(async () => {
                                     <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
                                         :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
                                     <FontAwesomeIcon v-else :icon="faImage"
-                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                        class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                                 </div>
 
                                 <!-- VARIANT LABEL -->
@@ -574,7 +574,7 @@ onMounted(async () => {
                 <FontAwesomeIcon
                     :icon="faCircle"
                     class="text-[10px]"
-                    :class="product.stock ? 'text-green-600' : 'text-red-600'"
+                    :class="product.stock ? 'text-green-600' : 'text-red-600'" fixed-width
                 />
                 <span>
                     {{
@@ -598,7 +598,7 @@ onMounted(async () => {
                     product?.is_favourite
                         ? onUnselectFavourite(product)
                         : onAddFavourite(product)
-                "
+                " fixed-width
             />
         </div>
 
@@ -656,7 +656,7 @@ onMounted(async () => {
                         @mouseenter="_popoverProfit?.show"
                         @mouseleave="_popoverProfit?.hide"
                     >
-                        <FontAwesomeIcon icon="fal fa-plus-circle" />
+                        <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
                     </span>
 
                     <Popover ref="_popoverProfit" class="max-w-[90vw] md:max-w-none sm:min-w-[350px]">
@@ -674,7 +674,7 @@ onMounted(async () => {
                 :key="index"
                 class="flex items-center gap-1"
             >
-                <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" />
+                <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" fixed-width />
                 <Image
                     v-else
                     :src="tag.image"
@@ -714,7 +714,7 @@ onMounted(async () => {
             <FontAwesomeIcon
                 v-else
                 :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'"
+                :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width
             />
             <span>
                 {{ customerData?.back_in_stock ? ctrans("Notified") : ctrans("Remind me") }}
@@ -787,7 +787,7 @@ onMounted(async () => {
                             <FontAwesomeIcon
                                 v-else
                                 :icon="faImage"
-                                class="absolute inset-0 m-auto text-gray-300"
+                                class="absolute inset-0 m-auto text-gray-300" fixed-width
                             />
                         </div>
 

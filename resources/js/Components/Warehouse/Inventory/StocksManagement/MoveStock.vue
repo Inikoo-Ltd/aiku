@@ -557,7 +557,7 @@ onMounted(() => {
                             <FractionDisplay :fractionData="toFractionData(moveStock.from.stock)" />
                         </span>
                         <template v-if="totalMoveQuantity > 0">
-                            <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                            <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
                             <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-green-700">
                                 <FractionDisplay :fractionData="toFractionData(getCalculatedStock(moveStock.from))" />
                             </span>
@@ -565,7 +565,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
 
                 <div class="text-center">
                     <div class="font-bold text-xs uppercase tracking-wide text-gray-500">{{ trans('Quantity') }}</div>
@@ -575,7 +575,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
 
                 <div
                     class="group text-center border rounded-lg px-4 py-2 transition"
@@ -600,7 +600,7 @@ onMounted(() => {
                                     <FractionDisplay :fractionData="toFractionData(entry.location.stock)" />
                                 </span>
                                 <template v-if="entry.quantity > 0">
-                                    <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                                    <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
                                     <span v-tooltip="trans('Stock preview after move')" class="font-semibold text-blue-700">
                                         <FractionDisplay :fractionData="toFractionData(getCalculatedStock(entry.location))" />
                                     </span>
@@ -753,7 +753,7 @@ onMounted(() => {
                                 noUndoButton
                             />
                         </div>
-                        <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" />
+                        <FontAwesomeIcon :icon="faLongArrowRight" class="text-gray-400" fixed-width />
                         <span
                             v-tooltip="trans('Stock preview after move')"
                             class="font-semibold"

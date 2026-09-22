@@ -485,7 +485,7 @@ onUnmounted(() => {
 					<div
 						v-if="result && mode !== 'camera_qr'"
 						class="flex flex-col items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-6 sm:py-10">
-						<font-awesome-icon :icon="faCheckCircle" class="text-4xl sm:text-5xl text-green-500" />
+						<font-awesome-icon :icon="faCheckCircle" class="text-4xl sm:text-5xl text-green-500" fixed-width />
 						<div class="text-lg sm:text-xl font-semibold text-gray-800 break-all">
 							{{ result.alias }}
 						</div>
@@ -508,7 +508,7 @@ onUnmounted(() => {
 						<div
 							v-if="errorMessage && mode !== 'camera_qr'"
 							class="flex items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-xs sm:px-4 sm:py-3 sm:text-sm text-red-700">
-							<font-awesome-icon :icon="faTimesCircle" />
+							<font-awesome-icon :icon="faTimesCircle" fixed-width />
 							{{ errorMessage }}
 						</div>
 
@@ -583,7 +583,7 @@ onUnmounted(() => {
 								<font-awesome-icon
 									:icon="faBarcode"
 									class="text-4xl sm:text-5xl text-gray-400"
-									:class="{ 'animate-pulse': isSubmitting }" />
+									:class="{ 'animate-pulse': isSubmitting }" fixed-width />
 								<p class="text-sm sm:text-base font-medium text-gray-600">
 									{{ isSubmitting ? trans("Checking...") : trans("Ready to scan") }}
 								</p>
@@ -607,7 +607,7 @@ onUnmounted(() => {
 								<div
 									v-if="!cameraActive"
 									class="flex flex-col items-center gap-3 sm:gap-4 px-3 py-10 sm:px-4 sm:py-16">
-									<font-awesome-icon :icon="faCamera" class="text-4xl sm:text-5xl text-gray-400" />
+									<font-awesome-icon :icon="faCamera" class="text-4xl sm:text-5xl text-gray-400" fixed-width />
 									<p class="text-sm sm:text-base font-medium text-gray-600">
 										{{ trans("Start the camera so employees can clock in or out by showing their QR code") }}
 									</p>
@@ -652,7 +652,7 @@ onUnmounted(() => {
 									<div
 										v-if="result"
 										class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-green-50/95 px-4 py-6">
-										<font-awesome-icon :icon="faCheckCircle" class="text-4xl sm:text-5xl text-green-500" />
+										<font-awesome-icon :icon="faCheckCircle" class="text-4xl sm:text-5xl text-green-500" fixed-width />
 										<div class="text-lg sm:text-xl font-semibold text-gray-800 break-all">
 											{{ result.alias }}
 										</div>
@@ -674,7 +674,7 @@ onUnmounted(() => {
 									<div
 										v-else-if="errorMessage"
 										class="absolute inset-x-0 top-0 flex items-center justify-center gap-2 bg-red-50/95 px-3 py-2.5 text-xs sm:px-4 sm:py-3 sm:text-sm text-red-700">
-										<font-awesome-icon :icon="faTimesCircle" />
+										<font-awesome-icon :icon="faTimesCircle" fixed-width />
 										{{ errorMessage }}
 									</div>
 

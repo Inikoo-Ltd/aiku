@@ -118,7 +118,7 @@ defineExpose({
                             ? 'bg-gray-200 sm:border-l-4 sm:border-amber-300 text-gray-600 transition-all duration-100 ease-in-out'
                             : 'hover:bg-gray-100 text-gray-400 hover:text-gray-500 transition-all duration-100 ease-in-out',
                     ]" :aria-current="key === current ? 'page' : undefined">
-                        <FontAwesomeIcon v-if="item.icon" aria-hidden="true"
+                        <FontAwesomeIcon v-if="item.icon" fixed-width aria-hidden="true"
                             class="flex-shrink-0 sm:-ml-1 sm:mr-3 h-6 w-6 text-gray-500 sm:text-gray-400 sm:group-hover:text-gray-500"
                             :icon="item.icon" />
                         <span class="hidden sm:inline truncate">{{ trans(item.title) }}</span>

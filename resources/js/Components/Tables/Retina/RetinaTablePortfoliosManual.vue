@@ -388,15 +388,15 @@ const compTableFilterForSale = computed(() => {
 						trans('This product line has been discontinued. Please remove this item')
 					"
 					class="flex h-full w-full">
-					<FontAwesomeIcon :icon="faBan" class="text-2xl" />
-					<FontAwesomeIcon :icon="faCube" class="text-md text-center" />
+					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
+					<FontAwesomeIcon :icon="faCube" class="text-md text-center" fixed-width />
 				</FontAwesomeLayers>
 				<FontAwesomeLayers
 					v-else
 					v-tooltip="trans('This product line is currently not for sale')"
 					class="flex h-full w-full">
-					<FontAwesomeIcon :icon="faBan" class="text-2xl" />
-					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" />
+					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
+					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" fixed-width />
 				</FontAwesomeLayers>
 			</div>
 			<div v-else />

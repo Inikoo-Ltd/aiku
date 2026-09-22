@@ -46,8 +46,8 @@ const emits = defineEmits<{
                     ]"
                 >
                     <span class="text-center w-full">
-                        <FontAwesomeIcon v-if="stepIndex < currentStep" icon='far fa-check' class='' aria-hidden='true' />
-                        <FontAwesomeIcon v-if="stepIndex >= currentStep" icon='fas fa-circle' class='' aria-hidden='true' />
+                        <FontAwesomeIcon v-if="stepIndex < currentStep" icon='far fa-check' class='' fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="stepIndex >= currentStep" icon='fas fa-circle' class='' fixed-width aria-hidden='true' />
                     </span>
                 </div>
             </div>

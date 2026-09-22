@@ -124,7 +124,7 @@ const resolvedGap = computed(() => {
               :width="getStyles(modelValue?.container?.properties, screenType, false)?.width" />
             <div v-else
               class="flex items-center justify-center w-full h-32 bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
-              <font-awesome-icon :icon="['fas', 'image']" class="text-gray-500 text-4xl group-hover:text-gray-700" />
+              <font-awesome-icon :icon="['fas', 'image']" class="text-gray-500 text-4xl group-hover:text-gray-700" fixed-width />
             </div>
           </component>
 

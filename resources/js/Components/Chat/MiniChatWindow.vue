@@ -1124,7 +1124,7 @@ onUnmounted(() => {
             <div class="relative w-5 h-5 shrink-0">
                 <div class="w-5 h-5 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400">
                     <Image v-if="chat.avatar" :src="chat.avatar" class="w-full h-full object-cover" />
-                    <FontAwesomeIcon v-else :icon="faUser" class="text-[9px]" />
+                    <FontAwesomeIcon v-else :icon="faUser" class="text-[9px]" fixed-width />
                 </div>
             </div>
 
@@ -1140,7 +1140,7 @@ onUnmounted(() => {
             <div ref="headerMenuRef" class="relative shrink-0">
                 <button class="w-5 h-5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                     v-tooltip="ctrans('More options')" @click.stop="showHeaderMenu = !showHeaderMenu">
-                    <FontAwesomeIcon :icon="faEllipsisVertical" class="text-[9px]" />
+                    <FontAwesomeIcon :icon="faEllipsisVertical" class="text-[9px]" fixed-width />
                 </button>
 
                 <div v-if="showHeaderMenu" @click.stop
@@ -1148,7 +1148,7 @@ onUnmounted(() => {
                     <button v-if="chat.organisationSlug" type="button"
                         class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-gray-700 hover:bg-gray-100"
                         @click="showHeaderMenu = false; isTicketModalOpen = true">
-                        <FontAwesomeIcon :icon="faLifeRing" class="text-[9px] text-gray-400" />
+                        <FontAwesomeIcon :icon="faLifeRing" class="text-[9px] text-gray-400" fixed-width />
                         {{ ctrans('Create ticket') }}
                     </button>
 
@@ -1158,7 +1158,7 @@ onUnmounted(() => {
                             <button type="button"
                                 class="w-full flex items-center gap-2 px-2 py-1 text-[10px] text-red-600 hover:bg-red-50"
                                 @click="showEndConfirm = true">
-                                <FontAwesomeIcon :icon="faTimesCircle" class="text-[9px]" />
+                                <FontAwesomeIcon :icon="faTimesCircle" class="text-[9px]" fixed-width />
                                 {{ ctrans('End chat') }}
                             </button>
                         </template>
@@ -1186,18 +1186,18 @@ onUnmounted(() => {
 
             <button class="w-5 h-5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                 v-tooltip="ctrans('Open in inbox')" @click.stop="openFullConversation">
-                <FontAwesomeIcon :icon="faArrowUpRightFromSquare" class="text-[9px]" />
+                <FontAwesomeIcon :icon="faArrowUpRightFromSquare" class="text-[9px]" fixed-width />
             </button>
 
             <button class="w-5 h-5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                 v-tooltip="chat.isMinimised ? ctrans('Expand') : ctrans('Minimise')" @click.stop="emit('toggle')">
                 <FontAwesomeIcon :icon="faChevronDown" class="text-[9px] transition-transform duration-300 ease-in-out"
-                    :class="chat.isMinimised ? 'rotate-180' : 'rotate-0'" />
+                    :class="chat.isMinimised ? 'rotate-180' : 'rotate-0'" fixed-width />
             </button>
 
             <button class="w-5 h-5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                 v-tooltip="ctrans('Close')" @click.stop="emit('close')">
-                <FontAwesomeIcon :icon="faXmark" class="text-[10px]" />
+                <FontAwesomeIcon :icon="faXmark" class="text-[10px]" fixed-width />
             </button>
         </div>
 
@@ -1253,7 +1253,7 @@ onUnmounted(() => {
                                     <button type="button" :title="ctrans('Reply')"
                                         class="flex h-[18px] w-[18px] items-center justify-center rounded-full text-gray-500 transition-all hover:bg-gray-100 hover:text-indigo-600 hover:scale-110"
                                         @click="startReply(message)">
-                                        <FontAwesomeIcon :icon="faReply" class="text-[9px]" />
+                                        <FontAwesomeIcon :icon="faReply" class="text-[9px]" fixed-width />
                                     </button>
                                 </template>
                             </div>
@@ -1275,7 +1275,7 @@ onUnmounted(() => {
 
                                 <div v-if="isUnsupported(message)"
                                     class="inline-flex items-center gap-1 text-[10px] italic opacity-60">
-                                    <FontAwesomeIcon :icon="faCircleExclamation" class="text-[9px]" />
+                                    <FontAwesomeIcon :icon="faCircleExclamation" class="text-[9px]" fixed-width />
                                     <span>{{ messageText(message) || ctrans('Unsupported message') }}</span>
                                 </div>
 
@@ -1290,14 +1290,14 @@ onUnmounted(() => {
                                         </div>
                                         <div v-for="phone in contact.phones" :key="phone.number"
                                             class="mt-1 flex items-center gap-1.5 border-t border-gray-100 pt-1">
-                                            <FontAwesomeIcon :icon="faPhone" class="text-[8px] text-gray-400" />
+                                            <FontAwesomeIcon :icon="faPhone" class="text-[8px] text-gray-400" fixed-width />
                                             <div class="min-w-0 flex-1">
                                                 <div class="truncate text-[10px] text-gray-700">{{ phone.number }}</div>
                                                 <div v-if="phone.label" class="text-[9px] text-gray-400">{{ phone.label }}</div>
                                             </div>
                                             <button type="button" v-tooltip="ctrans('Copy')" @click="useCopyText(phone.number)"
                                                 class="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-                                                <FontAwesomeIcon :icon="faCopy" class="text-[8px]" />
+                                                <FontAwesomeIcon :icon="faCopy" class="text-[8px]" fixed-width />
                                             </button>
                                         </div>
                                     </div>
@@ -1312,11 +1312,11 @@ onUnmounted(() => {
                                             class="absolute max-w-none"
                                             :style="{ left: `${tile.left}px`, top: `${tile.top}px`, width: '256px', height: '256px' }" />
                                         <FontAwesomeIcon :icon="faLocationDot"
-                                            class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-base text-red-500 drop-shadow" />
+                                            class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-base text-red-500 drop-shadow" fixed-width />
                                         <span class="absolute bottom-0 right-0 bg-white/75 px-0.5 text-[7px] text-gray-500">© OpenStreetMap</span>
                                     </div>
                                     <div class="flex items-start gap-1 px-1.5 py-1">
-                                        <FontAwesomeIcon :icon="faLocationDot" class="mt-0.5 text-[9px] text-red-500" />
+                                        <FontAwesomeIcon :icon="faLocationDot" class="mt-0.5 text-[9px] text-red-500" fixed-width />
                                         <div class="min-w-0">
                                             <div class="truncate text-[10px] font-semibold text-gray-800">{{ getLocation(message)!.name }}</div>
                                             <div class="text-[9px] leading-snug text-gray-500">{{ getLocation(message)!.address }}</div>
@@ -1362,13 +1362,13 @@ onUnmounted(() => {
                                     <span>{{ formatTime(message.created_at) }}</span>
                                     <LoadingIcon v-if="message._status === 'sending'" class="w-2.5 h-2.5" />
                                     <span v-else-if="message._status === 'failed'" class="text-red-300">
-                                        <FontAwesomeIcon :icon="faExclamationCircle" class="text-[9px]" />
+                                        <FontAwesomeIcon :icon="faExclamationCircle" class="text-[9px]" fixed-width />
                                     </span>
                                     <span v-else-if="!['guest', 'user'].includes(message.sender_type)" class="leading-none">
                                         <FontAwesomeIcon
                                             :icon="waReadIcon(message)"
                                             class="text-[9px]"
-                                            :class="waReadIconClass(message)" />
+                                            :class="waReadIconClass(message)" fixed-width />
                                     </span>
                                 </div>
                             </div>
@@ -1404,7 +1404,7 @@ onUnmounted(() => {
                     :style="{ backgroundColor: 'var(--theme-color-4)' }"
                     :disabled="isReopening" @click="reopenChat">
                     <LoadingIcon v-if="isReopening" class="w-3 h-3" />
-                    <FontAwesomeIcon v-else :icon="faRotateRight" class="text-[9px]" />
+                    <FontAwesomeIcon v-else :icon="faRotateRight" class="text-[9px]" fixed-width />
                     {{ ctrans('Reopen chat') }}
                 </button>
             </div>
@@ -1422,7 +1422,7 @@ onUnmounted(() => {
                     :style="{ backgroundColor: 'var(--theme-color-4)' }"
                     :disabled="isAssigningSelf" @click="assignSelf">
                     <LoadingIcon v-if="isAssigningSelf" class="w-3 h-3" />
-                    <FontAwesomeIcon v-else :icon="faUser" class="text-[9px]" />
+                    <FontAwesomeIcon v-else :icon="faUser" class="text-[9px]" fixed-width />
                     {{ ctrans('Assign to me') }}
                 </button>
             </div>
@@ -1436,7 +1436,7 @@ onUnmounted(() => {
 
                     <div v-if="templateOnly && !hasTemplate"
                         class="flex items-center gap-1.5 mx-2 mt-1.5 px-2 py-1 rounded bg-amber-50 border border-amber-200 text-amber-700 text-[9px]">
-                        <FontAwesomeIcon :icon="faFileLines" class="text-[8px]" />
+                        <FontAwesomeIcon :icon="faFileLines" class="text-[8px]" fixed-width />
                         <span>{{ ctrans('24h window closed. Send a template.') }}</span>
                         <button type="button" @click="openTemplateDialog"
                             class="ml-auto shrink-0 px-1.5 py-0.5 rounded bg-amber-600 text-white font-medium hover:bg-amber-700">
@@ -1446,17 +1446,17 @@ onUnmounted(() => {
                             class="shrink-0 w-4 h-4 text-[9px] flex items-center justify-center text-amber-600 hover:text-amber-800"
                             v-tooltip="ctrans('Why can I not type? The WhatsApp 24 hour rule, explained')"
                             :aria-label="ctrans('Guide: the WhatsApp 24 hour rule')">
-                            <FontAwesomeIcon :icon="faCircleQuestion" />
+                            <FontAwesomeIcon :icon="faCircleQuestion" fixed-width />
                         </a>
                     </div>
 
                     <div v-if="hasTemplate" class="mx-2 mt-1.5">
                         <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-green-50 text-green-700 text-[10px]">
-                            <FontAwesomeIcon :icon="faFileLines" class="text-[9px]" />
+                            <FontAwesomeIcon :icon="faFileLines" class="text-[9px]" fixed-width />
                             <span class="font-medium truncate">{{ selectedTemplate?.name }}</span>
                             <span class="text-green-600/70 text-[9px]">{{ selectedTemplate?.language }}</span>
                             <button @click="clearTemplate" class="ml-auto text-green-600 hover:text-red-500">
-                                <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
+                                <FontAwesomeIcon :icon="faXmark" class="text-[8px]" fixed-width />
                             </button>
                         </div>
                         <div class="px-1 pt-1 text-[10px] text-gray-500 whitespace-pre-line max-h-16 overflow-y-auto leading-snug"
@@ -1478,19 +1478,19 @@ onUnmounted(() => {
                                 <button type="button"
                                     class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white shadow border border-gray-200 text-gray-500 hover:text-red-500"
                                     @click="removeAttachment(index)">
-                                    <FontAwesomeIcon :icon="faXmark" class="text-[8px]" />
+                                    <FontAwesomeIcon :icon="faXmark" class="text-[8px]" fixed-width />
                                 </button>
                             </template>
 
                             <div v-else class="flex items-center gap-1.5 px-1.5 py-1 rounded border border-gray-200 bg-gray-50 min-w-0 max-w-[160px]">
-                                <FontAwesomeIcon :icon="faFileLines" class="text-[10px] text-gray-400 shrink-0" />
+                                <FontAwesomeIcon :icon="faFileLines" class="text-[10px] text-gray-400 shrink-0" fixed-width />
                                 <div class="flex-1 min-w-0">
                                     <div class="text-[10px] text-gray-700 truncate">{{ attachment.file.name }}</div>
                                     <div class="text-[9px] text-gray-400">{{ (attachment.file.size / 1024).toFixed(1) }} KB</div>
                                 </div>
                                 <button type="button" class="text-gray-400 hover:text-red-500 shrink-0"
                                     @click="removeAttachment(index)">
-                                    <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
+                                    <FontAwesomeIcon :icon="faXmark" class="text-[9px]" fixed-width />
                                 </button>
                             </div>
                         </div>
@@ -1504,7 +1504,7 @@ onUnmounted(() => {
                             </div>
                             <button type="button" class="shrink-0 text-gray-400 hover:text-red-500"
                                 :title="ctrans('Cancel reply')" @click="cancelReply">
-                                <FontAwesomeIcon :icon="faXmark" class="text-[9px]" />
+                                <FontAwesomeIcon :icon="faXmark" class="text-[9px]" fixed-width />
                             </button>
                         </div>
                     </div>
@@ -1521,12 +1521,12 @@ onUnmounted(() => {
                             <button type="button" @click="imageInput?.click()" :disabled="hasTemplate || templateOnly"
                                 class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40"
                                 :title="ctrans('Upload image')">
-                                <FontAwesomeIcon :icon="faImage" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faImage" class="text-[10px]" fixed-width />
                             </button>
                             <button type="button" @click="fileInput?.click()" :disabled="hasTemplate || templateOnly"
                                 class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40"
                                 :title="ctrans('Upload file')">
-                                <FontAwesomeIcon :icon="faPaperclip" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faPaperclip" class="text-[10px]" fixed-width />
                             </button>
                             <div class="relative">
                                 <button ref="emojiButtonRef" type="button" @click.stop="toggleEmojiPicker"
@@ -1534,7 +1534,7 @@ onUnmounted(() => {
                                     class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors disabled:opacity-40"
                                     :class="showEmojiPicker ? 'text-green-600 bg-gray-100' : 'text-gray-500'"
                                     :title="ctrans('Emoji')">
-                                    <FontAwesomeIcon :icon="faFaceSmile" class="text-[10px]" />
+                                    <FontAwesomeIcon :icon="faFaceSmile" class="text-[10px]" fixed-width />
                                 </button>
                                 <Teleport to="body">
                                     <div v-if="showEmojiPicker" ref="emojiPickerRef" :style="emojiPickerStyle"
@@ -1547,12 +1547,12 @@ onUnmounted(() => {
                                 class="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
                                 :class="isEmailNotif ? 'text-green-600 bg-green-50' : 'text-gray-500'"
                                 :title="isEmailNotif ? ctrans('Email notification ON') : ctrans('Email notification OFF')">
-                                <FontAwesomeIcon :icon="faEnvelope" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faEnvelope" class="text-[10px]" fixed-width />
                             </button>
                             <button v-if="isWhatsapp" type="button" @click="openTemplateDialog"
                                 class="w-6 h-6 flex items-center justify-center rounded hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors"
                                 :title="ctrans('Send template message')">
-                                <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" fixed-width />
                             </button>
                         </div>
                         <button
@@ -1560,7 +1560,7 @@ onUnmounted(() => {
                             :style="{ backgroundColor: 'var(--theme-color-4)' }"
                             :disabled="isSending || (hasTemplate ? !canSendTemplate : (templateOnly || (!newMessage.trim() && !hasAttachment)))"
                             @click="sendMessage">
-                            <FontAwesomeIcon :icon="faPaperPlane" class="text-[9px]" />
+                            <FontAwesomeIcon :icon="faPaperPlane" class="text-[9px]" fixed-width />
                         </button>
                     </div>
                 </div>

@@ -269,11 +269,11 @@ const listType = [
                 @click="removeProduct(index)"
                 title="Remove product"
               >
-                <FontAwesomeIcon :icon="faTimes" />
+                <FontAwesomeIcon :icon="faTimes" fixed-width />
               </button>
               <!-- Drag Handle -->
               <div class="cursor-move drag-handle text-gray-400 hover:text-gray-600 text-sm mb-2 flex items-center gap-1">
-                <FontAwesomeIcon :icon="faGripVertical" />
+                <FontAwesomeIcon :icon="faGripVertical" fixed-width />
                 <span>Drag to reorder</span>
               </div>
               <!-- Product Selector -->

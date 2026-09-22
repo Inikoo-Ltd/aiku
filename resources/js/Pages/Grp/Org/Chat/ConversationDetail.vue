@@ -315,7 +315,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                             class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
                             @click="isSlackShareModalOpen = true"
                         >
-                            <FontAwesomeIcon :icon="['fab', 'fa-slack']" class="text-sm" />
+                            <FontAwesomeIcon :icon="['fab', 'fa-slack']" class="text-sm" fixed-width />
                             <span>Share to Slack</span>
                         </button>
                         <!-- Toggle side panel -->
@@ -324,7 +324,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                             @click="showContactDetail = !showContactDetail"
                             aria-label="Toggle contact details"
                         >
-                            <FontAwesomeIcon :icon="['fal', 'fa-user']" class="text-sm" />
+                            <FontAwesomeIcon :icon="['fal', 'fa-user']" class="text-sm" fixed-width />
                         </button>
                     </div>
                 </div>
@@ -369,7 +369,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                         :class="isFromAgent(msg) ? 'text-white/90' : ''"
                                         :style="!isFromAgent(msg) ? { color: themePrimary } : {}"
                                     >
-                                        <FontAwesomeIcon :icon="['fal', 'fa-paperclip']" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-paperclip']" fixed-width />
                                         <span>{{ attachment.file_name || 'Download file' }}</span>
                                         <span v-if="attachment.file_size" class="text-xs opacity-60">({{ formatFileSize(attachment.file_size) }})</span>
                                     </a>
@@ -384,14 +384,14 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                         v-if="imageValidation(msg).is_ai_generated"
                                         class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700"
                                     >
-                                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-[10px]" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-[10px]" fixed-width />
                                         AI generated
                                     </span>
                                     <span
                                         v-else
                                         class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700"
                                     >
-                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" fixed-width />
                                         Verified
                                     </span>
                                 </div>
@@ -401,7 +401,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                         class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500"
                                         :class="isFromAgent(msg) ? 'text-white/70 bg-white/10' : ''"
                                     >
-                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" fixed-width />
                                         Not verified yet
                                     </span>
                                 </div>
@@ -422,15 +422,15 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
 
                     <div v-else class="flex justify-center">
                         <span class="text-xs text-gray-400 bg-gray-50 rounded-full px-3 py-1 border border-gray-100">
-                            <FontAwesomeIcon v-if="msg.is_ai" :icon="['fal', 'fa-robot']" class="mr-1" />
-                            <FontAwesomeIcon v-else :icon="['fal', 'fa-cog']" class="mr-1" />
+                            <FontAwesomeIcon v-if="msg.is_ai" :icon="['fal', 'fa-robot']" class="mr-1" fixed-width />
+                            <FontAwesomeIcon v-else :icon="['fal', 'fa-cog']" class="mr-1" fixed-width />
                             {{ msg.message_text }}
                         </span>
                     </div>
                 </template>
 
                 <div v-if="!messages.length" class="flex flex-col items-center justify-center py-16 text-gray-400">
-                    <FontAwesomeIcon :icon="['fal', 'fa-comments']" class="text-4xl mb-2" />
+                    <FontAwesomeIcon :icon="['fal', 'fa-comments']" class="text-4xl mb-2" fixed-width />
                     <p class="text-sm">No messages in this conversation</p>
                 </div>
             </div>
@@ -500,7 +500,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                 <div class="col-span-2 flex items-center gap-1">
                                     <code class="text-[11px] font-mono text-gray-700 bg-gray-100 rounded px-1.5 py-0.5 truncate">{{ chatSession.ulid }}</code>
                                     <button class="shrink-0 text-gray-400 hover:text-gray-600 transition-colors" @click="copyChatId" aria-label="Copy chat ID">
-                                        <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" />
+                                        <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" fixed-width />
                                     </button>
                                 </div>
                             </div>
@@ -548,7 +548,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                     :key="tag.id"
                                     class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium bg-indigo-50 text-indigo-700 border-indigo-200"
                                 >
-                                    <FontAwesomeIcon :icon="['fal', 'fa-tag']" class="text-[9px] opacity-70" />
+                                    <FontAwesomeIcon :icon="['fal', 'fa-tag']" class="text-[9px] opacity-70" fixed-width />
                                     {{ tag.name }}
                                 </span>
                             </div>
@@ -558,7 +558,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                         <!-- AI Summary -->
                         <div v-if="chatSession.ai_summary?.summary" class="px-4 py-3">
                             <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" />
+                                <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" fixed-width />
                                 AI Summary
                                 <span
                                     v-if="chatSession.ai_summary.sentiment"
@@ -617,7 +617,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                             Loading...
                         </div>
                         <div v-else-if="!customerProfile.stats" class="flex flex-col items-center justify-center py-10 text-gray-400">
-                            <FontAwesomeIcon :icon="['fal', 'fa-chart-line']" class="text-2xl mb-2 opacity-30" />
+                            <FontAwesomeIcon :icon="['fal', 'fa-chart-line']" class="text-2xl mb-2 opacity-30" fixed-width />
                             <p class="text-xs">No statistics available</p>
                         </div>
                         <div v-else class="space-y-2.5">

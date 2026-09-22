@@ -131,7 +131,7 @@ const guidelines = computed(() => {
 					class="!m-0 flex items-start gap-[10px] text-xs leading-[1.7] md:text-sm 2xl:text-base">
 					<FontAwesomeIcon
 						icon="fas fa-check-circle"
-						class="!mt-[3px] !flex-shrink-0 !bg-transparent !text-sm !leading-none !text-[#C0899B] 2xl:!text-base" />
+						class="!mt-[3px] !flex-shrink-0 !bg-transparent !text-sm !leading-none !text-[#C0899B] 2xl:!text-base" fixed-width />
 
 					<span>{{ guideline.text }}</span>
 				</li>

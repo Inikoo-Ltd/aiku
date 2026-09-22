@@ -365,7 +365,7 @@ onUnmounted(() => {
                         <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400">
                             <Image v-if="layout?.avatar_thumbnail" :src="layout.avatar_thumbnail"
                                 class="w-full h-full object-cover" />
-                            <FontAwesomeIcon v-else :icon="faUser" class="text-xs" />
+                            <FontAwesomeIcon v-else :icon="faUser" class="text-xs" fixed-width />
                         </div>
                     </div>
                     <span class="text-base font-semibold text-gray-900 truncate">{{ trans('Messages') }}</span>
@@ -374,7 +374,7 @@ onUnmounted(() => {
                 <div class="flex items-center gap-1 shrink-0 text-gray-500">
                     <button class="w-8 h-8 rounded-full hover:bg-gray-100" v-tooltip="trans('Close')"
                         @click="closePopover">
-                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm" />
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm" fixed-width />
                     </button>
                 </div>
             </div>
@@ -383,7 +383,7 @@ onUnmounted(() => {
             <div class="px-3 pb-2 shrink-0">
                 <div class="relative">
                     <FontAwesomeIcon :icon="faSearch"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" fixed-width />
                     <input v-model="searchQuery" type="text" :placeholder="trans('Search messages')"
                         class="w-full pl-8 pr-9 py-1.5 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:border-gray-400 focus:ring-0" />
                    <!--  <button class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded hover:bg-gray-100 text-gray-500"
@@ -433,7 +433,7 @@ onUnmounted(() => {
                             <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400">
                                 <Image v-if="sessionAvatar(item)" :src="sessionAvatar(item)"
                                     class="w-full h-full object-cover" />
-                                <FontAwesomeIcon v-else :icon="faUser" class="text-base" />
+                                <FontAwesomeIcon v-else :icon="faUser" class="text-base" fixed-width />
                             </div>
                             <span v-if="item.unread_count"
                                 class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none ring-2 ring-white">
@@ -444,7 +444,7 @@ onUnmounted(() => {
                                 class="absolute -bottom-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white"
                                 :class="isWhatsapp(item) ? 'bg-[#25D366] text-white' : 'bg-gray-200 text-gray-600'"
                                 :title="isWhatsapp(item) ? 'WhatsApp' : trans('Website chat')">
-                                <FontAwesomeIcon :icon="isWhatsapp(item) ? faWhatsapp : faGlobe" class="text-[8px]" />
+                                <FontAwesomeIcon :icon="isWhatsapp(item) ? faWhatsapp : faGlobe" class="text-[8px]" fixed-width />
                             </span>
                         </div>
 
@@ -460,14 +460,14 @@ onUnmounted(() => {
                             </div>
 
                             <div v-if="item.shop?.name" class="flex items-center gap-1 text-[11px] text-gray-400 truncate">
-                                <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
+                                <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" fixed-width />
                                 <span class="truncate">{{ item.shop.name }}</span>
                             </div>
 
                             <div class="flex items-center gap-1 text-xs"
                                 :class="item.unread_count ? 'text-gray-900 font-medium' : 'text-gray-500'">
                                 <FontAwesomeIcon v-if="isAttachment(item)" :icon="faPaperclip"
-                                    class="text-[10px] shrink-0" />
+                                    class="text-[10px] shrink-0" fixed-width />
                                 <span class="truncate">{{ messagePreview(item) }}</span>
                             </div>
                         </div>
@@ -486,7 +486,7 @@ onUnmounted(() => {
             :class="showPopover ? 'bg-gray-800' : ''" @click="togglePopover">
             <div class="relative flex items-center gap-2 text-xs">
                 <div class="relative flex items-center justify-center w-4 h-4">
-                    <FontAwesomeIcon :icon="faMessage" class="text-[12px]" />
+                    <FontAwesomeIcon :icon="faMessage" class="text-[12px]" fixed-width />
                     <span v-if="totalUnread > 0" class="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-[2px]
                         bg-red-500 text-white text-[9px] font-semibold rounded-full whitespace-nowrap animate-pulse">
                         {{ trans('New Messages') }} ({{ totalUnread }})
@@ -517,7 +517,7 @@ onUnmounted(() => {
                         <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400">
                             <Image v-if="layout?.avatar_thumbnail" :src="layout.avatar_thumbnail"
                                 class="w-full h-full object-cover" />
-                            <FontAwesomeIcon v-else :icon="faUser" class="text-xs" />
+                            <FontAwesomeIcon v-else :icon="faUser" class="text-xs" fixed-width />
                         </div>
                     </div>
                     <span class="text-base font-semibold text-gray-900 truncate">{{ trans('Messages') }}</span>
@@ -526,7 +526,7 @@ onUnmounted(() => {
                 <div class="flex items-center gap-1 shrink-0 text-gray-500">
                     <button class="w-8 h-8 rounded-full hover:bg-gray-100" v-tooltip="trans('Close')"
                         @click="closePopover">
-                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm" />
+                        <FontAwesomeIcon :icon="faChevronDown" class="text-sm" fixed-width />
                     </button>
                 </div>
             </div>
@@ -535,7 +535,7 @@ onUnmounted(() => {
             <div class="px-3 pb-2 shrink-0">
                 <div class="relative">
                     <FontAwesomeIcon :icon="faSearch"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" fixed-width />
                     <input v-model="searchQuery" type="text" :placeholder="trans('Search messages')"
                         class="w-full pl-8 pr-9 py-1.5 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:border-gray-400 focus:ring-0" />
                    <!--  <button class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded hover:bg-gray-100 text-gray-500"
@@ -585,7 +585,7 @@ onUnmounted(() => {
                             <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400">
                                 <Image v-if="sessionAvatar(item)" :src="sessionAvatar(item)"
                                     class="w-full h-full object-cover" />
-                                <FontAwesomeIcon v-else :icon="faUser" class="text-base" />
+                                <FontAwesomeIcon v-else :icon="faUser" class="text-base" fixed-width />
                             </div>
                             <span v-if="item.unread_count"
                                 class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none ring-2 ring-white">
@@ -596,7 +596,7 @@ onUnmounted(() => {
                                 class="absolute -bottom-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white"
                                 :class="isWhatsapp(item) ? 'bg-[#25D366] text-white' : 'bg-gray-200 text-gray-600'"
                                 :title="isWhatsapp(item) ? 'WhatsApp' : trans('Website chat')">
-                                <FontAwesomeIcon :icon="isWhatsapp(item) ? faWhatsapp : faGlobe" class="text-[8px]" />
+                                <FontAwesomeIcon :icon="isWhatsapp(item) ? faWhatsapp : faGlobe" class="text-[8px]" fixed-width />
                             </span>
                         </div>
 
@@ -612,14 +612,14 @@ onUnmounted(() => {
                             </div>
 
                             <div v-if="item.shop?.name" class="flex items-center gap-1 text-[11px] text-gray-400 truncate">
-                                <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" />
+                                <FontAwesomeIcon :icon="faStoreAlt" class="text-[9px] shrink-0" fixed-width />
                                 <span class="truncate">{{ item.shop.name }}</span>
                             </div>
 
                             <div class="flex items-center gap-1 text-xs"
                                 :class="item.unread_count ? 'text-gray-900 font-medium' : 'text-gray-500'">
                                 <FontAwesomeIcon v-if="isAttachment(item)" :icon="faPaperclip"
-                                    class="text-[10px] shrink-0" />
+                                    class="text-[10px] shrink-0" fixed-width />
                                 <span class="truncate">{{ messagePreview(item) }}</span>
                             </div>
                         </div>

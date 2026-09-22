@@ -203,7 +203,7 @@ onUnmounted(() => {
                 full-screen
                 @close="closeConversation" />
             <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
-                <FontAwesomeIcon icon="fal fa-comments" class="text-5xl mb-3" aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-comments" class="text-5xl mb-3" fixed-width aria-hidden="true" />
                 <span class="text-sm">{{ trans('Select a conversation') }}</span>
             </div>
         </div>

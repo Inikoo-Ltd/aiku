@@ -80,7 +80,7 @@ const slideNext = () => swiperInstance.value?.slideNext()
       <div class="carousel-cta-content">
         <button type="button" class="carousel-cta-nav carousel-cta-nav-prev" aria-label="Previous"
           :disabled="!isLooping && isBeginning" @click.stop="slidePrev">
-          <FontAwesomeIcon :icon="faChevronLeft" />
+          <FontAwesomeIcon :icon="faChevronLeft" fixed-width />
         </button>
 
         <Swiper class="w-full min-w-0 carousel-cta-swiper" :modules="[Autoplay]" :slides-per-view="1"
@@ -137,7 +137,7 @@ const slideNext = () => swiperInstance.value?.slideNext()
 
         <button type="button" class="carousel-cta-nav carousel-cta-nav-next" aria-label="Next"
           :disabled="!isLooping && isEnd" @click.stop="slideNext">
-          <FontAwesomeIcon :icon="faChevronRight" />
+          <FontAwesomeIcon :icon="faChevronRight" fixed-width />
         </button>
       </div>
     </div>

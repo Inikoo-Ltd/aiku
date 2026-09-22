@@ -166,7 +166,7 @@ const isModalUploadFileOpen = ref(false);
 
   <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-1/4">
     <div class="text-center">
-      <font-awesome-icon :icon="['fal', 'exclamation-triangle']" class="mx-auto h-12 w-12 text-gray-400" />
+      <font-awesome-icon :icon="['fal', 'exclamation-triangle']" class="mx-auto h-12 w-12 text-gray-400" fixed-width />
       <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ trans("You Dont Have Rental Agreement") }}</h3>
       <p class="mt-1 text-sm text-gray-500">{{ trans("You need to make a rental agreement first to continue this") }}.</p>
       <div class="mt-6">

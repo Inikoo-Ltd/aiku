@@ -1291,7 +1291,7 @@ const onClickButtonShipmentPlatform = () => {
 
 	<ConfirmDialog :group="'confirm-delete'">
 		<template #icon>
-			<FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500" />
+			<FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500" fixed-width />
 		</template>
 	</ConfirmDialog>
 </template>

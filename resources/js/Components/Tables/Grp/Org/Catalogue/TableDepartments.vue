@@ -283,7 +283,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <Link :href="(masterDepartmentRoute(department) as string)" v-tooltip="trans('Go to Master')" class="mr-1" :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                     <FontAwesomeIcon
                         icon="fab fa-octopus-deploy"
-                        color="#4B0082"
+                        color="#4B0082" fixed-width
                     />
                 </Link>
 
@@ -319,8 +319,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(webpage_state)="{ item }">
             <div class="whitespace-nowrap">
-                <FontAwesomeIcon v-if="item['webpage_state'] == 'live'" v-tooltip="trans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500"/>
-                <FontAwesomeIcon v-else v-tooltip="trans('Webpage is Offline')" :icon="faSkull" class="text-red-500"/>
+                <FontAwesomeIcon v-if="item['webpage_state'] == 'live'" v-tooltip="trans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500" fixed-width/>
+                <FontAwesomeIcon v-else v-tooltip="trans('Webpage is Offline')" :icon="faSkull" class="text-red-500" fixed-width/>
             </div>
         </template>
 
@@ -329,7 +329,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_name_reviewed),
-                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="trans('Name needs a review')" />
+                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="trans('Name needs a review')" fixed-width />
             </div>
         </template>
 
@@ -338,7 +338,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_reviewed),
-                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="trans('Description needs a review')" />
+                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="trans('Description needs a review')" fixed-width />
             </div>
         </template>
 
@@ -347,7 +347,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_title_reviewed),
-                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="trans('Description Title needs a review')" />
+                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="trans('Description Title needs a review')" fixed-width />
             </div>
         </template>
 
@@ -356,7 +356,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_description_extra_reviewed),
-                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="trans('Description Extra needs a review')" />
+                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="trans('Description Extra needs a review')" fixed-width />
             </div>
         </template>
     </Table>

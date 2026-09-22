@@ -142,7 +142,7 @@ const robotFlags = computed(() => [
 						<div v-if="previewTab !== 'whatsapp'" class="aspect-[1.91/1] w-full bg-gray-100">
 							<img v-if="shareImage" :src="shareImage" :alt="seo?.share_image?.alt" class="h-full w-full object-cover" />
 							<div v-else class="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400">
-								<FontAwesomeIcon :icon="faImage" size="2x" aria-hidden="true" />
+								<FontAwesomeIcon :icon="faImage" size="2x" fixed-width aria-hidden="true" />
 								<span class="text-xs">{{ trans("No share image set") }}</span>
 							</div>
 						</div>
@@ -151,7 +151,7 @@ const robotFlags = computed(() => [
 							<div v-if="previewTab === 'whatsapp'" class="h-16 w-16 shrink-0 overflow-hidden rounded bg-gray-100">
 								<img v-if="shareImage" :src="shareImage" :alt="seo?.share_image?.alt" class="h-full w-full object-cover" />
 								<div v-else class="flex h-full w-full items-center justify-center text-gray-400">
-									<FontAwesomeIcon :icon="faImage" aria-hidden="true" />
+									<FontAwesomeIcon :icon="faImage" fixed-width aria-hidden="true" />
 								</div>
 							</div>
 

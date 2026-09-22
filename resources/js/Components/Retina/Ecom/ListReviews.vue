@@ -134,7 +134,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100">
 								<FontAwesomeIcon
 									:icon="scopeIcon(item.scope)"
-									class="text-sm text-gray-500" />
+									class="text-sm text-gray-500" fixed-width />
 							</div>
 
 							<!-- Title -->
@@ -149,7 +149,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 										class="text-[10px]">
 										<template #icon>
 											<FontAwesomeIcon
-												:icon="item?.review?.is_public ? faEye : faEyeSlash" />
+												:icon="item?.review?.is_public ? faEye : faEyeSlash" fixed-width />
 										</template>
 
 										{{ item?.review?.is_public ? "Public" : "Private" }}
@@ -161,7 +161,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 									<span>{{ item.code }}</span>
 
 									<span class="flex items-center">
-										<FontAwesomeIcon :icon="faCircle" class="text-[5px]" />
+										<FontAwesomeIcon :icon="faCircle" class="text-[5px]" fixed-width />
 									</span>
 
 									<span>{{ useFormatTime(item.created_at) }}</span>
@@ -212,7 +212,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 								:disabled="reactingKeys[`${item.review.review_id}-review`]"
 								@click="() => toggleReaction(item, 'review', true)"
 								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100 disabled:opacity-50">
-								<FontAwesomeIcon :icon="faThumbsUp" />
+								<FontAwesomeIcon :icon="faThumbsUp" fixed-width />
 
 								<span>
 									{{ item.review.likes ?? 0 }}
@@ -223,7 +223,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 								:disabled="reactingKeys[`${item.review.review_id}-review`]"
 								@click="() => toggleReaction(item, 'review', false)"
 								class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 transition hover:bg-gray-100 disabled:opacity-50">
-								<FontAwesomeIcon :icon="faThumbsDown" />
+								<FontAwesomeIcon :icon="faThumbsDown" fixed-width />
 
 								<span>
 									{{ item.review.dislikes ?? 0 }}
@@ -265,7 +265,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 										:disabled="reactingKeys[`${item.review.review_id}-reply`]"
 										@click="() => toggleReaction(item, 'reply', true)"
 										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100 disabled:opacity-50">
-										<FontAwesomeIcon :icon="faThumbsUp" />
+										<FontAwesomeIcon :icon="faThumbsUp" fixed-width />
 
 										<span>
 											{{ item.review.reply.likes ?? 0 }}
@@ -276,7 +276,7 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 										:disabled="reactingKeys[`${item.review.review_id}-reply`]"
 										@click="() => toggleReaction(item, 'reply', false)"
 										class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-orange-600 transition hover:bg-orange-100 disabled:opacity-50">
-										<FontAwesomeIcon :icon="faThumbsDown" />
+										<FontAwesomeIcon :icon="faThumbsDown" fixed-width />
 
 										<span>
 											{{ item.review.reply.dislikes ?? 0 }}
@@ -309,14 +309,14 @@ const toggleReaction = (item: any, target: "review" | "reply", isLike: boolean) 
 						type="button"
 						class="absolute left-2 top-1/2 z-40 -translate-y-1/2 text-3xl text-white"
 						@click="prevPreviewImage">
-						<FontAwesomeIcon :icon="faChevronCircleLeft" />
+						<FontAwesomeIcon :icon="faChevronCircleLeft" fixed-width />
 					</button>
 
 					<button
 						type="button"
 						class="absolute right-2 top-1/2 z-40 -translate-y-1/2 text-3xl text-white"
 						@click="nextPreviewImage">
-						<FontAwesomeIcon :icon="faChevronCircleRight" />
+						<FontAwesomeIcon :icon="faChevronCircleRight" fixed-width />
 					</button>
 
 					<div class="mt-2 text-xs text-white">

@@ -61,7 +61,7 @@ const richTextClass = "text-[13px] md:text-[14px] 2xl:text-[16px] leading-[1.8] 
 					:class="{ 'mt-6': hasDescriptionExtra }">
 					<FontAwesomeIcon
 						:icon="faMapMarkerAlt"
-						class="shrink-0 text-gray-600 transition group-hover:text-gray-800" />
+						class="shrink-0 text-gray-600 transition group-hover:text-gray-800" fixed-width />
 					<div
 						class="text-sm font-medium text-gray-800 underline [&_p]:!mb-0"
 						v-html="appointment?.text" />

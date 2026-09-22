@@ -74,7 +74,7 @@ onBeforeUnmount(() => {
                     {{ trans('Personal settings') }}
                 </span>
                 <FontAwesomeIcon icon="fal fa-chevron-down" class="text-sm text-gray-400 transition-transform duration-200"
-                    :class="isSettingsOpen ? 'rotate-180' : ''" aria-hidden="true" />
+                    :class="isSettingsOpen ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
             </button>
 
             <div v-if="hasSettingsBeenOpened" v-show="isSettingsOpen" class="min-h-0 flex-1">

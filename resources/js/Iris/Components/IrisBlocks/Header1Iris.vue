@@ -198,7 +198,7 @@ const onClickLogout = () => {
 							<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100"
 								:class="{ 'cursor-wait': isLoading }">
 								<LoadingIcon v-if="isLoading" class="text-lg text-gray-500" />
-								<FontAwesomeIcon v-else :icon="faUser" class="text-lg text-gray-500" />
+								<FontAwesomeIcon v-else :icon="faUser" class="text-lg text-gray-500" fixed-width />
 							</div>
 						</LinkIris>
 
@@ -265,7 +265,7 @@ const onClickLogout = () => {
 						class="flex items-center justify-center text-[20px] text-gray-600 bg-gray-100 rounded-full hover:text-gray-900 disabled:opacity-60 disabled:cursor-wait"
 						:disabled="isLoadingLogout" @click="onClickLogout">
 						<LoadingIcon v-if="isLoadingLogout" />
-						<FontAwesomeIcon v-else :icon="faSignOutAlt" />
+						<FontAwesomeIcon v-else :icon="faSignOutAlt" fixed-width />
 					</button>
 				</template>
 

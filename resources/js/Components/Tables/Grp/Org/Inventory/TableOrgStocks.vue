@@ -357,7 +357,7 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
             <Icon :data="stock.state"></Icon>
         </template>
         <template #cell(type)="{ item: stock }">
-            <FontAwesomeIcon v-if="stock.type" :icon="stock.type == 'picking' ? faCheck : faHandPaper  " :data="stock.type"></FontAwesomeIcon>
+            <FontAwesomeIcon v-if="stock.type" :icon="stock.type == 'picking' ? faCheck : faHandPaper  " :data="stock.type" fixed-width></FontAwesomeIcon>
         </template>
         <template #cell(org_sku)="{ item: stock }">
             <Link :href="orgStockHref(stock) as string" class="primaryLink">

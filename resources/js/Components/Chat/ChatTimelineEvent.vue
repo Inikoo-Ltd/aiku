@@ -82,7 +82,7 @@ const stamp = computed(() => {
 <template>
     <div class="flex flex-col items-center gap-1 py-1 text-center">
         <span class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-            <FontAwesomeIcon :icon="icon" class="text-[9px]" :class="tone" />
+            <FontAwesomeIcon :icon="icon" class="text-[9px]" :class="tone" fixed-width />
         </span>
         <div class="text-[11px] leading-snug text-gray-500 max-w-xs">{{ headline }}</div>
         <div v-if="isPhoneCall && payload.notes"

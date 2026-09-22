@@ -168,7 +168,7 @@ watch(() => props.valueToRefetch, () => {
                                         <FontAwesomeIcon
                                             v-if="selectedItems.some(i => i.id === item.id)"
                                             icon="fa-solid fa-check-circle"
-                                            class="absolute top-1 right-1 text-green-600 text-lg"
+                                            class="absolute top-1 right-1 text-green-600 text-lg" fixed-width
                                         />
                                     </div>
                                 </template>

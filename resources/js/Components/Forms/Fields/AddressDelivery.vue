@@ -119,9 +119,9 @@ const submitForm = () => {
                             <div v-if="form.errors[fieldName] || form.recentlySuccessful"
                                 class="absolute inset-y-2/4 right-0 pr-3 flex items-center pointer-events-none bg-red-500">
                                 <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]"
-                                    class="h-5 w-5 text-red-500" aria-hidden="true" />
+                                    class="h-5 w-5 text-red-500" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-check-circle" v-if="form.recentlySuccessful"
-                                    class="h-5 w-5 text-green-500" aria-hidden="true" />
+                                    class="h-5 w-5 text-green-500" fixed-width aria-hidden="true" />
                             </div>
                         </div>
                         <span v-if="form.errors[fieldName]" class="block mt-2 text-sm text-red-600">{{ form.errors[fieldName] }}</span>
@@ -155,7 +155,7 @@ const submitForm = () => {
                             </div>
                             <div class="w-5 self-end">
                                 <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[addressField]"
-                                    class="h-5 w-5 text-red-500" aria-hidden="true" />
+                                    class="h-5 w-5 text-red-500" fixed-width aria-hidden="true" />
                             </div>
                         </div>
                     </template>
@@ -167,9 +167,9 @@ const submitForm = () => {
         <button @click="submitForm" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="button">
             <template v-if="form.isDirty">
                 <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
-                <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
             </template>
-            <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+            <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
         </button>
     </div>
 </template>

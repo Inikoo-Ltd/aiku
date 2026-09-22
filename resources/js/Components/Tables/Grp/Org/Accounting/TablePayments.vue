@@ -71,7 +71,7 @@ const cancelConfirmationText = (item) => {
 
 		<template #cell(status)="{ item }">
 			<Icon v-if="item.is_cancelled === false" :data="item.status_icon" class="" />
-			<FontAwesomeIcon v-else :icon="faFileTimes" class="text-orange-500 text-lg" v-tooltip="trans('This payment is being cancelled')"/>
+			<FontAwesomeIcon v-else :icon="faFileTimes" class="text-orange-500 text-lg" v-tooltip="trans('This payment is being cancelled')" fixed-width/>
 		</template>
 
 		<template #cell(amount)="{ item: item }">
@@ -105,7 +105,7 @@ const cancelConfirmationText = (item) => {
 						class="text-sm" :type="'negative'"
 						@click="changeModel"
 					>
-						<FontAwesomeIcon :icon="faFileTimes" class="text-red-500"/>
+						<FontAwesomeIcon :icon="faFileTimes" class="text-red-500" fixed-width/>
 					</Button>
 				</template>
 

@@ -297,9 +297,9 @@ onMounted(async () => {
                 :class="activeTab === 'slack' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                 @click="activeTab = 'slack'"
             >
-                <FontAwesomeIcon :icon="faSlack" />
+                <FontAwesomeIcon :icon="faSlack" fixed-width />
                 {{ trans("Slack Setting") }}
-                <FontAwesomeIcon v-if="slackHasToken && slackDestinations.length" :icon="faCircleCheck" class="text-emerald-500 text-xs" />
+                <FontAwesomeIcon v-if="slackHasToken && slackDestinations.length" :icon="faCircleCheck" class="text-emerald-500 text-xs" fixed-width />
             </button>
         </div>
 
@@ -350,7 +350,7 @@ onMounted(async () => {
         <div v-show="activeTab === 'slack'" class="flex flex-col gap-4">
             <div v-if="!sessionUlid" class="flex flex-col items-center gap-2 py-8 text-center">
                 <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
-                    <FontAwesomeIcon :icon="faCircleInfo" class="text-amber-500" />
+                    <FontAwesomeIcon :icon="faCircleInfo" class="text-amber-500" fixed-width />
                 </div>
                 <p class="text-xs text-gray-500 max-w-[220px]">
                     {{ trans("Open an active chat first to manage this shop's Slack settings.") }}
@@ -359,14 +359,14 @@ onMounted(async () => {
 
             <template v-else>
                 <div class="flex items-start gap-2.5 rounded-lg bg-purple-50/70 border border-purple-100 px-3 py-2.5">
-                    <FontAwesomeIcon :icon="faSlack" class="text-purple-600 mt-0.5 shrink-0" />
+                    <FontAwesomeIcon :icon="faSlack" class="text-purple-600 mt-0.5 shrink-0" fixed-width />
                     <p class="text-xs text-purple-900/80 leading-relaxed">
                         {{ trans("Shared with every agent of this shop. Add the channels and people you want to be able to forward chats to.") }}
                     </p>
                 </div>
 
                 <div v-if="isLoadingSlack" class="flex items-center justify-center gap-2 py-8 text-xs text-gray-400">
-                    <FontAwesomeIcon :icon="faChevronDown" class="animate-bounce" />
+                    <FontAwesomeIcon :icon="faChevronDown" class="animate-bounce" fixed-width />
                     {{ trans("Loading…") }}
                 </div>
 
@@ -375,7 +375,7 @@ onMounted(async () => {
                     <div class="flex flex-col gap-1.5 rounded-xl border border-gray-200 p-3.5">
                         <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
                             {{ trans("Slack Bot Token") }}
-                            <FontAwesomeIcon v-if="slackHasToken" :icon="faCircleCheck" class="text-emerald-500 text-[11px]" />
+                            <FontAwesomeIcon v-if="slackHasToken" :icon="faCircleCheck" class="text-emerald-500 text-[11px]" fixed-width />
                         </label>
                         <div class="relative">
                             <InputText
@@ -389,7 +389,7 @@ onMounted(async () => {
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                 @click="showSlackToken = !showSlackToken"
                             >
-                                <FontAwesomeIcon :icon="showSlackToken ? faEyeSlash : faEye" />
+                                <FontAwesomeIcon :icon="showSlackToken ? faEyeSlash : faEye" fixed-width />
                             </button>
                         </div>
                         <span v-if="slackHasToken" class="text-[11px] text-gray-400">
@@ -417,7 +417,7 @@ onMounted(async () => {
                                             ? 'bg-indigo-100 text-indigo-600'
                                             : 'bg-purple-100 text-purple-600'"
                                     >
-                                        <FontAwesomeIcon :icon="destination.type === 'channel' ? faHashtag : faUser" />
+                                        <FontAwesomeIcon :icon="destination.type === 'channel' ? faHashtag : faUser" fixed-width />
                                     </span>
                                     <div class="flex flex-col min-w-0 flex-1">
                                         <span class="text-sm text-gray-700 truncate leading-tight">{{ destination.name }}</span>
@@ -428,13 +428,13 @@ onMounted(async () => {
                                         class="text-gray-300 group-hover:text-gray-400 hover:!text-red-500 transition-colors shrink-0"
                                         @click="removeDestination(index)"
                                     >
-                                        <FontAwesomeIcon :icon="faXmark" />
+                                        <FontAwesomeIcon :icon="faXmark" fixed-width />
                                     </button>
                                 </div>
                             </TransitionGroup>
 
                             <div v-if="!slackDestinations.length" class="flex flex-col items-center gap-1.5 py-5 text-center">
-                                <FontAwesomeIcon :icon="faSlack" class="text-gray-300 text-lg" />
+                                <FontAwesomeIcon :icon="faSlack" class="text-gray-300 text-lg" fixed-width />
                                 <p class="text-xs text-gray-400">{{ trans("No channels or people added yet.") }}</p>
                             </div>
                         </div>
@@ -443,7 +443,7 @@ onMounted(async () => {
                             <div class="flex items-end gap-2">
                                 <div class="flex flex-col gap-1 flex-1 min-w-0">
                                     <label class="flex items-center gap-1 text-[11px] font-medium text-gray-500">
-                                        <FontAwesomeIcon :icon="faHashtag" class="text-indigo-400 text-[10px]" />
+                                        <FontAwesomeIcon :icon="faHashtag" class="text-indigo-400 text-[10px]" fixed-width />
                                         {{ trans("Channel name") }}
                                     </label>
                                     <InputText v-model="newChannelName" placeholder="general" class="w-full min-w-0 text-sm" @keydown.enter.prevent="addChannel" />
@@ -454,7 +454,7 @@ onMounted(async () => {
                             <div class="flex items-end gap-2">
                                 <div class="flex flex-col gap-1 flex-1 min-w-0">
                                     <label class="flex items-center gap-1 text-[11px] font-medium text-gray-500">
-                                        <FontAwesomeIcon :icon="faUser" class="text-purple-400 text-[10px]" />
+                                        <FontAwesomeIcon :icon="faUser" class="text-purple-400 text-[10px]" fixed-width />
                                         {{ trans("Slack User ID") }}
                                     </label>
                                     <InputText v-model="newUserId" placeholder="U0123ABCD" class="w-full min-w-0 text-sm" />
@@ -486,10 +486,10 @@ onMounted(async () => {
                             @click="showGuide = !showGuide"
                         >
                             <span class="flex items-center gap-2 text-sm font-medium">
-                                <FontAwesomeIcon :icon="faCircleInfo" class="text-blue-500" />
+                                <FontAwesomeIcon :icon="faCircleInfo" class="text-blue-500" fixed-width />
                                 {{ trans("How to get a Bot Token & Slack User ID") }}
                             </span>
-                            <FontAwesomeIcon :icon="faChevronDown" class="text-xs transition-transform" :class="showGuide ? 'rotate-180' : ''" />
+                            <FontAwesomeIcon :icon="faChevronDown" class="text-xs transition-transform" :class="showGuide ? 'rotate-180' : ''" fixed-width />
                         </button>
 
                         <ol v-show="showGuide" class="px-4 py-3 text-xs text-gray-600 space-y-2.5 list-none">

@@ -141,7 +141,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", true)
 
                 <button v-if="isLoggedIn" class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
                     v-tooltip="ctrans('Reminder back in stock')">
-                    <FontAwesomeIcon :icon="faEnvelope" class="text-[20px]" />
+                    <FontAwesomeIcon :icon="faEnvelope" class="text-[20px]" fixed-width />
                     <span class="text-sm font-medium">
                         {{ layout.iris_variables?.back_in_stock_count }}
                     </span>
@@ -202,7 +202,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", true)
                     <button
                         class="text-[20px] rounded-full bg-gray-100 text-gray-600 hover:text-gray-900 flex items-center justify-center"
                         v-tooltip="ctrans('Logout')">
-                        <FontAwesomeIcon :icon="faSignOutAlt" />
+                        <FontAwesomeIcon :icon="faSignOutAlt" fixed-width />
                     </button>
                 </template>
 

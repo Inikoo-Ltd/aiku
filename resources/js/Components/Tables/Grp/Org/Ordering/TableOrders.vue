@@ -227,8 +227,8 @@ const setNewMarkerDate = (newVal: Date) => {
                 <template #dp-input>
                     <span class="h-9 rounded flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-600 hover:cursor-pointer" :class="isValidMark ? 'ps-3 pe-10 ' : 'px-3'">
                         <FontAwesomeLayers class="mr-5">
-                            <FontAwesomeIcon :icon="faCalendarAlt"/>
-                            <FontAwesomeIcon :icon="faHighlighter" style="right: -16px; bottom: -8px" class="text-red-500"/>
+                            <FontAwesomeIcon :icon="faCalendarAlt" fixed-width/>
+                            <FontAwesomeIcon :icon="faHighlighter" style="right: -16px; bottom: -8px" class="text-red-500" fixed-width/>
                         </FontAwesomeLayers>
                         {{ isValidMark ? getDateLocaleString(markerDate) : '-' }}
                     </span>
@@ -276,7 +276,7 @@ const setNewMarkerDate = (newVal: Date) => {
                         v-if="isValidMark && isBeforeMark(order['date'])"
                         v-tooltip="ctrans('Order created at :_dateCreated', {_dateCreated: getDateLocaleString(new Date(order['date']))})"
                         :icon="faPennant"
-                        class="mr-1 text-red-500"
+                        class="mr-1 text-red-500" fixed-width
                     />
                     {{ order["reference"] }}
                 </Link>
@@ -348,7 +348,7 @@ const setNewMarkerDate = (newVal: Date) => {
                       "
                       class="text-gray-400 cursor-help"
                 >
-                    <FontAwesomeIcon :icon="faInfoCircle" size="xs" />
+                    <FontAwesomeIcon :icon="faInfoCircle" size="xs" fixed-width />
                 </span>
                 <span>
                     {{ useFormatTime(order.platform_milestones?.placed_at || order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}

@@ -374,10 +374,10 @@ watch(() => currentTab.value, (tab) => {
                         <InputNumber v-model="form.price" mode="currency" :currency="currency" :step="0.25" showButtons
                             button-layout="horizontal" inputClass="w-full text-xs">
                             <template #incrementbuttonicon>
-                                <FontAwesomeIcon :icon="faPlus" />
+                                <FontAwesomeIcon :icon="faPlus" fixed-width />
                             </template>
                             <template #decrementbuttonicon>
-                                <FontAwesomeIcon :icon="faMinus" />
+                                <FontAwesomeIcon :icon="faMinus" fixed-width />
                             </template>
                         </InputNumber>
                     </div>
@@ -387,10 +387,10 @@ watch(() => currentTab.value, (tab) => {
                         <InputNumber v-model="form.rrp" mode="currency" :currency="currency" :step="0.25" showButtons
                             button-layout="horizontal" inputClass="w-full text-xs">
                             <template #incrementbuttonicon>
-                                <FontAwesomeIcon :icon="faPlus" />
+                                <FontAwesomeIcon :icon="faPlus" fixed-width />
                             </template>
                             <template #decrementbuttonicon>
-                                <FontAwesomeIcon :icon="faMinus" />
+                                <FontAwesomeIcon :icon="faMinus" fixed-width />
                             </template>
                         </InputNumber>
                     </div>

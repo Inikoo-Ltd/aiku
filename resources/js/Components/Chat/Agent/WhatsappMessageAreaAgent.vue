@@ -930,14 +930,14 @@ onUnmounted(() => {
         <!-- Header -->
         <header class="flex items-center gap-3 px-3 py-2 border-b">
             <button @click="$emit('back')">
-                <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" />
+                <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
 
             <button type="button"
                 class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600 hover:ring-2 hover:ring-green-200 transition"
                 @click="emit('view-profile')">
                 <Image v-if="session?.image" :src="session?.image" class="w-full h-full rounded-full object-cover" />
-                <FontAwesomeIcon v-else :icon="faUser" class="text-sm" />
+                <FontAwesomeIcon v-else :icon="faUser" class="text-sm" fixed-width />
             </button>
 
             <div class="flex-1 min-w-0 cursor-pointer" @click="emit('view-profile')">
@@ -945,7 +945,7 @@ onUnmounted(() => {
                     {{ session?.guest_identifier || session?.contact_name }}
                 </div>
                 <div class="flex items-center gap-1.5 mt-0.5">
-                    <FontAwesomeIcon :icon="faWhatsapp" class="text-[11px] text-green-600" />
+                    <FontAwesomeIcon :icon="faWhatsapp" class="text-[11px] text-green-600" fixed-width />
                     <img v-if="(session as any)?.country_code" :src="`/flags/${(session as any).country_code.toLowerCase()}.png`"
                         :alt="(session as any).country_code" v-tooltip="(session as any).country_code" class="h-3 w-auto shrink-0" />
                     <span v-if="session?.phone_number" class="text-[11px] text-gray-400 truncate">
@@ -964,7 +964,7 @@ onUnmounted(() => {
                         v-tooltip="isCustomer ? ctrans('Customer') : ctrans('Guest')">
                         {{ isCustomer ? 'C' : 'G' }}
                     </span>
-                    <FontAwesomeIcon :icon="faWhatsapp" class="shrink-0 text-[11px] text-green-600" />
+                    <FontAwesomeIcon :icon="faWhatsapp" class="shrink-0 text-[11px] text-green-600" fixed-width />
                     <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
                         {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
                     </span>
@@ -975,7 +975,7 @@ onUnmounted(() => {
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
                 class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                 @click="markSpam">
-                <FontAwesomeIcon :icon="faBan" class="text-[11px]" />
+                <FontAwesomeIcon :icon="faBan" class="text-[11px]" fixed-width />
                 {{ ctrans("Spam") }}
             </button>
 
@@ -992,7 +992,7 @@ onUnmounted(() => {
                     <button @click="changeModel"
                         class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
                         :style="{ backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' }">
-                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" />
+                        <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" fixed-width />
                         {{ ctrans("End chat") }}
                     </button>
                 </template>
@@ -1004,7 +1004,7 @@ onUnmounted(() => {
             <div class="flex justify-center" v-if="canLoadMore && nextCursor">
                 <button @click="getMessages(true)" :disabled="isLoadingMore" class="flex items-center gap-2 text-xs text-gray-600 px-4 py-1.5
                border rounded-full hover:bg-gray-100 disabled:opacity-50">
-                    <FontAwesomeIcon v-if="isLoadingMore" :icon="faSpinner" class="animate-spin text-[10px]" />
+                    <FontAwesomeIcon v-if="isLoadingMore" :icon="faSpinner" class="animate-spin text-[10px]" fixed-width />
                     <span>
                         {{ isLoadingMore ? ctrans('Loading messages…') : ctrans('Load older messages') }}
                     </span>
@@ -1039,7 +1039,7 @@ onUnmounted(() => {
             <div class="relative inline-block">
                 <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
                 <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
-                    <FontAwesomeIcon :icon="faXmark" />
+                    <FontAwesomeIcon :icon="faXmark" fixed-width />
                 </button>
             </div>
         </div>
@@ -1047,7 +1047,7 @@ onUnmounted(() => {
         <div v-if="previewType === 'file' && selectedFile" class="px-3 pb-2">
             <div class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0">
                 <div class="text-2xl">
-                    <FontAwesomeIcon :icon="faFilePdf" />
+                    <FontAwesomeIcon :icon="faFilePdf" fixed-width />
                 </div>
                 <div class="flex-1 min-w-0 overflow-hidden">
                     <div class="text-sm font-medium truncate">
@@ -1058,7 +1058,7 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
-                    <FontAwesomeIcon :icon="faXmark" />
+                    <FontAwesomeIcon :icon="faXmark" fixed-width />
                 </button>
             </div>
         </div>
@@ -1130,7 +1130,7 @@ onUnmounted(() => {
 
             <div v-if="templateOnly && !hasTemplate"
                 class="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px]">
-                <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
+                <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" fixed-width />
                 <span>{{ ctrans('The customer has not messaged in the last 24 hours. Only template messages can be sent.') }}</span>
                 <button type="button" @click="openTemplateDialog"
                     class="ml-auto shrink-0 px-2 py-1 rounded-md bg-amber-600 text-white font-medium hover:bg-amber-700">
@@ -1140,7 +1140,7 @@ onUnmounted(() => {
                     class="shrink-0 w-5 h-5 text-[11px] flex items-center justify-center text-amber-600 hover:text-amber-800"
                     v-tooltip="ctrans('Why can I not type? The WhatsApp 24 hour rule, explained')"
                     :aria-label="ctrans('Guide: the WhatsApp 24 hour rule')">
-                    <FontAwesomeIcon :icon="faCircleQuestion" />
+                    <FontAwesomeIcon :icon="faCircleQuestion" fixed-width />
                 </a>
             </div>
 
@@ -1155,19 +1155,19 @@ onUnmounted(() => {
                 </div>
                 <button type="button" @click="cancelReply" :aria-label="ctrans('Cancel reply')"
                     class="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-400">
-                    <FontAwesomeIcon :icon="faXmark" class="text-xs" />
+                    <FontAwesomeIcon :icon="faXmark" class="text-xs" fixed-width />
                 </button>
             </div>
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <div v-if="hasTemplate"
                     class="flex items-center gap-2 mx-3 mt-2 px-2 py-1 rounded-lg bg-green-50 text-green-700 text-[11px]">
-                    <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" />
+                    <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" fixed-width />
                     <span class="font-medium truncate">{{ selectedTemplate?.name }}</span>
                     <span class="text-green-600/70">{{ selectedTemplate?.language }}</span>
                     <button @click="clearTemplate" class="ml-auto text-green-600 hover:text-red-500"
                         :title="ctrans('Remove template')">
-                        <FontAwesomeIcon :icon="faXmark" class="text-[10px]" />
+                        <FontAwesomeIcon :icon="faXmark" class="text-[10px]" fixed-width />
                     </button>
                 </div>
 
@@ -1199,11 +1199,11 @@ onUnmounted(() => {
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()" :disabled="hasTemplate || templateOnly"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="ctrans('Upload image')">
-                            <FontAwesomeIcon :icon="faImage" class="text-sm" />
+                            <FontAwesomeIcon :icon="faImage" class="text-sm" fixed-width />
                         </button>
                         <button @click="fileInput?.click()" :disabled="hasTemplate || templateOnly"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors disabled:opacity-40 disabled:hover:bg-transparent" :title="ctrans('Upload file')">
-                            <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
+                            <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
                         </button>
                         <div ref="emojiPickerContainer" class="relative">
                             <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
@@ -1211,7 +1211,7 @@ onUnmounted(() => {
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                                 :class="showEmojiPicker ? 'text-green-600 bg-gray-100' : 'text-gray-500'"
                                 :title="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
-                                <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                                <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                             </button>
 
                             <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1 z-30">
@@ -1220,11 +1220,11 @@ onUnmounted(() => {
                         </div>
                         <button @click="openTemplateDialog"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-colors" :title="ctrans('Send template message')">
-                            <FontAwesomeIcon :icon="faFileLines" class="text-sm" />
+                            <FontAwesomeIcon :icon="faFileLines" class="text-sm" fixed-width />
                         </button>
                         <button @click="isTicketModalOpen = true"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket from this chat')" :aria-label="ctrans('Create ticket from this chat')">
-                            <FontAwesomeIcon :icon="faLifeRing" class="text-sm" />
+                            <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
                     </div>
                     <Button @click="sendMessage" :loading="isSending"
@@ -1256,7 +1256,7 @@ onUnmounted(() => {
         <div v-if="isDraggingFile"
             class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-white/75 p-6">
             <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-green-500 bg-white px-10 py-8 shadow-sm">
-                <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-green-600" />
+                <FontAwesomeIcon :icon="faPaperclip" class="text-2xl text-green-600" fixed-width />
                 <div class="text-sm font-medium text-gray-700">{{ ctrans("Drop the file here") }}</div>
                 <div class="text-xs text-gray-400">
                     {{ ctrans("One file per message: JPG or PNG up to 5MB, or a document up to 100MB") }}

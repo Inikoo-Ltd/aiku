@@ -136,14 +136,14 @@ const showDialog = ref(false);
                 <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                     <FontAwesomeIcon
                         :icon="faOctopusDeploy"
-                        color="#4B0082"
+                        color="#4B0082" fixed-width
                     />
                 </Link>
                 <FontAwesomeIcon 
                     v-if="mismatch_detected" 
                     :icon="faWarning" 
                     class="text-red-500" 
-                    v-tooltip="trans('One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units')"
+                    v-tooltip="trans('One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units')" fixed-width
                 />
             </div>
         </template>
@@ -185,7 +185,7 @@ const showDialog = ref(false);
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" fixed-width />
                         <span class="">{{ item.label || '-' }}</span>
                     </component>
                 </div>
@@ -194,7 +194,7 @@ const showDialog = ref(false);
         <Message v-if="mismatch_detected" :severity="'error'">
             <FontAwesomeIcon
                 :icon="faWarning"
-                class="text-red-500 mr-1"
+                class="text-red-500 mr-1" fixed-width
             />
             {{ trans("One or more products under the master family contain mismatched trade unit data. Please fix it by modifying the related master products trade units.") }}
         </Message>

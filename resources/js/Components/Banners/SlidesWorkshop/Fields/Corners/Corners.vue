@@ -137,7 +137,7 @@ const clear = (sec: any) => {
                         get(common, ['corners', cornerSection.id]) &&
                         !isNull(common.corners[cornerSection.id])
                     " class="flex flex-col items-center gap-1 text-xs">
-                        <font-awesome-icon :icon="['fas', 'lock']" class="text-gray-400" />
+                        <font-awesome-icon :icon="['fas', 'lock']" class="text-gray-400" fixed-width />
                         <span class="italic">Used in common</span>
                     </div>
 

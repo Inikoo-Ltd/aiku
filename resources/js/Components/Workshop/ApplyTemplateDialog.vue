@@ -473,7 +473,7 @@ watch(visible, (isVisible) => {
 						<div
 							v-if="!resolution.length"
 							class="pointer-events-none absolute inset-1 flex flex-col items-center justify-center gap-1 px-3 text-center rounded-md border border-dashed border-slate-200 text-slate-500">
-							<FontAwesomeIcon :icon="faLayerGroup" class="text-2xl text-slate-300" />
+							<FontAwesomeIcon :icon="faLayerGroup" class="text-2xl text-slate-300" fixed-width />
 							<span class="text-xs font-medium">{{ trans('The page will end up with no blocks') }}</span>
 							<span class="text-[10px]">{{ trans('Drag blocks here, or pick them from either side') }}</span>
 						</div>

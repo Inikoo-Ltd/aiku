@@ -120,8 +120,8 @@ const isOpenModalAddShop = ref(false)
         <template #otherBefore>
           <Button v-if="currentTab == 'shops'" :type="'edit'" @click="isOpenModalAddShop = true">
             <FontAwesomeLayers class="me-2">
-              <FontAwesomeIcon :icon="faStoreAlt"/>
-              <FontAwesomeIcon :icon="faPlusCircle" style="left: unset; right: -12px; bottom: -22px; width: 75%;"/>
+              <FontAwesomeIcon :icon="faStoreAlt" fixed-width/>
+              <FontAwesomeIcon :icon="faPlusCircle" style="left: unset; right: -12px; bottom: -22px; width: 75%;" fixed-width/>
             </FontAwesomeLayers>
             {{ trans('Add Shop') }}
           </Button>

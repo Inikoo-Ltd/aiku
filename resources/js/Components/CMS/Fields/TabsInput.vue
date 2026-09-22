@@ -176,7 +176,7 @@ const updateBlocks = (blocks: any[]) => {
                                 <div class="flex items-center w-full gap-2 py-1 pr-2" @click.stop>
                                     <div
                                         class="drag-handle flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-500 cursor-move">
-                                        <FontAwesomeIcon :icon="faBars" />
+                                        <FontAwesomeIcon :icon="faBars" fixed-width />
                                     </div>
 
                                     <InputText :model-value="block.name" class="w-[80%]"
@@ -187,7 +187,7 @@ const updateBlocks = (blocks: any[]) => {
                                     <button type="button"
                                         class="flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 transition"
                                         @click.stop="removeBlock(index)">
-                                        <FontAwesomeIcon :icon="faTrashAlt" />
+                                        <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
                                     </button>
                                 </div>
                             </AccordionHeader>

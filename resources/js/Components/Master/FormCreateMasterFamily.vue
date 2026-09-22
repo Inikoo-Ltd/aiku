@@ -192,7 +192,7 @@ const toggleFull = () => {
             </h2>
             <!-- Tombol Toggle Fullscreen -->
             <button @click="toggleFull" class="text-gray-500 hover:text-gray-700 mx-3">
-                <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" />
+                <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" fixed-width />
             </button>
         </template>
 
@@ -208,7 +208,7 @@ const toggleFull = () => {
                     <span>
                         {{ trans("Family Detail") }}
                     </span>
-                    <FontAwesomeIcon :icon="detailsVisible ? faChevronUp : faChevronDown" class="text-xs" />
+                    <FontAwesomeIcon :icon="detailsVisible ? faChevronUp : faChevronDown" class="text-xs" fixed-width />
                 </button>
 
                 <!-- Details Form -->
@@ -228,14 +228,14 @@ const toggleFull = () => {
 
                                 <!-- Kalau kosong -->
                                 <div v-else class="flex flex-col items-center text-gray-400 text-xs">
-                                    <FontAwesomeIcon :icon="faCamera" class="text-lg mb-1" />
+                                    <FontAwesomeIcon :icon="faCamera" class="text-lg mb-1" fixed-width />
                                     <span>Upload</span>
                                 </div>
 
                                 <!-- Tombol remove -->
                                 <button v-if="previewUrl || form.image" @click.stop="resetImage"
                                     class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow hover:text-red-500">
-                                    <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" />
+                                    <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" fixed-width />
                                 </button>
                             </div>
                             <input type="file" accept="image/*" ref="fileInput" class="hidden" @change="previewImage" />
@@ -250,7 +250,7 @@ const toggleFull = () => {
                                     class="w-full" />
                                 <small v-if="form.errors.code"
                                     class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    <FontAwesomeIcon :icon="faExclamationCircle" fixed-width />
                                     {{ form.errors.code.join(", ") }}
                                 </small>
                             </div>
@@ -262,7 +262,7 @@ const toggleFull = () => {
                                     class="w-full" />
                                 <small v-if="form.errors.name"
                                     class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    <FontAwesomeIcon :icon="faExclamationCircle" fixed-width />
                                     {{ form.errors.name.join(", ") }}
                                 </small>
                             </div>
@@ -274,7 +274,7 @@ const toggleFull = () => {
                                     @update:model-value="form.errors.description_title = null" class="w-full" />
                                 <small v-if="form.errors.description_title"
                                     class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    <FontAwesomeIcon :icon="faExclamationCircle" fixed-width />
                                     {{ form.errors.description_title.join(", ") }}
                                 </small>
                             </div>
@@ -286,7 +286,7 @@ const toggleFull = () => {
                                     @update:model-value="form.errors.description = null" class="w-full" />
                                 <small v-if="form.errors.description"
                                     class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    <FontAwesomeIcon :icon="faExclamationCircle" fixed-width />
                                     {{ form.errors.description.join(", ") }}
                                 </small>
                             </div>
@@ -298,7 +298,7 @@ const toggleFull = () => {
                                     @update:model-value="form.errors.description_extra = null" class="w-full" />
                                 <small v-if="form.errors.description_extra"
                                     class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    <FontAwesomeIcon :icon="faExclamationCircle" fixed-width />
                                     {{ form.errors.description_extra.join(", ") }}
                                 </small>
                             </div>
@@ -317,7 +317,7 @@ const toggleFull = () => {
                     <span>
                         {{ trans("Shop Family") }}
                     </span>
-                    <FontAwesomeIcon :icon="tableVisible ? faChevronUp : faChevronDown" class="text-xs" />
+                    <FontAwesomeIcon :icon="tableVisible ? faChevronUp : faChevronDown" class="text-xs" fixed-width />
                 </button>
 
                 <!-- Table -->

@@ -158,13 +158,13 @@ const onUpload = async (files: File[], clear) => {
             </div>
             <div class="flex items-center justify-between mb-6">
                 <button @click="goToPrev" aria-label="Previous">
-                    <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" />
+                    <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl text-gray-600 hover:text-primary" fixed-width />
                 </button>
                 <div class="flex-1 mx-4">
                     <component :is="getComponentDepartment(usedTemplate.code)" :data="form" />
                 </div>
                 <button @click="goToNext" aria-label="Next">
-                    <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl text-gray-600 hover:text-primary" />
+                    <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl text-gray-600 hover:text-primary" fixed-width />
                 </button>
             </div>
             <!-- Form -->
@@ -206,7 +206,7 @@ const onUpload = async (files: File[], clear) => {
 
     <ConfirmDialog group="alert-save">
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
         </template>
     </ConfirmDialog>
 
