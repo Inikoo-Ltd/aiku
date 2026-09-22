@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\Whatsapp;
 
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappCredentials;
+use App\Actions\Chat\Whatsapp\Calls\HandleWhatsappCallEvent;
 use App\Actions\Chat\Whatsapp\Templates\UpdateWhatsappTemplateStatus;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\JsonResponse;
@@ -34,6 +35,12 @@ class HandleWhatsappWebhook
             foreach (Arr::get($entry, 'changes', []) as $change) {
                 if (Arr::get($change, 'field') === 'message_template_status_update') {
                     UpdateWhatsappTemplateStatus::dispatch($change['value']);
+
+                    continue;
+                }
+
+                if (Arr::get($change, 'field') === 'calls') {
+                    HandleWhatsappCallEvent::dispatch($change['value']);
 
                     continue;
                 }
