@@ -45,6 +45,7 @@ const props = defineProps<{
     location_id: number,
     transfer_reason?: {}
     discontinue_preview_route?: routeType | null
+    discontinue_route?: routeType | null
 }>()
 
 const isDiscontinuePreviewOpen = ref(false)
@@ -577,7 +578,9 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
         :isOpen="isDiscontinuePreviewOpen"
         :orgStockIds="selectedOrgStockIds"
         :previewRoute="discontinue_preview_route"
+        :discontinueRoute="discontinue_route"
         @onClose="isDiscontinuePreviewOpen = false"
+        @onDone="() => { isDiscontinuePreviewOpen = false; selectedRows = {}; key++ }"
     />
 
     <Dialog

@@ -106,6 +106,7 @@ const props = defineProps<{
     }
     org_stock_id: number
     discontinue_preview_route: routeType
+    discontinue_route: routeType
 }>()
 
 const isDiscontinuePreviewOpen = ref(false)
@@ -233,6 +234,7 @@ const component = computed(() => {
         :isOpen="isDiscontinuePreviewOpen"
         :orgStockIds="[org_stock_id]"
         :previewRoute="discontinue_preview_route"
+        :discontinueRoute="discontinue_route"
         @onClose="isDiscontinuePreviewOpen = false"
     />
 </template>

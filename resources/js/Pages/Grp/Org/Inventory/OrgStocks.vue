@@ -25,6 +25,7 @@ const props = defineProps<{
     index?: {};
     sales?: {};
     discontinue_preview_route?: routeType | null;
+    discontinue_route?: routeType | null;
 }>();
 
 const currentTab = ref<string>(props?.tabs?.current ?? "index");
@@ -50,5 +51,6 @@ const component = computed(() => {
         :tab="currentTab"
         :data="props[currentTab]"
         :discontinue_preview_route="discontinue_preview_route"
+        :discontinue_route="discontinue_route"
     />
 </template>

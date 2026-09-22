@@ -134,6 +134,8 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
+use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStock\GetOrgStockDiscontinuePreview;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
@@ -144,6 +146,10 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Actions\SysAdmin\Organisation\StoreOrganisation;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\Helpers\Audit;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -3508,5 +3514,122 @@ describe('discontinue preview', function () {
             $warehouse->slug,
             'org_stock_ids' => [$this->orgStocks[1]->id],
         ]))->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $this->orgStocks[1]->id);
+    });
+});
+
+describe('discontinue confirm', function () {
+    beforeEach(function () {
+        createStocks($this->group);
+        $stocks          = $this->group->stocks()->orderBy('id')->limit(3)->get()->all();
+        $this->orgStocks = createOrgStocks($this->organisation, $stocks);
+
+        $otherOrganisation = Organisation::where('code', 'other')->first();
+        if (!$otherOrganisation) {
+            $otherOrganisation = StoreOrganisation::make()->action(
+                $this->group,
+                array_merge(Organisation::factory()->definition(), ['code' => 'other', 'type' => OrganisationTypeEnum::SHOP])
+            );
+        }
+        $this->otherOrganisation = $otherOrganisation;
+        $this->otherOrgStocks    = createOrgStocks($otherOrganisation, $stocks);
+
+        $warehouse = $this->organisation->warehouses()->oldest('id')->first();
+        if ($warehouse && !$warehouse->address?->country_code) {
+            $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $this->group->id, 'address_line_1' => 'Default warehouse'])->id]);
+        }
+    });
+
+    test('confirm discontinues the stock group wide, keeps an excepted organisation and audits the reason', function () {
+        $orgStock      = $this->orgStocks[0];
+        $otherOrgStock = $this->otherOrgStocks[0];
+
+        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$orgStock->id],
+            'state'               => OrgStockStateEnum::DISCONTINUED->value,
+            'organisation_states' => ['other' => OrgStockStateEnum::ACTIVE->value],
+            'reason'              => 'Supplier stopped making it',
+            'source'              => 'mcp',
+            'request_text'        => 'discontinue this one please',
+        ]);
+
+        $audit = Audit::where('auditable_type', 'OrgStock')->where('auditable_id', $orgStock->id)->where('event', 'state_change')->latest('id')->first();
+
+        $siblings = OrgStock::where('stock_id', $orgStock->stock_id)->count();
+
+        expect($stats['changed'])->toBe(1)
+            ->and($stats['unchanged'])->toBe($siblings - 1)
+            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUED)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($audit)->not->toBeNull()
+            ->and($audit->old_values['state'])->toBe('active')
+            ->and($audit->new_values['to_state'])->toBe('discontinued')
+            ->and($audit->new_values['reason'])->toBe('Supplier stopped making it')
+            ->and($audit->new_values['source'])->toBe('mcp')
+            ->and($audit->new_values['request_text'])->toBe('discontinue this one please')
+            ->and($audit->new_values['overrides'])->toBe(['other' => 'active']);
+    });
+
+    test('a discontinued sko is refused on a purchase order line', function () {
+        $orgStock = $this->orgStocks[0];
+        DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'reason'        => 'Running down',
+        ]);
+
+        $supplier = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+        StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $orgStock->stock_id]));
+        $orgSupplier   = OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->first()
+            ?? StoreOrgSupplier::make()->action($this->organisation, $supplier);
+        $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+        expect(fn () => StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $orgStock, PurchaseOrderTransaction::factory()->definition()))
+            ->toThrow(ValidationException::class);
+
+        DiscontinueOrgStocks::make()->action($this->organisation, ['org_stock_ids' => [$orgStock->id], 'state' => OrgStockStateEnum::ACTIVE->value]);
+
+        expect(StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $orgStock->refresh(), PurchaseOrderTransaction::factory()->definition()))
+            ->toBeInstanceOf(PurchaseOrderTransaction::class);
+    });
+
+    test('confirm refuses a sko that moved since the preview', function () {
+        $orgStock = $this->orgStocks[1];
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$orgStock->id],
+            'state'               => OrgStockStateEnum::DISCONTINUED->value,
+            'reason'              => 'x',
+            'expected_updated_at' => [$orgStock->id => now()->subDay()->toIso8601String()],
+        ]))->toThrow(ValidationException::class)
+            ->and($orgStock->refresh()->state)->not->toBe(OrgStockStateEnum::DISCONTINUED);
+    });
+
+    test('a future effective date is stored and applied by the sweep when the day comes', function () {
+        $orgStock      = $this->orgStocks[2];
+        $otherOrgStock = $this->otherOrgStocks[2];
+
+        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$orgStock->id],
+            'state'               => OrgStockStateEnum::DISCONTINUED->value,
+            'organisation_states' => ['other' => OrgStockStateEnum::SUSPENDED->value],
+            'reason'              => 'Last batch sells until October',
+            'effective_at'        => now()->addDays(10)->toDateString(),
+        ]);
+
+        expect($stats['scheduled'])->toBe(2)
+            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($orgStock->data[DiscontinueOrgStocks::SCHEDULED_KEY]['to_state'])->toBe('discontinued')
+            ->and(ApplyScheduledOrgStockStateChanges::run()['waiting'])->toBe(2)
+            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+
+        foreach ([$orgStock, $otherOrgStock] as $scheduled) {
+            $scheduled->refresh();
+            $scheduled->update(['data' => array_merge($scheduled->data, [DiscontinueOrgStocks::SCHEDULED_KEY => array_merge($scheduled->data[DiscontinueOrgStocks::SCHEDULED_KEY], ['effective_at' => now()->subMinute()->toIso8601String()])])]);
+        }
+
+        expect(ApplyScheduledOrgStockStateChanges::run()['applied'])->toBe(2)
+            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUED)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::SUSPENDED)
+            ->and($orgStock->data)->not->toHaveKey(DiscontinueOrgStocks::SCHEDULED_KEY);
     });
 });

@@ -184,6 +184,14 @@ class ShowOrgStock extends OrgAction
                         'warehouse'    => $this->warehouse->slug,
                     ]
                 ],
+                'discontinue_route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue',
+                    'parameters' => [
+                        'organisation' => $orgStock->organisation->slug,
+                        'warehouse'    => $this->warehouse->slug,
+                    ],
+                    'method'     => 'post',
+                ],
 
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)

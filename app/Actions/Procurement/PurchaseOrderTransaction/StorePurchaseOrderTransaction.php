@@ -16,11 +16,13 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreProcurementOrderItem;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\HistoricSupplierProduct;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class StorePurchaseOrderTransaction extends OrgAction
@@ -28,6 +30,8 @@ class StorePurchaseOrderTransaction extends OrgAction
     use WithProcurementEditAuthorisation;
     use WithNoStrictRules;
     use WithStoreProcurementOrderItem;
+
+    private OrgStock $orgStock;
 
     public function handle(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, array $modelData): PurchaseOrderTransaction
     {
@@ -63,8 +67,23 @@ class StorePurchaseOrderTransaction extends OrgAction
         return $rules;
     }
 
+    public function afterValidator(Validator $validator): void
+    {
+        if (!$this->strict) {
+            return;
+        }
+
+        if (in_array($this->orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED])) {
+            $validator->errors()->add('org_stock', __('SKO :code is :state and cannot be ordered', [
+                'code'  => $this->orgStock->code,
+                'state' => $this->orgStock->state->labels()[$this->orgStock->state->value],
+            ]));
+        }
+    }
+
     public function action(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, array $modelData, int $hydratorsDelay = 0, bool $strict = true): PurchaseOrderTransaction
     {
+        $this->orgStock = $orgStock;
         $this->asAction = true;
         $this->strict = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
@@ -75,6 +94,7 @@ class StorePurchaseOrderTransaction extends OrgAction
 
     public function asController(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, ActionRequest $request): void
     {
+        $this->orgStock = $orgStock;
         $this->initialisation($purchaseOrder->organisation, $request);
         $this->handle($purchaseOrder, $historicSupplierProduct, $orgStock, $this->validatedData);
     }

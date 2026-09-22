@@ -11,6 +11,7 @@ namespace App\Console;
 use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPoints;
 use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
+use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
@@ -162,6 +163,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'SweepStrandedDeliveryNotes',
                 ),
                 name: 'SweepStrandedDeliveryNotes',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(ApplyScheduledOrgStockStateChanges::makeJob())->dailyAt('00:10')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ApplyScheduledOrgStockStateChanges',
+                ),
+                name: 'ApplyScheduledOrgStockStateChanges',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
