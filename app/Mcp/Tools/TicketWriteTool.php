@@ -15,6 +15,7 @@ use App\Http\Resources\Helpers\TicketResource;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -22,7 +23,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
+#[Description('Change a ticket or create a help ticket. With a reference: add a comment (posted as you, optionally with attachments as base64 files; internal=true keeps it visible to the help desk only, for technical notes: ids repaired, commands run, root cause), rewrite subject or description, change status (open, in_progress, waiting with optional waiting_hours, resolved, cancelled), priority, assignee (username), kind, module or tags. Without a reference: creates a new HELP ticket (or an INI engineer ticket with type=engineer) with subject, and optional description, kind, module, priority. Every change is recorded as the authenticated user, or as the user named in acting_as when a help desk supervisor passes it. Only engineers, lead engineers and QA can use it.')]
 class TicketWriteTool extends Tool
 {
     public function shouldRegister(Request $request): bool
@@ -48,6 +49,9 @@ class TicketWriteTool extends Tool
             'tags.*'      => ['string', 'max:64'],
             'acting_as'   => ['sometimes', 'nullable', 'string'],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
+            'attachments'   => ['sometimes', 'array', 'max:5'],
+            'attachments.*.name'   => ['required', 'string', 'max:255'],
+            'attachments.*.base64' => ['required', 'string', 'max:14000000'],
         ]);
 
         $user = $request->user();
@@ -133,14 +137,43 @@ class TicketWriteTool extends Tool
             $ticket = UpdateTicket::make()->action($ticket, $changes);
         }
 
-        if ($request->filled('comment') && !$isClosingAfterDeployment) {
+        $attachments = $this->decodeAttachments($request->get('attachments', []));
+        if ($attachments === null) {
+            return Response::error('An attachment is not valid base64.');
+        }
+
+        if (($request->filled('comment') || $attachments) && !$isClosingAfterDeployment) {
             if (!$ticket->assignee_id) {
                 return Response::error("$ticket->reference has no assignee. Assign it before commenting.");
             }
-            StoreTicketComment::make()->action($ticket, $user, ['body' => $request->string('comment')->toString(), 'is_internal' => $request->boolean('internal')]);
+            StoreTicketComment::make()->action($ticket, $user, [
+                'body'        => $request->string('comment')->toString(),
+                'is_internal' => $request->boolean('internal'),
+                'images'      => $attachments,
+            ]);
         }
 
-        return Response::json(['updated' => $ticket->reference, 'changes' => array_keys($changes), 'commented' => $request->filled('comment'), 'ticket' => TicketResource::make($ticket->fresh())->resolve()]);
+        return Response::json(['updated' => $ticket->reference, 'changes' => array_keys($changes), 'commented' => $request->filled('comment'), 'attached' => count($attachments), 'ticket' => TicketResource::make($ticket->fresh())->resolve()]);
+    }
+
+    /**
+     * @param  array<int, array{name: string, base64: string}>  $attachments
+     * @return array<int, UploadedFile>|null
+     */
+    private function decodeAttachments(array $attachments): ?array
+    {
+        $files = [];
+        foreach ($attachments as $attachment) {
+            $content = base64_decode($attachment['base64'], true);
+            if ($content === false) {
+                return null;
+            }
+            $path = tempnam(sys_get_temp_dir(), 'ticket-attachment-');
+            file_put_contents($path, $content);
+            $files[] = new UploadedFile($path, $attachment['name'], mime_content_type($path) ?: null, null, true);
+        }
+
+        return $files;
     }
 
     /**
@@ -163,6 +196,9 @@ class TicketWriteTool extends Tool
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),
             'acting_as'   => $schema->string()->description('Username to act as: the comment, assignment or status change is recorded as that user. Help desk supervisors only'),
             'waiting_hours' => $schema->integer()->description('With status waiting: hours before the ticket resurfaces (1-720). Defaults to the ticket kind\'s waiting period'),
+            'attachments'   => $schema->array()->description('Up to 5 files to attach to the comment (images, PDF, Word, Excel, CSV, video, archives; 10 MB each), each as {name, base64}')->items(
+                $schema->object(['name' => $schema->string()->description('File name with extension, e.g. proof.png'), 'base64' => $schema->string()->description('Base64-encoded file content')])
+            ),
         ];
     }
 }

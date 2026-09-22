@@ -752,6 +752,15 @@ test('assistant raises, lists, works and closes a ticket through MCP', function 
         ->and($ticket->fresh()->description)->toBe('Rewritten');
 
     AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'assignee' => 'nobody-here'])->assertHasErrors();
+
+    $png = base64_encode(UploadedFile::fake()->image('proof.png', 20, 20)->getContent());
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'comment' => 'Screenshot as proof', 'attachments' => [['name' => 'proof.png', 'base64' => $png]]])->assertOk();
+    $proofComment = $ticket->comments()->where('body', 'Screenshot as proof')->firstOrFail();
+    expect($proofComment->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($proofComment->getFirstMedia('ticket_images')->name)->toBe('proof.png');
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'attachments' => [['name' => 'hack.exe', 'base64' => $png]]])->assertHasErrors();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $reference, 'attachments' => [['name' => 'proof.png', 'base64' => '***']]])->assertHasErrors();
 });
 
 test('new tickets post one alert in the Slack tickets channel and edit it as status and assignee change', function () {
