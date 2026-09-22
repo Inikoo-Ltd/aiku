@@ -105,6 +105,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Permission;
+use Illuminate\Http\Request;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
 use Illuminate\Http\JsonResponse;
@@ -6450,4 +6451,131 @@ test('a closed whatsapp chat nobody ever picked up is in the team list, not in m
 
     expect($mineUlids)->not->toContain($metaChatSession->ulid)
         ->and($teamUlids)->toContain($metaChatSession->ulid);
+});
+
+test('replying to a waiting conversation nobody holds claims it instead of refusing the message', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $session = StoreChatSession::make()->handle([
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'channel'     => ChatChannelEnum::WEBSITE,
+    ]);
+
+    $session->update(['status' => ChatSessionStatusEnum::WAITING, 'closed_at' => now(), 'closed_by' => 'agent']);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]
+    );
+
+    actingAs($this->user);
+
+    $result = SendChatMessage::make()->asController(Request::create(
+        '/',
+        'POST',
+        ['message_text' => 'Back to you', 'message_type' => ChatMessageTypeEnum::TEXT->value, 'sender_type' => ChatSenderTypeEnum::AGENT->value],
+    )->setRouteResolver(fn () => new class ($session) {
+        public function __construct(private $session)
+        {
+        }
+
+        public function route($name)
+        {
+            return (string) $this->session->ulid;
+        }
+
+        public function parameter($name, $default = null)
+        {
+            return (string) $this->session->ulid;
+        }
+    }));
+
+    expect($result['ok'])->toBeTrue()
+        ->and($session->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and($session->closed_at)->toBeNull()
+        ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->where('chat_agent_id', $agent->id)->count())->toBe(1);
+});
+
+test('replying to a conversation another agent holds is still refused', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $session = StoreChatSession::make()->handle([
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'channel'     => ChatChannelEnum::WEBSITE,
+    ]);
+
+    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
+
+    $session->assignments()->create([
+        'chat_agent_id' => $other->id,
+        'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'   => now(),
+    ]);
+
+    ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]
+    );
+
+    actingAs($this->user);
+
+    $result = SendChatMessage::make()->asController(Request::create(
+        '/',
+        'POST',
+        ['message_text' => 'Mine now', 'message_type' => ChatMessageTypeEnum::TEXT->value, 'sender_type' => ChatSenderTypeEnum::AGENT->value],
+    )->setRouteResolver(fn () => new class ($session) {
+        public function __construct(private $session)
+        {
+        }
+
+        public function route($name)
+        {
+            return (string) $this->session->ulid;
+        }
+
+        public function parameter($name, $default = null)
+        {
+            return (string) $this->session->ulid;
+        }
+    }));
+
+    expect($result['ok'])->toBeFalse()
+        ->and($result['code'])->toBe(403)
+        ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(1);
+});
+
+test('assigning a conversation nobody holds creates the assignment instead of leaving it active and unheld', function () {
+    $session = StoreChatSession::make()->handle([
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'channel'     => ChatChannelEnum::EMAIL,
+    ]);
+
+    $session->update(['status' => ChatSessionStatusEnum::WAITING, 'closed_at' => now(), 'closed_by' => 'agent']);
+
+    $mine  = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
+    $other->update([
+        'is_online'         => true,
+        'is_available'      => true,
+        'presence_status'   => \App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at' => now(),
+        'max_concurrent_chats' => 100,
+        'current_chat_count'   => 0,
+    ]);
+
+    $assignment = \App\Actions\Chat\ChatSession\AssignChatToAgent::make()->handle($session, $other->id, $mine->id);
+
+    expect($assignment->chat_agent_id)->toBe($other->id)
+        ->and($assignment->status)->toBe(ChatAssignmentStatusEnum::ACTIVE)
+        ->and($session->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and($session->closed_at)->toBeNull()
+        ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(1);
 });
