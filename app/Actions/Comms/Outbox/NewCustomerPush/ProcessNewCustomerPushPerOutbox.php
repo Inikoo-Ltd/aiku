@@ -47,10 +47,10 @@ class ProcessNewCustomerPushPerOutbox
         $baseQuery->where('customers.shop_id', $outbox->shop_id);
         $baseQuery->whereNull('customers.deleted_at');
         $baseQuery->whereNotNull('customers.email');
-        $baseQuery->where('customers.created_at', '>=', $registeredSince);
+        $baseQuery->where('customers.registered_at', '>=', $registeredSince);
 
         if ($lastOutBoxSent) {
-            $baseQuery->where('customers.created_at', '>', $lastOutBoxSent);
+            $baseQuery->where('customers.registered_at', '>', $lastOutBoxSent);
         }
 
         $baseQuery->whereExists(function ($query) use ($productClass) {
