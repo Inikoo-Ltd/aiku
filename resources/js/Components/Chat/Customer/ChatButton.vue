@@ -24,7 +24,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
@@ -154,10 +154,28 @@ const brandColors: Record<string, string> = {
 
 const websiteLogo = computed(() => layout?.iris?.header?.header?.data?.fieldValue?.logo)
 
-const configuredContactOptions = computed<ContactOption[]>(
-    () => (page.props?.contact_options_panel as ContactOption[]) ?? []
-)
+const isAtlassianContactOption = (option: ContactOption) =>
+    option.url?.toLowerCase().includes("atlassian.net") === true
 
+const isBrokenContactOption = (option: ContactOption) => {
+    const url = option.url?.trim() ?? ""
+
+    if (!url) {
+        return false
+    }
+
+    try {
+        return !new URL(url)
+    } catch {
+        return true
+    }
+}
+
+const configuredContactOptions = computed<ContactOption[]>(() =>
+    ((page.props?.contact_options_panel as ContactOption[]) ?? []).filter(
+        (option) => !isAtlassianContactOption(option) && !isBrokenContactOption(option)
+    )
+)
 const isLiveChatOption = (option: ContactOption) => !option.url?.trim()
 
 const contactOptions = computed<ContactOption[]>(() => {
@@ -167,7 +185,7 @@ const contactOptions = computed<ContactOption[]>(() => {
         return options
     }
 
-    return [{ icon: ["fal", "comments"], label: trans("Livechat"), url: "" }, ...options]
+    return [{ icon: ["fal", "comments"], label: ctrans("Livechat"), url: "" }, ...options]
 })
 
 const hasContactOptionsPanel = computed(
@@ -552,17 +570,17 @@ const closeSession = async () => {
         isMenuOpen.value = false
 
         notify({
-            title: trans("Success"),
-            text: res.data?.message ?? trans("Chat session closed successfully"),
+            title: ctrans("Success"),
+            text: res.data?.message ?? ctrans("Chat session closed successfully"),
             type: "success",
         })
     } catch (e: any) {
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text:
                 e?.response?.data?.message ??
                 e?.message ??
-                trans("Failed to close chat session"),
+                ctrans("Failed to close chat session"),
             type: "error",
         })
     } finally {
@@ -852,7 +870,7 @@ if (isClient) {
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle" :aria-label="trans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-20 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
+        <button ref="buttonRef" @click="toggle" :aria-label="ctrans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-20 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
             <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faMessage" class="text-base"
                 fixed-width aria-hidden="true" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
@@ -926,13 +944,13 @@ if (isClient) {
                     ? 'pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3'
                     : 'py-3'">
                     <button v-if="hasContactOptionsPanel" @click="backToContactOptions"
-                        :aria-label="trans('Back')"
+                        :aria-label="ctrans('Back')"
                         class="-ml-2 mr-1 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
                         <FontAwesomeIcon :icon="faChevronLeft" class="w-3.5 h-3.5" fixed-width />
                     </button>
 
                     <span class="text-sm font-semibold">
-                        {{ trans("Chat Support") }}
+                        {{ ctrans("Chat Support") }}
                     </span>
 
                     <div class="flex-1"></div>
@@ -949,7 +967,7 @@ if (isClient) {
                                             color: layout.app.theme[5],
                                         }
                                         : {}">
-                                {{ trans(m === 'chat' ? 'Chat' : 'History') }}
+                                {{ ctrans(m === 'chat' ? 'Chat' : 'History') }}
                             </button>
                         </template>
 
@@ -965,7 +983,7 @@ if (isClient) {
                                 <button @click="isMenuOpen = false; showCloseConfirm = true"
                                     class="menu-item text-red-600">
                                     <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
-                                    {{ trans("Close Chat Session") }}
+                                    {{ ctrans("Close Chat Session") }}
                                 </button>
                             </div>
                         </div>
@@ -981,7 +999,7 @@ if (isClient) {
                 <div class="flex-1 min-h-0 flex flex-col">
                     <div v-if="isCheckingStatus" class="flex flex-col items-center bg-white">
                         <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" fixed-width />
-                        <span class="text-sm">{{ trans("Connecting...") }}</span>
+                        <span class="text-sm">{{ ctrans("Connecting...") }}</span>
                     </div>
 
                     <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat"
@@ -1033,18 +1051,18 @@ if (isClient) {
 
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                                         <DialogTitle as="h3" class="text-base font-semibold">
-                                            {{ trans("Close Chat Session") }}
+                                            {{ ctrans("Close Chat Session") }}
                                         </DialogTitle>
                                         <div class="mt-2">
                                             <p class="text-sm text-gray-500">
-                                                {{ trans("Are you sure you want to close this chat session?") }}
+                                                {{ ctrans("Are you sure you want to close this chat session?") }}
                                             </p>
                                         </div>
 
                                         <div class="mt-5 flex flex-row-reverse gap-2">
                                             <Button type="red" :loading="isClosingSession"
-                                                :label="trans('Close Session')" @click="closeSession" />
-                                            <Button type="tertiary" :label="trans('Cancel')"
+                                                :label="ctrans('Close Session')" @click="closeSession" />
+                                            <Button type="tertiary" :label="ctrans('Cancel')"
                                                 @click="showCloseConfirm = false" />
                                         </div>
                                     </div>

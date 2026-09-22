@@ -18,7 +18,6 @@ import { UploadPallet } from '@/types/Pallet'
 import { Link, router } from "@inertiajs/vue3"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal'
 import Papa from 'papaparse'
-import * as XLSX from 'xlsx'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from './LoadingIcon.vue'
@@ -85,7 +84,8 @@ const onUploadFile = async (fileUploaded: File) => {
     } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
         selectedFile.value = fileUploaded;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
+            const XLSX = await import('xlsx');
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             const sheetName = workbook.SheetNames[0];
