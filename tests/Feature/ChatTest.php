@@ -29,6 +29,7 @@ use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Actions\Helpers\Address\GetFormattedAddress;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
+use App\Actions\Chat\ChatSession\CloseEmptyChatSessions;
 use App\Actions\Chat\ChatSession\GetChatReports;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
@@ -4767,6 +4768,44 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         ->and($result['by_topic'][0])->toMatchArray(['topic' => 'order_status', 'conversations' => 1, 'share' => 100.0, 'website' => 1, 'unanswered' => 0])
         ->and($result['unclassified'])->toBe(1)
         ->and($widgetOnlyOpened->exists)->toBeTrue();
+});
+
+test('empty widget sessions are not counted open and the sweep closes them quietly', function () {
+    $this->freezeTime();
+    [, , $emptyShop] = createOwnShop(__FILE__.':chat-empty');
+
+    $session = fn () => ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $emptyShop->id,
+        'channel'          => ChatChannelEnum::WEBSITE,
+        'created_at'       => now()->subDays(3),
+        'updated_at'       => now(),
+    ]);
+
+    $widgetOnlyOpened = $session();
+    $waitingForReply  = $session();
+    ChatMessage::create([
+        'chat_session_id' => $waitingForReply->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'hello',
+        'is_read'         => false,
+    ]);
+
+    $open = fn () => collect(GetChatReports::make()->handle(collect([$emptyShop->id]), '1d')['daily'])->last()['open'];
+
+    expect($open())->toBe(1);
+
+    CloseEmptyChatSessions::make()->handle();
+
+    expect($widgetOnlyOpened->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($widgetOnlyOpened->messages()->count())->toBe(0)
+        ->and($waitingForReply->fresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($open())->toBe(1);
 });
 
 test('ignoring a conversation records why, and undoing it puts the conversation back', function () {
