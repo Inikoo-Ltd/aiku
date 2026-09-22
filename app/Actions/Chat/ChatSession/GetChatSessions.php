@@ -250,12 +250,8 @@ class GetChatSessions
                     // my/team it belongs to is then decided from what comes back.
                     $query->whereIn('shop_id', $shopIds);
                 } elseif (!empty($filters['view_team'])) {
-                    $teamAgentIds = $this->agentIdsCovering($shopIds, $currentAgent->id);
-
-                    $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
-                        $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
-                            ->where('status', $assignmentStatus);
-                    });
+                    $query->whereIn('shop_id', $shopIds);
+                    $this->scopeHeldByColleague($query, $currentAgent->id, $assignmentStatus, $isClosed);
                 } else {
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been

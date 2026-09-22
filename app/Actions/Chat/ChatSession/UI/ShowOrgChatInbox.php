@@ -486,9 +486,16 @@ class ShowOrgChatInbox extends OrgAction
             ." and a.status = case when {$sessions}.status = '".ChatSessionStatusEnum::CLOSED->value."'"
             ." then '".ChatAssignmentStatusEnum::RESOLVED->value."' else '".ChatAssignmentStatusEnum::ACTIVE->value."' end";
 
+        // Closed and not mine is the colleagues' column, whoever closed it: a conversation
+        // nobody ever picked up is still the shop's history, and counted in neither it sat
+        // in no column at all while its list showed it.
+        $colleague = "case when {$sessions}.status = '".ChatSessionStatusEnum::CLOSED->value."'"
+            ." then not exists ({$assigned} and a.chat_agent_id = {$agentId})"
+            ." else exists ({$assigned} and a.chat_agent_id is not null and a.chat_agent_id <> {$agentId}) end";
+
         return [
             DB::raw("exists ({$assigned} and a.chat_agent_id = {$agentId}) as by_me"),
-            DB::raw("exists ({$assigned} and a.chat_agent_id is not null and a.chat_agent_id <> {$agentId}) as by_colleague"),
+            DB::raw("({$colleague}) as by_colleague"),
         ];
     }
 

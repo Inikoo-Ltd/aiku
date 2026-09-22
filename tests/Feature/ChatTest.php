@@ -6334,11 +6334,11 @@ test('a customer replying to a closed email conversation puts it back in the wai
     ];
 
     \Illuminate\Support\Facades\Http::fake([
-        'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/r1?*' => \Illuminate\Support\Facades\Http::response($gmailMessage('r1', 'The lid is missing')),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/r2?*' => \Illuminate\Support\Facades\Http::response($gmailMessage('r2', 'It still has not arrived')),
-        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L9', 'name' => 'aiku/unmatched']]]),
-        'gmail.googleapis.com/*'                              => \Illuminate\Support\Facades\Http::response([]),
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/r1?*'  => \Illuminate\Support\Facades\Http::response($gmailMessage('r1', 'The lid is missing')),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/r2?*'  => \Illuminate\Support\Facades\Http::response($gmailMessage('r2', 'It still has not arrived')),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'         => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L9', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
     ]);
 
     $session = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'r1')->chatSession;
@@ -6362,4 +6362,70 @@ test('a customer replying to a closed email conversation puts it back in the wai
     expect($session->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
         ->and($session->closed_at)->toBeNull()
         ->and($assignment->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::RESOLVED);
+});
+
+test('a colleague holding a whatsapp chat keeps it in the team list after they stop covering the shop', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $mine  = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628444555888',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $metaChatSession->assignments()->create([
+        'meta_channel_id' => $channel->id,
+        'chat_agent_id'   => $other->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    $team = collect(GetMetaChatSessions::make()->handle([
+        'assigned_to_me' => $this->user->id,
+        'view_team'      => true,
+        'statuses'       => [ChatSessionStatusEnum::ACTIVE->value],
+        'shop_id'        => $this->shop->id,
+    ])->items())->pluck('ulid');
+
+    expect($mine->id)->not->toBe($other->id)
+        ->and($team)->toContain($metaChatSession->ulid);
+});
+
+test('a closed whatsapp chat nobody ever picked up is in the team list, not in mine', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628444555999',
+        'status'          => ChatSessionStatusEnum::CLOSED,
+        'closed_at'       => now(),
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $filters = [
+        'assigned_to_me' => $this->user->id,
+        'statuses'       => [ChatSessionStatusEnum::CLOSED->value],
+        'shop_id'        => $this->shop->id,
+    ];
+
+    $mineUlids = collect(GetMetaChatSessions::make()->handle($filters)->items())->pluck('ulid');
+    $teamUlids = collect(GetMetaChatSessions::make()->handle($filters + ['view_team' => true])->items())->pluck('ulid');
+
+    expect($mineUlids)->not->toContain($metaChatSession->ulid)
+        ->and($teamUlids)->toContain($metaChatSession->ulid);
 });

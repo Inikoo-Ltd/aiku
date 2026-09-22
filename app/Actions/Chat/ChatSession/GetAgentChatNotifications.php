@@ -81,12 +81,6 @@ class GetAgentChatNotifications
      */
     private function teamUnreadByShop(ChatAgent $agent, $shopIds): array
     {
-        $teamAgentIds = $this->agentIdsCovering(collect($shopIds)->all(), $agent->id);
-
-        if ($teamAgentIds === []) {
-            return [];
-        }
-
         return ChatSession::query()
             ->where('is_spam', false)
             ->whereIn('shop_id', $shopIds)
@@ -94,8 +88,8 @@ class GetAgentChatNotifications
                 ChatSessionStatusEnum::ACTIVE->value,
                 ChatSessionStatusEnum::CLOSED->value,
             ])
-            ->whereHas('assignments', function ($assignmentQuery) use ($teamAgentIds) {
-                $assignmentQuery->whereIn('chat_agent_id', $teamAgentIds)
+            ->whereHas('assignments', function ($assignmentQuery) use ($agent) {
+                $assignmentQuery->where('chat_agent_id', '!=', $agent->id)
                     ->whereIn('status', [
                         ChatAssignmentStatusEnum::ACTIVE->value,
                         ChatAssignmentStatusEnum::RESOLVED->value,
