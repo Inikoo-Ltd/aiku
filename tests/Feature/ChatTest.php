@@ -6034,3 +6034,22 @@ test('a shop may set its own unclaimed time, and the rest follow the group defau
     expect(Arr::get($this->shop->refresh()->settings, 'chat.unclaimed_after_seconds.email'))->toBeNull()
         ->and($queue())->toContain($patient->id);
 });
+
+test('the bin opens for an agent when no status is asked for', function () {
+    \Illuminate\Support\Facades\Http::fake();
+    setPermissionsTeamId($this->user->group_id);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    ChatAgent::create(['user_id' => $clerk->id, 'max_concurrent_chats' => 10]);
+
+    $binned = noiseTestEmailSession($this->shop, 'binned@example.com', 'Out of office', 'I am away');
+    $binned->update(['is_rubbish' => true, 'rubbish_at' => now()]);
+
+    $bin = collect(GetChatSessions::make()->handle([
+        'is_rubbish'     => true,
+        'assigned_to_me' => $clerk->id,
+    ])->items())->pluck('id')->all();
+
+    expect($bin)->toContain($binned->id);
+});
