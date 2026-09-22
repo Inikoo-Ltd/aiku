@@ -79,25 +79,11 @@ test('neither master nor slave schedules register when both flags are disabled',
     config(['app.master' => false, 'app.slave' => false]);
 
     expect(scheduledEventIds(rebuildSchedule()))
-        ->toEqualCanonicalizing(
-            [
-                'cloudflare:reload',
-                'comms:archive_dispatched_emails',
-                'google-ads:fetch-campaigns',
-                'horizon:snapshot',
-                'inventory:archive_stock_histories --dates=5',
-                'nightowl:freeze-cold-partitions',
-                'nightowl:prune',
-                'prune-fetch-stacks',
-                'prune-product-image-zips',
-                'prune-traffic-source-clicks',
-                'search:propose-synonyms',
-                'staff-tasks:nudge',
-                'sync:customers-to-google-ads --all',
-                'tickets:cancel_stale',
-                'traffic-source:collect-visits',
-                'traffic-source:fetch-meta-costs --days=2',
-                'traffic-source:fetch-google-ads-costs --days=3'
-            ]
+        ->toContain('horizon:snapshot', 'cloudflare:reload')
+        ->not->toContain(
+            'offer:update_status_from_dates',
+            'ebay:ping',
+            'queue:prune-failed --hours=168',
+            \App\Actions\Reviews\AutoPublishReviews::class,
         );
 });

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
-import PageHeading from "@/Components/Headings/PageHeading.vue";
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faBuilding, faMoneyBillAlt } from "@fal";

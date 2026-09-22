@@ -12,6 +12,7 @@ use App\Actions\CRM\WebUser\AuthoriseWebUserWithLegacyPassword;
 use App\Actions\CRM\WebUser\LogWebUserFailLogin;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
 use App\Actions\Dropshipping\Tiktok\User\ProcessUnregisterCustomerTiktokUser;
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Actions\Traits\WithLogin;
 use App\Actions\Traits\WithRetinaAuthRedirect;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
@@ -19,7 +20,6 @@ use App\Models\CRM\WebUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
@@ -29,6 +29,7 @@ use Lorisleiva\Actions\Concerns\AsController;
 class RetinaLogin
 {
     use AsController;
+    use WithIrisAuthCookie;
     use WithLogin;
     use WithRetinaAuthRedirect;
 
@@ -147,7 +148,7 @@ class RetinaLogin
 
         $request->session()->regenerate();
         Session::put('reloadLayout', '1');
-        Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
+        $this->queueIrisAuthCookie();
 
 
         $language = $webUser->language;

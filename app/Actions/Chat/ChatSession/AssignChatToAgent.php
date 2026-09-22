@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
@@ -22,12 +23,12 @@ use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AssignChatToAgent
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
 
     /**
@@ -158,7 +159,7 @@ class AssignChatToAgent
     {
         $this->validateUlid($chatSession->ulid);
 
-        $assignedByAgent = $this->getCurrentAgent();
+        $assignedByAgent = $this->getCurrentAgent($chatSession);
 
         if (!$assignedByAgent) {
             return response()->json([
@@ -222,16 +223,9 @@ class AssignChatToAgent
         )->validate();
     }
 
-    protected function getCurrentAgent(): ?ChatAgent
+    protected function getCurrentAgent(ChatSession $chatSession): ?ChatAgent
     {
-        $user = Auth::user();
-        if ($user) {
-            if (!$user->chatAgent) {
-                return null;
-            }
-        }
-
-        return $user->chatAgent;
+        return $this->getAuthorisedChatAgent($chatSession);
     }
 
 
@@ -248,7 +242,7 @@ class AssignChatToAgent
                 ], 404);
             }
 
-            $agent = $this->getCurrentAgent();
+            $agent = $this->getCurrentAgent($chatSession);
 
             if (!$agent) {
                 return response()->json([
@@ -327,7 +321,7 @@ class AssignChatToAgent
 
     public function takeOver(string $organisation, ChatSession $chatSession): JsonResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($chatSession);
 
         if (!$agent) {
             return response()->json([

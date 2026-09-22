@@ -7,16 +7,17 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ToggleChatSessionHighlight
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(ChatSession $chatSession, ChatAgent $agent): ChatSession
     {
@@ -36,7 +37,7 @@ class ToggleChatSessionHighlight
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($chatSession);
 
         if (!$agent) {
             return response()->json([

@@ -10,6 +10,7 @@ namespace App\Actions\UI\AikuPublic;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class BlogPosts
@@ -85,7 +86,7 @@ class BlogPosts
      */
     public static function everything(string $dir = 'blog'): Collection
     {
-        return collect(glob(resource_path("markdown/aiku-public/{$dir}/*.md")))
+        return collect(File::glob(resource_path("markdown/aiku-public/{$dir}/*.md")))
             ->map(fn (string $path) => self::parse($path))
             ->reject(fn (array $post) => $post['date']->isFuture())
             ->sortByDesc('date')
@@ -109,7 +110,7 @@ class BlogPosts
     {
         $path = resource_path("markdown/aiku-public/{$dir}/{$slug}.md");
 
-        $post = preg_match('/^[a-z0-9-]+$/', $slug) && is_file($path) ? self::parse($path) : null;
+        $post = preg_match('/^[a-z0-9-]+$/', $slug) && File::isFile($path) ? self::parse($path) : null;
 
         return $post && $post['date']->isFuture() ? null : $post;
     }
@@ -159,7 +160,7 @@ class BlogPosts
 
     private static function parse(string $path): array
     {
-        $raw = file_get_contents($path);
+        $raw = File::get($path);
         preg_match('/^---\n(.*?)\n---\n(.*)$/s', $raw, $matches);
         $meta = collect(explode("\n", $matches[1]))
             ->mapWithKeys(function (string $line) {

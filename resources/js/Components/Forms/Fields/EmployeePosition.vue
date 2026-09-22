@@ -104,7 +104,6 @@ const props = defineProps<{
             }
         }
         updateOrganisationPermissionsRoute: routeType
-        updateEmployeeJobPositionsRoute: routeType
         updateJobPositionsRoute: routeType
         is_in_organisation: boolean
         current_organisation?: {  // the organisation of the employee
@@ -124,58 +123,30 @@ const employeePositionForm = {
 }
 const newForm = props.saveButton ? useForm(employeePositionForm || {}) : reactive(props.form)
 const onSubmitNewForm = () => {
-
-    if (props.fieldData.current_organisation?.slug == props.fieldName) {
-        console.log(".")
-        // If a user is employed in this organisation
-        newForm
-            .transform((data) => ({
-                permissions: data[props.fieldName]
-            }))
-            .submit(
-                props.fieldData.updateEmployeeJobPositionsRoute.method || "patch",
-                route(props.fieldData.updateEmployeeJobPositionsRoute.name, {
-                    ...props.fieldData.updateEmployeeJobPositionsRoute.parameters,
-                    organisation: props.fieldData.is_in_organisation ? undefined : props.organisationId
+    newForm
+        .transform((data) => ({
+            permissions: data[props.fieldName]
+        }))
+        .submit(
+            props.fieldData.updateJobPositionsRoute.method || "patch",
+            route(props.fieldData.updateJobPositionsRoute.name, {
+                ...props.fieldData.updateJobPositionsRoute.parameters,
+                organisation: props.fieldData.is_in_organisation ? undefined : props.organisationId
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => notify({
+                    title: trans("Success"),
+                    text: trans("Successfully update the permissions"),
+                    type: "success"
                 }),
-                {
-                    preserveScroll: true,
-                    onSuccess: () => notify({
-                        title: trans("Success"),
-                        text: trans("Successfully update the permissions"),
-                        type: "success"
-                    }),
-                    onError: () => notify({
-                        title: trans("Something went wrong"),
-                        text: trans("Failed to update the permissions"),
-                        type: "error"
-                    })
-                }
-            )
-    } else {
-        console.log(",")
-        newForm
-            .transform((data) => ({
-                permissions: data[props.fieldName]
-            }))
-            .submit(
-                props.fieldData.updateJobPositionsRoute.method || "patch",
-                route(props.fieldData.updateJobPositionsRoute.name, { ...props.fieldData.updateJobPositionsRoute.parameters, organisation: props.fieldData.is_in_organisation ? undefined : props.organisationId }),
-                {
-                    preserveScroll: true,
-                    onSuccess: () => notify({
-                        title: trans("Success"),
-                        text: trans("Successfully update the permissions"),
-                        type: "success"
-                    }),
-                    onError: () => notify({
-                        title: trans("Something went wrong"),
-                        text: trans("Failed to update the permissions"),
-                        type: "error"
-                    })
-                }
-            )
-    }
+                onError: () => notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update the permissions"),
+                    type: "error"
+                })
+            }
+        )
 }
 
 

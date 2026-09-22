@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { useAppAccentVariables } from "@/Composables/useAppAccent"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
@@ -258,6 +259,8 @@ const safeTheme = computed(() => {
 
     return (t && t.length >= 8) ? t : fallbackTheme
 })
+
+useAppAccentVariables(() => safeTheme.value)
 </script>
 
 <template>

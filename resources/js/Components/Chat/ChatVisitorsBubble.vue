@@ -39,6 +39,7 @@ interface WebsiteRow {
 const props = defineProps<{
     route: string
     date?: string  // demo mode: "YYYY-MM-DD" for historical data, omit for live (last 24h)
+    websiteId?: number
 }>()
 
 const POLL_INTERVAL_MS = 15_000
@@ -71,7 +72,9 @@ const websiteOptions = computed(() =>
 )
 
 const visibleWebsites = computed(() =>
-    selectedIds.value.length
+    props.websiteId
+        ? websites.value.filter(w => w.website_id === props.websiteId)
+        : selectedIds.value.length
         ? websites.value.filter(w => selectedIds.value.includes(w.website_id))
         : websites.value
 )
@@ -142,11 +145,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
+    <div :class="websiteId ? '' : 'rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm'">
 
         <!-- Header -->
         <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-gray-100">
-            <div class="flex items-center gap-2">
+            <div v-if="!websiteId" class="flex items-center gap-2">
                 <FontAwesomeIcon :icon="['fal', 'fa-globe']" class="text-gray-400" />
                 <h3 class="text-sm font-semibold text-gray-700">Live Visitors</h3>
                 <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-gray-600">
@@ -173,7 +176,7 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <div class="relative h-96 overflow-y-auto">
+        <div class="relative overflow-y-auto" :class="websiteId ? 'max-h-96' : 'h-96'">
 
             <!-- Loading -->
             <div v-if="loading" class="absolute inset-0 p-4">
@@ -183,7 +186,7 @@ onUnmounted(() => {
             <template v-else-if="websites.length">
 
                 <!-- Website filter -->
-                <div class="sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+                <div v-if="!websiteId" class="sticky top-0 z-10 flex flex-wrap items-center gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
                     <span class="text-xs text-gray-400 shrink-0">Website:</span>
                     <MultiSelect
                         v-model="selectedIds"
@@ -220,7 +223,7 @@ onUnmounted(() => {
                 <div v-for="site in visibleWebsites" :key="site.website_id">
 
                 <!-- Website header row -->
-                <div class="flex items-center gap-2 px-5 py-2 bg-gray-50 border-b border-gray-100">
+                <div v-if="!websiteId" class="flex items-center gap-2 px-5 py-2 bg-gray-50 border-b border-gray-100">
                     <!-- <span class="text-xs font-bold text-gray-700">www.{{ site.domain }}</span> -->
                     <span class="text-xs font-bold text-gray-600">{{ site.website_name }}</span>
                     <span class="ml-auto rounded-full bg-white border border-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600">
@@ -288,7 +291,7 @@ onUnmounted(() => {
             </div>
         </div>        
         <!-- Footer -->
-        <div v-if="!loading && websites.length" class="px-5 py-2 border-t border-gray-100 text-xs text-gray-400 text-right">
+        <div v-if="!loading && websites.length && !websiteId" class="px-5 py-2 border-t border-gray-100 text-xs text-gray-400 text-right">
             <template v-if="date">Historical data for {{ date }}</template>
             <template v-else>Auto-refreshes every {{ POLL_INTERVAL_MS / 1000 }}s</template>
         </div>

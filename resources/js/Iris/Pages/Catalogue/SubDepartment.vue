@@ -5,7 +5,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faFolder, faFolderTree, faFolderDownload, faDotCircle, faAlbumCollection, faTachometerAltFast } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'

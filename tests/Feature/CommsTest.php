@@ -10,6 +10,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Comms\SesNotification\ProcessSesNotification;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
@@ -974,6 +975,23 @@ test('ensure email has unsubscribe link adds link when missing', function () {
 test('ensure email has unsubscribe link leaves existing link untouched', function () {
     $html = '<html><body>hello {{unsubscribe}}</body></html>';
     expect(EnsureEmailHasUnsubscribeLink::run($html))->toBe($html);
+});
+
+test('ses notification finds the dispatched email by its ses id, falling back to the legacy lookup table', function () {
+    $outbox       = $this->shop->outboxes()->first();
+    $withSesId    = $outbox->dispatchedEmails()->create(['data' => [], 'ses_id' => 'ses-direct-'.uniqid()]);
+    $legacyLinked = $outbox->dispatchedEmails()->create(['data' => []]);
+    DB::table('ses_dispatched_emails')->insert([
+        'dispatched_email_id' => $legacyLinked->id,
+        'ses_id'              => $legacySesId = 'ses-legacy-'.uniqid(),
+        'send_at'             => now(),
+    ]);
+
+    $processSesNotification = ProcessSesNotification::make();
+
+    expect($processSesNotification->getDispatchedEmail($withSesId->ses_id)?->id)->toBe($withSesId->id)
+        ->and($processSesNotification->getDispatchedEmail($legacySesId)?->id)->toBe($legacyLinked->id)
+        ->and($processSesNotification->getDispatchedEmail('ses-unknown-'.uniqid()))->toBeNull();
 });
 
 test('store email copy', function () {
@@ -2719,6 +2737,20 @@ test('credit balance email to customer is only sent when the credit explains its
     'unexplained' => [[], false],
     'with notes'  => [['notes' => 'Refund for items not shipped in order X1'], true],
 ]);
+
+test('credit balance email to customer is not sent when the money is refunded to the original payment', function () {
+    Queue::fake();
+
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($this->customer, [
+        'amount' => 10,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::MONEY_BACK,
+        'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::ORDER_CANCELLED,
+        'notes'  => 'Order #X1 cancelled. Money to be refunded to the original payment method.',
+    ], notifyCustomer: false);
+
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer::assertNotPushed();
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToUser::assertPushed();
+});
 
 test('delete outbox has subscriber again is idempotent at handle level', function () {
     $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);

@@ -27,6 +27,10 @@ const START_EVENT = ".low_stock_audited_start"
 const DONE_EVENT = ".low_stock_audited"
 const LOCK_EVENT = ".low_stock_audit_lock"
 
+// The server lock expires on its own so an abandoned tab cannot hold a SKO for ever; a count still
+// open re-takes it well inside that window
+const HEARTBEAT_MS = 10 * 60 * 1000
+
 export const useLowStockAuditBroadcast = (handlers: {
 	onAudited: (event: LowStockAuditedEvent) => void
 	onAuditStart?: (event: LowStockAuditedEvent) => void
@@ -48,6 +52,7 @@ export const useLowStockAuditBroadcast = (handlers: {
 	const holderToken = ulid()
 
 	let channel: any = null
+	let heartbeat: ReturnType<typeof setInterval> | null = null
 
 	const isLocked = (locationOrgStockId: number) =>
 		lockedLocationIds.value.includes(locationOrgStockId)
@@ -201,9 +206,24 @@ export const useLowStockAuditBroadcast = (handlers: {
 	onMounted(() => {
 		subscribe()
 		window.addEventListener("beforeunload", releaseOnUnload)
+		heartbeat = setInterval(() => {
+			heldLocks.value.slice().forEach((held) => {
+				announceLock({
+					org_stock_id: held.org_stock_id,
+					location_org_stock_id: held.location_org_stock_id,
+					is_locked: true,
+					source: held.source,
+				})
+			})
+		}, HEARTBEAT_MS)
 	})
 
 	onBeforeUnmount(() => {
+		if (heartbeat) {
+			clearInterval(heartbeat)
+			heartbeat = null
+		}
+
 		window.removeEventListener("beforeunload", releaseOnUnload)
 		releaseHeldLocks()
 		unsubscribe()

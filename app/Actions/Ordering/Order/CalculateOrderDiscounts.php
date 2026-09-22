@@ -378,6 +378,14 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     {
         $enabledOffers = [];
 
+        /**
+         * An intercompany order is a transfer between two of our own companies, priced from the
+         * seller's list price and discounted by the partner's own terms. The shop's promotions are
+         * retail marketing aimed at customers, so none of them apply here: a partner buying for the
+         * first time is not a new customer to acquire. Offers granted to the intercompany customer
+         * itself, and discretionary discounts the office enters by hand, still apply.
+         */
+        $isIntercompany = $order->salesChannel?->code === 'intercompany';
 
         foreach (
             $this->scopeOffersValidity(
@@ -404,7 +412,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
 
-        if ($order->offer_voucher_id) {
+        if ($order->offer_voucher_id && !$isIntercompany) {
             $voucherData = $this->scopeOffersValidity(
                 DB::table('offers')
                     ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
@@ -433,17 +441,20 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
 
-        $offersData = $this->scopeOffersValidity(
-            DB::table('offers')
-                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
-                ->where('shop_id', $order->shop_id)
-        )->whereIn('trigger_type', [
-            'Customer',
-            'Product',
-            'ProductCategory',
-            'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
-        ])
-        ->get();
+        $offersData = collect();
+        if (!$isIntercompany) {
+            $offersData = $this->scopeOffersValidity(
+                DB::table('offers')
+                    ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
+                    ->where('shop_id', $order->shop_id)
+            )->whereIn('trigger_type', [
+                'Customer',
+                'Product',
+                'ProductCategory',
+                'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
+            ])
+            ->get();
+        }
         foreach ($offersData as $offerData) {
             if ($offerData->type == 'Amount AND Order Number') {
                 list($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);

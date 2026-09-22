@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -15,7 +16,6 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,6 +23,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SetMetaChatSessionPriority
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(MetaChatSession $metaChatSession, string $priority, ?ChatAgent $agent = null): MetaChatSession
     {
@@ -58,7 +59,7 @@ class SetMetaChatSessionPriority
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, MetaChatSession $metaChatSession, ActionRequest $request): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($metaChatSession);
 
         if (!$agent) {
             return response()->json([

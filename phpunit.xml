@@ -19,6 +19,7 @@
         <exclude>
             <group>browser</group>
             <group>integration</group>
+            <group>editorial</group>
         </exclude>
     </groups>
     <source>

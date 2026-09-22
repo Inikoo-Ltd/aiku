@@ -2,14 +2,14 @@
 title: Memeriksa tiket sebagai QA
 summary: Untuk QA - temukan tiket yang menunggu pemeriksaan, uji perbaikannya di halaman live, beri keputusan lolos atau gagal yang jelas, dan pahami apa yang terjadi selanjutnya.
 date: 2026-09-14
-source_date: 2026-09-14
+source_date: 2026-09-21
 tags: help desk, tickets, qa
 category: help-desk
 audience: qa
 ---
 
 <aside class="tldr">
-Saat perbaikan dari engineer sudah live, mereka menekan <b>Ask QA to check</b>, dan tiket muncul di <b>QA queue</b> Anda. Buka tiketnya, periksa perbaikan di tempat pelapor mengalami masalah, lalu beri keputusan: <b>Pass</b> dengan catatan apa yang Anda periksa, atau <b>Fail</b> dengan catatan apa yang masih salah. Engineer langsung diberi tahu. Anda yang memeriksa; engineer yang memutuskan kapan tiket <b>Done</b>.
+Saat perbaikan dari engineer sudah live, mereka menekan <b>Ask QA to check</b>, biasanya meninggalkan catatan pada tiket tentang apa yang perlu diperiksa, dan tiket muncul di <b>QA queue</b> Anda - ditujukan kepada Anda dengan nama, atau kepada siapa pun di QA. Buka tiketnya, periksa perbaikan di tempat pelapor mengalami masalah, lalu beri keputusan: <b>Pass</b> dengan catatan apa yang Anda periksa, atau <b>Fail</b> dengan catatan apa yang masih salah. Engineer langsung diberi tahu. Anda yang memeriksa; engineer yang memutuskan kapan tiket <b>Done</b>.
 </aside>
 
 ## Mencari tiket untuk diperiksa

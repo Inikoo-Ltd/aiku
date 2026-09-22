@@ -1214,3 +1214,18 @@ test('retina fulfilment read routes refuse the pallets, spaces, stored items and
             ->and($this->get(route($routeName, $key($own)))->getStatusCode())->not->toBe(403, $routeName.' with the customer own record');
     }
 });
+
+test('logging in flags the browser so the storefront can paint logged in before the first hit lands', function () {
+    $response = $this->post(route('retina.login.store'), [
+        'username' => $this->webUser->username,
+        'password' => 'test',
+    ]);
+
+    $response->assertSuccessful();
+
+    $authCookie = collect($response->headers->getCookies())
+        ->first(fn ($cookie) => $cookie->getName() === 'iris_vua');
+
+    expect($authCookie)->not->toBeNull()
+        ->and($authCookie->isHttpOnly())->toBeFalse();
+});

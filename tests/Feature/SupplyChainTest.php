@@ -131,7 +131,7 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
 
     $this->get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $organisation->slug));
     $this->get(route('grp.devops.dashboard'))->assertForbidden();
-    $this->get(route('grp.chat.dashboard'))->assertForbidden();
+    $this->get(route('grp.chat.reports'))->assertForbidden();
     $this->get(route('grp.org.dashboard.show', $organisation->slug))->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('dashboard.super_blocks', [])

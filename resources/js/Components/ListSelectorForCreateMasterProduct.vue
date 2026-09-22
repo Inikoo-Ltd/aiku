@@ -438,7 +438,7 @@ defineExpose({
                         <div class="flex items-center gap-2">
                             <NumberWithButtonSave v-if="withQuantity"
                                 :key="item.id + '-' + (item[props.key_quantity] || 1)"
-                                :modelValue="item[props.key_quantity]" :bindToTarget="{ min: 1 }"
+                                :modelValue="item[props.key_quantity]" :bindToTarget="item.is_divisible ? { min: 0.001, maxFractionDigits: 3 } : { min: 1 }"
                                 @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]); debounceUpdatePickFractional(item) }"
                                 noUndoButton noSaveButton parentClass="w-min" >
                                 <template #suffix>

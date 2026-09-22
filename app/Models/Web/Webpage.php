@@ -93,6 +93,7 @@ use App\Models\Traits\HasSearch;
  * @property bool $allow_fetch If false changes in Aurora webpages are not fetched
  * @property bool|null $show_in_parent
  * @property int|null $seo_image_id
+ * @property string|null $seo_image_url
  * @property int|null $redirect_webpage_id
  * @property string|null $seo_title
  * @property string|null $seo_description

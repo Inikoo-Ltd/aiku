@@ -50,6 +50,14 @@ class SyncRetinaCustomerSalesChannelPortfolioManually extends RetinaAction
             ]);
         }
 
+        if (SyncCustomerSalesChannelPortfolios::hasNothingToSend($customerSalesChannel)) {
+            return Redirect::back()->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Nothing to update'),
+                'description' => __('None of your products has been uploaded to this channel yet, so there is no stock to send. Upload them to the channel first.'),
+            ]);
+        }
+
         return Redirect::back()->with('notification', [
             'status'      => 'success',
             'title'       => __('Stock update started'),

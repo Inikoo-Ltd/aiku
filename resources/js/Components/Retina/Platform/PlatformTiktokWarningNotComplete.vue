@@ -4,7 +4,7 @@ import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Message } from "primevue"
 import { checkVisible } from "@/Composables/Workshop"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -32,7 +32,7 @@ const submitForm = async () => {
 
 	if(!tiktokInput.tiktok_shop_id && !tiktokInput.tiktok_shop_chiper) {
 		errors.value = {
-			message: trans('Please select at least one shop.')
+			message: ctrans('Please select at least one shop.')
 		}
 
 		isLoadingStep.value = false
@@ -68,9 +68,9 @@ const submitForm = async () => {
 					aria-hidden="true" />
 				<div class="inline items-center gap-x-2">
 					{{
-						trans(
-							"Your registration is not complete yet, you can continue choose your shop here"
-						)
+						customer_sales_channel?.tiktok_shop_has_no_warehouse
+							? ctrans("Your TikTok shop has no warehouse yet. Add a warehouse in TikTok Seller Center and set it as default, then choose your shop and press Save again.")
+							: ctrans("Your registration is not complete yet, you can continue choose your shop here")
 					}}
 				</div>
 			</div>

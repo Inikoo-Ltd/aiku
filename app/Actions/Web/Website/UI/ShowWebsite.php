@@ -17,6 +17,7 @@ use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
 use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
+use App\Actions\Web\Website\GetWebsitePageSpeedHistory;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
@@ -336,6 +337,10 @@ class ShowWebsite extends OrgAction
                 'route_register'     => $route_register_page,
                 'route_forgot_pass'  => $route_forgot_pass_page,
 
+                'pagespeed_history' => $this->tab == WebsiteTabsEnum::SHOWCASE->value
+                    ? Inertia::defer(fn () => GetWebsitePageSpeedHistory::run($website), 'pagespeed_history')
+                    : null,
+
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
                     WebsiteResource::make($website)->getArray(),
                     [
@@ -349,6 +354,10 @@ class ShowWebsite extends OrgAction
                         'live_visitors_enabled' => $liveVisitorsEnabled,
                         'currency_code'        => $website->shop?->currency?->code,
                         'route_live_users'     => $analyticsRoute('live_users'),
+                        'route_chat_visitors'  => route('grp.org.shops.show.chat.dashboard-visitors', [
+                            $website->organisation->slug,
+                            $website->shop->slug,
+                        ]),
                         'website_type'         => $website->shop->type,
                         'migrated'             => $website->migrated,
                         'search_insights'      => GetWebsiteSearchAnalytics::run($website),

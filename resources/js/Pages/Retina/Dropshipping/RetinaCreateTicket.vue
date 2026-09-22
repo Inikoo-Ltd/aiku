@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import TicketForm from "@/Components/Tickets/TicketForm.vue"
 
 defineProps<{

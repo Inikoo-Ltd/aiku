@@ -14,13 +14,24 @@ use App\Models\Fulfilment\StoredItem;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 trait WithPortfolioSKU
 {
+    /**
+     * A product made of one stock is known by its own code: the slug of the stock is shared by every
+     * product built on that stock and survives a recode, so it can be the code of another product.
+     * A product made of several stocks keeps the composite of their slugs, and so does a bundle,
+     * whose sku is already on the listings and is the inventory key on eBay.
+     */
     public function getSKU(Product|StoredItem $item): ?string
     {
         if (!$item instanceof Product) {
             return $item->reference;
+        }
+
+        if (!$item->is_bundle && $item->orgStocks->count() === 1) {
+            return Str::lower($item->code);
         }
 
         $skuArray = [];
@@ -58,6 +69,14 @@ trait WithPortfolioSKU
 
     public function findProductsBySKU(string $sku, ?Shop $shop = null): EloquentCollection
     {
+        $productsByCode = Product::whereRaw('lower(code collate "C") = ?', [Str::lower($sku)])
+            ->when($shop, fn ($query) => $query->where('shop_id', $shop->id))
+            ->get();
+
+        if ($productsByCode->isNotEmpty()) {
+            return $productsByCode;
+        }
+
         $candidateProductIds = $this->getCandidateProductIds($sku);
 
         if (blank($candidateProductIds)) {

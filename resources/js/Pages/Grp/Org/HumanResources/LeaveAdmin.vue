@@ -624,7 +624,7 @@ const closeRejectModal = () => {
 						:autoApply="true"
 						:placeholder="trans('Select start date')"
 						class="mt-1 block w-full"
-						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 					<p v-if="editForm.errors.start_date" class="mt-1 text-sm text-red-600">
 						{{ editForm.errors.start_date }}
 					</p>
@@ -643,7 +643,7 @@ const closeRejectModal = () => {
 						:autoApply="true"
 						:placeholder="trans('Select end date')"
 						class="mt-1 block w-full"
-						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+						inputClassName="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 					<p v-if="editForm.errors.end_date" class="mt-1 text-sm text-red-600">
 						{{ editForm.errors.end_date }}
 					</p>
@@ -841,7 +841,7 @@ const closeRejectModal = () => {
 							v-model="exportForm.format"
 							type="radio"
 							value="xlsx"
-							class="text-blue-600 focus:ring-blue-500" />
+							class="text-[--app-accent] focus:ring-[--app-accent]" />
 						<FontAwesomeIcon icon="fal fa-file-excel" class="text-green-600" />
 						<span class="text-sm">{{ trans("Excel (XLSX)") }}</span>
 					</label>
@@ -850,7 +850,7 @@ const closeRejectModal = () => {
 							v-model="exportForm.format"
 							type="radio"
 							value="csv"
-							class="text-blue-600 focus:ring-blue-500" />
+							class="text-[--app-accent] focus:ring-[--app-accent]" />
 						<FontAwesomeIcon icon="fal fa-file-csv" class="text-blue-600" />
 						<span class="text-sm">{{ trans("CSV") }}</span>
 					</label>

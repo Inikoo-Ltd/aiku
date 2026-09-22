@@ -18,7 +18,7 @@ import {
 } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"

@@ -71,8 +71,18 @@ const addFiles = (files: Iterable<File>) => {
 
 const removeImage = (index: number) => emit("update:images", props.images.filter((_, i) => i !== index))
 
+const clipboardFiles = (clipboard: DataTransfer | null): File[] => {
+    if (clipboard?.types.includes("text/html") && clipboard.types.includes("text/plain")) return []
+    const files = Array.from(clipboard?.files ?? [])
+    if (files.length) return files.filter(isAcceptedFile)
+    return Array.from(clipboard?.items ?? [])
+        .filter((item) => item.kind === "file")
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file !== null && isAcceptedFile(file))
+}
+
 const onPaste = (event: ClipboardEvent) => {
-    const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith("image/"))
+    const files = clipboardFiles(event.clipboardData)
     if (files.length) {
         event.preventDefault()
         addFiles(files)
@@ -137,6 +147,23 @@ const onKeydown = (event: KeyboardEvent) => {
     }
 }
 
+const appendMention = (username: string) => {
+    const mention = `@${username} `
+    const separator = !props.body || /\s$/.test(props.body) ? "" : " "
+    const value = props.body + separator + mention
+    emit("update:body", value)
+    mentionQuery.value = null
+    nextTick(() => {
+        const element = textarea.value
+        if (!element) return
+        element.focus()
+        element.selectionStart = element.selectionEnd = value.length
+        element.scrollIntoView({ block: "center", behavior: "smooth" })
+    })
+}
+
+defineExpose({ appendMention })
+
 const onPick = (event: Event) => {
     addFiles((event.target as HTMLInputElement).files ?? [])
     if (fileInput.value) fileInput.value.value = ""
@@ -146,7 +173,7 @@ const onPick = (event: Event) => {
 <template>
     <div
         class="rounded-md border bg-white"
-        :class="isDragging ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-gray-300'"
+        :class="isDragging ? 'border-[--app-accent] ring-2 ring-[--app-accent-muted]' : 'border-gray-300'"
         @dragover.prevent="isDragging = true"
         @dragleave="isDragging = false"
         @drop.prevent="onDrop"
@@ -169,7 +196,7 @@ const onPick = (event: Event) => {
                     v-for="(user, index) in mentionSuggestions"
                     :key="user.username"
                     class="flex cursor-pointer gap-2 px-3 py-1.5"
-                    :class="index === mentionIndex ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'"
+                    :class="index === mentionIndex ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-700'"
                     @mousedown.prevent="insertMention(user.username)"
                     @mouseenter="mentionIndex = index"
                 >

@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import type { Component } from 'vue'
 
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'

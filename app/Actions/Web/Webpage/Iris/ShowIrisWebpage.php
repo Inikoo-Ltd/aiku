@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage\Iris;
 use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Actions\Web\Webpage\WithWebpageSeoData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -30,6 +31,7 @@ class ShowIrisWebpage
     use AsAction;
     use WithIrisGetWebpageWebBlocks;
     use WithIrisBlogBreadcrumbs;
+    use WithWebpageSeoData;
 
 
     public function getCanonicalUrl($webpageID): ?string
@@ -55,18 +57,9 @@ class ShowIrisWebpage
         );
 
 
-        $webpageImg = [];
-        if ($webpage->seoImage) {
-            $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
-        }
+        $webpageImg = $this->getWebpageShareImageSources($webpage);
 
-        $website = $webpage->website;
-
-        $title = $webpage->title;
-        // Prioritize webpage prefix/suffix -> website prefix/suffix
-        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null));
-        $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
-        $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        $title = $this->getWebpageSeoTitle($webpage);
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,

@@ -11,6 +11,8 @@ namespace App\Http\Resources\Helpers;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
+use App\Models\Chat\ChatSession;
+use App\Models\SysAdmin\User;
 use App\Models\Chat\MetaChatSession;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
@@ -39,6 +41,7 @@ class TicketResource extends JsonResource
             'qa_status_label' => $this->qa_status ? TicketQaStatusEnum::labels()[$this->qa_status->value] : null,
             'qa_status_icon' => $this->qa_status ? TicketQaStatusEnum::stateIcon()[$this->qa_status->value] : null,
             'qa_user'        => $this->qaUser?->contact_name ?: $this->qaUser?->username,
+            'qa_user_id'     => $this->qa_user_id,
             'qa_requested_at' => $this->qa_requested_at,
             'qa_checked_at'  => $this->qa_checked_at,
             'kind_label'     => $this->kind ? TicketKindEnum::labels()[$this->kind->value] : null,
@@ -55,6 +58,11 @@ class TicketResource extends JsonResource
             'description'    => $this->description,
             'reporter'       => $this->reporter?->contact_name ?: $this->reporter?->username,
             'reporter_roles' => $request->routeIs('retina.*') ? [] : $this->reporterRoles(),
+            'blocks_source'  => (bool) $this->blocks_source,
+            'closes_source'  => (bool) $this->closes_source,
+            'reporter_key'   => $this->reporter_id ? $this->reporter_type.'-'.$this->reporter_id : null,
+            'reporter_username' => $this->reporter_type === 'User' ? $this->reporter?->username : null,
+            'reporter_profile_url' => $this->reporter_type === 'User' ? $this->profileUrl($request, $this->reporter) : null,
             'reporter_short' => $this->reporter_type === 'User' ? $this->reporter?->username : ($this->reporter?->contact_name ?: $this->reporter?->username),
             'reporter_avatar' => $this->reporter_type === 'User' ? $this->reporter?->imageSources(48, 48) : null,
             'is_from_slack'  => (bool) data_get($this->data, 'slack'),
@@ -94,6 +102,21 @@ class TicketResource extends JsonResource
     }
 
     /** @return array{channel: string|null, channel_label: string|null, channel_icon: array|null, contact: string|null, reference: string|null, url: string|null}|null */
+    /**
+     * Their account in system administration, for whoever may look at it. Null for everybody
+     * else, so the ticket does not offer a link that answers with a 403.
+     */
+    private function profileUrl($request, ?User $person): ?string
+    {
+        $viewer = $request->user();
+
+        if (!$person || !$viewer instanceof User || !$viewer->authTo('sysadmin.view')) {
+            return null;
+        }
+
+        return route('grp.sysadmin.users.show', ['user' => $person->slug]);
+    }
+
     private function sourceData(): ?array
     {
         if (!$this->source_type || !$this->source_id) {
@@ -114,6 +137,9 @@ class TicketResource extends JsonResource
                     : ($session?->webUser?->contact_name ?: $session?->guest_identifier)),
             'reference'     => $customer?->reference,
             'url'           => $this->sourceUrl($session),
+            // Whether there is a conversation to read on the ticket, rather than just a note of
+            // where it came from
+            'has_conversation' => $session instanceof ChatSession || $session instanceof MetaChatSession,
         ];
     }
 

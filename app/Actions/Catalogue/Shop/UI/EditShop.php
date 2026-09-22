@@ -758,6 +758,27 @@ class EditShop extends OrgAction
                                 'value'       => Arr::get($shop->settings, 'chat.data_contact_options_panel') ?? [],
                             ],
                         ] : [],
+                        'chat_unclaimed_website_seconds'  => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '30', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('Website chat unclaimed after (seconds)'),
+                            'information' => __('How long a website conversation may sit with nobody holding it before it joins the unclaimed queue everybody sees. Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.website') ?? '',
+                        ],
+                        'chat_unclaimed_whatsapp_seconds' => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '60', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('WhatsApp unclaimed after (seconds)'),
+                            'information' => __('Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.whatsapp') ?? '',
+                        ],
+                        'chat_unclaimed_email_seconds'    => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '300', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('Email unclaimed after (seconds)'),
+                            'information' => __('Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.email') ?? '',
+                        ],
                         'enable_whatsapp' => [
                             'type'        => 'toggle',
                             'label'       => __('Enable WhatsApp Channel'),

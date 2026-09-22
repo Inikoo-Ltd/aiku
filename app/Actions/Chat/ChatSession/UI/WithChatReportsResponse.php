@@ -1,0 +1,45 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Copyright (c) 2026, Inikoo Ltd
+ */
+
+namespace App\Actions\Chat\ChatSession\UI;
+
+use App\Actions\Chat\ChatSession\GetChatReports;
+use App\Models\Catalogue\Shop;
+use Illuminate\Support\Collection;
+
+/**
+ * The reports page is the same in group, organisation and shop scope; only the set of shops
+ * it counts differs.
+ */
+trait WithChatReportsResponse
+{
+    /**
+     * @param  Collection<int, Shop>  $shops
+     */
+    protected function chatReportsProps(Collection $shops): array
+    {
+        $reports  = GetChatReports::make();
+        $interval = $reports->intervalFromRequest();
+        $title    = __('Chat Reports');
+
+        $shopNames = $shops->mapWithKeys(fn (Shop $shop) => [$shop->id => ['name' => $shop->name, 'slug' => $shop->slug]])->all();
+
+        return [
+            'title'     => $title,
+            'pageHead'  => [
+                'title' => $title,
+                'icon'  => [
+                    'icon'  => ['fal', 'fa-chart-line'],
+                    'title' => $title,
+                ],
+            ],
+            'stats'     => $reports->handle($shops->pluck('id'), $interval, $shopNames),
+            'intervals' => $reports->intervalOptions(),
+            'showShops' => $shops->count() > 1,
+        ];
+    }
+}

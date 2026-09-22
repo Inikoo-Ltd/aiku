@@ -59,8 +59,8 @@ class SetToProduceItemPreparing extends OrgAction
      */
     private function writeExpiryOntoLabels(PartnerShoppingListItem $item, string $expiryDate): void
     {
-        $artefactId = Artefact::where('org_stock_id', $item->org_stock_id)
-            ->where('production_id', $this->production->id)
+        $artefactId = Artefact::where('production_id', $this->production->id)
+            ->whereHas('orgStock', fn ($query) => $query->where('stock_id', $item->stock_id))
             ->value('id');
 
         if (!$artefactId) {

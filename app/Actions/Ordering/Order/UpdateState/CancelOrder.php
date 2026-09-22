@@ -64,6 +64,7 @@ class CancelOrder extends OrgAction
 
         $reason = $this->getCancellationReason($modelData);
         $notes  = trim((string)Arr::get($modelData, 'cancellation_notes'));
+        $isRefundToOriginalPayment = (bool)Arr::get($modelData, 'refund_to_original_payment', false);
 
         $orderData = [
             'state' => OrderStateEnum::CANCELLED,
@@ -102,8 +103,8 @@ class CancelOrder extends OrgAction
                 'amount' => $order->payment_amount,
                 'type'   => CreditTransactionTypeEnum::MONEY_BACK,
                 'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
-                'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes),
-            ]);
+                'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes, $isRefundToOriginalPayment),
+            ], notifyCustomer: !$isRefundToOriginalPayment);
 
 
             $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
@@ -196,18 +197,22 @@ class CancelOrder extends OrgAction
         return OrderCancellationReasonEnum::tryFrom((string)$reason);
     }
 
-    private function getCreditTransactionNotes(Order $order, ?OrderCancellationReasonEnum $reason, string $notes): string
+    private function getCreditTransactionNotes(Order $order, ?OrderCancellationReasonEnum $reason, string $notes, bool $isRefundToOriginalPayment): string
     {
+        $outcome = $isRefundToOriginalPayment
+            ? 'Money to be refunded to the original payment method.'
+            : 'Money returned as store credit.';
+
         $explanation = rtrim(
             collect([$reason?->label(), $notes])->filter()->implode('. '),
             " \t\n."
         );
 
         if ($explanation === '') {
-            return "Order #$order->reference cancelled. Money returned as store credit.";
+            return "Order #$order->reference cancelled. $outcome";
         }
 
-        return "Order #$order->reference cancelled: $explanation. Money returned as store credit.";
+        return "Order #$order->reference cancelled: $explanation. $outcome";
     }
 
     public function rules(): array
@@ -215,6 +220,7 @@ class CancelOrder extends OrgAction
         return [
             'cancellation_reason' => ['sometimes', 'nullable', Rule::enum(OrderCancellationReasonEnum::class)],
             'cancellation_notes'  => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'refund_to_original_payment' => ['sometimes', 'boolean'],
         ];
     }
 

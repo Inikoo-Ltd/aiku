@@ -2,7 +2,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
-use App\Actions\CRM\Customer\UI\GetCustomerTimeline;
+use App\Actions\Chat\GetChatContactTimeline;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,7 +20,7 @@ class GetMetaChatCustomerTimeline
             return ['events' => []];
         }
 
-        return GetCustomerTimeline::run($customer);
+        return GetChatContactTimeline::run($customer, $metaChatSession);
     }
 
     public function asController(MetaChatSession $metaChatSession, ActionRequest $request): JsonResponse

@@ -51,6 +51,8 @@ const props = defineProps<{
             description?: string
             yesLabel?: string
             whenValueIs?: any  // Confirm only for this value, leave out to confirm every save
+            reasonField?: string  // Asks for a reason in the dialog and sends it under this name
+            reasonLabel?: string
         }
     }
     args: {
@@ -71,6 +73,11 @@ if (props['fieldData']['hasOther']) {
         formFields[other['name']] = other['value']
     })
 }
+const reasonField = props.fieldData.saveConfirmation?.reasonField
+if (reasonField) {
+    formFields[reasonField] = ''
+}
+
 formFields['_method'] = 'patch'
 const form = useForm(formFields)
 form['fieldType'] = 'edit'
@@ -276,6 +283,18 @@ const needsSaveConfirmation = computed(() => {
                         </p>
                     </div>
 
+                    <div v-if="reasonField" class="mt-4">
+                        <label :for="`${field}-reason`" class="text-sm text-gray-500">
+                            {{ fieldData.saveConfirmation?.reasonLabel ?? trans("Reason") }}
+                        </label>
+                        <textarea
+                            :id="`${field}-reason`"
+                            v-model="form[reasonField]"
+                            rows="3"
+                            class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                        <p v-if="form.errors[reasonField]" class="mt-1 text-sm text-red-600">{{ form.errors[reasonField] }}</p>
+                    </div>
+
                     <div class="mt-5 flex xflex-row-reverse gap-2">
                         <Button
                             type="tertiary"
@@ -291,6 +310,7 @@ const needsSaveConfirmation = computed(() => {
                                 type="secondary"
                                 key="3"
                                 :loading="form.processing"
+                                :disabled="!!reasonField && !form[reasonField]?.trim()"
                                 full
                             >
                                 <template #label>

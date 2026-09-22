@@ -41,6 +41,8 @@ import { faNarwhal, faReceipt, faWarehouseAlt } from "@fas"
 import { faLayerPlus } from "@far"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { inject, ref } from "vue"
+import { useScrollArrows } from "@/Composables/useScrollArrows"
+import { faChevronLeft as faChevronLeftLight, faChevronRight as faChevronRightLight } from "@fal"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useTruncate } from "@/Composables/useTruncate"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
@@ -75,7 +77,9 @@ library.add(
     faFileCertificate,
     faEnvelopeOpenText,
     faPaperclip,
-	faCogs
+	faCogs,
+	faChevronLeftLight,
+	faChevronRightLight
 )
 
 const props = defineProps<{
@@ -87,6 +91,19 @@ const props = defineProps<{
 }>()
 
 const isButtonLoading = ref<boolean | string>(false)
+
+const isPlatformOrderIdCopied = ref(false)
+
+const actionScroller = ref<HTMLElement | null>(null)
+const { canScrollLeft: canScrollActionsLeft, canScrollRight: canScrollActionsRight, scrollBy: scrollActions } = useScrollArrows(actionScroller)
+
+const breakableId = (id: string) => id.replace(/([/:.-])/g, "$1\u200b")
+
+const copyPlatformOrderId = async (id: string) => {
+	await navigator.clipboard.writeText(id)
+	isPlatformOrderIdCopied.value = true
+	setTimeout(() => (isPlatformOrderIdCopied.value = false), 2000)
+}
 
 if (props.dataToSubmit && props.data.actionActualMethod) {
 	props.dataToSubmit["_method"] = props.data.actionActualMethod
@@ -114,7 +131,7 @@ const setError = (e) => {
 	<slot name="afterSubNav"></slot>
 
 	<div
-		class="relative  px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-2"
+		class="relative  px-4 py-2 flex flex-wrap justify-between items-center gap-x-3 gap-y-2"
 		:class="[
 			props.ignoreIsolate ? '' : 'isolate z-10',
 		]"
@@ -162,7 +179,7 @@ const setError = (e) => {
 
 				<!-- Section: Main title group -->
 				<div
-					class="flex leading-none py-1.5 items-center gap-x-2 text-gray-700 tracking-tight"
+					class="flex leading-none py-1.5 items-start sm:items-center gap-x-2 text-gray-700 tracking-tight"
 					:class="data.titleStyle ?? 'font-bold text-2xl'">
 					<div v-if="data.container" class="text-slate-500 text-lg">
 						<Link
@@ -201,7 +218,7 @@ const setError = (e) => {
 						:alt="data.image.alt"
 						class="w-6 h-6" />
 
-					<div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center">
+					<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-x-3">
 						<div class="xspace-x-2">
 							<template v-if="data.model">
 								<span class="text-gray-400 font-medium" :class="data.modelStyle">{{ data.model }}</span>
@@ -253,7 +270,13 @@ const setError = (e) => {
 								class="h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none"
 								:alt="data.platform.type"
 								v-tooltip="data.platform.title || data.platform.name" />
-                            <span v-tooltip="'platform order id'" v-if="data.platform?.order_id" class="text-light font-sm">{{ data.platform?.order_id }}</span>
+                            <button
+                                v-if="data.platform?.order_id"
+                                v-tooltip="isPlatformOrderIdCopied ? trans('Copied') : trans('Click to copy') + ': ' + breakableId(data.platform.order_id)"
+                                type="button"
+                                class="inline-block max-w-[14rem] truncate align-middle text-sm font-normal tracking-normal transition duration-200 hover:text-gray-800"
+                                :class="isPlatformOrderIdCopied ? 'text-green-600' : 'text-gray-500'"
+                                @click="copyPlatformOrderId(data.platform.order_id)">{{ data.platform.order_id }}</button>
 						</slot>
 
 						<span
@@ -333,7 +356,9 @@ const setError = (e) => {
 		<!-- Section: Button and/or ButtonGroup -->
 		<slot name="button" :dataPageHead="{ ...props }">
 			<div
-				class="self-end w-full md:w-auto flex sm:flex-row flex-wrap justify-end sm:items-center gap-y-3 md:gap-y-1 gap-x-2 rounded-md">
+				class="ml-auto flex items-center gap-x-2 rounded-md max-sm:w-full">
+				<div class="relative max-sm:min-w-0 max-sm:flex-1">
+				<div ref="actionScroller" class="flex items-center gap-x-2 max-sm:overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:justify-end sm:gap-y-1 [&>*]:shrink-0 max-sm:[&>*:first-child]:ml-auto">
 				<slot name="otherBefore" :dataPageHead="{ ...props }" />
 
 				<template v-for="(action, actIndex) in data.actions">
@@ -435,10 +460,28 @@ const setError = (e) => {
 				</template>
 
 				<slot name="other" :dataPageHead="{ ...props }" />
+				</div>
+				<button
+					v-if="canScrollActionsLeft"
+					type="button"
+					class="absolute inset-y-0 left-0 flex w-6 items-center justify-center bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800 sm:hidden"
+					:aria-label="trans('Scroll left')"
+					@click="scrollActions(-1)">
+					<FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
+				</button>
+				<button
+					v-if="canScrollActionsRight"
+					type="button"
+					class="absolute inset-y-0 right-0 flex w-6 items-center justify-center bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800 sm:hidden"
+					:aria-label="trans('Scroll right')"
+					@click="scrollActions(1)">
+					<FontAwesomeIcon icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
+				</button>
+				</div>
 
 				<Popover
 					v-if="data?.wrapped_actions?.length"
-					class="relative"
+					class="relative shrink-0"
 					v-slot="{ open: isOpen }">
 					<PopoverButton>
 						<div

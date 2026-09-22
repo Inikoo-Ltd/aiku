@@ -80,7 +80,7 @@ class StoreChatSession
                 'language_id'      => $modelData['language_id'],
                 'priority'         => $modelData['priority'],
                 'ai_model_version' => $modelData['ai_model_version'] ?? 'default',
-                'shop_id'          => $modelData['shop_id'] ?? null,
+                'shop_id'          => $modelData['shop_id'],
                 'channel'          => $modelData['channel'] ?? ChatChannelEnum::WEBSITE,
                 'geo_country_code'      => $this->resolveCountryCode(request()->header('CF-IPCountry')),
                 'website_visitor_id'   => $this->resolveWebsiteVisitorId($modelData['shop_id'] ?? null),

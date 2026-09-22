@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { useCopyText } from "@/Composables/useCopyText"
 import { PageHeadingTypes } from "@/types/PageHeading"

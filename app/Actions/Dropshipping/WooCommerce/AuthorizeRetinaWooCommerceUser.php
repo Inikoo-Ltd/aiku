@@ -109,13 +109,14 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
         }
 
         $body = $response->body();
+
         $wooErrorCode = Arr::get($response->json() ?? [], 'code');
-        $isWooApi = is_string($wooErrorCode) && str_starts_with($wooErrorCode, 'woocommerce_rest_');
+
+        $isWooApi = str_contains(Arr::get($response->json() ?? [], 'namespace'), 'wc/v3');
 
         $context = [
             'status'        => $response->status(),
             'effective_url' => (string)$response->effectiveUri(),
-            'woo_code'      => $wooErrorCode,
             'body'          => substr($body, 0, 500),
         ];
 

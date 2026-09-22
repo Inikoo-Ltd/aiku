@@ -75,6 +75,7 @@ use App\Actions\HumanResources\TimeTracker\ClockInTimeTracker;
 use App\Actions\HumanResources\TimeTracker\AddClockingToTimeTracker;
 use App\Actions\HumanResources\TimeTracker\CloseTimeTracker;
 use App\Actions\HumanResources\TimeTracker\RepairNegativeTimeTrackers;
+use App\Actions\HumanResources\Employee\UI\IndexClockingEmployees;
 use App\Actions\HumanResources\Timesheet\StoreTimesheet;
 use App\Actions\HumanResources\Timesheet\DeleteTimesheet;
 use App\Actions\HumanResources\Leave\StoreLeave;
@@ -112,8 +113,11 @@ use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
 use Illuminate\Support\Facades\Storage;
 use App\Actions\Helpers\Avatars\GetDiceBearAvatar;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 class CollidingStoreClockingMachineQRCode extends StoreClockingMachineQRCode
 {
@@ -2592,4 +2596,472 @@ describe('hr records leave on behalf of employee', function () {
         $balance = \App\Models\HumanResources\EmployeeLeaveBalance::where('employee_id', $employee->id)->first();
         expect((float) $balance->medical_used)->toBe((float) $leave->duration_days);
     });
+});
+
+test('public holidays are generated with the right movable feasts and weekend substitutions', function () {
+    $generator = \App\Actions\HumanResources\Holiday\GeneratePublicHolidays::make();
+
+    $uk2026 = collect($generator->holidaysFor('gb', 2026))->pluck('date', 'label');
+    expect($uk2026['Good Friday'])->toBe('2026-04-03')
+        ->and($uk2026['Easter Monday'])->toBe('2026-04-06')
+        ->and($uk2026['Early May bank holiday'])->toBe('2026-05-04')
+        ->and($uk2026['Spring bank holiday'])->toBe('2026-05-25')
+        ->and($uk2026['Summer bank holiday'])->toBe('2026-08-31')
+        // Boxing Day 2026 is a Saturday, so England and Wales take the Monday.
+        ->and($uk2026['Boxing Day'])->toBe('2026-12-28');
+
+    // 2027 pushes both Christmas and Boxing Day off the weekend, onto consecutive days.
+    $uk2027 = collect($generator->holidaysFor('gb', 2027))->pluck('date', 'label');
+    expect($uk2027['Christmas Day'])->toBe('2027-12-27')
+        ->and($uk2027['Boxing Day'])->toBe('2027-12-28');
+
+    // Slovakia does not substitute: Christmas Day 2027 stays on the Saturday.
+    $sk2027 = collect($generator->holidaysFor('sk', 2027))->pluck('date', 'label');
+    expect($sk2027['Prvý sviatok vianočný'])->toBe('2027-12-25')
+        ->and($sk2027['Veľký piatok'])->toBe('2027-03-26');
+
+    $es2026 = collect($generator->holidaysFor('es', 2026))->pluck('date', 'label');
+    expect($es2026['Viernes Santo'])->toBe('2026-04-03')
+        ->and($es2026['Fiesta Nacional de España'])->toBe('2026-10-12');
+});
+
+test('an employee marked as left gets an end date and their user is deactivated', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id'     => $this->organisation->id,
+        'group_id'            => $this->group->id,
+        'state'               => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'employment_end_at'   => null,
+        'email'               => 'leaver-' . uniqid() . '@example.com',
+        'worker_number'       => 'LV' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'leaver-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    $employee = UpdateEmployee::make()->action($employee->refresh(), [
+        'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+        'employment_end_at' => null,
+    ]);
+
+    expect($employee->employment_end_at->format('Y-m-d'))->toBe(now()->format('Y-m-d'))
+        ->and($user->refresh()->status)->toBeFalse();
+});
+
+test('an employee marked as left keeps the end date that was given', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id'   => $this->organisation->id,
+        'group_id'          => $this->group->id,
+        'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'employment_end_at' => null,
+        'email'             => 'leaver-' . uniqid() . '@example.com',
+        'worker_number'     => 'LV' . uniqid(),
+    ]);
+
+    $employee = UpdateEmployee::make()->action($employee, [
+        'state'             => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+        'employment_end_at' => now()->subMonth()->format('Y-m-d'),
+    ]);
+
+    expect($employee->employment_end_at->format('Y-m-d'))->toBe(now()->subMonth()->format('Y-m-d'));
+});
+
+test('giving the login back to somebody who left needs a reason, and it lands in the history', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+        'email'           => 'reinstated-' . uniqid() . '@example.com',
+        'worker_number'   => 'RE' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'reinstated-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    \App\Actions\SysAdmin\User\UpdateUser::make()->action($user, ['status' => false]);
+
+    // Past the window where an audit folds back into the one before it
+    $this->travel(5)->seconds();
+
+    expect(fn () => \App\Actions\SysAdmin\User\UpdateUser::make()->action($user->refresh(), ['status' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $user = \App\Actions\SysAdmin\User\UpdateUser::make()->action($user->refresh(), [
+        'status' => true,
+        'reason' => 'Covering the handover until the end of the month',
+    ]);
+
+    expect($user->status)->toBeTrue();
+
+    $audit = \App\Models\Helpers\Audit::where('auditable_type', 'User')
+        ->where('auditable_id', $user->id)
+        ->latest('id')
+        ->first();
+
+    expect($audit->comments)->toBe('Covering the handover until the end of the month')
+        ->and($audit->new_values['status'])->toBeTrue();
+});
+
+test('profile timesheets tab returns timesheets beyond today', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'profile-timesheets-' . uniqid() . '@example.com',
+        'worker_number'   => 'PT' . uniqid(),
+    ]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'profile-timesheets-' . $employee->id,
+        'password' => 'secret123',
+    ]);
+
+    StoreTimesheet::make()->action($employee, ['date' => now()]);
+    StoreTimesheet::make()->action($employee, ['date' => now()->subDays(3)]);
+
+    actingAs($user);
+
+    $response = get(route('grp.profile.timesheets.index'), ['Accept' => 'application/json']);
+    $response->assertOk();
+
+    expect($response->json('data'))->toHaveCount(2);
+});
+
+test('an employee can be given a shorter week than the organisation works', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'four-day-'.uniqid().'@example.com',
+        'worker_number'   => 'FD'.uniqid(),
+    ]);
+
+    // Monday to Friday, nine to five, as the organisation works
+    $organisationHours = collect(range(1, 5))
+        ->mapWithKeys(fn (int $day) => [$day => ['s' => '09:00', 'e' => '17:00']])
+        ->all();
+
+    $organisationSchedule = StoreWorkSchedule::make()->action($this->organisation, [
+        'name'          => 'Org hours',
+        'type'          => 'default',
+        'working_hours' => ['data' => $organisationHours],
+    ]);
+
+    // this one does not work Fridays: the day is kept, and says nobody is expected in
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => array_replace($organisationHours, [5 => ['s' => null, 'e' => null, 'w' => false, 'b' => []]]),
+        ],
+    ]);
+
+    $schedule = $employee->refresh()->getDefaultWorkSchedule();
+
+    expect($schedule)->not->toBeNull();
+
+    $friday = $schedule->days()->where('day_of_week', 5)->first();
+    $thursday = $schedule->days()->where('day_of_week', 4)->first();
+
+    expect($friday)->not->toBeNull()
+        ->and($friday->is_working_day)->toBeFalse()
+        ->and($friday->start_time)->toBeNull()
+        ->and($thursday->is_working_day)->toBeTrue()
+        ->and($thursday->start_time)->toBe('09:00:00')
+        ->and($schedule->days()->where('is_working_day', true)->count())->toBe(4);
+
+    // and the organisation still works its Friday
+    expect($organisationSchedule->days()->where('day_of_week', 5)->value('is_working_day'))->toBeTrue();
+});
+
+test('a day switched back on keeps its hours and a day switched off drops its breaks', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'breaks-'.uniqid().'@example.com',
+        'worker_number'   => 'BR'.uniqid(),
+    ]);
+
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => [
+                3 => ['s' => '08:00', 'e' => '16:00', 'b' => [['s' => '12:00', 'e' => '12:30', 'n' => 'Lunch', 'p' => false]]],
+            ],
+        ],
+    ]);
+
+    $schedule = $employee->refresh()->getDefaultWorkSchedule();
+    expect($schedule->days()->where('day_of_week', 3)->first()->breaks()->count())->toBe(1);
+
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => [
+                3 => ['s' => '08:00', 'e' => '16:00', 'w' => false, 'b' => [['s' => '12:00', 'e' => '12:30', 'n' => 'Lunch', 'p' => false]]],
+            ],
+        ],
+    ]);
+
+    $wednesday = $schedule->refresh()->days()->where('day_of_week', 3)->first();
+
+    expect($wednesday->is_working_day)->toBeFalse()
+        ->and($wednesday->start_time)->toBeNull()
+        ->and($wednesday->breaks()->count())->toBe(0);
+
+    // switched on but with no hours is still not a day anybody works
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => [
+                3 => ['s' => null, 'e' => null, 'w' => true, 'b' => []],
+                4 => ['s' => '08:00', 'e' => null, 'w' => true, 'b' => []],
+            ],
+        ],
+    ]);
+
+    $schedule->refresh();
+
+    expect($schedule->days()->where('day_of_week', 3)->value('is_working_day'))->toBeFalse()
+        ->and($schedule->days()->where('day_of_week', 4)->value('is_working_day'))->toBeFalse()
+        ->and($schedule->days()->where('day_of_week', 4)->value('start_time'))->toBeNull();
+});
+
+test('a schedule saved the old way, without the working day flag, is unchanged', function () {
+    $schedule = StoreWorkSchedule::make()->action($this->organisation, [
+        'name' => 'Legacy payload',
+        'type' => 'shift',
+    ]);
+
+    // what the organisation's own hours editor sends: no 'w' anywhere
+    UpdateWorkSchedule::make()->action($this->organisation, $schedule, [
+        'working_hours' => [
+            'data' => [
+                1 => ['s' => '09:00', 'e' => '17:00', 'b' => [['s' => '13:00', 'e' => '13:30', 'n' => 'Lunch']]],
+                6 => ['s' => null, 'e' => null, 'b' => []],
+            ],
+        ],
+    ]);
+
+    $monday   = $schedule->days()->where('day_of_week', 1)->first();
+    $saturday = $schedule->days()->where('day_of_week', 6)->first();
+
+    expect($monday->is_working_day)->toBeTrue()
+        ->and($monday->start_time)->toBe('09:00:00')
+        ->and($monday->breaks()->count())->toBe(1)
+        ->and($saturday->is_working_day)->toBeFalse()
+        ->and($schedule->days()->count())->toBe(2);
+});
+
+test('attendance is judged against the employee week, not the organisation one', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id'  => $this->organisation->id,
+        'group_id'         => $this->group->id,
+        'state'            => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'employment_type'  => \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME,
+        'email'            => 'late-'.uniqid().'@example.com',
+        'worker_number'    => 'LT'.uniqid(),
+    ]);
+
+    $everyDayNineToFive = collect(range(1, 7))
+        ->mapWithKeys(fn (int $day) => [$day => ['s' => '09:00', 'e' => '17:00']])
+        ->all();
+
+    // the organisation works every day of the week
+    StoreWorkSchedule::make()->action($this->organisation, [
+        'name'          => 'Org every day '.uniqid(),
+        'type'          => 'default',
+        'working_hours' => ['data' => $everyDayNineToFive],
+    ]);
+
+    $lateClocking = new class () {
+        use \App\Actions\HumanResources\Clocking\Traits\DeterminesClockingResult;
+
+        public function check(Employee $employee, \Illuminate\Support\Carbon $at): bool
+        {
+            return $this->calculateLateClocking($employee, $at);
+        }
+    };
+
+    // in the organisation's timezone, since that is the clock the check works against
+    $timezone     = $this->organisation->timezone->name ?? config('app.timezone');
+    $todayIso     = \Illuminate\Support\Carbon::today($timezone)->dayOfWeekIso;
+    $twoHoursLate = \Illuminate\Support\Carbon::today($timezone)->setTimeFromTimeString('09:00')->addHours(2);
+
+    // this employee does not work today, whatever the organisation says
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => array_replace($everyDayNineToFive, [$todayIso => ['s' => null, 'e' => null, 'w' => false, 'b' => []]]),
+        ],
+    ]);
+
+    expect($employee->refresh()->getEffectiveWorkSchedule()->days()->where('day_of_week', $todayIso)->value('is_working_day'))->toBeFalse()
+        ->and($lateClocking->check($employee->refresh(), $twoHoursLate))->toBeFalse();
+
+    // and once today is a day they do work, the same clocking is late
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => ['data' => $everyDayNineToFive],
+    ]);
+
+    expect($lateClocking->check($employee->refresh(), $twoHoursLate))->toBeTrue();
+});
+
+test('the clocking screen counts attendance against each employee own week', function () {
+    $organisation = $this->organisation;
+
+    $everyDayNineToFive = collect(range(1, 7))
+        ->mapWithKeys(fn (int $day) => [$day => ['s' => '09:00', 'e' => '17:00']])
+        ->all();
+
+    // the organisation's own default schedule, not a second one beside it: only the first is
+    // ever read back
+    $organisationSchedule = $organisation->getDefaultWorkSchedule();
+
+    if ($organisationSchedule) {
+        UpdateWorkSchedule::make()->action($organisation, $organisationSchedule, [
+            'working_hours' => ['data' => $everyDayNineToFive],
+        ]);
+    } else {
+        StoreWorkSchedule::make()->action($organisation, [
+            'name'          => 'Org every day '.uniqid(),
+            'type'          => 'default',
+            'working_hours' => ['data' => $everyDayNineToFive],
+        ]);
+    }
+
+    $timezone = $organisation->timezone->name ?? config('app.timezone');
+    $today    = \Illuminate\Support\Carbon::today($timezone);
+    $todayIso = $today->dayOfWeekIso;
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING,
+        'email'           => 'stats-'.uniqid().'@example.com',
+        'worker_number'   => 'ST'.uniqid(),
+    ]);
+
+    // clocked in two hours after the organisation's start
+    $timesheet = StoreTimesheet::make()->action($employee, ['date' => $today->toDateString()]);
+    // written with an explicit offset so the instant is unambiguous whatever the app and the
+    // organisation are set to: two hours after the day starts, and away on time
+    \Illuminate\Support\Facades\DB::table('timesheets')->where('id', $timesheet->id)->update([
+        'start_at' => $today->copy()->setTimeFromTimeString('11:00')->utc()->format('Y-m-d H:i:sP'),
+        'end_at'   => $today->copy()->setTimeFromTimeString('17:00')->utc()->format('Y-m-d H:i:sP'),
+    ]);
+
+    expect($timesheet->refresh()->start_at->copy()->setTimezone($timezone)->format('H:i'))->toBe('11:00');
+
+    $lateCount = function () use ($employee, $timezone) {
+        $action = IndexClockingEmployees::make();
+        $statsQuery = \App\Models\HumanResources\Timesheet::where('subject_type', 'Employee')
+            ->where('subject_id', $employee->id);
+
+        $statistics = (new ReflectionMethod($action, 'getStatistics'))
+            ->invoke($action, $employee->refresh(), $statsQuery, $timezone, null, null);
+
+        return $statistics['late_clock_in'] ?? null;
+    };
+
+    expect($lateCount())->toBe(1);
+
+    // the same clocking on a day this employee does not work is not counted
+    UpdateEmployee::make()->action($employee, [
+        'working_hours' => [
+            'data' => array_replace($everyDayNineToFive, [$todayIso => ['s' => null, 'e' => null, 'w' => false, 'b' => []]]),
+        ],
+    ]);
+
+    expect($lateCount())->toBe(0);
+});
+
+test('a human resources supervisor can create a holiday from the holidays page', function () {
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_SUPERVISOR->value, $this->organisation));
+    $user->forgetWildcardPermissionIndex();
+
+    expect($user->authTo(["human-resources.{$this->organisation->id}.edit"]))->toBeTrue();
+
+    actingAs($user);
+
+    $response = post(route('grp.org.hr.holidays.store', $this->organisation->slug), [
+        'type'         => \App\Enums\HumanResources\Holiday\HolidayTypeEnum::PUBLIC->value,
+        'label'        => 'Día de la Hispanidad',
+        'from'         => '2026-10-12',
+        'to'           => '2026-10-12',
+        'is_recurring' => true,
+    ]);
+
+    $response->assertRedirect();
+
+    $holiday = \App\Models\HumanResources\Holiday::where('organisation_id', $this->organisation->id)
+        ->where('label', 'Día de la Hispanidad')
+        ->first();
+
+    expect($holiday)->not->toBeNull()
+        ->and($holiday->year)->toBe(2026)
+        ->and(data_get($holiday->data, 'is_recurring'))->toBeTrue();
+});
+
+test('clocking photo does not appear in the group uploaded images gallery', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $workplace = StoreWorkplace::make()->action($this->organisation, [
+        'name' => 'Photo Workplace',
+        'type' => \App\Enums\HumanResources\Workplace\WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clocking = StoreClocking::make()->action($this->organisation, $workplace, $employee, [
+        'type' => 'in',
+        'at'   => now()->toDateTimeString(),
+    ], 0, true);
+
+    $imagePath = tempnam(sys_get_temp_dir(), 'clocking-photo-') . '.png';
+    file_put_contents($imagePath, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+    \App\Actions\HumanResources\Clocking\Traits\SetClockingPhotoFromImage::run($clocking, $imagePath, 'selfie.png', 'png');
+    unlink($imagePath);
+
+    $clocking->refresh();
+
+    expect($clocking->image_id)->not->toBeNull()
+        ->and($clocking->image->collection_name)->toBe('clocking_photo')
+        ->and(
+            \App\Models\Helpers\Media::where('group_id', $this->group->id)
+                ->where('collection_name', 'image')
+                ->pluck('id')
+                ->all()
+        )->not->toContain($clocking->image_id);
+});
+
+test('a staff avatar is not offered in the group image gallery', function () {
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    $imagePath = tempnam(sys_get_temp_dir(), 'avatar-') . '.png';
+    file_put_contents($imagePath, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+    \App\Actions\Helpers\Media\SaveModelImage::run(
+        model: $employee,
+        imageData: ['path' => $imagePath, 'originalName' => 'me.png', 'extension' => 'png'],
+        scope: 'avatar'
+    );
+    unlink($imagePath);
+
+    $employee->refresh();
+
+    expect($employee->image_id)->not->toBeNull()
+        ->and($employee->image->collection_name)->toBe('avatar')
+        ->and(
+            \App\Models\Helpers\Media::where('group_id', $this->group->id)
+                ->where('collection_name', 'image')
+                ->pluck('id')
+                ->all()
+        )->not->toContain($employee->image_id);
 });

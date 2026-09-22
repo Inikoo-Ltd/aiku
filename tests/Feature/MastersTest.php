@@ -3362,3 +3362,109 @@ test('recommended trade units follow the linked trade unit family, not the famil
     expect($recommended)->toContain($tradeUnit->id)
         ->and($recommended)->toContain($prefixOnlyTradeUnit->id);
 });
+
+test('store master variant is blocked while a product waits for its cutover retirement decision', function () {
+    $masterShop   = createFreshMasterShop();
+    $masterFamily = StoreMasterFamily::make()->action(
+        StoreMasterDepartment::make()->action($masterShop, ['code' => 'RTD-DEP-'.uniqid(), 'name' => 'Retirement Dept']),
+        ['code' => 'RTD-FAM-'.uniqid(), 'name' => 'Retirement Family']
+    );
+    $leader = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RTD-LEAD-'.uniqid(),
+        'name'    => 'Retired Leader',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $originalData           = $product->data;
+    $originalMasterProduct  = $product->master_product_id;
+    $product->updateQuietly([
+        'master_product_id' => $leader->id,
+        'data'              => array_merge($product->data ?? [], ['retire_at_cutover' => true, 'replaced_by_product_id' => $product->id]),
+    ]);
+
+    try {
+        $response = post(route('grp.models.master_variant.store', $masterFamily->id), [
+            'data_variants' => [
+                'variants' => [['label' => 'Size', 'options' => ['S']]],
+                'groupBy'  => 'Size',
+                'products' => [$leader->id => ['is_leader' => true, 'product' => ['id' => $leader->id]]],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('leader_id');
+        expect($leader->refresh()->master_variant_id)->toBeNull();
+    } finally {
+        $product->updateQuietly(['master_product_id' => $originalMasterProduct, 'data' => $originalData]);
+    }
+});
+
+test('master products can be looked up by the codes pasted into the ordering tab', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PASTE-DEP-'.uniqid(),
+        'name' => 'Paste order department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PASTE-FAM-'.uniqid(),
+        'name' => 'Paste order family',
+    ]);
+    $otherFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PASTE-OTHER-'.uniqid(),
+        'name' => 'Paste order other family',
+    ]);
+
+    $first = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PASTE-A1',
+        'name'    => 'Paste asset one',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $second = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PASTE-A2',
+        'name'    => 'Paste asset two',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 11,
+        'stocks'  => [],
+    ]);
+    $outsider = StoreMasterAsset::make()->action($otherFamily, [
+        'code'    => 'PASTE-OUT',
+        'name'    => 'Paste asset from another family',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12,
+        'stocks'  => [],
+    ]);
+
+    $codes = collect(get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterFamily->id,
+        'codes'                 => 'paste-a2, PASTE-A1 ,PASTE-OUT,PASTE-NOPE',
+    ]))->assertOk()->json('data'))->pluck('code');
+
+    expect($codes->all())->toContain($first->code, $second->code)
+        ->and($codes->all())->not->toContain($outsider->code);
+
+    get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterDepartment->id,
+        'codes'                 => 'PASTE-A1',
+    ]))->assertForbidden();
+
+    get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterFamily->id,
+    ]))->assertSessionHasErrors('codes');
+
+    $shopCodes = collect(get(route('grp.json.master_shop.products_by_codes', [
+        'masterShop' => $masterShop->id,
+        'codes'      => 'PASTE-A1,PASTE-OUT',
+    ]))->assertOk()->json('data'))->pluck('code');
+
+    expect($shopCodes->all())->toContain($first->code, $outsider->code);
+});

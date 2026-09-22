@@ -26,16 +26,20 @@ class GetEcomOrderActions
 
         $generateInvoiceLabel = __('Generate Invoice');
 
-        $hasShipment = null;//only used in bellow states
-        if ($order->is_shipping_by_external && $order->state == OrderStateEnum::PACKED) {
-            $hasShipment = false;
-
+        /**
+         * Ready to invoice once the warehouse has finished with it: a carrier label when the
+         * sales channel ships it, otherwise the parcels the packer recorded. Without the second
+         * case an office user had no way to invoice a packed order shipped by us (HELP-3220).
+         */
+        $isReadyToInvoice = false;
+        if ($order->state == OrderStateEnum::PACKED) {
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
             if ($deliveryNote) {
-                $hasShipment = $deliveryNote->shipments()->count() > 0;
+                $isReadyToInvoice = $order->is_shipping_by_external
+                    ? $deliveryNote->shipments()->count() > 0
+                    : count($deliveryNote->parcels ?? []) > 0;
             }
-
         }
 
         /** Only on an order actually held for a missing address, otherwise it reads as "this customer has no address" (HELP-3126) */
@@ -197,7 +201,7 @@ class GetEcomOrderActions
 
                 OrderStateEnum::PACKED => [
 
-                    ($order->is_shipping_by_external && $hasShipment && $order->invoices()->count() == 0) ?
+                    ($isReadyToInvoice && $order->invoices()->count() == 0) ?
                         [
                             'type'    => 'button',
                             'style'   => '',
@@ -293,6 +297,7 @@ class GetEcomOrderActions
                         'icon'                 => 'fas fa-skull',
                         'label'                => __('Cancel'),
                         'cancellation_reasons' => OrderCancellationReasonEnum::valuesWithLabels(),
+                        'is_paid'              => $order->payment_amount > 0,
                         'route'                => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.order.state.cancelled',

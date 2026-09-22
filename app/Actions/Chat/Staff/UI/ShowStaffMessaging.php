@@ -50,7 +50,7 @@ class ShowStaffMessaging extends OrgAction
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
-        $title        = __('Messaging');
+        $title        = __('Internal Messages');
         $conversation = $this->conversation;
 
         return Inertia::render(
@@ -85,7 +85,7 @@ class ShowStaffMessaging extends OrgAction
                         'route' => [
                             'name' => 'grp.chat.staff.index',
                         ],
-                        'label' => __('Messaging'),
+                        'label' => __('Internal Messages'),
                     ],
                 ],
             ]

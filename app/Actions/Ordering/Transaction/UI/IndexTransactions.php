@@ -157,6 +157,16 @@ class IndexTransactions extends OrgAction
         return $transactions;
     }
 
+    private function orderHasBatchCodes(Order $order): bool
+    {
+        return DB::table('pickings')
+            ->join('delivery_note_items', 'delivery_note_items.id', '=', 'pickings.delivery_note_item_id')
+            ->join('transactions', 'transactions.id', '=', 'delivery_note_items.transaction_id')
+            ->where('transactions.order_id', $order->id)
+            ->whereNotNull('pickings.batch_code_id')
+            ->exists();
+    }
+
     public function tableStructure(Organisation|Shop|Customer|Order|Invoice|Asset|CustomerClient $parent, $tableRows = null, $prefix = null, bool $withMargins = false): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix, $tableRows, $withMargins) {
@@ -180,7 +190,7 @@ class IndexTransactions extends OrgAction
             $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
 
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            if ($parent instanceof Order && $parent->deliveryNotes()->exists()) {
+            if ($parent instanceof Order && $this->orderHasBatchCodes($parent)) {
                 $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
             }
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');

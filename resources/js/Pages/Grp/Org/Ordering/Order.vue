@@ -74,7 +74,8 @@ import {
     faTrash,
     faPercentage,
     faSackDollar,
-    faUndo as falUndo
+    faUndo as falUndo,
+    faInfoCircle,
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -104,7 +105,7 @@ import { Icon as IconTS } from "@/types/Utils/Icon"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle)
 
 interface OrderCharge {
     name: string
@@ -556,14 +557,15 @@ const generateRouteDeliveryNote = (slug: string) => {
 const cancelLoading = ref(false)
 const isModalCancelOrder = ref(false)
 const cancelOrderAction = ref<any>(null)
-const cancelOrderData = ref<{ cancellation_reason: string | null, cancellation_notes: string }>({
+const cancelOrderData = ref<{ cancellation_reason: string | null, cancellation_notes: string, refund_to_original_payment: boolean }>({
     cancellation_reason: null,
-    cancellation_notes: ''
+    cancellation_notes: '',
+    refund_to_original_payment: false
 })
 
 const openCancelOrderModal = (action) => {
     cancelOrderAction.value = action
-    cancelOrderData.value = { cancellation_reason: null, cancellation_notes: '' }
+    cancelOrderData.value = { cancellation_reason: null, cancellation_notes: '', refund_to_original_payment: false }
     isModalCancelOrder.value = true
 }
 
@@ -2962,7 +2964,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     {{ ctrans("Cancel Order") }}
                 </h2>
                 <p class="mt-1 text-sm text-gray-500">
-                    {{ ctrans("The reason will be shown to the customer in the credit balance notification.") }}
+                    {{ ctrans("The reason is shown to the customer in the store credit email, which is not sent when the money is refunded to the original payment method.") }}
                 </p>
             </div>
 
@@ -2985,6 +2987,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <div class="mt-1">
                         <PureTextarea v-model="cancelOrderData.cancellation_notes" rows="3" full
                             :placeholder="ctrans('Add more detail for the customer, e.g. which item is out of stock')" />
+                    </div>
+                </div>
+
+                <div v-if="cancelOrderAction?.is_paid">
+                    <label class="block text-sm font-medium leading-6">
+                        {{ ctrans("Paid amount") }}
+                    </label>
+                    <div class="mt-1 flex flex-col gap-y-2 text-sm">
+                        <label class="flex items-center gap-x-2 cursor-pointer">
+                            <RadioButton v-model="cancelOrderData.refund_to_original_payment" :value="false" />
+                            {{ ctrans("Keep as store credit, the customer is emailed about the credit") }}
+                        </label>
+                        <label class="flex items-center gap-x-2 cursor-pointer">
+                            <RadioButton v-model="cancelOrderData.refund_to_original_payment" :value="true" />
+                            {{ ctrans("Customer wants a refund to the original payment method, no credit email is sent") }}
+                        </label>
                     </div>
                 </div>
             </div>
@@ -3012,6 +3030,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <div v-for="check of proforma_invoice.check_list" :key="check.key" class="flex items-center gap-2">
                     <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
                     <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
+                    <FontAwesomeIcon v-if="check.tooltip" v-tooltip="check.tooltip" icon="fal fa-info-circle" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
             </div>
 

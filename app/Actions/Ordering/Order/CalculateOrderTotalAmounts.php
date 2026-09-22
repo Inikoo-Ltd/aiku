@@ -71,7 +71,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         $taxBreakdown = $this->getOrderTaxBreakdown($order);
 
         $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
-        $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
+        $taxAmount   = $order->getMarketplaceTaxAmount() ?? round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
         $totalAmount = $netAmount + $taxAmount;
         $grpNet      = $netAmount * $order->grp_exchange;
         $orgNet      = $netAmount * $order->org_exchange;

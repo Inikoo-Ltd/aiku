@@ -11,6 +11,7 @@ namespace App\Actions\Production\Production\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Production\PartnerShippingList\GetPartnerOrdersInTheMaking;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
@@ -154,6 +155,11 @@ class ShowOperationsDashboard extends OrgAction
                                 ->whereDate('ended_at', now()->toDateString())
                                 ->sum('quantity_made'),
                     ],
+                ],
+                'partner_orders' => [
+                    'can_create'    => $request->user()->authTo(['org-supervisor.'.$this->organisation->id, "productions_operations.{$production->id}.orchestrate"]),
+                    'currency_code' => $this->organisation->currency->code,
+                    'orders'        => GetPartnerOrdersInTheMaking::run($this->organisation),
                 ],
                 'command_control' => [
                     'floor_route' => [

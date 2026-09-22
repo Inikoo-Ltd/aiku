@@ -12,6 +12,7 @@ namespace App\Actions\Ordering\Transaction;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNoteTotalAmounts;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -84,6 +85,7 @@ class UpdateTransactionProductQuantityOrdered extends OrgAction
             }
 
             CalculateOrderTotalAmounts::run($order);
+            UpdateOrderPaymentsStatus::run($order->refresh());
             foreach ($deliveryNotes as $deliveryNote) {
                 CalculateDeliveryNoteTotalAmounts::run($deliveryNote);
             }

@@ -10,7 +10,7 @@ import "../css/app.css";
 import { createSSRApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
 import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
-import { i18nVue } from "laravel-vue-i18n";
+import { i18nVue, loadLanguageAsync } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
 import { createPinia } from "pinia";
 
@@ -22,6 +22,7 @@ import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
 import { ctrans } from "@/Composables/useTrans";
+import { irisI18nOptions, loadLocaleMessages, normalizeLocale } from "@/Composables/useIrisTranslations";
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -40,6 +41,9 @@ const MyPreset = definePreset(Aura, {
     }
   }
 });
+
+const irisLocale = normalizeLocale(document.documentElement.lang);
+const irisLocaleMessages = loadLocaleMessages(irisLocale);
 
 createInertiaApp(
   {
@@ -68,7 +72,8 @@ createInertiaApp(
 
         return page
     },
-    setup({ el, App, props, plugin }) {
+    async setup({ el, App, props, plugin }) {
+      const localeMessages = await irisLocaleMessages;
       const app = createSSRApp({ render: () => h(App, props) });
       if (import.meta.env.VITE_SENTRY_IRIS_DSN) {
         const initSentry = () => import("@sentry/vue").then(({ init: sentryInit, browserTracingIntegration: sentryTracing }) => {
@@ -109,15 +114,11 @@ createInertiaApp(
             }
           }
         }).
-        use(i18nVue, {
-          fallbackMissingTranslations: true,
-          resolve                    : async (lang) => {
-            const languages = import.meta.glob(
-              "../../lang/*.json");
-            return await languages[`../../lang/${lang}.json`]();
-          }
-        }).
-        mount(el);
+        use(i18nVue, irisI18nOptions(irisLocale, localeMessages));
+
+      await loadLanguageAsync(irisLocale);
+
+      app.mount(el);
 
     },
     progress: {

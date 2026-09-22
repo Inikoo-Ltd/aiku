@@ -335,6 +335,7 @@ watch(() => currentTab.value, (tab) => {
         :key="currentTab"
         :tab="currentTab"
         :data="currentTab == 'index_ordering' ?  localData : props[currentTab]"
+        :pasteLookupRoute="currentTab === 'index_ordering' ? { name: 'grp.json.master_product_category.products_by_codes', parameters: { masterProductCategory: familyId } } : null"
         :taxPresetOptions="taxPresetOptions"
         :taxBulkSignal="taxBulkSignal"
         :bulkEditSaveSignal="bulkEditSaveSignal"

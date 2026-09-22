@@ -315,11 +315,11 @@ const getMessages = async (loadMore = false) => {
 const sendMessage = async ({
     text,
     type,
-    file,
+    files,
 }: {
     text: string
     type: "text" | "image" | "file"
-    file?: File | null
+    files?: File[]
 }) => {
     if (!chatSession.value?.ulid) return
     const tempId = `tmp-${crypto.randomUUID()}`
@@ -330,7 +330,7 @@ const sendMessage = async ({
         message_text: text ?? "",
         message_type: type,
         media_url:
-            type === "image" && file ? URL.createObjectURL(file) : null,
+            type === "image" && files?.[0] ? URL.createObjectURL(files[0]) : null,
         sender_type: isLoggedIn.value ? "user" : "guest",
         created_at: new Date().toISOString(),
         _status: "sending",
@@ -345,8 +345,10 @@ const sendMessage = async ({
         if (isLoggedIn.value && layout.user?.id) {
             formData.append("sender_id", layout.user.id)
         }
-        if (file) {
-            formData.append(type === "image" ? "image" : "file", file)
+        if (files?.length === 1) {
+            formData.append(type === "image" ? "image" : "file", files[0])
+        } else {
+            files?.forEach((file) => formData.append("attachments[]", file))
         }
 
         await axios.post(
@@ -391,6 +393,20 @@ const initWebSocket = () => {
     bindConnectionRecovery()
 
     const notifiedMessageIds = new Set<number>()
+
+    // An agent took a message back: the words go at once, the fact that something was
+    // withdrawn stays, so nothing disappears from under the customer unexplained.
+    chatChannel.listen(".message.retracted", (e: any) => {
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(e?.id))
+        if (msg) {
+            msg.message_text = null
+            msg.original = null
+            msg.translations = []
+            msg.is_retracted = true
+            msg.retracted_at = e?.retracted_at ?? new Date().toISOString()
+            msg.retraction_reason = e?.retraction_reason ?? null
+        }
+    })
 
     chatChannel.listen(".message", (e: any) => {
         const msg = e.message

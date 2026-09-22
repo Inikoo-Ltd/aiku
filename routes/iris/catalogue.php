@@ -9,6 +9,7 @@
 
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Iris\Catalogue\GetProductDetail;
+use App\Actions\Iris\Catalogue\PdfIrisProductIngredientsLabel;
 use App\Actions\Retina\Dropshipping\Bundle\UI\IndexRetinaBulkProductImages;
 use App\Actions\Retina\Dropshipping\Bundle\UI\ShowRetinaBundle;
 use App\Actions\Web\Webpage\Iris\ShowIrisCollection;
@@ -26,6 +27,7 @@ Route::get('sub-department/{subDepartment}', ShowIrisSubDepartment::class)->name
 Route::get('family/{family}', ShowIrisFamily::class)->name('family.show');
 Route::get('collection/{collection}', ShowIrisCollection::class)->name('collection.show');
 Route::get('products/{product}', ShowIrisProduct::class)->name('product.show');
+Route::get('product/{product}/ingredients-label.pdf', PdfIrisProductIngredientsLabel::class)->name('product.ingredients_label');
 
 Route::prefix('feeds')->as('feeds.')->middleware(['retina-auth:retina', 'throttle:iris-feeds'])->group(function () {
     Route::get('product-category/{productCategory}/download.img', [DownloadIrisProduct::class, 'imagesInProductCategory'])->name('product_category.download_img');

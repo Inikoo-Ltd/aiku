@@ -12,7 +12,9 @@ use App\Actions\Helpers\Ticket\UI\IndexTickets;
 use App\Actions\OrgAction;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Http\Resources\Tasks\StaffTaskResource;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Models\Tasks\StaffTask;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowStaffTasksBoard extends OrgAction
 {
+    use WithStaffTasksScope;
+
     public function handle(Group $group, string $interval): array
     {
         $tasks = IndexTickets::make()->whereCreatedIn(StaffTask::query()->where('group_id', $group->id), $interval, 'staff_tasks.created_at')
@@ -38,7 +42,21 @@ class ShowStaffTasksBoard extends OrgAction
 
     public function asController(ActionRequest $request): array
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $this->initialisationFromTasksScope($request);
+
+        return $this->handle($this->group, $this->createdInterval());
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisationFromTasksScope($request, $organisation);
+
+        return $this->handle($this->group, $this->createdInterval());
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    {
+        $this->initialisationFromTasksScope($request, $organisation, $shop);
 
         return $this->handle($this->group, $this->createdInterval());
     }
@@ -54,8 +72,8 @@ class ShowStaffTasksBoard extends OrgAction
 
         return Inertia::render('Tasks/StaffTasksBoard', [
             'breadcrumbs' => array_merge(
-                ShowStaffTasks::make()->getBreadcrumbs(),
-                [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tasks.board'], 'label' => __('Board')]]]
+                $this->tasksBreadcrumbs(),
+                [['type' => 'simple', 'simple' => ['route' => $this->tasksRoute('board'), 'label' => __('Board')]]]
             ),
             'title'       => $title,
             'pageHead'    => ['title' => $title, 'icon' => ['icon' => ['fal', 'fa-columns'], 'title' => $title]],

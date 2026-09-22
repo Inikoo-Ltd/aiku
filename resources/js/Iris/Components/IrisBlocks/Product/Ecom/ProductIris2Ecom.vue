@@ -41,7 +41,8 @@ import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductB
 import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
@@ -316,6 +317,12 @@ const variantNavigation = ref<{ prevEl: HTMLElement | null; nextEl: HTMLElement 
     nextEl: null
 })
 
+const isVariantSwiperLocked = ref(true)
+
+const syncVariantNavigationState = (swiper: any) => {
+    isVariantSwiperLocked.value = swiper.isLocked ?? (swiper.isBeginning && swiper.isEnd)
+}
+
 onMounted(async () => {
     await nextTick()
     variantNavigation.value.prevEl = variantPrevEl.value
@@ -356,8 +363,8 @@ onMounted(async () => {
                         <span class="
                             font-medium text-sm text-gray-800
                             truncate max-w-[420px]
-                        " :title="`${trans('Download Marketing Materials for')} ${product.name}`">
-                            {{ trans('Download Marketing Materials for') }} {{ product.name }}
+                        " :title="`${ctrans('Download Marketing Materials for')} ${product.name}`">
+                            {{ ctrans('Download Marketing Materials for') }} {{ product.name }}
                         </span>
                     </a>
                 </div>
@@ -379,8 +386,8 @@ onMounted(async () => {
                                 <span :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
                                     {{
                                         product.stock > 0
-                                            ? `${trans("In stock")}`
-                                            : trans("Out Of Stock")
+                                            ? `${ctrans("In stock")}`
+                                            : useOutOfStockLabel(product)
                                     }}
                                 </span>
                             </div>
@@ -400,8 +407,8 @@ onMounted(async () => {
                                 <span>
                                     {{
                                         product.is_back_in_stock
-                                            ? trans("will be notified when in Stock")
-                                            : trans("Remind me")
+                                            ? ctrans("will be notified when in Stock")
+                                            : ctrans("Remind me")
                                     }}
                                 </span>
                             </button>
@@ -450,13 +457,13 @@ onMounted(async () => {
                     <!-- Section: RRP -->
                     <div class="text-right">
                         <template v-if="product.rrp_per_unit > 0">
-                            <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                            <p class="text-xs text-black leading-tight">{{ ctrans("Retail Price") }}:</p>
                             <p class="text-xs text-black leading-tight font-semibold">
                                 {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                             </p>
                         </template>
 
-                        <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
+                        <p class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
                         <div class="flex items-baseline justify-end gap-1 text-black">
                             <span class="text-xs font-semibold">
                                 {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
@@ -505,13 +512,13 @@ onMounted(async () => {
                 <div class="flex gap-2 mt-4 mb-4">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <EcomAddToBasketv2 v-if="product.stock > 0" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"  class="button-basket"/>
-                        <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
+                        <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
                     </div>
 
                     <LinkIris v-else :href="urlLoginWithRedirect()"
                         class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
-                        {{ trans("Login or Register for Wholesale Prices") }}
+                        {{ ctrans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
                 </div>
 
@@ -522,14 +529,14 @@ onMounted(async () => {
                         <span class="ml-1">{{ selectedVariantLabel }}</span>
                     </div>
 
-                    <div class="relative px-5">
-                        <button ref="variantPrevEl" type="button"
-                            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800">
+                    <div class="group/variants relative px-5">
+                        <button v-show="!isVariantSwiperLocked" ref="variantPrevEl" type="button"
+                            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
                             <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" />
                         </button>
 
-                        <button ref="variantNextEl" type="button"
-                            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800">
+                        <button v-show="!isVariantSwiperLocked" ref="variantNextEl" type="button"
+                            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
                             <FontAwesomeIcon :icon="faChevronRight" class="text-sm" />
                         </button>
 
@@ -538,7 +545,10 @@ onMounted(async () => {
                             640: { slidesPerView: 4 },
                             768: { slidesPerView: 4 },
                             1024: { slidesPerView: 4 }
-                        }">
+                        }"
+                            @swiper="syncVariantNavigationState" @resize="syncVariantNavigationState"
+                            @breakpoint="syncVariantNavigationState" @lock="syncVariantNavigationState"
+                            @unlock="syncVariantNavigationState">
                             <SwiperSlide v-for="item in listProducts" :key="item.id">
                                 <button @click="onSelectProduct(item)" :disabled="item.code === product.code" class="group relative w-full rounded-lg border bg-white
                      overflow-hidden transition flex flex-col" :class="item.code === product.code
@@ -553,18 +563,12 @@ onMounted(async () => {
 
                                         <FontAwesomeIcon v-else :icon="faImage"
                                             class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                    </div>
 
-                                        <!-- VARIANT LABEL (HOVER ONLY) -->
-                                        <div class="pointer-events-none absolute bottom-1 left-1 right-1
-                         opacity-0 translate-y-1
-                         transition-all duration-200
-                         group-hover:opacity-100 group-hover:translate-y-0">
-                                            <span class="block text-[11px] font-medium px-2 py-0.5 rounded
-                           text-center truncate
-                           bg-gray-900/80 text-white backdrop-blur">
-                                                {{ item.variant_label }}
-                                            </span>
-                                        </div>
+                                    <div v-if="item.variant_label" class="p-1">
+                                        <span class="block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700">
+                                            {{ item.variant_label }}
+                                        </span>
                                     </div>
                                 </button>
                             </SwiperSlide>
@@ -585,7 +589,7 @@ onMounted(async () => {
                         <span class="
                              font-medium text-sm underline text-gray-800
                             truncate max-w-[420px]
-                        " :title="`${trans('Download Marketing Materials for')} ${product.name}`">
+                        " :title="`${ctrans('Download Marketing Materials for')} ${product.name}`">
                             <div v-html="fieldValue?.appointment_data?.text"></div>
                         </span>
                     </div>
@@ -615,13 +619,13 @@ onMounted(async () => {
 
                             <!-- Origin -->
                             <div v-if="product?.specifications?.origin" class="spec-row">
-                                <div class="spec-cell">{{ trans('Origin') }}</div>
+                                <div class="spec-cell">{{ ctrans('Origin') }}</div>
                                 <div class="spec-cell">{{ product.specifications.origin }}</div>
                             </div>
 
                             <!-- Net Weight -->
                             <div v-if="product?.specifications?.marketing_weight" class="spec-row">
-                                <div class="spec-cell">{{ trans('Net Weight') }}</div>
+                                <div class="spec-cell">{{ ctrans('Net Weight') }}</div>
                                 <div class="spec-cell">
                                     {{ product.specifications.marketing_weight }} g/{{ product.specifications.unit }}
                                 </div>
@@ -629,37 +633,37 @@ onMounted(async () => {
 
                             <!-- Shipping Weight -->
                             <div v-if="product?.specifications?.gross_weight" class="spec-row">
-                                <div class="spec-cell">{{ trans("Shipping Weight") }}</div>
+                                <div class="spec-cell">{{ ctrans("Shipping Weight") }}</div>
                                 <div class="spec-cell">{{ product.specifications.gross_weight }} g</div>
                             </div>
 
                             <!-- Dimensions -->
                             <div v-if="product?.specifications?.dimensions" class="spec-row">
-                                <div class="spec-cell">{{ trans("Dimensions") }}</div>
+                                <div class="spec-cell">{{ ctrans("Dimensions") }}</div>
                                 <div class="spec-cell">{{ product.specifications.dimensions }}</div>
                             </div>
 
                             <!-- Ingredients -->
                             <div v-if="product?.specifications?.ingredients" class="spec-row">
-                                <div class="spec-cell">{{ trans('Materials/Ingredients') }}</div>
+                                <div class="spec-cell">{{ ctrans('Materials/Ingredients') }}</div>
                                 <div class="spec-cell">{{ product.specifications.ingredients }}</div>
                             </div>
 
                             <!-- Barcode -->
                             <div v-if="product?.specifications?.barcode" class="spec-row">
-                                <div class="spec-cell">{{ trans('Barcode') }}</div>
+                                <div class="spec-cell">{{ ctrans('Barcode') }}</div>
                                 <div class="spec-cell">{{ product.specifications.barcode }}</div>
                             </div>
 
                             <!-- CPNP -->
                             <div v-if="product?.specifications?.cpnp" class="spec-row">
-                                <div class="spec-cell">{{ trans('cpnp') }}</div>
+                                <div class="spec-cell">{{ ctrans('cpnp') }}</div>
                                 <div class="spec-cell">{{ product.specifications.cpnp }}</div>
                             </div>
 
                             <!-- Origin Country -->
                             <div v-if="countriesOfOrigin.length" class="spec-row">
-                                <div class="spec-cell">{{ trans('Origin Country') }}</div>
+                                <div class="spec-cell">{{ ctrans('Origin Country') }}</div>
 
                                 <div class="spec-cell flex flex-col gap-1">
                                     <div v-for="country in countriesOfOrigin" :key="country.code"
@@ -702,7 +706,7 @@ onMounted(async () => {
             </div>
 
             <button v-if="product.description_extra" @click="toggleExpanded" class="mt-2 text-sm underline">
-                {{ expanded ? trans("Show Less") : trans("Read More") }}
+                {{ expanded ? ctrans("Show Less") : ctrans("Read More") }}
             </button>
         </div>
     </div>
@@ -726,8 +730,8 @@ onMounted(async () => {
                 <span class="text-sm font-medium" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
                     {{
                         product.stock > 0
-                            ? `${trans('In stock')}`
-                            : trans('Out Of Stock')
+                            ? `${ctrans('In stock')}`
+                            : useOutOfStockLabel(product)
                     }}
                 </span>
 
@@ -767,13 +771,13 @@ onMounted(async () => {
 
                 <div class="text-right">
                     <template v-if="product.rrp_per_unit > 0">
-                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                        <p class="text-xs text-black leading-tight">{{ ctrans("Retail Price") }}:</p>
                         <p class="text-xs text-black leading-tight font-semibold">
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                         </p>
                     </template>
 
-                    <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
+                    <p class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
                     <div class="flex items-baseline justify-end gap-1 text-black">
                         <span class="text-xs font-semibold">
                             {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
@@ -834,15 +838,15 @@ onMounted(async () => {
                 <span>
                     {{
                         product.is_back_in_stock
-                            ? trans('will be notified when in Stock')
-                            : trans('Remind me')
+                            ? ctrans('will be notified when in Stock')
+                            : ctrans('Remind me')
                     }}
                 </span>
             </button>
 
             <!-- ADD TO CART -->
             <EcomAddToBasketv2 v-if="product.stock > 0" ref="_mobileAddToBasket" v-model:product="product" :customerData="customerData" :key="keyCustomer" class="w-full button-basket" />
-            <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
+            <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
 
             <!-- DOWNLOAD -->
             <a :href="marketingMaterialUrl"
@@ -850,7 +854,7 @@ onMounted(async () => {
                 class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-[#f9f8f5] ">
                 <FontAwesomeIcon :icon="faArrowToBottom" />
                 <span class="text-sm font-medium truncate">
-                    {{ trans('Download Marketing Materials for') }} {{ product.name }}
+                    {{ ctrans('Download Marketing Materials for') }} {{ product.name }}
                 </span>
             </a>
 
@@ -904,13 +908,13 @@ onMounted(async () => {
 
                             <!-- Origin -->
                             <div v-if="product?.specifications?.origin" class="spec-row">
-                                <div class="spec-cell">{{ trans('Origin') }}</div>
+                                <div class="spec-cell">{{ ctrans('Origin') }}</div>
                                 <div class="spec-cell">{{ product.specifications.origin }}</div>
                             </div>
 
                             <!-- Net Weight -->
                             <div v-if="product?.specifications?.marketing_weight" class="spec-row">
-                                <div class="spec-cell">{{ trans('Net Weight') }}</div>
+                                <div class="spec-cell">{{ ctrans('Net Weight') }}</div>
                                 <div class="spec-cell">
                                     {{ product.specifications.marketing_weight }} g/{{ product.specifications.unit }}
                                 </div>
@@ -918,37 +922,37 @@ onMounted(async () => {
 
                             <!-- Shipping Weight -->
                             <div v-if="product?.specifications?.gross_weight" class="spec-row">
-                                <div class="spec-cell">{{ trans("Shipping Weight") }}</div>
+                                <div class="spec-cell">{{ ctrans("Shipping Weight") }}</div>
                                 <div class="spec-cell">{{ product.specifications.gross_weight }} g</div>
                             </div>
 
                             <!-- Dimensions -->
                             <div v-if="product?.specifications?.dimensions" class="spec-row">
-                                <div class="spec-cell">{{ trans("Dimensions") }}</div>
+                                <div class="spec-cell">{{ ctrans("Dimensions") }}</div>
                                 <div class="spec-cell">{{ product.specifications.dimensions }}</div>
                             </div>
 
                             <!-- Ingredients -->
                             <div v-if="product?.specifications?.ingredients" class="spec-row">
-                                <div class="spec-cell">{{ trans('Materials/Ingredients') }}</div>
+                                <div class="spec-cell">{{ ctrans('Materials/Ingredients') }}</div>
                                 <div class="spec-cell">{{ product.specifications.ingredients }}</div>
                             </div>
 
                             <!-- Barcode -->
                             <div v-if="product?.specifications?.barcode" class="spec-row">
-                                <div class="spec-cell">{{ trans('Barcode') }}</div>
+                                <div class="spec-cell">{{ ctrans('Barcode') }}</div>
                                 <div class="spec-cell">{{ product.specifications.barcode }}</div>
                             </div>
 
                             <!-- CPNP -->
                             <div v-if="product?.specifications?.cpnp" class="spec-row">
-                                <div class="spec-cell">{{ trans('cpnp') }}</div>
+                                <div class="spec-cell">{{ ctrans('cpnp') }}</div>
                                 <div class="spec-cell">{{ product.specifications.cpnp }}</div>
                             </div>
 
                             <!-- Origin Country -->
                             <div v-if="countriesOfOrigin.length" class="spec-row">
-                                <div class="spec-cell">{{ trans('Origin Country') }}</div>
+                                <div class="spec-cell">{{ ctrans('Origin Country') }}</div>
 
                                 <div class="spec-cell flex flex-col gap-1">
                                     <div v-for="country in countriesOfOrigin" :key="country.code"
@@ -985,7 +989,7 @@ onMounted(async () => {
                 <div v-html="product.description" />
                 <div v-if="expanded" v-html="product.description_extra" class="mt-2" />
                 <button v-if="product.description_extra" @click="toggleExpanded" class="underline text-sm mt-2">
-                    {{ expanded ? trans('Show Less') : trans('Read More') }}
+                    {{ expanded ? ctrans('Show Less') : ctrans('Read More') }}
                 </button>
             </div>
         </div>

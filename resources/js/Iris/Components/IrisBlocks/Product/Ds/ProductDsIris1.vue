@@ -9,7 +9,8 @@ import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductConten
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
 import Image from "@common/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
 import { Image as ImageTS } from "@/types/Image"
 import { getStyles } from "@/Composables/styles"
 import ProductPrices from "@/Components/CMS/Webpage/Product1/ProductPrices.vue"
@@ -138,10 +139,10 @@ const openBundlePanel = (product:any) => {
                                     <span>
                                         {{
                                             product?.stock >= 250
-                                                ? trans("Unlimited quantity")
+                                                ? ctrans("Unlimited quantity")
                                                 : product.stock > 0
-                                                    ? trans("In stock") + ` (${product.stock} ` + trans("available") + `)`
-                                        : trans("Out Of Stock")
+                                                    ? ctrans("In stock") + ` (${product.stock} ` + ctrans("available") + `)`
+                                        : useOutOfStockLabel(product)
                                         }}
                                     </span>
                                 </div>
@@ -150,15 +151,15 @@ const openBundlePanel = (product:any) => {
                             <!-- RIGHT BUTTON -->
                             <button v-if="!product.stock && layout?.outboxes?.oos_notification?.state === 'active'"
                                 v-tooltip="product?.back_in_stock
-                                    ? trans('You will be notify via email when the product back in stock')
-                                    : trans('Click to be notified via email when the product back in stock')" 
+                                    ? ctrans('You will be notify via email when the product back in stock')
+                                    : ctrans('Click to be notified via email when the product back in stock')" 
                                     @click="product?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                                 class="inline-flex shrink-0 items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="product?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
                                     :class="product?.back_in_stock ? 'text-green-600' : 'text-gray-600'" />
-                                <span>{{ product?.back_in_stock ? trans("Notified") : trans("Remind me") }}</span>
+                                <span>{{ product?.back_in_stock ? ctrans("Notified") : ctrans("Remind me") }}</span>
                             </button>
                         </div>
 
@@ -216,7 +217,7 @@ const openBundlePanel = (product:any) => {
                         class="flex items-center justify-center transition rounded-md"
                         type="primary"
                         size="sm"
-                        v-tooltip="trans('Add to bundle')"
+                        v-tooltip="ctrans('Add to bundle')"
                     >
                         <FontAwesomeIcon
                             icon="fas fa-layer-group"
@@ -239,7 +240,7 @@ const openBundlePanel = (product:any) => {
 
                     <button v-if="product.description_extra" @click="toggleExpanded"
                         class="mt-1 text-gray-900 text-xs underline focus:outline-none">
-                        {{ expanded ? trans("Show Less") : trans("Read More") }}
+                        {{ expanded ? ctrans("Show Less") : ctrans("Read More") }}
                     </button>
                 </div>
 
@@ -251,7 +252,7 @@ const openBundlePanel = (product:any) => {
                     <div v-if="fieldValue?.paymentData?.length > 0"
                         class="items-center gap-3 border-gray-400 font-bold text-gray-800 xpy-2"
                         :style="getStyles(fieldValue?.information_style?.title)">
-                        <h2 class="!text-base font-bold">{{ trans("Secure Payments") }}:</h2>
+                        <h2 class="!text-base font-bold">{{ ctrans("Secure Payments") }}:</h2>
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
                                 :src="logo.image" :alt="logo.code" loading="lazy" decoding="async" class="h-4 px-1" />
@@ -339,7 +340,7 @@ const openBundlePanel = (product:any) => {
                 :styleData="fieldValue?.information_style" />
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
                 :styleData="fieldValue?.information_style" />
-            <h2 class="!text-sm !font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
+            <h2 class="!text-sm !font-semibold mb-2">{{ ctrans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" loading="lazy" decoding="async" class="h-4 px-1" />

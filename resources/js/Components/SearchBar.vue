@@ -315,6 +315,12 @@ const closeModal = () => {
     searchValue.value = ''
     resetSearchState()
 }
+
+onUnmounted(router.on('start', () => {
+    if (isOpen.value) {
+        closeModal()
+    }
+}))
 </script>
 
 <template>

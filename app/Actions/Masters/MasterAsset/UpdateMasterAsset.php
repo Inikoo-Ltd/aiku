@@ -43,6 +43,7 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -507,6 +508,13 @@ class UpdateMasterAsset extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->strict) {
+            $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
+    }
+
     public function action(MasterAsset $masterAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): MasterAsset
     {
         $this->strict = $strict;

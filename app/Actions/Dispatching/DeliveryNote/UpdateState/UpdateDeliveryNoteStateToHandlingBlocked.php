@@ -8,9 +8,11 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandlingBlocked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -33,9 +35,14 @@ class UpdateDeliveryNoteStateToHandlingBlocked extends OrgAction
         data_set($modelData, 'handling_blocked_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value);
 
-        //todo update order state
+        $deliveryNote = $this->update($deliveryNote, $modelData);
 
-        return $this->update($deliveryNote, $modelData);
+        $order = $deliveryNote->orders->first();
+        if ($order && $deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            UpdateOrderStateToHandlingBlocked::make()->action($order, $deliveryNote);
+        }
+
+        return $deliveryNote;
     }
 
 

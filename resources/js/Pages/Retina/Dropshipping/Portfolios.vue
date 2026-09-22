@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount, inject } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -862,6 +862,7 @@ const extendedColumns = [
 	{ key: "family_code", label: "Family code" },
 	{ key: "family_name", label: "Family name" },
 	{ key: "product_name", label: "Product name" },
+	{ key: "barcode", label: "Barcode (EAN/GTIN)" },
 	{ key: "materials_ingredients", label: "Materials/Ingredients" },
 	{ key: "unit_dimensions", label: "Unit dimensions" },
 	{ key: "unit_net_weight", label: "Unit net weight" },

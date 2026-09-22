@@ -25,10 +25,12 @@ class StoreProductWebpage extends OrgAction
      */
     public function handle(Product $product): Webpage
     {
+        $webpageCode = $this->getWebpageCode($product);
+
         $webpageData = [
             'title'      => $product->name,
-            'code'       => $product->code,
-            'url'        => strtolower($product->code),
+            'code'       => $webpageCode,
+            'url'        => strtolower($webpageCode),
             'sub_type'   => WebpageSubTypeEnum::PRODUCT,
             'type'       => WebpageTypeEnum::CATALOGUE,
             'model_type' => class_basename($product),
@@ -39,6 +41,11 @@ class StoreProductWebpage extends OrgAction
             $product->shop->website,
             $webpageData
         );
+    }
+
+    private function getWebpageCode(Product $product): string
+    {
+        return trim(preg_replace('/[^A-Za-z0-9_-]+/', '-', $product->code), '-');
     }
 
     public function htmlResponse(Webpage $webpage): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse

@@ -53,6 +53,7 @@ class TradeUnitsForMasterResource extends JsonResource
             'description_title'       => $this->description_title,
             'description_extra'       => $this->description_extra,
             'type'                    => $this->type,
+            'is_divisible'            => $tradeUnit->is_divisible,
             'net_weight'              => $this->net_weight,
             'marketing_weight'        => $this->marketing_weight,
             'gross_weight'            => $this->gross_weight,

@@ -62,6 +62,7 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
@@ -2838,7 +2839,13 @@ describe('org supplier sub pages navigation', function () {
 });
 
 describe('partner shopping list', function () {
+    afterEach(function () {
+        DB::rollBack();
+    });
+
     beforeEach(function () {
+        DB::beginTransaction();
+
         $seller = $this->orgPartner->partner;
 
         $sellerShop = $seller->shops()->first();
@@ -3297,6 +3304,84 @@ describe('partner shopping list', function () {
             ->and(collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))->firstWhere('org_stock_id', $sellerOrgStock->id))->toBeNull();
     });
 
+    test('what a partner asked for that is in their bay or on the shelves becomes an order, the rest stays on the list', function () {
+        $seller = $this->orgPartner->partner;
+
+        $stock = StoreStock::make()->action($seller->group, Stock::factory()->definition());
+        $sellerOrgStock = createOrgStocks($seller, [$stock])[0];
+        $product = \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->sellerShop, array_merge(
+            \App\Models\Catalogue\Product::factory()->definition(),
+            [
+                'state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE,
+                'trade_units' => [['id' => $stock->tradeUnits()->firstOrFail()->id, 'quantity' => 1]],
+            ]
+        ));
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        $baySlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $goodsOut, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($baySlot, ['quantity' => 3]);
+
+        $inTheMaking = collect(\App\Actions\Production\PartnerShippingList\GetPartnerOrdersInTheMaking::run($seller))
+            ->firstWhere('org_partner_id', $sellerPartner->id);
+        $pricePerSko = (float) $product->price / (float) $product->orgStocks()->first()->pivot->quantity;
+
+        expect($inTheMaking['location_code'])->toBe($goodsOut->code)
+            ->and($inTheMaking['lines'])->toBe([['id' => $item->id, 'quantity' => 3.0]])
+            ->and($inTheMaking['in_the_bay'])->toBe(['quantity' => 3.0, 'amount' => round(3 * $pricePerSko, 2)])
+            ->and($inTheMaking['on_the_shelves']['quantity'])->toBe(0.0)
+            ->and($inTheMaking['requested']['quantity'])->toBe(2.0);
+
+        $shelf     = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $shelfSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $shelf, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($shelfSlot, ['quantity' => 1]);
+
+        $inTheMaking = collect(\App\Actions\Production\PartnerShippingList\GetPartnerOrdersInTheMaking::run($seller))
+            ->firstWhere('org_partner_id', $sellerPartner->id);
+        expect($inTheMaking['lines'])->toBe([['id' => $item->id, 'quantity' => 4.0]])
+            ->and($inTheMaking['on_the_shelves']['quantity'])->toBe(1.0)
+            ->and($inTheMaking['requested']['quantity'])->toBe(1.0);
+
+        $orders = \App\Actions\Production\PartnerShippingList\StorePartnerOrderFromBay::make()->action($sellerPartner);
+
+        $item->refresh();
+        expect($orders)->toHaveCount(1)
+            ->and($orders[0]->refresh()->state)->not->toBe(OrderStateEnum::CREATING)
+            ->and((float) $orders[0]->net_amount)->toBe(round(4 * $pricePerSko, 2))
+            ->and($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
+            ->and((float) $item->quantity)->toBe(4.0)
+            ->and((float) $item->children()->where('state', ShoppingListItemStateEnum::OPEN)->sum('quantity'))->toBe(1.0);
+
+        $deliveryNoteItem = $orders[0]->deliveryNotes()->first()->deliveryNoteItems()->where('org_stock_id', $sellerOrgStock->id)->first();
+        $firstLocationFor = fn (int $deliveryNoteItemId) => DB::table('location_org_stocks')
+            ->join('locations', 'locations.id', 'location_org_stocks.location_id')
+            ->where('location_org_stocks.org_stock_id', $sellerOrgStock->id)
+            ->orderByRaw(\App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder::sql((string) $deliveryNoteItemId))
+            ->orderBy('location_org_stocks.picking_priority')
+            ->value('locations.id');
+
+        expect($firstLocationFor($deliveryNoteItem->id))->toBe($goodsOut->id)
+            ->and($firstLocationFor(0))->toBe($shelf->id);
+
+        expect(fn () => \App\Actions\Production\PartnerShippingList\StorePartnerOrderFromBay::make()->action($sellerPartner))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+    });
+
     test('staging takes whatever was really moved: less leaves the rest to move, more clears the row', function () {
         $seller = $this->orgPartner->partner;
 
@@ -3339,6 +3424,54 @@ describe('partner shopping list', function () {
 
         expect($taskFor())->toBeNull()
             ->and((float) $sourceSlot->refresh()->quantity)->toBe(500 - 2 - ($toMove + 5));
+    });
+
+    test('releasing a staging task keeps what was moved promised and sends the rest back to the lists', function () {
+        $seller = $this->orgPartner->partner;
+
+        [, $product]    = createProduct(StoreShop::run($seller, Shop::factory()->definition()));
+        $sellerOrgStock = $product->orgStocks()->first();
+        $buyerOrgStock  = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 5]);
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $source    = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        $sourceSlot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $source, [
+            'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+        ]);
+        \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($sourceSlot, ['quantity' => 500]);
+
+        \App\Actions\Production\PartnerShippingList\PrePickPartnerShoppingListItems::make()
+            ->action($seller, [['id' => $item->id]]);
+
+        $taskFor = fn () => collect(\App\Actions\Dispatching\PartnerStaging\GetPartnerStagingTasks::run($warehouse))
+            ->firstWhere('org_stock_id', $sellerOrgStock->id);
+        $toMove  = (float) $taskFor()['quantity_to_move'];
+
+        \App\Actions\Dispatching\PartnerStaging\StagePartnerStock::make()->action($warehouse, $sourceSlot->refresh(), $sellerPartner, 2);
+
+        $released = \App\Actions\Dispatching\PartnerStaging\ReleasePartnerStagingTask::make()->action($warehouse, $sellerPartner, $sellerOrgStock);
+
+        $lines = \App\Models\Procurement\PartnerShoppingListItem::where('partner_organisation_id', $seller->id)
+            ->where('organisation_id', $this->orgPartner->organisation_id)
+            ->where('stock_id', $sellerOrgStock->stock_id)
+            ->where('state', ShoppingListItemStateEnum::OPEN)
+            ->get();
+
+        expect($released)->toBe($toMove - 2)
+            ->and($taskFor())->toBeNull()
+            ->and((float) $lines->whereNotNull('pre_picked_at')->sum('quantity'))->toBe(2.0)
+            ->and((float) $lines->whereNull('pre_picked_at')->sum('quantity'))->toBe($toMove - 2);
     });
 
     test('staging refuses a partner with no goods out location and more stock than the shelf holds', function () {
@@ -4464,4 +4597,67 @@ test('attach a supplier product to an org stock that has none, first one becomes
     $second                   = AttachOrgSupplierProductToOrgStock::make()->action($orgStock, $secondOrgSupplierProduct);
     expect((int) $second->local_priority)->toBe(0)
         ->and(OrgStockHasOrgSupplierProduct::where('org_stock_id', $orgStock->id)->count())->toBe(2);
+});
+
+test('every organisation and group top menu subsection carries a label', function () {
+    $unlabelled = function (array $navigation) {
+        return collect($navigation)
+            ->flatMap(fn ($section, $key) => collect(data_get($section, 'topMenu.subSections', []))
+                ->filter(fn ($subSection) => is_array($subSection) && blank(data_get($subSection, 'label')))
+                ->map(fn ($subSection) => $key.': '.data_get($subSection, 'route.name', '?')))
+            ->values()
+            ->all();
+    };
+
+    $user = $this->adminGuest->getUser();
+
+    expect($unlabelled(GetOrganisationNavigation::run($user, $this->organisation)))->toBe([])
+        ->and($unlabelled(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($user)))->toBe([]);
+});
+
+test('incoming stock tells the customer when an out of stock product is expected back', function () {
+    $orgStock = $this->orgStocks[0];
+
+    $supplier    = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'ETA-01',
+        'name'             => 'ETA asset',
+        'cost'             => 100,
+        'stock_id'         => $orgStock->stock_id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+
+    $stockDelivery = StoreStockDelivery::make()->action($orgSupplier, [
+        'reference' => 'ETA-DEL-1',
+        'date'      => date('Y-m-d'),
+    ]);
+    StoreStockDeliveryItem::make()->action(
+        $stockDelivery,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $orgStock,
+        array_merge(StockDeliveryItem::factory()->definition(), ['unit_quantity' => 120])
+    );
+
+    [, $product] = createProduct(StoreShop::run($this->organisation, Shop::factory()->definition()));
+    $product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $product->load('orgStocks');
+
+    expect(GetProductIncomingStock::run($product))->toBe([]);
+
+    DispatchStockDelivery::make()->action($stockDelivery);
+    $product->load('orgStocks');
+
+    $incoming = GetProductIncomingStock::run($product);
+    $expectedEta = now()->addDays(7)->toDateString();
+
+    expect($incoming)->toHaveCount(1)
+        ->and($incoming[0]['type'])->toBe('stock_delivery')
+        ->and($incoming[0]['reference'])->toBe('ETA-DEL-1')
+        ->and($incoming[0]['quantity'])->toBe(120.0)
+        ->and($incoming[0]['eta'])->toBe($expectedEta)
+        ->and(GetProductIncomingStock::make()->earliestEta($product))->toBe($expectedEta);
 });

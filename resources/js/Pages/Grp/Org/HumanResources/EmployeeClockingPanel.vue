@@ -145,7 +145,7 @@ onUnmounted(() => {
 							class="flex min-w-0 flex-1 basis-0 items-center justify-center gap-1.5 rounded-lg px-1.5 py-2.5 text-xs font-medium transition sm:gap-2 sm:px-2 sm:text-sm"
 							:class="
 								selectedMethod === option.value
-									? 'bg-white text-indigo-700 shadow-sm'
+									? 'bg-white text-[--app-accent-strong] shadow-sm'
 									: 'text-gray-500 hover:text-gray-700'
 							"
 							@click="selectedMethod = option.value">

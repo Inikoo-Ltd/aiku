@@ -551,6 +551,11 @@ class ShowOrder extends OrgAction
                             'label' => __('Group by Tariff Code'),
                             'value' => 'group_by_tariff_code',
                         ],
+                        [
+                            'label'   => __('Price breakdown (gross, discount, net)'),
+                            'value'   => 'price_breakdown',
+                            'tooltip' => __('Shows each line with its price before discount, the discount amount and the final amount. Useful for customs clearance.'),
+                        ],
                     ],
                     'route_download_pdf' => [
                         'name'       => 'grp.org.shops.show.ordering.proforma_invoice.download',

@@ -11,10 +11,14 @@ namespace App\Actions\Chat\ChatSession;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
+use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithUnclaimedChatSessions;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,6 +27,8 @@ use App\Models\CRM\WebUser;
 class GetChatSessions
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
+    use WithUnclaimedChatSessions;
 
     public function rules(): array
     {
@@ -40,7 +46,9 @@ class GetChatSessions
             'assigned_to_me' => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],
+            'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'unclaimed'       => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'web_user_id'     => ['sometimes', 'integer', 'exists:web_users,id'],
@@ -48,6 +56,12 @@ class GetChatSessions
             'search'          => ['sometimes', 'string', 'max:100'],
             'organisation_id' => ['sometimes', 'integer', 'exists:organisations,id'],
             'shop_id'         => ['sometimes', 'integer', 'exists:shops,id'],
+            'shop_ids'        => ['sometimes', 'array'],
+            'shop_ids.*'      => ['integer', 'exists:shops,id'],
+            'agent_ids'       => ['sometimes', 'array'],
+            'agent_ids.*'     => ['integer'],
+            'pairs'           => ['sometimes', 'array'],
+            'pairs.*'         => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
         ];
     }
 
@@ -60,11 +74,24 @@ class GetChatSessions
             $filters['web_user_id'] = $user->id;
             $filters['include_spam'] = true;
             unset($filters['assigned_to_me'], $filters['view_team'], $filters['is_spam'], $filters['trashed'], $filters['highlighted']);
-        } elseif ($user && !empty($filters['assigned_to_me'])) {
-            $filters['assigned_to_me'] = $user->id;
+        } else {
+            $filters = $this->chatFiltersScopedTo($user, $filters);
         }
 
         return $this->handle($filters);
+    }
+
+    /**
+     * A queue is worked from the top, so the conversation that has been waiting longest belongs
+     * there: newest first is how a chat from Monday goes untouched for four days while one that
+     * arrived after it is answered in two minutes.
+     *
+     * The bins are the other way round. Nobody works through spam, rubbish or the trash; they
+     * are looked at to find what landed there a moment ago.
+     */
+    public static function oldestFirst(array $filters): bool
+    {
+        return empty($filters['is_spam']) && empty($filters['is_rubbish']) && empty($filters['trashed']);
     }
 
     public function handle(array $filters = [])
@@ -89,23 +116,49 @@ class GetChatSessions
                             ChatSenderTypeEnum::GUEST->value,
                             ChatSenderTypeEnum::USER->value,
                         ]);
-                }
+                },
+                'tickets as open_tickets_count' => function ($q) {
+                    $q->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
+                },
+                'tickets as blocking_tickets_count' => function ($q) {
+                    $q->where('blocks_source', true)
+                        ->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
+                },
             ])
             ->withLastMessageTime()
-            ->orderBy('last_message_at', 'desc');
+            ->orderBy('last_message_at', self::oldestFirst($filters) ? 'asc' : 'desc');
 
 
-        if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
+        if (array_key_exists('allowed_shop_ids', $filters)) {
+            $query->whereIn('shop_id', $filters['allowed_shop_ids']);
         }
 
-        if (isset($filters['statuses'])) {
-            $query->whereIn('status', $filters['statuses']);
+        $statuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
+
+        if ($statuses !== []) {
+            $query->where(function ($outer) use ($statuses) {
+                foreach ($statuses as $status) {
+                    $outer->orWhere(function ($q) use ($status) {
+                        $q->where('status', $status);
+
+                        if ($status === ChatSessionStatusEnum::CLOSED->value) {
+                            self::scopeClosedToday($q);
+                        }
+                    });
+                }
+            });
         }
 
-        $isTrashView = !empty($filters['trashed']);
-        $isSpamView  = !empty($filters['is_spam']) && !$isTrashView;
-        $includeSpam = !empty($filters['include_spam']);
+        $isTrashView   = !empty($filters['trashed']);
+        $isSpamView    = !empty($filters['is_spam']) && !$isTrashView;
+        $isRubbishView = !empty($filters['is_rubbish']) && !$isTrashView && !$isSpamView;
+        $includeSpam   = !empty($filters['include_spam']);
+
+        // Rubbish stays out of every list but its own. The mark hides the conversation, it does
+        // not change its status, so taking it off puts it back where it was.
+        if (!$isTrashView) {
+            $query->where('is_rubbish', $isRubbishView);
+        }
 
         // Trash view: only soft-deleted sessions, scoped to the agent's shops.
         if ($isTrashView) {
@@ -115,7 +168,7 @@ class GetChatSessions
                 ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
                 : null;
 
-            $query->whereIn('shop_id', $trashAgent ? $trashAgent->shops()->pluck('shops.id')->all() : []);
+            $query->whereIn('shop_id', $trashAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
         } elseif (!$includeSpam) {
             $query->where('is_spam', $isSpamView);
         }
@@ -125,7 +178,13 @@ class GetChatSessions
                 ? $this->getCurrentAgent((int) $filters['assigned_to_me'])
                 : null;
 
-            $query->whereIn('shop_id', $spamAgent ? $spamAgent->shops()->pluck('shops.id')->all() : []);
+            $query->whereIn('shop_id', $spamAgent ? $this->shopIdsWorkedBy((int) $filters['assigned_to_me']) : []);
+        }
+
+        // The unclaimed queue is the whole group's, so it takes no status, no my/team and no
+        // shop: which shops the person asking works is exactly what let these go unanswered.
+        if (!empty($filters['unclaimed'])) {
+            $this->scopeUnclaimedChatSessions($query);
         }
 
         // Highlight view is additive: it keeps the normal status/assignment filters
@@ -134,12 +193,12 @@ class GetChatSessions
             $query->where('is_highlighted', true);
         }
 
-        if (!$isSpamView && !$isTrashView && !empty($filters['assigned_to_me'])) {
+        if (!$isSpamView && !$isTrashView && empty($filters['unclaimed']) && !empty($filters['assigned_to_me'])) {
             $userId       = (int) $filters['assigned_to_me'];
             $currentAgent = $this->getCurrentAgent($userId);
 
             if ($currentAgent) {
-                $shopIds = $currentAgent->shops()->pluck('shops.id');
+                $shopIds = $this->shopIdsWorkedBy($userId);
 
                 $requestedStatuses = (array) ($filters['statuses'] ?? ($filters['status'] ? [$filters['status']] : []));
                 $isClosed          = in_array('closed', $requestedStatuses);
@@ -153,9 +212,7 @@ class GetChatSessions
                     // my/team it belongs to is then decided from what comes back.
                     $query->whereIn('shop_id', $shopIds);
                 } elseif (!empty($filters['view_team'])) {
-                    $teamAgentIds = ChatAgent::whereHas('shops', function ($q) use ($shopIds) {
-                        $q->whereIn('shops.id', $shopIds);
-                    })->where('id', '!=', $currentAgent->id)->pluck('id');
+                    $teamAgentIds = $this->agentIdsCovering($shopIds, $currentAgent->id);
 
                     $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
                         $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
@@ -185,8 +242,43 @@ class GetChatSessions
             });
         }
 
+        // Each pair is one channel for one kind of sender, and any set of them may be asked
+        // for at once. They have to be matched as pairs rather than as two separate lists:
+        // wanting email from strangers and website from customers is not the same as wanting
+        // both channels from both, which is what filtering the two dimensions apart would give.
+        //
+        // A conversation belongs to a customer when it is tied to their web user; everything
+        // else is a stranger, which on email means a supplier or a robot.
+        $pairs = $this->sessionPairs($filters);
+
+        if ($pairs !== []) {
+            $query->where(function ($outer) use ($pairs) {
+                foreach ($pairs as [$channel, $kind]) {
+                    $outer->orWhere(function ($inner) use ($channel, $kind) {
+                        $inner->where('channel', $channel);
+
+                        $kind === 'customer'
+                            ? $inner->whereNotNull('web_user_id')
+                            : $inner->whereNull('web_user_id');
+                    });
+                }
+            });
+        }
+
+        // Whoever oversees asks for what one colleague is holding. It has to be asked of the
+        // database: picked out of the page already loaded, it finds nothing past the first twenty.
+        if (!empty($filters['agent_ids'])) {
+            $agentIds = array_map('intval', (array) $filters['agent_ids']);
+            $query->whereHas('assignments', fn ($a) => $a->whereIn('chat_agent_id', $agentIds)
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value));
+        }
+
         if (!empty($filters['shop_id'])) {
             $query->where('shop_id', (int) $filters['shop_id']);
+        }
+
+        if (!empty($filters['shop_ids'])) {
+            $query->whereIn('shop_id', array_map('intval', (array) $filters['shop_ids']));
         }
 
         if (isset($filters['web_user_id'])) {
@@ -215,9 +307,39 @@ class GetChatSessions
         return $query->paginate($filters['limit'] ?? 20);
     }
 
+    /**
+     * Closed conversations are kept forever, so the list and the capsule only ever mean the
+     * ones closed today; older ones are found through search or the reports.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    public static function scopeClosedToday($query): void
+    {
+        $table = $query->getModel()->getTable();
+
+        $query->whereRaw("coalesce({$table}.closed_at, {$table}.updated_at) >= ?", [now()->startOfDay()]);
+    }
+
     protected function getCurrentAgent(int $userId): ?ChatAgent
     {
         return ChatAgent::where('user_id', $userId)->first();
+    }
+
+    /**
+     * The channel and sender pairs this list is limited to, WhatsApp left out because it lives
+     * in its own table. No pairs at all means no limit, which is what the housekeeping views
+     * and the notification counters ask for.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<int, array{0: string, 1: string}>
+     */
+    public static function sessionPairs(array $filters): array
+    {
+        return collect($filters['pairs'] ?? [])
+            ->map(fn ($pair) => explode(':', (string) $pair, 2))
+            ->filter(fn ($parts) => count($parts) === 2 && $parts[0] !== 'whatsapp')
+            ->values()
+            ->all();
     }
 
     public function jsonResponse($sessions): JsonResponse

@@ -168,7 +168,7 @@ const modalTitle = computed(() =>
 				<input
 					v-model="form.label"
 					type="text"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 				<div v-if="form.errors.label" class="mt-1 text-sm text-red-600">
 					{{ form.errors.label }}
 				</div>
@@ -182,7 +182,7 @@ const modalTitle = computed(() =>
 					<input
 						v-model="form.start_date"
 						type="date"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 					<div v-if="form.errors.start_date" class="mt-1 text-sm text-red-600">
 						{{ form.errors.start_date }}
 					</div>
@@ -195,7 +195,7 @@ const modalTitle = computed(() =>
 					<input
 						v-model="form.end_date"
 						type="date"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 					<div v-if="form.errors.end_date" class="mt-1 text-sm text-red-600">
 						{{ form.errors.end_date }}
 					</div>
@@ -209,7 +209,7 @@ const modalTitle = computed(() =>
 					</label>
 					<select
 						v-model="form.strictness"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]">
 						<option
 							v-for="option in props.strictnessOptions"
 							:key="option.value"
@@ -229,7 +229,7 @@ const modalTitle = computed(() =>
 						id="is_active"
 						v-model="form.is_active"
 						type="checkbox"
-						class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+						class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 					<label for="is_active" class="ml-2 block text-sm text-gray-700">
 						{{ trans("Active") }}
 					</label>
@@ -240,7 +240,7 @@ const modalTitle = computed(() =>
 						id="allow_superuser_override"
 						v-model="form.allow_superuser_override"
 						type="checkbox"
-						class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+						class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 					<label for="allow_superuser_override" class="ml-2 block text-sm text-gray-700">
 						{{ trans("Allow Superuser Override") }}
 					</label>

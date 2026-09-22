@@ -123,7 +123,7 @@ const openFile = (file: TicketAttachment) => {
             <select
                 v-if="typeOptions.length > 1"
                 v-model="selectedType"
-                class="ml-auto cursor-pointer rounded-md border-gray-300 py-0.5 pl-2 pr-7 text-xs text-gray-600 focus:border-indigo-400 focus:ring-indigo-400"
+                class="ml-auto cursor-pointer rounded-md border-gray-300 py-0.5 pl-2 pr-7 text-xs text-gray-600 focus:border-[--app-accent] focus:ring-[--app-accent]"
                 :aria-label="trans('Filter attachments by type')">
                 <option value="all">{{ trans("All types") }}</option>
                 <option v-for="option in typeOptions" :key="option.value" :value="option.value">{{ option.label }} ({{ option.count }})</option>
@@ -134,7 +134,7 @@ const openFile = (file: TicketAttachment) => {
                 v-for="file in filteredFiles"
                 :key="file.url"
                 type="button"
-                class="overflow-hidden rounded-lg border border-gray-200 text-left transition hover:border-indigo-300 hover:shadow-sm"
+                class="overflow-hidden rounded-lg border border-gray-200 text-left transition hover:border-[--app-accent-muted] hover:shadow-sm"
                 :title="file.name"
                 :disabled="previewBlocked"
                 :class="previewBlocked && 'cursor-not-allowed opacity-70 hover:!border-gray-200 hover:!shadow-none'"

@@ -18,6 +18,7 @@ use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Webpage\GetWebpagePageSpeedReport;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
+use App\Actions\Web\Webpage\GetWebpageSeo;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -356,9 +357,13 @@ class ShowWebpage extends OrgAction
                     fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
                     : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
 
-                'pagespeed' => $this->tab == WebpageTabsEnum::ANALYTICS->value
+                'pagespeed' => in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value])
                     ? Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed')
                     : Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+
+                'seo' => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
+                    fn () => GetWebpageSeo::run($webpage)
+                    : Inertia::optional(fn () => GetWebpageSeo::run($webpage)),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))

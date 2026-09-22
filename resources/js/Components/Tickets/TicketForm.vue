@@ -10,10 +10,10 @@ import { trans } from "laravel-vue-i18n"
 import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase } from "@fal"
+import { faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch } from "@fal"
 import { faExclamationTriangle, faArrowUp, faMinus, faArrowDown } from "@fas"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faExclamationTriangle, faArrowUp, faMinus, faArrowDown)
+library.add(faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faVial, faLevelUp, faBooks, faDatabase, faSearch, faExclamationTriangle, faArrowUp, faMinus, faArrowDown)
 import { Select } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
@@ -49,6 +49,7 @@ const optionIcons: Record<string, string> = {
     escalation: "fal fa-level-up",
     documentation: "fal fa-books",
     data_integrity: "fal fa-database",
+    support: "fal fa-search",
     urgent: "fas fa-exclamation-triangle",
     high: "fas fa-arrow-up",
     normal: "fas fa-minus",
@@ -63,7 +64,8 @@ const optionIconClasses: Record<string, string> = {
     bug: "text-red-500",
     documentation: "text-sky-600",
     data_integrity: "text-amber-600",
-    feature: "text-indigo-500",
+    support: "text-teal-600",
+    feature: "text-[--app-accent-strong]",
 }
 
 const submit = () =>

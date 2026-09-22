@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import { capitalize } from "@/Composables/capitalize"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import BoxAuditStoredItems from '@/Components/Box/BoxAuditStoredItems.vue'

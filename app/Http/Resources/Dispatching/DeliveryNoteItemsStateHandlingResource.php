@@ -49,6 +49,8 @@ use Illuminate\Support\Facades\DB;
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
+    use WithOrderedAsset;
+
     /**
      * Replaces `:qty` in a standing warehouse note with the number of products ordered in this
      * transaction, so notes such as "add :qty import address label(s)" carry the count the picker
@@ -178,6 +180,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_code'                           => $this->org_stock_code,
             'org_stock_slug'                           => $this->org_stock_slug,
             'org_stock_name'                           => $this->org_stock_name,
+            'ordered_asset'                            => $this->getOrderedAssetForFractionalQuantity(),
             'replacement_reason_label'                 => $this->replacement_reason?->label(),
             'barcode'                                  => $this->barcode,
             'org_stock_image_thumbnail'                => null,

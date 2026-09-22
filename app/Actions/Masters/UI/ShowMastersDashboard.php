@@ -110,7 +110,7 @@ class ShowMastersDashboard extends OrgAction
                 'title'       => __('masters'),
                 'pageHead'    => [
                     'icon'    => [
-                        'icon'  => ['fal', 'fa-ruler-combined'],
+                        'icon'  => ['fab', 'fa-octopus-deploy'],
                         'title' => __('Masters'),
                     ],
                     'title'   => __('Master catalogue'),

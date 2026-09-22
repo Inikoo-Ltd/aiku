@@ -22,7 +22,7 @@ class TicketNotification extends Notification implements ShouldQueue
     /**
      * @param array<int, string> $lines
      */
-    public function __construct(public Ticket $ticket, public string $subject, public array $lines, public string $actionLabel, public bool $byEmail = true)
+    public function __construct(public Ticket $ticket, public string $subject, public array $lines, public string $actionLabel, public bool $byEmail = true, public string $reason = 'update')
     {
     }
 
@@ -38,6 +38,7 @@ class TicketNotification extends Notification implements ShouldQueue
             'body'  => $this->lines[0] ?? '',
             'type'      => 'ticket',
             'ticket_id' => $this->ticket->id,
+            'reason'    => $this->reason,
             'route'     => $this->ticketUrl($notifiable),
         ];
     }
