@@ -779,6 +779,12 @@ class EditShop extends OrgAction
                             'information' => __('Leave empty or zero to follow the group default.'),
                             'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.email') ?? '',
                         ],
+                        'chat_email_offline_replies' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Answer offline messages by email'),
+                            'information' => __('When nobody is on cover the widget asks the visitor for an email address. With this on, the conversation becomes an email one, so the answer written later is sent to them rather than left in a widget they have closed. Needs a mailbox connected to this shop.'),
+                            'value'       => (bool) Arr::get($shop->settings, 'chat.email_offline_replies', false),
+                        ],
                         'enable_whatsapp' => [
                             'type'        => 'toggle',
                             'label'       => __('Enable WhatsApp Channel'),

@@ -6053,3 +6053,54 @@ test('the bin opens for an agent when no status is asked for', function () {
 
     expect($bin)->toContain($binned->id);
 });
+
+test('an offline message becomes an email conversation only when the shop asks for it', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $offlineMessage = fn () => StoreOfflineMessage::make()->handle($this->shop->refresh(), [
+        'name'        => 'Jane Doe',
+        'email'       => 'jane@example.com',
+        'message'     => 'Nobody was on, please write back',
+        'language_id' => 68,
+        'sender_type' => ChatSenderTypeEnum::GUEST->value,
+        'web_user_id' => null,
+    ]);
+
+    $settings = $this->shop->settings ?? [];
+    data_set($settings, 'gmail.email', 'help@example.com');
+    data_set($settings, 'chat.email_offline_replies', false);
+    $this->shop->updateQuietly(['settings' => $settings]);
+
+    expect($offlineMessage()->channel)->toBe(ChatChannelEnum::WEBSITE);
+
+    data_set($settings, 'chat.email_offline_replies', true);
+    $this->shop->updateQuietly(['settings' => $settings]);
+
+    $emailed = $offlineMessage();
+
+    expect($emailed->channel)->toBe(ChatChannelEnum::EMAIL)
+        ->and($emailed->metadata['email_from'])->toBe('jane@example.com')
+        ->and($emailed->metadata['email_from_name'])->toBe('Jane Doe')
+        ->and($emailed->metadata['email_subject'])->toContain($this->shop->name);
+
+    // No mailbox to send from means the answer would go nowhere at all, which is worse than
+    // leaving it in the widget.
+    data_set($settings, 'gmail.email', null);
+    $this->shop->updateQuietly(['settings' => $settings]);
+
+    expect($offlineMessage()->channel)->toBe(ChatChannelEnum::WEBSITE);
+
+    // The toggle is a shop setting, so it has to survive the form it is saved from without
+    // taking the rest of the shop's settings with it.
+    data_set($settings, 'gmail.email', 'help@example.com');
+    $this->shop->updateQuietly(['settings' => $settings]);
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_email_offline_replies' => true]);
+
+    expect(Arr::get($this->shop->refresh()->settings, 'chat.email_offline_replies'))->toBeTrue()
+        ->and(Arr::get($this->shop->settings, 'gmail.email'))->toBe('help@example.com');
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['chat_email_offline_replies' => false]);
+
+    expect(Arr::get($this->shop->refresh()->settings, 'chat.email_offline_replies'))->toBeFalse();
+});

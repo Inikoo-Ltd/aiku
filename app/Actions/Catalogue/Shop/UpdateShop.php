@@ -386,6 +386,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.chat.unclaimed_after_seconds.$chatChannel", $seconds > 0 ? $seconds : null);
         }
 
+        if (Arr::exists($modelData, 'chat_email_offline_replies')) {
+            data_set($modelData, 'settings.chat.email_offline_replies', (bool) Arr::pull($modelData, 'chat_email_offline_replies'));
+        }
+
         $viewContactOptionsPanel = null;
         if (Arr::exists($modelData, 'view_contact_options_panel')) {
             $viewContactOptionsPanel = (bool) Arr::pull($modelData, 'view_contact_options_panel');
@@ -858,6 +862,7 @@ class UpdateShop extends OrgAction
             'chat_unclaimed_website_seconds'                          => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
             'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
+            'chat_email_offline_replies'                              => ['sometimes', 'boolean'],
             'view_contact_options_panel'                              => ['sometimes', 'boolean'],
             'data_contact_options_panel'                              => ['sometimes', 'nullable', 'array'],
             'data_contact_options_panel.*.icon'                       => ['sometimes', 'nullable'],

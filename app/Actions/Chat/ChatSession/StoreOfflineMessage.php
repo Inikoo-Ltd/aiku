@@ -10,6 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -18,6 +19,7 @@ use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,6 +41,8 @@ class StoreOfflineMessage
             }
 
             $this->updateOfflineContactMetadata($session, $data);
+
+            $this->routeRepliesToEmail($session, $data);
 
             $this->sendOfflineMessage($session, $data);
 
@@ -125,6 +129,33 @@ class StoreOfflineMessage
             'metadata' => array_merge($old, [
                 'name'  => $data['name']  ?? $old['name']  ?? null,
                 'email' => $data['email'] ?? $old['email'] ?? null,
+            ]),
+        ]);
+    }
+
+    /**
+     * The form is only shown when nobody is on cover, and it asks for an email address because
+     * the answer is written hours later, into a widget the visitor closed on their way out. A
+     * website conversation is not delivered anywhere, so the answer went nowhere; an email one
+     * is sent through the mailbox the shop already answers on, and their reply comes back to the
+     * same thread. Off until a shop turns it on, and never on without a mailbox to send from.
+     */
+    private function routeRepliesToEmail(ChatSession $session, array $data): void
+    {
+        $settings = $session->shop?->settings ?? [];
+
+        if (!Arr::get($settings, 'chat.email_offline_replies') || blank(Arr::get($settings, 'gmail.email'))) {
+            return;
+        }
+
+        $metadata = $session->metadata ?? [];
+
+        $session->update([
+            'channel'  => ChatChannelEnum::EMAIL,
+            'metadata' => array_merge($metadata, [
+                'email_from'      => $metadata['email_from'] ?? $data['email'],
+                'email_from_name' => $metadata['email_from_name'] ?? $data['name'],
+                'email_subject'   => $metadata['email_subject'] ?? __('Your message to :shop', ['shop' => $session->shop->name]),
             ]),
         ]);
     }
