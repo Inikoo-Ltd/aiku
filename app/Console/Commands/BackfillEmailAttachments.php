@@ -31,6 +31,7 @@ class BackfillEmailAttachments extends Command
                            {--shop= : Only this shop id}
                            {--since= : Only messages received on or after this date}
                            {--until= : Only messages received before this date}
+                           {--message= : Only this chat message id}
                            {--chunk=50 : Messages to fetch per batch}
                            {--dry-run : Report what would be imported without writing}';
 
@@ -47,6 +48,7 @@ class BackfillEmailAttachments extends Command
             ->when($this->option('shop'), fn ($q, $shopId) => $q->whereHas('chatSession', fn ($s) => $s->where('shop_id', (int) $shopId)))
             ->when($this->option('since'), fn ($q, $since) => $q->where('created_at', '>=', $since))
             ->when($this->option('until'), fn ($q, $until) => $q->where('created_at', '<', $until))
+            ->when($this->option('message'), fn ($q, $id) => $q->whereKey((int) $id))
             ->whereDoesntHave('media', fn ($m) => $m->whereIn('collection_name', ['chat_images', 'chat_attachments']));
 
         $total = (clone $query)->count();
@@ -102,14 +104,24 @@ class BackfillEmailAttachments extends Command
                         $client->getMessage($gmailMessageId),
                         trusted: (bool) $session->web_user_id
                     );
-                } catch (Throwable) {
+                } catch (Throwable $e) {
                     // Deleted from the mailbox, or the mailbox disconnected. Leave it alone.
                     $failed++;
+
+                    if ($this->output->isVerbose()) {
+                        $this->newLine();
+                        $this->warn('Message '.$message->id.' ('.$gmailMessageId.'): '.$e->getMessage());
+                    }
 
                     continue;
                 }
 
                 if ($files === []) {
+                    if ($this->output->isVerbose()) {
+                        $this->newLine();
+                        $this->line('Message '.$message->id.' ('.$gmailMessageId.'): nothing to import');
+                    }
+
                     continue;
                 }
 

@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 final class GmailClient
 {
@@ -191,6 +192,13 @@ final class GmailClient
             ->get(self::DRIVE_BASE_URL."files/$fileId", ['fields' => 'name,mimeType,size']);
 
         if (! $response->successful()) {
+            Log::warning('Drive file not readable', [
+                'shop'    => $this->shop->slug,
+                'file_id' => $fileId,
+                'status'  => $response->status(),
+                'reason'  => $response->json('error.message'),
+            ]);
+
             return null;
         }
 
