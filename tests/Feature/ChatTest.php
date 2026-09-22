@@ -6664,6 +6664,64 @@ test('an email reply does not also send a chat notification, and carries the sho
     });
 });
 
+test('an inline picture in an inbound email is shown inside the body where the sender put it', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    $png    = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/c1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'c1',
+            'threadId' => 'tc1',
+            'payload'  => [
+                'mimeType' => 'multipart/related',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Daryl <daryl@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Re: Thank you for your order'],
+                ],
+                'parts'    => [
+                    ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('It is broken, see picture below')]],
+                    ['mimeType' => 'text/html', 'filename' => '', 'body' => ['data' => $encode('<p>It is broken, see picture below</p><img src="cid:broken@mail">')]],
+                    [
+                        'mimeType' => 'image/png',
+                        'filename' => 'broken.png',
+                        'headers'  => [
+                            ['name' => 'Content-Disposition', 'value' => 'inline; filename="broken.png"'],
+                            ['name' => 'Content-ID', 'value' => '<broken@mail>'],
+                        ],
+                        'body'     => ['data' => $encode($png), 'size' => 9000],
+                    ],
+                ],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels' => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c1');
+    $media   = $message->attachedFiles()->first();
+
+    // Left alone the purifier drops a cid src and the picture is lost from the body, leaving
+    // "see picture below" with nothing below it.
+    expect($media?->name)->toBe('broken.png')
+        ->and($message->html_body)->toContain($media->getUrl())
+        ->and($message->html_body)->not->toContain('cid:');
+
+    // The bubble hides an attachment whose url the body already shows, so the two have to be
+    // the same string.
+    $resource = \App\Http\Resources\CRM\Livechat\ChatMessageResource::make($message->fresh())->resolve();
+    expect(collect($resource['attachments'])->pluck('original_url')->all())->toBe([$media->getUrl()]);
+});
 
 test('forwarding a conversation to a colleague opens one staff thread and optionally mails them', function () {
     \Illuminate\Support\Facades\Notification::fake();

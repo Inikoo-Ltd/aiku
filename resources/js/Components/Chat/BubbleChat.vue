@@ -347,7 +347,15 @@ const isFile = computed(() => props.message.message_type === "file")
 const fileMime = computed(() => props.message.file_mime ?? props.message.media_url?.mime ?? "")
 
 const attachmentList = computed<ChatAttachment[]>(() => {
-    if (props.message.attachments?.length) return props.message.attachments
+    // A picture the email already shows in its own body is not listed again underneath it,
+    // where it would read as a second, separate photograph.
+    if (props.message.attachments?.length) {
+        const body = props.message.html_body ?? ""
+
+        return props.message.attachments.filter(
+            (attachment) => !attachment.original_url || !body.includes(attachment.original_url)
+        )
+    }
 
     if (!props.message.media_url && !props.message.download_route) return []
 

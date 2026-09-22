@@ -78,8 +78,10 @@ class ProcessInboundEmail
         $body    = GmailMessageParser::body($raw);
 
         // Kept beside the text, never instead of it: the text is what search, previews and
-        // translation read, and what is shown if the markup is ever refused.
-        $html = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
+        // translation read, and what is shown if the markup is ever refused. It is purified
+        // once the pictures it points at have been stored, because the purifier refuses the
+        // cid scheme they arrive under and there is no second chance to resolve them.
+        $rawHtml = GmailMessageParser::htmlBody($raw);
         $threadId = GmailMessageParser::threadId($raw);
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
 
@@ -126,8 +128,9 @@ class ProcessInboundEmail
         // Pictures come in whoever sent them: with the markup discarded they are the only thing
         // left to look at, and mail whose images are missing reads as broken. A stranger's other
         // files still wait in Gmail until an agent has replied.
+        $contentIds  = [];
         $attachments = ImportPendingGmailAttachments::make()
-            ->download($client, $gmailMessageId, $raw, trusted: (bool) $webUser);
+            ->download($client, $gmailMessageId, $raw, trusted: (bool) $webUser, contentIds: $contentIds);
 
         $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($client, $raw, trusted: (bool) $webUser);
 
@@ -142,6 +145,10 @@ class ProcessInboundEmail
             'sender_type'  => $webUser ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
             'sender_id'    => $webUser?->id,
         ]);
+
+        $html = app(HTMLSanitizer::class)->cleanEmail(
+            $this->resolveInlineImages($rawHtml, $message, $contentIds)
+        );
 
         if ($html !== '') {
             $message->update(['html_body' => $html]);
@@ -194,6 +201,41 @@ class ProcessInboundEmail
         $this->importThreadHistory($client, $session, $threadId, $mailboxAddress, $webUser);
 
         return $message;
+    }
+
+    /**
+     * A picture inside an email is addressed as src="cid:something", which means nothing outside
+     * the mail itself: left alone the purifier drops the src and the message reads as "see the
+     * photo below" with nothing below it, while the file sits detached above the text. Each one
+     * is pointed at the copy we stored instead, so the mail shows the way it was written.
+     *
+     * The stored files are in the order they were downloaded, so position is what matches them.
+     *
+     * @param  array<int, string|null>  $contentIds
+     */
+    private function resolveInlineImages(?string $html, ChatMessage $message, array $contentIds): ?string
+    {
+        if (! $html || ! array_filter($contentIds)) {
+            return $html;
+        }
+
+        $files = $message->attachedFiles();
+
+        foreach ($contentIds as $index => $contentId) {
+            $media = $files[$index] ?? null;
+
+            if (! $contentId || ! $media) {
+                continue;
+            }
+
+            $html = str_ireplace(
+                ['cid:'.$contentId, 'cid:'.rawurlencode($contentId)],
+                $media->getUrl(),
+                $html
+            );
+        }
+
+        return $html;
     }
 
     private function goneKey(Shop $shop, string $gmailMessageId): string
