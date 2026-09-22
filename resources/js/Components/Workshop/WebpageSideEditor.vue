@@ -638,7 +638,7 @@ const showBlockVisibilityOptions = computed(
 																{{element.web_block.layout.data.fieldValue.blocks.name}}
 															</template>
 															<template v-else>
-																{{ element.type }}
+																{{ element.name || element.type }}
 															</template>
 														</span>
 														<span
