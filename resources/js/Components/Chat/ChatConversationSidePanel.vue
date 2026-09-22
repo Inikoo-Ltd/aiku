@@ -15,6 +15,7 @@ import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Icon from '@/Components/Icon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
+import SelectQuery from '@/Components/SelectQuery.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock } from '@fal'
@@ -44,6 +45,7 @@ interface PanelSession {
     status: string
     priority?: string | null
     assigned_agent?: string | null
+    assigned_agent_id?: number | string | null
     started?: string | null
     ai_summary?: {
         summary?: string
@@ -78,6 +80,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: 'close'): void
     (e: 'priority-updated', value: string): void
+    (e: 'agent-assigned', agent: { id: number; name: string }): void
     (e: 'synced', webUser: { id: number; name: string; email: string | null }): void
     (e: 'customer-synced', customer: { id: number; name: string; email: string | null; phone: string | null }): void
     (e: 'unlinked'): void
@@ -98,7 +101,51 @@ const currentPriority = computed(() => PRIORITIES.find(p => p.value === effectiv
 const isPriorityOpen = ref(false)
 const isSavingPriority = ref(false)
 
-watch(() => props.session.ulid, () => { pendingPriority.value = null })
+watch(() => props.session.ulid, () => {
+    pendingPriority.value = null
+    pendingAgent.value = null
+    isEditingAgent.value = false
+})
+
+// WhatsApp has no route for handing a conversation to a named agent yet, so there it stays
+// what it was: the name of whoever holds it.
+const canAssignAgent = computed(() => props.session.channel !== 'whatsapp')
+const pendingAgent = ref<{ id: number; name: string } | null>(null)
+const currentAgentName = computed(() => pendingAgent.value?.name ?? props.session.assigned_agent ?? null)
+const currentAgentId = computed(() => pendingAgent.value?.id ?? props.session.assigned_agent_id ?? null)
+const isEditingAgent = ref(false)
+const isAssigningAgent = ref(false)
+
+const assignAgent = async (option: any) => {
+    const agentId = Number(option?.agent_id)
+    if (!agentId || isAssigningAgent.value) return
+    if (String(currentAgentId.value ?? '') === String(agentId)) {
+        isEditingAgent.value = false
+        return
+    }
+
+    isAssigningAgent.value = true
+    try {
+        const organisation = String((route().params as Record<string, any>)?.organisation ?? '')
+        const response = await axios.patch(
+            route('grp.org.chat.agents.assign', [organisation, props.session.ulid]),
+            { agent_id: agentId },
+            { withCredentials: true }
+        )
+        const name = response.data?.data?.assigned_agent_name || option?.label || option?.name || ''
+        pendingAgent.value = { id: agentId, name }
+        isEditingAgent.value = false
+        emit('agent-assigned', { id: agentId, name })
+    } catch (e: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: e.response?.data?.message || e.message,
+            type: 'error',
+        })
+    } finally {
+        isAssigningAgent.value = false
+    }
+}
 
 const updatePriority = async (value: string) => {
     isPriorityOpen.value = false
@@ -832,9 +879,26 @@ const copyChatId = async () => {
                             </div>
                         </div>
                     </div>
-                    <div v-if="session.assigned_agent" class="grid grid-cols-3 gap-2 items-center">
-                        <div class="text-gray-500 text-xs">Agent</div>
-                        <div class="col-span-2 text-xs font-medium text-gray-800">{{ session.assigned_agent }}</div>
+                    <div v-if="currentAgentName || canAssignAgent" class="grid grid-cols-3 gap-2 items-center">
+                        <div class="text-gray-500 text-xs">{{ ctrans("Agent") }}</div>
+                        <div v-if="!canAssignAgent" class="col-span-2 text-xs font-medium text-gray-800">{{ currentAgentName }}</div>
+                        <div v-else-if="!isEditingAgent" class="col-span-2">
+                            <button type="button"
+                                class="w-full text-left text-xs font-medium rounded-md border border-gray-200 px-2 py-1 hover:bg-gray-50"
+                                :class="currentAgentName ? 'text-gray-800' : 'text-gray-400'"
+                                @click="isEditingAgent = true">
+                                {{ currentAgentName || ctrans("Assign to an agent") }}
+                            </button>
+                        </div>
+                        <div v-else class="col-span-2">
+                            <SelectQuery :urlRoute="`${baseUrl}/app/api/chats/agents`" :label="'label'"
+                                :valueProp="'agent_id'" :object="true" :searchable="true" :closeOnSelect="true"
+                                :disabled="isAssigningAgent" :onChange="assignAgent" />
+                            <button type="button" class="mt-1 text-[10px] text-gray-500 hover:text-gray-700"
+                                :disabled="isAssigningAgent" @click="isEditingAgent = false">
+                                {{ ctrans("Cancel") }}
+                            </button>
+                        </div>
                     </div>
                     <div v-if="session.started" class="grid grid-cols-3 gap-2 items-center">
                         <div class="text-gray-500 text-xs">Started</div>

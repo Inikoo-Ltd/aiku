@@ -6786,3 +6786,76 @@ test('forwarding a conversation to a colleague opens one staff thread and option
     expect($event->payload['recipient_user_ids'])->toBe([$warehouse->id])
         ->and($event->payload['also_emailed'])->toBeFalse();
 });
+
+test('an agent can hand a conversation to another named agent', function () {
+    $user = $this->user;
+
+    actingAs($user);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $user->id],
+        [
+            'is_online'            => true,
+            'max_concurrent_chats' => 100,
+            'current_chat_count'   => 0,
+        ]
+    );
+
+    ShopHasChatAgent::firstOrCreate([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $agent->id,
+    ]);
+
+    $colleagueUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $colleague     = ChatAgent::create([
+        'user_id'              => $colleagueUser->id,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
+        'max_concurrent_chats' => 100,
+        'current_chat_count'   => 0,
+    ]);
+
+    ShopHasChatAgent::firstOrCreate([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $colleague->id,
+    ]);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING->value,
+        'guest_identifier' => 'guest_assign_other',
+        'language_id'      => 68,
+        'shop_id'          => $this->shop->id,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
+    ]);
+
+    app(AssignChatToAgent::class)->assignToSelf($this->organisation, $chatSession->ulid);
+
+    $chatSession->refresh();
+
+    $response = app(AssignChatToAgent::class)->asController(
+        $this->organisation->slug,
+        $chatSession,
+        Request::create('/', 'PATCH', ['agent_id' => $colleague->id, 'note' => 'This is yours'])
+    );
+
+    $data = $response->getData(true);
+
+    expect($data['success'])->toBeTrue()
+        ->and($data['data']['assigned_agent_id'])->toBe($colleague->id);
+
+    // One owner at a time: the active row moves to the colleague, it is not duplicated.
+    expect(ChatAssignment::where('chat_session_id', $chatSession->id)
+        ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+        ->pluck('chat_agent_id')->all())->toBe([$colleague->id]);
+
+    $event = $chatSession->chatEvents()->where('event_type', 'transfer_to_agent')->latest('id')->first();
+    expect($event->payload['to_agent_id'])->toBe($colleague->id)
+        ->and($event->payload['from_agent_id'])->toBe($agent->id);
+});

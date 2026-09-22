@@ -279,6 +279,7 @@ const panelSession = computed(() => {
         status: s.status,
         priority: s.priority ?? null,
         assigned_agent: s.assigned_agent?.name ?? null,
+        assigned_agent_id: s.assigned_agent?.id ?? null,
         started: s.created_at ?? null,
         ai_summary: s.ai_summary ?? null,
     }
@@ -1175,6 +1176,15 @@ const onPriorityUpdated = (value: string) => {
     if (selectedSession.value) selectedSession.value.priority = value
     const found = contacts.value.find((x) => x.ulid === ulid)
     if (found) found.priority = value
+}
+
+const onAgentAssigned = (agent: { id: number; name: string }) => {
+    const ulid = selectedSession.value?.ulid
+    if (selectedSession.value) {
+        selectedSession.value.assigned_agent = { id: String(agent.id), name: agent.name }
+    }
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) found.agent = { id: String(agent.id), name: agent.name }
 }
 
 // A guest was matched to a registered Aiku customer by email: promote it to a customer.
@@ -2342,7 +2352,7 @@ onUnmounted(() => {
             @click="closeSidePanel" />
 
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
-            :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
+            :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
             @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
