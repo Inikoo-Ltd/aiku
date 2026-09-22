@@ -142,6 +142,7 @@ const platformSummary = (byPlatform: Record<string, number>) =>
             <div>
                 <h3 class="text-lg font-semibold">{{ ctrans("Discontinue preview") }}</h3>
                 <p class="text-sm text-gray-500">{{ ctrans("What still hangs off the selected SKOs. Nothing is changed yet.") }}</p>
+                <p class="text-xs text-gray-400">{{ ctrans("Customer stores are never touched: once discontinued, their own stock sync shows zero and they delist it themselves.") }}</p>
             </div>
 
             <div v-if="isLoading" class="flex items-center gap-2 py-8 justify-center text-gray-500">
