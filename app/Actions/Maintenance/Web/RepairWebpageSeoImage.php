@@ -21,6 +21,12 @@ use Symfony\Component\Console\Helper\ProgressBar;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use stdClass;
 
+/**
+ * No longer needed for what the public site renders: a webpage with no share image of its own
+ * now falls back to its model's image, and its alt text to the page title, at render time.
+ * This only pins that fallback into a stored copy, which then stops following the model, so run
+ * it only to freeze the share image of a page as it is today.
+ */
 class RepairWebpageSeoImage
 {
     use WithActionUpdate;

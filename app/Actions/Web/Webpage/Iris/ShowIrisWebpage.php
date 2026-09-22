@@ -93,7 +93,7 @@ class ShowIrisWebpage
             'navigation'                  => $this->getIrisProductNavigation($webpage),
             'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
-                'seo_image_alt' => Arr::get($webpage->seo_data, 'image_alt'),
+                'seo_image_alt' => $this->getWebpageShareImageAlt($webpage),
                 'title'         => $title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,

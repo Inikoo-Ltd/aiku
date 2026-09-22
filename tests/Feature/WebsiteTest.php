@@ -128,6 +128,8 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
+use App\Actions\Helpers\Media\SaveModelImages;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Decorators\JobDecorator;
@@ -2699,3 +2701,39 @@ test('iris page render data is cached deflated and entries written before that s
 
     cache()->forget($key);
 });
+
+test('a catalogue webpage with no share image of its own shares the image of its product', function (array $catalogue) {
+    Storage::fake('public');
+
+    $product        = $catalogue['product'];
+    $productWebpage = $catalogue['productWebpage'];
+
+    expect(GetWebpageSeo::run($productWebpage)['share_image']['url'])->toBeNull();
+
+    $fakeImage = UploadedFile::fake()->image('bath-bomb.jpg');
+    SaveModelImages::run(
+        model: $product,
+        mediaData: [
+            'path'         => Storage::disk('public')->path($fakeImage->store('photos', 'public')),
+            'originalName' => $fakeImage->getClientOriginalName(),
+        ],
+        mediaScope: 'product_images',
+        modelHasMediaData: ['scope' => 'photo']
+    );
+    $product->refresh();
+    $productWebpage->refresh();
+
+    $seo = GetWebpageSeo::run($productWebpage);
+
+    expect($seo['share_image']['url'])->not->toBeNull()
+        ->and($seo['share_image']['alt'])->toBe($seo['title'])
+        ->and(ShowIrisWebpage::make()->getWebpageData($productWebpage->id, [], false)['webpage_img'])->not->toBeEmpty();
+
+    $chosen = UpdateWebpage::make()->action($productWebpage, ['seo_image_url' => 'https://cdn.example.com/chosen.png', 'seo_image_alt' => 'Chosen by hand']);
+    $chosenSeo = GetWebpageSeo::run($chosen);
+
+    expect($chosenSeo['share_image']['url'])->toBe('https://cdn.example.com/chosen.png')
+        ->and($chosenSeo['share_image']['alt'])->toBe('Chosen by hand');
+
+    UpdateWebpage::make()->action($chosen, ['seo_image_url' => null]);
+})->depends('create catalogue webpages');
