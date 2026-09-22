@@ -531,6 +531,17 @@ interface SelectedAttachment {
 const selectedFiles = ref<SelectedAttachment[]>([])
 const isEmailNotif = ref(false)
 
+const isEmailChat = computed(() => (props.session as any)?.channel === "email")
+
+// An email is written, not chatted: Enter opens a line and the message goes when it is finished.
+// A live chat is the other way round, a line at a time, so Enter still sends there.
+const onEnterKey = (event: KeyboardEvent) => {
+    if (isEmailChat.value) return
+
+    event.preventDefault()
+    sendMessage()
+}
+
 // Only worth offering where there is somebody to email and something to say: an email
 // conversation is already an email, and a stranger who left no address cannot be written to.
 const canEmailNotify = computed(() => {
@@ -1479,24 +1490,26 @@ const handleClickOutside = (e: MouseEvent) => {
                         isTyping = false
                         sendTypingStatus(false)
                     }
-                " @paste="onPasteAttachment" @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
+                " @paste="onPasteAttachment" @keydown.enter.exact="onEnterKey"
+                    @keydown.enter.meta.prevent="sendMessage" @keydown.enter.ctrl.prevent="sendMessage" rows="1"
+                    :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : 'Type message...'"
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="ctrans('Upload image')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" v-tooltip="ctrans('Upload image')" :aria-label="ctrans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" fixed-width />
                         </button>
                         <button @click="fileInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="ctrans('Upload file')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" v-tooltip="ctrans('Upload file')" :aria-label="ctrans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
                         </button>
                         <div ref="emojiPickerContainer" class="relative">
                             <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                                 :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
-                                :title="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
+                                v-tooltip="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
                                 <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                             </button>
 
@@ -1505,7 +1518,7 @@ const handleClickOutside = (e: MouseEvent) => {
                             </div>
                         </div>
                         <button @click="openTicketModal"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" v-tooltip="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
                     </div>

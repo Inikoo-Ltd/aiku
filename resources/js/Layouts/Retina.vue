@@ -13,9 +13,9 @@ import Notification from '@/Components/Utils/Notification.vue'
 import { faPlug, faStoreAltSlash, faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSnooze, faSkull } from '@fal'
 import { defineAsyncComponent, onBeforeMount, onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
-import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
-import RetinaLayoutDs from "./RetinaLayoutDs.vue"
-import RetinaLayoutEcom from "./RetinaLayoutEcom.vue"
+const RetinaLayoutFulfilment = defineAsyncComponent(() => import("./RetinaLayoutFulfilment.vue"))
+const RetinaLayoutDs = defineAsyncComponent(() => import("./RetinaLayoutDs.vue"))
+const RetinaLayoutEcom = defineAsyncComponent(() => import("./RetinaLayoutEcom.vue"))
 import { notify } from "@kyvg/vue3-notification"
 import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"

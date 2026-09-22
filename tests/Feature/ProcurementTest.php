@@ -2031,7 +2031,7 @@ test('under delivered stock delivery item is placed and books in the delivery', 
     expect($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::CHECKED)
         ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::CHECKED);
 
-    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 8]);
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 8, 'location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id]);
 
     expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(8.0)
         ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED)
@@ -2059,7 +2059,7 @@ test('UI show stock delivery under over delivered items tab', function () {
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
 
     $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 8]);
-    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 8]);
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 8, 'location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id]);
 
     expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
 
@@ -2105,7 +2105,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
     });
 
     $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
-    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 10]);
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 10, 'location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id]);
 
     expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
 
@@ -2130,7 +2130,7 @@ test('stock delivery item can not be placed beyond the checked quantity', functi
     $stockDeliveryItem = $stockDelivery->items()->first();
     $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 8]);
 
-    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 9]);
+    UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 9, 'location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id]);
 })->throws(ValidationException::class);
 
 function createLocationOrgStockFor($test, StockDeliveryItem $stockDeliveryItem): LocationOrgStock
@@ -2183,18 +2183,37 @@ test('stock delivery item places all the remaining checked quantity in one locat
         ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
 });
 
-test('stock delivery item places all without a location when the org stock has none', function () {
+test('stock delivery item is booked in to a location the org stock did not have and gets associated to it', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-NEW-LOCATION', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $warehouse         = Warehouse::where('organisation_id', $this->organisation->id)->first() ?? StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $location          = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    expect(LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->where('location_id', $location->id)->exists())->toBeFalse();
+
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_id' => $location->id]);
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 6, 'location_id' => $location->id]);
+
+    $locationOrgStock = LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->where('location_id', $location->id)->first();
+
+    expect($locationOrgStock)->not->toBeNull()
+        ->and((float) $locationOrgStock->quantity)->toBe(10.0)
+        ->and($stockDeliveryItem->sowings()->where('location_id', $location->id)->count())->toBe(2)
+        ->and((float) $stockDeliveryItem->unit_quantity_placed)->toBe(10.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED);
+});
+
+test('stock delivery item can not be placed without a location', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-ALL-NO-LOCATION', [10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
     $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
 
     $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
-    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, []);
-
-    expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(10.0)
-        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED)
-        ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
-});
+    SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, []);
+})->throws(ValidationException::class);
 
 test('UI show stock delivery items exposes the placement and sowings data', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'PLACEMENT-UI', [10]);

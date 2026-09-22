@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, inject, onMounted, watch, computed, onUnmounted, defineAsyncComponent } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar, faPlus, faSpinner, faPaperPlane, faImage, faPaperclip, faXmark, faFilePdf, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
@@ -519,7 +519,7 @@ defineExpose({
         </div>
 
         <div v-if="agentTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
-            {{ agentTypingUser }} {{ trans("is typing...") }}
+            {{ agentTypingUser }} {{ ctrans("is typing...") }}
         </div>
 
         <!-- Empty -->
@@ -532,7 +532,7 @@ defineExpose({
         sm:grid
         sm:place-content-center
     ">
-            {{ trans("Start the conversation") }}
+            {{ ctrans("Start the conversation") }}
         </div>
 
         <!-- Rating -->
@@ -552,7 +552,7 @@ defineExpose({
                     color: layout.app.theme[4],
                 }">
                 <FontAwesomeIcon :icon="faPlus" fixed-width />
-                {{ trans("New Chat") }}
+                {{ ctrans("New Chat") }}
             </button>
         </div>
 
@@ -593,7 +593,7 @@ defineExpose({
                 class="rounded-xl border bg-white shadow-sm focus-within:shadow-md transition-shadow"
                 :style="{ borderColor: layout.app.theme[4] }">
                 <textarea ref="textareaRef" v-model="input" rows="1" @input="handleTyping" @keydown="handleKeyDown"
-                    :placeholder="trans('Type a message...')"
+                    :placeholder="ctrans('Type a message...')"
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
@@ -601,13 +601,13 @@ defineExpose({
                         <template v-if="isLoggedIn">
                             <button @click="imageInput?.click()"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-                                :title="trans('Upload image')">
+                                v-tooltip="ctrans('Upload image')" :aria-label="ctrans('Upload image')">
                                 <FontAwesomeIcon :icon="faImage" class="text-sm" fixed-width />
                             </button>
 
                             <button @click="fileInput?.click()"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-                                :title="trans('Upload file')">
+                                v-tooltip="ctrans('Upload file')" :aria-label="ctrans('Upload file')">
                                 <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
                             </button>
 
@@ -621,7 +621,7 @@ defineExpose({
                         <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                             :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
-                            :title="trans('Emoji')">
+                            v-tooltip="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
                             <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                         </button>
 
