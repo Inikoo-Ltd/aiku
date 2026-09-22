@@ -34,6 +34,7 @@ use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Actions\Chat\ChatSession\GetChatStatus;
+use App\Actions\HumanResources\WorkSchedule\GetChatConfig;
 use App\Actions\Chat\ChatSession\GetChatVisitorsByCountry;
 use App\Actions\Chat\ChatSession\HandleChatTyping;
 use App\Actions\Chat\ChatSession\MarkChatMessagesAsRead;
@@ -6140,4 +6141,51 @@ test('a logged in customer is never asked for the name and email we already hold
         ->and($session->metadata['email'])->toBe('known@example.com')
         ->and($session->channel)->toBe(ChatChannelEnum::EMAIL)
         ->and($session->metadata['email_from'])->toBe('known@example.com');
+});
+
+test('the widget goes offline on a bank holiday even though the week says open', function () {
+    $tz = \App\Models\Helpers\Timezone::where('name', 'Europe/London')->first();
+    $this->shop->update(['timezone_id' => $tz->id, 'opening_hours' => []]);
+    $this->web->update(['settings' => array_merge($this->web->settings ?? [], ['enable_chat' => true])]);
+
+    $schedule = \App\Models\HumanResources\WorkSchedule::create([
+        'name'             => 'Widget cover',
+        'schedulable_type' => 'Shop',
+        'schedulable_id'   => $this->shop->id,
+        'timezone_id'      => $tz->id,
+        'type'             => 'default',
+        'is_active'        => true,
+    ]);
+
+    foreach (range(1, 7) as $dayOfWeek) {
+        $schedule->days()->create([
+            'day_of_week'    => $dayOfWeek,
+            'is_working_day' => true,
+            'start_time'     => '00:00:00',
+            'end_time'       => '23:59:00',
+        ]);
+    }
+
+    $shop = $this->shop->fresh();
+    $web  = $this->web->fresh();
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-23 09:00', 'Europe/London'));
+    expect(GetChatConfig::run($web)['is_online'])->toBeTrue();
+
+    $this->organisation->holidays()->create([
+        'group_id' => $this->organisation->group_id,
+        'type'     => \App\Enums\HumanResources\Holiday\HolidayTypeEnum::PUBLIC->value,
+        'year'     => 2026,
+        'label'    => 'Widget bank holiday',
+        'from'     => '2026-09-23',
+        'to'       => '2026-09-23',
+    ]);
+
+    $config = GetChatConfig::run($web);
+
+    expect($config['is_online'])->toBeFalse()
+        ->and($config['offline_info'])->not->toBeNull()
+        ->and($shop->workSchedules()->where('is_active', true)->first()->isOpenNow('Europe/London'))->toBeTrue();
+
+    \Illuminate\Support\Carbon::setTestNow();
 });
