@@ -4703,3 +4703,21 @@ test('a cancelled delivery note row reports its pickings as returned to location
 
     expect((bool)$row()->is_returned_to_location)->toBeTrue();
 });
+
+test('a delivery note item with nothing required does not break the tariff codes page (HELP-3277)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($deliveryNoteItem->id)->delete();
+    $deliveryNoteItem->transaction->update(['net_amount' => 40]);
+    $deliveryNoteItem->update(['quantity_required' => 0]);
+    $deliveryNoteItem->orgStock->update(['sku_commercial_value' => 9, 'current_supplier_sku_cost' => 3, 'sku_value' => 2]);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($deliveryNoteItem->orgStock->tradeUnits->first(), [
+        'tariff_code'       => '3304990000',
+        'origin_country_id' => $this->organisation->country_id,
+    ]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
+
+    expect((float) $rows->firstWhere('tariff_code', '3304990000')->amount)->toBe(40.0);
+});
