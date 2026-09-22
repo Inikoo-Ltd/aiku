@@ -7238,3 +7238,11 @@ test('filing an imported mail away writes down whether it was unread', function 
 
     $this->shop->update(['settings' => $original]);
 });
+
+test('email attachments over the media library limit are left in the mail', function () {
+    $isWorthImporting = fn (int $size) => (fn () => $this->isWorthImporting(['size' => $size, 'mimeType' => 'video/mp4', 'inline' => false], true))
+        ->call(new App\Actions\Comms\Mailbox\ImportPendingGmailAttachments());
+
+    expect($isWorthImporting(1024))->toBeTrue()
+        ->and($isWorthImporting(91 * 1024 * 1024))->toBeFalse();
+});
