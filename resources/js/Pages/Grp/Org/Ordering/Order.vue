@@ -74,7 +74,8 @@ import {
     faTrash,
     faPercentage,
     faSackDollar,
-    faUndo as falUndo
+    faUndo as falUndo,
+    faInfoCircle,
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -104,7 +105,7 @@ import { Icon as IconTS } from "@/types/Utils/Icon"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle)
 
 interface OrderCharge {
     name: string
@@ -1551,7 +1552,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <Head :title="capitalize(title)" />
     <ConfirmDialog>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" fixed-width />
         </template>
     </ConfirmDialog>
 
@@ -2456,7 +2457,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     class="ml-auto h-6 mr-2 text-purple-400 hover:text-purple-600" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                     v-tooltip="ctrans('Apply discount to all products')">
                                     <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
-                                        class="h-4" />
+                                        class="h-4" fixed-width />
                                 </button>
                                 <button
                                     @click="() => {
@@ -2468,11 +2469,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
                                         <FontAwesomeIcon
                                             :icon="faTrash"
-                                            class="!text-lg !w-fit"
+                                            class="!text-lg !w-fit" fixed-width
                                         />
                                         <FontAwesomeIcon
                                             :icon="faPercentage"
-                                            class="text-xs !top-[25%]"
+                                            class="text-xs !top-[25%]" fixed-width
                                         />
                                     </FontAwesomeLayers>
                                 </button>
@@ -2480,7 +2481,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     class="ml-auto h-6 mr-2 text-red-500 hover:text-red-700" @click="restoreAllDiscount" aria-label="Edit Percentage"
                                     v-tooltip="ctrans('Restore original discount to all products')">
                                     <FontAwesomeIcon :icon="falUndo"
-                                        class="h-4" />
+                                        class="h-4" fixed-width />
                                 </button>
                             </template>
                         </dl>
@@ -3029,6 +3030,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <div v-for="check of proforma_invoice.check_list" :key="check.key" class="flex items-center gap-2">
                     <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
                     <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
+                    <FontAwesomeIcon v-if="check.tooltip" v-tooltip="check.tooltip" icon="fal fa-info-circle" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
             </div>
 

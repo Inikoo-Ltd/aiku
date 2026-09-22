@@ -53,7 +53,7 @@ const conversationHref = (ulid: string) =>
                 :href="conversationHref(item.meta_chat_session_ulid)"
                 class="text-gray-400 hover:text-gray-600"
                 v-tooltip="trans('Open conversation')">
-                <FontAwesomeIcon :icon="faCommentAlt" />
+                <FontAwesomeIcon :icon="faCommentAlt" fixed-width />
             </Link>
         </template>
     </Table>

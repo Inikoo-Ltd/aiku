@@ -268,7 +268,7 @@ defineExpose({
                         </div>
 
                         <FontAwesomeIcon v-if="!images.length" icon="fal fa-image"
-                            class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" />
+                            class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" fixed-width />
 
                     </slot>
                 </div>

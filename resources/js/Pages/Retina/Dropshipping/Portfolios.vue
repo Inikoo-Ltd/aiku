@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount, inject } from "vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
@@ -862,6 +862,7 @@ const extendedColumns = [
 	{ key: "family_code", label: "Family code" },
 	{ key: "family_name", label: "Family name" },
 	{ key: "product_name", label: "Product name" },
+	{ key: "barcode", label: "Barcode (EAN/GTIN)" },
 	{ key: "materials_ingredients", label: "Materials/Ingredients" },
 	{ key: "unit_dimensions", label: "Unit dimensions" },
 	{ key: "unit_net_weight", label: "Unit net weight" },
@@ -1985,7 +1986,7 @@ const layout = inject("layout", layoutStructure)
 								<FontAwesomeIcon
 									icon="fas fa-spinner"
 									class="animate-spin"
-									aria-hidden="true" />
+									fixed-width aria-hidden="true" />
 								<span>{{ trans("Preparing...") }}</span>
 							</div>
 						</div>
@@ -2111,7 +2112,7 @@ const layout = inject("layout", layoutStructure)
 								<FontAwesomeIcon
 									icon="fas fa-spinner"
 									class="animate-spin"
-									aria-hidden="true" />
+									fixed-width aria-hidden="true" />
 								<span>{{ trans("Preparing...") }}</span>
 							</div>
 						</div>
@@ -2227,7 +2228,7 @@ const layout = inject("layout", layoutStructure)
 								<FontAwesomeIcon
 									icon="fas fa-spinner"
 									class="animate-spin"
-									aria-hidden="true" />
+									fixed-width aria-hidden="true" />
 								<span>{{ trans("Preparing...") }}</span>
 							</div>
 						</div>
@@ -2336,14 +2337,14 @@ const layout = inject("layout", layoutStructure)
 									<FontAwesomeIcon
 										:icon="faCheck"
 										class="w-3.5 h-3.5"
-										v-tooltip="'success to upload'" />
+										v-tooltip="'success to upload'" fixed-width />
 									{{ uploadProgressData.done }}
 								</span>
 								<span class="flex items-center gap-1 text-red-500">
 									<FontAwesomeIcon
 										:icon="faTimes"
 										class="w-3.5 h-3.5"
-										v-tooltip="'failed to upload'" />
+										v-tooltip="'failed to upload'" fixed-width />
 									{{ uploadProgressData.data.number_fails }}
 								</span>
 							</div>

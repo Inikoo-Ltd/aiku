@@ -53,7 +53,7 @@ class GetCustomerChatHistory
         if ($webUserIds) {
             $paginator       = GetChatSessions::make()->handle(['web_user_id' => $webUserIds, 'page' => 1, 'limit' => $take]);
             $websiteSessions = collect($paginator->items())
-                ->map(fn ($s) => ['channel' => 'website', 'session' => $s]);
+                ->map(fn ($s) => ['channel' => $s->channel?->value ?? 'website', 'session' => $s]);
         }
 
         $whatsappSessions = collect();

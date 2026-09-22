@@ -11,6 +11,7 @@ namespace App\Actions\Comms\Mailbox;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatAgent;
+use App\Actions\Chat\ChatSession\GetChatMediaContents;
 use App\Models\Chat\ChatMessage;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
@@ -30,10 +31,6 @@ class SendChatMessageByGmail
 
         $threadId = Arr::get($session->metadata, 'gmail_thread_id');
 
-        if (! $threadId) {
-            return;
-        }
-
         $client = GmailClient::forShop($session->shop);
 
         if (! $client) {
@@ -43,6 +40,16 @@ class SendChatMessageByGmail
         $raw = $this->buildRawMessage($session, $chatMessage);
 
         $result = $client->send($raw, $threadId);
+
+        // A conversation we started has no thread until Gmail gives it one. Without it kept here
+        // the customer's reply matches nothing and opens a second conversation beside this one.
+        if (! $threadId && Arr::get($result, 'threadId')) {
+            $session->update([
+                'metadata' => array_merge($session->metadata ?? [], [
+                    'gmail_thread_id' => Arr::get($result, 'threadId'),
+                ]),
+            ]);
+        }
 
         $chatMessage->update([
             'metadata' => array_merge($chatMessage->metadata ?? [], [
@@ -61,7 +68,9 @@ class SendChatMessageByGmail
         $subject        = Arr::get($metadata, 'email_subject') ?? '';
         $replyToHeader  = Arr::get($metadata, 'gmail_last_header_message_id');
 
-        if (! str_starts_with(trim($subject), 'Re:')) {
+        // Only an answer is prefixed: the first mail of a conversation we started replies to
+        // nothing, and a subject reading "Re:" out of the blue looks like a lost thread.
+        if ($replyToHeader && ! str_starts_with(trim($subject), 'Re:')) {
             $subject = 'Re: '.$subject;
         }
 
@@ -96,29 +105,39 @@ class SendChatMessageByGmail
             chunk_split(base64_encode($messageBody)),
         ];
 
-        $attachment = $chatMessage->attachment;
+        $attachments = $chatMessage->attachedFiles();
 
-        if (! $attachment) {
+        if ($attachments->isEmpty()) {
             return implode("\r\n", [...$headers, ...$textPart]);
         }
 
         $boundary = 'aiku-'.bin2hex(random_bytes(12));
-        $fileName = $this->encodeHeader(str_replace(['"', "\r", "\n"], '', $attachment->name ?: $attachment->file_name));
 
-        return implode("\r\n", [
+        $lines = [
             ...$headers,
             "Content-Type: multipart/mixed; boundary=\"{$boundary}\"",
             '',
             "--{$boundary}",
             ...$textPart,
-            "--{$boundary}",
-            "Content-Type: {$attachment->mime_type}; name=\"{$fileName}\"",
-            "Content-Disposition: attachment; filename=\"{$fileName}\"",
-            'Content-Transfer-Encoding: base64',
-            '',
-            chunk_split(base64_encode(stream_get_contents($attachment->stream()))),
-            "--{$boundary}--",
-        ]);
+        ];
+
+        foreach ($attachments as $attachment) {
+            $fileName = $this->encodeHeader(str_replace(['"', "\r", "\n"], '', $attachment->name ?: $attachment->file_name));
+
+            array_push(
+                $lines,
+                "--{$boundary}",
+                "Content-Type: {$attachment->mime_type}; name=\"{$fileName}\"",
+                "Content-Disposition: attachment; filename=\"{$fileName}\"",
+                'Content-Transfer-Encoding: base64',
+                '',
+                chunk_split(base64_encode(GetChatMediaContents::run($attachment))),
+            );
+        }
+
+        $lines[] = "--{$boundary}--";
+
+        return implode("\r\n", $lines);
     }
 
     private function encodeHeader(string $value): string

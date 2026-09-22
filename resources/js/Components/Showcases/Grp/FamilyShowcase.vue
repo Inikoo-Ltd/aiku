@@ -89,7 +89,7 @@ function offerRoute(offer: {}) {
     <div v-if="data.webpage_url"
 		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
 		<div class="flex items-center gap-2 text-blue-700 text-sm">
-			<FontAwesomeIcon :icon="faExternalLink" class="text-blue-500" />
+			<FontAwesomeIcon :icon="faExternalLink" class="text-blue-500" fixed-width />
 			<a :href="data.webpage_url" target="_blank" rel="noopener noreferrer"
 				class="font-medium break-all hover:underline hover:text-blue-800 transition-colors duration-200">
 				{{ data.webpage_url }}
@@ -102,7 +102,7 @@ function offerRoute(offer: {}) {
                 v-if="!data.family?.data.description || !data.family?.data.description_title || !data.family?.data.description_extra && actions"
                 severity="error" closable>
                 <template #icon>
-                    <FontAwesomeIcon :icon="faInfoCircle" />
+                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
                 </template>
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">

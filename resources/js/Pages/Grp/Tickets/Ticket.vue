@@ -5,12 +5,14 @@
   -->
 
 <script setup lang="ts">
+import { ticketRoute } from "@/Composables/useTicketsRoute"
 import { ref, computed } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Icon from "@/Components/Icon.vue"
-import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketControlPanel from "@/Components/Tickets/TicketControlPanel.vue"
+import TicketChatDropdown from "@/Components/Tickets/TicketChatDropdown.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -72,7 +74,6 @@ const props = defineProps<{
         update: { name: string; parameters: Record<string, unknown> }
         comment: { name: string; parameters: Record<string, unknown> }
         rate: { name: string; parameters: Record<string, unknown> }
-        escalate: { name: string; parameters: Record<string, unknown> }
     }
 }>()
 
@@ -80,16 +81,6 @@ useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can
 
 const saveTicketOrderSetting = (setting: "ticket_comments_newest_first" | "ticket_history_newest_first", isNewestFirst: boolean) => {
     axios.patch(route("grp.models.profile.update"), { [setting]: isNewestFirst })
-}
-
-const kindIcons: Record<string, string> = {
-    bug: "fal fa-bug",
-    feature: "fal fa-lightbulb",
-    escalation: "fal fa-level-up",
-    task: "fal fa-tasks",
-    qa: "fal fa-vial",
-    documentation: "fal fa-books",
-    data_integrity: "fal fa-database",
 }
 
 const readPanelState = (key: string) => {
@@ -100,7 +91,6 @@ const readPanelState = (key: string) => {
     }
 }
 
-const isControlsOpen = ref(readPanelState("ticket_controls_open"))
 const isHistoryOpen = ref(readPanelState("ticket_history_open"))
 
 const rememberPanelState = (key: string, isOpen: boolean) => {
@@ -109,17 +99,11 @@ const rememberPanelState = (key: string, isOpen: boolean) => {
     } catch {}
 }
 
-const toggleControls = () => {
-    isControlsOpen.value = !isControlsOpen.value
-    rememberPanelState("ticket_controls_open", isControlsOpen.value)
-}
-
 const toggleHistory = () => {
     isHistoryOpen.value = !isHistoryOpen.value
     rememberPanelState("ticket_history_open", isHistoryOpen.value)
 }
 
-const summaryPeople = computed(() => (props.ticket.collaborators ?? []) as { id: number; name: string; short: string; avatar?: any }[])
 
 const isHistoryNewestFirst = ref(props.history_newest_first)
 
@@ -141,7 +125,7 @@ const update = (field: string, value: unknown) => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #afterTitle>
-            <button type="button" v-tooltip="isLinkCopied ? trans('Copied') : trans('Copy link')" class="text-sm text-gray-400 hover:text-gray-600" @click="copyTicketLink">
+            <button type="button" v-tooltip="isLinkCopied ? ctrans('Copied') : ctrans('Copy link')" class="text-sm text-gray-400 hover:text-gray-600" @click="copyTicketLink">
                 <FontAwesomeIcon :icon="isLinkCopied ? ['fal', 'fa-check'] : ['fal', 'fa-link']" :class="{ 'text-green-500': isLinkCopied }" fixed-width aria-hidden="true" />
             </button>
         </template>
@@ -149,16 +133,16 @@ const update = (field: string, value: unknown) => {
             <div class="flex w-80 flex-col gap-3 whitespace-nowrap">
                 <label v-if="can_flag_confidential" class="flex items-center gap-x-2 text-sm text-gray-600 cursor-pointer">
                     <input type="checkbox" :checked="ticket.is_confidential" class="rounded border-gray-300" @change="update('is_confidential', ($event.target as HTMLInputElement).checked)" />
-                    {{ trans("Confidential") }} <span class="text-xs text-gray-400">({{ trans("only reporter and lead engineers") }})</span>
+                    {{ ctrans("Confidential") }} <span class="text-xs text-gray-400">({{ ctrans("only reporter and lead engineers") }})</span>
                 </label>
                 <ModalConfirmationDelete
-                    :title="trans('Delete :reference?', { reference: ticket.reference })"
-                    :description="trans('The ticket and its comments will be removed for good.')"
-                    :noLabel="trans('Yes, delete')"
+                    :title="ctrans('Delete :reference?', { reference: ticket.reference })"
+                    :description="ctrans('The ticket and its comments will be removed for good.')"
+                    :noLabel="ctrans('Yes, delete')"
                     :routeDelete="routes.delete"
                     class="w-full">
                     <template #default="{ changeModel }">
-                        <Button type="negative" icon="fal fa-trash-alt" :label="trans('Delete ticket')" full @click="changeModel" />
+                        <Button type="negative" icon="fal fa-trash-alt" :label="ctrans('Delete ticket')" full @click="changeModel" />
                     </template>
                 </ModalConfirmationDelete>
             </div>
@@ -167,98 +151,40 @@ const update = (field: string, value: unknown) => {
     <div class="p-4 grid gap-4 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-4">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
                 <template #after-description>
+                    <TicketChatDropdown v-if="ticket.source?.has_conversation" :ticketId="ticket.id" :source="ticket.source" />
                     <TicketAttachmentList :files="attachment_gallery" :preview-blocked="can_preview_attachments === false" />
                 </template>
             </TicketThread>
         </div>
         <div class="space-y-4 self-start lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto">
-        <aside class="bg-white rounded-lg border border-gray-300 text-sm">
-            <button type="button" class="flex w-full items-start justify-between gap-3 p-4 text-left transition duration-200 hover:bg-gray-50" @click="toggleControls">
-                <span v-if="isControlsOpen" class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Control panel") }}</span>
-                <span v-if="!isControlsOpen" class="flex min-w-0 flex-col gap-1.5">
-                    <span class="flex items-center gap-2">
-                        <TicketUserAvatar v-if="ticket.assignee" :name="ticket.assignee" :avatar="ticket.assignee_avatar" size="sm" />
-                        <span v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-gray-500">
-                            <FontAwesomeIcon icon="fal fa-user" fixed-width class="text-xs" />
-                        </span>
-                        <span :class="ticket.assignee ? 'font-medium text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || trans("Unassigned") }}</span>
-                    </span>
-                    <span
-                        v-if="summaryPeople.length"
-                        v-tooltip="{ content: summaryPeople.map((person) => person.name).join(', '), delay: 0 }"
-                        class="flex items-center gap-1.5">
-                        <FontAwesomeIcon icon="fal fa-users" fixed-width class="text-xs text-gray-400" />
-                        <span class="flex -space-x-1.5">
-                            <TicketUserAvatar v-for="person in summaryPeople.slice(0, 3)" :key="person.id" :name="person.name" :avatar="person.avatar" size="xs" class="ring-2 ring-white" />
-                        </span>
-                        <span v-if="summaryPeople.length > 3" class="text-xs text-gray-500">{{ trans("+:count others", { count: String(summaryPeople.length - 3) }) }}</span>
-                    </span>
-                </span>
-                <span class="flex shrink-0 items-center gap-3">
-                    <span v-if="!isControlsOpen" class="flex flex-col items-end gap-1.5">
-                        <span class="flex items-center gap-1.5">
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                                <Icon :data="ticket.status_icon" />{{ ticket.status_label }}
-                            </span>
-                            <span v-if="ticket.qa_status" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                                <Icon :data="ticket.qa_status_icon" />{{ ticket.qa_status_label }}
-                            </span>
-                        </span>
-                        <span v-if="ticket.kind || ticket.module_label" class="flex items-center gap-1.5">
-                            <span v-if="ticket.kind" v-tooltip="ticket.kind_label" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                                <FontAwesomeIcon :icon="kindIcons[ticket.kind] ?? 'fal fa-question-circle'" fixed-width />
-                            </span>
-                            <span v-if="ticket.module_label" v-tooltip="ticket.module_label" class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                                <FontAwesomeIcon icon="fal fa-cube" fixed-width />
-                            </span>
-                        </span>
-                    </span>
-                    <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width class="text-gray-400 transition-transform duration-200" :class="!isControlsOpen && '-rotate-90'" />
-                </span>
-            </button>
-            <div v-show="isControlsOpen" class="space-y-4 border-t border-gray-200 p-4">
+        <TicketControlPanel :ticket="ticket" storage-key="ticket_controls_open">
             <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
             <div v-if="ticket.commits?.length">
-                <p class="text-xs text-gray-500 mb-1">{{ trans("Commits") }}</p>
+                <p class="text-xs text-gray-500 mb-1">{{ ctrans("Commits") }}</p>
                 <ul class="space-y-1 text-xs">
                     <li v-for="commit in ticket.commits" :key="commit.hash">
                         <a v-if="commit.url" :href="commit.url" target="_blank" class="font-mono text-blue-600 hover:underline">{{ commit.hash.slice(0, 8) }}</a>
                         <span v-else class="font-mono">{{ commit.hash.slice(0, 8) }}</span>
                         <span class="text-gray-600"> {{ commit.subject }}</span>
-                        <span v-if="commit.version || commit.deployed_at" class="text-gray-400"> · {{ commit.version || trans("deployed") }} {{ commit.deployed_at ? new Date(commit.deployed_at).toLocaleDateString() : "" }}</span>
+                        <span v-if="commit.version || commit.deployed_at" class="text-gray-400"> · {{ commit.version || ctrans("deployed") }} {{ commit.deployed_at ? new Date(commit.deployed_at).toLocaleDateString() : "" }}</span>
                     </li>
                 </ul>
             </div>
-            <div v-if="ticket.source" class="rounded-md border border-gray-200 bg-gray-50 p-3">
-                <div class="flex items-center gap-2">
-                    <FontAwesomeIcon v-if="ticket.source.channel_icon" :icon="ticket.source.channel_icon.icon" :class="ticket.source.channel_icon.class" fixed-width aria-hidden="true" />
-                    <span class="font-medium text-gray-800">{{ ticket.source.channel_label }}</span>
-                </div>
-                <dl class="mt-2 space-y-1 text-gray-600">
-                    <div v-if="ticket.source.contact" class="flex justify-between gap-2"><dt>{{ trans("Contact") }}</dt><dd class="truncate">{{ ticket.source.contact }}</dd></div>
-                    <div v-if="ticket.source.reference" class="flex justify-between gap-2"><dt>{{ trans("Reference") }}</dt><dd class="font-mono text-xs">{{ ticket.source.reference }}</dd></div>
-                </dl>
-                <a v-if="ticket.source.url" :href="ticket.source.url" class="mt-2 inline-flex items-center gap-1 text-blue-600 hover:underline">
-                    <FontAwesomeIcon :icon="['fal', 'comments']" fixed-width aria-hidden="true" />
-                    {{ trans("Open conversation") }}
-                </a>
-            </div>
             <dl class="space-y-1 text-gray-600">
-                <div v-if="ticket.parent" class="flex justify-between"><dt>{{ trans("Escalated from") }}</dt><dd><Link :href="route('grp.tickets.show', ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
-                <div v-if="ticket.escalations.length" class="flex justify-between"><dt>{{ trans("Escalated to") }}</dt><dd class="space-x-1"><Link v-for="ref in ticket.escalations" :key="ref" :href="route('grp.tickets.show', ref)" class="text-blue-600 hover:underline">{{ ref }}</Link></dd></div>
-                <div v-if="ticket.customer" class="flex justify-between"><dt>{{ trans("Customer") }}</dt><dd>{{ ticket.customer }}</dd></div>
-                <div v-if="ticket.shop" class="flex justify-between"><dt>{{ trans("Shop") }}</dt><dd>{{ ticket.shop }}</dd></div>
+                <div v-if="ticket.parent" class="flex justify-between"><dt>{{ ctrans("Escalated from") }}</dt><dd><Link :href="ticketRoute(ticket.parent)" class="text-blue-600 hover:underline">{{ ticket.parent }}</Link></dd></div>
+                <div v-if="ticket.escalations.length" class="flex justify-between"><dt>{{ ctrans("Escalated to") }}</dt><dd class="space-x-1"><Link v-for="ref in ticket.escalations" :key="ref" :href="ticketRoute(ref)" class="text-blue-600 hover:underline">{{ ref }}</Link></dd></div>
+                <div v-if="ticket.customer" class="flex justify-between"><dt>{{ ctrans("Customer") }}</dt><dd>{{ ticket.customer }}</dd></div>
+                <div v-if="ticket.shop" class="flex justify-between"><dt>{{ ctrans("Shop") }}</dt><dd>{{ ticket.shop }}</dd></div>
             </dl>
-            </div>
-        </aside>
+        </TicketControlPanel>
         <div class="bg-white rounded-lg border border-gray-300 text-sm">
             <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left text-xs text-gray-500 transition duration-200 hover:bg-gray-50" @click="toggleHistory">
-                <span class="font-medium uppercase tracking-wide text-gray-400">{{ trans("History") }}</span>
+                <span class="font-medium uppercase tracking-wide text-gray-400">{{ ctrans("History") }}</span>
                 <span class="flex shrink-0 items-center gap-3">
-                    <span v-if="isHistoryOpen && timeline.length > 1" class="px-1 py-0.5 hover:text-gray-900" :title="trans('Sort history')" @click.stop="toggleHistoryOrder">
-                        {{ isHistoryNewestFirst ? "↓" : "↑" }} {{ isHistoryNewestFirst ? trans("Newest first") : trans("Oldest first") }}
+                    <span v-if="isHistoryOpen && timeline.length > 1" class="px-1 py-0.5 hover:text-gray-900" :title="ctrans('Sort history')" @click.stop="toggleHistoryOrder">
+                        {{ isHistoryNewestFirst ? "↓" : "↑" }} {{ isHistoryNewestFirst ? ctrans("Newest first") : ctrans("Oldest first") }}
                     </span>
                     <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width class="text-gray-400 transition-transform duration-200" :class="!isHistoryOpen && '-rotate-90'" />
                 </span>

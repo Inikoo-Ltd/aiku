@@ -85,6 +85,7 @@ const props = defineProps<{
         fetch_live_webpages: routeType
         submit: routeType
     }
+    pagespeed_history?: object
 }>()
 
 
@@ -155,6 +156,7 @@ const submitForm = () => {
         :route_login
         :route_register
         :route_forgot_pass
+        :pagespeed_history="currentTab === 'showcase' ? pagespeed_history : undefined"
     />
 
     <Modal :isOpen="openModal" width="w-full max-w-md" closeButton @onClose="openModal = false">

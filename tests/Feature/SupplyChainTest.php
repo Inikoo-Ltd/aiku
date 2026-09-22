@@ -131,7 +131,7 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
 
     $this->get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $organisation->slug));
     $this->get(route('grp.devops.dashboard'))->assertForbidden();
-    $this->get(route('grp.chat.dashboard'))->assertForbidden();
+    $this->get(route('grp.chat.reports'))->assertForbidden();
     $this->get(route('grp.org.dashboard.show', $organisation->slug))->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('dashboard.super_blocks', [])
@@ -687,6 +687,20 @@ test('UI supply chain control', function () {
     });
 });
 
+test('UI supply chain PO journey', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.po_journey.dashboard'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/SupplyChainPurchaseOrderJourney')
+            ->has('title')
+            ->has('pageHead')
+            ->has('ribbons')
+            ->has('summary');
+    });
+});
+
 test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
     $supplier = Supplier::first();
@@ -979,4 +993,12 @@ test('UI get section route group supply chain index', function () {
     $sectionScope = GetSectionRoute::make()->handle('grp.supply-chain.suppliers.index', []);
     expect($sectionScope)->toBeInstanceOf(AikuScopedSection::class)
         ->and($sectionScope->code)->toBe(AikuSectionEnum::GROUP_SUPPLY_CHAIN->value);
+});
+
+test('housekeep purchase orders flags legacy open orders and undo removes the flag', function () {
+    $flagged = \App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0);
+    expect($flagged)->toBeGreaterThanOrEqual(0);
+    $response = $this->get(route('grp.supply-chain.po_journey.dashboard'));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplyChainPurchaseOrderJourney'));
+    expect(\App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0, true))->toBe($flagged);
 });

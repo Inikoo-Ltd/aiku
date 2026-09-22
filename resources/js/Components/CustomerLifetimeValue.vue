@@ -342,7 +342,7 @@ const predictedStartPosition = computed(() => {
                 <div class="text-sm text-gray-500 mb-1 flex items-center justify-center gap-1">
                     <span>{{ trans('Historic CLV') }}</span>
                     <Tooltip placement="top">
-                        <FontAwesomeIcon :icon="faQuestionCircle" class="text-gray-400 text-xs cursor-help" />
+                        <FontAwesomeIcon :icon="faQuestionCircle" class="text-gray-400 text-xs cursor-help" fixed-width />
                         <template #popper>
                             <div class="text-xs">
                                 {{ trans('Historical CLV = Average Purchase Value × Total Order') }}
@@ -360,7 +360,7 @@ const predictedStartPosition = computed(() => {
                 <div class="text-sm text-gray-500 mb-1 flex items-center justify-center gap-1">
                     <span>{{ trans('Predicted CLV') }}</span>
                     <Tooltip placement="top">
-                        <FontAwesomeIcon :icon="faQuestionCircle" class="text-gray-400 text-xs cursor-help" />
+                        <FontAwesomeIcon :icon="faQuestionCircle" class="text-gray-400 text-xs cursor-help" fixed-width />
                         <template #popper>
                             <div class="text-xs">
                                 {{ trans('Predicted CLV = Customer Value (per month) × Expected Remaining Lifespan (Months)') }}

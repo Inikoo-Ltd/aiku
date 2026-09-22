@@ -53,6 +53,14 @@ class ForceSyncCustomerSalesChannelPortfolios extends OrgAction
             ]);
         }
 
+        if (SyncCustomerSalesChannelPortfolios::hasNothingToSend($customerSalesChannel)) {
+            return Redirect::back()->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Nothing to sync'),
+                'description' => __('None of these products has been uploaded to the channel yet, so a sync has nothing to send. Use Create New Product or Match With Existing Product first.'),
+            ]);
+        }
+
         return Redirect::back()->with('notification', [
             'status'      => 'success',
             'title'       => __('Force sync started'),

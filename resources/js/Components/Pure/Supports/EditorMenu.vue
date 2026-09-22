@@ -95,7 +95,7 @@ const onHeadingClick = (index: number) => {
         '': !editor?.isActive(action.active)
     }" class="p-1">
         <span v-if="action.icon">
-            <FontAwesomeIcon :icon='action.icon' />
+            <FontAwesomeIcon :icon='action.icon' fixed-width />
         </span>
     </button>
 

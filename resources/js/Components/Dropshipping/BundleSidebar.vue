@@ -688,7 +688,7 @@ onBeforeUnmount(() => {
                         <div class="flex justify-center items-center gap-2">
                             <button @click="bundle.decreaseQty(item.id)"><FontAwesomeIcon icon='fas fa-minus' class="text-xs" fixed-width aria-hidden='true' /></button>
                             <div>{{ item.quantity }}</div>
-                            <button @click="bundle.increaseQty(item.id) "><FontAwesomeIcon icon='fas fa-plus' class="text-xs"fixed-width aria-hidden='true' /></button>
+                            <button @click="bundle.increaseQty(item.id) "><FontAwesomeIcon icon='fas fa-plus' class="text-xs" fixed-width aria-hidden='true' /></button>
                             <button @click="bundle.removeProduct(item.id)" v-tooltip="trans('Delete product')"><FontAwesomeIcon icon='fas fa-trash-alt' class="text-sm text-red-500" fixed-width aria-hidden='true' />
                             </button>
                         </div>
@@ -764,7 +764,7 @@ onBeforeUnmount(() => {
                                 @click="handleBack"
                                 class="flex items-center gap-2 text-gray-600 hover:text-black"
                             >
-                                <FontAwesomeIcon icon="fas fa-arrow-left" />
+                                <FontAwesomeIcon icon="fas fa-arrow-left" fixed-width />
                                 <span class="text-sm">Back</span>
                             </button>
 
@@ -788,7 +788,7 @@ onBeforeUnmount(() => {
                             @click="handleClose"
                             class="text-gray-500 hover:text-red-500"
                         >
-                            <FontAwesomeIcon icon="fal fa-times" />
+                            <FontAwesomeIcon icon="fal fa-times" fixed-width />
                         </button>
 
                     </div>
@@ -1017,7 +1017,7 @@ onBeforeUnmount(() => {
                                     :icon="message.data?.type === 'danger'
                                         ? 'fas fa-exclamation-triangle'
                                         : 'fas fa-question-circle'"
-                                    class="text-3xl text-red-500"
+                                    class="text-3xl text-red-500" fixed-width
                                 />
                             </div>
 

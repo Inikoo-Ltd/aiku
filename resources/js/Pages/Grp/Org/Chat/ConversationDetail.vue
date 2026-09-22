@@ -70,6 +70,17 @@ interface ChatSessionProp {
     ai_summary: { summary?: string; sentiment?: string; key_points?: string[] } | null
 }
 
+interface MessageAttachment {
+    id: number
+    is_image: boolean
+    media_url: { original: string; webp?: string } | null
+    original_url: string
+    file_name: string
+    file_size: number
+    file_mime: string
+    download_route: { url: string }
+}
+
 interface MessageProp {
     id: number
     message_text: string | null
@@ -87,6 +98,7 @@ interface MessageProp {
     file_size: number | null
     file_mime: string | null
     download_route: { url: string } | null
+    attachments?: MessageAttachment[]
     created_at: string
     is_ai_generated: boolean | null
     is_validated: boolean | null
@@ -218,6 +230,23 @@ function needsImageVerification(msg: MessageProp): boolean {
     return msg.message_type === 'image' && !!msg.is_verifiable_image && imageValidation(msg).is_validated == null
 }
 
+function attachmentList(msg: MessageProp): MessageAttachment[] {
+    if (msg.attachments?.length) return msg.attachments
+
+    if (!msg.media_url && !msg.download_route) return []
+
+    return [{
+        id: msg.id,
+        is_image: msg.message_type === 'image',
+        media_url: msg.media_url,
+        original_url: msg.media_url?.original ?? '',
+        file_name: msg.file_name ?? '',
+        file_size: msg.file_size ?? 0,
+        file_mime: msg.file_mime ?? '',
+        download_route: msg.download_route ?? { url: '' },
+    }]
+}
+
 
 function formatTimestamp(raw: string): string {
     return new Date(raw).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -286,7 +315,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                             class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
                             @click="isSlackShareModalOpen = true"
                         >
-                            <FontAwesomeIcon :icon="['fab', 'fa-slack']" class="text-sm" />
+                            <FontAwesomeIcon :icon="['fab', 'fa-slack']" class="text-sm" fixed-width />
                             <span>Share to Slack</span>
                         </button>
                         <!-- Toggle side panel -->
@@ -295,7 +324,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                             @click="showContactDetail = !showContactDetail"
                             aria-label="Toggle contact details"
                         >
-                            <FontAwesomeIcon :icon="['fal', 'fa-user']" class="text-sm" />
+                            <FontAwesomeIcon :icon="['fal', 'fa-user']" class="text-sm" fixed-width />
                         </button>
                     </div>
                 </div>
@@ -320,13 +349,31 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                 {{ senderLabel(msg) }}
                             </div>
 
-                            <template v-if="msg.message_type === 'image' && msg.media_url">
-                                <Image
-                                    :src="msg.media_url.webp ?? msg.media_url.original"
-                                    preview
-                                    imageClass="rounded-lg max-w-full max-h-64 object-contain cursor-pointer"
-                                    class="mt-1"
-                                />
+                            <p v-if="msg.message_text && attachmentList(msg).length" class="whitespace-pre-wrap break-words mb-1">{{ msg.message_text }}</p>
+
+                            <template v-if="attachmentList(msg).length">
+                                <template v-for="attachment in attachmentList(msg)" :key="attachment.id">
+                                    <Image
+                                        v-if="attachment.is_image && attachment.media_url"
+                                        :src="attachment.media_url.webp ?? attachment.media_url.original"
+                                        preview
+                                        imageClass="rounded-lg max-w-full max-h-64 object-contain cursor-pointer"
+                                        class="mt-1"
+                                    />
+
+                                    <a
+                                        v-else
+                                        :href="attachment.download_route.url"
+                                        target="_blank"
+                                        class="flex items-center gap-x-2 text-sm underline mt-1"
+                                        :class="isFromAgent(msg) ? 'text-white/90' : ''"
+                                        :style="!isFromAgent(msg) ? { color: themePrimary } : {}"
+                                    >
+                                        <FontAwesomeIcon :icon="['fal', 'fa-paperclip']" fixed-width />
+                                        <span>{{ attachment.file_name || 'Download file' }}</span>
+                                        <span v-if="attachment.file_size" class="text-xs opacity-60">({{ formatFileSize(attachment.file_size) }})</span>
+                                    </a>
+                                </template>
 
                                 <div
                                     v-if="imageValidation(msg).is_validated === true"
@@ -337,14 +384,14 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                         v-if="imageValidation(msg).is_ai_generated"
                                         class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700"
                                     >
-                                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-[10px]" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-[10px]" fixed-width />
                                         AI generated
                                     </span>
                                     <span
                                         v-else
                                         class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700"
                                     >
-                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" fixed-width />
                                         Verified
                                     </span>
                                 </div>
@@ -354,24 +401,10 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                         class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500"
                                         :class="isFromAgent(msg) ? 'text-white/70 bg-white/10' : ''"
                                     >
-                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" />
+                                        <FontAwesomeIcon :icon="['fal', 'fa-shield-check']" class="text-[10px]" fixed-width />
                                         Not verified yet
                                     </span>
                                 </div>
-                            </template>
-
-                            <template v-else-if="msg.message_type === 'file' && msg.download_route">
-                                <a
-                                    :href="msg.download_route.url"
-                                    target="_blank"
-                                    class="flex items-center gap-x-2 text-sm underline"
-                                    :class="isFromAgent(msg) ? 'text-white/90' : ''"
-                                    :style="!isFromAgent(msg) ? { color: themePrimary } : {}"
-                                >
-                                    <FontAwesomeIcon :icon="['fal', 'fa-paperclip']" />
-                                    <span>{{ msg.file_name || 'Download file' }}</span>
-                                    <span v-if="msg.file_size" class="text-xs opacity-60">({{ formatFileSize(msg.file_size) }})</span>
-                                </a>
                             </template>
 
                             <template v-else>
@@ -389,15 +422,15 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
 
                     <div v-else class="flex justify-center">
                         <span class="text-xs text-gray-400 bg-gray-50 rounded-full px-3 py-1 border border-gray-100">
-                            <FontAwesomeIcon v-if="msg.is_ai" :icon="['fal', 'fa-robot']" class="mr-1" />
-                            <FontAwesomeIcon v-else :icon="['fal', 'fa-cog']" class="mr-1" />
+                            <FontAwesomeIcon v-if="msg.is_ai" :icon="['fal', 'fa-robot']" class="mr-1" fixed-width />
+                            <FontAwesomeIcon v-else :icon="['fal', 'fa-cog']" class="mr-1" fixed-width />
                             {{ msg.message_text }}
                         </span>
                     </div>
                 </template>
 
                 <div v-if="!messages.length" class="flex flex-col items-center justify-center py-16 text-gray-400">
-                    <FontAwesomeIcon :icon="['fal', 'fa-comments']" class="text-4xl mb-2" />
+                    <FontAwesomeIcon :icon="['fal', 'fa-comments']" class="text-4xl mb-2" fixed-width />
                     <p class="text-sm">No messages in this conversation</p>
                 </div>
             </div>
@@ -467,7 +500,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                 <div class="col-span-2 flex items-center gap-1">
                                     <code class="text-[11px] font-mono text-gray-700 bg-gray-100 rounded px-1.5 py-0.5 truncate">{{ chatSession.ulid }}</code>
                                     <button class="shrink-0 text-gray-400 hover:text-gray-600 transition-colors" @click="copyChatId" aria-label="Copy chat ID">
-                                        <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" />
+                                        <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" fixed-width />
                                     </button>
                                 </div>
                             </div>
@@ -515,7 +548,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                                     :key="tag.id"
                                     class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium bg-indigo-50 text-indigo-700 border-indigo-200"
                                 >
-                                    <FontAwesomeIcon :icon="['fal', 'fa-tag']" class="text-[9px] opacity-70" />
+                                    <FontAwesomeIcon :icon="['fal', 'fa-tag']" class="text-[9px] opacity-70" fixed-width />
                                     {{ tag.name }}
                                 </span>
                             </div>
@@ -525,7 +558,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                         <!-- AI Summary -->
                         <div v-if="chatSession.ai_summary?.summary" class="px-4 py-3">
                             <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" />
+                                <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" fixed-width />
                                 AI Summary
                                 <span
                                     v-if="chatSession.ai_summary.sentiment"
@@ -584,7 +617,7 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                             Loading...
                         </div>
                         <div v-else-if="!customerProfile.stats" class="flex flex-col items-center justify-center py-10 text-gray-400">
-                            <FontAwesomeIcon :icon="['fal', 'fa-chart-line']" class="text-2xl mb-2 opacity-30" />
+                            <FontAwesomeIcon :icon="['fal', 'fa-chart-line']" class="text-2xl mb-2 opacity-30" fixed-width />
                             <p class="text-xs">No statistics available</p>
                         </div>
                         <div v-else class="space-y-2.5">

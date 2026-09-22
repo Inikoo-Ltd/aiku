@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Allegro\Product;
 
+use App\Actions\Dropshipping\Allegro\Traits\WithAllegroDispatchLocation;
 use App\Actions\Dropshipping\Allegro\Traits\WithAllegroMarketplace;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
@@ -35,6 +36,7 @@ class StoreProductToAllegro extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithAllegroDispatchLocation;
     use WithAllegroMarketplace;
     use WithPortfolioErrorResponse;
 
@@ -66,7 +68,7 @@ class StoreProductToAllegro extends RetinaAction
 
             $marketplaceId = Arr::get($allegroUser->data, 'marketplace_id');
 
-            $offerLanguage = $this->getAllegroOfferLanguage($marketplaceId);
+            $offerLanguage = $this->getAllegroOfferLanguage();
 
             $productSearch = [];
             if ($product->barcode) {
@@ -190,6 +192,7 @@ class StoreProductToAllegro extends RetinaAction
                     'available' => $availableQuantity,
                     'unit' => 'UNIT'
                 ],
+                'location' => $this->allegroOfferLocation(),
                 'delivery' => [
                     'handlingTime' => 'PT24H',
                     'shippingRates' => [

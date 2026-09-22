@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import TableCustomerClients from "@/Components/Tables/Grp/Org/CRM/TableCustomerClients.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Button from "@/Components/Elements/Buttons/Button.vue"

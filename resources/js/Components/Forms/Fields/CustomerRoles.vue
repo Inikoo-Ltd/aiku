@@ -129,7 +129,7 @@ watch([optionsRoles1, optionsRoles2, optionsRoles3], () => {
                                     :disabled="optionsRoles1.value"
                                     class="h-5 w-5 rounded cursor-pointer disabled:text-green-400 border-gray-300 hover:border-green-500 text-green-500 focus:ring-green-500"
                                 />
-                                <FontAwesomeIcon v-if="optionsRoles1.value" icon='fal fa-lock' class='' aria-hidden='true' />
+                                <FontAwesomeIcon v-if="optionsRoles1.value" icon='fal fa-lock' class='' fixed-width aria-hidden='true' />
                             </div>
                         </td>
                     </tr>
@@ -150,7 +150,7 @@ watch([optionsRoles1, optionsRoles2, optionsRoles3], () => {
                                     :disabled="optionsRoles2.value"
                                     class="h-5 w-5 rounded cursor-pointer disabled:text-green-400 border-gray-300 hover:border-green-500 text-green-500 focus:ring-green-500"
                                 />
-                                <FontAwesomeIcon v-if="optionsRoles2.value" icon='fal fa-lock' class='' aria-hidden='true' />
+                                <FontAwesomeIcon v-if="optionsRoles2.value" icon='fal fa-lock' class='' fixed-width aria-hidden='true' />
                             </div>
                         </td>
                     </tr>
@@ -160,11 +160,11 @@ watch([optionsRoles1, optionsRoles2, optionsRoles3], () => {
             <!-- Icon: Error, Success, Processing -->
             <div class="mr-2 h-full flex items-center pointer-events-none">
                 <FontAwesomeIcon v-if="get(form, ['errors', `${fieldName}`])" icon="fas fa-exclamation-circle"
-                    class="h-5 w-5 text-red-500" aria-hidden="true" />
+                    class="h-5 w-5 text-red-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="form.recentlySuccessful" icon="fas fa-check-circle"
-                    class="h-5 w-5 text-green-500" aria-hidden="true" />
+                    class="h-5 w-5 text-green-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third"
-                    class="h-5 w-5 animate-spin" />
+                    class="h-5 w-5 animate-spin" fixed-width />
             </div>
         </div>
         

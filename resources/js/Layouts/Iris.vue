@@ -14,9 +14,8 @@ const ScreenWarning = defineAsyncComponent(() => import('@/Components/Utils/Scre
 const Modal = defineAsyncComponent(() => import('@/Components/Utils/Modal.vue'))
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
-import { faExclamationTriangle } from '@fas'
 import { faHome, faImage, faSparkles, faSignIn, faPlusCircle, faGift, faMedal, faSkull, faSkullCow, faSkullCrossbones, faCheck, faTimes, faLock } from '@fal'
-import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull } from '@fas'
+import { faMedal as fasMedal, faCandleHolder, faCircle, faBoxFull, faExclamationTriangle  } from '@fas'
 import { faMedal as fadMedal } from '@fad'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'

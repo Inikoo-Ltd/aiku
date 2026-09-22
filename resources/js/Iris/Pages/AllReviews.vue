@@ -215,7 +215,7 @@ const heroTitle = computed(
 
                             <div v-if="props.shop_profile?.formatted_address" class="flex items-start gap-3">
 
-                                <FontAwesomeIcon :icon="faLocation" class="mt-1 w-4 shrink-0 text-gray-400" />
+                                <FontAwesomeIcon :icon="faLocation" class="mt-1 w-4 shrink-0 text-gray-400" fixed-width />
 
                                 <span class="break-words" v-html="props.shop_profile.formatted_address">
                                 </span>
@@ -224,7 +224,7 @@ const heroTitle = computed(
 
                             <div v-if="props.shop_profile?.country" class="flex items-start gap-3">
 
-                                <FontAwesomeIcon :icon="faGlobe" class="mt-1 w-4 shrink-0 text-gray-400" />
+                                <FontAwesomeIcon :icon="faGlobe" class="mt-1 w-4 shrink-0 text-gray-400" fixed-width />
 
                                 <span class="break-words">
                                     {{ props.shop_profile.country }}
@@ -234,7 +234,7 @@ const heroTitle = computed(
 
                             <div v-if="props.shop_profile?.phone" class="flex items-start gap-3">
 
-                                <FontAwesomeIcon :icon="faPhone" class="mt-1 w-4 shrink-0 text-gray-400" />
+                                <FontAwesomeIcon :icon="faPhone" class="mt-1 w-4 shrink-0 text-gray-400" fixed-width />
 
                                 <span class="break-all">
                                     {{ props.shop_profile.phone }}
@@ -244,7 +244,7 @@ const heroTitle = computed(
 
                             <div v-if="props.shop_profile?.email" class="flex items-start gap-3">
 
-                                <FontAwesomeIcon :icon="faEnvelope" class="mt-1 w-4 shrink-0 text-gray-400" />
+                                <FontAwesomeIcon :icon="faEnvelope" class="mt-1 w-4 shrink-0 text-gray-400" fixed-width />
 
                                 <span class="break-all">
                                     {{ props.shop_profile.email }}

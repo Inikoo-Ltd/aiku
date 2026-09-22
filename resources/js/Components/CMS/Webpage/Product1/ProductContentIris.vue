@@ -53,7 +53,7 @@ const openDisclosureId = ref<number | null>(null)
                         <h2 class="!text-base !font-semibold">{{ trans("Product Specifications & Documentations") }}</h2>
                         <FontAwesomeIcon :icon="faChevronDown"
                             class="text-sm text-gray-500 transform transition-transform duration-200"
-                            :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" />
+                            :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" fixed-width />
                     </div>
                     <div v-show="openDisclosureId === 'spec-1'" class="text-sm text-gray-600 whitespace-pre-line py-2" :style="getStyles(styleData?.content)">
                        <ProductSpecDocumentation :product="product" ></ProductSpecDocumentation>

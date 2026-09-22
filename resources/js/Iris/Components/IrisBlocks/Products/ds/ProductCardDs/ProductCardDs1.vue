@@ -273,7 +273,7 @@ const openBundlePanel = (product:any) => {
                         </div>
 
                         <FontAwesomeIcon v-if="!images.length" icon="fal fa-image"
-                            class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" />
+                            class="opacity-20 text-3xl md:text-7xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" fixed-width />
 
                     </slot>
                 </div>
@@ -335,7 +335,7 @@ const openBundlePanel = (product:any) => {
                         class="flex items-start gap-1 px-2 py-1 rounded-xl font-medium max-w-[12rem] break-words leading-snug"
                         :class="(product?.stock > 0) ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
                         <span class="inline-flex items-center gap-1 text-xs leading-snug">
-                            <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" />
+                            <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" fixed-width />
                             <span>
                                 {{ product?.stock >= 250
                                     ? trans("Unlimited quantity available")

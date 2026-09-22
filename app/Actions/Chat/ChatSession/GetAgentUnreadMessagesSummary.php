@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -22,10 +23,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetAgentUnreadMessagesSummary
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(ChatAgent $agent): array
     {
-        $shopIds = $agent->shops()->pluck('shops.id');
+        $shopIds = collect($this->shopIdsWorkedBy($agent->user_id));
 
         if ($shopIds->isEmpty()) {
             return [

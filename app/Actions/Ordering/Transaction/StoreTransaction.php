@@ -121,7 +121,7 @@ class StoreTransaction extends OrgAction
         data_set($modelData, 'submitted_at', $order->submitted_at, overwrite: false);
         data_set($modelData, 'gross_amount', $gross ?? 0);
         data_set($modelData, 'net_amount', $net ?? 0);
-        if ($order->state == OrderStateEnum::SUBMITTED) {
+        if ($order->state != OrderStateEnum::CREATING) {
             data_set($modelData, 'state', TransactionStateEnum::SUBMITTED, overwrite: false);
             data_set($modelData, 'status', TransactionStatusEnum::PROCESSING, overwrite: false);
             data_set($modelData, 'submitted_at', now(), overwrite: false);

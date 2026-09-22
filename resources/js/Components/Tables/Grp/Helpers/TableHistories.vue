@@ -226,7 +226,7 @@ const getTradeUnitHistory = (oldData, newData) => {
                                             {{ item.old }}
                                         </span>
                                         <span v-if="item.old && item.new" class="px-1">
-                                            <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
+                                            <FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" size="xs" />
                                         </span>
                                         <span v-if="item.new">
                                             {{ item.new }}
@@ -243,7 +243,7 @@ const getTradeUnitHistory = (oldData, newData) => {
                         <div class="flex items-center space-x-2">
                             <span class="font-bold text-gray-700">{{ trans("Shipper") }}:</span>
                             <span class="text-gray-600">{{ history.old_values?.shipper }}</span>
-                            <FontAwesomeIcon :icon="faArrowRight" aria-hidden="true" size="xs" />
+                            <FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" size="xs" />
                             <span class="text-gray-800 font-semibold">{{ history.new_values?.shipper }}</span>
                         </div>
                         <div class="text-xs text-gray-500 italic">
@@ -268,12 +268,15 @@ const getTradeUnitHistory = (oldData, newData) => {
                                         class="text-gray-400"
                                         :class="{ 'line-through decoration-gray-300': hasValue(history.new_values[key]) }"
                                     >{{ formatValue(history.old_values[key], key) }}</span>
-                                    <FontAwesomeIcon v-if="hasValue(history.new_values[key])" :icon="faArrowRight" aria-hidden="true" size="xs" class="text-gray-300 mx-1.5" />
+                                    <FontAwesomeIcon v-if="hasValue(history.new_values[key])" :icon="faArrowRight" fixed-width aria-hidden="true" size="xs" class="text-gray-300 mx-1.5" />
                                 </template>
                                 <span v-if="hasValue(history.new_values[key])">{{ formatValue(history.new_values[key], key) }}</span>
                                 <span v-else class="text-gray-400 italic">{{ trans("cleared") }}</span>
                             </span>
                         </template>
+                    </div>
+                    <div v-if="history.comments" class="text-xs text-gray-500 italic">
+                        {{ history.comments }}
                     </div>
                 </div>
                 <div
@@ -295,7 +298,7 @@ const getTradeUnitHistory = (oldData, newData) => {
                     >
                         <FontAwesomeIcon
                             :icon="history.id && expandedRows.includes(history.id) ? faMinus : faPlus"
-                            class="h-fit transition-all ease-out duration-700"
+                            class="h-fit transition-all ease-out duration-700" fixed-width
                         />
                     </span>
                 </div>
@@ -313,6 +316,10 @@ const getTradeUnitHistory = (oldData, newData) => {
                 <dd>{{ useFormatTime(detailHistory.datetime, { formatTime: 'hms' }) }}</dd>
                 <dt class="text-gray-400 text-right">{{ trans("Action") }}</dt>
                 <dd>{{ detailHistory.event?.replace(/_/g, ' ') }}</dd>
+                <template v-if="detailHistory.comments">
+                    <dt class="text-gray-400 text-right">{{ trans("Reason") }}</dt>
+                    <dd>{{ detailHistory.comments }}</dd>
+                </template>
                 <template v-if="isStaffApp && detailHistory.ip_address">
                     <dt class="text-gray-400 text-right">{{ trans("IP address") }}</dt>
                     <dd>{{ detailHistory.ip_address }}</dd>

@@ -167,7 +167,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                 <select
                     v-model="filters.employee_id"
                     @change="updateFilter"
-                    class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
                     <option :value="null">{{ trans('All Employees') }}</option>
                     <option v-for="employee in employeeOptions" :key="employee.value" :value="employee.value">
@@ -178,7 +178,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                 <select
                     v-model="filters.overtime_type_id"
                     @change="updateFilter"
-                    class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
                     <option :value="null">{{ trans('All Types') }}</option>
                     <option v-for="type in overtimeTypeOptions" :key="type.value" :value="type.value">
@@ -189,7 +189,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                 <select
                     v-model="filters.year"
                     @change="updateFilter"
-                    class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
                     <option v-for="year in yearOptions" :key="year.value" :value="year.value">
                         {{ year.label }}
@@ -199,7 +199,7 @@ const getOvertimeForDay = (overtimes: any[], day: number) => {
                 <select
                     v-model="filters.month"
                     @change="updateFilter"
-                    class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 >
                     <option v-for="month in monthOptions" :key="month.value" :value="month.value">
                         {{ month.label }}

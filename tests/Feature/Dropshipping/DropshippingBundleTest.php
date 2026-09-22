@@ -49,14 +49,15 @@ beforeEach(function () {
 
     $this->customer = createCustomer($this->shop);
 
-    list($this->tradeUnit, $this->product) = createProduct($this->shop);
+    [, $this->product] = createProduct($this->shop);
+    $this->tradeUnit = $this->product->tradeUnits()->firstOrFail();
 
     $secondProductData = array_merge(
         Product::factory()->definition(),
         [
             'trade_units' => [
                 [
-                    'id'       => $this->tradeUnit->id ?? $this->tradeUnit[0]->id,
+                    'id'       => $this->tradeUnit->id,
                     'quantity' => 1,
                 ],
             ],
@@ -302,7 +303,7 @@ test('two components made of the same trade unit both count towards the bundle i
         ['reference' => 'shared_trade_unit_channel']
     );
 
-    $sharedTradeUnitId = $this->tradeUnit->id ?? $this->tradeUnit[0]->id;
+    $sharedTradeUnitId = $this->tradeUnit->id;
 
     $bundle = StoreBundle::make()->action($channel, [
         'name'     => 'Shared Trade Unit Bundle',
@@ -326,9 +327,8 @@ test('a component added after the bundle was created reaches the bundle product 
         ['reference' => 'late_component_channel']
     );
 
-    $otherTradeUnit = $this->group->tradeUnits()
-        ->whereNotIn('trade_units.id', [$this->tradeUnit->id ?? $this->tradeUnit[0]->id])
-        ->first();
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, \App\Models\Goods\Stock::factory()->definition());
+    $otherTradeUnit = $stock->tradeUnits()->firstOrFail();
 
     $family = $this->shop->productCategories()
         ->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)
@@ -367,7 +367,7 @@ test('a component added after the bundle was created reaches the bundle product 
         ->and($bundleTradeUnitIds)->toContain($otherTradeUnit->id)
         ->and($bundleTradeUnitIds)->toHaveCount(2)
         ->and($portfolio->refresh()->sku)->not->toBe($skuOnCreation)
-        ->and($portfolio->sku)->toBe(\App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->getSKU($bundle->bundleable));
+        ->and($portfolio->sku)->toBe($stock->slug);
 });
 
 test('a bundle holding several of a component made of several trade units multiplies the two quantities', function () {
@@ -377,7 +377,7 @@ test('a bundle holding several of a component made of several trade units multip
         ['reference' => 'multi_trade_unit_channel']
     );
 
-    $tradeUnitId = $this->tradeUnit->id ?? $this->tradeUnit[0]->id;
+    $tradeUnitId = $this->tradeUnit->id;
 
     $family = $this->shop->productCategories()
         ->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY)

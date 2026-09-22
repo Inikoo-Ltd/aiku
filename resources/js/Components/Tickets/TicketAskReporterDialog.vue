@@ -73,7 +73,7 @@ const askReporter = () => {
                         :key="preset.hours"
                         type="button"
                         class="rounded-full border px-3 py-1 transition duration-200"
-                        :class="waitingHours === preset.hours ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50 active:!bg-gray-100'"
+                        :class="waitingHours === preset.hours ? 'border-[--app-accent] bg-[--app-accent-soft] text-[--app-accent-strong]' : 'border-gray-300 text-gray-600 hover:bg-gray-50 active:!bg-gray-100'"
                         @click="waitingHours = preset.hours">
                         {{ preset.label }}
                     </button>

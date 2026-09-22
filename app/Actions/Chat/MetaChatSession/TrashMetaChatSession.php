@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -15,13 +16,15 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use Illuminate\Support\Facades\Auth;
 
 class TrashMetaChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * Soft-deletes the thread. A chat an agent is actually handling is closed first so
@@ -44,6 +47,14 @@ class TrashMetaChatSession
                 CloseMetaChatSession::run($metaChatSession, $actorId, ChatActorTypeEnum::AGENT);
             }
 
+            StoreMetaChatEvent::run(
+                $metaChatSession,
+                ChatEventTypeEnum::TRASH,
+                ChatActorTypeEnum::AGENT,
+                $actorId,
+                ['user_id' => Auth::id()]
+            );
+
             BroadcastMetaChatListEvent::dispatch(null, $metaChatSession);
 
             $metaChatSession->delete();
@@ -55,7 +66,7 @@ class TrashMetaChatSession
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($metaChatSession);
 
         if (!$agent instanceof ChatAgent) {
             return response()->json([

@@ -51,6 +51,8 @@ const props = defineProps<{
             description?: string
             yesLabel?: string
             whenValueIs?: any  // Confirm only for this value, leave out to confirm every save
+            reasonField?: string  // Asks for a reason in the dialog and sends it under this name
+            reasonLabel?: string
         }
     }
     args: {
@@ -71,6 +73,11 @@ if (props['fieldData']['hasOther']) {
         formFields[other['name']] = other['value']
     })
 }
+const reasonField = props.fieldData.saveConfirmation?.reasonField
+if (reasonField) {
+    formFields[reasonField] = ''
+}
+
 formFields['_method'] = 'patch'
 const form = useForm(formFields)
 form['fieldType'] = 'edit'
@@ -179,7 +186,7 @@ const needsSaveConfirmation = computed(() => {
                 <div class="inline-flex items-start leading-none">
                     <FontAwesomeIcon v-if="fieldData.icon" :icon="fieldData.icon" class="mr-1" fixed-width aria-hidden="true" />
                     {{ fieldData.label }}
-                    <FontAwesomeIcon v-if="fieldData.required" icon="fas fa-asterisk" class="font-light text-[12px] text-red-400 mr-1"/>
+                    <FontAwesomeIcon v-if="fieldData.required" icon="fas fa-asterisk" class="font-light text-[12px] text-red-400 mr-1" fixed-width/>
                     <div v-if="fieldData.information" v-tooltip="fieldData.information" class="opacity-50 hover:opacity-100 cursor-pointer ml-1">
                         <FontAwesomeIcon icon="fal fa-info-circle" class="text-gray-500" fixed-width aria-hidden="true" />
                     </div>
@@ -221,7 +228,7 @@ const needsSaveConfirmation = computed(() => {
 
                     <!-- Verification: Label -->
                     <div v-if="labelVerification" class="mt-1" :class="classVerification">
-                        <FontAwesomeIcon icon='fal fa-info-circle' class='opacity-80' aria-hidden='true' />
+                        <FontAwesomeIcon icon='fal fa-info-circle' class='opacity-80' fixed-width aria-hidden='true' />
                         <span class="ml-1 font-medium">{{ labelVerification }}</span>
                     </div>
                 </div>
@@ -235,19 +242,19 @@ const needsSaveConfirmation = computed(() => {
                     <button v-if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
                         <template v-if="form.isDirty">
                             <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
-                            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                         </template>
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                     </button>
 
                     <!-- Verification: Button -->
                     <span v-else>
-                        <FontAwesomeIcon v-if="isVerificationLoading" icon='fad fa-spinner-third' class='animate-spin h-8 text-gray-500 hover:text-gray-600 cursor-pointer' aria-hidden='true' />
+                        <FontAwesomeIcon v-if="isVerificationLoading" icon='fad fa-spinner-third' class='animate-spin h-8 text-gray-500 hover:text-gray-600 cursor-pointer' fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-else @click="isVerificationDirty ? checkVerification() : ''"
                             icon='fas fa-question'
                             class='h-8'
                             :class="isVerificationDirty ? 'text-gray-500 hover:text-gray-600 cursor-pointer' : 'text-gray-300'"
-                            aria-hidden='true' />
+                            fixed-width aria-hidden='true' />
                     </span>
                 </span>
             </dd>
@@ -276,6 +283,18 @@ const needsSaveConfirmation = computed(() => {
                         </p>
                     </div>
 
+                    <div v-if="reasonField" class="mt-4">
+                        <label :for="`${field}-reason`" class="text-sm text-gray-500">
+                            {{ fieldData.saveConfirmation?.reasonLabel ?? trans("Reason") }}
+                        </label>
+                        <textarea
+                            :id="`${field}-reason`"
+                            v-model="form[reasonField]"
+                            rows="3"
+                            class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                        <p v-if="form.errors[reasonField]" class="mt-1 text-sm text-red-600">{{ form.errors[reasonField] }}</p>
+                    </div>
+
                     <div class="mt-5 flex xflex-row-reverse gap-2">
                         <Button
                             type="tertiary"
@@ -291,6 +310,7 @@ const needsSaveConfirmation = computed(() => {
                                 type="secondary"
                                 key="3"
                                 :loading="form.processing"
+                                :disabled="!!reasonField && !form[reasonField]?.trim()"
                                 full
                             >
                                 <template #label>

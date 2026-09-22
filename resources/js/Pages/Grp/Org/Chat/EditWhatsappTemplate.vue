@@ -257,7 +257,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                         </p>
                         <div
                             class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
-                            <FontAwesomeIcon :icon="faLock" class="text-[10px] text-gray-400" />
+                            <FontAwesomeIcon :icon="faLock" class="text-[10px] text-gray-400" fixed-width />
                             {{ template.name }}
                         </div>
                     </div>
@@ -299,7 +299,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                             <span class="text-xs font-medium text-gray-600">{{ trans("Header") }}</span>
                             <span
                                 class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[10px] text-gray-500">
-                                <FontAwesomeIcon v-if="headerIcon" :icon="headerIcon" class="text-[9px]" />
+                                <FontAwesomeIcon v-if="headerIcon" :icon="headerIcon" class="text-[9px]" fixed-width />
                                 {{ headerFormatLabel }}
                             </span>
                         </div>
@@ -324,7 +324,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                         class="w-full h-full flex items-center justify-center"
                                         :style="{ width: '100%', height: '100%', objectFit: 'contain' }" />
                                     <FontAwesomeIcon v-else-if="headerIcon" :icon="headerIcon"
-                                        class="text-xl text-gray-300" />
+                                        class="text-xl text-gray-300" fixed-width />
                                 </div>
                                 <span class="min-w-0 flex-1">
                                     <span class="block truncate text-xs text-gray-700">
@@ -340,7 +340,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                 <a v-if="template.header_media.file_url"
                                     :href="template.header_media.file_url" target="_blank" rel="noopener"
                                     class="shrink-0 inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-[11px] text-gray-600 transition hover:bg-white hover:text-gray-800">
-                                    <FontAwesomeIcon :icon="faDownload" class="text-[10px]" />
+                                    <FontAwesomeIcon :icon="faDownload" class="text-[10px]" fixed-width />
                                     {{ trans("Download") }}
                                 </a>
                             </div>
@@ -351,7 +351,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
 
                             <label
                                 class="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 cursor-pointer hover:border-gray-400">
-                                <FontAwesomeIcon :icon="faUpload" class="text-[11px]" />
+                                <FontAwesomeIcon :icon="faUpload" class="text-[11px]" fixed-width />
                                 {{ template.header_media ? trans("Replace file") : trans("Upload the file to send") }}
                                 <input type="file" class="hidden" :accept="headerMediaRule?.accept"
                                     @change="onHeaderMediaSelect" />
@@ -388,7 +388,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                         <div v-else class="space-y-2">
                         <div v-for="(button, index) in template.buttons" :key="index"
                             class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                            <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[11px] text-gray-400 shrink-0" />
+                            <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[11px] text-gray-400 shrink-0" fixed-width />
 
                             <div class="min-w-0 flex-1">
                                 <div class="text-sm text-gray-600">{{ button.text }}</div>
@@ -448,7 +448,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                         <template #default="{ changeModel }">
                             <button type="button" @click="changeModel"
                                 class="inline-flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 hover:underline">
-                                <FontAwesomeIcon :icon="faTrash" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faTrash" class="text-[10px]" fixed-width />
                                 {{ trans("Delete template") }}
                             </button>
                         </template>
@@ -462,7 +462,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                 <div class="lg:sticky lg:top-6">
                     <div class="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
                         <div class="flex items-center gap-2 bg-[#075E54] px-4 py-2.5 text-white">
-                            <FontAwesomeIcon :icon="faWhatsapp" class="text-sm" />
+                            <FontAwesomeIcon :icon="faWhatsapp" class="text-sm" fixed-width />
                             <span class="text-sm font-semibold">{{ trans("Preview") }}</span>
                             <span class="ml-auto text-[11px] opacity-70 truncate max-w-[130px]">{{ businessName }}</span>
                         </div>
@@ -484,7 +484,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                         <a v-else-if="headerFormat === 'DOCUMENT' && template.header_media?.file_url"
                                             :href="template.header_media.file_url" target="_blank" rel="noopener"
                                             class="h-36 rounded-md bg-gray-100 flex flex-col items-center justify-center gap-1 text-gray-500 transition hover:bg-gray-200">
-                                            <FontAwesomeIcon :icon="faFilePdf" class="text-3xl text-gray-400" />
+                                            <FontAwesomeIcon :icon="faFilePdf" class="text-3xl text-gray-400" fixed-width />
                                             <span class="max-w-[90%] truncate text-[11px]">
                                                 {{ template.header_media.name }}
                                             </span>
@@ -496,7 +496,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                                 :src="template.header_media.url" image-cover
                                                 class="w-full h-full" />
                                             <FontAwesomeIcon v-else :icon="headerIcon ?? faImage"
-                                                class="text-gray-300 text-3xl" />
+                                                class="text-gray-300 text-3xl" fixed-width />
                                         </div>
                                     </div>
 
@@ -535,7 +535,7 @@ const buttonDestination = (button: TemplateButton) => button.url || button.phone
                                     <div v-if="template.buttons?.length" class="border-t border-[#E9EDEF]">
                                         <div v-for="(button, index) in template.buttons" :key="index"
                                             class="flex items-center justify-center gap-1.5 border-b border-[#E9EDEF] last:border-b-0 py-2.5 text-[14px] text-[#0091EA] font-medium">
-                                            <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[11px]" />
+                                            <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[11px]" fixed-width />
                                             {{ button.text }}
                                         </div>
                                     </div>

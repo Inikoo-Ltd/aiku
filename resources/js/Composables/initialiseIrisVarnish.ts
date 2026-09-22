@@ -9,6 +9,7 @@ import axios from "axios"
 import { set } from "lodash-es"
 import Cookies from "js-cookie"
 import { usePage } from "@inertiajs/vue3"
+import { resolveIsLoggedIn } from "@/Composables/irisAuthFlag"
 
 
 export const initialiseIrisVarnish = async (layoutStore) => {
@@ -16,7 +17,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
   let storageIris = {}
   if (typeof window !== "undefined") {
     storageIris = JSON.parse(localStorage.getItem("iris") || "{}")  // Get layout from localStorage
-    layout.iris.is_logged_in = storageIris?.is_logged_in ?? false
+    layout.iris.is_logged_in = resolveIsLoggedIn(storageIris?.is_logged_in)
 
     // Restore the cached user snapshot immediately so logged-in chrome (topbar
     // greeting, offer label) renders at first paint instead of popping in when

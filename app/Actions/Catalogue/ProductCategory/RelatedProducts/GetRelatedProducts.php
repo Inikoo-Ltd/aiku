@@ -41,6 +41,12 @@ class GetRelatedProducts
                     'organisation' => $organisation->slug,
                     'shop' => $shop->slug,
                 ]
+            ],
+            'route_products_by_codes' => [
+                'name' => 'grp.json.shop.products_by_codes',
+                'parameters' => [
+                    'shop' => $shop->id,
+                ]
             ]
         ];
     }

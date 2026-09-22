@@ -296,8 +296,8 @@ const subnavColumns = computed(() => {
                         <div v-if="hasNavigationIcon(navigation)">
                             <LoadingIcon v-if="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
                             <FontAwesomeIcon v-else-if="navigation.type === 'multiple'" icon="fas fa-chevron-down"
-                                class="ml-2 text-[8px]" />
-                            <FontAwesomeIcon v-else :icon="navigation.icon" class="ml-2 text-[8px]" />
+                                class="ml-2 text-[8px]" fixed-width />
+                            <FontAwesomeIcon v-else :icon="navigation.icon" class="ml-2 text-[8px]" fixed-width />
                         </div>
                         <span v-else-if="loadingItem === (navigation.id || navigation.label)"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px]">
@@ -323,9 +323,9 @@ const subnavColumns = computed(() => {
                         <div v-if="hasNavigationIcon(navigation)" class="ml-2">
                             <LoadingIcon v-if="loadingItem === (navigation.id || navigation.label)" class="text-[8px] align-middle" />
                             <FontAwesomeIcon v-else-if="navigation.type === 'multiple'" icon="fas fa-chevron-down"
-                                class="text-[8px] align-middle" />
+                                class="text-[8px] align-middle" fixed-width />
                             <FontAwesomeIcon v-else :icon="navigation.icon"
-                                class="text-[8px] align-middle" />
+                                class="text-[8px] align-middle" fixed-width />
                         </div>
                         <span v-else-if="loadingItem === (navigation.id || navigation.label)"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] align-middle">
@@ -352,8 +352,8 @@ const subnavColumns = computed(() => {
                         <div v-if="hasNavigationIcon(navigation)">
                             <LoadingIcon v-if="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
                             <FontAwesomeIcon v-else-if="navigation.type === 'multiple'" icon="fas fa-chevron-down"
-                                class="ml-2 text-[8px]" />
-                            <FontAwesomeIcon v-else :icon="navigation.icon" class="ml-2 text-[8px]" />
+                                class="ml-2 text-[8px]" fixed-width />
+                            <FontAwesomeIcon v-else :icon="navigation.icon" class="ml-2 text-[8px]" fixed-width />
                         </div>
                         <span v-else-if="loadingItem === (navigation.id || navigation.label)" class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px]">
                             <LoadingIcon />

@@ -61,7 +61,7 @@ const emits = defineEmits<{
             <template #content>
                 <div>
                     <div class="inline-flex items-start leading-none">
-                        <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" />
+                        <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" fixed-width />
                         <span class="capitalize">{{ trans('comment') }}</span>
                     </div>
                     <div class="py-2.5">
@@ -74,8 +74,8 @@ const emits = defineEmits<{
                             :key="modelValue.length" :style="modelValue.length ? 'primary' : 'disabled'">
                             <template #icon>
                                 <FontAwesomeIcon v-if="isLoading" icon='fad fa-spinner-third' class='animate-spin'
-                                    aria-hidden='true' />
-                                <FontAwesomeIcon v-else icon='far fa-rocket-launch' class='' aria-hidden='true' />
+                                    fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon v-else icon='far fa-rocket-launch' class='' fixed-width aria-hidden='true' />
                             </template>
                         </Button>
                     </div>

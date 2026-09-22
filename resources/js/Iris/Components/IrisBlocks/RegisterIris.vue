@@ -248,7 +248,7 @@ const submit = async () => {
 							<div class="mt-2">
 								<IconField class="w-full" :class="form.errors.email ? 'errorShake rounded-lg' : ''">
 									<InputIcon>
-										<FontAwesomeIcon :icon="faEnvelope" />
+										<FontAwesomeIcon :icon="faEnvelope" fixed-width />
 									</InputIcon>
 
 									<InputText
@@ -402,7 +402,7 @@ const submit = async () => {
 				<div class="relative w-full transform overflow-hidden rounded-lg bg-white text-left transition-all">
 					<div>
 						<div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100">
-							<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-4xl text-red-500" fixed aria-hidden="true" />
+							<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-4xl text-red-500" fixed fixed-width aria-hidden="true" />
 						</div>
 
 						<div class="mt-3 text-center">
@@ -427,7 +427,7 @@ const submit = async () => {
 				<div class="relative w-full transform overflow-hidden rounded-lg bg-white text-left transition-all">
 					<div>
 						<div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100">
-							<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-4xl text-amber-500" fixed aria-hidden="true" />
+							<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-4xl text-amber-500" fixed fixed-width aria-hidden="true" />
 						</div>
 
 						<div class="mt-3 text-center">

@@ -104,7 +104,6 @@ const props = defineProps<{
             }
         }
         updateOrganisationPermissionsRoute: routeType
-        updateEmployeeJobPositionsRoute: routeType
         updateJobPositionsRoute: routeType
         is_in_organisation: boolean
         current_organisation?: {  // the organisation of the employee
@@ -124,58 +123,30 @@ const employeePositionForm = {
 }
 const newForm = props.saveButton ? useForm(employeePositionForm || {}) : reactive(props.form)
 const onSubmitNewForm = () => {
-
-    if (props.fieldData.current_organisation?.slug == props.fieldName) {
-        console.log(".")
-        // If a user is employed in this organisation
-        newForm
-            .transform((data) => ({
-                permissions: data[props.fieldName]
-            }))
-            .submit(
-                props.fieldData.updateEmployeeJobPositionsRoute.method || "patch",
-                route(props.fieldData.updateEmployeeJobPositionsRoute.name, {
-                    ...props.fieldData.updateEmployeeJobPositionsRoute.parameters,
-                    organisation: props.fieldData.is_in_organisation ? undefined : props.organisationId
+    newForm
+        .transform((data) => ({
+            permissions: data[props.fieldName]
+        }))
+        .submit(
+            props.fieldData.updateJobPositionsRoute.method || "patch",
+            route(props.fieldData.updateJobPositionsRoute.name, {
+                ...props.fieldData.updateJobPositionsRoute.parameters,
+                organisation: props.fieldData.is_in_organisation ? undefined : props.organisationId
+            }),
+            {
+                preserveScroll: true,
+                onSuccess: () => notify({
+                    title: trans("Success"),
+                    text: trans("Successfully update the permissions"),
+                    type: "success"
                 }),
-                {
-                    preserveScroll: true,
-                    onSuccess: () => notify({
-                        title: trans("Success"),
-                        text: trans("Successfully update the permissions"),
-                        type: "success"
-                    }),
-                    onError: () => notify({
-                        title: trans("Something went wrong"),
-                        text: trans("Failed to update the permissions"),
-                        type: "error"
-                    })
-                }
-            )
-    } else {
-        console.log(",")
-        newForm
-            .transform((data) => ({
-                permissions: data[props.fieldName]
-            }))
-            .submit(
-                props.fieldData.updateJobPositionsRoute.method || "patch",
-                route(props.fieldData.updateJobPositionsRoute.name, { ...props.fieldData.updateJobPositionsRoute.parameters, organisation: props.fieldData.is_in_organisation ? undefined : props.organisationId }),
-                {
-                    preserveScroll: true,
-                    onSuccess: () => notify({
-                        title: trans("Success"),
-                        text: trans("Successfully update the permissions"),
-                        type: "success"
-                    }),
-                    onError: () => notify({
-                        title: trans("Something went wrong"),
-                        text: trans("Failed to update the permissions"),
-                        type: "error"
-                    })
-                }
-            )
-    }
+                onError: () => notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update the permissions"),
+                    type: "error"
+                })
+            }
+        )
 }
 
 
@@ -696,7 +667,7 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                                  class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-50 transition-all duration-200 ease-in-out">
                                 <!-- Section: Department label -->
                                 <div class="flex items-center gap-x-1.5 py-2">
-                                    <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400 fixed-width" aria-hidden="true" />
+                                    <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400" fixed-width aria-hidden="true" />
                                     {{ jobGroup.department }}
                                 </div>
 
@@ -843,7 +814,7 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                                                 </div>
                                             </div>
                                             <div @click="openFineTune = ''" class="absolute top-1 right-2 w-fit px-1 text-slate-400 hover:text-slate-500 cursor-pointer hover:">
-                                                <FontAwesomeIcon icon="fal fa-times" class="" aria-hidden="true" />
+                                                <FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
                                             </div>
                                         </div>
                                     </Transition>
@@ -869,10 +840,10 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                     <FontAwesomeIcon icon="fad fa-spinner-third" class="text-2xl animate-spin" fixed-width aria-hidden="true" />
                 </div>
                 <div v-else-if="newForm.isDirty" @click="() => onSubmitNewForm()" class="h-9 align-bottom text-center cursor-pointer">
-                    <FontAwesomeIcon icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                 </div>
                 <div v-else class="h-9 align-bottom text-center">
-                    <FontAwesomeIcon icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                 </div>
             </div>
 
@@ -881,8 +852,8 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
 
         <!-- State: error icon & error description -->
         <Transition name="spin-to-down">
-            <FontAwesomeIcon v-if="newForm.errors?.[fieldName]" icon="fas fa-exclamation-circle" class="absolute top-0 right-5 h-6 w-6 text-red-500" aria-hidden="true" />
-            <FontAwesomeIcon v-else-if="newForm.recentlySuccessful" icon="fas fa-check-circle" class="absolute top-0 right-5 h-6 w-6 text-green-500" aria-hidden="true" />
+            <FontAwesomeIcon v-if="newForm.errors?.[fieldName]" icon="fas fa-exclamation-circle" class="absolute top-0 right-5 h-6 w-6 text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else-if="newForm.recentlySuccessful" icon="fas fa-check-circle" class="absolute top-0 right-5 h-6 w-6 text-green-500" fixed-width aria-hidden="true" />
         </Transition>
 
         <div v-if="newForm.errors?.[fieldName]" class="mt-1 flex items-center gap-x-1.5 pointer-events-none">

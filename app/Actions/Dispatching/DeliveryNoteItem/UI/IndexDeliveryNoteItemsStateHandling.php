@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
+use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
@@ -117,6 +118,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                                 )
                             )
                             ORDER BY
+                                ".PartnerBayPickingOrder::sql('delivery_note_items.id').",
                                 CASE
                                     WHEN shops.type = 'b2b'
                                         THEN location_org_stocks.default_wholesale_picking_location::int

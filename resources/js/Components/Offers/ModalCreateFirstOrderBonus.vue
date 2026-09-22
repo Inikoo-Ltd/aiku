@@ -128,7 +128,7 @@ const submitFirstOrderBonus = () => {
                 <div class="space-y-2">
                     <label class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk"
-                            class="font-light text-xs text-red-400 align-middle" />
+                            class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Minimum first order amount') }}:
                     </label>
 
@@ -139,7 +139,7 @@ const submitFirstOrderBonus = () => {
 
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Discount') }}:
                     </label>
 
@@ -149,7 +149,7 @@ const submitFirstOrderBonus = () => {
 
                 <div class="space-y-3">
                     <div class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer Duration') }}:
                     </div>
 
@@ -170,7 +170,7 @@ const submitFirstOrderBonus = () => {
                     <div v-if="dateType === 'interval'" class="space-y-2">
                         <label class="font-medium block">
                             <FontAwesomeIcon icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
+                                class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ trans('End Date') }}:
                         </label>
 

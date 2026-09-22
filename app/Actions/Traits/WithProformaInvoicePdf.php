@@ -67,6 +67,7 @@ trait WithProformaInvoicePdf
                 'hide_payment_status'  => Arr::get($options, 'hide_payment_status', false),
                 'cpnp'                 => Arr::get($options, 'cpnp', false),
                 'group_by_tariff_code' => Arr::get($options, 'group_by_tariff_code', false),
+                'price_breakdown'      => Arr::get($options, 'price_breakdown', false),
 
                 'totalNet' => number_format($totalNet, 2, '.', ''),
             ], [], $config);
@@ -95,6 +96,7 @@ trait WithProformaInvoicePdf
             'cpnp'                 => ['sometimes', 'boolean'],
             'hide_payment_status'  => ['sometimes', 'boolean'],
             'group_by_tariff_code' => ['sometimes', 'boolean'],
+            'price_breakdown'      => ['sometimes', 'boolean'],
         ];
     }
 }

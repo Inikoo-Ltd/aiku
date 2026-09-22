@@ -10,6 +10,8 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Transfers\Aurora\FetchAuroraWarehouses;
 use App\Actions\Transfers\Aurora\FetchAuroraWarehouseAreas;
+use App\Models\Inventory\Location;
+use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraLocation extends FetchAurora
@@ -25,19 +27,7 @@ class FetchAuroraLocation extends FetchAurora
             $parent = FetchAuroraWarehouses::run($this->organisationSource, $this->auroraModelData->{'Location Warehouse Key'});
         }
 
-        $code = $this->auroraModelData->{'Location Code'};
-        $code = str_replace(' ', '-', $code);
-        $code = str_replace('A&C', 'AC', $code);
-        $code = str_replace('.', '-', $code);
-        $code = str_replace('+', '-', $code);
-        $code = str_replace('*', '', $code);
-        $code = str_replace('/', '', $code);
-        if ($code == 'Papier.-Lep.-Pás') {
-            $code = 'Papier-Lep-Pas';
-        }
-        if ($code == 'Affinity-(Goods-') {
-            $code = 'Affinity-Goods2';
-        }
+        $code = self::normaliseCode($this->auroraModelData->{'Location Code'});
 
         $this->parsedData['parent']   = $parent;
         $this->parsedData['location'] = [
@@ -50,6 +40,30 @@ class FetchAuroraLocation extends FetchAurora
         ];
     }
 
+
+    public static function normaliseCode(string $code): string
+    {
+        $code = str_replace([' ', '.', '+'], '-', $code);
+        $code = str_replace(['A&C', '*', '/'], ['AC', '', ''], $code);
+
+        return match ($code) {
+            'Papier.-Lep.-Pás' => 'Papier-Lep-Pas',
+            'Affinity-(Goods-' => 'Affinity-Goods2',
+            default => $code
+        };
+    }
+
+    public static function findAikuLocation(int $organisationId, object $auroraLocation): ?Location
+    {
+        $warehouse = Warehouse::where('source_id', $organisationId.':'.$auroraLocation->{'Location Warehouse Key'})->first();
+        if (!$warehouse) {
+            return null;
+        }
+
+        return Location::where('warehouse_id', $warehouse->id)
+            ->where('code', self::normaliseCode($auroraLocation->{'Location Code'}))
+            ->first();
+    }
 
     protected function fetchData($id): object|null
     {

@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -16,13 +17,13 @@ use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class MarkChatSessionAsSpam
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      *
@@ -53,6 +54,9 @@ class MarkChatSessionAsSpam
                 }
             }
 
+            ClassifyChatSessionNoise::humanDecided($chatSession, true);
+
+
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,
                 eventType: ChatEventTypeEnum::SPAM,
@@ -75,12 +79,19 @@ class MarkChatSessionAsSpam
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession): JsonResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($chatSession);
 
         if (!$agent) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only authenticated agents can mark chats as spam',
+            ], 403);
+        }
+
+        if (!$this->userCanDisposeOfChat($agent->user, $chatSession)) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
             ], 403);
         }
 
@@ -111,8 +122,8 @@ class MarkChatSessionAsSpam
         ]);
     }
 
-    public function getCurrentAgent(): ?ChatAgent
+    public function getCurrentAgent(ChatSession $chatSession): ?ChatAgent
     {
-        return Auth::user()?->chatAgent;
+        return $this->getAuthorisedChatAgent($chatSession);
     }
 }

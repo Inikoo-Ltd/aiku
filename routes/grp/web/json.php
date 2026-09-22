@@ -6,7 +6,14 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
+use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
+use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
+use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoriesByCodes;
+use App\Actions\Catalogue\Product\Json\GetProductsByCodes;
+use App\Actions\Helpers\Ticket\Json\GetTicketChat;
 use App\Actions\Helpers\Ticket\Json\GetTicketControls;
+use App\Actions\Helpers\Ticket\Json\GetTicketQaQueue;
 use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
 use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
@@ -231,7 +238,13 @@ Route::get('organisation/{organisation}/employees/pickers', GetPickers::class)->
 Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers::class)->name('employees.picker_users');
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
+Route::get('product-category/{productCategory:id}/products-by-codes', GetProductsByCodes::class)->name('product_category.products_by_codes')->withoutScopedBindings();
+Route::get('shop/{shop:id}/products-by-codes', [GetProductsByCodes::class, 'inShopController'])->name('shop.products_by_codes')->withoutScopedBindings();
+Route::get('shop/{shop:id}/product-categories-by-codes', GetProductCategoriesByCodes::class)->name('shop.product_categories_by_codes')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
+Route::get('master-product-category/{masterProductCategory:id}/products-by-codes', GetMasterProductsByCodes::class)->name('master_product_category.products_by_codes')->withoutScopedBindings();
+Route::get('master-shop/{masterShop:id}/products-by-codes', [GetMasterProductsByCodes::class, 'inMasterShopController'])->name('master_shop.products_by_codes')->withoutScopedBindings();
+Route::get('master-shop/{masterShop:id}/product-categories-by-codes', GetMasterProductCategoriesByCodes::class)->name('master_shop.product_categories_by_codes')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/shops-content', GetShopsContentInMasterProductCategory::class)->name('master_product_category.shops_content.index')->withoutScopedBindings();
 Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks');
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
@@ -417,4 +430,7 @@ Route::get('{webpage:id}/web-layout-templates/{layoutTemplate:id}', FetchWebLayo
 
 Route::post('warehouse/{warehouse}/low-stock-audit-lock', HandleLowStockAuditLock::class)->name('warehouse.low_stock_audit_lock')->withoutScopedBindings();
 
+Route::get('tickets/qa-queue', GetTicketQaQueue::class)->name('ticket.qa_queue');
+Route::get('tickets/recently-updated', GetRecentlyUpdatedTickets::class)->name('ticket.recently_updated');
 Route::get('tickets/{ticket:id}/controls', GetTicketControls::class)->name('ticket.controls')->whereNumber('ticket');
+Route::get('tickets/{ticket:id}/chat', GetTicketChat::class)->name('ticket.chat')->whereNumber('ticket');

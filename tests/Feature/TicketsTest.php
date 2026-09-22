@@ -10,6 +10,7 @@ use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Helpers\Ticket\GetRetinaTicketBadgeData;
 use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
 use App\Actions\Helpers\Ticket\CancelStaleTickets;
@@ -36,6 +37,7 @@ use App\Models\Chat\ChatAgent;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Mcp\Servers\AikuServer;
 use App\Models\SysAdmin\User;
+use App\Mcp\Tools\TicketAttachmentTool;
 use App\Mcp\Tools\TicketsTool;
 use App\Mcp\Tools\TicketWriteTool;
 use App\Http\Resources\Helpers\TicketResource;
@@ -43,6 +45,7 @@ use App\Models\Helpers\Ticket;
 use App\Models\Helpers\TicketComment;
 use App\Models\SysAdmin\Guest;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -60,11 +63,13 @@ use GuzzleHttp\Psr7\Response as GuzzleResponse;
 use Minishlink\WebPush\MessageSentReport;
 use Minishlink\WebPush\WebPush;
 use Inertia\Testing\AssertableInertia;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
+use function Pest\Laravel\patchJson;
 use function Pest\Laravel\post;
 
 beforeAll(function () {
@@ -259,6 +264,26 @@ test('reporter cancels their own ticket but cannot change anything else', functi
     actingAs($this->user);
 });
 
+test('a comment is translated into the reader language and cached', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Translate me']);
+    $comment = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Olá Graciela'], false);
+
+    $key = 'ticket-comment-translation:'.$comment->id.':'.$comment->updated_at?->timestamp.':'.$this->user->language_id;
+    Cache::put($key, ['text' => 'Hello Graciela', 'language' => 'Portuguese']);
+
+    post(route('grp.models.ticket.comment.translate', $comment->id))
+        ->assertOk()
+        ->assertJson(['text' => 'Hello Graciela', 'language' => 'Portuguese']);
+
+    $ticket->update(['description' => 'Olá, o meu email não aparece']);
+    $descriptionKey = 'ticket-description-translation:'.$ticket->id.':'.$ticket->refresh()->updated_at?->timestamp.':'.$this->user->language_id;
+    Cache::put($descriptionKey, ['text' => 'Hello, my email does not show up', 'language' => 'Portuguese']);
+
+    post(route('grp.models.ticket.translate', $ticket->id))
+        ->assertOk()
+        ->assertJson(['text' => 'Hello, my email does not show up']);
+});
+
 test('comment author edits and deletes their own comment', function () {
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Comment edit']);
     $comment = StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'Typo'], false);
@@ -385,8 +410,9 @@ test('chat agent raises a ticket linked to the session', function () {
     ]);
 
     expect($ticket->type)->toBe(TicketTypeEnum::CUSTOMER)
-        ->and($ticket->model_type)->toBe('ChatSession')
-        ->and($ticket->model_id)->toBe($chatSession->id)
+        ->and($ticket->source_type)->toBe('ChatSession')
+        ->and($ticket->source_id)->toBe($chatSession->id)
+        ->and(App\Actions\Chat\GetChatSessionTickets::run($chatSession)->collection->pluck('id')->all())->toContain($ticket->id)
         ->and($ticket->shop_id)->toBe($this->shop->id)
         ->and($ticket->reporter_id)->toBe($this->user->id)
         ->and($ticket->description)->toContain('Reference: https://app.aiku.test/chat')
@@ -628,25 +654,6 @@ test('staff reporter rates their own resolved help ticket from grp', function ()
 
     expect($ticket->fresh()->rating)->toBe(5);
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_rate', false)->where('ticket.rating', 5));
-});
-
-test('customer ticket escalates to a help ticket that keeps the customer and points back', function () {
-    $customerTicket = StoreRetinaTicket::make()->action($this->webUser, ['subject' => 'Feed is empty', 'priority' => 'high']);
-
-    $response = post(route('grp.models.ticket.escalate', $customerTicket->id), ['description' => 'Feed generator crashed']);
-    $helpTicket = Ticket::where('model_type', 'Ticket')->where('model_id', $customerTicket->id)->first();
-    $response->assertRedirect(route('grp.tickets.show', $helpTicket->reference));
-
-    expect($helpTicket->type)->toBe(TicketTypeEnum::HELP)
-        ->and($helpTicket->kind)->toBe(TicketKindEnum::ESCALATION)
-        ->and($helpTicket->subject)->toBe('Feed is empty')
-        ->and($helpTicket->description)->toBe('Feed generator crashed')
-        ->and($helpTicket->priority)->toBe(ChatPriorityEnum::HIGH)
-        ->and($helpTicket->customer_id)->toBe($this->customer->id)
-        ->and($helpTicket->reporter_id)->toBe($this->user->id)
-        ->and($customerTicket->escalations()->pluck('reference')->all())->toBe([$helpTicket->reference]);
-
-    post(route('grp.models.ticket.escalate', $helpTicket->id))->assertStatus(422);
 });
 
 test('staff file a bug from anywhere without leaving the page', function () {
@@ -1241,13 +1248,13 @@ test('tickets reports link to filtered lists by assignee and dates', function ()
 
     $from = $mine->fresh()->created_at->toDateString();
 
-    get(route('grp.tickets.list', ['filter' => ['assignee' => $this->user->username]]))
+    get(route('grp.tickets.list', ['filter' => ['assignee' => $this->user->username], 'perPage' => 1000]))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('assignee_id', $this->user->id)->count()));
 
-    get(route('grp.tickets.list', ['filter' => ['created_since' => $from]]))
+    get(route('grp.tickets.list', ['filter' => ['created_since' => $from], 'perPage' => 1000]))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('created_at', '>=', $from)->count()));
 
-    get(route('grp.tickets.list', ['filter' => ['resolved_since' => $from]]))
+    get(route('grp.tickets.list', ['filter' => ['resolved_since' => $from], 'perPage' => 1000]))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', Ticket::where('resolved_at', '>=', $from)->count()));
 
     $stats = ShowTicketsReports::make()->handle($this->group, '1w');
@@ -1265,8 +1272,8 @@ test('engineers raise task and qa tickets, staff cannot, and internal tickets st
     setPermissionsTeamId($this->group->id);
     $engineer->assignRole('help-desk-clerk');
 
-    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa'])
-        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature']);
+    expect(collect(TicketKindEnum::raisableBy($engineer))->pluck('value')->all())->toBe(['bug', 'feature', 'task', 'qa', 'documentation', 'data_integrity', 'support'])
+        ->and(collect(TicketKindEnum::raisableBy($staff))->pluck('value')->all())->toBe(['bug', 'feature', 'documentation', 'data_integrity', 'support']);
 
     $todoBefore = GetTicketBadgeData::run($engineer)['queue']['todo_week']['count'];
 
@@ -1350,7 +1357,7 @@ test('only the assignee and supervisors change kind and module, and no ticket is
     get(route('grp.json.ticket.controls', $ticket->id))->assertOk()
         ->assertJsonPath('can_change_kind_module', true)
         ->assertJsonPath('ticket.reference', $ticket->reference)
-        ->assertJsonStructure(['ticket', 'options' => ['kinds', 'modules', 'assignees'], 'can_manage', 'can_assign', 'routes' => ['update', 'escalate']]);
+        ->assertJsonStructure(['ticket', 'options' => ['kinds', 'modules', 'assignees'], 'can_manage', 'can_assign', 'routes' => ['update']]);
 
     actingAs($this->user);
     patch(route('grp.models.ticket.update', $ticket->id), ['kind' => 'bug'])->assertRedirect()->assertSessionHasNoErrors();
@@ -1678,7 +1685,7 @@ test('ticket list sorts by creation, remembers the Mine filter and lets lead eng
             ->where('data.data', fn ($rows) => collect($rows)->isNotEmpty() && collect($rows)->every(fn ($row) => $row['assignee_id'] === $this->user->id))
     );
 
-    get(route('grp.tickets.list', ['elements' => ['mine' => 'reported,assigned,collaborating']]))->assertInertia(
+    get(route('grp.tickets.list', ['elements' => ['mine' => '']]))->assertInertia(
         fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('reference')->contains($newest->reference))
     );
 
@@ -1938,7 +1945,6 @@ test('reporters follow progress from their badge, cannot move their ticket, and 
     expect(GetTicketBadgeData::run($reporter)['mine']['to_do']['count'])->toBe(1);
 
     actingAs($reporter);
-    patch($update, ['status' => 'cancelled', 'status_comment' => 'never mind'])->assertForbidden();
     patch($update, ['status' => 'in_progress'])->assertForbidden();
     post($comment, ['body' => 'secret from the reporter', 'is_internal' => true])->assertSessionHasErrors('is_internal');
     get(route('grp.tickets.show', $ticket->reference))->assertInertia(
@@ -2312,4 +2318,576 @@ test('collaborators who lose their role drop off and tickets held by former staf
     actingAs($engineer);
     patch(route('grp.models.ticket.update', $ticket->id), ['assignee_id' => $engineer->id])->assertRedirect()->assertSessionHasNoErrors();
     expect($ticket->fresh()->assignee_id)->toBe($engineer->id);
+});
+
+test('the QA queue can be narrowed to checks for anyone or for me', function () {
+    Notification::fake();
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa  = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $forAnyone = StoreTicket::make()->action($this->group, ['subject' => 'Check for anyone']);
+    $forMe     = StoreTicket::make()->action($this->group, ['subject' => 'Check for me']);
+    $forOther  = StoreTicket::make()->action($this->group, ['subject' => 'Check for someone else']);
+    UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
+    UpdateTicket::make()->action($forMe, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
+    UpdateTicket::make()->action($forOther, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $otherQa->id]);
+
+    actingAs($qa);
+    $references = fn (string $checker) => collect(get(route('grp.json.ticket.qa_queue', ['checker' => $checker]))->assertOk()->json())->pluck('reference')->all();
+
+    expect($references('all'))->toContain($forAnyone->reference, $forMe->reference, $forOther->reference)
+        ->and($references('anyone'))->toContain($forAnyone->reference)->not->toContain($forMe->reference, $forOther->reference)
+        ->and($references('me'))->toContain($forMe->reference)->not->toContain($forAnyone->reference, $forOther->reference);
+
+    $mine = collect(get(route('grp.json.ticket.qa_queue', ['checker' => 'me']))->json())->firstWhere('reference', $forMe->reference);
+    expect($mine['qa_user_id'])->toBe($qa->id);
+
+    get(route('grp.json.ticket.qa_queue', ['checker' => 'nobody']))->assertSessionHasErrors('checker');
+
+    actingAs($outsider);
+    get(route('grp.json.ticket.qa_queue'))->assertForbidden();
+    actingAs($this->user);
+});
+
+test('the ticket list offers ownership by role and QA filters', function () {
+    Notification::fake();
+    $qa    = User::factory()->create(['group_id' => $this->group->id]);
+    $staff = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+
+    $forAnyone = StoreTicket::make()->action($this->group, ['subject' => 'List QA for anyone']);
+    $forQa     = StoreTicket::make()->action($this->group, ['subject' => 'List QA for me']);
+    $failed    = StoreTicket::make()->action($this->group, ['subject' => 'List QA failed']);
+    $noQa      = StoreTicket::make()->action($this->group, ['subject' => 'List without QA', 'reporter_type' => 'User', 'reporter_id' => $qa->id]);
+    UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
+    UpdateTicket::make()->action($forQa, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
+    $failed->forceFill(['qa_status' => TicketQaStatusEnum::FAILED, 'qa_user_id' => $qa->id])->saveQuietly();
+
+    $references = fn (array $elements) => collect(get(route('grp.tickets.list', ['elements' => $elements, 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
+
+    get(route('grp.tickets.list'))->assertInertia(
+        fn (AssertableInertia $page) => $page->where('queryBuilderProps.default.elementGroups.mine.label', 'Ownership')
+            ->has('queryBuilderProps.default.elementGroups.mine.elements.assigned')
+            ->has('queryBuilderProps.default.elementGroups.mine.elements.unassigned')
+            ->has('queryBuilderProps.default.elementGroups.qa_status')
+            ->has('queryBuilderProps.default.elementGroups.qa_checker')
+    );
+
+    actingAs($qa);
+    get(route('grp.tickets.list'))->assertInertia(
+        fn (AssertableInertia $page) => $page->missing('queryBuilderProps.default.elementGroups.mine.elements.assigned')
+            ->has('queryBuilderProps.default.elementGroups.mine.elements.reported')
+            ->where('queryBuilderProps.default.elementGroups.mine.optional', true)
+            ->where('queryBuilderProps.default.elementGroups.status.optional', false)
+            ->has('queryBuilderProps.default.elementGroups.qa_checker')
+    );
+
+    actingAs($this->user);
+    $unassignedTicket = StoreTicket::make()->action($this->group, ['subject' => 'List nobody on it']);
+    $assignedTicket   = StoreTicket::make()->action($this->group, ['subject' => 'List someone on it', 'assignee_id' => $this->user->id]);
+    expect($references(['mine' => 'unassigned'])->all())->toContain($unassignedTicket->reference)->not->toContain($assignedTicket->reference);
+
+    actingAs($qa);
+    expect($references(['mine' => 'reported'])->all())->toContain($noQa->reference)->not->toContain($forAnyone->reference)
+        ->and($references(['qa_checker' => 'mine'])->all())->toContain($forQa->reference, $failed->reference)->not->toContain($forAnyone->reference, $noQa->reference)
+        ->and($references(['qa_checker' => 'anyone'])->all())->toContain($forAnyone->reference)->not->toContain($forQa->reference, $noQa->reference)
+        ->and($references(['qa_checker' => 'everyone'])->all())->toContain($forAnyone->reference, $forQa->reference, $failed->reference)->not->toContain($noQa->reference)
+        ->and($references(['qa_status' => 'failed'])->all())->toContain($failed->reference)->not->toContain($forQa->reference, $noQa->reference)
+        ->and($references(['qa_checker' => 'mine,anyone,everyone'])->all())->toContain($forAnyone->reference)->not->toContain($noQa->reference)
+        ->and($references(['qa_status' => 'requested,failed,passed'])->all())->not->toContain($noQa->reference);
+
+    patch(route('grp.models.profile.update'), ['tickets_list_mine' => 'reported'])->assertSessionHasNoErrors();
+    expect($references([])->all())->toContain($noQa->reference)->not->toContain($forAnyone->reference)
+        ->and($references(['mine' => ''])->all())->toContain($noQa->reference, $forAnyone->reference);
+
+    actingAs($staff);
+    get(route('grp.tickets.list'))->assertInertia(
+        fn (AssertableInertia $page) => $page->missing('queryBuilderProps.default.elementGroups.qa_checker')
+            ->has('queryBuilderProps.default.elementGroups.qa_status')
+    );
+    expect($references(['qa_status' => 'requested'])->all())->toContain($forAnyone->reference, $forQa->reference)->not->toContain($failed->reference);
+
+    actingAs($this->user);
+});
+
+test('recently updated lists ticket notifications by ticket, with unread, mentions and the reason', function () {
+    Notification::fake();
+    $watcher = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $watcher->assignRole('help-desk-clerk');
+
+    $commented = StoreTicket::make()->action($this->group, ['subject' => 'Recent commented']);
+    $mentioned = StoreTicket::make()->action($this->group, ['subject' => 'Recent mentioned']);
+    $readOnly  = StoreTicket::make()->action($this->group, ['subject' => 'Recent already read']);
+    $legacy    = StoreTicket::make()->action($this->group, ['subject' => 'Recent legacy']);
+
+    $notify = fn (Ticket $ticket, array $data, int $minutesAgo, bool $read = false) => $watcher->notifications()->create([
+        'id'         => (string) Str::uuid(),
+        'type'       => App\Notifications\TicketNotification::class,
+        'data'       => ['type' => 'ticket', 'ticket_id' => $ticket->id, 'body' => '', 'route' => '', ...$data],
+        'read_at'    => $read ? now() : null,
+        'created_at' => now()->subMinutes($minutesAgo),
+    ]);
+    $notify($commented, ['title' => 'x has a new comment', 'reason' => 'comment'], 1);
+    $notify($mentioned, ['title' => 'Someone mentioned you on it', 'reason' => 'mention'], 5, true);
+    $notify($mentioned, ['title' => 'x is now In progress', 'reason' => 'status'], 3);
+    $notify($readOnly, ['title' => 'x was edited', 'reason' => 'edited'], 2, true);
+    $notify($legacy, ['title' => 'Artha mentioned you on HELP-1'], 4);
+
+    actingAs($watcher);
+    $rows = fn (string $scope) => collect(get(route('grp.json.ticket.recently_updated', ['scope' => $scope]))->assertOk()->json());
+
+    $unread = $rows('unread');
+    expect($unread->pluck('reference')->all())->toBe([$commented->reference, $mentioned->reference, $legacy->reference])
+        ->and($unread->firstWhere('reference', $mentioned->reference)['reason'])->toBe('status')
+        ->and($unread->firstWhere('reference', $mentioned->reference)['is_mentioned'])->toBeTrue()
+        ->and($unread->firstWhere('reference', $legacy->reference)['reason'])->toBe('mention')
+        ->and($unread->first())->toHaveKeys(['reason_label', 'reason_icon', 'notified_at', 'has_unread']);
+
+    expect($rows('mentions')->pluck('reference')->sort()->values()->all())->toBe(collect([$mentioned->reference, $legacy->reference])->sort()->values()->all())
+        ->and($rows('all')->pluck('reference')->all())->toContain($readOnly->reference)
+        ->and($rows('all')->firstWhere('reference', $readOnly->reference)['has_unread'])->toBeFalse();
+
+    get(route('grp.json.ticket.recently_updated', ['scope' => 'nope']))->assertSessionHasErrors('scope');
+    actingAs($this->user);
+});
+
+test('status changes and QA verdicts reach collaborators, and field edits reach the assignee', function () {
+    Mail::fake();
+    Notification::fake();
+    $assignee     = User::factory()->create(['group_id' => $this->group->id]);
+    $collaborator = User::factory()->create(['group_id' => $this->group->id]);
+    $qa           = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $assignee->assignRole('help-desk-clerk');
+    $collaborator->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Notify the crew', 'assignee_id' => $assignee->id]);
+    $ticket->collaborators()->attach($collaborator->id);
+    Notification::fake();
+
+    UpdateTicket::make()->action($ticket->fresh(), ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    Notification::assertSentTo($collaborator, App\Notifications\TicketNotification::class, fn ($notification) => $notification->reason === 'status');
+
+    actingAs($qa);
+    UpdateTicket::make()->action($ticket->fresh(), ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'nope'])->assertRedirect();
+    Notification::assertSentTo($collaborator, App\Notifications\TicketNotification::class, fn ($notification) => $notification->reason === 'qa');
+    Notification::assertSentTo($assignee, App\Notifications\TicketNotification::class, fn ($notification) => $notification->reason === 'qa');
+
+    Notification::fake();
+    actingAs($this->user);
+    UpdateTicket::make()->action($ticket->fresh(), ['priority' => 'urgent', 'description' => 'More detail']);
+    Notification::assertSentTo($assignee, App\Notifications\TicketNotification::class, fn ($notification) => $notification->reason === 'edited' && str_contains($notification->lines[0], 'urgency, description'));
+    Notification::assertNotSentTo($collaborator, App\Notifications\TicketNotification::class);
+
+    Notification::fake();
+    actingAs($assignee);
+    UpdateTicket::make()->action($ticket->fresh(), ['module' => TicketModuleEnum::cases()[0]->value]);
+    Notification::assertNotSentTo($assignee, App\Notifications\TicketNotification::class);
+    actingAs($this->user);
+});
+
+test('ticket and comment resources carry the author identity the hover card needs', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Hover card identity', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'on it']);
+
+    $ticketPayload = TicketResource::make($ticket->refresh())->resolve();
+
+    expect($ticketPayload['reporter_key'])->toBe('User-'.$this->user->id)
+        ->and($ticketPayload['reporter_username'])->toBe($this->user->username);
+
+    $commentPayload = \App\Http\Resources\Helpers\TicketCommentResource::make($ticket->comments()->first())->resolve();
+
+    expect($commentPayload['author_key'])->toBe('User-'.$this->user->id)
+        ->and($commentPayload['author_username'])->toBe($this->user->username);
+});
+
+test('the assignee cancels their own ticket, and the reporter still can too', function () {
+    setPermissionsTeamId($this->group->id);
+    $assignee  = User::factory()->create(['group_id' => $this->group->id]);
+    $bystander = User::factory()->create(['group_id' => $this->group->id]);
+    $assignee->assignRole('help-desk-clerk');
+    $bystander->assignRole('help-desk-clerk');
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'     => 'Cancel me',
+        'assignee_id' => $assignee->id,
+    ]);
+
+    // an engineer who is neither the assignee nor the reporter is still kept out
+    actingAs($bystander);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'cancelled', 'status_comment' => 'not mine'])->assertForbidden();
+
+    actingAs($assignee);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'cancelled', 'status_comment' => 'duplicate'])
+        ->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::CANCELLED);
+
+    // the reporter's own cancel, which this branch was written for, keeps working: a staff
+    // member with no help desk role at all, cancelling what they raised
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+
+    actingAs($reporter);
+    $reporterTicket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Mine to cancel',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+    ]);
+
+    patch(route('grp.models.ticket.update', $reporterTicket->id), ['status' => 'cancelled', 'status_comment' => 'sorted itself out'])
+        ->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($reporterTicket->refresh()->status)->toBe(TicketStatusEnum::CANCELLED);
+});
+
+test('a ticket raised from a chat carries that conversation, read only', function () {
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $session->messages()->create([
+        'message_text' => 'My order never arrived',
+        'message_type' => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => \App\Enums\CRM\Livechat\ChatSenderTypeEnum::GUEST->value,
+    ]);
+
+    $withdrawn = $session->messages()->create([
+        'message_text' => 'ignore that, wrong chat',
+        'message_type' => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => \App\Enums\CRM\Livechat\ChatSenderTypeEnum::GUEST->value,
+    ]);
+    $withdrawn->delete();
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'         => 'Order never arrived',
+        'type'            => TicketTypeEnum::CUSTOMER->value,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $this->customer->id,
+        'source_type'     => 'ChatSession',
+        'source_id'       => $session->id,
+    ]);
+
+    $payload = get(route('grp.json.ticket.chat', $ticket->id))->assertOk()->json();
+
+    expect($payload['session']['ulid'])->toBe($session->ulid)
+        ->and($payload['messages'])->toHaveCount(2)
+        ->and($payload['messages'][0]['text'])->toBe('My order never arrived')
+        ->and($payload['messages'][0]['sender_type'])->toBe('guest')
+        // a withdrawn message keeps its place without its words
+        ->and($payload['messages'][1]['is_redacted'])->toBeTrue()
+        ->and($payload['messages'][1]['text'])->toBeNull()
+        ->and($payload['truncated'])->toBeFalse();
+
+    // the resource tells the page there is something to read, and the customer is one click away
+    expect(TicketResource::make($ticket->refresh())->resolve()['source']['has_conversation'])->toBeTrue()
+        ->and($payload['customer']['name'])->toBe($this->customer->name)
+        ->and($payload['customer']['url'])->toBe(route('grp.org.shops.show.crm.customers.show', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $this->customer->slug,
+        ]));
+
+    // a ticket with no conversation behind it says so, and does not offer one
+    $plain = StoreTicket::make()->action($this->group, ['subject' => 'Raised by hand']);
+
+    expect(TicketResource::make($plain)->resolve()['source'])->toBeNull()
+        ->and(get(route('grp.json.ticket.chat', $plain->id))->assertOk()->json('session'))->toBeNull();
+});
+
+test('somebody who cannot see a ticket cannot read its conversation', function () {
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'         => 'Confidential one',
+        'type'            => TicketTypeEnum::CUSTOMER->value,
+        'is_confidential' => true,
+        'source_type'     => 'ChatSession',
+        'source_id'       => $session->id,
+    ]);
+
+    actingAs(User::factory()->create(['group_id' => $this->group->id]));
+
+    get(route('grp.json.ticket.chat', $ticket->id))->assertForbidden();
+});
+
+test('settling a ticket tells the customer and ends the conversation, when that was agreed', function () {
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Refund never arrived',
+        'type'          => TicketTypeEnum::CUSTOMER->value,
+        'blocks_source' => true,
+        'closes_source' => true,
+        'source_type'   => 'ChatSession',
+        'source_id'     => $session->id,
+        'assignee_id'   => $this->user->id,
+    ]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), [
+        'status'         => 'resolved',
+        'status_comment' => 'Refunded this morning, it will show in a day or two',
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $session->refresh();
+
+    // the customer was told, in the conversation, with the note signed off
+    $lastMessage = $session->messages()->latest('id')->skip(1)->first();
+
+    expect($lastMessage->message_text)->toContain('Refunded this morning')
+        ->and($lastMessage->message_text)->toContain('- Developer')
+        ->and($lastMessage->sender_type)->toBe(\App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT)
+        ->and($lastMessage->sender_id)->toBeNull()
+        ->and($session->status)->toBe(\App\Enums\CRM\Livechat\ChatSessionStatusEnum::CLOSED);
+
+    // and the ticket says what happened
+    expect($ticket->refresh()->comments()->where('is_internal', true)->latest('id')->value('body'))
+        ->toContain('sent to the customer');
+});
+
+test('a ticket that was not agreed to close its conversation leaves it alone', function () {
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $ticket = StoreTicket::make()->action($this->group, [
+        'subject'     => 'Nothing to tell them',
+        'type'        => TicketTypeEnum::CUSTOMER->value,
+        'source_type' => 'ChatSession',
+        'source_id'   => $session->id,
+        'assignee_id' => $this->user->id,
+    ]);
+
+    patch(route('grp.models.ticket.update', $ticket->id), [
+        'status'         => 'resolved',
+        'status_comment' => 'Fixed, nothing the customer needs to hear',
+    ])->assertRedirect();
+
+    expect($session->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE)
+        ->and($session->messages()->count())->toBe(0);
+});
+
+test('a ticket settled on WhatsApp answers inside the day, and closes in silence after it', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', null);
+
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], [
+        'whatsapp' => ['phone_number_id' => '111', 'waba_id' => '222'],
+    ])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], [
+        'meta' => ['access_key' => 'token'],
+    ])]);
+
+    $channel = \App\Models\Chat\MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $sessionFor = function (\Illuminate\Support\Carbon $lastInbound) use ($channel) {
+        $session = \App\Models\Chat\MetaChatSession::create([
+            'ulid'            => (string) \Illuminate\Support\Str::ulid(),
+            'meta_channel_id' => $channel->id,
+            'shop_id'         => $this->shop->id,
+            'phone_number'    => '+628123456789',
+            'status'          => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE->value,
+            'language_id'     => 68,
+            'priority'        => ChatPriorityEnum::NORMAL->value,
+        ]);
+
+        // what Meta's window is measured from: the customer's last message
+        $session->messages()->create([
+            'meta_channel_id' => $channel->id,
+            'message_type'    => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => \App\Enums\CRM\Livechat\ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'my order is late',
+            'created_at'      => $lastInbound,
+        ]);
+
+        return $session;
+    };
+
+    $ticketFor = function ($session) {
+        return StoreTicket::make()->action($this->group, [
+            'subject'       => 'Late order '.uniqid(),
+            'type'          => TicketTypeEnum::CUSTOMER->value,
+            'blocks_source' => true,
+            'closes_source' => true,
+            'source_type'   => 'MetaChatSession',
+            'source_id'     => $session->id,
+            'assignee_id'   => $this->user->id,
+        ]);
+    };
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.TEST']]])]);
+
+    // inside the window: the customer is answered on WhatsApp and the conversation closes
+    $fresh = $sessionFor(now()->subHours(2));
+    patch(route('grp.models.ticket.update', $ticketFor($fresh)->id), [
+        'status'         => 'resolved',
+        'status_comment' => 'Reshipped this morning',
+    ])->assertRedirect();
+
+    $sent = $fresh->refresh()->messages()->where('sender_type', \App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT->value)->latest('id')->first();
+
+    expect($sent)->not->toBeNull()
+        ->and($sent->message_text)->toContain('Reshipped this morning')
+        ->and($sent->message_text)->toContain('- Developer')
+        ->and($fresh->status)->toBe(\App\Enums\CRM\Livechat\ChatSessionStatusEnum::CLOSED);
+
+    // past it: Meta would refuse the message, so the chat is closed without one
+    $stale = $sessionFor(now()->subDays(3));
+    $staleTicket = $ticketFor($stale);
+
+    patch(route('grp.models.ticket.update', $staleTicket->id), [
+        'status'         => 'resolved',
+        'status_comment' => 'Reshipped, sorry for the wait',
+    ])->assertRedirect();
+
+    expect($stale->refresh()->messages()->where('sender_type', \App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT->value)->count())->toBe(0)
+        ->and($stale->status)->toBe(\App\Enums\CRM\Livechat\ChatSessionStatusEnum::CLOSED)
+        ->and($staleTicket->refresh()->comments()->where('is_internal', true)->latest('id')->value('body'))
+        ->toContain('WhatsApp');
+});
+
+test('only the person a notification belongs to can mark it read or unread', function () {
+    $mine = \App\Models\Notifications\Notification::create([
+        'id'              => (string) \Illuminate\Support\Str::uuid(),
+        'type'            => 'TicketRaised',
+        'notifiable_type' => $this->user->getMorphClass(),
+        'notifiable_id'   => $this->user->id,
+        'data'            => json_encode(['title' => 'Mine to read']),
+    ]);
+
+    $theirs = \App\Models\Notifications\Notification::create([
+        'id'              => (string) \Illuminate\Support\Str::uuid(),
+        'type'            => 'TicketRaised',
+        'notifiable_type' => $this->user->getMorphClass(),
+        'notifiable_id'   => User::factory()->create(['group_id' => $this->group->id])->id,
+        'data'            => json_encode(['title' => 'Somebody else, and their business']),
+    ]);
+
+    // the key is a uuid, which the model now says it is
+    expect($mine->id)->toBe($mine->getAttributes()['id']);
+
+    patchJson(route('grp.models.notifications.read', $mine->id))->assertSuccessful();
+    expect($mine->refresh()->read_at)->not->toBeNull();
+
+    // reading somebody else's by id used to answer with the row itself
+    patchJson(route('grp.models.notifications.read', $theirs->id))->assertForbidden();
+    patchJson(route('grp.models.notifications.unread', $theirs->id))->assertForbidden();
+
+    expect($theirs->refresh()->read_at)->toBeNull();
+});
+
+test('the link to somebody account is only offered to those who may open it', function () {
+    setPermissionsTeamId($this->group->id);
+
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    $ticket   = StoreTicket::make()->action($this->group, [
+        'subject'       => 'Who raised this',
+        'reporter_type' => 'User',
+        'reporter_id'   => $reporter->id,
+    ]);
+    StoreTicketComment::make()->action($ticket, $reporter, ['body' => 'and who commented']);
+
+    // every help desk role carries sysadmin through groupAdminPermissions, so the person who
+    // must not see the link is somebody working a shop rather than the group
+    $clerk = User::factory()->create(['group_id' => $this->group->id]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $clerk->forgetWildcardPermissionIndex();
+
+    // the resource reads the viewer off the request, so the request has to carry one
+    $seenBy = function (User $viewer) use ($ticket) {
+        $request = \Illuminate\Http\Request::create('/');
+        $request->setUserResolver(fn () => $viewer);
+
+        return [
+            'reporter' => TicketResource::make($ticket->refresh())->toArray($request)['reporter_profile_url'],
+            'author'   => \App\Http\Resources\Helpers\TicketCommentResource::make($ticket->comments()->first())->toArray($request)['author_profile_url'],
+        ];
+    };
+
+    actingAs($clerk);
+    $asClerk = $seenBy($clerk);
+
+    expect($clerk->authTo('sysadmin.view'))->toBeFalse()
+        ->and($asClerk['reporter'])->toBeNull()
+        ->and($asClerk['author'])->toBeNull();
+
+    $admin = User::factory()->create(['group_id' => $this->group->id]);
+    $admin->assignRole('group-admin');
+    $admin->forgetWildcardPermissionIndex();
+
+    actingAs($admin);
+    $asAdmin = $seenBy($admin);
+
+    expect($admin->authTo('sysadmin.view'))->toBeTrue()
+        ->and($asAdmin['reporter'])->toBe(route('grp.sysadmin.users.show', ['user' => $reporter->slug]))
+        ->and($asAdmin['author'])->toBe(route('grp.sysadmin.users.show', ['user' => $reporter->slug]));
+});
+
+test('assistant reads ticket attachments through MCP, within the ticket visibility rules', function () {
+    $pdf = new Mpdf\Mpdf(['tempDir' => sys_get_temp_dir()]);
+    $pdf->WriteHTML('<p>Invoice total 42.50 GBP</p>');
+
+    $directory = sys_get_temp_dir().'/ticket_mcp_'.uniqid();
+    mkdir($directory);
+    $docx = new ZipArchive();
+    $docx->open("$directory/notes.docx", ZipArchive::CREATE);
+    $docx->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>');
+    $docx->addFromString('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Customer &amp; wants</w:t></w:r></w:p><w:p><w:r><w:t>a refund</w:t></w:r></w:p></w:body></w:document>');
+    $docx->close();
+    $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save("$directory/stock.xlsx");
+
+    $ticket  = StoreTicket::make()->action($this->group, ['subject' => 'Read my files', 'images' => [UploadedFile::fake()->createWithContent('invoice.pdf', $pdf->OutputBinaryData())]]);
+    $comment = StoreTicketComment::make()->action($ticket, $this->user, ['images' => [new UploadedFile("$directory/notes.docx", 'notes.docx', null, null, true), UploadedFile::fake()->image('shot.png', 4, 4)]]);
+    $comment->update(['is_lead_only' => true]);
+    $stock = StoreTicketComment::make()->action($ticket, $this->user, ['images' => [new UploadedFile("$directory/stock.xlsx", 'stock.xlsx', null, null, true)]]);
+
+    $tool = fn (User $user, string $attachment) => AikuServer::actingAs($user)->tool(TicketAttachmentTool::class, ['reference' => strtolower($ticket->reference), 'attachment' => $attachment]);
+
+    $tool($this->user, 'invoice.pdf')->assertOk()->assertSee('Invoice total 42.50 GBP');
+    $tool($this->user, $ticket->getMedia('ticket_attachments')->first()->ulid)->assertOk()->assertSee('invoice.pdf');
+    $tool($this->user, 'notes.docx')->assertOk()->assertSee(json_encode("Customer & wants\na refund"));
+    $tool($this->user, 'shot.png')->assertOk()->assertSee(base64_encode(Storage::disk($comment->getMedia('ticket_images')->first()->disk)->get($comment->getMedia('ticket_images')->first()->getPathRelativeToRoot())));
+    $tool($this->user, 'stock.xlsx')->assertHasErrors(['Cannot extract text from .xlsx files.']);
+    $tool($this->user, 'missing.pdf')->assertHasErrors(['Attachment not found on this ticket.']);
+
+    $qa = User::factory()->create(['group_id' => $this->group->id]);
+    $qa->assignRole('qa');
+    $tool($qa, 'invoice.pdf')->assertOk();
+    $tool($qa, 'notes.docx')->assertHasErrors(['Attachment not found on this ticket.']);
+
+    $ticket->update(['is_confidential' => true]);
+    $tool($qa, 'invoice.pdf')->assertHasErrors(['Ticket not found or not visible to you.']);
+    expect($stock)->toBeInstanceOf(TicketComment::class);
 });

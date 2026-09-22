@@ -2,6 +2,7 @@
 === .ai/aiku-ai.guidelines rules ===
 
 - DO not write code comments you must write clear, self-explanatory code instead
+- Frontend translations: always use `ctrans` from `@/Composables/useTrans`, never `trans` from `laravel-vue-i18n`. Same signature, but it falls back to the original text (with `:placeholder` replacements) when no translation exists, so missing keys never render empty. Convert `trans(` calls and their import whenever you touch a file that still uses them.
 
 === foundation rules ===
 

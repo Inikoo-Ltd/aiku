@@ -24,7 +24,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
@@ -154,10 +154,28 @@ const brandColors: Record<string, string> = {
 
 const websiteLogo = computed(() => layout?.iris?.header?.header?.data?.fieldValue?.logo)
 
-const configuredContactOptions = computed<ContactOption[]>(
-    () => (page.props?.contact_options_panel as ContactOption[]) ?? []
-)
+const isAtlassianContactOption = (option: ContactOption) =>
+    option.url?.toLowerCase().includes("atlassian.net") === true
 
+const isBrokenContactOption = (option: ContactOption) => {
+    const url = option.url?.trim() ?? ""
+
+    if (!url) {
+        return false
+    }
+
+    try {
+        return !new URL(url)
+    } catch {
+        return true
+    }
+}
+
+const configuredContactOptions = computed<ContactOption[]>(() =>
+    ((page.props?.contact_options_panel as ContactOption[]) ?? []).filter(
+        (option) => !isAtlassianContactOption(option) && !isBrokenContactOption(option)
+    )
+)
 const isLiveChatOption = (option: ContactOption) => !option.url?.trim()
 
 const contactOptions = computed<ContactOption[]>(() => {
@@ -167,7 +185,7 @@ const contactOptions = computed<ContactOption[]>(() => {
         return options
     }
 
-    return [{ icon: ["fal", "comments"], label: trans("Livechat"), url: "" }, ...options]
+    return [{ icon: ["fal", "comments"], label: ctrans("Livechat"), url: "" }, ...options]
 })
 
 const hasContactOptionsPanel = computed(
@@ -315,11 +333,11 @@ const getMessages = async (loadMore = false) => {
 const sendMessage = async ({
     text,
     type,
-    file,
+    files,
 }: {
     text: string
     type: "text" | "image" | "file"
-    file?: File | null
+    files?: File[]
 }) => {
     if (!chatSession.value?.ulid) return
     const tempId = `tmp-${crypto.randomUUID()}`
@@ -330,7 +348,7 @@ const sendMessage = async ({
         message_text: text ?? "",
         message_type: type,
         media_url:
-            type === "image" && file ? URL.createObjectURL(file) : null,
+            type === "image" && files?.[0] ? URL.createObjectURL(files[0]) : null,
         sender_type: isLoggedIn.value ? "user" : "guest",
         created_at: new Date().toISOString(),
         _status: "sending",
@@ -345,8 +363,10 @@ const sendMessage = async ({
         if (isLoggedIn.value && layout.user?.id) {
             formData.append("sender_id", layout.user.id)
         }
-        if (file) {
-            formData.append(type === "image" ? "image" : "file", file)
+        if (files?.length === 1) {
+            formData.append(type === "image" ? "image" : "file", files[0])
+        } else {
+            files?.forEach((file) => formData.append("attachments[]", file))
         }
 
         await axios.post(
@@ -391,6 +411,20 @@ const initWebSocket = () => {
     bindConnectionRecovery()
 
     const notifiedMessageIds = new Set<number>()
+
+    // An agent took a message back: the words go at once, the fact that something was
+    // withdrawn stays, so nothing disappears from under the customer unexplained.
+    chatChannel.listen(".message.retracted", (e: any) => {
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(e?.id))
+        if (msg) {
+            msg.message_text = null
+            msg.original = null
+            msg.translations = []
+            msg.is_retracted = true
+            msg.retracted_at = e?.retracted_at ?? new Date().toISOString()
+            msg.retraction_reason = e?.retraction_reason ?? null
+        }
+    })
 
     chatChannel.listen(".message", (e: any) => {
         const msg = e.message
@@ -536,17 +570,17 @@ const closeSession = async () => {
         isMenuOpen.value = false
 
         notify({
-            title: trans("Success"),
-            text: res.data?.message ?? trans("Chat session closed successfully"),
+            title: ctrans("Success"),
+            text: res.data?.message ?? ctrans("Chat session closed successfully"),
             type: "success",
         })
     } catch (e: any) {
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text:
                 e?.response?.data?.message ??
                 e?.message ??
-                trans("Failed to close chat session"),
+                ctrans("Failed to close chat session"),
             type: "error",
         })
     } finally {
@@ -836,9 +870,9 @@ if (isClient) {
 
 <template>
     <div>
-        <button ref="buttonRef" @click="toggle" :aria-label="trans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-20 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
+        <button ref="buttonRef" @click="toggle" :aria-label="ctrans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-20 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
             <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faMessage" class="text-base"
-                aria-hidden="true" />
+                fixed-width aria-hidden="true" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
                rounded-full flex items-center justify-center">
@@ -863,7 +897,7 @@ if (isClient) {
                     }">
                     <button v-if="isMobile" @click="open = false"
                         class="absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/10">
-                        <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" fixed-width />
                     </button>
 
                     <Image v-if="websiteLogo?.image?.source" :src="websiteLogo.image.source"
@@ -910,13 +944,13 @@ if (isClient) {
                     ? 'pt-[calc(env(safe-area-inset-top)+0.5rem)] pb-3'
                     : 'py-3'">
                     <button v-if="hasContactOptionsPanel" @click="backToContactOptions"
-                        :aria-label="trans('Back')"
+                        :aria-label="ctrans('Back')"
                         class="-ml-2 mr-1 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
-                        <FontAwesomeIcon :icon="faChevronLeft" class="w-3.5 h-3.5" />
+                        <FontAwesomeIcon :icon="faChevronLeft" class="w-3.5 h-3.5" fixed-width />
                     </button>
 
                     <span class="text-sm font-semibold">
-                        {{ trans("Chat Support") }}
+                        {{ ctrans("Chat Support") }}
                     </span>
 
                     <div class="flex-1"></div>
@@ -933,7 +967,7 @@ if (isClient) {
                                             color: layout.app.theme[5],
                                         }
                                         : {}">
-                                {{ trans(m === 'chat' ? 'Chat' : 'History') }}
+                                {{ ctrans(m === 'chat' ? 'Chat' : 'History') }}
                             </button>
                         </template>
 
@@ -941,22 +975,22 @@ if (isClient) {
                             class="relative" ref="menuRef">
                             <button @click.stop="isMenuOpen = !isMenuOpen"
                                 class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
-                                <FontAwesomeIcon :icon="faEllipsisVertical" class="w-4 h-4" />
+                                <FontAwesomeIcon :icon="faEllipsisVertical" class="w-4 h-4" fixed-width />
                             </button>
 
                             <div v-if="isMenuOpen"
                                 class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                                 <button @click="isMenuOpen = false; showCloseConfirm = true"
                                     class="menu-item text-red-600">
-                                    <FontAwesomeIcon :icon="faTimesCircle" />
-                                    {{ trans("Close Chat Session") }}
+                                    <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
+                                    {{ ctrans("Close Chat Session") }}
                                 </button>
                             </div>
                         </div>
 
                         <button v-if="isMobile" @click="open = false"
                             class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
-                            <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" />
+                            <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" fixed-width />
                         </button>
 
                     </div>
@@ -964,8 +998,8 @@ if (isClient) {
 
                 <div class="flex-1 min-h-0 flex flex-col">
                     <div v-if="isCheckingStatus" class="flex flex-col items-center bg-white">
-                        <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" />
-                        <span class="text-sm">{{ trans("Connecting...") }}</span>
+                        <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" fixed-width />
+                        <span class="text-sm">{{ ctrans("Connecting...") }}</span>
                     </div>
 
                     <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat"
@@ -1012,23 +1046,23 @@ if (isClient) {
                                 <div class="sm:flex sm:items-start">
                                     <div
                                         class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
-                                        <FontAwesomeIcon :icon="faTimesCircle" class="text-red-600" />
+                                        <FontAwesomeIcon :icon="faTimesCircle" class="text-red-600" fixed-width />
                                     </div>
 
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                                         <DialogTitle as="h3" class="text-base font-semibold">
-                                            {{ trans("Close Chat Session") }}
+                                            {{ ctrans("Close Chat Session") }}
                                         </DialogTitle>
                                         <div class="mt-2">
                                             <p class="text-sm text-gray-500">
-                                                {{ trans("Are you sure you want to close this chat session?") }}
+                                                {{ ctrans("Are you sure you want to close this chat session?") }}
                                             </p>
                                         </div>
 
                                         <div class="mt-5 flex flex-row-reverse gap-2">
                                             <Button type="red" :loading="isClosingSession"
-                                                :label="trans('Close Session')" @click="closeSession" />
-                                            <Button type="tertiary" :label="trans('Cancel')"
+                                                :label="ctrans('Close Session')" @click="closeSession" />
+                                            <Button type="tertiary" :label="ctrans('Cancel')"
                                                 @click="showCloseConfirm = false" />
                                         </div>
                                     </div>

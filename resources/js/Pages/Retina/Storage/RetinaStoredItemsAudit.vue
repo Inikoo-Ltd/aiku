@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import { capitalize } from "@/Composables/capitalize"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import BoxAuditStoredItems from '@/Components/Box/BoxAuditStoredItems.vue'
@@ -200,7 +200,7 @@ function palletRoute(pallet: Pallet) {
 
             <div v-if="item.audited_at" class="flex items-center justify-center">
                 <font-awesome-icon :icon="['fas', 'check-circle']" class="text-lg text-green-500 mr-2"
-                    v-tooltip="`Audited at: ${useFormatTime(item.audited_at)}`" />
+                    v-tooltip="`Audited at: ${useFormatTime(item.audited_at)}`" fixed-width />
 
                 <Popover>
                     <template #button="{ isOpen }">

@@ -1188,6 +1188,27 @@ test('update job positions in the organisation where the user is an employee', f
         ->and($user->pseudoJobPositions()->wherePivot('organisation_id', $organisation->id)->count())->toBe(0);
 })->depends('employee job position in another organisation');
 
+test('job positions that do not exist in the organisation are ignored', function (Employee $employee) {
+    $user         = $employee->getUser();
+    $organisation = $employee->organisation;
+    $jobPosition  = $organisation->jobPositions()->where('code', 'hr-c')->first();
+
+    UpdateUserOrganisationPseudoJobPositions::make()->action(
+        $user,
+        $organisation,
+        [
+            'permissions' => [
+                'this-position-does-not-exist' => [],
+                $jobPosition->code             => []
+            ]
+        ]
+    );
+    $employee->refresh();
+
+    expect($employee->jobPositions()->count())->toBe(1)
+        ->and($employee->jobPositions()->where('job_positions.id', $jobPosition->id)->count())->toBe(1);
+})->depends('employee job position in another organisation');
+
 test('can show hr dashboard', function () {
     actingAs(User::first());
 
@@ -1832,6 +1853,7 @@ test('UI sysadmin user show/edit/create/actions', function (User $user) {
     get(route('grp.sysadmin.users.edit', [$user]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->has('formData.blueprint.permissions.fields.permissions.options.'.$user->getOrganisation()->slug.'.productions'));
     get(route('grp.sysadmin.users.show.actions.index', [$user]))->assertOk();
+    get(route('grp.sysadmin.users.show.visit_logs.index', [$user]))->assertOk();
 })->depends('SetUserAuthorisedModels command');
 
 test('UI sysadmin scheduled tasks and settings', function (User $user) {
@@ -2335,8 +2357,44 @@ test('address boxes come in the order the country writes an address', function (
 test('edit profile includes preferences sections', function (Guest $guest) {
     $blueprint = \App\Actions\UI\Profile\EditProfile::make()->generateBlueprint($guest->getUser())['formData']['blueprint'];
 
-    expect(collect($blueprint)->pluck('label')->all())->toContain(__('Profile'), __('Notifications'), __('Log in'), __('Preferences'), __('Timezone'));
+    expect(collect($blueprint)->pluck('label')->all())
+        ->toContain(__('Notifications'), __('Log in'), __('Preferences'), __('Timezone'))
+        ->not->toContain(__('Profile'));
 
     $channels = collect($blueprint)->firstWhere('label', __('Notifications'))['fields']['notifications']['channels'];
     expect(collect($channels)->pluck('value')->all())->toBe(['email', 'slack', 'browser']);
 })->depends('create guest');
+
+test('a guest with job positions and no phone is stored without a deprecation', function () {
+    $group = createGroup();
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $jobPosition = $group->jobPositions()->where('code', 'gp-sc')->first();
+
+    $guestData = Guest::factory()->definition();
+    data_set($guestData, 'contact_name', 'No Phone');
+    data_set($guestData, 'phone', null);
+    data_set($guestData, 'user.username', 'nophone');
+    data_set($guestData, 'user.password', 'secret-password');
+    data_set($guestData, 'positions', [
+        $jobPosition->slug => [
+            'slug'   => $jobPosition->slug,
+            'scopes' => []
+        ],
+    ]);
+
+    set_error_handler(
+        fn (int $severity, string $message) => throw new ErrorException($message, 0, $severity),
+        E_DEPRECATED | E_WARNING | E_NOTICE
+    );
+
+    try {
+        $guest = StoreGuest::make()->action($group, $guestData);
+    } finally {
+        restore_error_handler();
+    }
+
+    expect($guest->phone)->toBeNull()
+        ->and($guest->getUser()->username)->toBe('nophone');
+});

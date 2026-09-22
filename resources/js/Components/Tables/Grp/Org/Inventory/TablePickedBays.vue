@@ -118,7 +118,7 @@ const deletePickBay = (pickedBay: any) => {
 		<template #cell(delivery_notes)="{ item: bay }">
 			<span v-if="bay.delivery_notes.length" class="border rounded-md border-yellow-400 px-2 py-1 text-yellow-600 bg-yellow-200 cursor-pointer pulse-animate hover:opacity-[80%] ease-in-out transition" @click="openModalPickBay(bay.delivery_notes)">
 				{{ trans("Used in :_countDeliveryNotes Delivery Notes", {_countDeliveryNotes: bay.delivery_notes.length}) }}
-				<FontAwesomeIcon :icon="faExpandAlt" class="ml-2"/>
+				<FontAwesomeIcon :icon="faExpandAlt" class="ml-2" fixed-width/>
 			</span>
             <span v-else class="italic text-xs opacity-60">
                 {{ trans('No current delivery note') }}
@@ -140,7 +140,7 @@ const deletePickBay = (pickedBay: any) => {
 
 	<Modal :isOpen="isOpenPickedBayModal" @onClose="resetModalPickBay" :width="'xl:w-[700px] w-4/5 px-0 py-2'">
 		<div class="px-4 pb-2 pt-2">
-			<FontAwesomeIcon :icon="faMonument" class="mr-2" /> 
+			<FontAwesomeIcon :icon="faMonument" class="mr-2" fixed-width /> 
 			<span class="font-medium">
 				{{ trans("Picked Bays - Delivery Notes") }}
 			</span>
@@ -149,7 +149,7 @@ const deletePickBay = (pickedBay: any) => {
 		<div class="pt-2 px-4 pb-2">
 			<div class="grid grid-cols-12 border-b border-gray-300 pt-1 pb-2">
 				<span class="pl-2">
-					<FontAwesomeIcon :icon="faYinYang" />
+					<FontAwesomeIcon :icon="faYinYang" fixed-width />
 				</span>
 				<span class="col-span-3">
 					{{ trans("Reference") }}

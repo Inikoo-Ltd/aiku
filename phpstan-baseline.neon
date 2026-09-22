@@ -985,18 +985,6 @@ parameters:
 			path: app/Actions/Chat/ChatSession/ExportChatConversations.php
 
 		-
-			message: '#^Relation ''shopAssignments'' is not found in App\\Models\\Chat\\ChatAgent model\.$#'
-			identifier: larastan.relationExistence
-			count: 2
-			path: app/Actions/Chat/ChatSession/GetChatAgents.php
-
-		-
-			message: '#^Relation ''shops'' is not found in App\\Models\\Chat\\ChatAgent model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Actions/Chat/ChatSession/GetChatSessions.php
-
-		-
 			message: '#^Relation ''webUser'' is not found in App\\Models\\Chat\\ChatSession model\.$#'
 			identifier: larastan.relationExistence
 			count: 1

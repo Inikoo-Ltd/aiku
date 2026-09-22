@@ -348,7 +348,7 @@ defineExpose({ setQuantity })
     <div :class="props.classContainer">
         <div class="qty-control">
             <button class="qty-btn" :disabled="disableDecrement" @click="decrementQty">
-                <FontAwesomeIcon icon="fas fa-minus" />
+                <FontAwesomeIcon icon="fas fa-minus" fixed-width />
             </button>
 
             <!-- Fix this UI: make the denominator inside the same box with input -->
@@ -363,7 +363,7 @@ defineExpose({ setQuantity })
                 :value="toInteger(customer.quantity_ordered_new) ?? toInteger(customer.quantity_ordered) ?? 0" @input="onManualInput" />
 
             <button class="qty-btn" :disabled="isLoadingSubmitQuantityProduct" @click="incrementQty">
-                <FontAwesomeIcon icon="fas fa-plus" />
+                <FontAwesomeIcon icon="fas fa-plus" fixed-width />
             </button>
         </div>
 

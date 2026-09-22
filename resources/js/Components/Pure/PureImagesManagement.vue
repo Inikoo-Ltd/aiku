@@ -114,7 +114,7 @@ function onSubmitVideoUrl() {
         <div v-if="props.modelValue.length" class="rounded-xl bg-white lg:col-span-2">
             <h3 class="mb-4 text-base font-semibold text-gray-700">
                 <FontAwesomeIcon v-if="props.bucket_images" :icon="faInfoCircle" class="text-yellow-400"
-                    v-tooltip="'Use images bucket'" />
+                    v-tooltip="'Use images bucket'" fixed-width />
             </h3>
 
             <TransitionGroup name="fade-move" tag="ul" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -151,7 +151,7 @@ function onSubmitVideoUrl() {
                             " :icon="faPencil" class="text-gray-400 hover:text-gray-600" fixed-width />
                             <FontAwesomeIcon v-if="categoryBox.images || categoryBox.url" :icon="faUnlink"
                                 @click="() => onDeletefilesInBox(categoryBox)"
-                                class="text-gray-400 text-red-600 cursor-pointer text-xs" />
+                                class="text-gray-400 text-red-600 cursor-pointer text-xs" fixed-width />
                         </div>
                     </div>
 
@@ -179,7 +179,7 @@ function onSubmitVideoUrl() {
                         <!-- Empty state -->
                         <div v-else class="flex flex-col items-center justify-center text-gray-400 cursor-pointer"
                             @click="$refs[`fileInput-${categoryBox.column_in_db}`][0].click()">
-                            <FontAwesomeIcon :icon="faUpload" class="mb-1 text-2xl" />
+                            <FontAwesomeIcon :icon="faUpload" class="mb-1 text-2xl" fixed-width />
                             <span class="text-[12px] font-medium">{{ trans("Click or drop image") }}</span>
                         </div>
 
@@ -187,7 +187,7 @@ function onSubmitVideoUrl() {
                         <button type="button"
                             class="absolute bottom-2 right-2 bg-white border rounded-full p-2 text-gray-500 shadow group-hover:opacity-100 opacity-0 transition"
                             @click="$refs[`fileInput-${categoryBox.column_in_db}`][0].click()">
-                            <FontAwesomeIcon :icon="faUpload" />
+                            <FontAwesomeIcon :icon="faUpload" fixed-width />
                         </button>
 
                         <!-- Hidden input -->
@@ -211,7 +211,7 @@ function onSubmitVideoUrl() {
                         </div>
 
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
-                            <FontAwesomeIcon :icon="faVideo" class="mb-1 text-2xl" />
+                            <FontAwesomeIcon :icon="faVideo" class="mb-1 text-2xl" fixed-width />
                             <span class="text-[12px] font-medium">
                                 {{ trans("Click to edit video here") }}
                             </span>

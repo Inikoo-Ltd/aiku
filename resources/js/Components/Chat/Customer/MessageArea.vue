@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, inject, onMounted, watch, computed, onUnmounted, defineAsyncComponent } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar, faPlus, faSpinner, faPaperPlane, faImage, faPaperclip, faXmark, faFilePdf, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
@@ -102,78 +102,69 @@ const FILE_TYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]
 
-const getMessageTypeFromFile = (file: File): "image" | "file" => {
-    return IMAGE_TYPES.includes(file.type) ? "image" : "file"
-}
-
 const MAX_SIZE = 10 * 1024 * 1024
 
-const selectedFile = ref<File | null>(null)
-const previewUrl = ref<string | null>(null)
-const previewType = ref<"image" | "file" | null>(null)
+const MAX_ATTACHMENTS = 10
 
-const handleImageSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (!file) return
+interface SelectedAttachment {
+    file: File
+    previewUrl: string | null
+    isImage: boolean
+}
 
-    if (!IMAGE_TYPES.includes(file.type)) {
-        notify({
-            title: "Failed",
-            text: "Image format not supported",
-            type: "error",
-        })
+const selectedFiles = ref<SelectedAttachment[]>([])
+
+const addAttachment = (file: File, isImage: boolean) => {
+    if (selectedFiles.value.length >= MAX_ATTACHMENTS) {
+        notify({ title: "Failed", text: "Maximum 10 attachments", type: "error" })
+        return
+    }
+
+    if (isImage && !IMAGE_TYPES.includes(file.type)) {
+        notify({ title: "Failed", text: "Image format not supported", type: "error" })
+        return
+    }
+
+    if (!isImage && !FILE_TYPES.includes(file.type)) {
+        notify({ title: "Failed", text: "File format not supported", type: "error" })
         return
     }
 
     if (file.size > MAX_SIZE) {
-        notify({
-            title: "Failed",
-            text: "Maximum image size 10MB",
-            type: "error",
-        })
+        notify({ title: "Failed", text: "Maximum file size 10MB", type: "error" })
         return
     }
 
-    selectedFile.value = file
-    previewType.value = "image"
-    previewUrl.value = URL.createObjectURL(file)
+    selectedFiles.value.push({
+        file,
+        isImage,
+        previewUrl: isImage ? URL.createObjectURL(file) : null,
+    })
+}
+
+const handleImageSelect = (e: Event) => {
+    const files = (e.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, true))
+    if (imageInput.value) imageInput.value.value = ""
 }
 
 const handleDocSelect = (e: Event) => {
-    const file = (e.target as HTMLInputElement)?.files?.[0]
-    if (!file) return
+    const files = (e.target as HTMLInputElement)?.files
+    Array.from(files ?? []).forEach((file) => addAttachment(file, false))
+    if (fileInput.value) fileInput.value.value = ""
+}
 
-    if (!FILE_TYPES.includes(file.type)) {
-        notify({
-            title: "Failed",
-            text: "File format not supported",
-            type: "error",
-        })
-        return
-    }
-
-    if (file.size > MAX_SIZE) {
-        notify({
-            title: "Failed",
-            text: "Maximum file size 10MB",
-            type: "error",
-        })
-        return
-    }
-
-    selectedFile.value = file
-    previewType.value = "file"
-    previewUrl.value = null
+const removeAttachment = (index: number) => {
+    const removed = selectedFiles.value[index]
+    if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
+    selectedFiles.value.splice(index, 1)
 }
 
 const removeFile = () => {
-    if (previewUrl.value) {
-        URL.revokeObjectURL(previewUrl.value)
-    }
-
-    selectedFile.value = null
-    previewUrl.value = null
-    previewType.value = null
+    selectedFiles.value.forEach((attachment) => {
+        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+    })
+    selectedFiles.value = []
 
     if (imageInput.value) imageInput.value.value = ""
     if (fileInput.value) fileInput.value.value = ""
@@ -252,12 +243,35 @@ const updateRating = async (r: number) => {
     }, 300)
 }
 
+// An agent having a bad minute can take several messages back in a row. Each one is kept
+// and each one is on our record, but the customer is shown a single line rather than a
+// column of apologies: the one that matters is the message that follows them.
+const collapseRetracted = (messages: any[]) =>
+    messages.reduce((kept: any[], msg: any) => {
+        const previous = kept[kept.length - 1]
+
+        if (msg.is_retracted && previous?.is_retracted) {
+            kept[kept.length - 1] = {
+                ...msg,
+                retracted_count: (previous.retracted_count ?? 1) + 1,
+            }
+
+            return kept
+        }
+
+        kept.push(msg)
+
+        return kept
+    }, [])
+
 const groupedMessages = computed(() => {
     const groups: Record<string, any[]> = {}
 
-    localMessages.value
-        .slice()
-        .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
+    collapseRetracted(
+        localMessages.value
+            .slice()
+            .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
+    )
         .forEach((msg) => {
             const label = new Intl.DateTimeFormat("id-ID", {
                 day: "2-digit",
@@ -277,9 +291,9 @@ const sendMessage = async () => {
 
     const text = input.value.trim()
     const hasText = !!text
-    const hasFile = !!selectedFile.value
+    const hasFiles = selectedFiles.value.length > 0
 
-    if (!hasText && !hasFile) return
+    if (!hasText && !hasFiles) return
 
     isSending.value = true
     input.value = ""
@@ -295,18 +309,19 @@ const sendMessage = async () => {
     }
 
     try {
+        const allImages = hasFiles && selectedFiles.value.every((a) => a.isImage)
+
         const payload: {
             text: string
             type: "text" | "image" | "file"
-            image?: File
+            files?: File[]
         } = {
             text,
-            type: "text",
+            type: hasFiles ? (allImages ? "image" : "file") : "text",
         }
 
-        if (selectedFile.value) {
-            payload.type = getMessageTypeFromFile(selectedFile.value)
-            payload.file = selectedFile.value
+        if (hasFiles) {
+            payload.files = selectedFiles.value.map((a) => a.file)
         }
 
         emit("send-message", payload)
@@ -504,7 +519,7 @@ defineExpose({
         </div>
 
         <div v-if="agentTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
-            {{ agentTypingUser }} {{ trans("is typing...") }}
+            {{ agentTypingUser }} {{ ctrans("is typing...") }}
         </div>
 
         <!-- Empty -->
@@ -517,7 +532,7 @@ defineExpose({
         sm:grid
         sm:place-content-center
     ">
-            {{ trans("Start the conversation") }}
+            {{ ctrans("Start the conversation") }}
         </div>
 
         <!-- Rating -->
@@ -527,7 +542,7 @@ defineExpose({
                     <FontAwesomeIcon :icon="faStar" :class="n <= (selectedRating ?? rating ?? 0)
                         ? 'text-yellow-400'
                         : 'text-gray-300'
-                        " />
+                        " fixed-width />
                 </button>
             </div>
 
@@ -536,36 +551,36 @@ defineExpose({
                     borderColor: layout.app.theme[4],
                     color: layout.app.theme[4],
                 }">
-                <FontAwesomeIcon :icon="faPlus" />
-                {{ trans("New Chat") }}
+                <FontAwesomeIcon :icon="faPlus" fixed-width />
+                {{ ctrans("New Chat") }}
             </button>
         </div>
 
-        <div v-if="previewType === 'image' && previewUrl" class="px-3 pb-2">
-            <div class="relative inline-block">
-                <img :src="previewUrl" class="h-24 rounded-lg border object-cover" />
-                <button @click="removeFile" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
-                    <FontAwesomeIcon :icon="faXmark" />
-                </button>
-            </div>
-        </div>
+        <div v-if="selectedFiles.length" class="px-3 pb-2 flex flex-wrap gap-2">
+            <div v-for="(attachment, index) in selectedFiles" :key="index" class="relative">
+                <template v-if="attachment.isImage && attachment.previewUrl">
+                    <img :src="attachment.previewUrl" class="h-24 rounded-lg border object-cover" />
+                    <button @click="removeAttachment(index)" class="absolute -top-2 -right-2 bg-white rounded-full shadow p-1">
+                        <FontAwesomeIcon :icon="faXmark" fixed-width />
+                    </button>
+                </template>
 
-        <div v-if="previewType === 'file' && selectedFile" class="px-3 pb-2">
-            <div class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0">
-                <div class="text-2xl">
-                    <FontAwesomeIcon :icon="faFilePdf" />
-                </div>
-                <div class="flex-1 min-w-0 overflow-hidden">
-                    <div class="text-sm font-medium truncate">
-                        {{ selectedFile.name }}
+                <div v-else class="flex items-center gap-3 border rounded-lg p-3 bg-gray-50 min-w-0 max-w-[220px]">
+                    <div class="text-2xl">
+                        <FontAwesomeIcon :icon="faFilePdf" fixed-width />
                     </div>
-                    <div class="text-xs text-gray-400">
-                        {{ (selectedFile.size / 1024).toFixed(1) }} KB
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <div class="text-sm font-medium truncate">
+                            {{ attachment.file.name }}
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            {{ (attachment.file.size / 1024).toFixed(1) }} KB
+                        </div>
                     </div>
+                    <button @click="removeAttachment(index)" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
+                        <FontAwesomeIcon :icon="faXmark" fixed-width />
+                    </button>
                 </div>
-                <button @click="removeFile" class="text-gray-400 hover:text-red-500 shrink-0 ml-2">
-                    <FontAwesomeIcon :icon="faXmark" />
-                </button>
             </div>
         </div>
 
@@ -578,7 +593,7 @@ defineExpose({
                 class="rounded-xl border bg-white shadow-sm focus-within:shadow-md transition-shadow"
                 :style="{ borderColor: layout.app.theme[4] }">
                 <textarea ref="textareaRef" v-model="input" rows="1" @input="handleTyping" @keydown="handleKeyDown"
-                    :placeholder="trans('Type a message...')"
+                    :placeholder="ctrans('Type a message...')"
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
@@ -586,28 +601,28 @@ defineExpose({
                         <template v-if="isLoggedIn">
                             <button @click="imageInput?.click()"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-                                :title="trans('Upload image')">
-                                <FontAwesomeIcon :icon="faImage" class="text-sm" />
+                                v-tooltip="ctrans('Upload image')" :aria-label="ctrans('Upload image')">
+                                <FontAwesomeIcon :icon="faImage" class="text-sm" fixed-width />
                             </button>
 
                             <button @click="fileInput?.click()"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-                                :title="trans('Upload file')">
-                                <FontAwesomeIcon :icon="faPaperclip" class="text-sm" />
+                                v-tooltip="ctrans('Upload file')" :aria-label="ctrans('Upload file')">
+                                <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
                             </button>
 
-                            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" class="hidden"
+                            <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
                                 @change="handleImageSelect" />
 
-                            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" class="hidden"
+                            <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" multiple class="hidden"
                                 @change="handleDocSelect" />
                         </template>
 
                         <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                             :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
-                            :title="trans('Emoji')">
-                            <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                            v-tooltip="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
+                            <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                         </button>
 
                         <div v-if="showEmojiPicker" class="absolute bottom-full left-0 mb-1 z-30 max-w-[calc(100vw-2rem)]">

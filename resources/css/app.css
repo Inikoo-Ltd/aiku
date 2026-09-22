@@ -3,6 +3,15 @@
 @import "@fortawesome/fontawesome-free/css/svg-with-js.min.css";
 
 @tailwind base;
+
+:root {
+    --app-accent: #4f46e5;
+    --app-accent-text: #ffffff;
+    --app-accent-strong: #4338ca;
+    --app-accent-deep: #312e81;
+    --app-accent-soft: #eef2ff;
+    --app-accent-muted: #c7d2fe;
+}
 @tailwind components;
 @tailwind utilities;
 

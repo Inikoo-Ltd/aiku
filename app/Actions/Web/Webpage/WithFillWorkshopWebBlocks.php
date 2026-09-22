@@ -93,7 +93,7 @@ trait WithFillWorkshopWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockLogin::run($webpage, $webBlock);
         } elseif ($webBlockType == 'register') {
             $parsedWebBlocks[$key] = GetWebBlockRegister::run($webpage, $webBlock);
-        } elseif ($webBlockType == 'register-dashboard') {
+        } elseif (in_array($webBlockType, ['register-dashboard', 'register-dashboard-2'])) {
             $parsedWebBlocks[$key] = GetWebBlockRegisterDashboard::run($webpage, $webBlock);
         } elseif ($webBlockType == 'forgot-password') {
             $parsedWebBlocks[$key] = GetWebBlockForgotPassword::run($webpage, $webBlock);

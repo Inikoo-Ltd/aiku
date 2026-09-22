@@ -205,7 +205,7 @@ import { ctrans } from "@/Composables/useTrans"
                                 <Select v-model="form.return_policy_id" :options="returnProfiles"
                                         @update:model-value="errors.return_policy_id = null "
                                         optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay return policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select eBay return policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.return_policy_id" class="text-sm text-red-600 mt-1">{{ errors.return_policy_id?.[0] }}</p>
                         </div>
@@ -223,7 +223,7 @@ import { ctrans } from "@/Composables/useTrans"
                                 <Select v-model="form.return_accepted" :options="returnAcceptedOptions"
                                         @update:model-value="errors.return_accepted = null "
                                         optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select returns accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select returns accepted')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.return_accepted" class="text-sm text-red-600 mt-1">{{ errors.return_accepted?.[0] }}</p>
                         </div>
@@ -234,7 +234,7 @@ import { ctrans } from "@/Composables/useTrans"
                                 <Select v-model="form.return_payer" :options="returnPayers"
                                         @update:model-value="errors.return_payer = null "
                                         optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select return paid by')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select return paid by')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.return_payer" class="text-sm text-red-600 mt-1">{{ errors.return_payer?.[0] }}</p>
                         </div>
@@ -279,7 +279,7 @@ import { ctrans } from "@/Composables/useTrans"
                                 <Select v-model="form.fulfillment_policy_id"
                                         @update:model-value="errors.fulfillment_policy_id = null "
                                         :options="shippingProfiles" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('A fulfillment policy is a reusable template that sets a listing’s shipping services, costs, delivery options, and handling time so you don’t need to configure them manually for each item.')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('A fulfillment policy is a reusable template that sets a listing’s shipping services, costs, delivery options, and handling time so you don’t need to configure them manually for each item.')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.fulfillment_policy_id" class="text-sm text-red-600 mt-1">{{ errors.fulfillment_policy_id?.[0] }}</p>
                         </div>
@@ -342,7 +342,7 @@ import { ctrans } from "@/Composables/useTrans"
                                 <Select v-model="form.payment_policy_id"
                                         @update:model-value="errors.payment_policy_id = null"
                                         :options="paymentProfiles" optionLabel="name" optionValue="value" class="w-full" />
-                                <FontAwesomeIcon v-tooltip="trans('Select eBay payment policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+                                <FontAwesomeIcon v-tooltip="trans('Select eBay payment policy')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width />
                             </div>
                             <p v-if="errors.payment_policy_id" class="text-sm text-red-600 mt-1">{{ errors.payment_policy_id?.[0] }}</p>
                         </div>

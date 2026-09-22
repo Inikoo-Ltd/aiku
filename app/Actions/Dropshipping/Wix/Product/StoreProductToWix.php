@@ -66,13 +66,22 @@ class StoreProductToWix extends RetinaAction
                 'stock_last_updated_at'       => now(),
             ]);
 
-            $this->pushImages($wixUser, $portfolio, $wixProductId);
+            $mediaError = $this->pushImages($wixUser, $portfolio, $wixProductId);
 
             CheckWixPortfolio::run($portfolio);
 
             $portfolio->refresh();
 
-            if ($portfolio->platform_status) {
+            if ($mediaError) {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $this->portfolioErrorResponse($mediaError)
+                ]);
+
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $mediaError
+                ]);
+            } elseif ($portfolio->platform_status) {
                 UpdatePlatformPortfolioLog::dispatch($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
@@ -102,12 +111,17 @@ class StoreProductToWix extends RetinaAction
         }
     }
 
-    private function pushImages(WixUser $wixUser, Portfolio $portfolio, string $wixProductId): void
+    /**
+     * The product itself is already listed by the time the pictures go up, so a refused media
+     * call is reported rather than thrown: the seller has to be told the listing has no images,
+     * but the listing still stands.
+     */
+    private function pushImages(WixUser $wixUser, Portfolio $portfolio, string $wixProductId): ?string
     {
         $item = $portfolio->item;
 
         if (!$item instanceof Product) {
-            return;
+            return null;
         }
 
         $imageUrls = [];
@@ -118,8 +132,12 @@ class StoreProductToWix extends RetinaAction
             }
         }
 
-        if ($imageUrls) {
-            $wixUser->catalog()->addProductMedia($wixProductId, $imageUrls);
+        if (!$imageUrls) {
+            return null;
         }
+
+        $response = $wixUser->catalog()->addProductMedia($wixProductId, $imageUrls);
+
+        return Arr::get($response, 'message');
     }
 }

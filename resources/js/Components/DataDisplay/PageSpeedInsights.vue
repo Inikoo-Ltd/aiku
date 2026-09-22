@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onBeforeUnmount, ref, watch } from "vue"
 import axios from "axios"
 import Chart from "primevue/chart"
 import { router } from "@inertiajs/vue3"
@@ -30,12 +30,14 @@ const props = defineProps<{
 	pagespeed?: {
 		status: "ready" | "unavailable"
 		message?: string
+		pending?: boolean
 		refresh_route?: { name: string; parameters: Record<string, string | number> }
 		mobile?: StrategyReport | null
 		desktop?: StrategyReport | null
 	}
 	history?: HistoryRecord[]
 	historyFrequency?: "daily" | "weekly"
+	embedded?: boolean
 }>()
 
 const HISTORY_COLOR = "#E8710A"
@@ -105,7 +107,24 @@ const historyLines: Array<{ key: Strategy; label: string; borderDash: number[]; 
 
 const historyScore = ref<HistoryScore>("performance")
 
-const isLoading = computed(() => props.pagespeed === undefined)
+const isLoading = computed(() => props.pagespeed === undefined || props.pagespeed.pending === true)
+
+// The measurement runs on the queue, so the page has to ask again until Google answers
+const POLL_MS = 15000
+let pollTimer: ReturnType<typeof setTimeout> | undefined
+
+const pollWhilePending = () => {
+	clearTimeout(pollTimer)
+
+	if (props.pagespeed?.pending !== true) {
+		return
+	}
+
+	pollTimer = setTimeout(() => router.reload({ only: ["pagespeed"] }), POLL_MS)
+}
+
+watch(() => props.pagespeed?.pending, pollWhilePending, { immediate: true })
+onBeforeUnmount(() => clearTimeout(pollTimer))
 const isUnavailable = computed(() => props.pagespeed?.status === "unavailable")
 const report = computed<StrategyReport | null>(() => props.pagespeed?.[strategy.value] ?? null)
 const hasScores = computed(() => !!report.value?.scores?.length)
@@ -201,7 +220,7 @@ const reMeasure = async () => {
 </script>
 
 <template>
-	<div class="rounded-lg bg-white shadow">
+	<div :class="embedded ? '' : 'rounded-lg bg-white shadow'">
 		<div class="flex flex-wrap items-center gap-3 border-b px-6 py-3">
 			<span class="text-sm font-semibold">{{ trans("PageSpeed Insights") }}</span>
 

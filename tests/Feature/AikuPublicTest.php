@@ -9,9 +9,14 @@
 use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\AikuPublic\IndexNotesInTypesense;
 use App\Actions\UI\AikuPublic\PingIndexNow;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\get;
+
+beforeAll(function () {
+    loadDB();
+});
 
 beforeEach(function () {
     $this->host = 'http://'.config('app.domain');
@@ -235,15 +240,13 @@ test('indexnow key file is served and the ping submits every public url', functi
 test('future-dated posts stay hidden until their date', function () {
     $slug = 'test-scheduled-post-'.uniqid();
     $path = resource_path("markdown/aiku-public/blog/{$slug}.md");
-    file_put_contents($path, "---\ntitle: Scheduled\nsummary: Not yet\ndate: ".now()->addDays(3)->toDateString()."\ntags: test\n---\n\nSoon.\n");
+    File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/blog/*.md'))->andReturn([$path]);
+    File::shouldReceive('isFile')->with($path)->andReturnTrue();
+    File::shouldReceive('get')->with($path)->andReturn("---\ntitle: Scheduled\nsummary: Not yet\ndate: ".now()->addDays(3)->toDateString()."\ntags: test\n---\n\nSoon.\n");
 
-    try {
-        expect(BlogPosts::all()->pluck('slug'))->not->toContain($slug)
-            ->and(BlogPosts::find($slug))->toBeNull();
-        get($this->host.'/blog/'.$slug)->assertNotFound();
-    } finally {
-        unlink($path);
-    }
+    expect(BlogPosts::all()->pluck('slug'))->not->toContain($slug)
+        ->and(BlogPosts::find($slug))->toBeNull();
+    get($this->host.'/blog/'.$slug)->assertNotFound();
 });
 
 test('analytics articles tab lists every note with real commit date and visit stats', function () {
@@ -310,7 +313,7 @@ test('the partner and factory series is complete in every worker language', func
                 ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');
         }
     }
-});
+})->group('editorial');
 
 test('docs index shows the clickable module map', function () {
     get($this->host.'/docs')->assertOk()
@@ -333,7 +336,7 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
     expect(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping.dashboard')['title'])->toBe('Reading the partner shopping dashboard')
         ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping_list.index')['title'])->toBe('Buying from a partner')
         ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.index')['title'])->toBe('Ordering from a partner organisation')
-        ->and(BlogPosts::helpFor('grp.org.shops.show.chat.dashboard')['url'])->toContain('/docs/customer-chat')
+        ->and(BlogPosts::helpFor('grp.org.shops.show.chat.reports')['url'])->toContain('/docs/customer-chat')
         ->and(BlogPosts::helpFor('grp.chat.staff.show', 'sk')['url'])->toEndWith('/docs/staff-chat-sk')
         ->and(BlogPosts::helpFor('grp.profile.edit')['url'])->toContain('/docs/getting-notifications-on-your-computer-and-phone')
         ->and(BlogPosts::helpFor('grp.dashboard.show'))->toBeNull()
@@ -371,23 +374,59 @@ test('translated docs are served, linked and kept out of the English listings', 
 });
 
 test('staff guides have Spanish and Slovak, engineer and QA guides Indonesian, made from the current English', function () {
-    foreach (BlogPosts::all('docs') as $english) {
+    $docs = BlogPosts::everything('docs')->keyBy('slug');
+    $issues = [];
+
+    foreach ($docs->where('lang', 'en') as $english) {
         foreach ($english['audience'] ? ['id'] : ['es', 'sk'] as $lang) {
-            $translation = BlogPosts::everything('docs')->firstWhere('slug', $english['slug'].'-'.$lang);
-            expect($translation)->not->toBeNull($english['slug'].' has no '.$lang.' translation')
-                ->and($translation['source_date']?->toDateString())->toBe($english['date']->toDateString(), $english['slug'].'-'.$lang.' is stale');
+            $slug = $english['slug'].'-'.$lang;
+            $translation = $docs->get($slug);
+
+            if (!$translation) {
+                $issues[] = $slug.' is missing';
+            } elseif ($translation['source_date']?->toDateString() !== $english['date']->toDateString()) {
+                $issues[] = $slug.' is stale';
+            }
         }
     }
-});
 
-test('a translation older than its English original is flagged as stale', function () {
-    $english = BlogPosts::all('docs')->firstWhere('slug', 'your-clean-handover-score');
-    $translation = BlogPosts::everything('docs')->firstWhere('slug', 'your-clean-handover-score-id');
+    expect($issues)->toBeEmpty(implode("\n", $issues));
+})->group('editorial');
 
-    expect($translation['source_date']->toDateString())->toBe($english['date']->toDateString());
+test('translation freshness is shown against the English source date', function (string $sourceDate, bool $stale) {
+    $slug = 'test-freshness-'.uniqid();
+    $englishPath = resource_path("markdown/aiku-public/docs/{$slug}.md");
+    $translationPath = resource_path("markdown/aiku-public/docs/{$slug}-id.md");
+    File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/docs/*.md'))->andReturn([$englishPath, $translationPath]);
+    File::shouldReceive('isFile')->with($englishPath)->andReturnTrue();
+    File::shouldReceive('isFile')->with($translationPath)->andReturnTrue();
+    File::shouldReceive('get')->with($englishPath)->andReturn("---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\ncategory: production\n---\nEnglish body\n");
+    File::shouldReceive('get')->with($translationPath)->andReturn("---\ntitle: Panduan\nsummary: Test guide\ndate: 2026-01-03\nsource_date: {$sourceDate}\ncategory: production\n---\nIndonesian body\n");
+    $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
 
-    get($this->host.'/docs/your-clean-handover-score-id')->assertOk()
-        ->assertDontSee('telah berubah setelah terjemahan ini', false);
+    $response = get($this->host.'/docs/'.$slug.'-id')->assertOk();
+
+    if ($stale) {
+        $response->assertSee('telah berubah setelah terjemahan ini', false);
+    } else {
+        $response->assertDontSee('telah berubah setelah terjemahan ini', false);
+    }
+})->with([
+    'current translation' => ['2026-01-02', false],
+    'stale translation' => ['2026-01-01', true],
+]);
+
+test('help falls back to English when the requested translation is missing', function () {
+    $slug = 'test-fallback-'.uniqid();
+    $path = resource_path("markdown/aiku-public/docs/{$slug}.md");
+    File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/docs/*.md'))->andReturn([$path]);
+    File::shouldReceive('get')->with($path)->andReturn("---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\nhelp_routes: grp.fixture.\n---\nEnglish body\n");
+    $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
+
+    expect(BlogPosts::helpFor('grp.fixture.index', 'es'))->toBe([
+        'title' => 'English guide',
+        'url' => 'https://'.config('app.domain').'/docs/'.$slug,
+    ]);
 });
 
 test('reading time counts non-latin scripts instead of reporting one minute', function () {

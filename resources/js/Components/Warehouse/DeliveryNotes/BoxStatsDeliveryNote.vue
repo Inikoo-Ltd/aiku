@@ -567,7 +567,7 @@ function returnNoteRoute(returnDeliveryNote) {
                 </div>
                 <div v-if="boxStats?.return_dn?.data?.length > 0" class="flex flex-col pl-2">
                     <span v-for="returnData in boxStats?.return_dn.data" v-tooltip="trans('Return Delivery Note')" class="w-max">
-                        <FontAwesomeIcon :icon="faExchange" class="pr-1"/>
+                        <FontAwesomeIcon :icon="faExchange" class="pr-1" fixed-width/>
                         <Link class="primaryLink" :href="returnNoteRoute(returnData)">
                             {{ returnData.reference }}
                         </Link>
@@ -583,7 +583,7 @@ function returnNoteRoute(returnDeliveryNote) {
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Delivery Note") }}
                     <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.majordomo.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
-                        <FontAwesomeIcon :icon="faTruck"/>
+                        <FontAwesomeIcon :icon="faTruck" fixed-width/>
                         {{ boxStats.parentDeliveryNote?.reference }}
                     </Link>
                 </div>

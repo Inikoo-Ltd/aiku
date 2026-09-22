@@ -8,7 +8,6 @@
 
 namespace App\Actions\Chat\ChatSession\UI;
 
-use App\Actions\Chat\ChatSession\GetShopChatDashboardData;
 use App\Actions\Chat\WithChatScopeNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
@@ -22,6 +21,7 @@ class ShowShopChatDashboard extends OrgAction
 {
     use WithCRMAuthorisation;
     use WithChatScopeNavigation;
+    use WithChatReportsResponse;
 
     public function handle(Shop $shop): Shop
     {
@@ -37,25 +37,11 @@ class ShowShopChatDashboard extends OrgAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-        $title         = __('Chat');
-        $dashboardData = GetShopChatDashboardData::run($shop);
-        $routeParams   = $request->route()->originalParameters();
-        $visitorsRoute = $this->chatRoute('dashboard-visitors');
-
         return Inertia::render(
-            'Org/Shop/Chat/Dashboard',
+            'Chat/ChatReports',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($routeParams),
-                'title'       => $title,
-                'pageHead'    => [
-                    'title' => $title,
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-comment-alt'],
-                        'title' => $title,
-                    ],
-                ],
-                'dashboardVisitorsRoute' => route($visitorsRoute['name'], $visitorsRoute['parameters']),
-                'stats'                  => $dashboardData,
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+                ...$this->chatReportsProps(collect([$shop])),
             ]
         );
     }
@@ -69,8 +55,8 @@ class ShowShopChatDashboard extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'icon'  => 'fal fa-comment-alt',
-                        'route' => $this->chatRoute('dashboard'),
-                        'label' => __('Chat'),
+                        'route' => $this->chatRoute('reports'),
+                        'label' => __('Chat Reports'),
                     ],
                 ],
             ]

@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faExclamationCircle, faCheckCircle, faTimes } from "@fas";
-import { faUndoAlt, faInfoCircle, faImage, faTrashAlt, faPen, faCrop } from "@fal";
+import { faUndoAlt, faInfoCircle, faImage, faTrashAlt, faPen, faCrop, faLink } from "@fal";
 import { faSpinnerThird } from "@fad";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -13,19 +13,22 @@ import PureInput from "@/Components/Pure/PureInput.vue";
 import { Cropper } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
 
-library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faUndoAlt, faInfoCircle, faTimes, faImage, faTrashAlt, faPen, faCrop)
+library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faUndoAlt, faInfoCircle, faTimes, faImage, faTrashAlt, faPen, faCrop, faLink)
+
+interface OtherField {
+    name: string,
+    type?: 'alt' | 'url',
+    label?: string,
+    placeholder?: string,
+    information?: string
+}
 
 const props = defineProps<{
     form: Record<string, any>,
     fieldName: string,
     fieldData: {
         required?: boolean,
-        hasOther?: {
-            name: string,
-            label?: string,
-            placeholder?: string,
-            information?: string
-        },
+        hasOther?: OtherField | OtherField[],
         options: {
             aspectRatio?: { width: number, height: number },
             minAspectRatio?: { width: number, height: number },
@@ -40,7 +43,13 @@ const imgAfterCrop = ref<{ original: string } | null>(
     props.form[props.fieldName] ? props.form[props.fieldName] : null
 );
 
-const altFieldName = props.fieldData?.hasOther?.name;
+const otherFields: OtherField[] = props.fieldData?.hasOther
+    ? (Array.isArray(props.fieldData.hasOther) ? props.fieldData.hasOther : [props.fieldData.hasOther])
+    : [];
+const altField = otherFields.find((o) => o.type !== 'url');
+const urlField = otherFields.find((o) => o.type === 'url');
+const altFieldName = altField?.name;
+const urlFieldName = urlField?.name;
 const inputId = `input-image-${props.fieldName}`;
 
 const altText = computed({
@@ -49,6 +58,22 @@ const altText = computed({
         if (altFieldName) {
             props.form[altFieldName] = value;
             props.form.errors[altFieldName] = null;
+        }
+    }
+});
+
+const externalUrl = computed({
+    get: () => (urlFieldName ? props.form[urlFieldName] : null),
+    set: (value: string | null) => {
+        if (!urlFieldName) return;
+        const url = value ? String(value).trim() : null;
+        props.form[urlFieldName] = url || null;
+        props.form.errors[urlFieldName] = null;
+        if (url) {
+            props.form[props.fieldName] = null;
+            imgAfterCrop.value = { original: url };
+        } else if (!(props.form[props.fieldName] instanceof File)) {
+            imgAfterCrop.value = null;
         }
     }
 });
@@ -94,6 +119,10 @@ const submitCrop = async () => {
 
     const imageBlob = dataURLtoBlob(imageDataURL);
     props.form[props.fieldName] = new File([imageBlob], "avatar.png", { type: "image/png" });
+    if (urlFieldName) {
+        props.form[urlFieldName] = null;
+        props.form.errors[urlFieldName] = null;
+    }
 
     isOpenModalCrop.value = false;
 };
@@ -113,6 +142,7 @@ const stencilProps = props.fieldData?.options?.minAspectRatio && props.fieldData
 const deleteImage = () => {
     imgAfterCrop.value = null
     props.form[props.fieldName] = null
+    if (urlFieldName) props.form[urlFieldName] = null
 }
 
 
@@ -122,7 +152,7 @@ watch(isOpenModalCrop, (val) => {
 </script>
 
 <template>
-    <div class="min-w-32" :class="altFieldName ? 'w-full' : 'w-fit'">
+    <div class="min-w-32" :class="(altFieldName || urlFieldName) ? 'w-full' : 'w-fit'">
         <!-- PrimeVue Dialog -->
         <Dialog v-model:visible="isOpenModalCrop" modal :header="trans('Crop Image')" :style="{ width: '600px' }"
             :breakpoints="{ '640px': '95vw' }">
@@ -161,7 +191,7 @@ watch(isOpenModalCrop, (val) => {
                 <!-- Empty state -->
                 <label v-else :for="inputId"
                     class="absolute inset-0 flex flex-col items-center justify-center gap-1.5 cursor-pointer text-gray-400 group-hover:text-indigo-500 transition-colors duration-200">
-                    <FontAwesomeIcon :icon="['fal', 'image']" class="text-2xl" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="['fal', 'image']" class="text-2xl" fixed-width aria-hidden="true" />
                     <span class="text-xs font-medium">{{ trans("Upload image") }}</span>
                 </label>
 
@@ -170,14 +200,14 @@ watch(isOpenModalCrop, (val) => {
                     class="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
                     <label :for="inputId" v-tooltip="trans('Change image')"
                         class="flex items-center justify-center h-9 w-9 rounded-full bg-white/90 text-gray-700 hover:bg-white hover:text-indigo-600 shadow cursor-pointer transition-colors duration-150">
-                        <FontAwesomeIcon :icon="['fal', 'pen']" class="text-sm" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="['fal', 'pen']" class="text-sm" fixed-width aria-hidden="true" />
                         <span class="sr-only">{{ trans("Change image") }}</span>
                     </label>
 
                     <button v-if="fieldData.required == false" @click="deleteImage" type="button"
                         v-tooltip="trans('Delete image')"
                         class="flex items-center justify-center h-9 w-9 rounded-full bg-white/90 text-gray-700 hover:bg-red-500 hover:text-white shadow transition-colors duration-150">
-                        <FontAwesomeIcon :icon="['fal', 'trash-alt']" class="text-sm" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="['fal', 'trash-alt']" class="text-sm" fixed-width aria-hidden="true" />
                         <span class="sr-only">{{ trans("Delete image") }}</span>
                     </button>
                 </div>
@@ -186,11 +216,38 @@ watch(isOpenModalCrop, (val) => {
                     @change="onPickFile($event.target.files[0]); $event.target.value = ''" />
             </div>
 
+            <div v-if="altFieldName || urlFieldName" class="flex-1 min-w-64 max-w-md space-y-3">
+            <!-- External URL -->
+            <div v-if="urlFieldName">
+                <label :for="`input-url-${urlFieldName}`" class="flex items-center gap-x-1 text-sm font-medium text-gray-500">
+                    <FontAwesomeIcon :icon="['fal', 'link']" class="text-gray-400" fixed-width aria-hidden="true" />
+                    {{ urlField?.label ?? trans("Or paste an image link") }}
+                    <span v-if="urlField?.information" v-tooltip="urlField.information"
+                        class="opacity-50 hover:opacity-100 cursor-pointer">
+                        <FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-gray-500" fixed-width aria-hidden="true" />
+                    </span>
+                </label>
+
+                <div class="mt-1.5">
+                    <PureInput
+                        v-model="externalUrl"
+                        :inputName="`input-url-${urlFieldName}`"
+                        :placeholder="urlField?.placeholder ?? 'https://'"
+                        :maxLength="2048"
+                        :isError="!!form.errors[urlFieldName]"
+                        :class="form.errors[urlFieldName] ? 'errorShake' : ''"
+                    />
+                </div>
+
+                <p v-if="form.errors[urlFieldName]" class="mt-1 text-sm text-red-600">
+                    {{ form.errors[urlFieldName] }}
+                </p>
+            </div>
             <!-- Alt Text -->
-            <div v-if="altFieldName" class="flex-1 min-w-64 max-w-md">
+            <div v-if="altFieldName">
                 <label :for="`input-alt-${altFieldName}`" class="flex items-center gap-x-1 text-sm font-medium text-gray-500">
-                    {{ fieldData.hasOther?.label ?? trans("Alt text") }}
-                    <span v-if="fieldData.hasOther?.information" v-tooltip="fieldData.hasOther.information"
+                    {{ altField?.label ?? trans("Alt text") }}
+                    <span v-if="altField?.information" v-tooltip="altField.information"
                         class="opacity-50 hover:opacity-100 cursor-pointer">
                         <FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-gray-500" fixed-width aria-hidden="true" />
                     </span>
@@ -200,7 +257,7 @@ watch(isOpenModalCrop, (val) => {
                     <PureInput
                         v-model="altText"
                         :inputName="`input-alt-${altFieldName}`"
-                        :placeholder="fieldData.hasOther?.placeholder ?? trans('Describe the image')"
+                        :placeholder="altField?.placeholder ?? trans('Describe the image')"
                         :maxLength="255"
                         :isError="!!form.errors[altFieldName]"
                         :class="form.errors[altFieldName] ? 'errorShake' : ''"
@@ -211,15 +268,17 @@ watch(isOpenModalCrop, (val) => {
                     {{ form.errors[altFieldName] }}
                 </p>
             </div>
+
+            </div>
         </div>
 
         <!-- Status -->
         <p v-if="form.errors[fieldName]" class="flex items-center gap-x-1.5 text-red-600 text-sm mt-2">
-            <FontAwesomeIcon :icon="['fas', 'exclamation-circle']" class="h-4 w-4" aria-hidden="true" />
+            <FontAwesomeIcon :icon="['fas', 'exclamation-circle']" class="h-4 w-4" fixed-width aria-hidden="true" />
             {{ form.errors[fieldName] }}
         </p>
         <p v-else-if="form.recentlySuccessful" class="flex items-center gap-x-1.5 text-green-600 text-sm mt-2">
-            <FontAwesomeIcon :icon="['fas', 'check-circle']" class="h-4 w-4" aria-hidden="true" />
+            <FontAwesomeIcon :icon="['fas', 'check-circle']" class="h-4 w-4" fixed-width aria-hidden="true" />
             {{ trans("Saved") }}
         </p>
     </div>

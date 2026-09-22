@@ -105,6 +105,7 @@ enum WebBlockTemplateEnum: string
                 'login',
                 'register',
                 'register-dashboard',
+                'register-dashboard-2',
                 'blog-categories',
                 'forgot-password',
             ]

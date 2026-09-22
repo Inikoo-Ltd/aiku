@@ -253,7 +253,7 @@ const onPickImageGalery = (image: any) => {
                     : 'hover:bg-gray-200/30 text-white transition-all duration-100 ease-in-out hover:bg-gray-100 border-gray-300',
                 ]" @click="setCommonEdit">
                 <FontAwesomeIcon 
-                icon="fal fa-cog" class="text-xl md:text-base text-gray-500" aria-hidden="true" />
+                icon="fal fa-cog" class="text-xl md:text-base text-gray-500" fixed-width aria-hidden="true" />
                 <span class="text-gray-600 text-sm hidden sm:inline">{{ trans("Common properties") }}</span>
             </div>
 
@@ -271,7 +271,7 @@ const onPickImageGalery = (image: any) => {
                         <div class="grid grid-flow-col gap-x-1 lg:gap-x-0 ssm:py-1 lg:py-0">
                             <!-- Icon: Bars, class 'handle' to grabable -->
                             <FontAwesomeIcon icon="fal fa-bars"
-                                class="handle p-1 text-xs sm:text-base sm:p-2.5 text-gray-700 cursor-grab place-self-center" />
+                                class="handle p-1 text-xs sm:text-base sm:p-2.5 text-gray-700 cursor-grab place-self-center" fixed-width />
 
                             <!-- Image slide: if Image is selected in SlideBackground -->
                             <div v-if="modelValue.type === 'square'" class="">
@@ -312,17 +312,17 @@ const onPickImageGalery = (image: any) => {
                             <button v-if="!slide.visibility"
                                 class="px-2 py-1 bg-grays-500 text-red-500/60 hover:text-red-500" type="button" @click="(e)=>{ e.stopPropagation()
                                     removeComponent(slide)}" title="Delete this slide">
-                                <FontAwesomeIcon :icon="['fal', 'fa-trash-alt']" class="text-xs sm:text-sm" />
+                                <FontAwesomeIcon :icon="['fal', 'fa-trash-alt']" class="text-xs sm:text-sm" fixed-width />
                             </button>
                             <button class="qwezxcpx-2 py-1 text-gray-400 hover:text-gray-500" type="button"
                                 @click="changeVisibility(slide)" title="Show/hide this slide">
                                 <FontAwesomeIcon v-if="slide.hasOwnProperty('visibility') ? slide.visibility : true"
-                                    icon="fas fa-eye" class="text-xs sm:text-sm " />
-                                <FontAwesomeIcon v-else icon="fas fa-eye-slash" class="text-xs sm:text-sm" />
+                                    icon="fas fa-eye" class="text-xs sm:text-sm " fixed-width />
+                                <FontAwesomeIcon v-else icon="fas fa-eye-slash" class="text-xs sm:text-sm" fixed-width />
                             </button>
                             <button class="px-2 py-1 text-gray-400 hover:text-gray-500" type="button"
                                 @click="duplicateSlide(slide)" title="Duplicate this slide">
-                                <FontAwesomeIcon icon="fad fa-clone" class="text-xs sm:text-sm " />
+                                <FontAwesomeIcon icon="fad fa-clone" class="text-xs sm:text-sm " fixed-width />
                             </button>
                         </div>
                     </div>
@@ -337,7 +337,7 @@ const onPickImageGalery = (image: any) => {
 
                 <Button :style="`secondary`" size="xs" @click="addNewSlide"
                     class="relative w-full flex justify-center lg:w-fit lg:inline space-x-2">
-                    <FontAwesomeIcon icon='fas fa-plus' class='' aria-hidden='true' />
+                    <FontAwesomeIcon icon='fas fa-plus' class='' fixed-width aria-hidden='true' />
                     <span>{{ trans("Add slide") }}</span>
                 </Button>
             </div>

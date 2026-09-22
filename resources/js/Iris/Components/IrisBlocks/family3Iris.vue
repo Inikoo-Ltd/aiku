@@ -115,11 +115,11 @@ const cleanedDescription = computed(() => {
 
             <!-- NAVIGATION -->
             <div v-if="images.length > 3" :class="`nav-btn left-3 swiper-btn-prev-${swiperId}`">
-              <FontAwesomeIcon :icon="faChevronCircleLeft" />
+              <FontAwesomeIcon :icon="faChevronCircleLeft" fixed-width />
             </div>
 
             <div v-if="images.length > 3" :class="`nav-btn right-3 swiper-btn-next-${swiperId}`">
-              <FontAwesomeIcon :icon="faChevronCircleRight" />
+              <FontAwesomeIcon :icon="faChevronCircleRight" fixed-width />
             </div>
 
             <!-- SWIPER -->

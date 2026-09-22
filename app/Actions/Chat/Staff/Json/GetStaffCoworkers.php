@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Json;
 
+use App\Models\Chat\ChatPhoneCall;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -124,11 +125,17 @@ class GetStaffCoworkers
             ? []
             : Cache::many(array_map(fn (array $row) => 'staff-last-active:'.$row['id'], $rows));
 
+        // Read outside the cached rows on purpose: somebody picking up the telephone has to show
+        // within seconds, which is the whole reason a colleague looks at this list.
+        $onCall = ChatPhoneCall::inProgress()->pluck('started_at', 'user_id');
+
         $data = collect($rows)
             ->map(fn (array $row) => $row + [
                 'is_close'       => count(array_intersect($row['organisation_ids'], $myOrgIds)) > 0,
                 'in_team'        => in_array($row['id'], $teamIds),
                 'last_active_at' => $lastActive['staff-last-active:'.$row['id']] ?? null,
+                'on_call'        => $onCall->has($row['id']),
+                'on_call_since'  => $onCall->get($row['id'])?->toIso8601String(),
             ])
             ->sortBy([['in_team', 'desc'], ['is_close', 'desc'], ['name', 'asc']])
             ->values();

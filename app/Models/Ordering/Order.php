@@ -39,6 +39,7 @@ use App\Models\Helpers\Currency;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Reviews\OrderReviewStat;
+use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
@@ -432,6 +433,11 @@ class Order extends Model implements HasMedia, Auditable
             ->saveSlugsTo('slug');
     }
 
+    public function isPartnerOrder(): bool
+    {
+        return OrgPartner::where('customer_id', $this->customer_id)->exists();
+    }
+
     public function customerClient(): BelongsTo
     {
         return $this->belongsTo(CustomerClient::class);
@@ -520,6 +526,17 @@ class Order extends Model implements HasMedia, Auditable
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    /**
+     * The tax a marketplace (Faire) actually charged the retailer. When set it is the order's
+     * and its invoice's tax, whatever Aiku's own per-line rates would add up to.
+     */
+    public function getMarketplaceTaxAmount(): ?float
+    {
+        $amount = Arr::get($this->data, 'marketplace_tax_amount');
+
+        return is_null($amount) ? null : (float)$amount;
     }
 
     public function taxCategory(): BelongsTo

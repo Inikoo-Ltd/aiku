@@ -9,8 +9,8 @@
 namespace App\Actions\SysAdmin\User\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\SysAdmin\User\UI\Traits\HasPermissionsForm;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -21,8 +21,6 @@ use Lorisleiva\Actions\ActionRequest;
 class EditUser extends OrgAction
 {
     use HasPermissionsForm;
-
-    private ?Employee $employee = null;
 
     public function handle(User $user): User
     {
@@ -44,7 +42,6 @@ class EditUser extends OrgAction
     public function inEmployee(Organisation $organisation, Employee $employee, User $user, ActionRequest $request): User
     {
         $this->initialisation($organisation, $request);
-        $this->employee = $employee;
 
         return $this->handle($user);
     }
@@ -52,8 +49,6 @@ class EditUser extends OrgAction
     public function htmlResponse(User $user, ActionRequest $request): Response
     {
         $permissionsData = $this->getPermissionsFormData($user);
-
-        $employee = $this->employee ?? GetUserCurrentEmployee::run($user);
 
         return Inertia::render("EditModel", [
             "title"       => __("Editing user").' '.$user->username,
@@ -90,6 +85,16 @@ class EditUser extends OrgAction
                                 "type"        => "toggle",
                                 "label"       => __("Can login"),
                                 "value"       => $user->status,
+                                ...($this->hasLeft($user) ? [
+                                    "saveConfirmation" => [
+                                        "title"       => __("Give the login back to somebody who is not working?"),
+                                        "description" => __("This person is not working here any more. Say why they need to log in again; it is kept in their history."),
+                                        "yesLabel"    => __("Yes, give it back"),
+                                        "whenValueIs" => true,
+                                        "reasonField" => "reason",
+                                        "reasonLabel" => __("Reason"),
+                                    ],
+                                ] : []),
                             ],
                             "can_use_mcp" => [
                                 "type"        => "toggle",
@@ -109,6 +114,19 @@ class EditUser extends OrgAction
                                     "confirmLabel"     => __("Proceed at your own risk"),
                                     "warningTextHtml"  => __("Their own AI assistant will know <strong>everything in Aiku</strong> — sales, products, stock, customers, suppliers, staff and payments — across <strong>every shop and organisation</strong>, and can ask <strong>any question</strong> of the data. It can <strong>only read</strong>: it can never change or delete anything."),
                                     "warningBox"       => __("This bypasses permissions: their AI will see data this person cannot see in Aiku. Only for people you trust with all company data."),
+                                ],
+                                "can_use_mcp_discontinue" => [
+                                    "type"             => "toggle",
+                                    "icon"             => "fal fa-ban",
+                                    "label"            => __("Can discontinue SKOs through their AI assistant"),
+                                    "value"            => $user->can_use_mcp_discontinue,
+                                    "noSaveButton"     => true,
+                                    "submitOnConfirm"  => true,
+                                    "warnOnEnableOnly" => true,
+                                    "warnTitle"        => __("Let their AI assistant discontinue SKOs?"),
+                                    "confirmLabel"     => __("Yes, they decide product status"),
+                                    "warningTextHtml"  => __("Their AI assistant will be able to <strong>preview and confirm</strong> a SKO going to discontinuing, discontinued, suspended or back to active, <strong>across every organisation</strong> carrying the stock. Every change is audited with their name, the reason and the exact request text."),
+                                    "warningBox"       => __("This is a write permission. Only for the people who decide product status."),
                                 ],
                             ] : []),
                         ],
@@ -145,7 +163,7 @@ class EditUser extends OrgAction
                         "icon"    => "fa-light fa-user-lock",
                         "current" => false,
                         "fields"  => [
-                            "permissions" => $this->getPermissionsFieldDefinition($user, $permissionsData, $employee),
+                            "permissions" => $this->getPermissionsFieldDefinition($user, $permissionsData),
                         ],
                     ],
 
@@ -159,6 +177,13 @@ class EditUser extends OrgAction
                 ],
             ],
         ]);
+    }
+
+    private function hasLeft(User $user): bool
+    {
+        return !$user->status && Employee::where('user_id', $user->id)
+            ->whereIn('state', [EmployeeStateEnum::LEFT->value, EmployeeStateEnum::LEAVING->value])
+            ->exists();
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

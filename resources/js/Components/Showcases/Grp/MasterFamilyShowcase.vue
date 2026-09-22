@@ -103,7 +103,7 @@ const saveGROffer = () => {
                 v-if="!data.family?.data.description || !data.family?.data.description_title || !data.family?.data.description_extra && actions"
                 severity="error" closable>
                 <template #icon>
-                    <FontAwesomeIcon :icon="faInfoCircle" />
+                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
                 </template>
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">
@@ -158,14 +158,14 @@ const saveGROffer = () => {
                                 </span>
                             </div>
                         </div>
-                        <FontAwesomeIcon :icon="faEdit" class="ml-auto my-auto text-amber-500"/>
+                        <FontAwesomeIcon :icon="faEdit" class="ml-auto my-auto text-amber-500" fixed-width/>
                     </div>
                     <div
                         v-else
                         class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold text-white bg-gradient-to-br from-amber-300 to-amber-500 cursor-pointer"
                         @click="openModalMasterGROffer"
                     >
-                        <FontAwesomeIcon :icon="faPlus" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
                         {{ trans('Add Master GR Offer') }}
                     </div>
                     <Link
@@ -173,7 +173,7 @@ const saveGROffer = () => {
                         :href="route(master_vol_gr_reward.missing_gr_route.name, master_vol_gr_reward.missing_gr_route.parameters)"
                         class="mt-1 text-sm text-yellow-600 flex items-center gap-1 hover:text-yellow-700"
                     >
-                        <FontAwesomeIcon :icon="faExclamationTriangle" />
+                        <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
                         {{ master_vol_gr_reward.missing_gr_children_count }} {{ trans("shop family missing Gold Reward offer") }}
                     </Link>
                     <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" :dismissableMask="screenType === 'desktop'" closeOnEscape>

@@ -1,0 +1,151 @@
+{
+	"slug": "register-dashboard-2",
+	"code": "register-dashboard-2",
+	"name": "Register Dashboard 2",
+	"scope": "webpage",
+	"category": "block",
+	"website_type": [
+		"b2b",
+		"b2c",
+		"dropshipping",
+		"fulfilment"
+	],
+	"shop_availability": [],
+	"icon": [
+		"fal",
+		"id-card"
+	],
+	"is_in_test": false,
+	"fixed": true,
+	"data": {
+		"fieldValue": {
+			"hero": {
+				"image": null,
+				"image_url": "/art/register-dashboard-2-hero.avif",
+				"image_alt": "Ancient Wisdom aromatherapy and bath products displayed for wholesale buyers",
+				"eyebrow": "Wholesale gifts since 1995",
+				"title": "Create your Ancient Wisdom wholesale account",
+				"intro": "<p>Register free to access wholesale prices across gifts, aromatherapy, bath and body, home fragrance and more.</p>",
+				"show_benefits": true,
+				"benefits": [
+					{
+						"title": "No minimum order",
+						"text": "Order what your business needs."
+					},
+					{
+						"title": "7,500+ products",
+						"text": "One broad range built for retail."
+					},
+					{
+						"title": "Established in 1995",
+						"text": "Decades of wholesale experience."
+					}
+				],
+				"text_color": "#ffffff",
+				"overlay_color": "rgb(17, 24, 32)",
+				"benefit_border_color": "#c8c6c2"
+			},
+			"card": {
+				"title": "Start your free wholesale account",
+				"intro": "<p>Tell us about you and your business to unlock trade pricing and begin ordering.</p>",
+				"show_checks": true,
+				"checks": [
+					{
+						"icon": [
+							"fal",
+							"check"
+						],
+						"text": "Free account registration"
+					},
+					{
+						"icon": [
+							"fal",
+							"check"
+						],
+						"text": "Designed for genuine retail and online businesses"
+					},
+					{
+						"icon": [
+							"fal",
+							"check"
+						],
+						"text": "Wholesale prices available after registration"
+					}
+				],
+				"button": {
+					"show": true,
+					"label": "Create my wholesale account",
+					"note": "You will continue to the secure registration form.",
+					"link": {
+						"type": "internal",
+						"href": "/app/registration-form",
+						"url": null,
+						"canonical_url": null,
+						"id": null,
+						"target": "_self"
+					},
+					"color": "#e87928",
+					"hover_color": "#c95f17"
+				},
+				"google": {
+					"show": true,
+					"note": null,
+					"label": "Register with Google"
+				},
+				"login_note": "<p>Already registered? <a href=\"/app/login\">Log in</a></p>",
+				"help_note": "<p>Need help registering? Contact <a href=\"mailto:care@ancientwisdom.biz\">care@ancientwisdom.biz</a></p>",
+				"background_color": "#ffffff",
+				"area_background_color": "#f5f3ef",
+				"text_color": "#1d252e",
+				"muted_color": "#58616b",
+				"line_color": "#dedbd5"
+			},
+			"faq": {
+				"show": true,
+				"title": "Before you register",
+				"subtitle": "Quick answers for new Ancient Wisdom wholesale customers.",
+				"items": [
+					{
+						"question": "Who can open a wholesale account?",
+						"answer": "<p>Ancient Wisdom supplies genuine businesses, including independent shops, online retailers, market traders and wellbeing businesses. The account is intended for customers purchasing products for resale or professional business use.</p>"
+					},
+					{
+						"question": "Is registration free?",
+						"answer": "<p>Yes. There is no fee to create an Ancient Wisdom wholesale account.</p>"
+					},
+					{
+						"question": "Is there a minimum order value?",
+						"answer": "<p>No. Ancient Wisdom has no minimum order value, so you can choose the products and quantities that suit your business.</p>"
+					},
+					{
+						"question": "When can I see wholesale prices?",
+						"answer": "<p>Wholesale prices are available when you are logged into your registered trade account. Start by selecting “Create my wholesale account” above.</p>"
+					},
+					{
+						"question": "Do online-only retailers qualify?",
+						"answer": "<p>Yes. Online shops and marketplace sellers can register, as can physical retailers and other genuine businesses.</p>"
+					},
+					{
+						"question": "Do I need a VAT number?",
+						"answer": "<p>Complete the registration form with the tax information that applies to your business and country. If you are unsure what to provide, contact <a href=\"mailto:care@ancientwisdom.biz\">customer care</a> before submitting your registration.</p>"
+					}
+				],
+				"text_color": "#1d252e",
+				"muted_color": "#58616b",
+				"line_color": "#dedbd5",
+				"toggle_color": "#c95f17"
+			},
+			"container": {
+				"properties": {
+					"background": {
+						"type": "color",
+						"color": "rgba(255, 255, 255, 1)",
+						"image": {
+							"original": null
+						}
+					}
+				}
+			}
+		}
+	}
+}

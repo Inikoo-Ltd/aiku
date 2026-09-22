@@ -31,11 +31,22 @@ class ShowProfileIndexTimesheets extends OrgAction
     {
         $this->initialisationFromGroup(group(), $request)->withTab(ProfileTabsEnum::values());
 
-        $employee = GetUserCurrentEmployee::run($request->user());
-        if ($employee && $employee->type->value == EmployeeTypeEnum::EMPLOYEE->value) {
-            return IndexTimesheets::run($employee, null, ProfileTabsEnum::TIMESHEETS->value);
+        $user = $request->user();
+
+        $parent = GetUserCurrentEmployee::run($user);
+        if ($parent && $parent->type->value != EmployeeTypeEnum::EMPLOYEE->value) {
+            $parent = null;
         }
-        return null;
+
+        if (!$parent) {
+            $parent = $user->guests()->first();
+        }
+
+        if (!$parent) {
+            return null;
+        }
+
+        return IndexTimesheets::run($parent, ProfileTabsEnum::TIMESHEETS->value);
     }
 
     public function jsonResponse(?LengthAwarePaginator $timesheets): AnonymousResourceCollection

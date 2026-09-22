@@ -40,7 +40,8 @@ class NotifyTicketUsers
                 __('If there is no reply by :deadline the ticket will be cancelled.', ['deadline' => $ticket->waiting_until?->format('d M Y H:i')]),
             ],
             __('Reply on the ticket'),
-            UserNotificationEnum::TICKET_NEEDS_REPLY
+            UserNotificationEnum::TICKET_NEEDS_REPLY,
+            reason: 'needs_reply'
         );
     }
 
@@ -58,7 +59,8 @@ class NotifyTicketUsers
                 __('If something is still wrong, use the Reopen button on the ticket.'),
             ],
             __('Open the ticket'),
-            UserNotificationEnum::TICKET_RESOLVED
+            UserNotificationEnum::TICKET_RESOLVED,
+            reason: 'resolved'
         );
     }
 
@@ -78,7 +80,8 @@ class NotifyTicketUsers
                     Str::limit($body, 2000),
                 ],
                 __('Open the ticket'),
-                UserNotificationEnum::TICKET_MENTION
+                UserNotificationEnum::TICKET_MENTION,
+                reason: 'mention'
             );
         }
 
@@ -111,7 +114,8 @@ class NotifyTicketUsers
                 Str::limit($body, 2000),
             ],
             __('Open the ticket'),
-            UserNotificationEnum::TICKET_COMMENT
+            UserNotificationEnum::TICKET_COMMENT,
+            reason: 'comment'
         );
     }
 
@@ -163,7 +167,8 @@ class NotifyTicketUsers
                     Str::limit($body, 2000),
                 ],
                 __('Open the ticket'),
-                UserNotificationEnum::TICKET_MENTION
+                UserNotificationEnum::TICKET_MENTION,
+                reason: 'mention'
             );
         }
     }
@@ -197,7 +202,8 @@ class NotifyTicketUsers
                 $engineer,
                 __('New ticket :reference', ['reference' => $ticket->reference]),
                 [$ticket->subject],
-                __('Open the ticket')
+                __('Open the ticket'),
+                reason: 'raised'
             );
         }
     }
@@ -206,15 +212,19 @@ class NotifyTicketUsers
     {
         if ($ticket->qa_status === TicketQaStatusEnum::REQUESTED) {
             foreach ($ticket->qaUser ? [$ticket->qaUser] : GetTicketBadgeData::qaUsers($ticket->group_id) as $qaUser) {
-                $this->handle($ticket, $actor, $qaUser, __(':reference is ready for QA', ['reference' => $ticket->reference]), [$ticket->subject], __('Check the ticket'));
+                $this->handle($ticket, $actor, $qaUser, __(':reference is ready for QA', ['reference' => $ticket->reference]), [$ticket->subject], __('Check the ticket'), reason: 'qa');
             }
 
             return;
         }
 
         if ($ticket->qa_status) {
-            $verdict = TicketQaStatusEnum::labels()[$ticket->qa_status->value];
-            $this->handle($ticket, $actor, $ticket->assignee()->first(), __(':reference: QA :verdict', ['reference' => $ticket->reference, 'verdict' => strtolower($verdict)]), [$ticket->subject], __('Open the ticket'));
+            $verdict  = TicketQaStatusEnum::labels()[$ticket->qa_status->value];
+            $assignee = $ticket->assignee()->first();
+            foreach ($ticket->collaborators()->get()->reject(fn (User $collaborator) => $collaborator->id === $assignee?->id) as $collaborator) {
+                $this->handle($ticket, $actor, $collaborator, __(':reference: QA :verdict', ['reference' => $ticket->reference, 'verdict' => strtolower($verdict)]), [$ticket->subject], __('Open the ticket'), reason: 'qa');
+            }
+            $this->handle($ticket, $actor, $ticket->assignee()->first(), __(':reference: QA :verdict', ['reference' => $ticket->reference, 'verdict' => strtolower($verdict)]), [$ticket->subject], __('Open the ticket'), reason: 'qa');
         }
     }
 
@@ -232,7 +242,58 @@ class NotifyTicketUsers
                     ? __(':actor moved :reference (:subject) to :status.', ['actor' => $actor->contact_name ?: $actor->username, 'reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel])
                     : __(':reference (:subject) is now :status.', ['reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel]),
             ],
-            __('Open the ticket')
+            __('Open the ticket'),
+            reason: 'status'
+        );
+    }
+
+    public function statusChangedForCollaborators(Ticket $ticket, ?User $actor): void
+    {
+        $statusLabel = TicketStatusEnum::labels()[$ticket->status->value];
+        $reporterId  = $ticket->reporter instanceof User ? $ticket->reporter->id : null;
+
+        foreach ($ticket->collaborators()->get()->reject(fn (User $collaborator) => $collaborator->id === $reporterId) as $collaborator) {
+            $this->handle(
+                $ticket,
+                $actor,
+                $collaborator,
+                __(':reference is now :status', ['reference' => $ticket->reference, 'status' => $statusLabel]),
+                [
+                    $actor
+                        ? __(':actor moved :reference (:subject) to :status.', ['actor' => $actor->contact_name ?: $actor->username, 'reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel])
+                        : __(':reference (:subject) is now :status.', ['reference' => $ticket->reference, 'subject' => $ticket->subject, 'status' => $statusLabel]),
+                ],
+                __('Open the ticket'),
+                reason: 'status'
+            );
+        }
+    }
+
+    /**
+     * @param array<int, string> $fields
+     */
+    public function edited(Ticket $ticket, ?User $actor, array $fields): void
+    {
+        $fieldLabels = collect($fields)->map(fn (string $field) => match ($field) {
+            'priority'    => __('urgency'),
+            'module'      => __('module'),
+            'kind'        => __('kind'),
+            'description' => __('description'),
+            default       => $field,
+        })->implode(', ');
+
+        $this->handle(
+            $ticket,
+            $actor,
+            $ticket->assignee()->first(),
+            __(':reference was edited', ['reference' => $ticket->reference]),
+            [
+                $actor
+                    ? __(':actor changed the :fields of :reference (:subject).', ['actor' => $actor->contact_name ?: $actor->username, 'fields' => $fieldLabels, 'reference' => $ticket->reference, 'subject' => $ticket->subject])
+                    : __('The :fields of :reference (:subject) changed.', ['fields' => $fieldLabels, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+            ],
+            __('Open the ticket'),
+            reason: 'edited'
         );
     }
 
@@ -244,7 +305,8 @@ class NotifyTicketUsers
             $collaborator,
             __('You were added to :reference', ['reference' => $ticket->reference]),
             [$ticket->subject],
-            __('Open the ticket')
+            __('Open the ticket'),
+            reason: 'collaborator'
         );
     }
 
@@ -269,7 +331,7 @@ class NotifyTicketUsers
     /**
      * @param array<int, string> $lines
      */
-    public function handle(Ticket $ticket, ?User $actor, mixed $recipient, string $subject, array $lines, string $actionLabel, ?UserNotificationEnum $event = null): void
+    public function handle(Ticket $ticket, ?User $actor, mixed $recipient, string $subject, array $lines, string $actionLabel, ?UserNotificationEnum $event = null, string $reason = 'update'): void
     {
         if ($recipient instanceof WebUser) {
             $this->notifyCustomer($ticket, $subject, $lines, $actionLabel);
@@ -283,7 +345,7 @@ class NotifyTicketUsers
 
         $channels = $event?->channelsFor($recipient) ?? [];
 
-        $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, in_array('email', $channels, true) && (bool) $recipient->email));
+        $recipient->notify(new TicketNotification($ticket, $subject, $lines, $actionLabel, in_array('email', $channels, true) && (bool) $recipient->email, $reason));
 
         SendTicketBadgeUpdateToUsers::run([$recipient->id], [
             'title' => $subject,

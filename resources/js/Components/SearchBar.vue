@@ -315,6 +315,12 @@ const closeModal = () => {
     searchValue.value = ''
     resetSearchState()
 }
+
+onUnmounted(router.on('start', () => {
+    if (isOpen.value) {
+        closeModal()
+    }
+}))
 </script>
 
 <template>
@@ -350,7 +356,7 @@ const closeModal = () => {
 
                         <div v-if="isBookmarkAvailable && bookmarks.length" class="border-b px-5 py-2.5 flex items-center gap-3">
                             <span class="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                                <FontAwesomeIcon icon="fas fa-bookmark" class="text-indigo-400" aria-hidden="true" />
+                                <FontAwesomeIcon icon="fas fa-bookmark" class="text-indigo-400" fixed-width aria-hidden="true" />
                                 {{ ctrans('Bookmarks') }}
                             </span>
                             <div class="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto py-0.5">
@@ -365,7 +371,7 @@ const closeModal = () => {
                                         class="inline-flex items-center gap-1.5 min-w-0 max-w-[12rem] pl-2.5 pr-1 py-1"
                                         v-tooltip="getBookmarkSubtitle(bookmark) ? `${bookmark.label} — ${getBookmarkSubtitle(bookmark)}` : bookmark.label"
                                     >
-                                        <FontAwesomeIcon icon="fas fa-bookmark" class="shrink-0 text-[11px] text-indigo-500" aria-hidden="true" />
+                                        <FontAwesomeIcon icon="fas fa-bookmark" class="shrink-0 text-[11px] text-indigo-500" fixed-width aria-hidden="true" />
                                         <span class="truncate text-xs font-medium text-indigo-900">{{ bookmark.label }}</span>
                                     </Link>
                                     <button
@@ -375,7 +381,7 @@ const closeModal = () => {
                                         v-tooltip="ctrans('Remove bookmark')"
                                         @click="removeBookmark(bookmark)"
                                     >
-                                        <FontAwesomeIcon icon="fal fa-times" class="text-[10px]" aria-hidden="true" />
+                                        <FontAwesomeIcon icon="fal fa-times" class="text-[10px]" fixed-width aria-hidden="true" />
                                     </button>
                                 </div>
                             </div>

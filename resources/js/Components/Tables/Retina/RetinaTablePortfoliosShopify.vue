@@ -556,7 +556,7 @@ onMounted(() => {
         <!-- Close Button -->
         <button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
                 aria-label="Close">
-            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4"/>
+            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" fixed-width/>
         </button>
 
         <!-- Message Content -->
@@ -666,8 +666,8 @@ onMounted(() => {
                             <div class="flex items-center gap-x-2">
                                 
                                 <FontAwesomeLayers class="fa-fw text-gray-400 w-4 text-center">
-                                    <FontAwesomeIcon :icon="faDollarSign" />
-                                    <FontAwesomeIcon :icon="faBan" class="text-red-500/80 scale-110" />
+                                    <FontAwesomeIcon :icon="faDollarSign" fixed-width />
+                                    <FontAwesomeIcon :icon="faBan" class="text-red-500/80 scale-110" fixed-width />
                                 </FontAwesomeLayers>
                                 
                                 <span>{{ trans('Not For Sale') }}</span>
@@ -818,11 +818,11 @@ onMounted(() => {
                 >
                     <FontAwesomeIcon
                         :icon="faBan"
-                        class="text-2xl"
+                        class="text-2xl" fixed-width
                     />
                     <FontAwesomeIcon
                         :icon="faCube"
-                        class="text-md text-center"
+                        class="text-md text-center" fixed-width
                     />
                 </FontAwesomeLayers>
                 <FontAwesomeLayers v-else
@@ -831,11 +831,11 @@ onMounted(() => {
                 >
                     <FontAwesomeIcon
                         :icon="faBan"
-                        class="text-2xl"
+                        class="text-2xl" fixed-width
                     />
                     <FontAwesomeIcon
                         :icon="faDollarSign"
-                        class="text-lg text-center"
+                        class="text-lg text-center" fixed-width
                     />
                 </FontAwesomeLayers>
             </div>

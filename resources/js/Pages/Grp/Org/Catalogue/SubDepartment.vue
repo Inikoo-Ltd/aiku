@@ -163,7 +163,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
             <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon
                     :icon="faOctopusDeploy"
-                    color="#4B0082"
+                    color="#4B0082" fixed-width
                 />
             </Link>
             </div>
@@ -188,7 +188,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4"/>
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" fixed-width/>
                         <span class="">{{ item.label || '-' }}</span>
                     </component>
                 </div>

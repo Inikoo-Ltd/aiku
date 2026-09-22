@@ -23,6 +23,7 @@ enum TicketKindEnum: string
     case QA         = 'qa';
     case DOCUMENTATION   = 'documentation';
     case DATA_INTEGRITY  = 'data_integrity';
+    case SUPPORT         = 'support';
 
     public static function labels(): array
     {
@@ -34,6 +35,7 @@ enum TicketKindEnum: string
             'qa'         => __('QA check request'),
             'documentation'  => __('Documentation'),
             'data_integrity' => __('Data integrity'),
+            'support'        => __('Support / investigation'),
         ];
     }
 

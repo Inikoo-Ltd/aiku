@@ -71,8 +71,18 @@ const addFiles = (files: Iterable<File>) => {
 
 const removeImage = (index: number) => emit("update:images", props.images.filter((_, i) => i !== index))
 
+const clipboardFiles = (clipboard: DataTransfer | null): File[] => {
+    if (clipboard?.types.includes("text/html") && clipboard.types.includes("text/plain")) return []
+    const files = Array.from(clipboard?.files ?? [])
+    if (files.length) return files.filter(isAcceptedFile)
+    return Array.from(clipboard?.items ?? [])
+        .filter((item) => item.kind === "file")
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file !== null && isAcceptedFile(file))
+}
+
 const onPaste = (event: ClipboardEvent) => {
-    const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith("image/"))
+    const files = clipboardFiles(event.clipboardData)
     if (files.length) {
         event.preventDefault()
         addFiles(files)
@@ -137,6 +147,23 @@ const onKeydown = (event: KeyboardEvent) => {
     }
 }
 
+const appendMention = (username: string) => {
+    const mention = `@${username} `
+    const separator = !props.body || /\s$/.test(props.body) ? "" : " "
+    const value = props.body + separator + mention
+    emit("update:body", value)
+    mentionQuery.value = null
+    nextTick(() => {
+        const element = textarea.value
+        if (!element) return
+        element.focus()
+        element.selectionStart = element.selectionEnd = value.length
+        element.scrollIntoView({ block: "center", behavior: "smooth" })
+    })
+}
+
+defineExpose({ appendMention })
+
 const onPick = (event: Event) => {
     addFiles((event.target as HTMLInputElement).files ?? [])
     if (fileInput.value) fileInput.value.value = ""
@@ -146,7 +173,7 @@ const onPick = (event: Event) => {
 <template>
     <div
         class="rounded-md border bg-white"
-        :class="isDragging ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-gray-300'"
+        :class="isDragging ? 'border-[--app-accent] ring-2 ring-[--app-accent-muted]' : 'border-gray-300'"
         @dragover.prevent="isDragging = true"
         @dragleave="isDragging = false"
         @drop.prevent="onDrop"
@@ -169,7 +196,7 @@ const onPick = (event: Event) => {
                     v-for="(user, index) in mentionSuggestions"
                     :key="user.username"
                     class="flex cursor-pointer gap-2 px-3 py-1.5"
-                    :class="index === mentionIndex ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'"
+                    :class="index === mentionIndex ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-700'"
                     @mousedown.prevent="insertMention(user.username)"
                     @mouseenter="mentionIndex = index"
                 >
@@ -181,19 +208,19 @@ const onPick = (event: Event) => {
         </div>
         <div class="flex items-center gap-2 px-2 py-1.5 border-t border-gray-200">
             <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5" :title="trans('Attach images, videos, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
-                <FontAwesomeIcon :icon="faPaperclip" /> {{ trans("Attach") }}
+                <FontAwesomeIcon :icon="faPaperclip" fixed-width /> {{ trans("Attach") }}
             </button>
             <span class="text-xs text-gray-400">{{ trans("or paste / drop") }}</span>
             <input ref="fileInput" type="file" accept="image/*,.mp4,.webm,.mov,.pdf,.docx,.xls,.xlsx,.csv,.zip,.rar,.7z" multiple class="hidden" @change="onPick" />
             <div v-if="previews.length" class="ml-auto flex gap-1.5">
                 <div v-for="(preview, index) in previews" :key="preview.url" class="relative">
                     <div v-if="preview.attachment" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center" :class="preview.attachment.class" :title="preview.name">
-                        <FontAwesomeIcon :icon="preview.attachment.icon" class="text-lg" />
+                        <FontAwesomeIcon :icon="preview.attachment.icon" class="text-lg" fixed-width />
                         <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ preview.name }}</span>
                     </div>
                     <img v-else :src="preview.url" alt="" class="h-12 w-12 rounded object-cover border border-gray-200" />
                     <button type="button" class="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-gray-700 text-white text-[10px] flex items-center justify-center" @click="removeImage(index)">
-                        <FontAwesomeIcon :icon="faTimes" />
+                        <FontAwesomeIcon :icon="faTimes" fixed-width />
                     </button>
                 </div>
             </div>

@@ -26,7 +26,8 @@ trait WithMasterProductNavigation
     protected function applyNavigationFilters(Builder $query, Model $model, ActionRequest $request): void
     {
         /** @var MasterAsset $model */
-        $query->where('master_shop_id', $model->master_shop_id);
+        $query->where('master_shop_id', $model->master_shop_id)
+            ->where('master_assets.status', $model->status);
 
         $routeName = $request->route()->getName();
 

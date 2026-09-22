@@ -113,7 +113,7 @@ class SettleShortJobOrderItemTask
         }
 
         $lines = PartnerShoppingListItem::where('job_order_id', $original->id)
-            ->where('org_stock_id', $item->artefact->org_stock_id)
+            ->where('stock_id', $item->artefact->orgStock?->stock_id)
             ->get();
 
         foreach ($lines as $line) {

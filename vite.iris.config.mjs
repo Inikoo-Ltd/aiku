@@ -19,8 +19,11 @@ import { codecov } from "./vite.codecov.mjs";
  * The lang/*.json files hold translations for every app (grp backoffice included).
  * Iris only ever looks up keys that exist as string literals in resources/js
  * (dynamic trans(data) keys are backend data with no entries in the lang files),
- * so the iris locale chunks keep only those keys. Runs in both client and ssr
- * builds of this config, keeping hydration consistent.
+ * so the iris locale chunks keep only those keys. Empty values are dropped as well
+ * (same rule as `php artisan lang:strip-empty`): laravel-vue-i18n counts "" as a
+ * translation and renders a blank label, while a missing key falls back to the
+ * English source string. Runs in both client and ssr builds of this config, keeping
+ * hydration consistent.
  */
 const irisLangFilter = () => {
     let usedKeys = null;
@@ -66,7 +69,9 @@ const irisLangFilter = () => {
             usedKeys ??= collectSourceStrings();
             const full = JSON.parse(code);
             const kept = Object.fromEntries(
-                Object.entries(full).filter(([key]) => usedKeys.has(key))
+                Object.entries(full).filter(
+                    ([key, value]) => usedKeys.has(key) && typeof value === "string" && value.trim() !== ""
+                )
             );
             return { code: JSON.stringify(kept), map: null };
         },

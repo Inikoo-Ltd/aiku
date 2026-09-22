@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import {Head, router} from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import {capitalize} from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import {computed, ref, inject, onMounted, onUnmounted} from 'vue'
@@ -700,7 +700,7 @@ const onChangeInsurance = async (val: boolean) => {
         <button @click="isModalProductListOpen = false" class="absolute top-3 right-3 z-50 flex items-center justify-center 
                w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 
                text-gray-600 hover:text-black transition">
-            <FontAwesomeIcon :icon="faTimes" />
+            <FontAwesomeIcon :icon="faTimes" fixed-width />
         </button>
 
         <ProductsSelectorAutoSelect :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"

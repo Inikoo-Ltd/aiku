@@ -39,6 +39,13 @@ class DownloadChatAttachment
             abort(403);
         }
 
+        if ($media->getCustomProperty('archived_at')) {
+            return response(GetChatMediaContents::run($media), 200, [
+                'Content-Type'        => $media->mime_type,
+                'Content-Disposition' => ($inline ? 'inline' : 'attachment').'; filename="'.str_replace('"', '', $media->file_name).'"',
+            ]);
+        }
+
         if ($inline) {
             return response()->file($media->getPath(), ['Content-Type' => $media->mime_type]);
         }

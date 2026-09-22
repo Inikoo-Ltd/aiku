@@ -8,12 +8,18 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithChatNavigation;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetOrganisationNavigation
 {
+    use WithChatAgentAuthorisation;
+    use WithChatNavigation;
+
     use AsAction;
     use WithLayoutNavigation;
 
@@ -134,6 +140,7 @@ class GetOrganisationNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
+                            'label' => __('Dashboard'),
                             'icon'  => ['fal', 'fa-chart-network'],
                             'root'  => 'grp.org.procurement.dashboard',
                             'route' => [
@@ -248,58 +255,18 @@ class GetOrganisationNavigation
 
         $canSeeShops = $user->authTo(['accounting.'.$organisation->id.'.view', 'org-supervisor.'.$organisation->id, 'shops-view.'.$organisation->id]);
 
-        if ($canSeeShops || $user->chatAgent) {
-            $navigation['chat'] = [
-                'label'   => __('Chat'),
-                'icon'    => ['fal', 'comment-alt'],
-                'root'    => 'grp.org.chat.',
-                'route'   => [
-                    'name'       => 'grp.org.chat.dashboard',
-                    'parameters' => [$organisation->slug],
-                ],
-                'topMenu' => [
-                    'subSections' => [
-                        [
-                            'label'   => __('Dashboard'),
-                            'icon'    => ['fal', 'comment-alt'],
-                            'root'    => 'grp.org.chat.dashboard',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.dashboard',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        [
-                            'label'   => __('Agents'),
-                            'icon'    => ['fal', 'fa-headset'],
-                            'root'    => 'grp.org.chat.agents.show',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.agents.show',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        [
-                            'label'   => __('Conversations'),
-                            'icon'    => ['fal', 'fa-comments'],
-                            'root'    => 'grp.org.chat.conversations.show',
-                            'route'   => [
-                                'name'       => 'grp.org.chat.conversations.show',
-                                'parameters' => [$organisation->slug],
-                            ],
-                        ],
-                        ...($user->chatAgent ? [
-                            [
-                                'label'   => __('Inbox'),
-                                'icon'    => ['fal', 'fa-inbox'],
-                                'root'    => 'grp.org.chat.inbox',
-                                'route'   => [
-                                    'name'       => 'grp.org.chat.inbox',
-                                    'parameters' => [$organisation->slug],
-                                ],
-                            ],
-                        ] : []),
-                    ],
-                ],
-            ];
+        $canWorkChat = $this->userCanWorkChatOnOrganisation($user, $organisation);
+
+        if ($canSeeShops || $canWorkChat) {
+            $navigation['chat'] = $this->getChatNavigation(
+                'grp.org.chat.',
+                [$organisation->slug],
+                (bool) $this->workableShopIdsFor($user),
+                $user->authTo([
+                    "org-admin.{$organisation->id}",
+                    ...$organisation->shops()->pluck('shops.id')->map(fn ($shopId) => "chat-m.{$shopId}")->all(),
+                ])
+            );
         }
 
         if ($canSeeShops) {
@@ -316,6 +283,106 @@ class GetOrganisationNavigation
                 'topMenu' => [],
             ];
         }
+
+        $navigation['tasks'] = [
+            'label'   => __('Tasks'),
+            'icon'    => ['fal', 'fa-tasks'],
+            'root'    => 'grp.org.tasks.',
+            'route'   => [
+                'name'       => 'grp.org.tasks.index',
+                'parameters' => [$organisation->slug],
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('My tasks'),
+                        'icon'  => ['fal', 'fa-tasks'],
+                        'root'  => 'grp.org.tasks.index',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.index',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('All'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'root'  => 'grp.org.tasks.list_all',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.list_all',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Board'),
+                        'icon'  => ['fal', 'fa-columns'],
+                        'root'  => 'grp.org.tasks.board',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.board',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Reports'),
+                        'icon'  => ['fal', 'fa-chart-line'],
+                        'root'  => 'grp.org.tasks.reports',
+                        'route' => [
+                            'name'       => 'grp.org.tasks.reports',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $navigation['tickets'] = [
+            'label'   => __('Tickets'),
+            'icon'    => ['fal', 'fa-life-ring'],
+            'root'    => 'grp.org.tickets.',
+            'route'   => [
+                'name'       => $user->roles()->where('name', RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? 'grp.org.tickets.board' : 'grp.org.tickets.index',
+                'parameters' => [$organisation->slug],
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('Dashboard'),
+                        'icon'  => ['fal', 'fa-tachometer-alt'],
+                        'root'  => 'grp.org.tickets.index',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.index',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('List'),
+                        'icon'  => ['fal', 'fa-list'],
+                        'root'  => 'grp.org.tickets.list',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.list',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Board'),
+                        'icon'  => ['fal', 'fa-columns'],
+                        'root'  => 'grp.org.tickets.board',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.board',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                    [
+                        'label' => __('Reports'),
+                        'icon'  => ['fal', 'fa-chart-line'],
+                        'root'  => 'grp.org.tickets.reports',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.reports',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ],
+                ],
+            ],
+        ];
 
         $navigation = $this->getSettingsNavs($user, $organisation, $navigation);
 

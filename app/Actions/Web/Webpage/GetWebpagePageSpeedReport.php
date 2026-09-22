@@ -15,7 +15,7 @@ class GetWebpagePageSpeedReport
     use AsAction;
 
     /**
-     * @return array{status: string, message?: string, refresh_route?: array, mobile?: array, desktop?: array}
+     * @return array{status: string, message?: string, pending?: bool, refresh_route?: array, mobile?: array, desktop?: array}
      */
     public function handle(Webpage $webpage): array
     {
@@ -39,13 +39,16 @@ class GetWebpagePageSpeedReport
             $report[$strategy] = $this->strategyReport($webpage, $strategy);
         }
 
+        $report['pending'] = collect(GetWebpagePageSpeed::STRATEGIES)
+            ->contains(fn (string $strategy) => (bool)($report[$strategy]['pending'] ?? false));
+
         return $report;
     }
 
     /**
-     * A failed run is remembered for a few minutes, so a page Google cannot measure is not asked
-     * about again on every load. Anything else is measured in the request: the report is served to
-     * a deferred prop, and a cached result comes back without touching Google at all.
+     * Nothing here talks to Google: a run takes up to a minute per strategy and would hang the
+     * deferred request until it timed out. A cached result is served, anything else is queued and
+     * reported as pending so the page can poll for it.
      */
     private function strategyReport(Webpage $webpage, string $strategy): array
     {
@@ -58,6 +61,17 @@ class GetWebpagePageSpeedReport
             ];
         }
 
-        return ['strategy' => $strategy] + GetWebpagePageSpeed::run($webpage, $strategy);
+        $cached = cache()->get(GetWebpagePageSpeed::resultKey($webpage, $strategy));
+
+        if ($cached) {
+            return ['strategy' => $strategy] + $cached;
+        }
+
+        QueueWebpagePageSpeed::run($webpage, $strategy);
+
+        return [
+            'strategy' => $strategy,
+            'pending'  => true,
+        ];
     }
 }

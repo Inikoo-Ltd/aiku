@@ -43,7 +43,7 @@ const toggle = (event: Event) => {
             v-tooltip="trans('Organisation cost breakdown')"
             @click.stop="toggle"
         >
-            <FontAwesomeIcon :icon="faInfoCircle" />
+            <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
         </button>
 
         <Popover ref="popover">

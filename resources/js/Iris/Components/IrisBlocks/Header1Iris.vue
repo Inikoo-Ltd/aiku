@@ -83,6 +83,7 @@ const props = defineProps<{
 
 const layout = inject('layout', layoutStructure)
 const isLoggedIn = computed(() => layout?.iris?.is_logged_in || false)
+const isShopB2B = computed(() => layout?.retina?.type === 'b2b')
 const displayUsername = computed(() => layout?.user?.username?.split('@')[0] || '')
 const loginUrl = computed(() => urlLoginWithRedirect())
 const loadingRedirect = ref(false)
@@ -155,7 +156,7 @@ const onClickLogout = () => {
 			<!-- Right Menu -->
 			<div class="shrink-0 h-full flex items-center gap-6">
 				<!-- My Interest -->
-				<LinkIris v-if="isLoggedIn" href="/app/interest/favourites" :type="'internal'"
+				<LinkIris v-if="isLoggedIn && isShopB2B" href="/app/interest/favourites" :type="'internal'"
 					v-slot="{ isLoading } = { isLoading: false }">
 					<button
 						class="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-wait"
@@ -170,7 +171,7 @@ const onClickLogout = () => {
 
 
 				<!-- Cart -->
-				<LinkIris v-if="isLoggedIn" href="/app/basket" :type="'internal'"
+				<LinkIris v-if="isLoggedIn && isShopB2B" href="/app/basket" :type="'internal'"
 					v-slot="{ isLoading } = { isLoading: false }">
 					<button
 						class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-60 disabled:cursor-wait"
@@ -187,7 +188,7 @@ const onClickLogout = () => {
 				</LinkIris>
 
 				<!-- Divider -->
-				<div v-if="isLoggedIn" class="h-8 w-px bg-gray-200" />
+				<div v-if="isLoggedIn && isShopB2B" class="h-8 w-px bg-gray-200" />
 
 				<!-- Logged In -->
 				<template v-if="isLoggedIn">
@@ -197,7 +198,7 @@ const onClickLogout = () => {
 							<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100"
 								:class="{ 'cursor-wait': isLoading }">
 								<LoadingIcon v-if="isLoading" class="text-lg text-gray-500" />
-								<FontAwesomeIcon v-else :icon="faUser" class="text-lg text-gray-500" />
+								<FontAwesomeIcon v-else :icon="faUser" class="text-lg text-gray-500" fixed-width />
 							</div>
 						</LinkIris>
 
@@ -264,7 +265,7 @@ const onClickLogout = () => {
 						class="flex items-center justify-center text-[20px] text-gray-600 bg-gray-100 rounded-full hover:text-gray-900 disabled:opacity-60 disabled:cursor-wait"
 						:disabled="isLoadingLogout" @click="onClickLogout">
 						<LoadingIcon v-if="isLoadingLogout" />
-						<FontAwesomeIcon v-else :icon="faSignOutAlt" />
+						<FontAwesomeIcon v-else :icon="faSignOutAlt" fixed-width />
 					</button>
 				</template>
 

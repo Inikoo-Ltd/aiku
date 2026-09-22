@@ -377,8 +377,8 @@ const onCheckedAll = (selectAll: boolean) => {
             <div class="flex flex-row items-center justify-start">
                 <div v-if="typeof column.label === 'object'">
                     <FontAwesomeIcon v-if="column.label.type === 'icon'" :title="capitalize(column.label.tooltip)"
-                        aria-hidden="true" :icon="column.label.data" size="lg" />
-                    <FontAwesomeIcon v-else :title="'icon'" aria-hidden="true" :icon="column.label" size="lg" />
+                        fixed-width aria-hidden="true" :icon="column.label.data" size="lg" />
+                    <FontAwesomeIcon v-else :title="'icon'" fixed-width aria-hidden="true" :icon="column.label" size="lg" />
                 </div>
 
                 <svg v-if="column.sortable" aria-hidden="true" class="w-3 h-3 ml-2" :class="{

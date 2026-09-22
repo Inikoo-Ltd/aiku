@@ -395,7 +395,7 @@ const handleCancelSchedule = async () => {
                     <div class="flex justify-between gap-4 px-4 py-3">
                         <dt class="text-gray-500">{{ trans("WhatsApp number") }}</dt>
                         <dd class="text-gray-800 text-right flex items-center gap-2 justify-end">
-                            <FontAwesomeIcon :icon="faWhatsapp" class="text-green-500" />
+                            <FontAwesomeIcon :icon="faWhatsapp" class="text-green-500" fixed-width />
                             {{ businessName }}
                         </dd>
                     </div>
@@ -411,7 +411,7 @@ const handleCancelSchedule = async () => {
                     </div>
                     <div class="flex justify-between gap-4 px-4 py-3">
                         <dt class="text-gray-500 flex items-center gap-2">
-                            <FontAwesomeIcon :icon="faUsers" class="text-gray-400" />
+                            <FontAwesomeIcon :icon="faUsers" class="text-gray-400" fixed-width />
                             {{ trans("Recipients") }}
                         </dt>
                         <dd class="text-gray-800 text-right">{{ campaign.recipients_count }}</dd>
@@ -421,7 +421,7 @@ const handleCancelSchedule = async () => {
                 <div v-if="isFilling" class="border-t border-gray-200 px-4 py-3">
                     <div class="flex items-center justify-between gap-4 text-xs">
                         <span class="text-gray-600 flex items-center gap-2">
-                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-indigo-500" />
+                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-indigo-500" fixed-width />
                             {{ trans("Preparing recipient data") }}
                         </span>
                         <span class="text-gray-500 tabular-nums">

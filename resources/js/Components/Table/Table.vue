@@ -1083,7 +1083,7 @@ const getSeverity = (type?: string) => {
                             getSeverity(warning.type) === 'success' ? 'text-green-800' :
                                 getSeverity(warning.type) === 'error' ? 'text-red-800' :
                                     'text-blue-500'
-                    ]" />
+                    ]" fixed-width />
 
                     <!-- Content -->
                     <div class="flex flex-col">

@@ -9,6 +9,7 @@
 namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum;
+use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\Organisation;
@@ -16,7 +17,9 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -130,12 +133,33 @@ class ChatAgent extends Model
         return $this->hasMany(ChatAssignment::class, 'chat_agent_id');
     }
 
-    public function shopAssignments()
+    public function shopAssignments(): HasMany
     {
         return $this->hasMany(ShopHasChatAgent::class);
     }
 
-    public function shops()
+    public function isAssignedToShop(?int $shopId, ?int $organisationId): bool
+    {
+        if (!$shopId && !$organisationId) {
+            return false;
+        }
+
+        return $this->shopAssignments()
+            ->whereNull('deleted_at')
+            ->where(function ($query) use ($shopId, $organisationId) {
+                if ($shopId) {
+                    $query->where('shop_id', $shopId);
+                }
+                if ($organisationId) {
+                    $query->orWhere(function ($orgWide) use ($organisationId) {
+                        $orgWide->whereNull('shop_id')->where('organisation_id', $organisationId);
+                    });
+                }
+            })
+            ->exists();
+    }
+
+    public function shops(): BelongsToMany
     {
         return $this->belongsToMany(Shop::class, 'shop_has_chat_agents')
             ->withPivot(['organisation_id'])
@@ -143,7 +167,7 @@ class ChatAgent extends Model
             ->withTimestamps();
     }
 
-    public function organisations()
+    public function organisations(): BelongsToMany
     {
         return $this->belongsToMany(Organisation::class, 'shop_has_chat_agents')
             ->withPivot(['shop_id'])
@@ -157,10 +181,33 @@ class ChatAgent extends Model
     }
 
 
+    public function phoneCalls(): HasMany
+    {
+        return $this->hasMany(ChatPhoneCall::class, 'chat_agent_id');
+    }
+
+
+    public function activePhoneCall(): HasOne
+    {
+        return $this->hasOne(ChatPhoneCall::class, 'chat_agent_id')
+            ->where('status', ChatPhoneCallStatusEnum::IN_PROGRESS)
+            ->latestOfMany('started_at');
+    }
+
+
+    public function isOnPhoneCall(): bool
+    {
+        return $this->relationLoaded('activePhoneCall')
+            ? $this->activePhoneCall !== null
+            : $this->phoneCalls()->inProgress()->exists();
+    }
+
+
     public function isAvailableForChat(): bool
     {
         return $this->isOnline()
             && $this->is_available
+            && !$this->isOnPhoneCall()
             && $this->current_chat_count < $this->max_concurrent_chats;
     }
 
@@ -238,6 +285,8 @@ class ChatAgent extends Model
     {
         return $query->online()
             ->where('is_available', true)
+            ->whereHas('user', fn ($user) => $user->where('status', true))
+            ->whereDoesntHave('phoneCalls', fn ($call) => $call->inProgress())
             ->whereColumn('current_chat_count', '<', 'max_concurrent_chats');
     }
 

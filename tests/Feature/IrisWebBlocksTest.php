@@ -552,3 +552,34 @@ test('website product workshop layout exposes the family extra description style
 
     expect(Arr::get($workshop, 'layout.data.fieldValue.tabs_style.storage.title'))->toBe('Storage & Shelf Life');
 });
+
+test('register dashboard 2 block keeps its default text, style and hero image through the iris pipeline', function () {
+    $webBlockType = $this->website->group->webBlockTypes()->where('code', 'register-dashboard-2')->firstOrFail();
+    $webpage      = StoreWebpage::make()->action($this->website->storefront, Webpage::factory()->definition());
+
+    StoreModelHasWebBlock::make()->action($webpage, [
+        'web_block_type_id' => $webBlockType->id,
+        'position'          => 0,
+    ]);
+
+    $webpage = PublishWebpage::make()->action($webpage, ['comment' => 'register dashboard 2']);
+
+    $renderer = new class () {
+        use WithIrisGetWebpageWebBlocks;
+    };
+
+    $parsed    = $renderer->getIrisWebBlocks($webpage, Arr::get($webpage->published_layout, 'web_blocks', []), false);
+    $structure = Arr::get(array_values($parsed)[0], 'structure');
+
+    expect(array_values($parsed)[0]['type'])->toBe('register-dashboard-2')
+        ->and(Arr::get($structure, 'card.button.color'))->toBe('#e87928')
+        ->and(Arr::get($structure, 'hero.benefit_border_color'))->toBe('#c8c6c2')
+        ->and(Arr::get($structure, 'hero.title'))->toBe('Create your Ancient Wisdom wholesale account')
+        ->and(Arr::get($structure, 'hero.benefits'))->toHaveCount(3)
+        ->and(Arr::get($structure, 'card.checks'))->toHaveCount(3)
+        ->and(Arr::get($structure, 'card.checks.0.icon'))->toBe(['fal', 'check'])
+        ->and(Arr::get($structure, 'card.button.link.href'))->toBe('/app/registration-form')
+        ->and(Arr::get($structure, 'card.google.show'))->toBeTrue()
+        ->and(Arr::get($structure, 'faq.items'))->toHaveCount(6)
+        ->and(public_path(ltrim(Arr::get($structure, 'hero.image_url'), '/')))->toBeFile();
+});

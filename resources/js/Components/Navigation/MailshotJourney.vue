@@ -26,7 +26,7 @@ withDefaults(
                 :class="step.current ? 'text-indigo-600 font-medium' : step.disabled ? 'text-gray-300 cursor-not-allowed' : step.done ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-gray-600'">
                 <span class="h-5 w-5 grid place-items-center rounded-full text-xs leading-none"
                     :class="step.current ? 'bg-indigo-600 text-white' : step.done ? 'bg-green-500 text-white' : 'border border-gray-300'">
-                    <FontAwesomeIcon v-if="step.done" :icon="faCheck" class="text-[10px]" />
+                    <FontAwesomeIcon v-if="step.done" :icon="faCheck" class="text-[10px]" fixed-width />
                     <template v-else>{{ index + 1 }}</template>
                 </span>
                 {{ step.label }}

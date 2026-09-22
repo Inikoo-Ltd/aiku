@@ -20,7 +20,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import CountUp from 'vue-countup-v3'
 import { Head } from '@inertiajs/vue3'
 import { PageHeadingTypes } from "@/types/PageHeading"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"

@@ -16,6 +16,10 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Ordering\Order\OrderChargesEngineEnum;
+use App\Models\Billables\Charge;
+use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,6 +50,9 @@ class DeleteTransaction extends OrgAction
 
         $order = $transaction->order;
         $order->refresh();
+
+        $this->stopAutomaticCharges($order, $transaction);
+
         if ($this->strict) {
             OrderHydrateCategoriesData::run($order);
             CalculateOrderTotalAmounts::run($order);
@@ -56,6 +63,24 @@ class DeleteTransaction extends OrgAction
 
 
         return $transaction;
+    }
+
+    /**
+     * The hanging charge is put back by CalculateOrderHangingCharges on every recalculation, so
+     * removing the line only lasted until the next basket change (HELP-3229). Taking it off is
+     * the decision that the order is not to carry it, and the charges engine records that.
+     */
+    private function stopAutomaticCharges(Order $order, Transaction $transaction): void
+    {
+        if ($transaction->model_type != 'Charge' || $order->charges_engine == OrderChargesEngineEnum::MANUAL) {
+            return;
+        }
+
+        if (Charge::where('id', $transaction->model_id)->value('type') != ChargeTypeEnum::HANGING->value) {
+            return;
+        }
+
+        $order->update(['charges_engine' => OrderChargesEngineEnum::MANUAL]);
     }
 
     /**

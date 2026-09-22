@@ -361,7 +361,7 @@ const isLoadingVisit = ref<number | null>(null)
 				<div class="bg-white rounded-lg shadow p-6">
 					<div class="flex items-center justify-between mb-1">
 						<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-							<FontAwesomeIcon :icon="['fal', 'calendar-alt']" class="text-blue-500" />
+							<FontAwesomeIcon :icon="['fal', 'calendar-alt']" class="text-blue-500" fixed-width />
 							{{ data.segments.recency.title }}
 						</h3>
 					</div>
@@ -387,7 +387,7 @@ const isLoadingVisit = ref<number | null>(null)
 						>
 							{{ chip.segment }}
 							<span class="font-semibold">{{ locale.number(data.comparison.current.data.recency[chip.segment] ?? 0) }}</span>
-							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-blue-400 text-xs" />
+							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-blue-400 text-xs" fixed-width />
 						</component>
 					</div>
 				</div>
@@ -396,7 +396,7 @@ const isLoadingVisit = ref<number | null>(null)
 				<div class="bg-white rounded-lg shadow p-6">
 					<div class="flex items-center justify-between mb-1">
 						<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-							<FontAwesomeIcon :icon="['fal', 'sync-alt']" class="text-green-500" />
+							<FontAwesomeIcon :icon="['fal', 'sync-alt']" class="text-green-500" fixed-width />
 							{{ data.segments.frequency.title }}
 						</h3>
 					</div>
@@ -422,7 +422,7 @@ const isLoadingVisit = ref<number | null>(null)
 						>
 							{{ chip.segment }}
 							<span class="font-semibold">{{ locale.number(data.comparison.current.data.frequency[chip.segment] ?? 0) }}</span>
-							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-green-400 text-xs" />
+							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-green-400 text-xs" fixed-width />
 						</component>
 					</div>
 				</div>
@@ -431,7 +431,7 @@ const isLoadingVisit = ref<number | null>(null)
 				<div class="bg-white rounded-lg shadow p-6">
 					<div class="flex items-center justify-between mb-1">
 						<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-							<FontAwesomeIcon :icon="['fal', 'chart-line']" class="text-purple-500" />
+							<FontAwesomeIcon :icon="['fal', 'chart-line']" class="text-purple-500" fixed-width />
 							{{ data.segments.monetary.title }}
 						</h3>
 					</div>
@@ -448,7 +448,7 @@ const isLoadingVisit = ref<number | null>(null)
 					<div v-if="data.newsletterRevenue" class="mt-4 border-t border-gray-100 pt-3">
 						<div class="flex items-center justify-between text-xs font-medium text-gray-500 mb-2">
 							<span class="flex items-center gap-1">
-								<FontAwesomeIcon :icon="['fal', 'envelope']" class="text-purple-400" />
+								<FontAwesomeIcon :icon="['fal', 'envelope']" class="text-purple-400" fixed-width />
 								{{ trans('Newsletter revenue') }}
 							</span>
 							<span class="font-semibold text-gray-700">
@@ -481,7 +481,7 @@ const isLoadingVisit = ref<number | null>(null)
 						>
 							{{ chip.segment }}
 							<span class="font-semibold">{{ locale.number(data.comparison.current.data.monetary[chip.segment] ?? 0) }}</span>
-							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-purple-400 text-xs" />
+							<FontAwesomeIcon :icon="['fal', 'info-circle']" class="text-purple-400 text-xs" fixed-width />
 						</component>
 					</div>
 				</div>

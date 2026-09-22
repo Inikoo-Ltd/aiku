@@ -329,6 +329,7 @@ class UpdateTradeUnit extends OrgAction
             'marketing_weight'             => ['sometimes', 'required', 'numeric'],
             'marketing_dimensions'         => ['sometimes', 'required'],
             'type'                         => ['sometimes', 'required'],
+            'is_divisible'                 => ['sometimes', 'boolean'],
             'image_id'                     => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
             'data'                         => ['sometimes', 'required'],
 

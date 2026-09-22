@@ -227,7 +227,7 @@ const replaceProps = (updatedData) => {
                 v-if="mismatch_trade_unit_with_master"
                 :icon="faWarning"
                 class="text-red-500"
-                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')" fixed-width
             />
         </template>
 
@@ -265,6 +265,7 @@ const replaceProps = (updatedData) => {
         :key="currentTab + key"
         :tab="currentTab"
         :data="localData[currentTab]"
+        :pasteLookupRoute="currentTab === 'index_ordering' ? { name: 'grp.json.product_category.products_by_codes', parameters: { productCategory: familyId } } : null"
         :isCheckboxProducts="currentTab === 'bulk_unit'"
         :selectedProductsId="selectedProductsId"
         :variantSlugs="variantSlugs"

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
-use App\Actions\CRM\Customer\UI\GetCustomerTimeline;
+use App\Actions\Chat\GetChatContactTimeline;
 use App\Models\Chat\ChatSession;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,7 +26,7 @@ class GetChatCustomerTimeline
             return ['events' => []];
         }
 
-        return GetCustomerTimeline::run($customer);
+        return GetChatContactTimeline::run($customer, $chatSession);
     }
 
     public function asController(ChatSession $chatSession, ActionRequest $request): JsonResponse

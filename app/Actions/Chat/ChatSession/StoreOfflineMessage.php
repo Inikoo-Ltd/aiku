@@ -10,6 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -17,7 +18,9 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
+use App\Models\CRM\WebUser;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,6 +32,8 @@ class StoreOfflineMessage
 
     public function handle(Shop $shop, array $data): ChatSession
     {
+        $data = $this->withWebUserContact($data);
+
         return DB::transaction(function () use ($shop, $data) {
             $session = $this->findSession($shop, $data['session_ulid'] ?? null);
 
@@ -40,10 +45,30 @@ class StoreOfflineMessage
 
             $this->updateOfflineContactMetadata($session, $data);
 
+            $this->routeRepliesToEmail($session, $data);
+
             $this->sendOfflineMessage($session, $data);
 
             return $session;
         });
+    }
+
+    /**
+     * A logged in customer is already known to us, so the form does not ask them to type their
+     * name and email again; whatever they left blank is taken from their account.
+     */
+    private function withWebUserContact(array $data): array
+    {
+        $webUser = blank($data['web_user_id'] ?? null) ? null : WebUser::find($data['web_user_id']);
+
+        if (!$webUser) {
+            return $data;
+        }
+
+        $data['name']  = $data['name']  ?? $webUser->contact_name ?? $webUser->username;
+        $data['email'] = $data['email'] ?? $webUser->email;
+
+        return $data;
     }
 
     private function findSession(Shop $shop, ?string $ulid): ?ChatSession
@@ -90,8 +115,8 @@ class StoreOfflineMessage
             'reopened_at' => now()->toISOString(),
             'session_previous_status' => $session->getOriginal('status'),
             'session_new_status' => $session->status->value,
-            'name' => $data['name'],
-            'email' => $data['email'],
+            'name' => $data['name'] ?? null,
+            'email' => $data['email'] ?? null,
             'message' => $data['message'],
             'is_offline_message' => true,
         ];
@@ -125,6 +150,37 @@ class StoreOfflineMessage
             'metadata' => array_merge($old, [
                 'name'  => $data['name']  ?? $old['name']  ?? null,
                 'email' => $data['email'] ?? $old['email'] ?? null,
+            ]),
+        ]);
+    }
+
+    /**
+     * The form is only shown when nobody is on cover, and it asks for an email address because
+     * the answer is written hours later, into a widget the visitor closed on their way out. A
+     * website conversation is not delivered anywhere, so the answer went nowhere; an email one
+     * is sent through the mailbox the shop already answers on, and their reply comes back to the
+     * same thread. Off until a shop turns it on, and never on without a mailbox to send from.
+     */
+    private function routeRepliesToEmail(ChatSession $session, array $data): void
+    {
+        $settings = $session->shop?->settings ?? [];
+
+        if (!Arr::get($settings, 'chat.email_offline_replies') || blank(Arr::get($settings, 'gmail.email'))) {
+            return;
+        }
+
+        if (blank($data['email'] ?? null)) {
+            return;
+        }
+
+        $metadata = $session->metadata ?? [];
+
+        $session->update([
+            'channel'  => ChatChannelEnum::EMAIL,
+            'metadata' => array_merge($metadata, [
+                'email_from'      => $metadata['email_from'] ?? $data['email'],
+                'email_from_name' => $metadata['email_from_name'] ?? $data['name'],
+                'email_subject'   => $metadata['email_subject'] ?? __('Your message to :shop', ['shop' => $session->shop->name]),
             ]),
         ]);
     }
@@ -174,8 +230,18 @@ class StoreOfflineMessage
 
             'shop_id' => ['required', 'exists:shops,id'],
             'session_ulid' => ['nullable', 'string'],
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:150'],
+            'name' => [
+                Rule::requiredIf(fn () => blank($request->input('web_user_id'))),
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'email' => [
+                Rule::requiredIf(fn () => blank($request->input('web_user_id'))),
+                'nullable',
+                'email',
+                'max:150',
+            ],
             'message' => ['required', 'string', 'max:5000'],
             'language_id' => ['required', 'exists:languages,id'],
             'sender_type' => [

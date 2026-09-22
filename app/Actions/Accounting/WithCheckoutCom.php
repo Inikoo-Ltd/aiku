@@ -18,6 +18,7 @@ use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
 use Checkout\Payments\PaymentsQueryFilter;
 use Checkout\Payments\Sessions\PaymentSessionsClient;
+use Checkout\Payments\Links\PaymentLinkRequest;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Sentry;
 
@@ -45,7 +46,7 @@ trait WithCheckoutCom
     }
 
 
-    private function setBillingInformation(PaymentSessionsRequest $paymentSessionRequest, ?Address $billingAddress): PaymentSessionsRequest
+    private function setBillingInformation(PaymentSessionsRequest|PaymentLinkRequest $paymentSessionRequest, ?Address $billingAddress): PaymentSessionsRequest|PaymentLinkRequest
     {
         if (!$billingAddress?->country) {
             return $paymentSessionRequest;

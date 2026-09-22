@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\Traits\WithLineTaxCategories;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
@@ -50,6 +51,9 @@ class CalculateInvoiceTotals extends OrgAction
         $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
         $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross + $packagingGross;
         $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
+        if ($invoice->type == InvoiceTypeEnum::INVOICE && $invoice->order) {
+            $taxAmount = $invoice->order->getMarketplaceTaxAmount() ?? $taxAmount;
+        }
 
         $totalAmount = $netAmount + $taxAmount;
 

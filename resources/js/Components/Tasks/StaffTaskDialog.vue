@@ -113,7 +113,7 @@ const submit = async () => {
                     maxlength="255"
                     autofocus
                     :placeholder="trans('What needs doing?')"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
                 <p v-if="errors.subject" class="text-xs text-red-600 mt-1">{{ errors.subject[0] }}</p>
             </div>
 
@@ -124,7 +124,7 @@ const submit = async () => {
                         v-model="assigneeQuery"
                         type="text"
                         :placeholder="trans('Search colleague…')"
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]"
                         @input="onAssigneeInput" />
                     <div v-if="assigneeResults.length" class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow max-h-48 overflow-y-auto">
                         <button v-for="coworker in assigneeResults" :key="coworker.id" type="button" class="w-full flex items-center gap-x-2 px-3 py-2 hover:bg-gray-50 text-left" @click="pickAssignee(coworker)">
@@ -137,7 +137,7 @@ const submit = async () => {
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">{{ trans('or a department') }}</label>
-                    <select v-model="form.department" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500" @change="form.assignee = null; assigneeQuery = ''">
+                    <select v-model="form.department" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" @change="form.assignee = null; assigneeQuery = ''">
                         <option value="">—</option>
                         <option v-for="department in departments" :key="department.value" :value="department.value">{{ department.label }}</option>
                     </select>
@@ -155,16 +155,16 @@ const submit = async () => {
                 rows="3"
                 maxlength="5000"
                 :placeholder="trans('Details (optional)')"
-                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">{{ trans('Due') }}</label>
-                    <input v-model="form.due_at" type="date" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                    <input v-model="form.due_at" type="date" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">{{ trans('Priority') }}</label>
-                    <select v-model="form.priority" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    <select v-model="form.priority" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]">
                         <option v-for="priority in priorities" :key="priority.value" :value="priority.value">{{ priority.label }}</option>
                     </select>
                 </div>
@@ -172,7 +172,7 @@ const submit = async () => {
 
             <div class="flex justify-end gap-x-2 pt-2">
                 <button type="button" class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900" @click="emit('close')">{{ trans('Cancel') }}</button>
-                <button type="submit" :disabled="saving || !form.subject.trim()" class="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40">{{ trans('Raise task') }}</button>
+                <button type="submit" :disabled="saving || !form.subject.trim()" class="px-4 py-2 text-sm rounded-md bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong] disabled:opacity-40">{{ trans('Raise task') }}</button>
             </div>
         </form>
     </div>

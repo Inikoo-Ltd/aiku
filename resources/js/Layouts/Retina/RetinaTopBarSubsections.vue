@@ -47,7 +47,7 @@ const mainColor = computed(() => {
 <template>
     <nav class="flex items-center space-x-4 border-b border-gray-200 px-4 w-full">
         <template v-for="(subSection, idxSubSec) in subSections" :key="idxSubSec">
-            <component :is="subSection?.route?.name ? Link : 'div'"
+            <component v-if="subSection" :is="subSection?.route?.name ? Link : 'div'"
                 :href="subSection?.route?.name ? route(subSection?.route?.name, subSection?.route?.parameters) : '#'" :class="[
                     'relative flex items-center py-2 font-medium text-xs md:text-sm transition duration-150 ease-in-out border-b-2 rounded-t-md',
                     isSubSectionActive(subSection?.root)
