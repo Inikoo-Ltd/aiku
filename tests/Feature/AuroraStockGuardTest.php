@@ -77,3 +77,57 @@ it('never lets aurora update an existing org stock, whichever organisation it be
     'organisation already runs stock control in aiku' => [true],
     'organisation still follows aurora, eg aroma'     => [false],
 ]);
+
+function auroraMovementRow(string $type, string $section = ''): object
+{
+    return (object) [
+        'Inventory Transaction Key'         => 1,
+        'Inventory Transaction Record Type' => 'Movement',
+        'Inventory Transaction Type'        => $type,
+        'Inventory Transaction Section'     => $section,
+        'Inventory Transaction Quantity'    => 5,
+        'Inventory Transaction Amount'      => 0,
+        'Part SKU'                          => 'none',
+        'Location Key'                      => 1,
+        'Warehouse Key'                     => 1,
+        'Note'                              => null,
+        'Date'                              => '2026-01-01 00:00:00',
+        'Part Location Stock'               => null,
+        'aiku_picking_id'                   => null,
+    ];
+}
+
+it('lets only production movements through from aurora when the organisation runs stock control in aiku', function (string $type, string $section, bool $reachesParsing) {
+    $organisation = $this->organisation;
+    $organisation->update(['is_aiku_stock_control' => true]);
+
+    $source               = Mockery::mock(SourceOrganisationService::class);
+    $source->organisation = $organisation;
+
+    $fetcher = new class ($source) extends \App\Transfers\Aurora\FetchAuroraOrgStockMovement {
+        public bool $lookedUpOrgStock = false;
+
+        public function feed(object $row): void
+        {
+            $this->auroraModelData = $row;
+            $this->parseModel();
+        }
+
+        public function parseOrgStock($sourceId): ?OrgStock
+        {
+            $this->lookedUpOrgStock = true;
+
+            return null;
+        }
+    };
+
+    $fetcher->feed(auroraMovementRow($type, $section));
+
+    expect($fetcher->lookedUpOrgStock)->toBe($reachesParsing);
+})->with([
+    'sale (picking is done in aiku)'         => ['Sale', '', false],
+    'in (booking in is done in aiku)'        => ['In', '', false],
+    'restock (returns are sowed in aiku)'    => ['Restock', '', false],
+    'production consumption'                 => ['Production', 'Out', true],
+    'production return of consumed stock'    => ['Production', 'In', true],
+]);

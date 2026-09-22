@@ -64,18 +64,15 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
             $type        = OrgStockMovementTypeEnum::PICKED;
             $isDelivered = true;
-            $forceFetch = true;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Adjust') {
             $type = OrgStockMovementTypeEnum::ADJUSTMENT;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'In') {
             $type = OrgStockMovementTypeEnum::PURCHASE;
             $note = $this->auroraModelData->{'Note'};
-            $forceFetch = true;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Found') {
             $type = OrgStockMovementTypeEnum::FOUND;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock') {
             $type = OrgStockMovementTypeEnum::RETURN_PICKED;
-            $forceFetch = true;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Other Out') {
             if ($this->auroraModelData->{'Inventory Transaction Section'} == 'Lost') {
                 $type = OrgStockMovementTypeEnum::WRITE_OFF;
