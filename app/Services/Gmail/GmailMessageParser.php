@@ -260,7 +260,11 @@ class GmailMessageParser
     // ponytail: quoted-reply trimming is a heuristic (first "On ... wrote:" or leading ">" block), good enough until real threads misbehave
     private static function trimQuotedHistory(string $body): string
     {
-        $lines = preg_split('/\R/', $body);
+        // Split on real line endings only. \R also matches the single byte 0x85, which is the
+        // continuation byte of many ordinary letters: it cut Polish "a with ogonek" and calendar
+        // emoji in half, replaced the second byte with a newline, and what came out was no longer
+        // valid UTF-8, so the database refused the whole message and the mail was lost.
+        $lines = preg_split('/\r\n|\n|\r/', $body);
         $cut   = count($lines);
 
         foreach ($lines as $index => $line) {

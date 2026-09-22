@@ -6966,6 +6966,8 @@ test('a mail that is not utf8 still comes through, and one left in the inbox is 
 });
 
 test('a mailbox already belonging to another shop is refused rather than connected to a second one', function () {
+    $this->shop->update(['settings' => Arr::except($this->shop->settings ?? [], 'gmail')]);
+
     $other = \App\Models\Catalogue\Shop::factory()->create([
         'organisation_id' => $this->organisation->id,
         'group_id'        => $this->organisation->group_id,
@@ -6993,4 +6995,78 @@ test('a mailbox already belonging to another shop is refused rather than connect
         ->and(session('notification')['description'])->toContain($other->name)
         ->and(Arr::get($this->shop->fresh()->settings, 'gmail'))->toBeNull()
         ->and($response->getTargetUrl())->toContain('/back');
+});
+
+test('a gmail message already being imported is refused, and a failed import gives the id back', function () {
+    $original          = $this->shop->settings ?? [];
+    $settings          = $original;
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                        => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/m2*' => \Illuminate\Support\Facades\Http::response([], 500),
+        'gmail.googleapis.com/*'                             => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $sessions = ChatSession::count();
+
+    \Illuminate\Support\Facades\Cache::add('gmail-message-claim:m2', true, now()->addMinutes(10));
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm2'))->toBeNull()
+        ->and(ChatSession::count())->toBe($sessions);
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    \Illuminate\Support\Facades\Cache::forget('gmail-message-claim:m2');
+
+    expect(fn () => \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm2'))
+        ->toThrow(\Illuminate\Http\Client\RequestException::class)
+        ->and(\Illuminate\Support\Facades\Cache::has('gmail-message-claim:m2'))->toBeFalse();
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('a letter whose second byte looks like a line break survives the quoted reply trim', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    // The second byte of "a with ogonek" is 0x85, which PCRE's \R treats as a line break: splitting
+    // on it cut the letter in half and left bytes the database refuses.
+    $body = "Dzień dobry,\n\njestem zainteresowana Państwa ofertą produktów 📅\n\nOn Mon, Bob wrote:\n> old";
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/p1?*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'p1',
+            'threadId' => 'tp1',
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Aleksandra <ala@example.com>'],
+                    ['name' => 'Subject', 'value' => 'White Label'],
+                    ['name' => 'Content-Type', 'value' => 'text/plain; charset="UTF-8"'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode($body), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'p1');
+
+    expect($message->message_text)->toBe("Dzień dobry,\n\njestem zainteresowana Państwa ofertą produktów 📅")
+        ->and(mb_check_encoding($message->message_text, 'UTF-8'))->toBeTrue();
 });
