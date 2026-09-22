@@ -300,6 +300,7 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::ACCOUNTING,
                 OrganisationPermissionsEnum::ACCOUNTING_VIEW,
                 OrganisationPermissionsEnum::ACCOUNTING_EDIT,
+                OrganisationPermissionsEnum::ORG_REPORTS,
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
                 OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
             ],
@@ -308,6 +309,7 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::ACCOUNTING_VIEW,
                 OrganisationPermissionsEnum::ACCOUNTING_EDIT,
                 OrganisationPermissionsEnum::SUPERVISOR_ACCOUNTING,
+                OrganisationPermissionsEnum::ORG_REPORTS,
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
                 OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
             ],

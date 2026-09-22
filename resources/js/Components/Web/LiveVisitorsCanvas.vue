@@ -149,7 +149,8 @@ onMounted(() => {
 
             const color = liveVisitorColors[visitor.status] ?? liveVisitorColors.idle
             const isHighlighted = props.highlighted === visitor.session_id
-            const age = now - visitor.last_active
+            
+            const age = Math.max(0, now - visitor.last_active)
 
             if (age < 3) {
                 ctx.beginPath()

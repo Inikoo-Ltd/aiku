@@ -10,6 +10,7 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Transfers\Aurora\WithAuroraAttachments;
@@ -36,6 +37,11 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
             }
 
             if ($stockDelivery = StockDelivery::withTrashed()->where('source_id', $stockDeliveryData['stockDelivery']['source_id'])->first()) {
+                $placesInAiku = $stockDelivery->placesInAiku();
+                if ($placesInAiku) {
+                    $stockDeliveryData['stockDelivery'] = StockDelivery::withoutAuroraPlacement($stockDeliveryData['stockDelivery']);
+                }
+
                 try {
                     $stockDelivery = UpdateStockDelivery::make()->action(
                         $stockDelivery,
@@ -44,6 +50,9 @@ class FetchAuroraStockDeliveries extends FetchAuroraAction
                         strict: false,
                         audit: false
                     );
+                    if ($placesInAiku) {
+                        $stockDelivery = UpdateStockDeliveryStateFromGoodsIn::run($stockDelivery);
+                    }
                     $this->recordChange($organisationSource, $stockDelivery->wasChanged());
                 } catch (Exception $e) {
                     $this->recordError($organisationSource, $e, $stockDeliveryData['stockDelivery'], 'StockDelivery', 'update');
