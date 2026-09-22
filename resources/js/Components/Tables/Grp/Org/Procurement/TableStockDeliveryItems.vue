@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { ref, reactive, watch, inject } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
@@ -16,18 +15,19 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import LabelPickingLocation from '@/Components/Warehouse/DeliveryNotes/LabelPickingLocation.vue'
 import SelectPickingLocation from '@/Components/Warehouse/DeliveryNotes/SelectPickingLocation.vue'
+import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { routeType } from '@/types/route'
 import { useLocaleStore } from '@/Stores/locale'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, faUndoAlt, faHandHoldingBox, faExclamationCircle as falExclamationCircle } from '@fal'
+import { faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, faUndoAlt, faHandHoldingBox, faExclamationCircle as falExclamationCircle } from '@fal'
 import { faExclamationCircle, faSpinner } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import { Dialog } from 'primevue'
 import { useConfirm } from 'primevue/useconfirm'
 import { ctrans } from '@/Composables/useTrans'
 
-library.add(faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, faUndoAlt, faHandHoldingBox, falExclamationCircle)
+library.add(faInventory, faBox, faSpellCheck, faBoxCheck, faTrashAlt, faExclamationCircle, faSpinner, faClipboardList, faSeedling, faTruck, faCheck, faClipboardCheck, faCheckDouble, faTimesCircle, faEquals, faDollarSign, faSave, faUndoAlt, faHandHoldingBox, falExclamationCircle)
 
 const props = defineProps<{
     data: { data?: any[] },
@@ -157,6 +157,7 @@ function onCheckedSaved() {
 
 const selectedLocationCode = reactive<Record<number, string | null>>({})
 const isModalLocation = ref(false)
+const selectedOtherLocation = reactive<Record<number, { id: number, code: string } | null>>({})
 const selectedItemValue = ref<any>(null)
 
 function findLocation(locationsList: any[], locationCode: string | null) {
@@ -164,6 +165,9 @@ function findLocation(locationsList: any[], locationCode: string | null) {
 }
 
 function placedAdditionalData(item: any) {
+    if (selectedOtherLocation[item.id]) {
+        return { location_id: selectedOtherLocation[item.id]?.id }
+    }
     return { location_org_stock_id: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.id }
 }
 
@@ -581,16 +585,14 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     <template #save="{ isProcessing }">
                         <div class="flex gap-x-8 w-fit">
                             <ButtonWithLink
-                                v-tooltip="trans('Place all remaining quantity in location :xlocation', { xlocation: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.location_code || '-' })"
+                                v-tooltip="ctrans('Place all remaining quantity in location :xlocation', { xlocation: selectedOtherLocation[item.id]?.code || findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.location_code || '-' })"
                                 icon="fal fa-check"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"
                                 type="positive"
                                 :loading="isProcessing"
                                 class="py-0"
                                 :routeTarget="item.placeAllRoute"
-                                :body="{
-                                    location_org_stock_id: findLocation(item.locations, selectedLocationCode[item.id] ?? null)?.id
-                                }"
+                                :body="placedAdditionalData(item)"
                                 :bind-to-link="{
                                     preserveScroll: true,
                                     preserveState: true,
@@ -606,15 +608,29 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                         </div>
                     </template>
                 </NumberWithButtonSave>
-                <LabelPickingLocation
-                    :locations="item.locations"
-                    :selectedOrgStockId="selectedLocationCode[item.id] ?? null"
-                    :warehouseArea="item.warehouse_area"
-                    :warehouse_slug="item.warehouse_slug"
-                    @openLocationModal="() => {
-                        isModalLocation = true; selectedItemValue = item;
-                    }"
-                />
+                <div class="flex items-center gap-x-2">
+                    <span v-if="selectedOtherLocation[item.id]" class="text-base bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 px-1">
+                        {{ selectedOtherLocation[item.id]?.code }}
+                    </span>
+                    <LabelPickingLocation
+                        v-else-if="item.locations?.length"
+                        :locations="item.locations"
+                        :selectedOrgStockId="selectedLocationCode[item.id] ?? null"
+                        :warehouseArea="item.warehouse_area"
+                        :warehouse_slug="item.warehouse_slug"
+                        @openLocationModal="() => {
+                            isModalLocation = true; selectedItemValue = item;
+                        }"
+                    />
+                    <span v-else class="text-red-500 italic text-xs">{{ ctrans('No location yet') }}</span>
+                    <Button
+                        v-tooltip="ctrans('Choose another location')"
+                        icon="fal fa-inventory"
+                        type="tertiary"
+                        size="xs"
+                        @click="() => { isModalLocation = true; selectedItemValue = item }"
+                    />
+                </div>
             </div>
             <span v-else-if="Number(item.unit_quantity_placed) > 0" class="text-green-500">
                 {{ formatQuantity(Number(item.unit_quantity_placed)) }}
@@ -635,11 +651,25 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         :header="ctrans('Location list for :itemCode', { itemCode: selectedItemValue?.org_stock_code ?? '' })"
     >
         <SelectPickingLocation
+            v-if="selectedItemValue?.locations?.length"
             :item="selectedItemValue"
             :selectedLocationCode="selectedLocationCode[selectedItemValue?.id] ?? null"
-            @select="(code) => { selectedLocationCode[selectedItemValue?.id] = code; isModalLocation = false; }"
+            @select="(code) => { selectedLocationCode[selectedItemValue?.id] = code; selectedOtherLocation[selectedItemValue?.id] = null; isModalLocation = false; }"
             :ignoreNoQty="true"
         />
+        <div v-if="selectedItemValue?.searchLocationsRoute" class="mt-4">
+            <div class="text-sm text-gray-500 mb-1">{{ ctrans('Or book in to any other location in the warehouse') }}</div>
+            <PureMultiselectInfiniteScroll
+                :key="`other-location-${selectedItemValue?.id}`"
+                :modelValue="selectedOtherLocation[selectedItemValue?.id]?.id ?? null"
+                :fetchRoute="selectedItemValue.searchLocationsRoute"
+                labelProp="code"
+                valueProp="id"
+                fetchOnOpen
+                :placeholder="ctrans('Search location code')"
+                @selectedObject="(location) => { if (location) { selectedOtherLocation[selectedItemValue?.id] = { id: location.id, code: location.code }; isModalLocation = false } }"
+            />
+        </div>
     </Dialog>
 
     <ConfirmPopup />
