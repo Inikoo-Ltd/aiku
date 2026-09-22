@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat;
 
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Chat\ChatAgent;
@@ -58,6 +59,55 @@ trait WithChatAgentAuthorisation
             // Administering an organisation carries chat across every one of its shops,
             // including any opened later: the permission is held on the organisation, so
             // there is nothing to grant per shop.
+            || $user->authTo(["org-admin.{$shop->organisation_id}"]);
+    }
+
+    /**
+     * A conversation somebody is holding is theirs to dispose of: putting it aside, reporting
+     * the sender or raising a ticket off it are the assignee's calls, not a passing colleague's.
+     * Supervisors keep the override, or a chat left behind by an absent agent could never be
+     * cleared without taking it over first.
+     */
+    protected function userCanDisposeOfChat(User $user, ChatSession|MetaChatSession $chatSession): bool
+    {
+        $shop = $chatSession->shop;
+
+        if (!$shop instanceof Shop || !$this->userCanActOnChatOnShop($user, $shop)) {
+            return false;
+        }
+
+        $assigneeUserId = $chatSession->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->latest('id')
+            ->first()?->chatAgent?->user_id;
+
+        if (!$assigneeUserId || $assigneeUserId === $user->id) {
+            return true;
+        }
+
+        return $this->userSupervisesChatOnShop($user, $shop);
+    }
+
+    protected function chatHeldByAnotherAgentMessage(ChatSession|MetaChatSession $chatSession): string
+    {
+        $assignee = $chatSession->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->latest('id')
+            ->first()?->chatAgent?->user?->contact_name;
+
+        return $assignee
+            ? __(':agent is handling this chat. Take it over first, or ask a supervisor.', ['agent' => $assignee])
+            : __('Another agent is handling this chat. Take it over first, or ask a supervisor.');
+    }
+
+    protected function userSupervisesChatOnShop(User $user, Shop $shop): bool
+    {
+        if (!$user->status) {
+            return false;
+        }
+
+        return $user->authTo(["chat-m.{$shop->id}"])
+            || $this->holdsFulfilmentPermission($user, $shop, 'fulfilment-chat-m')
             || $user->authTo(["org-admin.{$shop->organisation_id}"]);
     }
 
@@ -226,6 +276,14 @@ trait WithChatAgentAuthorisation
             ->filter(fn (Shop $shop) => $this->userCanViewChatOnShop($user, $shop))
             ->pluck('id')
             ->all();
+
+        // The unclaimed queue is deliberately not scoped to the shops this person works. A
+        // conversation reaching a queue nobody watching could answer is the whole failure it
+        // exists to catch, so it is the group's queue and anybody who works chat at all sees
+        // every conversation in it, whichever shop or organisation it arrived on.
+        if (!empty($filters['unclaimed']) && $filters['allowed_shop_ids'] !== []) {
+            unset($filters['allowed_shop_ids']);
+        }
 
         return $filters;
     }

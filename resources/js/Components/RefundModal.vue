@@ -307,12 +307,12 @@ const handleReasonBlur = () => {
                 borderColor: 'var(--theme-primary-bg-20)'
             }">
                 <h3 class="text-lg font-semibold flex items-center gap-2" :style="{ color: 'var(--theme-primary-bg)' }">
-                    <FontAwesomeIcon icon="fal fa-undo" />
+                    <FontAwesomeIcon icon="fal fa-undo" fixed-width />
                     {{ trans('Process Payment Refund') }}
                 </h3>
                 <button @click="closeRefundModal" class="hover:opacity-70 transition-opacity"
                     :style="{ color: 'var(--theme-primary-bg)' }">
-                    <FontAwesomeIcon icon="fal fa-times" class="w-5 h-5" />
+                    <FontAwesomeIcon icon="fal fa-times" class="w-5 h-5" fixed-width />
                 </button>
             </div>
 
@@ -325,7 +325,7 @@ const handleReasonBlur = () => {
                 }">
                     <div class="flex">
                         <FontAwesomeIcon icon="fal fa-times-circle" class="w-5 h-5 mt-0.5 mr-3"
-                            :style="{ color: 'var(--theme-secondary-bg)' }" />
+                            :style="{ color: 'var(--theme-secondary-bg)' }" fixed-width />
                         <div>
                             <h4 class="text-sm font-medium mb-1" :style="{ color: 'var(--theme-secondary-text)' }">
                                 {{ trans('Please correct the following errors') }}:

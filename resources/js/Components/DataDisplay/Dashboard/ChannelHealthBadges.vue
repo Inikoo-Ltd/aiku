@@ -53,7 +53,7 @@ function buildHref(routeTarget: RouteTarget): string {
             <!-- <span class="font-semibold text-gray-700">{{ platform.name }}</span> -->
 
             <div class="flex items-center gap-1 border-l border-gray-200 pl-2 ml-1">
-                <FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400 text-xs" />
+                <FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400 text-xs" fixed-width />
                 <Link
                     v-tooltip="trans('Not connected')"
                     :href="buildHref(platform.routes.problem)"
@@ -62,7 +62,7 @@ function buildHref(routeTarget: RouteTarget): string {
             </div>
 
             <div class="flex items-center gap-1 border-l border-gray-200 pl-2">
-                <FontAwesomeIcon icon="fal fa-check-circle" class="text-green-400 text-xs" />
+                <FontAwesomeIcon icon="fal fa-check-circle" class="text-green-400 text-xs" fixed-width />
                 <Link
                     v-tooltip="trans('Connected OK')"
                     :href="buildHref(platform.routes.ok)"
@@ -71,7 +71,7 @@ function buildHref(routeTarget: RouteTarget): string {
             </div>
 
             <div class="flex items-center gap-1 border-l border-gray-200 pl-2">
-                <FontAwesomeIcon icon="fal fa-file-invoice" class="text-blue-400 text-xs" />
+                <FontAwesomeIcon icon="fal fa-file-invoice" class="text-blue-400 text-xs" fixed-width />
                 <Link
                     v-tooltip="trans('Connected with invoices (all time)')"
                     :href="buildHref(platform.routes.ok_with_invoices)"
@@ -80,7 +80,7 @@ function buildHref(routeTarget: RouteTarget): string {
             </div>
 
             <div class="flex items-center gap-1 border-l border-gray-200 pl-2">
-                <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 text-xs" />
+                <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400 text-xs" fixed-width />
                 <Link
                     v-tooltip="trans('Connected with invoice in last 30 days')"
                     :href="buildHref(platform.routes.ok_with_recent_invoices)"

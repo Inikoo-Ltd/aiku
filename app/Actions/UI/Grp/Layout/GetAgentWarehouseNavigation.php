@@ -38,6 +38,7 @@ class GetAgentWarehouseNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            "label" => __("Dashboard"),
                             "icon"  => ["fal", "fa-chart-network"],
                             'root'  => 'grp.org.warehouses.show.agent_inventory.dashboard',
                             "route" => [
@@ -88,6 +89,7 @@ class GetAgentWarehouseNavigation
                 "topMenu" => [
                     'subSections' => [
                         [
+                            'label' => __('Backlog'),
                             'icon'  => ['fal', 'fa-tasks-alt'],
                             'root'  => 'grp.org.warehouses.show.agent_incoming.backlog',
                             'route' => [
@@ -146,6 +148,7 @@ class GetAgentWarehouseNavigation
                 "topMenu" => [
                     'subSections' => [
                         [
+                            'label' => __('Backlog'),
                             'icon'  => ['fal', 'fa-tasks-alt'],
                             'root'  => 'grp.org.warehouses.show.agent_dispatching.backlog',
                             'route' => [

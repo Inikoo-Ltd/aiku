@@ -28,11 +28,13 @@ use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\UI\ShowSupplierProduct;
 use App\Actions\SupplyChain\UI\ShowSupplyChainControl;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
+use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
 use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowSupplyChainDashboard::class)->name('dashboard');
 Route::get('control', ShowSupplyChainControl::class)->name('control.dashboard');
+Route::get('po-journey', ShowSupplyChainPurchaseOrderJourney::class)->name('po_journey.dashboard');
 Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])->name('shopping_list.board');
 Route::get('agent-suppliers', IndexAgentSuppliers::class)->name('agent_suppliers.index');
 

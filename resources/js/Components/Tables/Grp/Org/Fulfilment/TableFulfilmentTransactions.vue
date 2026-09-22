@@ -111,7 +111,7 @@ const userCanEdit = (item) => {
 		<!-- Column: Code -->
 		<template #cell(code)="{ item }">
 			{{ item.code || '-' }}
-			<FontAwesomeIcon v-if="item.is_auto_assign" v-tooltip="trans('Auto assign')" :icon="faUserRobot" />
+			<FontAwesomeIcon v-if="item.is_auto_assign" v-tooltip="trans('Auto assign')" :icon="faUserRobot" fixed-width />
 		</template>
 
 		<!-- Column: Name -->
@@ -121,7 +121,7 @@ const userCanEdit = (item) => {
 			}}/{{ item["unit_abbreviation"] }})
 			<Tag v-if="item['discount'] > 0" :theme="17">
 				<template #label>
-					<font-awesome-icon :icon="faTag" class="text-xs text-emerald-700" />
+					<font-awesome-icon :icon="faTag" class="text-xs text-emerald-700" fixed-width />
 					{{ item["discount"] }}%
 				</template>
 			</Tag>

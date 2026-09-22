@@ -53,6 +53,7 @@ class GetWarehouseNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
+                            "label" => __("Dashboard"),
                             "icon"  => ["fal", "fa-chart-network"],
                             'root'  => 'grp.org.warehouses.show.inventory.dashboard',
                             "route" => [
@@ -165,6 +166,7 @@ class GetWarehouseNavigation
                 "topMenu" => [
                     'subSections' => [
                         [
+                            'label' => __('Backlog'),
                             'icon'  => ['fal', 'fa-tasks-alt'],
                             'root'  => 'grp.org.warehouses.show.incoming.backlog',
                             'route' => [
@@ -233,6 +235,7 @@ class GetWarehouseNavigation
                 "topMenu" => [
                     'subSections' => [
                         [
+                            'label' => __('Backlog'),
                             'icon'  => ['fal', 'fa-tasks-alt'],
                             'root'  => 'grp.org.warehouses.show.dispatching.backlog',
                             'route' => [

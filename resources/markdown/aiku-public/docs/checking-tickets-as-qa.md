@@ -1,14 +1,14 @@
 ---
 title: Checking tickets as QA
 summary: For QA - find the tickets waiting for a check, test the fix on the live page, give a clear pass or fail, and know what happens next.
-date: 2026-09-14
+date: 2026-09-21
 tags: help desk, tickets, qa
 category: help-desk
 audience: qa
 ---
 
 <aside class="tldr">
-When an engineer's fix is live they press <b>Ask QA to check</b>, and the ticket appears in your <b>QA queue</b>. Open it, check the fix where the reporter had the problem, and give a verdict: <b>Pass</b> with a note on what you checked, or <b>Fail</b> with a note on what is still wrong. The engineer is told straight away. You check; the engineer decides when the ticket is <b>Done</b>.
+When an engineer's fix is live they press <b>Ask QA to check</b>, usually leaving a note on the ticket about what to look at, and it appears in your <b>QA queue</b> - addressed to you by name, or to anybody in QA. Open it, check the fix where the reporter had the problem, and give a verdict: <b>Pass</b> with a note on what you checked, or <b>Fail</b> with a note on what is still wrong. The engineer is told straight away. You check; the engineer decides when the ticket is <b>Done</b>.
 </aside>
 
 ## Finding tickets to check

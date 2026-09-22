@@ -763,7 +763,7 @@ const isModalUploadStoredItemOpen = ref(false)
             <div class="flex">
                 <div class="flex-shrink-0">
                     <font-awesome-icon :icon="['fad', 'exclamation-triangle']" class="h-5 w-5 text-amber-500"
-                        aria-hidden="true"
+                        fixed-width aria-hidden="true"
                         :class="{
                             'text-yellow-50': pallet_limits?.status === 'almost',
                             'text-orange-200': pallet_limits?.status === 'limit',

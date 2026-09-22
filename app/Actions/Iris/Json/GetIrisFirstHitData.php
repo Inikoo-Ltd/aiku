@@ -11,14 +11,15 @@ namespace App\Actions\Iris\Json;
 use App\Actions\Iris\CaptureTrafficSource;
 use App\Actions\IrisAction;
 use App\Actions\Traits\HasIrisUserData;
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Actions\Web\Website\BlockedCountries\CheckIfCountryRegionsIsBlocked;
 use App\Models\Catalogue\Collection;
-use Illuminate\Support\Facades\Cookie;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisFirstHitData extends IrisAction
 {
     use HasIrisUserData;
+    use WithIrisAuthCookie;
 
     private ?\App\Models\Fulfilment\Fulfilment $fulfilment;
     private null $fulfilmentCustomer;
@@ -42,10 +43,10 @@ class GetIrisFirstHitData extends IrisAction
             $this->customer = $this->webUser?->customer;
             $this->shop     = $this->customer?->shop;
 
-            Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
+            $this->queueIrisAuthCookie();
             $response = $this->getIrisUserData();
         } else {
-            Cookie::queue(Cookie::forget('iris_vua'));
+            $this->forgetIrisAuthCookie();
             $response = [
                 'is_logged_in'           => false,
                 'traffic_source_cookies' => CaptureTrafficSource::run(),

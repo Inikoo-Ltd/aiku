@@ -16,13 +16,21 @@ use Illuminate\Support\Facades\Http;
 
 final class GmailClient
 {
-    public const string SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
+    /**
+     * Drive is read because mail is not always where the pictures are: anything over Gmail's
+     * attachment limit is sent as a Drive link instead, and the photograph a customer is
+     * talking about then lives there. A mailbox connected before this scope existed keeps
+     * working and simply has no Drive access until it is reconnected.
+     */
+    public const string SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive.readonly';
 
     private const string OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 
     private const string OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
     private const string API_BASE_URL = 'https://gmail.googleapis.com/gmail/v1/';
+
+    private const string DRIVE_BASE_URL = 'https://www.googleapis.com/drive/v3/';
 
     public function __construct(private readonly Shop $shop)
     {
@@ -157,9 +165,48 @@ final class GmailClient
         return $this->get("users/me/messages/$messageId", ['format' => 'full'])->json();
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getThreadMessages(string $threadId): array
+    {
+        return $this->get("users/me/threads/$threadId", ['format' => 'full'])->json('messages', []);
+    }
+
     public function getAttachment(string $messageId, string $attachmentId): string
     {
         return GmailMessageParser::decodeData((string) $this->get("users/me/messages/$messageId/attachments/$attachmentId")->json('data'));
+    }
+
+    /**
+     * What the file is, before deciding whether to take it. Null when the sender never shared it
+     * with us, or when the mailbox was connected before we asked for Drive: the link stays in the
+     * message either way, which is what the sender sent.
+     *
+     * @return array{name: string, mimeType: string, size: int}|null
+     */
+    public function driveFile(string $fileId): ?array
+    {
+        $response = Http::withToken($this->accessToken())
+            ->get(self::DRIVE_BASE_URL."files/$fileId", ['fields' => 'name,mimeType,size']);
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        return [
+            'name'     => (string) $response->json('name', $fileId),
+            'mimeType' => (string) $response->json('mimeType', 'application/octet-stream'),
+            'size'     => (int) $response->json('size', 0),
+        ];
+    }
+
+    public function driveFileContents(string $fileId): string
+    {
+        return Http::withToken($this->accessToken())
+            ->throw()
+            ->get(self::DRIVE_BASE_URL."files/$fileId", ['alt' => 'media'])
+            ->body();
     }
 
     public function send(string $rawRfc822, ?string $threadId = null): array

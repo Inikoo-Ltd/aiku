@@ -464,14 +464,19 @@ class EditEmployee extends OrgAction
             ]
         ];
 
+        // An employee without hours of their own follows the organisation's, so the form starts
+        // from those rather than blank: switching one day off must not leave the other six
+        // undefined, which is what an employee schedule holding a single row would mean.
         $employeeWorkSchedule = $employee->getDefaultWorkSchedule()?->load('days.breaks');
+        $inheritedSchedule    = $employeeWorkSchedule ?: $employee->organisation->getDefaultWorkSchedule()?->load('days.breaks');
 
         $workingHoursData = [];
-        if ($employeeWorkSchedule) {
-            foreach ($employeeWorkSchedule->days as $day) {
+        if ($inheritedSchedule) {
+            foreach ($inheritedSchedule->days as $day) {
                 $workingHoursData[(string) $day->day_of_week] = [
                     's' => $day->start_time,
                     'e' => $day->end_time,
+                    'w' => (bool) $day->is_working_day,
                     'b' => $day->breaks->map(fn ($break) => [
                         's' => $break->start_time?->format('H:i'),
                         'e' => $break->end_time?->format('H:i'),
@@ -490,7 +495,10 @@ class EditEmployee extends OrgAction
                     'type' => 'employee-working-hours',
                     'label' => __('Working hours'),
                     'noTitle' => true,
-                    'value' => ['data' => $workingHoursData],
+                    'value' => [
+                        'data'      => $workingHoursData,
+                        'inherited' => !$employeeWorkSchedule && (bool) $inheritedSchedule,
+                    ],
                 ],
             ]
         ];

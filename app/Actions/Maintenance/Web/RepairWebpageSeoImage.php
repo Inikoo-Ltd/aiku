@@ -9,7 +9,6 @@
 
 namespace App\Actions\Maintenance\Web;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Actions\Web\Webpage\BreakWebpageCache;
@@ -31,9 +30,14 @@ class RepairWebpageSeoImage
      */
     public function handle(Webpage $webpage, bool $isBlog = false): void
     {
-        if ($webpage->seoImage) {
+        if ($webpage->seoImage || $webpage->seo_image_url) {
             return;
         }
+
+        $wasRepaired = false;
+
+        $seoData = $webpage->seo_data;
+        data_set($seoData, 'image_alt', $webpage->title, true);
 
         if ($isBlog) {
             $blogModelHasWebBlock = $webpage->modelHasWebBlocks()
@@ -48,15 +52,20 @@ class RepairWebpageSeoImage
 
             if ($thirdPartyUrl) {
                 $webpage->updateQuietly([
-                    'seo_image_url' => $thirdPartyUrl
+                    'seo_image_url' => $thirdPartyUrl,
+                    'seo_data'      => $seoData
                 ]);
+                $wasRepaired = true;
             }
         } else {
             $model = $webpage->model;
             if ($model && $model->images->isNotEmpty()) {
                 $media = $model->image ?? $model->images->first();
 
-                $webpage->updateQuietly(['seo_image_id' => $media->id]);
+                $webpage->updateQuietly([
+                    'seo_image_id'  => $media->id,
+                    'seo_data'      => $seoData
+                ]);
                 $webpage->images()->sync([
                     $media->id => [
                         'group_id'        => $webpage->group_id,
@@ -65,15 +74,19 @@ class RepairWebpageSeoImage
                         'data'            => json_encode(new stdClass())
                     ]
                 ]);
+                $wasRepaired = true;
             }
+        }
+
+        if (!$wasRepaired) {
+            return;
         }
 
         $webpage->refresh();
         BreakWebpageCache::run($webpage, false);
-        ClearCacheByWildcard::run("irisData:website:{$webpage->website_id}:*");
     }
 
-    public string $commandSignature = 'repair:webpage_seo_image {shop?}';
+    public string $commandSignature = 'repair:webpage_seo_image {shop?} {--type= : Only repair this webpage type (catalogue or blog)}';
 
     public function asCommand(Command $command): void
     {
@@ -81,10 +94,21 @@ class RepairWebpageSeoImage
 
         $shop = Shop::where('slug', $command->argument('shop'))->first();
 
-        $query = Webpage::when($shop, fn ($q) => $q->where('shop_id', $shop->id))->whereIn('type', [
-            WebpageTypeEnum::CATALOGUE,
-            WebpageTypeEnum::BLOG
-        ]);
+        $repairableTypes = [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG];
+
+        if ($command->option('type')) {
+            $requestedType = WebpageTypeEnum::tryFrom($command->option('type'));
+
+            if (!$requestedType || !in_array($requestedType, $repairableTypes, true)) {
+                $command->error('Invalid --type. Allowed: '.implode(', ', array_map(fn (WebpageTypeEnum $type) => $type->value, $repairableTypes)));
+
+                return;
+            }
+
+            $repairableTypes = [$requestedType];
+        }
+
+        $query = Webpage::when($shop, fn ($q) => $q->where('shop_id', $shop->id))->whereIn('type', $repairableTypes);
 
         ProgressBar::setFormatDefinition(
             'aiku_eta',

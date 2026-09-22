@@ -109,7 +109,7 @@ const cards = computed(() => [
                     </div>
                     <Link v-if="card.viewAll && data.routes?.[card.viewAll]" :href="route(data.routes[card.viewAll].name, data.routes[card.viewAll].parameters)" class="text-xs text-gray-500 hover:text-gray-800 inline-flex items-center gap-1">
                         {{ trans("View all") }}
-                        <FontAwesomeIcon icon="fal fa-arrow-right" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
                     </Link>
                 </div>
 

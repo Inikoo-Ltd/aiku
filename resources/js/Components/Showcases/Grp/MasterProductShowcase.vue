@@ -330,14 +330,14 @@ const isModalProductForSale = ref(false)
 				<div class="flex items-start justify-between gap-3">
 					<div class="flex items-center gap-2 pt-0.5 text-xs font-semibold text-gray-500">
 						<span>{{ title }}</span>
-						<FontAwesomeIcon v-if="!hasPrices(prices)" :icon="faWarning" />
+						<FontAwesomeIcon v-if="!hasPrices(prices)" :icon="faWarning" fixed-width />
 						<span
 							v-if="rebelList.length > 0"
 							class="inline-flex items-center gap-1 text-yellow-500 hover:text-yellow-600 cursor-pointer"
 							v-tooltip="trans('Show rebel prices (products not following master pricing)')"
 							@click.stop="toggleRebel"
 						>
-							<FontAwesomeIcon :icon="faStarfighter" />
+							<FontAwesomeIcon :icon="faStarfighter" fixed-width />
 							<span class="text-xs font-bold">{{ rebelList.length }}</span>
 						</span>
 					</div>
@@ -366,7 +366,7 @@ const isModalProductForSale = ref(false)
 						<FontAwesomeIcon
 							:icon="faChevronDown"
 							class="text-xs transition-transform duration-200"
-							:class="{ '-rotate-90': !open }"
+							:class="{ '-rotate-90': !open }" fixed-width
 						/>
 					</DisclosureButton>
 					<template v-if="open">
@@ -413,7 +413,7 @@ const isModalProductForSale = ref(false)
 				<FontAwesomeIcon
 					v-if="!data.availability_status.is_for_sale"
 					icon="fas fa-thumbtack"
-					:class="'text-red-500 ms-2 hover:cursor-pointer'"
+					:class="'text-red-500 ms-2 hover:cursor-pointer'" fixed-width
 				/>
 			</span>
 		</div>
@@ -441,7 +441,7 @@ const isModalProductForSale = ref(false)
 					<div v-else>
 						<div
 							class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-							<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+							<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
 							<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 						</div>
 					</div>
@@ -567,13 +567,13 @@ const isModalProductForSale = ref(false)
 					class="hover:cursor-pointer hover:opacity-80"
 					style="color: var(--theme-color-0);"
 					v-tooltip="trans('Click to edit For Sale status')"
-					v-on:click="editRoute()"
+					v-on:click="editRoute()" fixed-width
 				/>
 				<FontAwesomeIcon
 					v-if="data.availability_status?.from_trade_unit"
 					v-tooltip="getTooltips()"
 					icon="fal fa-atom"
-					:class="'ms-2 hover:cursor-pointer'"
+					:class="'ms-2 hover:cursor-pointer'" fixed-width
 				/>
 			</div>
         </div>
@@ -603,7 +603,7 @@ const isModalProductForSale = ref(false)
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
 				:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
 					{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
-					<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+					<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'" fixed-width/>
 				</span>
 			</div>
 		</div>

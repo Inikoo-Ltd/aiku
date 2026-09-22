@@ -287,8 +287,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
             </div>
         </template>
         <template #cell(status)="{ item: masterProduct }">
-            <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="trans('Active')" />
-            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="trans('Inactive')" />
+            <FontAwesomeIcon v-if="masterProduct.status" :icon="faCheck" :class="'text-green-500'" v-tooltip="trans('Active')" fixed-width />
+            <FontAwesomeIcon v-else :icon="faTimes" :class="'text-red-500'" v-tooltip="trans('Inactive')" fixed-width />
         </template>
 
         <template #cell(master_shop_code)="{ item: masterProduct }">
@@ -326,14 +326,14 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     class="secondaryLink whitespace-nowrap w-max inline-block">
                     {{ masterProduct.code }}
                 </Link>
-                <FontAwesomeIcon v-if="masterProduct.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch found in products under this master. Please update the master product trade units.')"/>
+                <FontAwesomeIcon v-if="masterProduct.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch found in products under this master. Please update the master product trade units.')" fixed-width/>
             </div>
         </template>
 
         <template #cell(code_product)="{ item: masterProduct }">
             <FontAwesomeIcon :icon="masterProduct.is_variant_leader ? faStar : faShapes" class="shrink-0 mx-2" :class="masterProduct.is_variant_leader
                 ? 'text-yellow-500'
-                : 'text-gray-500'" />
+                : 'text-gray-500'" fixed-width />
 
             <Link v-if="masterProduct.code" v-tooltip="masterProduct.code"
                 :href="masterProductRoute(masterProduct) as string" class="secondaryLink">
@@ -353,7 +353,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                 : 'bg-gray-50 border-gray-200'">
                     <!-- ICON -->
                     <FontAwesomeIcon :icon="masterProduct.is_variant_leader ? faStar : faShapes" class="shrink-0"
-                        :style="{ ...getClassColorIcon(masterProduct.variant_slug), fontSize: '0.7rem' }" />
+                        :style="{ ...getClassColorIcon(masterProduct.variant_slug), fontSize: '0.7rem' }" fixed-width />
 
                     <!-- CODE -->
                     <span class="leading-none truncate" :style="{ ...getClassColorIcon(masterProduct.variant_slug) }">
@@ -399,10 +399,10 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     mode="currency" :currency="product.currency_code" :step="0.25" showButtons
                     button-layout="horizontal" inputClass="w-full text-xs">
                     <template #incrementbuttonicon>
-                        <FontAwesomeIcon :icon="faPlus" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
                     </template>
                     <template #decrementbuttonicon>
-                        <FontAwesomeIcon :icon="faMinus" />
+                        <FontAwesomeIcon :icon="faMinus" fixed-width />
                     </template>
                 </InputNumber>
                 <span v-else>
@@ -417,10 +417,10 @@ const getIntervalStateColor = (isPositive: boolean) => {
                     mode="currency" :currency="product.currency_code" :step="0.25" showButtons
                     button-layout="horizontal" inputClass="w-full text-xs">
                     <template #incrementbuttonicon>
-                        <FontAwesomeIcon :icon="faPlus" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
                     </template>
                     <template #decrementbuttonicon>
-                        <FontAwesomeIcon :icon="faMinus" />
+                        <FontAwesomeIcon :icon="faMinus" fixed-width />
                     </template>
                 </InputNumber>
 
@@ -536,7 +536,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <div v-if="editable_table">
                 <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="()=>onEdit(item)">
                     <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
-                        aria-hidden="true" v-tooltip="'edit'" />
+                        fixed-width aria-hidden="true" v-tooltip="'edit'" />
                 </button>
 
                 <span v-else class="flex items-center space-x-3">
@@ -549,9 +549,9 @@ const getIntervalStateColor = (isPositive: boolean) => {
                             class="text-2xl animate-spin" fixed-width aria-hidden="true" />
 
                         <FontAwesomeIcon v-else-if="editingValues[item.id]" icon="fad fa-save" class="h-8"
-                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
 
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                     </button>
                 </span>
             </div>

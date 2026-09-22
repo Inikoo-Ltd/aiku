@@ -23,6 +23,18 @@ class AddVoucherToOrder extends OrgAction
      */
     public function handle(Order $order, array $modelData): void
     {
+        /**
+         * An intercompany order is a transfer between two of our own companies, priced by the
+         * partner's own terms. The shop's vouchers are retail marketing, and the discount
+         * calculation ignores them here, so the voucher is refused when it is typed instead of
+         * being accepted and then quietly doing nothing.
+         */
+        if ($order->salesChannel?->code === 'intercompany') {
+            throw ValidationException::withMessages([
+                'voucher' => __('Vouchers cannot be used on a partner order.')
+            ]);
+        }
+
         $voucherCode = Str::lower(trim(data_get($modelData, 'voucher')));
 
         $offer = Offer::where('shop_id', $order->shop_id)

@@ -11,6 +11,7 @@ namespace App\Console;
 use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPoints;
 use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
+use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
@@ -163,6 +164,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'SweepStrandedDeliveryNotes',
                 ),
                 name: 'SweepStrandedDeliveryNotes',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(ApplyScheduledOrgStockStateChanges::makeJob())->dailyAt('00:10')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ApplyScheduledOrgStockStateChanges',
+                ),
+                name: 'ApplyScheduledOrgStockStateChanges',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -1060,6 +1070,42 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'PruneStaleChatAgentPresence',
                 ),
                 name: 'PruneStaleChatAgentPresence',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:summarise-idle')->hourlyAt(17)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'SummarizeIdleChatSessions',
+                ),
+                name: 'SummarizeIdleChatSessions',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:classify-noise')->hourlyAt(37)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ClassifyIdleChatSessionsNoise',
+                ),
+                name: 'ClassifyIdleChatSessionsNoise',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:close-stale-phone-calls')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AutoCloseStaleChatPhoneCalls',
+                ),
+                name: 'AutoCloseStaleChatPhoneCalls',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:alert-unclaimed')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AlertUnclaimedChatSessions',
+                ),
+                name: 'AlertUnclaimedChatSessions',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

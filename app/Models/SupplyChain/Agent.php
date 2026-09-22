@@ -89,12 +89,13 @@ class Agent extends Model implements HasMedia, Auditable
     use HasSearch;
 
     protected $casts = [
-        'status'          => 'boolean',
-        'fetched_at'      => 'datetime',
-        'last_fetched_at' => 'datetime',
-        'sources'         => 'array',
-        'data'            => 'array',
-        'settings'        => 'array',
+        'status'                => 'boolean',
+        'fetched_at'            => 'datetime',
+        'last_fetched_at'       => 'datetime',
+        'sources'               => 'array',
+        'data'                  => 'array',
+        'settings'              => 'array',
+        'production_lead_days'  => 'integer',
     ];
 
     protected $attributes = [

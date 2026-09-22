@@ -179,7 +179,7 @@ onBeforeUnmount(stopAndReset)
         <canvas ref="canvasRef" class="h-full w-full" />
         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/audio:opacity-100 transition cursor-pointer">
             <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-800/70 text-white">
-                <FontAwesomeIcon :icon="isPlaying ? faPause : faPlay" class="text-sm" :class="{ 'pl-0.5': !isPlaying }" />
+                <FontAwesomeIcon :icon="isPlaying ? faPause : faPlay" class="text-sm" :class="{ 'pl-0.5': !isPlaying }" fixed-width />
             </div>
         </div>
     </div>

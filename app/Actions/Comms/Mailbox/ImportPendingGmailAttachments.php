@@ -85,7 +85,7 @@ class ImportPendingGmailAttachments
     {
         $files = [];
 
-        foreach (GmailMessageParser::attachments(Arr::get($raw, 'payload', [])) as $attachment) {
+        foreach ($this->candidates($client, $raw) as $attachment) {
             if (! $this->isWorthImporting($attachment, $trusted)) {
                 continue;
             }
@@ -94,9 +94,11 @@ class ImportPendingGmailAttachments
                 continue;
             }
 
-            $content = $attachment['attachmentId']
-                ? $client->getAttachment($gmailMessageId, $attachment['attachmentId'])
-                : GmailMessageParser::decodeData((string) $attachment['data']);
+            $content = match (true) {
+                (bool) $attachment['driveFileId'] => $client->driveFileContents($attachment['driveFileId']),
+                (bool) $attachment['attachmentId'] => $client->getAttachment($gmailMessageId, $attachment['attachmentId']),
+                default => GmailMessageParser::decodeData((string) $attachment['data']),
+            };
 
             $path = tempnam(sys_get_temp_dir(), 'gmail-attachment-');
             file_put_contents($path, $content);
@@ -108,19 +110,55 @@ class ImportPendingGmailAttachments
     }
 
     /**
+     * Everything the message offers, wherever it is kept. A photograph over Gmail's attachment
+     * limit is not in the mail at all: it is a Drive link, and Drive is asked what it is before
+     * any of the rules below can judge it. A file the sender never shared with us answers
+     * nothing, and is left as the link the customer sent.
+     *
+     * @return array<int, array{filename: string, mimeType: string, attachmentId: ?string, driveFileId: ?string, data: ?string, inline: bool, size: int}>
+     */
+    private function candidates(GmailClient $client, array $raw): array
+    {
+        $candidates = array_map(
+            fn (array $attachment) => $attachment + ['driveFileId' => null],
+            GmailMessageParser::attachments(Arr::get($raw, 'payload', []))
+        );
+
+        foreach (GmailMessageParser::driveFileIds(GmailMessageParser::htmlBody($raw)) as $fileId) {
+            $file = $client->driveFile($fileId);
+
+            if (! $file) {
+                continue;
+            }
+
+            $candidates[] = [
+                'filename'     => $file['name'],
+                'mimeType'     => $file['mimeType'],
+                'attachmentId' => null,
+                'driveFileId'  => $fileId,
+                'data'         => null,
+                'inline'       => false,
+                'size'         => $file['size'],
+            ];
+        }
+
+        return $candidates;
+    }
+
+    /**
      * How many files are waiting for an agent to reply. Only what a reply would actually import
      * counts: a signature logo is never coming, so counting it would promise a file that does
      * not exist.
      *
      * @param  array<string, mixed>  $raw
      */
-    public function countDeferred(array $raw, bool $trusted): int
+    public function countDeferred(GmailClient $client, array $raw, bool $trusted): int
     {
         if ($trusted) {
             return 0;
         }
 
-        return collect(GmailMessageParser::attachments(Arr::get($raw, 'payload', [])))
+        return collect($this->candidates($client, $raw))
             ->filter(fn (array $attachment) => $this->isWorthImporting($attachment, true)
                 && ! $this->isWorthImporting($attachment, false))
             ->count();

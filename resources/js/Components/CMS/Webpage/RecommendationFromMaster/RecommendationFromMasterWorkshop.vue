@@ -90,11 +90,11 @@ const sendMessageToParent = (type: string, value: any) => {
     }">
       <!-- Navigation -->
       <button ref="prevEl" class="swiper-nav-button left-0">
-        <FontAwesomeIcon :icon="['fas', 'chevron-left']" />
+        <FontAwesomeIcon :icon="['fas', 'chevron-left']" fixed-width />
       </button>
 
       <button ref="nextEl" class="swiper-nav-button right-0">
-        <FontAwesomeIcon :icon="['fas', 'chevron-right']" />
+        <FontAwesomeIcon :icon="['fas', 'chevron-right']" fixed-width />
       </button>
 
       <!-- Swiper -->

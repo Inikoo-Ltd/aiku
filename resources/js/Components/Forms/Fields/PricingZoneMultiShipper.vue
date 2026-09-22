@@ -99,7 +99,7 @@ const updateEntry = (index: number, newEntry: any) => {
             <div class="flex items-center justify-between">
                 <div class="font-medium text-gray-700">{{ shipperName(entry.shipper_id) }}</div>
                 <div class="text-red-500 hover:text-red-700 cursor-pointer" @click="removeShipper(index)">
-                    <FontAwesomeIcon :icon="faTrash" />
+                    <FontAwesomeIcon :icon="faTrash" fixed-width />
                 </div>
             </div>
             <PurePricingZone

@@ -12,7 +12,7 @@ import { Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { routeType } from "@/types/route"
@@ -27,6 +27,7 @@ library.add(faGlobe, faLink, faFragile, faUser, faChartLine, faUserCheck, faUser
 
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
 import SearchMerchandising from "@/Components/DataDisplay/Dashboard/Widget/SearchMerchandising.vue"
+import WebsitePageSpeed from "@/Components/DataDisplay/WebsitePageSpeed.vue"
 
 // Deep link to the website's search analytics page; null (hidden) when the route
 // doesn't apply, e.g. fulfilment websites
@@ -110,6 +111,14 @@ const props = defineProps<{
     route_login?: routeType
     route_register?: routeType
     route_forgot_pass?: routeType
+    pagespeed_history?: {
+        frequency: "daily" | "weekly"
+        start_date: string
+        end_date: string
+        measured_webpages: number
+        last_measured_on: string | null
+        history: any[]
+    }
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -132,15 +141,15 @@ watch(() => props.data.website_stats, (newStats) => {
 
 const links = computed(() => {
     const baseLinks: { label: string; route_target: any; icon: any; disabled?: boolean }[] = [
-        { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
-        { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
-        { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
+        { label: ctrans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
+        { label: ctrans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
+        { label: ctrans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
     ];
 
     // Add Edit Sidebar button only for dropshipping websites
     if (props.data.website_type !== "fulfilment") {
         baseLinks.splice(2, 0, {
-            label: trans("Edit Sidebar"),
+            label: ctrans("Edit Sidebar"),
             route_target: props.data.layout.sidebarRoute,
             icon: faPencil,
             // disabled: layout?.app.environment !== 'local' 
@@ -160,10 +169,10 @@ const links = computed(() => {
             <div class="">
                 <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
                     <div class="bg-white w-fit h-fit flex items-center gap-x-3">
-                        <a :href="props.data.url" target="_blank" v-tooltip="trans('Go To Website')"
+                        <a :href="props.data.url" target="_blank" v-tooltip="ctrans('Go To Website')"
                             class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
                             <div class="bg-gray-200 py-2 px-2">
-                                <FontAwesomeIcon :icon="faGlobe" class="px-1" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="faGlobe" class="px-1" fixed-width aria-hidden="true" />
                             </div>
                             <div class="flex items-center px-4">
                                 {{ props.data.url }}
@@ -208,7 +217,7 @@ const links = computed(() => {
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
                                 <div class="font-semibold w-fit text-lg">
-                                    {{ trans('Website Search') }}
+                                    {{ ctrans('Website Search') }}
                                 </div>
                                 <SearchMerchandising
                                     v-if="props.data.search_merchandising"
@@ -219,7 +228,7 @@ const links = computed(() => {
                             <SearchAnalyticsDisplay
                                 :widget="props.data.search_insights"
                                 :logs-url="searchAnalyticsUrl"
-                                :logs-label="trans('Search analytics')"
+                                :logs-label="ctrans('Search analytics')"
                                 :live-website-id="props.data.id"
                                 :query-url="searchAnalyticsUrl ? searchQueryUrl : undefined"
                                 :customer-url="searchAnalyticsUrl ? searchCustomerUrl : undefined"
@@ -229,14 +238,14 @@ const links = computed(() => {
 
                         <div class="w-full xl:w-56 shrink-0">
                             <div class="font-semibold w-fit text-lg mb-2">
-                                {{ trans('Product Catalogue') }}
+                                {{ ctrans('Product Catalogue') }}
                             </div>
                             <div class="gap-2 grid grid-cols-2 xl:grid-cols-1">
                                 <StatsBox v-for="stat in props.data.stats" :stat />
                             </div>
 
                             <div class="mt-6 font-semibold w-fit text-lg mb-2">
-                                {{ trans('Content & Blog') }}
+                                {{ ctrans('Content & Blog') }}
                             </div>
                             <div class="gap-2 grid grid-cols-2 xl:grid-cols-1">
                                 <StatsBox v-for="stat in props.data.content_blog_stats" :stat />
@@ -245,18 +254,25 @@ const links = computed(() => {
                     </div>
                 </div>
 
+                <div class="border-t border-gray-300 mt-6 pt-4">
+                    <div class="font-semibold w-fit text-lg mb-2">
+                        {{ ctrans('Page Speed') }}
+                    </div>
+                    <WebsitePageSpeed :pagespeed="props.pagespeed_history" />
+                </div>
+
                 <!-- Section: PIC Webmaster and SEO -->
                 <div v-if="props.data.pic?.webmaster?.length || props.data.pic?.seo?.length" class="mt-6">
                     <div class="font-semibold w-fit text-lg mb-2">
-                        {{ trans('Person in Contact') }}
+                        {{ ctrans('Person in Contact') }}
                     </div>
 
                     <div v-if="props.data.pic?.webmaster?.length">
-                        {{ trans("Webmaster") }}:  {{ props.data.pic.webmaster.map(x => x.name).join(', ') }}
+                        {{ ctrans("Webmaster") }}:  {{ props.data.pic.webmaster.map(x => x.name).join(', ') }}
                     </div>
 
                     <div v-if="props.data.pic?.seo?.length">
-                        {{ trans("SEO") }}:  {{ props.data.pic.seo.map(x => x.name).join(', ') }}
+                        {{ ctrans("SEO") }}:  {{ props.data.pic.seo.map(x => x.name).join(', ') }}
                     </div>
                 </div>
             </div>
@@ -266,35 +282,35 @@ const links = computed(() => {
                 <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
                     <div class="p-2" v-if="props.data.route_restricted_country?.name">
                         <ButtonWithLink :routeTarget="props.data.route_restricted_country" icon="fal fa-ban"
-                            type="tertiary" :label="trans('Restricted Countries')"
-                            :tooltip="trans('Countries restricted from this website')" full />
+                            type="tertiary" :label="ctrans('Restricted Countries')"
+                            :tooltip="ctrans('Countries restricted from this website')" full />
                     </div>
 
                     <div class="p-2">
                         <ButtonWithLink :routeTarget="route_storefront" icon="fal fa-home" type="tertiary"
-                            :label="trans('Storefront')" full />
+                            :label="ctrans('Storefront')" full />
                     </div>
 
                     <div class="p-2" v-if="route_welcome?.name">
                         <ButtonWithLink :routeTarget="route_welcome" :icon="faPlaneArrival" type="tertiary"
-                            :label="trans('Welcome Page')" full />
+                            :label="ctrans('Welcome Page')" full />
                     </div>
 
                     <hr>
 
                     <div class="m-2 bg-[#ffe06e4d]" v-if="route_login?.name">
                         <ButtonWithLink :routeTarget="route_login" :icon="faSignIn" type="secondary"
-                            :label="trans('Login Page')" full />
+                            :label="ctrans('Login Page')" full />
                     </div>
 
                     <div class="m-2 bg-[#ffe06e4d]" v-if="route_register?.name">
                         <ButtonWithLink :routeTarget="route_register" :icon="faUserPlus" type="secondary"
-                            :label="trans('Register Page')" full />
+                            :label="ctrans('Register Page')" full />
                     </div>
 
                     <div class="m-2 bg-[#ffe06e4d]" v-if="route_forgot_pass?.name">
                         <ButtonWithLink :routeTarget="route_forgot_pass" :icon="faUserUnlock" type="secondary"
-                            :label="trans('Forgot Password Page')" full />
+                            :label="ctrans('Forgot Password Page')" full />
                     </div>
 
                     <hr class="pb-1" v-if="route_login?.name || route_register?.name || route_forgot_pass?.name">
@@ -306,8 +322,8 @@ const links = computed(() => {
 
                     <div class="p-2 space-y-2">
                         <ModalConfirmationDelete
-                            :description="trans('Purge all cached files. Purging your cache may slow your website temporarily')"
-                            :title="trans('Break cache')" :noLabel="trans('Confirm')" noIcon="" :routeDelete="{
+                            :description="ctrans('Purge all cached files. Purging your cache may slow your website temporarily')"
+                            :title="ctrans('Break cache')" :noLabel="ctrans('Confirm')" noIcon="" :routeDelete="{
                                 name: 'grp.models.website.break_cache',
                                 parameters: {
                                     website: data?.id
@@ -316,9 +332,9 @@ const links = computed(() => {
                             }">
                             <template #default="{ changeModel }">
                                 <ButtonWithLink @click="changeModel" :icon="faFragile" type="tertiary"
-                                    :label="trans('Break cache')" full>
+                                    :label="ctrans('Break cache')" full>
                                     <template #iconRight>
-                                        <div v-tooltip="trans('If you made some changes but did not updated yet in the website, use this feature')"
+                                        <div v-tooltip="ctrans('If you made some changes but did not updated yet in the website, use this feature')"
                                             class="text-gray-400 hover:text-gray-700">
                                             <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width
                                                 aria-hidden="true" />

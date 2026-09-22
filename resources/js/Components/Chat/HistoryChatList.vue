@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faRobot } from '@far'
-import { faGlobe } from '@fal'
+import { faGlobe, faEnvelope } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
 const props = defineProps<{
@@ -79,10 +79,13 @@ const onScroll = (event: Event) => {
 			<div class="flex justify-between text-sm">
 				<div class="flex items-center gap-1.5 min-w-0">
 					<span v-if="s.channel === 'whatsapp'" class="shrink-0 text-green-500" title="WhatsApp">
-						<FontAwesomeIcon :icon="faWhatsapp" class="text-xs" />
+						<FontAwesomeIcon :icon="faWhatsapp" class="text-xs" fixed-width />
+					</span>
+					<span v-else-if="s.channel === 'email'" class="shrink-0 text-blue-500" title="Email">
+						<FontAwesomeIcon :icon="faEnvelope" class="text-xs" fixed-width />
 					</span>
 					<span v-else-if="s.channel === 'website'" class="shrink-0 text-blue-500" title="Website">
-						<FontAwesomeIcon :icon="faGlobe" class="text-xs" />
+						<FontAwesomeIcon :icon="faGlobe" class="text-xs" fixed-width />
 					</span>
 					<span class="truncate">{{ s.contact_name || s.guest_identifier }}</span>
 				</div>
@@ -91,25 +94,28 @@ const onScroll = (event: Event) => {
 				</span>
 			</div>
 
-			<div class="text-xs text-gray-500 truncate">
+			<div v-if="!(showAiSummary && s.ai_summary?.summary)" class="text-xs text-gray-500 truncate">
 				{{ s.last_message?.message }}
 			</div>
 
-			<div v-if="showAiSummary && s.ai_summary?.summary"
-				class="mt-1 flex items-center gap-1.5"
+			<div v-else
+				class="flex items-center gap-1.5"
 				@click.stop
 				@mouseenter="openPopover($event, s)"
 				@mouseleave="closePopover">
-				<FontAwesomeIcon :icon="faRobot" class="text-indigo-400 text-[10px] shrink-0" />
-				<span class="text-[11px] text-emerald-600 truncate">{{ s.ai_summary.summary }}</span>
+				<FontAwesomeIcon :icon="faRobot" class="text-indigo-400 text-[10px] shrink-0" fixed-width />
+				<span class="text-xs text-gray-500 truncate">
+					<span v-if="s.ai_summary.topic_label" class="font-medium text-gray-700">{{ s.ai_summary.topic_label }} · </span>{{ s.ai_summary.summary }}
+				</span>
 
 				<Teleport to="body">
 					<div v-if="activePopover === s.ulid"
 						class="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-left overflow-y-auto"
 						:style="popStyle">
 						<p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-							<FontAwesomeIcon :icon="faRobot" class="text-indigo-400" />
+							<FontAwesomeIcon :icon="faRobot" class="text-indigo-400" fixed-width />
 							AI Summary
+							<span v-if="s.ai_summary.topic_label" class="normal-case tracking-normal text-gray-600">· {{ s.ai_summary.topic_label }}</span>
 							<span v-if="s.ai_summary.sentiment"
 								class="ml-auto text-[10px] font-medium capitalize px-1.5 py-0.5 rounded-full"
 								:class="sentimentClass(s.ai_summary.sentiment)">

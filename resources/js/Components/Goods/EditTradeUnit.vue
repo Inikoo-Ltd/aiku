@@ -345,7 +345,7 @@ const onEditBrand = () => {
                     >
                         <template #default="{ isOpenModal, changeModel }">
                             <div @click="changeModel" class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
-                                <FontAwesomeIcon icon='fal fa-trash-alt' class='text-xs' aria-hidden='true' />
+                                <FontAwesomeIcon icon='fal fa-trash-alt' class='text-xs' fixed-width aria-hidden='true' />
                             </div>
                         </template>
                     </ModalConfirmationDelete>
@@ -431,7 +431,7 @@ const onEditBrand = () => {
                             >
                                 <template #default="{ isOpenModal, changeModel }">
                                     <div @click.stop="changeModel" class="cursor-pointer px-1 text-red-400 hover:text-red-600 rounded-sm">
-                                        <FontAwesomeIcon icon='fal fa-trash-alt' class='' aria-hidden='true' />
+                                        <FontAwesomeIcon icon='fal fa-trash-alt' class='' fixed-width aria-hidden='true' />
                                     </div>
                                 </template>
                             </ModalConfirmationDelete>

@@ -167,7 +167,7 @@ console.log("MasterVariantShowcase props:", props)
               preview image-class="object-contain w-full h-full p-3" />
 
             <div v-else class="flex flex-col items-center text-gray-400">
-              <FontAwesomeIcon icon="image" class="text-2xl mb-1" />
+              <FontAwesomeIcon icon="image" class="text-2xl mb-1" fixed-width />
               <span class="text-[11px]">{{ trans("No product image") }}</span>
             </div>
 
@@ -210,7 +210,7 @@ console.log("MasterVariantShowcase props:", props)
                 : 'border-gray-200 hover:border-gray-300'" @click="selectProduct(index)">
                 <!-- ⭐ LEADER BADGE -->
                 <span v-if="product.is_leader" class="absolute top-1 right-1">
-                  <FontAwesomeIcon :icon="faStar" class="text-yellow-400 text-sm drop-shadow" v-tooltip="trans('Leader')"/>
+                  <FontAwesomeIcon :icon="faStar" class="text-yellow-400 text-sm drop-shadow" v-tooltip="trans('Leader')" fixed-width/>
                 </span>
 
 
@@ -218,7 +218,7 @@ console.log("MasterVariantShowcase props:", props)
                 <div class="aspect-square w-14 flex items-center justify-center bg-gray-50 rounded-md">
                   <Image v-if="product.main_images" :src="product.main_images"
                     class="max-h-12 max-w-12 object-contain" />
-                  <FontAwesomeIcon v-else :icon="faImage" class="text-gray-300 text-sm" />
+                  <FontAwesomeIcon v-else :icon="faImage" class="text-gray-300 text-sm" fixed-width />
                 </div>
 
                 <!-- VARIANT LABEL -->
@@ -238,7 +238,7 @@ console.log("MasterVariantShowcase props:", props)
           <div class="text-lg font-semibold text-gray-800">
             <ProductUnitLabel v-if="selectedProduct?.units" :units="selectedProduct.units" :unit="selectedProduct.unit"class="mr-2" />
               {{ selectedProduct?.name }}
-             <FontAwesomeIcon v-if="selectedProduct.is_leader" :icon="faStar" class="text-yellow-400 text-sm drop-shadow" v-tooltip="trans('Leader')" />
+             <FontAwesomeIcon v-if="selectedProduct.is_leader" :icon="faStar" class="text-yellow-400 text-sm drop-shadow" v-tooltip="trans('Leader')" fixed-width />
           </div>
 
           <dl class="space-y-2 text-sm">
@@ -262,7 +262,7 @@ console.log("MasterVariantShowcase props:", props)
             <div class="flex justify-between">
               <dt class="text-gray-500 flex items-center gap-1">
                 {{ trans("Barcode") }}
-                <FontAwesomeIcon :icon="faBarcode" />
+                <FontAwesomeIcon :icon="faBarcode" fixed-width />
               </dt>
               <dd class="font-medium">{{ selectedProduct?.barcode }}</dd>
             </div>

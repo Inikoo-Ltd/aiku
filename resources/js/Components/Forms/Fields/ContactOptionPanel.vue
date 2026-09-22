@@ -82,7 +82,7 @@ const removeContactOption = (index: number) => {
                 <button type="button"
                     class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-red-300 bg-white text-xxs leading-none text-red-500 shadow-sm transition hover:border-red-400 hover:bg-red-500 hover:text-white"
                     :title="trans('Remove')" @click="removeContactOption(index)">
-                    <FontAwesomeIcon :icon="faTimes" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
                 </button>
 
                 <div class="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">

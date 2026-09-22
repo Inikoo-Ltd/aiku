@@ -233,7 +233,7 @@ const clickVisitRoute = (visitRoute: {
                 <div v-if="hasOverflowLeft"
                      @click="scrollBoxesLeft"
                      class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                    <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" />
+                    <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" fixed-width />
                 </div>
             </transition>
 
@@ -242,7 +242,7 @@ const clickVisitRoute = (visitRoute: {
                 <div v-if="hasOverflowRight"
                      @click="scrollBoxesRight"
                      class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                    <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" />
+                    <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" fixed-width />
                 </div>
             </transition>
 
@@ -391,7 +391,7 @@ const clickVisitRoute = (visitRoute: {
                 <div v-if="hasMobileOverflowLeft"
                      @click="scrollMobileBoxesLeft"
                      class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                    <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" />
+                    <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" fixed-width />
                 </div>
             </transition>
 
@@ -400,7 +400,7 @@ const clickVisitRoute = (visitRoute: {
                 <div v-if="hasMobileOverflowRight"
                      @click="scrollMobileBoxesRight"
                      class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
-                    <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" />
+                    <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" fixed-width />
                 </div>
             </transition>
 

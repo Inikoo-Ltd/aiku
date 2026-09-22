@@ -172,9 +172,9 @@ const submitNote =  () => {
                 @click="openListModal"
                 class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
             >
-                <FontAwesomeIcon icon="fal fa-calendar-plus" class="text-xs text-indigo-500" />
+                <FontAwesomeIcon icon="fal fa-calendar-plus" class="text-xs text-indigo-500" fixed-width />
                 {{ trans("Upcoming Transactions") }}
-                <FontAwesomeIcon v-if="isLoading" icon="fad fa-spinner-third" class="animate-spin text-xs text-gray-400" />
+                <FontAwesomeIcon v-if="isLoading" icon="fad fa-spinner-third" class="animate-spin text-xs text-gray-400" fixed-width />
                 <span
                     v-else-if="total"
                     class="rounded-full bg-indigo-50 px-1.5 py-0.5 text-xs font-semibold text-indigo-600 tabular-nums"
@@ -245,7 +245,7 @@ const submitNote =  () => {
                         >
                             <FontAwesomeIcon
                                 :icon="upcomingTransactionTypeMeta[transaction.type].icon"
-                                :class="upcomingTransactionTypeMeta[transaction.type].iconClass"
+                                :class="upcomingTransactionTypeMeta[transaction.type].iconClass" fixed-width
                             />
                         </div>
 
@@ -259,7 +259,7 @@ const submitNote =  () => {
                                     class="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-xs font-medium ring-1"
                                     :class="upcomingTransactionTypeMeta[transaction.type].badgeClass"
                                 >
-                                    <FontAwesomeIcon :icon="upcomingTransactionTypeMeta[transaction.type].icon" class="text-xs" />
+                                    <FontAwesomeIcon :icon="upcomingTransactionTypeMeta[transaction.type].icon" class="text-xs" fixed-width />
                                     {{ trans(upcomingTransactionTypeMeta[transaction.type].label) }}
                                 </span>
                             </div>
@@ -324,7 +324,7 @@ const submitNote =  () => {
                     @click="() => openCreateForm(true)"
                     class="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-gray-300 px-3 py-8 text-center transition-colors hover:border-indigo-300 hover:bg-gray-50"
                 >
-                    <FontAwesomeIcon icon="fal fa-cubes" class="text-2xl text-gray-300" />
+                    <FontAwesomeIcon icon="fal fa-cubes" class="text-2xl text-gray-300" fixed-width />
                     <span class="text-sm text-gray-500">{{ trans("No upcoming transactions yet") }}</span>
                     <span class="text-sm font-medium text-indigo-600">{{ trans("Add the first one") }}</span>
                 </button>
@@ -338,7 +338,7 @@ const submitNote =  () => {
                                 :class="'ml-1'"
                                 :style="{
                                     color: temporaryNote.bgColor
-                                }"
+                                }" fixed-width
                             />
                         </span>
                         <span>

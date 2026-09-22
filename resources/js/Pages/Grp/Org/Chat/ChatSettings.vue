@@ -82,7 +82,7 @@ const shopTemplatesRoute = (shop: { organisation_slug: string; slug: string }) =
                     :href="shopTemplatesRoute(item.shop)"
                     class="primaryLink inline-flex items-center gap-1.5 text-sm">
                     {{ item.shop.name }}
-                    <FontAwesomeIcon :icon="['fal', 'external-link']" class="text-[10px]" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="['fal', 'external-link']" class="text-[10px]" fixed-width aria-hidden="true" />
                 </Link>
                 <span v-else class="text-sm text-gray-400">-</span>
             </template>

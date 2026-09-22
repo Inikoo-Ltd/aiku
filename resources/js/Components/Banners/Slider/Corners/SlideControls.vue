@@ -41,7 +41,7 @@ const toggleAutoplay = (swiper: any) => {
             title="Go to previous banner" id="previous"
             :style="{'color': dataBanner.navigation.colorNav}"
         >
-            <FontAwesomeIcon icon='fas fa-chevron-left' class='z-10 text-xl mr-0.5' aria-hidden='true' />
+            <FontAwesomeIcon icon='fas fa-chevron-left' class='z-10 text-xl mr-0.5' fixed-width aria-hidden='true' />
             <div :style="[`background-color: ${dataBanner.navigation.colorNav}`]" class="-z-10 absolute opacity-30 inset-0"></div>
         </div>
 
@@ -50,8 +50,8 @@ const toggleAutoplay = (swiper: any) => {
             class="relative flex items-center justify-center cursor-pointer w-9 overflow-hidden isolate aspect-square border border-gray-400 rounded-full hover:bg-black/10 active:bg-gray-300/80"
             :style="{'color': dataBanner.navigation.colorNav}"
             title="Pause/resume autoplay" id="autoplay">
-            <FontAwesomeIcon v-if="swiperAutoplayPause" icon="fas fa-play" class='text-xl ml-1' aria-hidden='true' />
-            <FontAwesomeIcon v-if="!swiperAutoplayPause" icon="fas fa-pause" class='text-xl' aria-hidden='true' />
+            <FontAwesomeIcon v-if="swiperAutoplayPause" icon="fas fa-play" class='text-xl ml-1' fixed-width aria-hidden='true' />
+            <FontAwesomeIcon v-if="!swiperAutoplayPause" icon="fas fa-pause" class='text-xl' fixed-width aria-hidden='true' />
             <div :style="[`background-color: ${dataBanner.navigation.colorNav}`]" class="-z-10 absolute opacity-30 inset-0"></div>
         </div>
 
@@ -60,7 +60,7 @@ const toggleAutoplay = (swiper: any) => {
             class="relative flex items-center justify-center cursor-pointer w-8 overflow-hidden isolate h-fit aspect-square border border-gray-400 rounded-full hover:bg-black/10 active:bg-gray-300/80"
             :style="{'color': dataBanner.navigation.colorNav}"
             title="Go to next banner" id="next">
-            <FontAwesomeIcon icon='fas fa-chevron-right' class='text-xl ml-0.5' aria-hidden='true' />
+            <FontAwesomeIcon icon='fas fa-chevron-right' class='text-xl ml-0.5' fixed-width aria-hidden='true' />
             <div :style="[`background-color: ${dataBanner.navigation.colorNav}`]" class="-z-10 absolute opacity-30 inset-0"></div>
         </div>
     </div>

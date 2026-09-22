@@ -327,7 +327,7 @@ useAppAccentVariables(() => safeTheme.value)
                     >
                         <FontAwesomeIcon v-if="selectedModal?.status == 'error' || selectedModal?.status == 'failure'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
                     </div>
 

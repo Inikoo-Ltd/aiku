@@ -121,7 +121,7 @@ const onLogoutAuth = () => {
                 </div>
                 <div class="grid justify-items-end">
                     <Button :style="'red-r-outline'" @click="onLogoutAuth()">
-                        <FontAwesomeIcon :icon="faSignOutAlt" />
+                        <FontAwesomeIcon :icon="faSignOutAlt" fixed-width />
                         {{ trans("Logout") }}
                         <LoadingIcon v-if="isLoadingLogout"/>
                     </Button>
@@ -176,7 +176,7 @@ const onLogoutAuth = () => {
                             triggers: ['hover', 'click']
                         }" 
                         v-on:click="copyTextToClipboard()">
-                            {{ trans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" />
+                            {{ trans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" fixed-width />
                         </span>
                     </div>
                 </div>

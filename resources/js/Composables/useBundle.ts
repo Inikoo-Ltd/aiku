@@ -1,8 +1,8 @@
 import { ref, computed, watch } from 'vue'
 import axios from 'axios'
-import debounce from 'lodash/debounce'
+import { debounce } from 'lodash-es'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const open = ref(false)
 const step = ref(1)
@@ -39,8 +39,8 @@ export function useBundle(routes?: any) {
 
     const notifyMaxBundleProducts = () => {
         notify({
-            title: trans('Information'),
-            text: trans('Only a maximum of 10 selected products can be selected'),
+            title: ctrans('Information'),
+            text: ctrans('Only a maximum of 10 selected products can be selected'),
             type: 'warn'
         })
     }
@@ -238,18 +238,18 @@ export function useBundle(routes?: any) {
 
             title.value = data
             notify({
-                title: trans('Success'),
-                text: trans('Success generate AI'),
+                title: ctrans('Success'),
+                text: ctrans('Success generate AI'),
                 type: 'success'
             })
         } catch (e: any) {
             aiTitleError.value =
                 e?.response?.data?.message
-                || trans('The OpenAI service is currently unreachable, please try again later.')
+                || ctrans('The OpenAI service is currently unreachable, please try again later.')
 
             console.error('[useBundle] generateAITitle failed', e)
             notify({
-                title: trans('Error'),
+                title: ctrans('Error'),
                 text: aiTitleError.value,
                 type: 'error'
             })
@@ -279,17 +279,17 @@ export function useBundle(routes?: any) {
             )
             description.value = data || ''
             notify({
-                title: trans('Success'),
-                text: trans('Success generate AI'),
+                title: ctrans('Success'),
+                text: ctrans('Success generate AI'),
                 type: 'success'
             })
         } catch (e: any) {
             console.error('[useBundle] generateAIDescription failed', e)
             aiDescError.value =
                 e?.response?.data?.message
-                || trans('The OpenAI service is currently unreachable, please try again later.')
+                || ctrans('The OpenAI service is currently unreachable, please try again later.')
             notify({
-                title: trans('Error'),
+                title: ctrans('Error'),
                 text: aiDescError.value,
                 type: 'error'
             })

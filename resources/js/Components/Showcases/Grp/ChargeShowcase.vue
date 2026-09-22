@@ -115,7 +115,7 @@ const stateBgColor = computed(() => {
                     <div class="flex items-center space-x-2">
                         <span
                             :class="[stateBgColor, stateColor, 'px-3 py-1 rounded-full text-sm font-medium flex items-center']">
-                            <FontAwesomeIcon :icon="isActive ? faCheckCircle : faTimesCircle" class="w-4 h-4 mr-1" />
+                            <FontAwesomeIcon :icon="isActive ? faCheckCircle : faTimesCircle" class="w-4 h-4 mr-1" fixed-width />
                             {{ data.charge.state.charAt(0).toUpperCase() + data.charge.state.slice(1) }}
                         </span>
                     </div>
@@ -131,7 +131,7 @@ const stateBgColor = computed(() => {
                         <!-- ID & Slug -->
                         <div class="bg-gray-50 rounded-lg p-4">
                             <h3 class="font-semibold text-gray-700 mb-3 flex items-center">
-                                <FontAwesomeIcon :icon="faHashtag" class="w-4 h-4 mr-2 text-gray-500" />
+                                <FontAwesomeIcon :icon="faHashtag" class="w-4 h-4 mr-2 text-gray-500" fixed-width />
                                 {{ ctrans('Identification') }}
                             </h3>
                             <div class="space-y-2">
@@ -165,7 +165,7 @@ const stateBgColor = computed(() => {
                         <!-- Label (if exists) -->
                         <div v-if="data.charge.label" class="bg-purple-50 rounded-lg p-4">
                             <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                                <FontAwesomeIcon :icon="faTag" class="w-4 h-4 mr-2 text-purple-600" />
+                                <FontAwesomeIcon :icon="faTag" class="w-4 h-4 mr-2 text-purple-600" fixed-width />
                                 {{ trans('Label') }}
                             </h3>
                             <span
@@ -180,7 +180,7 @@ const stateBgColor = computed(() => {
                 <div v-if="data.charge.description" class="mb-6">
                     <div class="bg-yellow-50 rounded-lg p-4">
                         <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                            <FontAwesomeIcon :icon="faInfoCircle" class="w-4 h-4 mr-2 text-yellow-600" />
+                            <FontAwesomeIcon :icon="faInfoCircle" class="w-4 h-4 mr-2 text-yellow-600" fixed-width />
                             {{ trans('Description') }}
                         </h3>
                         <p class="text-sm text-gray-700 leading-relaxed">{{ data.charge.description }}</p>
@@ -190,7 +190,7 @@ const stateBgColor = computed(() => {
                 <!-- Settings Section -->
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center">
-                        <FontAwesomeIcon :icon="faCog" class="w-4 h-4 mr-2 text-gray-600" />
+                        <FontAwesomeIcon :icon="faCog" class="w-4 h-4 mr-2 text-gray-600" fixed-width />
                         {{ trans('When it is applied') }}
                     </h3>
                     <div class="bg-white rounded-lg p-3 border border-gray-200">
@@ -209,7 +209,7 @@ const stateBgColor = computed(() => {
 
         <!-- Empty State -->
         <div v-else class="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
-            <FontAwesomeIcon :icon="faInfoCircle" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <FontAwesomeIcon :icon="faInfoCircle" class="w-12 h-12 text-gray-400 mx-auto mb-4" fixed-width />
             <h3 class="text-lg font-medium text-gray-900 mb-2">{{ trans('No Data Available') }}</h3>
             <p class="text-gray-500">{{ trans('No charge information to display') }}</p>
         </div>

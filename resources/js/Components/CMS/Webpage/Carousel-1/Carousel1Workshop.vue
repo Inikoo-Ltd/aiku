@@ -175,7 +175,7 @@ const onEditorFocus = (key: string) => {
       <button v-if="swiperInstance?.allowSlidePrev && isLooping" ref="prevEl"
         class="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
-        <FontAwesomeIcon :icon="faChevronLeft" />
+        <FontAwesomeIcon :icon="faChevronLeft" fixed-width />
       </button>
       
       <DefineCard v-slot="{ data, index }">
@@ -201,7 +201,7 @@ const onEditorFocus = (key: string) => {
                     :height="getStyles(modelValue.carousel_data.card_container?.image_properties, screenType, false)?.height"
                     :width="getStyles(modelValue.carousel_data.card_container?.image_properties, screenType, false)?.width" />
                     <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
-                      <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                      <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" fixed-width />
                     </div>
                 </div>
               </div>
@@ -253,7 +253,7 @@ const onEditorFocus = (key: string) => {
       <button v-if="swiperInstance?.allowSlideNext && isLooping" ref="nextEl"
         class="absolute right-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
         @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
-        <FontAwesomeIcon :icon="faChevronRight" />
+        <FontAwesomeIcon :icon="faChevronRight" fixed-width />
       </button>
     </div>
   </div>

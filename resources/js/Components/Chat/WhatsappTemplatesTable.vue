@@ -170,7 +170,7 @@ const save = () => {
                     <a v-if="!template.is_draft" :href="rowRoute(languageRouteName, template.id)"
                         v-tooltip="ctrans('Add another language')"
                         class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-                        <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" />
+                        <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" fixed-width />
                     </a>
 
                     <button v-if="!template.is_draft" type="button" @click="refreshStatus(template)"
@@ -178,13 +178,13 @@ const save = () => {
                         v-tooltip="ctrans('Check status on WhatsApp')"
                         class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50">
                         <FontAwesomeIcon :icon="faSync" class="text-[10px]"
-                            :class="refreshingId === template.id ? 'animate-spin' : ''" />
+                            :class="refreshingId === template.id ? 'animate-spin' : ''" fixed-width />
                     </button>
 
                     <a :href="rowRoute(template.is_draft ? draftRouteName : editRouteName, template.id)"
                         v-tooltip="template.is_draft ? ctrans('Continue draft') : ctrans('Edit')"
                         class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-                        <FontAwesomeIcon :icon="faPen" class="text-[10px]" />
+                        <FontAwesomeIcon :icon="faPen" class="text-[10px]" fixed-width />
                     </a>
 
                     <ModalConfirmationDelete :routeDelete="{
@@ -199,7 +199,7 @@ const save = () => {
                         <template #default="{ changeModel }">
                             <button type="button" @click="changeModel" v-tooltip="ctrans('Delete')"
                                 class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500">
-                                <FontAwesomeIcon :icon="faTrash" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faTrash" class="text-[10px]" fixed-width />
                             </button>
                         </template>
                     </ModalConfirmationDelete>
@@ -214,7 +214,7 @@ const save = () => {
                     :class="template.merge_tags?.length
                         ? 'border-green-200 bg-green-50 text-green-700 hover:border-green-300'
                         : 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300'">
-                    <FontAwesomeIcon :icon="faWandMagicSparkles" class="text-[9px]" />
+                    <FontAwesomeIcon :icon="faWandMagicSparkles" class="text-[9px]" fixed-width />
                     {{ template.merge_tags?.length
                         ? ctrans("Auto-filled")
                         : ctrans(":count to map", { count: template.variable_count }) }}

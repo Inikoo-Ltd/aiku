@@ -854,7 +854,7 @@ if (isClient) {
     <div>
         <button ref="buttonRef" @click="toggle" :aria-label="trans('Open chat')" :aria-expanded="open" class="fixed z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary" :class="['fixed bottom-20 z-[60] flex items-center gap-2 px-4 py-4 rounded-xl shadow-lg buttonPrimary transition-all duration-300', (bundle.open.value || layout?.rightbasket?.show) ? 'right-[470px]' : 'right-10']">
             <FontAwesomeIcon :icon="open && showContactOptions ? faXmark : faMessage" class="text-base"
-                aria-hidden="true" />
+                fixed-width aria-hidden="true" />
             <span v-if="unreadCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
                bg-red-500 text-white text-[10px] font-semibold
                rounded-full flex items-center justify-center">
@@ -879,7 +879,7 @@ if (isClient) {
                     }">
                     <button v-if="isMobile" @click="open = false"
                         class="absolute right-4 top-[calc(env(safe-area-inset-top)+1rem)] w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/10">
-                        <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" fixed-width />
                     </button>
 
                     <Image v-if="websiteLogo?.image?.source" :src="websiteLogo.image.source"
@@ -928,7 +928,7 @@ if (isClient) {
                     <button v-if="hasContactOptionsPanel" @click="backToContactOptions"
                         :aria-label="trans('Back')"
                         class="-ml-2 mr-1 w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
-                        <FontAwesomeIcon :icon="faChevronLeft" class="w-3.5 h-3.5" />
+                        <FontAwesomeIcon :icon="faChevronLeft" class="w-3.5 h-3.5" fixed-width />
                     </button>
 
                     <span class="text-sm font-semibold">
@@ -957,14 +957,14 @@ if (isClient) {
                             class="relative" ref="menuRef">
                             <button @click.stop="isMenuOpen = !isMenuOpen"
                                 class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
-                                <FontAwesomeIcon :icon="faEllipsisVertical" class="w-4 h-4" />
+                                <FontAwesomeIcon :icon="faEllipsisVertical" class="w-4 h-4" fixed-width />
                             </button>
 
                             <div v-if="isMenuOpen"
                                 class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                                 <button @click="isMenuOpen = false; showCloseConfirm = true"
                                     class="menu-item text-red-600">
-                                    <FontAwesomeIcon :icon="faTimesCircle" />
+                                    <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
                                     {{ trans("Close Chat Session") }}
                                 </button>
                             </div>
@@ -972,7 +972,7 @@ if (isClient) {
 
                         <button v-if="isMobile" @click="open = false"
                             class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100">
-                            <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" />
+                            <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" fixed-width />
                         </button>
 
                     </div>
@@ -980,7 +980,7 @@ if (isClient) {
 
                 <div class="flex-1 min-h-0 flex flex-col">
                     <div v-if="isCheckingStatus" class="flex flex-col items-center bg-white">
-                        <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" />
+                        <FontAwesomeIcon :icon="faSpinner" class="animate-spin text-2xl" fixed-width />
                         <span class="text-sm">{{ trans("Connecting...") }}</span>
                     </div>
 
@@ -1028,7 +1028,7 @@ if (isClient) {
                                 <div class="sm:flex sm:items-start">
                                     <div
                                         class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
-                                        <FontAwesomeIcon :icon="faTimesCircle" class="text-red-600" />
+                                        <FontAwesomeIcon :icon="faTimesCircle" class="text-red-600" fixed-width />
                                     </div>
 
                                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">

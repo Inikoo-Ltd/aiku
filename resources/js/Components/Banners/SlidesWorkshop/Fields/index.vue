@@ -93,7 +93,7 @@
                           ]"
                           :aria-current="key === current ? 'page' : undefined"
                       >
-                          <FontAwesomeIcon v-if="item.icon" aria-hidden="true"
+                          <FontAwesomeIcon v-if="item.icon" fixed-width aria-hidden="true"
                           :class="[
                               key === current
                                   ? 'text-orange-500 group-hover:text-orange-500'
@@ -127,7 +127,7 @@
                                       <dt class="text-sm font-medium text-gray-500">
                                           <div class="inline-flex items-start leading-none">
                                               <!-- Icon: Required -->
-                                              <FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']" class="font-light text-[12px] text-red-400 mr-1"/>
+                                              <FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']" class="font-light text-[12px] text-red-400 mr-1" fixed-width/>
                                               <span>{{ fieldData.label }}</span>
                                           </div>
                                       </dt>

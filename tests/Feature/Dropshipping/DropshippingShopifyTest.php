@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\SyncCustomerSalesChannelPortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
@@ -1179,4 +1180,19 @@ test('the borrowed sku repair gives an unlinked portfolio its own sku back and l
     expect($repair->handle($borrower->refresh()))->toBe(RepairPortfoliosBorrowedSku::REPAIRED)
         ->and($borrower->refresh()->sku)->toBe(Str::lower($this->product->code))
         ->and($repair->borrowedSkuQuery($channel)->count())->toBe(0);
+});
+
+test('a sync of a channel whose portfolios were never uploaded reports it has nothing to send', function () {
+    Queue::fake();
+    $channel = shopifyProductChannel($this, 'product-sync-nothing-to-send')->customerSalesChannel;
+
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeTrue();
+
+    $portfolio->update(['platform_product_id' => 'gid://shopify/Product/7600']);
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeFalse();
+
+    $portfolio->update(['status' => false]);
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeTrue();
 });

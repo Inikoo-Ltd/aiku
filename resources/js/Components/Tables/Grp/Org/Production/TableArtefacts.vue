@@ -304,7 +304,7 @@ function productionRoute(artefact: { slug: string }) {
                     <template #button>
                         <div class="flex w-48 items-center justify-between gap-2 rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none">
                             <span class="truncate">{{ currentAction?.label }}</span>
-                            <FontAwesomeIcon icon="fal fa-chevron-down" class="text-xs text-gray-400" aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-chevron-down" class="text-xs text-gray-400" fixed-width aria-hidden="true" />
                         </div>
                     </template>
 

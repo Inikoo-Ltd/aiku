@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, ref, onMounted, onBeforeUnmount, computed, provide } from "vue"
+import { inject, ref, onMounted, onBeforeUnmount, computed, provide, defineAsyncComponent } from "vue"
 import { faCheck, faPlus, faMinus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Head, usePage } from "@inertiajs/vue3"
@@ -14,7 +14,7 @@ import IrisBlockRenderer from "@/Iris/Components/IrisBlockRenderer.vue"
 import { useStructuredData, getEntityImageUrls } from "@/Iris/Composables/useStructuredData"
 import { resolveProductImages } from "@/Composables/useProductPage"
 import { useRevealBlocks } from "@/Iris/Composables/useRevealBlocks"
-import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
+const ReviewsIris = defineAsyncComponent(() => import("@/Iris/Components/IrisBlocks/ReviewsIris.vue"))
 library.add(faCheck, faPlus, faMinus)
 
 const props = defineProps<{

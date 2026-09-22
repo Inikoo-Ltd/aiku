@@ -306,7 +306,7 @@ const generateRouteEditBarcode = () => {
                 class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
                 <div>{{ trans("No customer reference barcode") }}</div>
                 <div>
-                  <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" />
+                  <FontAwesomeIcon :icon="faEmptySet" class="text-3xl" fixed-width />
                 </div>
               </div>
               <div

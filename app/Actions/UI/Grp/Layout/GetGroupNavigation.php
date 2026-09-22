@@ -31,6 +31,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label'   => __("Catalogue"),
                         "tooltip" => __("Catalogue"),
                         "icon"    => ["fal", "fa-books"],
                         'root'    => 'grp.catalogue.show',
@@ -40,6 +41,7 @@ class GetGroupNavigation
                         ],
                     ],
                     [
+                        'label'   => __("Platform"),
                         "tooltip" => __("Platform"),
                         'icon'    => ['fal', 'fa-code-branch'],
                         'root'    => 'grp.platforms.index',
@@ -182,6 +184,15 @@ class GetGroupNavigation
                             'name' => 'grp.chat.staff.index',
                         ],
                     ],
+                    ...($user->hasGroupAccess() ? [[
+                        'label'   => __('Phone calls'),
+                        'tooltip' => __('Phone calls'),
+                        'icon'    => ['fal', 'fa-phone'],
+                        'root'    => 'grp.chat.phone_calls.',
+                        'route'   => [
+                            'name' => 'grp.chat.phone_calls.index',
+                        ],
+                    ]] : []),
                     [
                         'label'   => __('Reports'),
                         'tooltip' => __('Reports'),
@@ -304,8 +315,9 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label'   => __("Master Catalogue"),
                         "tooltip" => __("Master Catalogue"),
-                        "icon"    => ["fal", "fa-books"],
+                        "icon"    => ["fab", "fa-octopus-deploy"],
                         'root'    => 'grp.masters.dashboard',
                         "route"   => [
                             "name"       => 'grp.masters.dashboard',
@@ -393,6 +405,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label' => __('Dashboard'),
                         'icon'  => ['fal', 'fa-chart-network'],
                         'root'  => 'grp.supply-chain.dashboard',
                         'route' => [
@@ -518,6 +531,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label'   => __('System Administration'),
                         'tooltip' => __('System Administration'),
                         'icon'    => ['fal', 'fa-users-cog'],
                         'root'    => 'grp.sysadmin.dashboard',

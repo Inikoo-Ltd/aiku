@@ -357,7 +357,7 @@ const getSeverity = (type?: string) => {
                         getSeverity(warning.type) === 'success' ? 'text-green-800' :
                             getSeverity(warning.type) === 'error' ? 'text-red-800' :
                                 'text-blue-500'
-                ]" />
+                ]" fixed-width />
 
                 <!-- Content -->
                 <div class="flex flex-col">
@@ -400,7 +400,7 @@ const getSeverity = (type?: string) => {
 									  }
 									: { 'border-left': `4px solid transparent` },
 							]">
-                            <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true"
+                            <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true"
                                 class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[
 									tabActive[key]
 										? 'text-gray-400 group-hover:text-gray-500'
@@ -503,11 +503,11 @@ const getSeverity = (type?: string) => {
                     <button type="button" @click="toggleMobileSection(key)"
                         :aria-expanded="!isMobileSectionCollapsed(key)"
                         class="w-full bg-gray-200 py-3 px-5 flex items-center text-left font-medium">
-                        <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
+                        <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true" :icon="sectionData.icon"
                             class="flex-shrink-0 mr-3 h-5 w-5"
                             :class="[key === currentTab ? 'text-gray-400' : 'text-gray-500']" />
                         <span class="capitalize truncate">{{ sectionData.label }}</span>
-                        <FontAwesomeIcon icon="fal fa-chevron-down" aria-hidden="true"
+                        <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true"
                             class="ml-auto h-3 w-3 text-gray-500 transition-transform duration-200"
                             :class="isMobileSectionCollapsed(key) ? '' : 'rotate-180'" />
                     </button>

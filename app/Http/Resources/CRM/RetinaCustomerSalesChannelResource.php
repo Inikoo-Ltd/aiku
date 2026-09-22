@@ -83,6 +83,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
 
         // For now only used by ebay
         $platformCompletion = false;
+        $tiktokShopHasNoWarehouse = false;
         if ($customerSalesChannels->platform->type == PlatformTypeEnum::EBAY) {
             /** @var EbayUser $ebayUser */
             $ebayUser = $customerSalesChannels->user;
@@ -96,6 +97,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
 
             if ($tiktokUser) {
                 $platformCompletion = $tiktokUser->tiktok_shop_id && $tiktokUser->tiktok_shop_chiper && $tiktokUser->tiktok_warehouse_id;
+                $tiktokShopHasNoWarehouse = $tiktokUser->tiktok_shop_id && !$tiktokUser->tiktok_warehouse_id;
             }
         }
 
@@ -133,6 +135,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'store_url' => $siteUrl,
             'not_ready_reason' => Arr::get($this->settings, $customerSalesChannels->platform->type->value.'.not_ready_reason'),
             'platform_completion' => $platformCompletion,
+            'tiktok_shop_has_no_warehouse' => $tiktokShopHasNoWarehouse,
             'reconnect_route' => $reconnectRoute,
             'test_route'      => $testRoute,
             'delete_route'    => [

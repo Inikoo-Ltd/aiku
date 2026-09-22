@@ -23,6 +23,10 @@ const props = defineProps<{
             name: string,
             parameters: Record<string, any>
         }
+        route_products_by_codes?: {
+            name: string,
+            parameters: Record<string, any>
+        }
     }
     product_category_id?: number
 }>()
@@ -119,7 +123,7 @@ const SaveOrder = async () => {
         <!-- MAIN CONTENT -->
         <div class="bg-white border rounded-lg p-4">
 
-            <SetOrderingPositionOfProduct :data="listProducts.data" :disabled="!props.data?.editable"
+            <SetOrderingPositionOfProduct :data="listProducts.data" :paste-lookup-route="props.data?.route_products_by_codes" :disabled="!props.data?.editable"
                 @update:data="(event) => { listProducts.data.data = event, saveActive = true }"
                 :useDelete="true" @delete="(item) => {
                     listProducts.data.data = listProducts.data.data.filter((product: any) => product.id !== item.id),

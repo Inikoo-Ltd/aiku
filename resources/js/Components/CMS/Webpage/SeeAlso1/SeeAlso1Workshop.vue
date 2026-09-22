@@ -107,11 +107,11 @@ const isTrendingNow = computed(() => props.modelValue?.settings?.products_data?.
     }">
       <!-- Tombol Navigasi Custom -->
       <button ref="prevEl" class="swiper-nav-button hidden lg:block left-0 top-1/2">
-        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg"/>
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg" fixed-width/>
       </button>
 
       <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0 top-1/2">
-        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg"/>
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg" fixed-width/>
       </button>
 
       <!-- Swiper -->

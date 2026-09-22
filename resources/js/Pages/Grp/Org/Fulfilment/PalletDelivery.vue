@@ -689,7 +689,7 @@ const isModalUploadFileOpen = ref(false)
             }">
                 <div class="flex-shrink-0">
                     <font-awesome-icon :icon="['fad', 'exclamation-triangle']" class="text-lg"
-                        aria-hidden="true"
+                        fixed-width aria-hidden="true"
                         
                     />
                 </div>

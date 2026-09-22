@@ -60,12 +60,12 @@ defineExpose({
       >
         <template #decrementicon>
           <slot name="decrementicon">
-            <FontAwesomeIcon :icon="['fal', 'minus']" aria-hidden="true" />
+            <FontAwesomeIcon :icon="['fal', 'minus']" fixed-width aria-hidden="true" />
           </slot>
         </template>
         <template #incrementicon>
           <slot name="incrementicon">
-            <FontAwesomeIcon :icon="['fal', 'plus']" aria-hidden="true" />
+            <FontAwesomeIcon :icon="['fal', 'plus']" fixed-width aria-hidden="true" />
           </slot>
         </template>
       </InputNumber>
@@ -79,9 +79,9 @@ defineExpose({
         icon="fad fa-save"
         class="h-8 cursor-pointer"
         :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }"
-        aria-hidden="true"
+        fixed-width aria-hidden="true"
       />
-      <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+      <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
     </slot>
   </div>
   <slot name="bottom-button" :form="form"></slot>

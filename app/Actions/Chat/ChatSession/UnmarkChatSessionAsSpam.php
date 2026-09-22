@@ -39,6 +39,9 @@ class UnmarkChatSessionAsSpam
                 'spammed_by_agent_id' => null,
             ]);
 
+            ClassifyChatSessionNoise::humanDecided($chatSession, false);
+
+
             StoreChatEvent::make()->handle(
                 chatSession: $chatSession,
                 eventType: ChatEventTypeEnum::NOT_SPAM,

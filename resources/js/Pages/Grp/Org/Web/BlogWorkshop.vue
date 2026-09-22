@@ -231,14 +231,14 @@ console.log('props',props)
     <template #other>
       <button class="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:underline"
         v-tooltip="trans('Go to website')" @click="openWebsite">
-        <FontAwesomeIcon :icon="faExternalLink" size="lg" />
+        <FontAwesomeIcon :icon="faExternalLink" size="lg" fixed-width />
         <span>{{ trans('Open Site') }}</span>
       </button>
     </template>
   </PageHeading>
   <ConfirmDialog group="alert-publish">
     <template #icon>
-      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" />
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" fixed-width />
     </template>
   </ConfirmDialog>
 

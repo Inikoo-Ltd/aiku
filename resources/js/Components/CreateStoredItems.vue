@@ -216,7 +216,7 @@ const onSaveNameForNewStoredItem = async () => {
 				>
 					<template #nooptions="{ search }: { search: string }">
 						<div class="px-2 py-3" @click="() => createStoredItems({ id: search, reference: search }, [])">
-							<font-awesome-icon v-if="search !== '' || search" :icon="['fas', 'plus']" class="mr-3" />
+							<font-awesome-icon v-if="search !== '' || search" :icon="['fas', 'plus']" class="mr-3" fixed-width />
 							{{ search !== "" || search ? `${trans(`Create`)} : ${search}` : trans("No Result") }}
 						</div>
 					</template>
@@ -226,7 +226,7 @@ const onSaveNameForNewStoredItem = async () => {
 						<div v-if="search && options?.length" class="border-t border-gray-300">
 							<!-- {{ [...options.options.map(options => options.reference)] }} === -->
 							<div v-if="!options?.some(option => option.reference === search)" class="bg-indigo-100 hover:bg-indigo-200 px-2 py-3" @click="() => createStoredItems({ id: search, reference: search }, [])">
-								<font-awesome-icon :icon="['fas', 'plus']" class="mr-3" />
+								<font-awesome-icon :icon="['fas', 'plus']" class="mr-3" fixed-width />
 								{{ `${trans(`Create`)}: ` }} <Tag :label="search" no-hover-color /> <br>
 							</div>
 						</div>
@@ -238,7 +238,7 @@ const onSaveNameForNewStoredItem = async () => {
 
 					<template #noresults="{ search }: { search: string }">
 						<div class="px-2 py-3" @click="() => createStoredItems({ id: search, reference: search }, [])">
-							<font-awesome-icon :icon="['fas', 'plus']" class="mr-3" />
+							<font-awesome-icon :icon="['fas', 'plus']" class="mr-3" fixed-width />
 							{{ `${trans(`Create`)} : ${search}` }}
 						</div>
 					</template>
@@ -247,9 +247,9 @@ const onSaveNameForNewStoredItem = async () => {
 						<div class="px-2">
 							<LoadingIcon v-if="isDeleteStoredItem" class="text-red-500 text-sm mr-1" />
 							<font-awesome-icon v-else-if="!disabledSelect.disabled" :icon="['fas', 'chevron-down']"
-								class="text-xs mr-2" />
+								class="text-xs mr-2" fixed-width />
 							<font-awesome-icon v-else :icon="faTrashAlt" class="text-xs mr-2 text-red-300 hover:text-red-600"
-								@click="deleteStoredItems(false)" />
+								@click="deleteStoredItems(false)" fixed-width />
 						</div>
 					</template>
 
@@ -258,7 +258,7 @@ const onSaveNameForNewStoredItem = async () => {
 							{{ value["reference"] }}
 							<Tag label="New" :theme="4" v-if="newStoredItem" >
 								<template #label>
-									<font-awesome-icon  :icon="faSparkles" v-tooltip="'New Stored Item'" class="text-xs  text-yellow-500"/>
+									<font-awesome-icon  :icon="faSparkles" v-tooltip="'New Stored Item'" class="text-xs  text-yellow-500" fixed-width/>
 									New
 								</template>
 							</Tag>
@@ -280,7 +280,7 @@ const onSaveNameForNewStoredItem = async () => {
 					<span class="leading-none">{{ trans("Name") }}</span>
 					<FontAwesomeIcon
 						icon="fas fa-asterisk"
-						class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
+						class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" fixed-width />
 			</label>
 
 			<PureInput
@@ -349,7 +349,7 @@ const onSaveNameForNewStoredItem = async () => {
 	</div>
 
 	<div v-else>
-		<div class="flex justify-center mb-6"><font-awesome-icon :icon="['far', 'exclamation-triangle']" class="text-8xl text-yellow-500"/></div>
+		<div class="flex justify-center mb-6"><font-awesome-icon :icon="['far', 'exclamation-triangle']" class="text-8xl text-yellow-500" fixed-width/></div>
 
 		<div class="text-center font-semibold text-2xl mb-6">
 			{{ trans('Do you want to delete') }} {{ newStoredItem?.reference }} ?
