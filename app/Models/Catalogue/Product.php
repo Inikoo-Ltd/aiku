@@ -258,6 +258,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|Product onlyTrashed()
  * @method static Builder<static>|Product query()
  * @method static Builder<static>|Product visibleToCustomer(?int $customerId)
+ * @method static Builder<static>|Product sellableToCustomer(?int $customerId)
  * @method static Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|Product whereLocale(string $column, string $locale)
@@ -585,6 +586,29 @@ class Product extends Model implements Auditable, HasMedia
                     $sub->from('product_has_exclusive_customers')
                         ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
                         ->where('product_has_exclusive_customers.customer_id', $customerId);
+                });
+            }
+        });
+    }
+
+    /**
+     * Products a given customer may be sold: everything on sale, plus the active products sold
+     * exclusively to them. An exclusive product is not for sale because it is not shown on the
+     * website, which says nothing about whether this customer can buy it.
+     */
+    public function scopeSellableToCustomer(Builder $query, ?int $customerId): Builder
+    {
+        return $query->where(function (Builder $query) use ($customerId) {
+            $query->where('products.is_for_sale', true);
+
+            if ($customerId) {
+                $query->orWhere(function (Builder $query) use ($customerId) {
+                    $query->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+                        ->whereExists(function ($sub) use ($customerId) {
+                            $sub->from('product_has_exclusive_customers')
+                                ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                                ->where('product_has_exclusive_customers.customer_id', $customerId);
+                        });
                 });
             }
         });
