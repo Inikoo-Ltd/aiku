@@ -17,7 +17,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -1796,9 +1796,10 @@ onUnmounted(() => {
                         </thead>
                         <tbody>
                             <tr v-for="kind in KINDS" :key="kind.key">
-                                <td class="text-[9px] font-bold text-center border-r border-slate-100"
+                                <td v-tooltip="kind.label" class="text-[9px] font-bold text-center border-r border-slate-100"
                                     :class="kind.key === 'customer' ? 'text-green-500' : 'text-blue-400'">
-                                    {{ kind.initial }}
+                                    <FontAwesomeIcon v-if="kind.key === 'customer'" :icon="faUser" class="text-[10px]" fixed-width aria-hidden="true" />
+                                    <template v-else>{{ kind.initial }}</template>
                                 </td>
                                 <td v-for="channel in inbox.channels" :key="channel.key"
                                     class="border border-slate-100">
