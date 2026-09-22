@@ -2015,7 +2015,7 @@ onUnmounted(() => {
                             :class="viewMode === 'team' ? 'bg-white shadow-sm text-gray-800 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                             @click="viewMode = 'team'">
                             {{ ctrans("Colleagues' Chats") }}
-                            <span v-if="colleaguesChatsCount" class="tabular-nums text-gray-500">{{ colleaguesChatsCount }}</span>
+                            <span class="tabular-nums text-gray-500">{{ colleaguesChatsCount }}</span>
                             <span v-if="teamUnreadForShop"
                                 v-tooltip="ctrans('Unread chats held by colleagues in this inbox — take over to reply')"
                                 class="min-w-[15px] px-1 text-[9px] leading-[15px] text-white rounded-full text-center bg-amber-500">
