@@ -1604,10 +1604,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
         <template #other>
-            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
-            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat" class="mr-2" />
-            <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
-                <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+            <div v-if="(!props.readonly || isShowProforma) && !is_shop_external && currentTab === 'attachments'" class="flex">
+                <Button @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
             <div v-if="is_shop_external && external_shop" class="absolute -top-1 md:top-auto md:bottom-0.5 left-0 md:left-12 text-xxs">
@@ -1618,6 +1616,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     {{ external_shop?.engine_label }}
                 </div>
             </div>
+            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat"/>
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id"/>
         </template>
 
         <template #button-replacement="{ action }">
