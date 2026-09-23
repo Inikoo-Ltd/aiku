@@ -35,7 +35,6 @@ class UpdateCustomerComms extends OrgAction
                 'is_subscribed_to_abandoned_cart',
                 'is_subscribed_to_reorder_reminder',
                 'is_subscribed_to_basket_low_stock',
-                'is_subscribed_to_basket_on_offer',
                 'is_subscribed_to_basket_reminder',
                 'is_subscribed_to_whatsapp_newsletter',
             ])
@@ -59,7 +58,6 @@ class UpdateCustomerComms extends OrgAction
             'is_subscribed_to_abandoned_cart'   => ['sometimes', 'boolean'],
             'is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
             'is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
-            'is_subscribed_to_basket_on_offer' => ['sometimes', 'boolean'],
             'is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
             'is_subscribed_to_price_change_notification' => ['sometimes', 'boolean'],
             'is_subscribed_to_gold_reward_reminder' => ['sometimes', 'boolean'],

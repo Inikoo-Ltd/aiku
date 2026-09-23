@@ -43,11 +43,6 @@ class ProcessBasketOnOfferPerOutbox
         $baseQuery->where('customers.shop_id', $outbox->shop_id);
         $baseQuery->whereNull('customers.deleted_at');
 
-        $baseQuery->join('customer_comms', function ($join) {
-            $join->on('customers.id', '=', 'customer_comms.customer_id')
-                ->where('customer_comms.is_subscribed_to_basket_on_offer', true);
-        });
-
         $baseQuery->join('orders', function ($join) {
             $join->on('customers.id', '=', 'orders.customer_id');
             $join->where('orders.state', OrderStateEnum::CREATING->value);

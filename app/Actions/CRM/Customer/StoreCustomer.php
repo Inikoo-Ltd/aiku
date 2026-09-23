@@ -227,7 +227,6 @@ class StoreCustomer extends OrgAction
             'is_subscribed_to_abandoned_cart'   => true,
             'is_subscribed_to_reorder_reminder' => true,
             'is_subscribed_to_basket_low_stock' => true,
-            'is_subscribed_to_basket_on_offer' => true,
             'is_subscribed_to_basket_reminder'  => true,
 
         ];
@@ -316,7 +315,6 @@ class StoreCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_abandoned_cart'   => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_on_offer' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_whatsapp_newsletter' => ['sometimes', 'boolean'],
             'traffic_sources'                                       => ['sometimes', 'nullable'],
