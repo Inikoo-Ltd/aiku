@@ -67,6 +67,7 @@ class GetOrgStockShowcase
                         'orgStock'     => $orgStock->slug,
                     ],
                 ],
+                'label_options'      => GetOrgStockLabelOptions::run($orgStock),
                 'future_orders'      => $this->getFutureOrders($orgStock),
                 'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
                 'has_no_products'    => $this->hasNoProducts($orgStock),

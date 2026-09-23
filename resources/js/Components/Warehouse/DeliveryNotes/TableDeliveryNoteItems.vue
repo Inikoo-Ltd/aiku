@@ -13,12 +13,12 @@ import Icon from "@/Components/Icon.vue";
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue";
 import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed, watch, onUnmounted } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faStopCircle } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faStopCircle, faFilePdf } from "@fal";
 import { faSkull, faWandMagic, faExclamationTriangle } from "@fas";
+import { faSpinnerThird } from "@fad";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
@@ -36,6 +36,7 @@ import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import axios from "axios";
 import Image from "@common/Components/Image.vue"
 import LabelItemsWaitingForWarehouse from "./LabelItemsWaitingForWarehouse.vue"
+import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelModal.vue"
 import LabelItemsWaitingForCrm from "./LabelItemsWaitingForCrm.vue"
 import LoadingOverlay2 from "@/Components/Utils/LoadingOverlay2.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -47,7 +48,7 @@ import OrgStockHandlingNotes from "./OrgStockHandlingNotes.vue"
 import BarcodeDisplay from "@/Components/DataDisplay/BarcodeDisplay.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faExclamationTriangle);
+library.add(faFilePdf, faSpinnerThird, faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faWandMagic, faBox, faBarcode, faExclamationTriangle);
 
 
 const props = defineProps<{
@@ -76,6 +77,40 @@ const layout = inject('layout', layoutStructure)
 
 const currentRouteParams = route().params
 const currentRouteName = route().current()
+
+const labelModalOpen = ref(false)
+const labelOptions = ref<any>(null)
+const labelRoute = ref<routeType | null>(null)
+const labelLoadingFor = ref<number | string | null>(null)
+
+const warehouseSlug = computed(() => props.warehouse?.slug ?? currentRouteParams.warehouse)
+
+async function openLabelModal(deliveryNoteItem: DeliveryNoteItem) {
+    if (!deliveryNoteItem.org_stock_id || !warehouseSlug.value || labelLoadingFor.value) {
+        return
+    }
+
+    labelLoadingFor.value = deliveryNoteItem.org_stock_id
+
+    try {
+        const { data } = await axios.get(route("grp.json.warehouse.org_stock.label_options", {
+            warehouse: warehouseSlug.value,
+            orgStock: deliveryNoteItem.org_stock_id,
+        }))
+
+        labelOptions.value = data.options
+        labelRoute.value = data.label_route
+        labelModalOpen.value = true
+    } catch (error) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans("Could not load the label options"),
+            type: "error",
+        })
+    } finally {
+        labelLoadingFor.value = null
+    }
+}
 
 const orgStockRouteCache = new Map<number | string, string>()
 function orgStockRoute(deliveryNoteItem: DeliveryNoteItem) {
@@ -166,14 +201,14 @@ onUnmounted(() => {
 //             preserveScroll: true,
 //             onSuccess: () => {
 //                 notify({
-//                     title: trans("Success"),
+//                     title: ctrans("Success"),
 //                     text: "",
 //                     type: "error"
 //                 });
 //             },
 //             onError: (error) => {
 //                 notify({
-//                     title: trans("Something went wrong"),
+//                     title: ctrans("Something went wrong"),
 //                     text: "",
 //                     type: "error"
 //                 });
@@ -295,16 +330,16 @@ const onSubmitEditExpiryDate = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully set batch code"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully set batch code"),
                     type: "success"
                 })
                 onCloseModalExpiryDate()
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set batch code. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to set batch code. Try again"),
                     type: "error"
                 })
             },
@@ -357,16 +392,16 @@ const onSubmitPickMagicPlace = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully pick from magic place"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully pick from magic place"),
                     type: "success"
                 })
                 onCloseModalPickMagicPlace()
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to pick from magic place. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to pick from magic place. Try again"),
                     type: "error"
                 })
             },
@@ -503,8 +538,8 @@ const submitTransactionAsWaiting = () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully set item as waiting"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully set item as waiting"),
                     type: "success"
                 })
                 dataToSendAsWaiting.value.note = ''
@@ -512,8 +547,8 @@ const submitTransactionAsWaiting = () => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set item as waiting. Try again"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to set item as waiting. Try again"),
                     type: "error"
                 })
             },
@@ -648,11 +683,11 @@ const onSubmitPickingBatchCode = () => {
             preserveState: true,
             onStart: () => { isLoadingSubmitPickingBatchCode.value = true },
             onSuccess: () => {
-                notify({ title: trans("Success"), text: trans("Successfully set batch code"), type: "success" })
+                notify({ title: ctrans("Success"), text: ctrans("Successfully set batch code"), type: "success" })
                 onCloseModalPickingBatchCode()
             },
             onError: () => {
-                notify({ title: trans("Something went wrong"), text: trans("Failed to set batch code. Try again"), type: "error" })
+                notify({ title: ctrans("Something went wrong"), text: ctrans("Failed to set batch code. Try again"), type: "error" })
             },
             onFinish: () => { isLoadingSubmitPickingBatchCode.value = false },
         }
@@ -680,7 +715,7 @@ const onSubmitSplitPicking = () => {
     const qty = Number(splitQuantity.value)
     const maxQty = Number(selectedPickingForSplit.value.quantity_picked)
     if (isNaN(qty) || qty <= 0 || qty >= maxQty) {
-        notify({ title: trans("Invalid quantity"), text: trans("Quantity to split must be greater than 0 and less than :max", { max: maxQty }), type: "error" })
+        notify({ title: ctrans("Invalid quantity"), text: ctrans("Quantity to split must be greater than 0 and less than :max", { max: maxQty }), type: "error" })
         return
     }
 
@@ -692,12 +727,12 @@ const onSubmitSplitPicking = () => {
             preserveState: true,
             onStart: () => { isLoadingSubmitSplitPicking.value = true },
             onSuccess: () => {
-                notify({ title: trans("Success"), text: trans("Successfully split picking"), type: "success" })
+                notify({ title: ctrans("Success"), text: ctrans("Successfully split picking"), type: "success" })
                 onCloseModalSplitPicking()
             },
             onError: (errors) => {
-                const errorMsg = get(errors, 'message') || trans("Failed to split picking. Try again")
-                notify({ title: trans("Something went wrong"), text: errorMsg, type: "error" })
+                const errorMsg = get(errors, 'message') || ctrans("Failed to split picking. Try again")
+                notify({ title: ctrans("Something went wrong"), text: errorMsg, type: "error" })
             },
             onFinish: () => { isLoadingSubmitSplitPicking.value = false },
         }
@@ -722,7 +757,7 @@ const onSetItemToUndoWaitingWarehouse = () => {
         onSuccess: () => {
             isOpenModalUndoWaitingWarehouse.value = false
             notify({
-                title: trans("Success") + '!',
+                title: ctrans("Success") + '!',
                 text: ctrans('Item :itemName undo the quantity waiting warehouse', { itemName: selectedItemToUndoWaitingWarehouse.value?.org_stock_name}),
                 type: "success",
             })
@@ -845,7 +880,7 @@ const warningMsg = computed(() => {
 
             <div v-else-if="action?.key === 'open-todo-items'" class="mt-4 flex justify-center">
                 <Button
-                    :label="trans('Open todo items')"
+                    :label="ctrans('Open todo items')"
                     icon="fal fa-clipboard-list-check"
                     iconRight="fal fa-arrow-right"
                     @click="emit('open-tab', 'picking_todo_items')"
@@ -910,9 +945,24 @@ const warningMsg = computed(() => {
 
         <!-- Column: Reference -->
         <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
-            <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
-                {{ deliveryNoteItem.org_stock_code }}
-            </Link>
+            <span class="inline-flex items-center gap-x-1.5 whitespace-nowrap">
+                <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
+                    {{ deliveryNoteItem.org_stock_code }}
+                </Link>
+                <button
+                    v-if="deliveryNoteItem.org_stock_id && warehouseSlug"
+                    type="button"
+                    v-tooltip="ctrans('Print label')"
+                    class="shrink-0 text-gray-500 transition hover:text-[--app-accent] disabled:cursor-wait"
+                    :disabled="labelLoadingFor === deliveryNoteItem.org_stock_id"
+                    @click="openLabelModal(deliveryNoteItem)">
+                    <FontAwesomeIcon
+                        :icon="labelLoadingFor === deliveryNoteItem.org_stock_id ? 'fad fa-spinner-third' : 'fal fa-file-pdf'"
+                        :spin="labelLoadingFor === deliveryNoteItem.org_stock_id"
+                        :class="labelLoadingFor === deliveryNoteItem.org_stock_id ? 'text-[--app-accent]' : ''"
+                        fixed-width aria-hidden="true" />
+                </button>
+            </span>
             <span v-for="un_number in deliveryNoteItem.un_numbers" v-tooltip="un_number?.shipping_name ?? ''" class="border border-red-700 rounded-sm px-1 text-red-700 bg-amber-500 ml-1" :class="un_number?.shipping_name ? 'cursor-pointer' : ''">
                 {{ un_number.number }}
             </span>
@@ -1076,7 +1126,7 @@ const warningMsg = computed(() => {
                 </span>
             </div>
             <span v-else class="text-gray-400 italic text-xs">
-                {{ trans("No batch code set") }}
+                {{ ctrans("No batch code set") }}
             </span>
         </template>
 
@@ -1129,7 +1179,7 @@ const warningMsg = computed(() => {
                         }" />
                 </div> -->
 
-                <!-- <div v-else-if="Number(item.quantity_not_picked > 0)" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
+                <!-- <div v-else-if="Number(item.quantity_not_picked > 0)" v-tooltip="ctrans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
                     <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
                     {{ Number(item.quantity_not_picked) }}
                 </div> -->
@@ -1206,7 +1256,7 @@ const warningMsg = computed(() => {
                             {{ picking.location_code }}
                         </span>
 
-                        <div v-tooltip="trans('Total picked quantity in this location')"
+                        <div v-tooltip="ctrans('Total picked quantity in this location')"
                             class="text-gray-500 whitespace-nowrap">
                             <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width
                                 aria-hidden="true" />
@@ -1284,7 +1334,7 @@ const warningMsg = computed(() => {
             </div>
 
             <div v-else class="text-xs text-gray-400 italic">
-                {{ trans("No item picked yet") }}
+                {{ ctrans("No item picked yet") }}
             </div>
 
             <!-- Section: items are waiting for warehouse -->
@@ -1345,7 +1395,7 @@ const warningMsg = computed(() => {
                                 <template #save="{ isProcessing, isDirty, onSaveViaForm }">
                                     <div class="flex gap-x-8 w-fit">
                                         <ButtonWithLink
-                                            v-tooltip="trans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
+                                            v-tooltip="ctrans('Pick all required quantity in location :xlocation', { xlocation: findLocation(itemValue.locations, get(selectedLocationCode, [itemValue.id], null)).location_code || '-' })"
                                             icon="fal fa-clipboard-list-check"
                                             :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                                             :size="screenType != 'mobile' ? 'xs' : 'md'"
@@ -1381,7 +1431,7 @@ const warningMsg = computed(() => {
                                 @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
                                 type="warning"
                                 key="4"
-                                v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
+                                v-tooltip="ctrans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
                                 :size="screenType == 'desktop' ? 'sm' : 'lg'"
                                 method="post"
                             >
@@ -1408,7 +1458,7 @@ const warningMsg = computed(() => {
                                         :size="screenType == 'desktop' ? 'sm' : 'lg'"
                                         :routeTarget="itemValue.not_picking_route"
                                         :bindToLink="{preserveScroll: true}"
-                                        v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: (itemValue.quantity_to_pick ?? 0) < 0 ? '0' : locale.number(itemValue.quantity_to_pick ?? 0)})"
+                                        v-tooltip="ctrans('Set :numberNotPicked as not picked', { numberNotPicked: (itemValue.quantity_to_pick ?? 0) < 0 ? '0' : locale.number(itemValue.quantity_to_pick ?? 0)})"
                                     >
                                         <template #label>
                                             <div>
@@ -1423,7 +1473,7 @@ const warningMsg = computed(() => {
                                         type="tertiary"
                                         iconRight="fal fa-hourglass-half"
                                         :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                        v-tooltip="trans('Set :numberNotPicked as waiting', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                        v-tooltip="ctrans('Set :numberNotPicked as waiting', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
                                     >
                                         <template #label>
                                             <div>
@@ -1442,7 +1492,7 @@ const warningMsg = computed(() => {
                                     :size="screenType == 'desktop' ? 'sm' : 'lg'"
                                     :routeTarget="itemValue.not_picking_route"
                                     :bindToLink="{preserveScroll: true}"
-                                    v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
+                                    v-tooltip="ctrans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(itemValue.quantity_to_pick ) || '0'})"
                                 >
                                     <template #label>
                                         <div>
@@ -1466,7 +1516,7 @@ const warningMsg = computed(() => {
                 </div>
 
                 <div v-else class="flex justify-between gap-x-2">
-                    <div class="italic text-gray-400">{{ trans("No locations found") }}</div>
+                    <div class="italic text-gray-400">{{ ctrans("No locations found") }}</div>
                     <!-- {{ itemValue.quantity_to_pick }} -->
 
                     <div class="flex gap-x-2 gap-y-1 items-center">
@@ -1474,7 +1524,7 @@ const warningMsg = computed(() => {
                             @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
                             type="warning"
                             key="4"
-                            v-tooltip="trans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
+                            v-tooltip="ctrans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
                             :size="screenType == 'desktop' ? 'sm' : 'lg'"
                         >
                             <template #label>
@@ -1853,7 +1903,7 @@ const warningMsg = computed(() => {
             />
             <Button
                 @click="() => submitTransactionAsWaiting()"
-                :label="trans('Set as waiting')"
+                :label="ctrans('Set as waiting')"
                 full
                 iconRight="far fa-arrow-right"
                 :loading="isLoadingSetAsWaiting"
@@ -1938,7 +1988,7 @@ const warningMsg = computed(() => {
                                 :loading="isLoadingUndoWaitingWarehouse"
                                 @click="() => (onSetItemToUndoWaitingWarehouse())"
                                 type="red"
-                                xlabel="props.noLabel ?? trans('Delete')"
+                                xlabel="props.noLabel ?? ctrans('Delete')"
                                 :icon="'far fa-trash-alt'"
                                 full
                                 :label="ctrans('Yes, undo waiting')"
@@ -1964,7 +2014,7 @@ const warningMsg = computed(() => {
     <!-- Modal: Set batch code per picking (2) -->
     <Modal :isOpen="isModalPickingBatchCode" @onClose="onCloseModalPickingBatchCode" width="w-full max-w-lg">
         <div class="text-center mb-4">
-            <div class="font-semibold text-2xl">{{ trans('Batch Code') }}</div>
+            <div class="font-semibold text-2xl">{{ ctrans('Batch Code') }}</div>
             <div class="opacity-80 italic text-sm">
                 <span>{{ selectedPickingForBatchCode?.location_code ? ctrans('Location: :loc', { loc: selectedPickingForBatchCode.location_code }) : '' }} || </span>
                 <span>{{ ctrans("Quantity") }}: {{ selectedPickingForBatchCode?.quantity_picked }}</span>
@@ -1973,7 +2023,7 @@ const warningMsg = computed(() => {
 
         <div class="flex flex-col items-center gap-4">
             <div class="w-full">
-                <label class="block text-sm font-medium mb-2">{{ trans("Batch code") }}:</label>
+                <label class="block text-sm font-medium mb-2">{{ ctrans("Batch code") }}:</label>
                 <PureMultiselectInfiniteScroll
                     v-if="selectedPickingForBatchCode?.batch_codes_fetch_route"
                     v-model="selectedPickingBatchCode"
@@ -1982,12 +2032,12 @@ const warningMsg = computed(() => {
                     labelProp="label"
                     valueProp="id"
                     object
-                    :placeholder="trans('Search batch code...')"
+                    :placeholder="ctrans('Search batch code...')"
                     :disabled="isLoadingSubmitPickingBatchCode"
                 >
                     <template #afterlist>
                         <div class="text-center m-2 py-1 cursor-auto text-blue-400 text-sm">
-                            {{ trans("Don't see the batch code") }}?
+                            {{ ctrans("Don't see the batch code") }}?
 
                             <Link
                                 :href="route('grp.org.warehouses.show.inventory.batch_codes.index', {
@@ -1996,7 +2046,7 @@ const warningMsg = computed(() => {
                                 })"
                                 class="underline hover:text-blue-700 cursor-pointer"
                             >
-                                {{ trans("See the batch codes list") }}
+                                {{ ctrans("See the batch codes list") }}
                             </Link>
                         </div>
                     </template>
@@ -2010,7 +2060,7 @@ const warningMsg = computed(() => {
                     :disabled="isLoadingSubmitPickingBatchCode"
                     icon="far fa-arrow-left"
                     @click="onCloseModalPickingBatchCode"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                 />
                 <Button
                     type="primary"
@@ -2019,7 +2069,7 @@ const warningMsg = computed(() => {
                     icon="fad fa-save"
                     @click="onSubmitPickingBatchCode"
                     full
-                    :label="trans('Save')"
+                    :label="ctrans('Save')"
                 />
             </div>
         </div>
@@ -2027,7 +2077,7 @@ const warningMsg = computed(() => {
 
     <Modal :isOpen="isModalSplitPicking" @onClose="onCloseModalSplitPicking" width="w-full max-w-lg">
         <div class="text-center mb-4">
-            <div class="font-semibold text-2xl">{{ trans('Split Picking') }}</div>
+            <div class="font-semibold text-2xl">{{ ctrans('Split Picking') }}</div>
             <div class="opacity-80 italic text-sm">
                 <span v-if="selectedPickingForSplit?.location_code">{{ ctrans('Location: :loc', { loc: selectedPickingForSplit.location_code }) }} || </span>
                 <span>{{ ctrans("Total Quantity") }}: {{ selectedPickingForSplit?.quantity_picked }}</span>
@@ -2036,7 +2086,7 @@ const warningMsg = computed(() => {
 
         <div class="flex flex-col gap-4">
             <div class="w-full">
-                <label class="block text-sm font-medium mb-2">{{ trans("Quantity to split off") }}:</label>
+                <label class="block text-sm font-medium mb-2">{{ ctrans("Quantity to split off") }}:</label>
                 <PureInput
                     type="number"
                     v-model="splitQuantity"
@@ -2058,7 +2108,7 @@ const warningMsg = computed(() => {
                     :disabled="isLoadingSubmitSplitPicking"
                     icon="far fa-arrow-left"
                     @click="onCloseModalSplitPicking"
-                    :label="trans('Cancel')"
+                    :label="ctrans('Cancel')"
                 />
                 <Button
                     type="primary"
@@ -2067,9 +2117,17 @@ const warningMsg = computed(() => {
                     icon="fad fa-scissors"
                     @click="onSubmitSplitPicking"
                     full
-                    :label="trans('Split')"
+                    :label="ctrans('Split')"
                 />
             </div>
         </div>
     </Modal>
+
+    <OrgStockLabelModal
+        v-if="labelOptions && labelRoute"
+        :isOpen="labelModalOpen"
+        level="sko"
+        :labelRoute="labelRoute"
+        :options="labelOptions"
+        @onClose="labelModalOpen = false" />
 </template>
