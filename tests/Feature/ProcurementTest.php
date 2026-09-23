@@ -167,6 +167,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockStats;
 use App\Models\Inventory\Warehouse;
 use App\Models\GoodsIn\StockDeliveryItem;
+use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -1218,6 +1219,18 @@ test('update supplier delivery items', function (StockDelivery $stockDelivery) {
 
     return $stockDeliveryItem;
 })->depends('create supplier delivery');
+
+test('stock delivery item without a supplier product shows the SKO code and name', function (StockDelivery $stockDelivery) {
+    $stockDeliveryItem = $stockDelivery->items()->first();
+    $stockDeliveryItem->supplier_product_id = null;
+    $stockDeliveryItem->setAttribute('org_stock_code', $stockDeliveryItem->orgStock->code);
+    $stockDeliveryItem->setAttribute('org_stock_name', $stockDeliveryItem->orgStock->name);
+
+    $row = StockDeliveryItemResource::make($stockDeliveryItem)->toArray(request());
+
+    expect($row['code'])->toBe($stockDeliveryItem->orgStock->code)
+        ->and($row['name'])->toBe($stockDeliveryItem->orgStock->name);
+})->depends('create supplier delivery items');
 
 test('aurora fetch moves an item to the stock delivery it now belongs to', function (StockDelivery $stockDelivery) {
     $newStockDelivery = StoreStockDelivery::make()->action($stockDelivery->parent, [

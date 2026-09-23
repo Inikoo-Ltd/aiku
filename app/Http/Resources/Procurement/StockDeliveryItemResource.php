@@ -96,8 +96,8 @@ class StockDeliveryItemResource extends JsonResource
         return [
             'id'                    => $item->id,
             'slug'                  => $supplierProduct?->slug,
-            'code'                  => $supplierProduct?->code,
-            'name'                  => $supplierProduct?->name,
+            'code'                  => $supplierProduct?->code ?? $item->org_stock_code,
+            'name'                  => $supplierProduct?->name ?? $item->org_stock_name,
             'units_per_pack'        => $supplierProduct?->units_per_pack,
             'units_per_carton'      => $supplierProduct?->units_per_carton,
             'unit_quantity'         => $item->unit_quantity,
