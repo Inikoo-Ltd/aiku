@@ -3,8 +3,8 @@ import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineA
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import {
 import { useComposerDraft } from "@/Composables/useComposerDraft"
+import {
     faPaperPlane,
     faArrowLeft,
     faImage,

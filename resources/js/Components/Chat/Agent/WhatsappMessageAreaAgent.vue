@@ -5,8 +5,8 @@ import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import {
 import { useComposerDraft } from "@/Composables/useComposerDraft"
+import {
     faPaperPlane,
     faArrowLeft,
     faImage,
