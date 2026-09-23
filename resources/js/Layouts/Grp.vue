@@ -18,6 +18,7 @@ import TopBar from "@/Layouts/Grp/TopBar.vue"
 import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import MessagingSideBar from "@/Layouts/Grp/MessagingSideBar.vue"
+import ChatPane from "@/Layouts/Grp/ChatPane.vue"
 import MessagingDock from "@/Components/Messaging/MessagingDock.vue"
 import PhoneCallDock from "@/Components/Chat/PhoneCallDock.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
@@ -51,7 +52,7 @@ initialiseApp()
 
 
 const layout = useLayoutStore()
-const isEmbedded = usePage().url.includes("embed=1")
+const isEmbedded = window.self !== window.top
 const sidebarOpen = ref(false)
 useAppAccentVariables(() => layout.app?.theme)
 
@@ -154,7 +155,9 @@ const checkScreenType = () => {
 provide("screenType", screenType)
 
 onMounted(() => {
-    startWorkAlerts(useStaffMessaging())
+    if (!isEmbedded) {
+        startWorkAlerts(useStaffMessaging())
+    }
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
     onCheckAppVersion()
@@ -203,7 +206,7 @@ const safeTheme = computed(() => {
 
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
-            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
+            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4 md:pr-[calc(1rem_+_var(--chat-pane,0px))]"
             :class="[
 				layout.leftSidebar.show
 					? (layout.messagingSidebar.show
@@ -235,7 +238,7 @@ const safeTheme = computed(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
 				'mr-4',
@@ -246,6 +249,7 @@ const safeTheme = computed(() => {
         </main>
 
         <MessagingSideBar />
+        <ChatPane />
         <Teleport to="body">
             <MessagingDock />
         </Teleport>

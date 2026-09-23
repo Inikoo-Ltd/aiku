@@ -1,6 +1,6 @@
 import axios from "axios"
 import { computed, ref, watch } from "vue"
-import { router } from "@inertiajs/vue3"
+import { openChatPane } from "@/Composables/useChatPane"
 import { useLayoutStore } from "@/Stores/layout"
 import { ctrans } from "@/Composables/useTrans"
 
@@ -85,7 +85,6 @@ const nobodyWaiting = (): Waiting => ({ sessions: 0, oldest_at: null, url: null,
 
 export const chatsWaiting = ref<Waiting>(nobodyWaiting())
 export const emailsWaiting = ref<Waiting>(nobodyWaiting())
-export const chatListVersion = ref(0)
 export const customerPeek = ref<{ key: string; channel: string; isEmail: boolean; sender: string; subject: string | null; text: string; url: string | null } | null>(null)
 export const desktopAlerts = ref<NotificationPermission | "unsupported">(typeof Notification === "undefined" ? "unsupported" : Notification.permission)
 
@@ -118,7 +117,7 @@ const applySummary = (data: any) => {
 	emailsWaiting.value = data?.waiting?.email ?? nobodyWaiting()
 }
 
-export const fetchUnreadCount = async (
+const fetchUnreadCount = async (
 	baseUrl: string,
 	activeTab: string,
 	myAgentId: number
@@ -304,7 +303,7 @@ const showDesktopAlert = (alert: Alert) => {
 			if (alert.onOpen) {
 				alert.onOpen()
 			} else if (alert.url) {
-				router.visit(alert.url)
+				openChatPane(alert.url)
 			}
 		}
 	} catch { }
@@ -406,7 +405,6 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	setInterval(() => refresh(25_000), 30_000)
 
 	const onChatListEvent = (event: any) => {
-		chatListVersion.value++
 		refresh(3000)
 
 		const message = event?.message

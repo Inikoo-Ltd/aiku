@@ -5,18 +5,16 @@
   -->
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, inject, onMounted, onUnmounted, ref, watch } from "vue"
-import { router } from "@inertiajs/vue3"
+import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faUserClock, faBell, faBellSlash } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { chatsWaiting, emailsWaiting, customerPeek, desktopAlerts, enableDesktopAlerts, waitedFor } from "@/Composables/useNotificationSound"
+import { openChatPane } from "@/Composables/useChatPane"
 
 library.add(faUserClock, faBell, faBellSlash)
-
-const FooterMessage = defineAsyncComponent(() => import("@/Components/Footer/FooterMessage.vue"))
 
 defineProps<{ micro?: boolean }>()
 
@@ -52,9 +50,8 @@ const boxClass = computed(() => {
     return live.value.sessions ? levelStyles.red.box : backlogLevel.value.box
 })
 
-const open = (url: string | null) => {
-    if (url) router.visit(url)
-}
+const inboxSlug = computed(() => layout.currentParams?.organisation ?? layout.organisations?.data?.[0]?.slug)
+const open = (url: string | null) => openChatPane(url ?? (inboxSlug.value ? route("grp.org.chat.inbox", [inboxSlug.value]) : null))
 
 const peekShownFor = computed(() => (layout.user?.settings?.alert_preview_seconds ?? 6) * 1000)
 const PEEK_GROW_TIME = 300
@@ -112,7 +109,7 @@ onUnmounted(holdPeek)
                 @click.stop="open(backlogUrl)">{{ backlog > 99 ? 99 : backlog }}</span>
         </div>
 
-        <FooterMessage v-else-if="layout.user?.is_agent" in-rail>
+        <div v-else-if="layout.user?.is_agent" class="w-full mb-1 cursor-pointer" @click="open(live.url ?? backlogUrl)">
             <div class="border-2 mb-6" :class="[boxClass, layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2 rounded-xl px-2 pt-2 pb-3' : 'w-fit mx-auto flex flex-col items-center gap-y-2 rounded-2xl px-0.5 pt-2 pb-3']">
                 <FontAwesomeIcon icon="fal fa-user-clock" class="w-4 shrink-0 text-center text-sm" :class="live.sessions ? levelStyles.red.text : backlogLevel.text" fixed-width aria-hidden="true" />
                 <span v-if="layout.messagingSidebar.show" class="flex-1 text-xs font-semibold text-white">{{ ctrans('Customers waiting') }}</span>
@@ -134,7 +131,7 @@ onUnmounted(holdPeek)
                     <FontAwesomeIcon :icon="desktopAlerts === 'default' ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />
                 </button>
             </div>
-        </FooterMessage>
+        </div>
 
         <button
             v-else-if="desktopAlerts === 'default' || desktopAlerts === 'denied'"

@@ -10,7 +10,6 @@ import { usePage } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { alertOnce, chosenAlertSound, isOpenInFront } from "@/Composables/useNotificationSound"
-import { useMiniChats } from "@/Composables/useMiniChats"
 
 export interface StaffMessageReactions {
     [emoji: string]: number[]
@@ -164,8 +163,6 @@ export const useStaffMessaging = defineStore("staff-messaging", {
         },
 
         openConversation(ulid: string) {
-            useMiniChats().closeAllMiniChats()
-
             const existing = this.openWindows.find((w) => w.ulid === ulid)
             if (existing) {
                 existing.minimised = false

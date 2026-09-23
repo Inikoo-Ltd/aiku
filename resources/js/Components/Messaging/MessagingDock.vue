@@ -232,7 +232,7 @@ onUnmounted(() => {
 
         <!-- Desktop: mini windows stacked right-to-left -->
         <template v-else>
-            <div class="fixed bottom-6 z-[30] flex flex-row-reverse items-end gap-x-3 text-gray-900" :class="desktopAnchor">
+            <div class="fixed bottom-6 z-[30] mr-[var(--chat-pane,0px)] flex flex-row-reverse items-end gap-x-3 text-gray-900" :class="desktopAnchor">
                 <div v-for="w in visibleConversationWindows" :key="w.ulid" class="w-[22rem] lg:w-[28rem] h-[26rem] lg:h-[38rem] max-h-[calc(100dvh-6rem)]">
                     <MessagingConversation
                         :conversation="w.conversation"
