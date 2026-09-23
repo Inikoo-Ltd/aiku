@@ -12,11 +12,14 @@ namespace App\Actions\Retina\Ecom\Basket;
 
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class RetinaEcomUpdateTransaction extends RetinaAction
@@ -65,6 +68,25 @@ class RetinaEcomUpdateTransaction extends RetinaAction
             throw ValidationException::withMessages([
                 'message' => __('This order has been submitted and cannot be updated'),
             ]);
+        }
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ((float) $this->get('quantity_ordered', 0) <= (float) $this->transaction->quantity_ordered) {
+            return;
+        }
+
+        $product = $this->transaction->model;
+        if (!$product instanceof Product
+            || $product->is_on_demand
+            || $this->order->platform_order_id
+            || $this->order->shop->type == ShopTypeEnum::EXTERNAL) {
+            return;
+        }
+
+        if (($product->available_quantity ?? 0) <= 0) {
+            $validator->errors()->add('quantity_ordered', __(':product is out of stock', ['product' => $product->code]));
         }
     }
 

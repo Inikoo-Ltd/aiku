@@ -150,7 +150,7 @@ const onUpdateQuantity = (
             onError: (e: any) => {
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: e.message,
+                    text: e.quantity_ordered || e.message,
                     type: "error"
                 })
             },
@@ -574,7 +574,7 @@ const isOffersData = (offersData: any): boolean => {
                     </div>
 
                     <!-- Editable when creating and not in edit mode -->
-                    <div v-else-if="(state === 'creating' || state === 'submitted') && !editingIds.has(item.id) && !is_shop_external"
+                    <div v-else-if="(state === 'creating' || (state === 'submitted' && layout?.app?.name !== 'retina')) && !editingIds.has(item.id) && !is_shop_external"
                         class="w-fit flex gap-x-2">
                        <!--  <NumberWithButtonSave
                             :modelValue="Number(item.quantity_ordered)"
