@@ -16,6 +16,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteArtefactComplianceItem extends OrgAction
 {
+    use WithArtefactComplianceItemAuthorisation;
+
     public function handle(ArtefactComplianceItem $artefactComplianceItem): void
     {
         $artefactComplianceItem->delete();
@@ -27,25 +29,20 @@ class DeleteArtefactComplianceItem extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([
-            'org-supervisor.'.$this->organisation->id,
-            'productions-view.'.$this->organisation->id,
-            "productions_operations.{$this->production->id}.view",
-            "productions_operations.{$this->production->id}.orchestrate",
-        ]);
+        return $this->canEditComplianceItems($request);
     }
 
     public function action(ArtefactComplianceItem $artefactComplianceItem): void
     {
         $this->asAction = true;
-        $this->initialisation($artefactComplianceItem->artefact->organisation, []);
+        $this->initialisation($artefactComplianceItem->organisation, []);
 
         $this->handle($artefactComplianceItem);
     }
 
     public function asController(ArtefactComplianceItem $artefactComplianceItem, ActionRequest $request): void
     {
-        $this->initialisationFromProduction($artefactComplianceItem->artefact->production, $request);
+        $this->initialisationFromComplianceItem($artefactComplianceItem, $request);
 
         $this->handle($artefactComplianceItem);
     }

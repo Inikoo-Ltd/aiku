@@ -44,6 +44,10 @@ enum RolesEnum: string
     case MASTERS_CLERK = 'masters-clerk';
     case MASTERS_VIEWER = 'masters-viewer';
 
+    case COMPLIANCE_MANAGER = 'compliance-manager';
+    case COMPLIANCE_SUPERVISOR = 'compliance-supervisor';
+    case COMPLIANCE_WORKER = 'compliance-worker';
+
     case ORGANISATIONS_MANAGER = 'organisations-manager';
 
 
@@ -155,6 +159,9 @@ enum RolesEnum: string
             RolesEnum::MASTERS_MEDIA => __('Masters media'),
             RolesEnum::MASTERS_CLERK => __('Masters clerk'),
             RolesEnum::MASTERS_VIEWER => __('Masters viewer'),
+            RolesEnum::COMPLIANCE_MANAGER => __('Compliance manager'),
+            RolesEnum::COMPLIANCE_SUPERVISOR => __('Compliance supervisor'),
+            RolesEnum::COMPLIANCE_WORKER => __('Compliance worker'),
             RolesEnum::SEO_SUPERVISOR => __('SEO supervisor'),
             RolesEnum::SEO_CLERK => __('SEO clerk'),
             RolesEnum::PPC_SUPERVISOR => __('PPC supervisor'),
@@ -197,6 +204,7 @@ enum RolesEnum: string
             GroupPermissionsEnum::ORGANISATIONS,
             GroupPermissionsEnum::GOODS,
             GroupPermissionsEnum::MASTERS,
+            GroupPermissionsEnum::COMPLIANCE,
             GroupPermissionsEnum::GROUP_WEBMASTER,
         ];
     }
@@ -236,6 +244,18 @@ enum RolesEnum: string
             ],
             RolesEnum::MASTERS_VIEWER => [
                 GroupPermissionsEnum::MASTERS_VIEW
+            ],
+            RolesEnum::COMPLIANCE_MANAGER => [
+                GroupPermissionsEnum::COMPLIANCE
+            ],
+            RolesEnum::COMPLIANCE_SUPERVISOR => [
+                GroupPermissionsEnum::COMPLIANCE_VIEW,
+                GroupPermissionsEnum::COMPLIANCE_EDIT,
+                GroupPermissionsEnum::COMPLIANCE_PUBLISH
+            ],
+            RolesEnum::COMPLIANCE_WORKER => [
+                GroupPermissionsEnum::COMPLIANCE_VIEW,
+                GroupPermissionsEnum::COMPLIANCE_EDIT
             ],
             RolesEnum::ORG_ADMIN => [
                 OrganisationPermissionsEnum::ORG_ADMIN,
@@ -548,6 +568,9 @@ enum RolesEnum: string
             RolesEnum::MASTERS_MEDIA,
             RolesEnum::MASTERS_CLERK,
             RolesEnum::MASTERS_VIEWER,
+            RolesEnum::COMPLIANCE_MANAGER,
+            RolesEnum::COMPLIANCE_SUPERVISOR,
+            RolesEnum::COMPLIANCE_WORKER,
             RolesEnum::ORGANISATIONS_MANAGER => 'Group',
 
             RolesEnum::SHOP_ADMIN,

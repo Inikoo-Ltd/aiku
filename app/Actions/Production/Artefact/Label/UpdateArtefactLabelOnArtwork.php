@@ -1,65 +1,45 @@
 <?php
 
 /*
- * Author: Vika Aqordi <aqordeon@gmail.com>
- * Created: Thu, 10 Sep 2026, Bali, Indonesia
- * Copyright (c) 2026, Inikoo LTD
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 24 Sep 2026 12:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
-use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
+use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
 use App\Http\Resources\Production\ArtefactLabelResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
-use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateArtefactLabel extends OrgAction
+/**
+ * A supplier's artwork often already prints the ingredients or the pictograms, so a compliance worker
+ * confirms those here instead of placing the same text on top of them.
+ */
+class UpdateArtefactLabelOnArtwork extends OrgAction
 {
-    use WithArtefactLabelLayout;
     use WithArtefactLabelAuthorisation;
 
     public function handle(ArtefactLabel $artefactLabel, array $modelData): ArtefactLabel
     {
-        $artwork       = Arr::pull($modelData, 'artwork');
-        $removeArtwork = filter_var(Arr::pull($modelData, 'remove_artwork', false), FILTER_VALIDATE_BOOLEAN);
+        $artefactLabel->update([
+            'on_artwork' => array_values(array_unique($modelData['on_artwork'] ?? [])),
+        ]);
 
-        $changes = [
-            'layout' => $this->packLayout($modelData),
-        ];
-
-        if ($artefactLabel->state !== ArtefactLabelStateEnum::PUBLISHED) {
-            $changes['state'] = ArtefactLabelStateEnum::PROCESSED;
-        }
-
-        if (Arr::has($modelData, 'name')) {
-            $changes['name'] = Arr::get($modelData, 'name');
-        }
-
-        if ($artwork) {
-            $changes['artwork_id'] = $this->saveArtwork($artefactLabel->orgStock, $artwork)->id;
-        } elseif ($removeArtwork) {
-            $changes['artwork_id'] = null;
-        }
-
-        $artefactLabel->update($changes);
-
-        return $artefactLabel->refresh();
+        return $artefactLabel;
     }
 
     public function rules(): array
     {
-        return array_merge(
-            [
-                'name'           => ['sometimes', 'required', 'string', 'max:255'],
-                'artwork'        => $this->artworkFileRules(),
-                'remove_artwork' => ['sometimes', 'boolean'],
-            ],
-            $this->labelLayoutRules()
-        );
+        return [
+            'on_artwork'   => ['present', 'array'],
+            'on_artwork.*' => ['string', Rule::enum(ArtefactLabelInformationEnum::class)],
+        ];
     }
 
     public function authorize(ActionRequest $request): bool
@@ -79,6 +59,7 @@ class UpdateArtefactLabel extends OrgAction
         return $this->handle($artefactLabel, $this->validatedData);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function asController(Artefact $artefact, ArtefactLabel $label, ActionRequest $request): ArtefactLabel
     {
         $this->initialisationFromProduction($artefact->production, $request);

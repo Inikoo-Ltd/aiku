@@ -2744,6 +2744,57 @@ test('current supplier sku cost distrusts implausible supplier cost and falls ba
     expect((float) $orgStock->fresh()->current_supplier_sku_cost)->toEqualWithDelta(4.0, 0.001);
 });
 
+test('an agent sees and prints only the published labels of the SKOs it buys for us', function () {
+    $this->orgSupplierProduct->updateQuietly(['org_agent_id' => $this->orgAgent->id, 'state' => 'active']);
+    $stockHasSupplierProduct = StockHasSupplierProduct::firstOrCreate(
+        ['stock_id' => $this->stock->id, 'supplier_product_id' => $this->supplierProduct->id],
+        ['available' => true]
+    );
+    $orgStock = $this->orgStocks[0];
+    OrgStockHasOrgSupplierProduct::updateOrCreate(
+        ['org_stock_id' => $orgStock->id, 'org_supplier_product_id' => $this->orgSupplierProduct->id],
+        ['stock_has_supplier_product_id' => $stockHasSupplierProduct->id, 'status' => true, 'local_priority' => 0]
+    );
+
+    $foreignStock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+    $foreignOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $foreignStock);
+
+    $layout   = ['orientation' => 'portrait', 'columns' => 1, 'rows' => 1, 'page_margin' => 5, 'gap' => 0, 'fields' => []];
+    $newLabel = fn ($orgStock, string $name, string $state) => \App\Models\Production\ArtefactLabel::create([
+        'group_id'        => $orgStock->group_id,
+        'organisation_id' => $orgStock->organisation_id,
+        'org_stock_id'    => $orgStock->id,
+        'name'            => $name,
+        'layout'          => $layout,
+        'state'           => $state,
+    ]);
+    $published = $newLabel($orgStock, 'Box', 'published');
+    $newLabel($orgStock, 'Draft', 'raw');
+    $foreign = $newLabel($foreignOrgStock, 'Not theirs', 'published');
+
+    expect(\App\Actions\Procurement\AgentLabel\GetAgentOrgStocks::run($this->agent)->pluck('org_stocks.id')->all())
+        ->toContain($orgStock->id)
+        ->not->toContain($foreignOrgStock->id);
+
+    $agentOrganisation = $this->agent->organisation;
+    actingAs($this->adminGuest->getUser());
+
+    get(route('grp.org.procurement.agent_labels.index', $agentOrganisation->slug))
+        ->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($orgStock, $published) {
+            $page->component('Org/Procurement/AgentLabels')
+                ->where('data.org_stocks', fn ($orgStocks) => collect($orgStocks)->pluck('id')->contains($orgStock->id)
+                    && collect(collect($orgStocks)->firstWhere('id', $orgStock->id)['labels'])->pluck('id')->all() === [$published->id]);
+        });
+
+    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7', 'expiry_date' => '2027-09-24']))
+        ->assertOk();
+    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $foreignOrgStock->id, $foreign->id]))
+        ->assertNotFound();
+    get(route('grp.org.procurement.agent_labels.index', $this->organisation->slug))
+        ->assertNotFound();
+});
+
 test('agent organisation creates a supplier under its own agent', function () {
     $ownAgent = StoreAgent::make()->action($this->group, Agent::factory()->definition());
 

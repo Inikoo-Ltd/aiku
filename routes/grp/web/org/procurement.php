@@ -6,6 +6,8 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Procurement\AgentLabel\DownloadAgentArtefactLabelPdf;
+use App\Actions\Procurement\AgentLabel\UI\IndexAgentLabels;
 use App\Actions\GoodsIn\StockDelivery\ExportStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\CreateStockDelivery;
@@ -105,6 +107,11 @@ Route::prefix('agents')->as('org_agents.')->group(function () {
 });
 
 Route::get('agent-suppliers', IndexOrgAgentSuppliers::class)->name('org_agent_suppliers.index');
+
+Route::prefix('agent-labels')->as('agent_labels.')->group(function () {
+    Route::get('', IndexAgentLabels::class)->name('index');
+    Route::get('{orgStock:id}/{label:id}/pdf', DownloadAgentArtefactLabelPdf::class)->name('pdf')->withoutScopedBindings();
+});
 
 Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('', IndexOrgSuppliers::class)->name('index');

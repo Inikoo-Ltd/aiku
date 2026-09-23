@@ -444,6 +444,8 @@ use App\Actions\Production\Artefact\Label\PublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\StoreArtefactLabel;
 use App\Actions\Production\Artefact\Label\UnpublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabel;
+use App\Actions\Production\Artefact\Label\UpdateArtefactLabelOnArtwork;
+use App\Actions\Inventory\OrgStock\UpdateOrgStockLabelMandatoryInformation;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
@@ -1556,11 +1558,25 @@ Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('labels/{label:id}/unpublish', UnpublishArtefactLabel::class)->name('labels.unpublish');
     Route::get('labels/{label:id}/pdf', DownloadArtefactLabelPdf::class)->name('labels.pdf');
     Route::delete('labels/{label:id}', DeleteArtefactLabel::class)->name('labels.delete');
+    Route::post('labels/{label:id}/on-artwork', UpdateArtefactLabelOnArtwork::class)->name('labels.on_artwork');
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inArtefact'])->name('tags.update');
     Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inArtefact'])->name('tags.delete');
     Route::post('tags/attach', [AttachTagsToModel::class, 'inArtefact'])->name('tags.attach');
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inArtefact'])->name('tags.detach');
+});
+
+Route::name('org_stock.')->prefix('org-stock/{orgStock:id}')->group(function () {
+    Route::post('label-sheet', [PdfArtefactLabelSheet::class, 'inOrgStock'])->name('label_sheet');
+    Route::post('labels', [StoreArtefactLabel::class, 'inOrgStock'])->name('labels.store');
+    Route::post('labels/{label:id}', [UpdateArtefactLabel::class, 'inOrgStock'])->name('labels.update');
+    Route::post('labels/{label:id}/publish', [PublishArtefactLabel::class, 'inOrgStock'])->name('labels.publish');
+    Route::post('labels/{label:id}/unpublish', [UnpublishArtefactLabel::class, 'inOrgStock'])->name('labels.unpublish');
+    Route::post('labels/{label:id}/on-artwork', [UpdateArtefactLabelOnArtwork::class, 'inOrgStock'])->name('labels.on_artwork');
+    Route::get('labels/{label:id}/pdf', [DownloadArtefactLabelPdf::class, 'inOrgStock'])->name('labels.pdf');
+    Route::delete('labels/{label:id}', [DeleteArtefactLabel::class, 'inOrgStock'])->name('labels.delete');
+    Route::patch('label-mandatory-information', UpdateOrgStockLabelMandatoryInformation::class)->name('label_mandatory_information.update');
+    Route::post('compliance-item', [StoreArtefactComplianceItem::class, 'inOrgStock'])->name('compliance-item.store');
 });
 
 Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {

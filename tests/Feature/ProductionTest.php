@@ -1524,6 +1524,7 @@ test('artefact compliance status reflects its items', function () {
         'group_id'        => $this->artefact->group_id,
         'organisation_id' => $this->artefact->organisation_id,
         'artefact_id'     => $this->artefact->id,
+        'org_stock_id'    => $this->artefact->org_stock_id ?? labelTestOrgStock($this->organisation, $this->group)->id,
         'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::CERTIFICATE,
         'reference'       => 'CERT-1',
         'is_required'     => true,
@@ -1536,6 +1537,7 @@ test('artefact compliance status reflects its items', function () {
         'group_id'        => $this->artefact->group_id,
         'organisation_id' => $this->artefact->organisation_id,
         'artefact_id'     => $this->artefact->id,
+        'org_stock_id'    => $this->artefact->org_stock_id ?? labelTestOrgStock($this->organisation, $this->group)->id,
         'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::SAFETY_TEST,
         'reference'       => null,
         'is_required'     => true,
@@ -1563,6 +1565,7 @@ test('a job order cannot be released while an artefact is not compliant', functi
         'group_id'        => $this->artefact->group_id,
         'organisation_id' => $this->artefact->organisation_id,
         'artefact_id'     => $this->artefact->id,
+        'org_stock_id'    => $this->artefact->org_stock_id ?? labelTestOrgStock($this->organisation, $this->group)->id,
         'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::CERTIFICATE,
         'reference'       => null,
         'is_required'     => true,
@@ -2631,6 +2634,7 @@ test('keeping the expiry date writes it onto the published label of a partner li
         'group_id'        => $made->group_id,
         'organisation_id' => $made->organisation_id,
         'artefact_id'     => $made->id,
+        'org_stock_id'    => $makerOrgStock->id,
         'name'            => 'Dated',
         'state'           => \App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED,
         'layout'          => ['fields' => [['source' => 'name', 'text' => 'Kept'], ['source' => 'expiry_date', 'text' => '']]],
@@ -3436,7 +3440,23 @@ test('factory search is gated by production permissions', function () {
         ->assertOk();
 });
 
+function labelTestOrgStock(\App\Models\SysAdmin\Organisation $organisation, \App\Models\SysAdmin\Group $group): \App\Models\Inventory\OrgStock
+{
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+
+    return \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($organisation, $stock);
+}
+
 test('artefact labels can be saved, updated and deleted', function () {
+    $orgStock = labelTestOrgStock($this->organisation, $this->group);
+    $this->artefact = StoreArtefact::make()->action($this->production, ['code' => 'LABEL-'.$orgStock->id, 'name' => 'Labelled']);
+    $this->artefact->update(['org_stock_id' => $orgStock->id]);
+
     $layout = [
         'orientation' => 'portrait',
         'columns'     => 3,
@@ -3451,7 +3471,10 @@ test('artefact labels can be saved, updated and deleted', function () {
         ->json('data.id');
 
     $label = \App\Models\Production\ArtefactLabel::find($labelId);
-    expect($label->name)->toBe('Front')
+    expect($label->org_stock_id)->toBe($orgStock->id)
+        ->and($label->artefact_id)->toBe($this->artefact->id)
+        ->and($orgStock->labels()->pluck('id')->all())->toBe([$labelId])
+        ->and($label->name)->toBe('Front')
         ->and($label->layout['columns'])->toBe(3)
         ->and($label->layout['fields'][0]['text'])->toBe('B-1');
 
@@ -3470,6 +3493,7 @@ test('artefact labels cannot be changed with view only production access', funct
         'group_id'        => $this->artefact->group_id,
         'organisation_id' => $this->artefact->organisation_id,
         'artefact_id'     => $this->artefact->id,
+        'org_stock_id'    => labelTestOrgStock($this->organisation, $this->group)->id,
         'name'            => 'Kept',
         'layout'          => ['columns' => 3],
     ]);
@@ -3484,6 +3508,61 @@ test('artefact labels cannot be changed with view only production access', funct
         ->assertForbidden();
 
     expect($label->refresh()->deleted_at)->toBeNull();
+});
+
+test('SKO labels are the compliance team\'s: workers draft, supervisors publish, and a label missing mandatory information cannot be published', function () {
+    \App\Actions\SysAdmin\Group\Seeders\SeedGroupPermissions::run($this->group);
+    $orgStock = labelTestOrgStock($this->organisation, $this->group);
+    $layout   = [
+        'orientation' => 'portrait',
+        'columns'     => 2,
+        'rows'        => 4,
+        'page_margin' => 8,
+        'gap'         => 3,
+        'fields'      => [['source' => 'cpnp_number', 'text' => 'CPNP 123', 'x' => 0.1, 'y' => 0.2, 'font_size' => 8, 'color' => '#111827']],
+    ];
+
+    $userWithRole = function (string $role) {
+        $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+        $user->syncRoles([$role]);
+
+        return $user->fresh();
+    };
+
+    actingAs($userWithRole('compliance-worker'));
+    $labelId = \Pest\Laravel\postJson(route('grp.models.org_stock.labels.store', $orgStock->id), array_merge($layout, ['name' => 'Imported']))
+        ->assertCreated()
+        ->json('data.id');
+    $label = \App\Models\Production\ArtefactLabel::find($labelId);
+
+    expect($label->org_stock_id)->toBe($orgStock->id)
+        ->and($label->artefact_id)->toBeNull();
+
+    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
+        ->assertForbidden();
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.publish', [$orgStock->id, $labelId]))
+        ->assertForbidden();
+
+    actingAs($userWithRole('compliance-manager'));
+    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
+        ->assertOk();
+    expect($label->refresh()->missingMandatoryInformation())->toBe(['ingredients']);
+
+    actingAs($userWithRole('compliance-supervisor'));
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.publish', [$orgStock->id, $labelId]))
+        ->assertUnprocessable();
+
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.on_artwork', [$orgStock->id, $labelId]), ['on_artwork' => ['ingredients']])
+        ->assertOk();
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.publish', [$orgStock->id, $labelId]))
+        ->assertOk();
+
+    expect($label->refresh()->state)->toBe(\App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED)
+        ->and($label->missingMandatoryInformation())->toBe([]);
+
+    $otherOrgStock = labelTestOrgStock($this->organisation, $this->group);
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.unpublish', [$otherOrgStock->id, $labelId]))
+        ->assertNotFound();
 });
 
 test('breaks belong to the artisan, are capped at their planned length and only their overlap is deducted from a session', function () {

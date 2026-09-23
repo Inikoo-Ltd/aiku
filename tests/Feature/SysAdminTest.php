@@ -128,7 +128,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(13)
+        ->and($group->roles()->count())->toBe(16)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -136,14 +136,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(12)
+    expect($group->jobPositions()->count())->toBe(15)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(12)
+    expect($group->jobPositions()->count())->toBe(15)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -196,7 +196,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(8)
-        ->and($group->roles()->count())->toBe(21)
+        ->and($group->roles()->count())->toBe(24)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -2007,6 +2007,29 @@ test('update user group pseudo job positions', function (User $user) {
 
     UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
     expect($groupPseudoCount())->toBe(0);
+})->depends('SetUserAuthorisedModels command');
+
+test('compliance job positions: the worker drafts, the supervisor publishes, only the manager holds everything', function (User $user) {
+    app()->instance('group', $user->group);
+    setPermissionsTeamId($user->group->id);
+
+    $expectedPermissions = [
+        'gp-cpl-w' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => false, 'compliance' => false],
+        'gp-cpl-s' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => true, 'compliance' => false],
+        'gp-cpl-m' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => true, 'compliance' => true],
+    ];
+
+    foreach ($expectedPermissions as $code => $permissions) {
+        UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => [$code]]);
+        $user->refresh();
+
+        foreach ($permissions as $permission => $isGranted) {
+            expect($user->authTo($permission))->toBe($isGranted, "$code $permission");
+        }
+    }
+
+    UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
+    expect($user->refresh()->authTo('compliance.view'))->toBeFalse();
 })->depends('SetUserAuthorisedModels command');
 
 test('changing group permissions leaves the cached ui props in sync with the menu', function (User $admin) {

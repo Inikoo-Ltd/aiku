@@ -56,7 +56,7 @@ class ImportArtefactLabelsFromFolder
             $labelName = pathinfo($pdfFile->getFilename(), PATHINFO_FILENAME);
             $artefact  = $artefacts->get(strtoupper(preg_split('/[\s_]+/', $labelName)[0]));
 
-            if (!$artefact || $artefact->labels()->where('name', $labelName)->exists()) {
+            if (!$artefact?->orgStock || $artefact->labels()->where('name', $labelName)->exists()) {
                 continue;
             }
 
@@ -74,7 +74,7 @@ class ImportArtefactLabelsFromFolder
         copy($pdfPath, $workingCopyPath);
 
         try {
-            StoreArtefactLabel::make()->action($artefact, array_merge(self::SHEET_ARTWORK_LAYOUT, [
+            StoreArtefactLabel::make()->action($artefact->orgStock, array_merge(self::SHEET_ARTWORK_LAYOUT, [
                 'name'    => $labelName,
                 'artwork' => new UploadedFile($workingCopyPath, basename($pdfPath), 'application/pdf', null, true),
             ]));

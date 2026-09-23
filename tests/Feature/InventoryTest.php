@@ -1924,6 +1924,26 @@ test('UI Show org stock stock_history tab', function () {
     });
 })->depends('create warehouse', 'create org stock');
 
+test('UI Show org stock labels and compliance tabs', function () {
+    $warehouse = Warehouse::first();
+    $orgStock  = OrgStock::first();
+    $this->withoutExceptionHandling();
+    $route = fn (string $tab) => route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.labels', [
+        $this->organisation->slug, $warehouse->slug, $orgStock->slug, 'tab' => $tab,
+    ]);
+
+    get($route('labels'))->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Inventory/OrgStockLabels')
+            ->where('labels.store_route.name', 'grp.models.org_stock.labels.store')
+            ->has('labels.information_options', 14)
+            ->has('labels.labels');
+    });
+    get($route('compliance'))->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Inventory/OrgStockLabels')
+            ->where('compliance.routes.store.name', 'grp.models.org_stock.compliance-item.store');
+    });
+})->depends('create warehouse', 'create org stock');
+
 test('UI Index org stocks with no products (orphan)', function () {
     $warehouse = Warehouse::first();
     $this->withoutExceptionHandling();

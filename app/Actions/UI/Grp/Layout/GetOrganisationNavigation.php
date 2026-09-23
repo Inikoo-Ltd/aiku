@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
@@ -200,6 +201,18 @@ class GetOrganisationNavigation
                             ]
                         ],
                     ]
+                ]
+            ];
+        }
+
+        if ($organisation->type === OrganisationTypeEnum::AGENT && $user->authTo("procurement.$organisation->id.view")) {
+            $navigation['procurement']['topMenu']['subSections'][] = [
+                'label' => __('Labels'),
+                'icon'  => ['fal', 'fa-tags'],
+                'root'  => 'grp.org.procurement.agent_labels.',
+                'route' => [
+                    'name'       => 'grp.org.procurement.agent_labels.index',
+                    'parameters' => [$organisation->slug],
                 ]
             ];
         }

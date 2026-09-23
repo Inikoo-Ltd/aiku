@@ -73,7 +73,7 @@ class GetOrgStockShowcase
                 'has_no_products'    => $this->hasNoProducts($orgStock),
                 'latest_movements'   => $this->getLatestMovements($orgStock),
                 'stock_history_route' => [
-                    'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes)$/', '', request()->route()->getName()).'.stock_history',
+                    'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes|labels)$/', '', request()->route()->getName()).'.stock_history',
                     'parameters' => request()->route()->originalParameters(),
                 ],
                 'stocks_management'  => [

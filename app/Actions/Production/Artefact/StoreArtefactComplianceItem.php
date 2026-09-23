@@ -10,6 +10,7 @@ namespace App\Actions\Production\Artefact;
 
 use App\Actions\OrgAction;
 use App\Enums\Production\Artefact\ArtefactComplianceTypeEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactComplianceItem;
 use Illuminate\Http\RedirectResponse;
@@ -19,12 +20,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreArtefactComplianceItem extends OrgAction
 {
-    public function handle(Artefact $artefact, array $modelData): ArtefactComplianceItem
-    {
-        $modelData['group_id']        = $artefact->group_id;
-        $modelData['organisation_id'] = $artefact->organisation_id;
+    use WithArtefactComplianceItemAuthorisation;
 
-        return $artefact->complianceItems()->create($modelData);
+    public function handle(OrgStock $orgStock, array $modelData): ArtefactComplianceItem
+    {
+        $modelData['group_id']        = $orgStock->group_id;
+        $modelData['organisation_id'] = $orgStock->organisation_id;
+        $modelData['artefact_id']     = Artefact::where('org_stock_id', $orgStock->id)->value('id');
+
+        return $orgStock->complianceItems()->create($modelData);
     }
 
     public function rules(): array
@@ -45,27 +49,30 @@ class StoreArtefactComplianceItem extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([
-            'org-supervisor.'.$this->organisation->id,
-            'productions-view.'.$this->organisation->id,
-            "productions_operations.{$this->production->id}.view",
-            "productions_operations.{$this->production->id}.orchestrate",
-        ]);
+        return $this->canEditComplianceItems($request);
     }
 
-    public function action(Artefact $artefact, array $modelData): ArtefactComplianceItem
+    public function action(OrgStock $orgStock, array $modelData): ArtefactComplianceItem
     {
         $this->asAction = true;
-        $this->initialisation($artefact->organisation, $modelData);
+        $this->initialisation($orgStock->organisation, $modelData);
 
-        return $this->handle($artefact, $this->validatedData);
+        return $this->handle($orgStock, $this->validatedData);
     }
 
     public function asController(Artefact $artefact, ActionRequest $request): ArtefactComplianceItem
     {
         $this->initialisationFromProduction($artefact->production, $request);
+        abort_unless($artefact->orgStock, 422, __('This artefact has no SKO, so it cannot carry compliance items yet.'));
 
-        return $this->handle($artefact, $this->validatedData);
+        return $this->handle($artefact->orgStock, $this->validatedData);
+    }
+
+    public function inOrgStock(OrgStock $orgStock, ActionRequest $request): ArtefactComplianceItem
+    {
+        $this->initialisation($orgStock->organisation, $request);
+
+        return $this->handle($orgStock, $this->validatedData);
     }
 
     public function htmlResponse(): RedirectResponse

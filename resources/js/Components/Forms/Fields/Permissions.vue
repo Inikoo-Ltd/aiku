@@ -3,16 +3,16 @@ import { ref } from "vue"
 import { Collapse } from "vue-collapsed"
 import { set } from "lodash-es"
 import EmployeePosition from "@/Components/Forms/Fields/EmployeePosition.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Fieldset from "primevue/fieldset"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHelmetBattle, faStar, faGlobe, faUserHardHat } from "@fas"
-import { faCircle } from "@fal"
+import { faClipboardCheck, faCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
 
-library.add(faHelmetBattle, faStar, faCircle, faGlobe, faUserHardHat)
+library.add(faClipboardCheck, faHelmetBattle, faStar, faCircle, faGlobe, faUserHardHat)
 
 const props = defineProps<{
     form: {
@@ -53,73 +53,73 @@ const props = defineProps<{
 const groupPositionList = {
     engineering: {
         key: "engineering",
-        department: trans("Engineering"),
+        department: ctrans("Engineering"),
         level: "group_admin",
         independent: true,
         icon: "fas fa-user-hard-hat",
         subDepartment: [
             {
                 slug: "gp-hd-m", // Note, this is not slug is job position code
-                label: trans("Lead engineer")
+                label: ctrans("Lead engineer")
             },
             {
                 slug: "gp-hd", // Note, this is not slug is job position code
-                label: trans("Engineer")
+                label: ctrans("Engineer")
             },
             {
                 slug: "gp-qa", // Note, this is not slug is job position code
-                label: trans("QA")
+                label: ctrans("QA")
             }
         ]
     },
     group_admin: {
-        department: trans("Group admin"),
+        department: ctrans("Group admin"),
         key: "group_admin",
         level: "group_admin",
         icon: "fas fa-helmet-battle",
         subDepartment: [
             {
                 slug: "group-admin", // Note, this is not slug is job position code
-                label: trans("Group Administrator")
+                label: ctrans("Group Administrator")
                 // number_employees: props.options.positions?.data?.find(position => position.slug == 'group_admin')?.number_employees || 0,
             }
         ]
     },
     system_admin: {
         key: "group_sysadmin",
-        department: trans("Group sysadmin"),
+        department: ctrans("Group sysadmin"),
         level: "group_sysadmin",
         icon: "fas fa-computer-classic",
         subDepartment: [
             {
                 slug: "sys-admin", // Note, this is not slug is job position code
-                label: trans("System Administrator")
+                label: ctrans("System Administrator")
                 // number_employees: props.options.positions?.data?.find(position => position.slug == 'system_admin')?.number_employees || 0,
             }
         ]
     },
     group_webmaster: {
         key: "group_webmaster",
-        department: trans("Group webmaster"),
+        department: ctrans("Group webmaster"),
         level: "group_sysadmin",
         icon: "fas fa-globe",
         subDepartment: [
             {
                 slug: "gp-wm", // Note, this is not slug is job position code
-                label: trans("Group webmaster")
+                label: ctrans("Group webmaster")
             }
         ]
     },
     group_supply_chain: {
         key: "group_supply_chain",
-        department: trans("Supply Chain"),
+        department: ctrans("Supply Chain"),
         icon: "fal fa-box-usd",
         level: "group_supply_chain",
         subDepartment: [
             {
                 slug: "gp-sc", // Note, this is not slug is job position code
                 grade: "manager",
-                label: trans("Manager")
+                label: ctrans("Manager")
                 // number_employees: props.options.positions?.data?.find(position => position.slug == 'gp-sc')?.number_employees || 0,
             }
         ]
@@ -127,14 +127,14 @@ const groupPositionList = {
     },
     group_goods: {
         key: "group_goods",
-        department: trans("Goods"),
+        department: ctrans("Goods"),
         icon: "fal fa-cloud-rainbow",
         level: "group_goods",
         subDepartment: [
             {
                 slug: "gp-g", // Note, this is not slug is job position code
                 grade: "manager",
-                label: trans("Manager")
+                label: ctrans("Manager")
                 // number_employees: props.options.positions?.data?.find(position => position.slug == 'gp-g')?.number_employees || 0,
             }
         ]
@@ -142,33 +142,56 @@ const groupPositionList = {
     },
     group_masters: {
         key: "group_masters",
-        department: trans("Masters"),
+        department: ctrans("Masters"),
         icon: "fab fa-octopus-deploy",
         level: "group_masters",
         subDepartment: [
             {
                 slug: "gp-mas", // Note, this is not slug is job position code
                 grade: "manager",
-                label: trans("Manager")
+                label: ctrans("Manager")
                 // number_employees: props.options.positions?.data?.find(position => position.slug == 'gp-g')?.number_employees || 0,
             },
             {
                 slug: "gp-clk", // Note, this is not slug is job position code
                 grade: "clerk-1",
-                label: trans("Clerk")
+                label: ctrans("Clerk")
             },
             {
                 slug: "gp-md", // Note, this is not slug is job position code
                 grade: "clerk-2",
-                label: trans("Media")
+                label: ctrans("Media")
             },
             {
                 slug: "gp-vw", // Note, this is not slug is job position code
                 grade: "clerk-3",
-                label: trans("Viewer")
+                label: ctrans("Viewer")
             },
         ]
         // value: null
+    },
+    group_compliance: {
+        key: "group_compliance",
+        department: ctrans("Compliance"),
+        icon: "fal fa-clipboard-check",
+        level: "group_compliance",
+        subDepartment: [
+            {
+                slug: "gp-cpl-m", // Note, this is not slug is job position code
+                grade: "manager",
+                label: ctrans("Manager")
+            },
+            {
+                slug: "gp-cpl-s", // Note, this is not slug is job position code
+                grade: "clerk-1",
+                label: ctrans("Supervisor")
+            },
+            {
+                slug: "gp-cpl-w", // Note, this is not slug is job position code
+                grade: "clerk-2",
+                label: ctrans("Worker")
+            }
+        ]
     }
 }
 
@@ -239,7 +262,7 @@ const organisationPositionCounts = ref({})
 <template>
     <div class="flex flex-col gap-y-6">
         <div class="flex gap-x-2">
-            <Fieldset :legend="trans('Group permissions')" class="w-full max-w-4xl">
+            <Fieldset :legend="ctrans('Group permissions')" class="w-full max-w-4xl">
                 <div>
                     <template v-for="(jobGroup, departmentName, idxJobGroup) in groupPositionList" :key="departmentName + idxJobGroup">
                         <div class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-100 transition-all duration-200 ease-in-out">
@@ -306,10 +329,10 @@ const organisationPositionCounts = ref({})
         <div class="grid max-w-4xl">
             <div class="flex justify-between px-2 border-b border-gray-300 py-2 mb-2">
                 <div>
-                    {{ trans("Organisations") }}
+                    {{ ctrans("Organisations") }}
                 </div>
                 <div>
-                    {{ trans("Access") }}
+                    {{ ctrans("Access") }}
                 </div>
             </div>
 
@@ -323,10 +346,10 @@ const organisationPositionCounts = ref({})
                     :class="organisation.slug === selectedOrganisation?.slug ? 'bg-indigo-100 text-indigo-500' : 'hover:bg-gray-200/70 '"
                 >
                     <div class="">{{ organisation.name }}
-                        <FontAwesomeIcon v-if="fieldData.current_organisation?.slug === organisation.slug" v-tooltip="trans('Employee in this company')" icon="fas fa-star" class="opacity-50 text-xxs" fixed-width
+                        <FontAwesomeIcon v-if="fieldData.current_organisation?.slug === organisation.slug" v-tooltip="ctrans('Employee in this company')" icon="fas fa-star" class="opacity-50 text-xxs" fixed-width
                                          aria-hidden="true" />
                     </div>
-                    <div v-tooltip="trans('Number job positions')" class="pl-3 pr-2 tabular-nums">
+                    <div v-tooltip="ctrans('Number job positions')" class="pl-3 pr-2 tabular-nums">
                         <transition name="spin-to-right"><span :key="organisationPositionCounts[organisation.slug]">{{ organisationPositionCounts[organisation.slug] }}</span></transition>
                         /{{ organisation.number_job_positions }}
                     </div>
