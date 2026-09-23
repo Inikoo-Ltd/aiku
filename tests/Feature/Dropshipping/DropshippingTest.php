@@ -1236,3 +1236,16 @@ test('manual channel pricing policy shows an example price and says it only pric
         ->and($fields['pricing_type']['hasOther'][0])->toBe(['name' => 'pricing_value', 'value' => 200])
         ->and($fields)->not->toHaveKey('pricing_value');
 });
+
+test('a channel pricing rule that would take a price to zero or below leaves new products at their RRP', function () {
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $manualPlatform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
+    $channel        = StoreCustomerSalesChannel::make()->action($customer, $manualPlatform, ['reference' => 'test_manual_negative_pricing']);
+    $channel->update(['settings' => ['pricing' => ['type' => 'fixed', 'value' => -50]]]);
+
+    $this->product->update(['rrp' => 10]);
+
+    $portfolio = StorePortfolio::make()->action($channel->refresh(), $this->product, []);
+
+    expect((float) $portfolio->customer_price)->toBe(10.0);
+});

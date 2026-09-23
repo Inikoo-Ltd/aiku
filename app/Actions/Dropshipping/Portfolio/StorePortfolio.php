@@ -60,7 +60,10 @@ class StorePortfolio extends OrgAction
                 $addedValue = $rrp * ($pricingValue / 100);
             }
 
-            $rrp = round($rrp + $addedValue, 2);
+            $adjustedRrp = round($rrp + $addedValue, 2);
+            if ($adjustedRrp > 0) {
+                $rrp = $adjustedRrp;
+            }
         }
 
         $customerProductName = Arr::get($modelData, 'customer_product_name', $item->name);
