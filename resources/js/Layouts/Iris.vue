@@ -262,6 +262,12 @@ watch(() => layout.iris_variables?.cart_amount, (newVal) => {
     }
 })
 
+const syncLoggedInClass = () => document.documentElement.classList.toggle('iris-logged-in', !!layout.iris?.is_logged_in)
+
+onMounted(syncLoggedInClass)
+
+watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
+
 watch(() => layout.iris_variables?.cart_count, (newVal) => {
     if (newVal <= 0) {
         set(layout, 'rightbasket.show', false)

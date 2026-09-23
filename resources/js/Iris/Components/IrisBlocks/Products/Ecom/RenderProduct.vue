@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed, onBeforeUnmount, nextTick, defineAsyncComponent } from 'vue'
+import { inject, ref, computed, watch, onBeforeUnmount, nextTick, defineAsyncComponent } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -86,6 +86,11 @@ const _render_components = ref(null)
 const popoverRef = ref<any>(null)
 const isLoadingFavourite = ref(false)
 const loadingGetVariants = ref(false)
+
+watch(() => props.product, () => {
+    selectedVariantProduct.value = null
+    variant.value = null
+})
 
 const displayedProduct = computed<ProductResource>(() => {
     if (!selectedVariantProduct.value) return props.product

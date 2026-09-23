@@ -334,7 +334,7 @@ defineExpose({
                 </div>
 
                 <!-- Section: Login (overlay at the bottom of the image) -->
-                <div v-if="!layout?.iris?.is_logged_in && !hideLogin" class="absolute inset-x-0 bottom-2 z-10 px-3">
+                <div v-if="!layout?.iris?.is_logged_in && !hideLogin" class="absolute inset-x-0 bottom-2 z-10 px-3 [.iris-logged-in_&]:hidden">
                     <Button :label="ctrans('Login or Register for Wholesale Prices')"
                         class="w-full rounded-none text-[9px] md:text-[10px] py-1 leading-tight" full
                         :injectStyle="buttonStyleLogin" @click.prevent.stop="goToLogin" />
@@ -358,12 +358,12 @@ defineExpose({
         </div>
 
 
-        <div class="mt-auto">
+        <div class="mt-auto [.iris-logged-in_&]:min-h-[93px] md:[.iris-logged-in_&]:min-h-[102px] lg:[.iris-logged-in_&]:min-h-[112px] 2xl:[.iris-logged-in_&]:min-h-[137px]">
             <section v-if="isPriceVisible">
                   <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket
                       :orderQuantity="onOrderStepQuantity"/>
             </section>
-            <section v-else class="text-xs leading-tight space-y-1">
+            <section v-else class="text-xs leading-tight space-y-1 [.iris-logged-in_&]:hidden">
 
                 <!-- CODE + RRP + V2-->
                 <div v-if="product.rrp_per_unit > 0" class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
