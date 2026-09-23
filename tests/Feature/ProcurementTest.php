@@ -87,6 +87,8 @@ use App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems;
 use App\Actions\HumanResources\Employee\StoreEmployee;
 use Illuminate\Support\Str;
 use App\Models\HumanResources\JobPosition;
+use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\User\StoreUser;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
@@ -142,6 +144,9 @@ use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
+use App\Models\SysAdmin\Guest;
+use App\Models\SysAdmin\Organisation;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Helpers\Address;
@@ -5303,4 +5308,29 @@ test('purchase order products and items tabs show stock and quarterly usage of e
         ->and((float) $item['quarterly_usage'][0]['sales'])->toBe(6.0);
 
     DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
+});
+
+test('stock delivery pdf downloads', function () {
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.pdf', [$this->organisation->slug, $this->stockDelivery->slug]));
+
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    expect(str_starts_with($response->getContent(), '%PDF'))->toBeTrue();
+});
+
+test('stock delivery pdf is not found under another organisation', function () {
+    $otherOrganisation = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+
+    $this->get(route('grp.org.procurement.stock_deliveries.pdf', [$otherOrganisation->slug, $this->stockDelivery->slug]))
+        ->assertNotFound();
+});
+
+test('stock delivery pdf is forbidden without procurement permission', function () {
+    setPermissionsTeamId($this->group->id);
+    $guest = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]));
+
+    actingAs($guest->getUser());
+
+    $this->get(route('grp.org.procurement.stock_deliveries.pdf', [$this->organisation->slug, $this->stockDelivery->slug]))
+        ->assertForbidden();
 });
