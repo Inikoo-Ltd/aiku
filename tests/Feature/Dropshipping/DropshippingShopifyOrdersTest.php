@@ -15,6 +15,7 @@ use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
+use App\Actions\Dropshipping\Order\RetryOrderImport;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
@@ -36,6 +37,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Dropshipping\OrderImportRetryStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Listeners\ShopifyAppInstalledListener;
 use App\Models\Catalogue\Shop;
@@ -390,6 +392,69 @@ test('a marketplace import line with only a sku and no shopify product still bec
 
     expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6091')->exists())->toBeFalse()
         ->and($channel->clients()->count())->toBe(0);
+});
+
+test('a retry by the shopify order id recognises the order already imported under its fulfilment order id', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-retry-known');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/6092', 'order' => ['id' => 'gid://shopify/Order/5092']])]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $channel = $shopifyUser->customerSalesChannel;
+    $order   = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6092')->firstOrFail();
+
+    foreach (['5092', 'gid://shopify/Order/5092'] as $shopifyOrderId) {
+        $result = RetryOrderImport::run($channel, $shopifyOrderId, true);
+
+        expect($result['status'])->toBe(OrderImportRetryStatusEnum::ALREADY_IMPORTED)
+            ->and($result['order']->id)->toBe($order->id);
+    }
+
+    $foreign = ['sku' => 'not-ours', 'lineItem' => ['variant' => ['id' => 'gid://shopify/ProductVariant/1'], 'product' => ['id' => 'gid://shopify/Product/1']]];
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([$foreign], ['id' => 'gid://shopify/FulfillmentOrder/6093', 'order' => ['id' => 'gid://shopify/Order/5092']])]),
+        'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $placeholder = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6093')->firstOrFail();
+    $result      = RetryOrderImport::run($channel, '5092', true);
+
+    expect($placeholder->isDeclinedPlatformRequest())->toBeTrue()
+        ->and($placeholder->id)->toBeGreaterThan($order->id)
+        ->and($result['status'])->toBe(OrderImportRetryStatusEnum::ALREADY_IMPORTED)
+        ->and($result['order']->id)->toBe($order->id);
+});
+
+test('a retry that imports nothing next to a declined placeholder is reported as failed, not as imported', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-retry-placeholder');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    $foreign        = ['sku' => 'not-ours', 'lineItem' => ['variant' => ['id' => 'gid://shopify/ProductVariant/1'], 'product' => ['id' => 'gid://shopify/Product/1']]];
+    $declinedFulfilmentOrder = shopifyFulfilmentOrder([$foreign], ['id' => 'gid://shopify/FulfillmentOrder/6094', 'order' => ['id' => 'gid://shopify/Order/5094']]);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([$declinedFulfilmentOrder]),
+        'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $shopifyOrder = array_merge($declinedFulfilmentOrder['order'], [
+        'name'              => '#1094',
+        'fulfillmentOrders' => ['edges' => [['node' => array_merge(Arr::except($declinedFulfilmentOrder, 'order'), ['status' => 'OPEN'])]]],
+    ]);
+    ShopifyFake::fake(['getFulfilmentOrder' => ShopifyFake::graphql(['order' => $shopifyOrder])]);
+
+    $result = RetryOrderImport::run($shopifyUser->customerSalesChannel, '5094', true);
+
+    expect($result['status'])->toBe(OrderImportRetryStatusEnum::FAILED)
+        ->and($shopifyUser->customerSalesChannel->orders()->count())->toBe(1);
 });
 
 test('a cancellation request is accepted for an order still in the office and rejected once the warehouse has it', function () {

@@ -108,7 +108,7 @@ class RetryOrderImport
 
         $order = $this->findExistingOrder($customerSalesChannel, $platformOrderId);
 
-        if (!$order) {
+        if (!$order || $order->isDeclinedPlatformRequest()) {
             return $this->result(
                 OrderImportRetryStatusEnum::FAILED,
                 __('The channel returned the order but AW did not create it. The usual cause is that none of its products are in this channel portfolio, or the order is in a state the import skips.'),
@@ -141,7 +141,9 @@ class RetryOrderImport
      * StoreOrderFromAmazon never sets platform_order_id, it keeps the whole Amazon payload in
      * data, so Amazon has to be matched the same way GetRetinaOrdersFromAmazon matches it.
      * WooCommerce stores the order key there while the store is asked by numeric id, which only
-     * lives inside the saved payload.
+     * lives inside the saved payload. Shopify is asked by order id but the order keeps the id of
+     * its fulfilment order, so the Shopify order id is also read from the saved payload, and a
+     * real order of the same Shopify order wins over a declined placeholder.
      */
     private function findExistingOrder(CustomerSalesChannel $customerSalesChannel, string $platformOrderId): ?Order
     {
@@ -157,6 +159,19 @@ class RetryOrderImport
                     $query->where('platform_order_id', $platformOrderId)
                         ->orWhereRaw("data->'woo_order'->>'id' = ?", [$platformOrderId]);
                 })
+                ->first();
+        }
+
+        if ($customerSalesChannel->platform->type === PlatformTypeEnum::SHOPIFY) {
+            $shopifyOrderGid = str_starts_with($platformOrderId, 'gid://') ? $platformOrderId : 'gid://shopify/Order/'.$platformOrderId;
+
+            return $customerSalesChannel->orders()
+                ->where(function ($query) use ($platformOrderId, $shopifyOrderGid) {
+                    $query->where('platform_order_id', $platformOrderId)
+                        ->orWhereRaw("data->'shopify_data'->'order'->>'id' = ?", [$shopifyOrderGid]);
+                })
+                ->orderByRaw("(state = 'cancelled' and data->>'declined_reason' is not null)")
+                ->orderByDesc('id')
                 ->first();
         }
 
