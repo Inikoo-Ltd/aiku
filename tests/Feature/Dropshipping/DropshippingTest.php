@@ -860,6 +860,22 @@ test('portfolio relative price rule computes price from rrp', function () {
     expect((float) $portfolio->customer_price)->toBe(12.5);
 });
 
+test('product without rrp is priced from its price instead of zero', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_no_rrp']);
+    $this->product->update(['rrp' => null, 'price' => 40]);
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    expect((float) $portfolio->customer_price)->toBe(40.0);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => 100
+    ], true);
+
+    expect((float) $portfolio->refresh()->customer_price)->toBe(80.0);
+});
+
 test('portfolio not follow rule freezes price and opts out', function () {
     $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
     $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_not_follow']);

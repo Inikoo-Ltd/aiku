@@ -49,7 +49,7 @@ class StorePortfolio extends OrgAction
     {
         $this->assertItemBelongsToChannelShop($customerSalesChannel, $item);
 
-        $rrp = $item->rrp ?? 0;
+        $rrp = $item instanceof Product ? $item->dropshippingBasePrice() : 0;
 
         $pricingType  = Arr::get($customerSalesChannel->settings, 'pricing.type');
         $pricingValue = Arr::get($customerSalesChannel->settings, 'pricing.value');

@@ -16,6 +16,7 @@ use App\Actions\Dropshipping\Wix\Product\UpdateWixProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Traits\SanitizeInputs;
 use Illuminate\Console\Command;
@@ -40,7 +41,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
             data_set($modelData, 'settings.pricing.value', null);
             data_set($modelData, 'settings.pricing_opt_out', true);
         } elseif ($pricingType !== null && $pricingValue !== null) {
-            $basePrice = $portfolio->item->rrp ?? 0;
+            $basePrice = $portfolio->item instanceof Product ? $portfolio->item->dropshippingBasePrice() : 0;
 
             $customerPrice = $pricingType === 'percent'
                 ? round($basePrice * (1 + $pricingValue / 100), 2)
