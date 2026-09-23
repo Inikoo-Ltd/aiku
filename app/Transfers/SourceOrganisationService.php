@@ -130,6 +130,8 @@ interface SourceOrganisationService
 
     public function fetchPurchaseOrder($id);
 
+    public function fetchPurchaseOrderNote($id);
+
     public function fetchAgentSupplierPurchaseOrder($id);
 
     public function fetchStockDelivery($id);

@@ -420,6 +420,7 @@ use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\ProcurementNote\StoreProcurementNote;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
@@ -1445,6 +1446,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
 });
 
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
+    Route::post('note', [StoreProcurementNote::class, 'inStockDelivery'])->name('note.store');
     Route::patch('update', UpdateStockDelivery::class)->name('update');
     Route::patch('dispatch', DispatchStockDelivery::class)->name('dispatch');
     Route::patch('undispatch', UndispatchStockDelivery::class)->name('undispatch');
@@ -1494,6 +1496,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::delete('', DeletePurchaseOrder::class)->name('delete');
     Route::patch('submit', UpdatePurchaseOrderStateToSubmitted::class)->name('submit');
     Route::patch('undo-submit', UpdatePurchaseOrderStateToInProcess::class)->name('undo-submit');
+    Route::post('note', [StoreProcurementNote::class, 'inPurchaseOrder'])->name('note.store');
     Route::patch('confirm', UpdatePurchaseOrderStateToConfirmed::class)->name('confirm');
     Route::patch('undo-confirm', RevertPurchaseOrderToSubmitted::class)->name('undo-confirm');
     Route::patch('cancel', UpdatePurchaseOrderStateToCancelled::class)->name('cancel');

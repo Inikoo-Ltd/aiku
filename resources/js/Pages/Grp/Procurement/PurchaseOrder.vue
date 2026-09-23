@@ -15,6 +15,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
+import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -150,6 +151,8 @@ const props = defineProps < {
 	items?: {}
 	products?: {}
 	showcase?: {}
+	notes?: {}
+	note_store_route?: routeType
 	history?: {}
 }>()
 
@@ -501,6 +504,7 @@ const component = computed(() => {
 		items: TablePurchaseOrderTransactions,
 		products: TablePurchaseOrderTransactions,
 		showcase: ProcurementOrderData,
+		notes: TableProcurementNotes,
 		history: TableHistories,
 	}
 
@@ -917,6 +921,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:isOrgAgent="isOrgAgent"
 			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
+			:storeRoute="currentTab === 'notes' ? note_store_route : undefined"
 			v-bind="isOrderingLevelTab ? {
 				level: currentLevel,
 				'onUpdate:level': (value: OrderingLevel) => currentLevel = value,

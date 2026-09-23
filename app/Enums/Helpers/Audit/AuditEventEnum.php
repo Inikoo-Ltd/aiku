@@ -19,6 +19,7 @@ enum AuditEventEnum: string
     case DELETED = 'deleted';
     case RESTORED = 'restored';
     case CUSTOMER_NOTE = 'customer_note';
+    case NOTE = 'note';
     case MIGRATED = 'migrated';
     case OTHER = 'other';
     case PUBLISHED = 'published';

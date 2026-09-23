@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Models\Goods\TradeUnit;
@@ -789,6 +790,32 @@ test('adding a product to a purchase order creates the missing org stock', funct
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS]);
 
     expect((float)$line->refresh()->net_amount)->toBe(240.0);
+});
+
+test('staff add notes to a purchase order and read them on its stock delivery', function () {
+    $purchaseOrder = $this->purchaseOrder;
+    $stockDelivery = $this->stockDelivery;
+    $stockDelivery->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
+
+    $this->post(route('grp.models.purchase-order.note.store', $purchaseOrder->id), ['note' => 'Booked on vessel, ETD 20/9'])
+        ->assertSessionHasNoErrors();
+    $this->post(route('grp.models.stock-delivery.note.store', $stockDelivery->id), ['note' => 'Bill of lading received'])
+        ->assertSessionHasNoErrors();
+    $this->post(route('grp.models.purchase-order.note.store', $purchaseOrder->id), ['note' => ''])
+        ->assertSessionHasErrors('note');
+
+    $purchaseOrderNotes = collect(IndexProcurementNotes::run($purchaseOrder)->items())->map(fn ($note) => $note->new_values['note']);
+    $stockDeliveryNotes = collect(IndexProcurementNotes::run($stockDelivery)->items())->map(fn ($note) => $note->new_values['note']);
+
+    expect($purchaseOrderNotes->all())->toContain('Booked on vessel, ETD 20/9')
+        ->not->toContain('Bill of lading received')
+        ->and($stockDeliveryNotes->all())->toContain('Booked on vessel, ETD 20/9', 'Bill of lading received');
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]).'?tab=notes')
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PurchaseOrder')
+            ->has('notes.data')
+            ->where('note_store_route.name', 'grp.models.purchase-order.note.store'));
 });
 
 test('delete purchase order', function () {
@@ -2313,7 +2340,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
     $this->get($url)->assertInertia(function (AssertableInertia $page) {
         $page
             ->where('queryBuilderProps.items.elementGroups.state.elements.placed.1', 0)
-            ->has('tabs.navigation', 6)
+            ->has('tabs.navigation', 7)
             ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value);
     });
 
@@ -2331,7 +2358,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
 
     $response->assertOk()
         ->assertJsonPath('props.queryBuilderProps.items.elementGroups.state.elements.placed.1', 1)
-        ->assertJsonCount(7, 'props.tabs.navigation')
+        ->assertJsonCount(8, 'props.tabs.navigation')
         ->assertJsonPath(
             'props.tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value.'.title',
             StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->blueprint()['title']

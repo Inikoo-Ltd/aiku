@@ -10,6 +10,8 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
+use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
@@ -234,12 +236,22 @@ class ShowPurchaseOrder extends OrgAction
                     fn () => GetPurchaseOrderData::run($purchaseOrder)
                     : Inertia::optional(fn () => GetPurchaseOrderData::run($purchaseOrder)),
 
+                PurchaseOrderTabsEnum::NOTES->value => $this->tab == PurchaseOrderTabsEnum::NOTES->value ?
+                    fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($purchaseOrder, PurchaseOrderTabsEnum::NOTES->value))
+                    : Inertia::optional(fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($purchaseOrder, PurchaseOrderTabsEnum::NOTES->value))),
+
+                'note_store_route' => [
+                    'name'       => 'grp.models.purchase-order.note.store',
+                    'parameters' => [$purchaseOrder->id],
+                ],
+
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))),
             ]
         )->table(IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::ITEMS->value))
             ->table(IndexPurchaseOrderOrgSupplierProducts::make()->tableStructure(prefix: PurchaseOrderTabsEnum::PRODUCTS->value))
+            ->table(IndexProcurementNotes::make()->tableStructure(prefix: PurchaseOrderTabsEnum::NOTES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
     }
 
