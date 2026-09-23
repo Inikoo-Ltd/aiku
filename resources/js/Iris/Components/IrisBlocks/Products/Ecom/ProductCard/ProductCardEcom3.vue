@@ -44,6 +44,7 @@ const props = withDefaults(defineProps<{
     isLoadingFavourite?: boolean
     isLoadingRemindBackInStock?: boolean
     screenType: string
+    imageSizes?: string
     hideLogin?:boolean
     routeGettransactionProductData?:routeType
 }>(), {
@@ -215,7 +216,7 @@ defineExpose({
                                 <div v-for="(img, i) in images" :key="i"
                                     class="relative w-full h-full flex-shrink-0 snap-start">
 
-                                    <Image :src="img" :alt="product.name"
+                                    <Image :src="img" :alt="product.name" :sizes="imageSizes"
                                         class="absolute inset-0 w-full h-full select-none pointer-events-none"
                                         :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }" />
                                 </div>
@@ -223,7 +224,7 @@ defineExpose({
 
                             <!-- SINGLE IMAGE -->
                             <div v-else class="relative w-full h-full">
-                                <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                <Image :src="images[0]" :alt="product.name" :sizes="imageSizes" class="absolute inset-0 w-full h-full"
                                     :style="{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center' }" />
                             </div>
 
@@ -245,7 +246,7 @@ defineExpose({
                                 :class="images.length > 1 ? 'group-hover:-translate-x-full' : ''">
                                 <!-- FIRST IMAGE -->
                                 <div class="w-full h-full flex-shrink-0 relative">
-                                    <Image :src="images[0]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                    <Image :src="images[0]" :alt="product.name" :sizes="imageSizes" class="absolute inset-0 w-full h-full"
                                         :style="{
                                             width: '100%',
                                             height: '100%',
@@ -256,7 +257,7 @@ defineExpose({
 
                                 <!-- SECOND IMAGE -->
                                 <div v-if="images.length > 1" class="w-full h-full flex-shrink-0 relative">
-                                    <Image :src="images[1]" :alt="product.name" class="absolute inset-0 w-full h-full"
+                                    <Image :src="images[1]" :alt="product.name" :sizes="imageSizes" class="absolute inset-0 w-full h-full"
                                         :style="{
                                             width: '100%',
                                             height: '100%',

@@ -77,6 +77,8 @@ const perRowCfg = computed(() => {
   }
 })
 
+const familyImageSizes = computed(() => `(max-width: 639px) ${100 / perRowCfg.value.mobile}vw, (max-width: 1023px) ${100 / perRowCfg.value.tablet}vw, ${100 / perRowCfg.value.desktop}vw`)
+
 const swiperBreakpoints = computed(() => ({
   640: { slidesPerView: perRowCfg.value.tablet, spaceBetween: 16 },
   1024: { slidesPerView: perRowCfg.value.desktop, spaceBetween: 24 },
@@ -242,6 +244,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
                 <Family3Render
                   class="family-item w-full h-full"
                   :data="item"
+                  :imageSizes="familyImageSizes"
                   :isLoading="isLoading"
                   :style="{
                     ...getStyles(props.fieldValue?.chip?.container?.properties, props.screenType),
