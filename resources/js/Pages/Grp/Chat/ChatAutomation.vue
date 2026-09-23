@@ -88,7 +88,7 @@ const CHANNEL_ICON: Record<string, object> = {
         </ul>
     </div>
 
-    <Table :resource="data" name="automation" class="mt-5">
+    <Table :resource="data" class="mt-5">
         <template #cell(at)="{ item }">
             <span class="whitespace-nowrap">{{ useFormatTime(item.at, { formatTime: "short-datetime" }) }}</span>
         </template>

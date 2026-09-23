@@ -5703,7 +5703,9 @@ function outOfHoursTestCleanUp(\App\Models\HumanResources\WorkSchedule $schedule
 test('an email out of hours is answered only when a person wrote it, once a day per address', function () {
     config(['chat.out_of_hours_reply' => true]);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    config(['askbot-laravel.openai_api_key' => 'test-key']);
     \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*'        => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['verdict' => 'genuine', 'confidence' => 95, 'reason' => 'Asks about stock.', 'existing_customer' => false])]]]]),
         'oauth2.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
         '*'                       => \Illuminate\Support\Facades\Http::response(['id' => 'sent-1', 'threadId' => 'th-ooh']),
     ]);
@@ -5722,7 +5724,12 @@ test('an email out of hours is answered only when a person wrote it, once a day 
     $address = 'ooh.person.'.Str::lower(Str::random(8)).'@example.com';
     $person  = noiseTestEmailSession($this->shop->fresh(), $address, 'Lavender oil', 'Is the lavender oil back in stock?');
 
-    expect($answered($person))->toBeTrue();
+    // A stranger waits for the noise check, which runs at the same moment: answering first once
+    // replied to spam and newsletters. The check's own genuine verdict sends the reply.
+    expect($answered($person))->toBeFalse()
+        ->and($person->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->exists())->toBeFalse();
+
+    \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($person);
 
     $sent = $person->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
 

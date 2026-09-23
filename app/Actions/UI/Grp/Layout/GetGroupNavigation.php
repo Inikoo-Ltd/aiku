@@ -194,7 +194,7 @@ class GetGroupNavigation
                         ],
                     ], [
                         'label'   => __('AI'),
-                        'tooltip' => __('Everything the chat did on its own'),
+                        'tooltip' => __('AI'),
                         'icon'    => ['fal', 'fa-robot'],
                         'root'    => 'grp.chat.ai',
                         'route'   => [

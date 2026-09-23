@@ -436,6 +436,15 @@ class ClassifyChatSessionNoise
             'noise_note'       => $note,
         ]);
 
+        // A stranger's email waits for this verdict before any automatic reply; now it can go.
+        if (!$verdict->isNoise() && $chatSession instanceof ChatSession && $chatSession->channel === ChatChannelEnum::EMAIL) {
+            $trigger = $chatSession->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->latest('id')->first();
+
+            if ($trigger) {
+                SendOutOfHoursReply::dispatch($chatSession, $trigger);
+            }
+        }
+
         if (!$verdict->isNoise() && $chatSession->is_spam && $chatSession instanceof MetaChatSession) {
             $chatSession->update(['is_spam' => false, 'spam_at' => null]);
             StoreMetaChatEvent::make()->handle($chatSession, ChatEventTypeEnum::NOT_SPAM, ChatActorTypeEnum::SYSTEM, null, [
