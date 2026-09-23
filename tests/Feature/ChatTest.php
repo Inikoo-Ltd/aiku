@@ -6034,6 +6034,43 @@ test('starting an email from the customer record opens an email conversation and
     expect(Arr::get($session->fresh()->metadata, 'gmail_references'))->toHaveCount(2);
 });
 
+test('a new email from the customer record carries the files the agent attached', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    actingAs($this->user);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+    $this->customer->update(['email' => 'buyer@example.com']);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent10', 'threadId' => 't10']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->customer->fresh(), [
+        'subject'     => 'Facture',
+        'message'     => 'Please find your invoice attached',
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')],
+    ]);
+
+    expect($session->messages()->first()->attachedFiles())->toHaveCount(1);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+
+        return str_contains(base64_decode(strtr($request['raw'], '-_', '+/')), 'filename="invoice.pdf"');
+    });
+});
+
 test('a new email can go to an address the customer does not have on file, or to somebody saved there and then as a prospect', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
 

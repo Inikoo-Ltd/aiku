@@ -42,6 +42,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
@@ -126,13 +127,14 @@ const emailForm = useForm({
     email: props.customer_email ?? '',
     subject: '',
     message: '',
+    attachments: [] as File[],
 })
 const emailDraftKey = (field: string) => () => `customer-email:${props.shop_data.customer_id}:${field}`
 useComposerDraft(emailDraftKey('subject'), toRef(emailForm, 'subject'))
 useComposerDraft(emailDraftKey('message'), toRef(emailForm, 'message'))
 const submitEmail = () => {
     emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters), {
-        onSuccess: () => emailForm.reset('subject', 'message'),
+        onSuccess: () => emailForm.reset('subject', 'message', 'attachments'),
     })
 }
 
@@ -265,6 +267,7 @@ const layout = inject('layout')
                     <ChatFormattingToolbar :textarea="messageTextarea" allow-underline class="mb-1" />
                     <PureTextarea v-model="emailForm.message" :rows="8" :placeholder="ctrans('Message')" />
                 </div>
+                <EmailAttachmentPicker v-model="emailForm.attachments" :errors="emailForm.errors" />
                 <p v-if="emailForm.errors.email" class="text-sm text-red-500">{{ emailForm.errors.email }}</p>
                 <p v-if="emailForm.errors.message" class="text-sm text-red-500">{{ emailForm.errors.message }}</p>
                 <p v-if="emailForm.errors.subject" class="text-sm text-red-500">{{ emailForm.errors.subject }}</p>

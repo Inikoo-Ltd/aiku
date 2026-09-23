@@ -26,6 +26,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -48,7 +49,9 @@ class StartCustomerEmailChat extends OrgAction
         $rules = [
             'subject' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],
-            'email'   => ['sometimes', 'nullable', 'email'],
+            'email'         => ['sometimes', 'nullable', 'email'],
+            'attachments'   => ['sometimes', 'array', 'max:10'],
+            'attachments.*' => [File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])->max(20 * 1024)],
         ];
 
         if (!$this->customer) {
@@ -136,6 +139,7 @@ class StartCustomerEmailChat extends OrgAction
             'message_type' => ChatMessageTypeEnum::TEXT->value,
             'sender_type'  => ChatSenderTypeEnum::AGENT->value,
             'sender_id'    => $agent->id,
+            'attachments'  => Arr::get($modelData, 'attachments', []),
         ]);
 
         return $session;

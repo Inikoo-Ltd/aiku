@@ -7,6 +7,7 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useComposerDraft } from "@/Composables/useComposerDraft"
 import { routeType } from "@/types/route"
@@ -32,6 +33,7 @@ const form = useForm({
     company_name: "",
     subject: "",
     message: "",
+    attachments: [] as File[],
 })
 
 const newEmailDraftKey = (field: string) => () => `new-email:${props.shopId ?? "none"}:${field}`
@@ -89,7 +91,7 @@ const send = () => {
 
     form.post(target, {
         onSuccess: () => {
-            form.reset("subject", "message")
+            form.reset("subject", "message", "attachments")
             visible.value = false
         },
     })
@@ -169,6 +171,7 @@ watch(visible, (isVisible) => {
                 <ChatFormattingToolbar :textarea="messageTextarea" allow-underline class="mb-1" />
                 <PureTextarea v-model="form.message" :rows="8" :placeholder="ctrans('Message')" />
             </div>
+            <EmailAttachmentPicker v-model="form.attachments" :errors="form.errors" />
 
             <p v-if="form.errors.email" class="text-xs text-red-500 leading-snug">{{ form.errors.email }}</p>
             <p v-if="form.errors.subject" class="text-xs text-red-500 leading-snug">{{ form.errors.subject }}</p>
