@@ -2208,6 +2208,19 @@ test('UI Show shop chat dashboard', function () {
     });
 });
 
+test('phone calls open from the chat reports, not the top menu, and a new build reloads open tabs', function () {
+    actingAs($this->user);
+
+    get(route('grp.chat.reports'))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('pageHead.actions.0.route.name', 'grp.chat.phone_calls.index'));
+
+    get(route('grp.org.chat.reports', [$this->organisation->slug]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('pageHead.actions.0.route.name', 'grp.org.chat.phone_calls.index'));
+
+    \Illuminate\Support\Facades\Vite::shouldReceive('manifestHash')->with('grp')->andReturn('build-2');
+    expect(app(\App\Http\Middleware\HandleInertiaGrpRequests::class)->version(request()))->toBe('build-2');
+});
+
 test('UI Index chat sessions for a shop', function () {
     actingAs($this->user);
 
@@ -4788,9 +4801,9 @@ test('overseeing chat has its own page, scoped to the address, showing everybody
         'topMenu.subSections'
     ))->pluck('route.name')->all();
 
-    expect($tabs(false, true))->toBe(['grp.org.chat.supervision', 'grp.org.chat.phone_calls.index', 'grp.org.chat.reports', 'grp.org.chat.settings'])
-        ->and($tabs(true, false))->toBe(['grp.org.chat.inbox', 'grp.org.chat.phone_calls.index', 'grp.org.chat.reports', 'grp.org.chat.settings'])
-        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox', 'grp.org.chat.supervision', 'grp.org.chat.phone_calls.index', 'grp.org.chat.reports', 'grp.org.chat.settings']);
+    expect($tabs(false, true))->toBe(['grp.org.chat.supervision', 'grp.org.chat.reports', 'grp.org.chat.settings'])
+        ->and($tabs(true, false))->toBe(['grp.org.chat.inbox', 'grp.org.chat.reports', 'grp.org.chat.settings'])
+        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox', 'grp.org.chat.supervision', 'grp.org.chat.reports', 'grp.org.chat.settings']);
 
     $assignment->forceDelete();
     foreach ([$held, $loose] as $session) {

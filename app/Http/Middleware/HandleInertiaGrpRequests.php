@@ -15,11 +15,17 @@ use App\Actions\UI\Grp\GetFirstLoadProps;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Vite;
 use Inertia\Middleware;
 
 class HandleInertiaGrpRequests extends Middleware
 {
     protected $rootView = 'app-grp';
+
+    public function version(Request $request): ?string
+    {
+        return Vite::manifestHash('grp');
+    }
 
     /**
      * JSON endpoints outside grp.json.* polled from every open tab: the full layout is never read from their response.

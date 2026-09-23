@@ -335,10 +335,10 @@ class ShowGroupChatAutomation extends OrgAction
         if (!$activity) {
             return Inertia::render('Chat/ChatAutomationDashboard', [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('AI'),
+                'title'       => __('AI assist'),
                 'pageHead'    => [
                     'title'         => __('AI dashboard'),
-                    'icon'          => ['title' => __('AI'), 'icon' => ['fal', 'fa-robot']],
+                    'icon'          => ['title' => __('AI assist'), 'icon' => ['fal', 'fa-robot']],
                     'subNavigation' => $this->subNavigation($this->group),
                 ],
                 'dashboard'  => $this->dashboard($this->group),
@@ -383,11 +383,11 @@ class ShowGroupChatAutomation extends OrgAction
             'Chat/ChatAutomation',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('AI'),
+                'title'       => __('AI assist'),
                 'pageHead'    => [
                     'title' => $this->bucket === self::NOISE_CHECKS ? __('Noise checks') : __('Sent to customers'),
                     'icon'  => [
-                        'title' => __('AI'),
+                        'title' => __('AI assist'),
                         'icon'  => ['fal', 'fa-robot'],
                     ],
                     'subNavigation' => $this->subNavigation($this->group),
@@ -540,7 +540,7 @@ class ShowGroupChatAutomation extends OrgAction
                     'simple' => [
                         'icon'  => 'fal fa-robot',
                         'route' => ['name' => 'grp.chat.ai.dashboard'],
-                        'label' => __('AI'),
+                        'label' => __('AI assist'),
                     ],
                 ],
             ]
