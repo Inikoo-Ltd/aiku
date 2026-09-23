@@ -6609,7 +6609,7 @@
     "Not a known variable:": "",
     "Not a member?": "Не є учасником?",
     "Not a regex, just the beginning of the postcode. BT matches BT1 7AB, BT29, etc. Several allowed with commas: 91,93,67. Spaces and case are ignored. Leave empty to match any postcode.": "",
-    "Not a whole number of packs: either this product's pack size or this SKU packing is wrong": "",
+    "Picked as part of a pack, which is normal when the product sells fewer units than the SKU holds. Check the pack size only if it should sell whole packs": "",
     "Not a working day": "",
     "Not allowed": "",
     "Not an artisan": "",

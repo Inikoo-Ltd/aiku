@@ -6609,7 +6609,7 @@
     "Not a known variable:": "",
     "Not a member?": "कोई कार्य दिन नहीं",
     "Not a regex, just the beginning of the postcode. BT matches BT1 7AB, BT29, etc. Several allowed with commas: 91,93,67. Spaces and case are ignored. Leave empty to match any postcode.": "अभी तक नहीं जुड़े।",
-    "Not a whole number of packs: either this product's pack size or this SKU packing is wrong": "स्थान 02339f523a9cfede5888df23 में सभी c2f00ffe5fec22d55ccb0799 की आवश्यकताओं को उठाने के लिए पर्याप्त स्टॉक नहीं है",
+    "Picked as part of a pack, which is normal when the product sells fewer units than the SKU holds. Check the pack size only if it should sell whole packs": "",
     "Not a working day": "इस स्थान में पर्याप्त स्टॉक नहीं है: 68af8ba997cad9e55b77d523 उपलब्ध है, 4af4ed029d4e85d4c9182682 की आवश्यकता है।",
     "Not allowed": "अनुमति नहीं है",
     "Not an artisan": "",

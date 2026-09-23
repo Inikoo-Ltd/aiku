@@ -6609,7 +6609,7 @@
     "Not a known variable:": "",
     "Not a member?": "Non sei ancora iscritto?",
     "Not a regex, just the beginning of the postcode. BT matches BT1 7AB, BT29, etc. Several allowed with commas: 91,93,67. Spaces and case are ignored. Leave empty to match any postcode.": "Non è un'espressione regolare, ma solo l'inizio del codice postale. BT corrisponde a BT1 7AB, BT29, ecc. È possibile inserire più valori separati da virgole: 91,93,67. Gli spazi e le maiuscole\/minuscole vengono ignorati. Lascia vuoto per corrispondere a qualsiasi codice postale.",
-    "Not a whole number of packs: either this product's pack size or this SKU packing is wrong": "Il numero di confezioni non è intero: è errato il formato di confezione del prodotto oppure il confezionamento di questo SKU",
+    "Picked as part of a pack, which is normal when the product sells fewer units than the SKU holds. Check the pack size only if it should sell whole packs": "",
     "Not a working day": "Non è un giorno lavorativo",
     "Not allowed": "Non consentito",
     "Not an artisan": "",

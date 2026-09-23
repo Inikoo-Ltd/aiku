@@ -195,7 +195,7 @@ const removeRow = (index: number) => rows.value.splice(index, 1)
                                                 v-if="product.pick.isPartial"
                                                 :icon="faExclamationTriangle"
                                                 class="text-amber-500"
-                                                v-tooltip="ctrans('Not a whole number of packs: either this product\'s pack size or this SKU packing is wrong')" fixed-width />
+                                                v-tooltip="ctrans('Picked as part of a pack, which is normal when the product sells fewer units than the SKU holds. Check the pack size only if it should sell whole packs')" fixed-width />
                                         </span>
                                     </div>
                                 </div>
