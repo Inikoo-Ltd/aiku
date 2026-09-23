@@ -58,7 +58,7 @@ class ShowPurchaseOrder extends OrgAction
 
     public function asController(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values(), $this->defaultTab($purchaseOrder));
         $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
@@ -66,7 +66,7 @@ class ShowPurchaseOrder extends OrgAction
 
     public function inOrgSupplier(Organisation $organisation, OrgSupplier $orgSupplier, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values(), $this->defaultTab($purchaseOrder));
         $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
@@ -74,7 +74,7 @@ class ShowPurchaseOrder extends OrgAction
 
     public function inOrgAgent(Organisation $organisation, OrgAgent $orgAgent, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values(), $this->defaultTab($purchaseOrder));
         $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
@@ -82,10 +82,19 @@ class ShowPurchaseOrder extends OrgAction
 
     public function inOrgPartner(Organisation $organisation, OrgPartner $orgPartner, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values());
+        $this->initialisation($organisation, $request)->withTab(PurchaseOrderTabsEnum::values(), $this->defaultTab($purchaseOrder));
         $this->authorizeProcurementRecord($purchaseOrder);
 
         return $this->handle($purchaseOrder);
+    }
+
+    private function defaultTab(PurchaseOrder $purchaseOrder): string
+    {
+        $isEmptyOpenOrder = $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
+            && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier)
+            && !$purchaseOrder->purchaseOrderTransactions()->exists();
+
+        return $isEmptyOpenOrder ? PurchaseOrderTabsEnum::PRODUCTS->value : PurchaseOrderTabsEnum::ITEMS->value;
     }
 
     public function htmlResponse(PurchaseOrder $purchaseOrder, ActionRequest $request): Response

@@ -345,8 +345,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(image_thumbnail)="{ item }">
-            <div class="flex">
-                <Image :src="item['image_thumbnail']" imageCover class="w-20 aspect-square overflow-hidden" />
+            <div class="h-12 w-12 flex-none overflow-hidden rounded border border-gray-100">
+                <Image :src="item['image_thumbnail']" imageCover class="h-12 w-12" />
             </div>
         </template>
 
@@ -409,7 +409,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(subtotals)="{ item }">
-            <div class="space-y-0.5">
+            <span v-if="!Number(item.quantity_ordered)" class="text-gray-300">-</span>
+            <div v-else class="space-y-0.5">
                 <div class="text-gray-500">{{ quantityBreakdown(item) }}</div>
                 <div class="flex items-center gap-1.5">
                     <span>{{ amount(item) }}</span>
@@ -467,9 +468,6 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     @click="confirmCancelItem($event, item)"
                 />
 
-                <span v-if="!item.deleteRoute && !item.cancelRoute" class="text-gray-400 text-sm">
-                    {{ ctrans('No actions needed') }}
-                </span>
             </div>
         </template>
 
