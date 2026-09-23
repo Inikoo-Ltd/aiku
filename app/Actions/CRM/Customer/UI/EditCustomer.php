@@ -183,6 +183,20 @@ class EditCustomer extends OrgAction
                     'value'    => $customer->accounting_reference,
                     'required' => false,
                 ],
+                'credit_limit'         => [
+                    'type'     => 'input',
+                    'label'    => __('Credit limit'),
+                    'value'    => $customer->credit_limit,
+                    'hidden'   => $customer->shop->type != ShopTypeEnum::B2B || !$request->user()->authTo("accounting.{$customer->organisation_id}.edit"),
+                    'required' => false,
+                ],
+                'payment_terms_days'   => [
+                    'type'     => 'input',
+                    'label'    => __('Payment terms (days)'),
+                    'value'    => $customer->payment_terms_days,
+                    'hidden'   => $customer->shop->type != ShopTypeEnum::B2B || !$request->user()->authTo("accounting.{$customer->organisation_id}.edit"),
+                    'required' => false,
+                ],
             ]
         ];
         $tags       = [

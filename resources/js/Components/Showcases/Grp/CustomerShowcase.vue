@@ -39,7 +39,7 @@ import {
     faPaperclip,
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans as trans } from "@/Composables/useTrans"
 import { inject, ref, computed } from "vue"
 import axios from "axios"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -1090,6 +1090,13 @@ const submitNote = async () => {
                                                  tooltip="Decrease Balance" fixed-width aria-hidden="true" />
                             </div>
                         </div>
+                    </div>
+                </div>
+                <div v-if="Number(data.customer.credit_limit) > 0" class="mt-2 text-sm text-gray-500">
+                    {{ trans("Credit limit") }}: {{ locale.currencyFormat(data.currency?.code, data.customer.credit_limit) }}
+                    <span v-if="data.customer.payment_terms_days"> · {{ trans(":days days terms", { days: data.customer.payment_terms_days }) }}</span>
+                    <div>
+                        {{ trans("Available") }}: <span class="font-semibold">{{ locale.currencyFormat(data.currency?.code, Number(data.customer.balance) + Number(data.customer.credit_limit)) }}</span>
                     </div>
                 </div>
                 <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
