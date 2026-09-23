@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { inject, ref, computed, onBeforeUnmount, nextTick, defineAsyncComponent } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Popover from 'primevue/popover'
 
 import { faQuestionCircle } from "@fal"
@@ -20,7 +20,7 @@ const productCardComponents: Record<string, any> = {
     "products-2": ProductCardEcom2,
 }
 import axios from "axios"
-import VariantDialogContent from "@/Iris/Components/IrisBlocks/Products/Ecom/VariantDialogContent.vue"
+const VariantDialogContent = defineAsyncComponent(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/VariantDialogContent.vue"))
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faStarHalfAlt, faQuestionCircle)
@@ -121,8 +121,8 @@ const onAddFavourite = (product: ProductResource) => {
             onError: errors => {
                 console.error(errors)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the product to favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add the product to favourites"),
                     type: "error"
                 })
             },
@@ -148,8 +148,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
+                //     title: ctrans("Success"),
+                //     text: ctrans("Added to portfolio"),
                 //     type: "success"
                 // })
                 layout.reload_handle()
@@ -157,8 +157,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to remove the product from favourites"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to remove the product from favourites"),
                     type: "error"
                 })
             },
@@ -189,8 +189,8 @@ const onAddBackInStock = async (product: ProductResource) => {
 		emits("afterOnAddBackInStock", product)
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to add the product to remind back in stock"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to add the product to remind back in stock"),
 			type: "error"
 		})
 	} finally {
@@ -214,8 +214,8 @@ const onUnselectBackInStock = async (product: ProductResource) => {
 		emits("afterOnUnselectBackInStock", product)
 	} catch (error) {
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("Failed to remove the product from remind back in stock"),
+			title: ctrans("Something went wrong"),
+			text: ctrans("Failed to remove the product from remind back in stock"),
 			type: "error"
 		})
 	} finally {
@@ -256,11 +256,13 @@ const closePopover = () => {
 }
 
 const bindPopoverViewportListeners = () => {
+  document.addEventListener('click', onClickOutside, true)
   window.addEventListener('scroll', closePopover, true)
   window.addEventListener('resize', closePopover)
 }
 
 const unbindPopoverViewportListeners = () => {
+  document.removeEventListener('click', onClickOutside, true)
   window.removeEventListener('scroll', closePopover, true)
   window.removeEventListener('resize', closePopover)
 }
@@ -354,12 +356,7 @@ const onPopoverHide = () => {
   popoverTarget.value = null
 }
 
-onMounted(() => {
-  document.addEventListener('click', onClickOutside, true)
-})
-
 onBeforeUnmount(() => {
-  document.removeEventListener('click', onClickOutside, true)
   unbindPopoverViewportListeners()
 })
 

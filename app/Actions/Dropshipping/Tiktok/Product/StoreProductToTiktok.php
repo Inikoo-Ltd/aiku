@@ -104,6 +104,13 @@ class StoreProductToTiktok extends RetinaAction
                 }
             }
 
+            $identifierCode = blank($product->barcode) ? [] : [
+                'identifier_code' => [
+                    'code' => (string) $product->barcode,
+                    'type' => 'EAN'
+                ]
+            ];
+
             $categoryAttributes = $tiktokUser->getCategoryAttributes($leafCategoryId);
             $attributes = Arr::get($categoryAttributes, 'data.attributes', []);
 
@@ -167,11 +174,8 @@ class StoreProductToTiktok extends RetinaAction
                 'product_certifications' => $requiredCertifications,
                 ...$requiredPersonResponsible,
                 ...$requiredManufacturer,
+                ...$identifierCode,
                 'external_product_id' => (string) $portfolio->id,
-                'identifier_code' => [
-                    'code' => (string) $product->barcode,
-                    'type' => 'EAN'
-                ],
                 'product_attributes' => $productAttributes,
                 'skus' => [
                     [

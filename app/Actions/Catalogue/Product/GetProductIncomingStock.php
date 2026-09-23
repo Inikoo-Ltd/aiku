@@ -19,8 +19,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
 /**
  * What is still on its way to the warehouse for a product's org stocks, and when it should land.
  *
- * Goods already turned into a stock delivery are counted there; a purchase order is only
- * counted while no live stock delivery exists for it, so nothing is listed twice.
+ * Goods already turned into a stock delivery are counted there; a purchase order line is only
+ * counted while no live stock delivery holds that same org stock, so nothing is listed twice
+ * and the rest of a partly delivered order stays visible.
  */
 class GetProductIncomingStock
 {
@@ -145,7 +146,10 @@ class GetProductIncomingStock
                 $query->select(DB::raw(1))
                     ->from('purchase_order_stock_delivery')
                     ->join('stock_deliveries', 'stock_deliveries.id', 'purchase_order_stock_delivery.stock_delivery_id')
+                    ->join('stock_delivery_items', 'stock_delivery_items.stock_delivery_id', 'stock_deliveries.id')
                     ->whereColumn('purchase_order_stock_delivery.purchase_order_id', 'purchase_orders.id')
+                    ->whereColumn('stock_delivery_items.org_stock_id', 'purchase_order_transactions.org_stock_id')
+                    ->whereNull('stock_delivery_items.deleted_at')
                     ->whereNull('stock_deliveries.deleted_at')
                     ->whereNotIn('stock_deliveries.state', [
                         StockDeliveryStateEnum::CANCELLED->value,

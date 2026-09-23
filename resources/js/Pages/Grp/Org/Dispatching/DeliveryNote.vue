@@ -63,6 +63,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import PureCheckbox from "@/Components/Pure/PureCheckbox.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
@@ -328,6 +329,9 @@ const hasClearedTodoTabBaySelector = computed(() =>
 	props.shop?.type !== "dropshipping"
 	&& !!props.pageHead?.actions?.some((action: any) => action?.key === "trigger-set-as-picked-or-packed")
 )
+
+// Cancelling leaves the picked goods on the trolley, so the put-away worklist is the default.
+const createReturnOnCancel = ref(true)
 
 // Section: To Queue
 const isModalToQueue = ref(false);
@@ -855,8 +859,6 @@ const stopSocketListener = () => {
 		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">
-			<StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
-			<StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
 			<!-- toggle picking view -->
 			<div
 				v-if="
@@ -898,6 +900,11 @@ const stopSocketListener = () => {
 			</div> -->
 		</template>
 
+		<template #other>
+			<StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
+			<StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
+		</template>
+
 		<template #button-to-queue="{ action }">
 			<Button
 				@click="isModalToQueue = true"
@@ -927,16 +934,33 @@ const stopSocketListener = () => {
 		<template #wrapped-cancel="{ action }">
 			<ModalConfirmationDelete
 				:routeDelete="action.route"
-				:title="trans('Are you sure you want to cancel the delivery?')"
+				:title="ctrans('Are you sure you want to cancel the delivery?')"
 				:description="
-					trans(
+					ctrans(
 						'This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.'
 					)
 				"
 				isFullLoading
-				:noLabel="trans('Yes, cancel delivery')"
+				:extraBody="{ create_return: createReturnOnCancel }"
+				:noLabel="ctrans('Yes, cancel delivery')"
 				noIcon="x"
-				:cancelLabel="trans('No, keep delivery')">
+				:cancelLabel="ctrans('No, keep delivery')">
+				<template #warning>
+					<label class="mt-4 flex items-start gap-x-2 cursor-pointer">
+						<PureCheckbox v-model="createReturnOnCancel" class="mt-0.5" />
+						<span class="text-sm text-gray-700">
+							{{ ctrans("Create Return") }}
+							<span class="block text-xs text-gray-500">
+								{{
+									ctrans(
+										"Picked goods stay off the shelf until someone walks them back. Untick to send them back to their locations straight away."
+									)
+								}}
+							</span>
+						</span>
+					</label>
+				</template>
+
 				<template #default="{ isOpenModal, changeModel }">
 					<Button
 						@click="changeModel"

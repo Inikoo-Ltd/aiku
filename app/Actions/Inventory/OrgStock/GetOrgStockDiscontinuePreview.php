@@ -13,7 +13,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
@@ -232,7 +232,7 @@ class GetOrgStockDiscontinuePreview extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation));
+        return $request->user()->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
     }
 
     public function rules(): array

@@ -15,12 +15,13 @@ import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Icon from '@/Components/Icon.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
+import SelectQuery from '@/Components/SelectQuery.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
-import { faArrowLeft, faLink, faEnvelope, faGlobe, faLock } from '@fal'
+import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faLifeRing, faLock)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock)
 
 type SidePanelTab = 'profile' | 'statistics' | 'tickets' | 'timeline' | 'log' | 'history'
 
@@ -44,6 +45,7 @@ interface PanelSession {
     status: string
     priority?: string | null
     assigned_agent?: string | null
+    assigned_agent_id?: number | string | null
     started?: string | null
     ai_summary?: {
         summary?: string
@@ -78,8 +80,10 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: 'close'): void
     (e: 'priority-updated', value: string): void
+    (e: 'agent-assigned', agent: { id: number; name: string }): void
     (e: 'synced', webUser: { id: number; name: string; email: string | null }): void
     (e: 'customer-synced', customer: { id: number; name: string; email: string | null; phone: string | null }): void
+    (e: 'unlinked'): void
 }>()
 
 const PRIORITIES: Array<{ value: string; label: string; color: string; icon: any }> = [
@@ -97,7 +101,51 @@ const currentPriority = computed(() => PRIORITIES.find(p => p.value === effectiv
 const isPriorityOpen = ref(false)
 const isSavingPriority = ref(false)
 
-watch(() => props.session.ulid, () => { pendingPriority.value = null })
+watch(() => props.session.ulid, () => {
+    pendingPriority.value = null
+    pendingAgent.value = null
+    isEditingAgent.value = false
+})
+
+// WhatsApp has no route for handing a conversation to a named agent yet, so there it stays
+// what it was: the name of whoever holds it.
+const canAssignAgent = computed(() => props.session.channel !== 'whatsapp')
+const pendingAgent = ref<{ id: number; name: string } | null>(null)
+const currentAgentName = computed(() => pendingAgent.value?.name ?? props.session.assigned_agent ?? null)
+const currentAgentId = computed(() => pendingAgent.value?.id ?? props.session.assigned_agent_id ?? null)
+const isEditingAgent = ref(false)
+const isAssigningAgent = ref(false)
+
+const assignAgent = async (option: any) => {
+    const agentId = Number(option?.agent_id)
+    if (!agentId || isAssigningAgent.value) return
+    if (String(currentAgentId.value ?? '') === String(agentId)) {
+        isEditingAgent.value = false
+        return
+    }
+
+    isAssigningAgent.value = true
+    try {
+        const organisation = String((route().params as Record<string, any>)?.organisation ?? '')
+        const response = await axios.patch(
+            route('grp.org.chat.agents.assign', [organisation, props.session.ulid]),
+            { agent_id: agentId },
+            { withCredentials: true }
+        )
+        const name = response.data?.data?.assigned_agent_name || option?.label || option?.name || ''
+        pendingAgent.value = { id: agentId, name }
+        isEditingAgent.value = false
+        emit('agent-assigned', { id: agentId, name })
+    } catch (e: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: e.response?.data?.message || e.message,
+            type: 'error',
+        })
+    } finally {
+        isAssigningAgent.value = false
+    }
+}
 
 const updatePriority = async (value: string) => {
     isPriorityOpen.value = false
@@ -417,6 +465,11 @@ watch(() => props.session.is_guest, (isGuest) => {
 
 const isSyncing = ref(false)
 const syncError = ref<string | null>(null)
+const showCustomerPicker = ref(false)
+const customerQuery = ref('')
+const customerCandidates = ref<Array<{ id: number, name: string, reference: string, email: string }>>([])
+const isSearchingCustomers = ref(false)
+let customerSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isWhatsapp = computed(() => props.session.channel === 'whatsapp')
 
@@ -454,12 +507,14 @@ const syncGuest = async () => {
                 emit('synced', res.data.data.web_user)
             } else {
                 syncError.value = res.data?.message ?? 'No matching Aiku customer for this email'
+                showCustomerPicker.value = true
             }
         }
     } catch (e: any) {
         syncError.value = e?.response?.data?.message ?? (isWhatsapp.value
             ? 'No matching Aiku customer for this phone number'
             : 'No matching Aiku customer for this email')
+        if (!isWhatsapp.value) showCustomerPicker.value = true
     } finally {
         isSyncing.value = false
     }
@@ -470,7 +525,68 @@ const suggestionDismissed = ref(false)
 watch(() => props.session.ulid, () => {
     suggestionDismissed.value = false
     syncError.value = null
+    showCustomerPicker.value = false
+    customerQuery.value = ''
+    customerCandidates.value = []
 })
+
+const searchCustomerCandidates = (query: string) => {
+    customerQuery.value = query
+    if (customerSearchTimeout) clearTimeout(customerSearchTimeout)
+    if (query.trim().length < 2) {
+        customerCandidates.value = []
+        isSearchingCustomers.value = false
+        return
+    }
+    isSearchingCustomers.value = true
+    customerSearchTimeout = setTimeout(async () => {
+        try {
+            const res = await axios.get(
+                `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer-candidates`,
+                { params: { q: query }, withCredentials: true }
+            )
+            customerCandidates.value = res.data ?? []
+        } catch {
+            customerCandidates.value = []
+        } finally {
+            isSearchingCustomers.value = false
+        }
+    }, 300)
+}
+
+const unlinkCustomer = async () => {
+    if (isSyncing.value) return
+    if (!window.confirm(ctrans('Unlink this customer from the conversation?'))) return
+    isSyncing.value = true
+    syncError.value = null
+    try {
+        await axios.delete(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer`, { withCredentials: true })
+        emit('unlinked')
+    } catch (e: any) {
+        syncError.value = e?.response?.data?.message ?? ctrans('Could not unlink this customer')
+    } finally {
+        isSyncing.value = false
+    }
+}
+
+const pickCustomer = async (customerId: number) => {
+    if (isSyncing.value) return
+    isSyncing.value = true
+    syncError.value = null
+    try {
+        const res = await axios.put(
+            `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer`,
+            { customer_id: customerId },
+            { withCredentials: true }
+        )
+        showCustomerPicker.value = false
+        emit('synced', res.data.data.web_user)
+    } catch (e: any) {
+        syncError.value = e?.response?.data?.message ?? ctrans('Could not match this customer')
+    } finally {
+        isSyncing.value = false
+    }
+}
 
 const answerSuggestion = async (confirmed: boolean) => {
     if (isSyncing.value) return
@@ -549,6 +665,17 @@ const copyChatId = async () => {
                             <span v-else>{{ session.contact_name || '-' }}</span>
                         </div>
                     </div>
+                    <div v-if="!isWhatsapp && !session.is_guest && session.web_user_id" class="grid grid-cols-3 gap-2 items-start">
+                        <div></div>
+                        <div class="col-span-2">
+                            <button type="button" :disabled="isSyncing"
+                                class="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 hover:underline disabled:opacity-60"
+                                @click="unlinkCustomer">
+                                <FontAwesomeIcon :icon="['fal', 'fa-unlink']" class="text-[9px]" fixed-width />
+                                {{ ctrans("Unlink customer") }}
+                            </button>
+                        </div>
+                    </div>
                     <div v-if="!session.is_guest && customerProfile.email" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">{{ ctrans("Email") }}</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800 break-all">
@@ -611,6 +738,28 @@ const copyChatId = async () => {
                                 {{ isSyncing ? 'Matching…' : 'Match to Aiku customer' }}
                             </button>
                             <p v-if="syncError" class="text-[10px] text-amber-600 mt-1">{{ syncError }}</p>
+                            <div v-if="showCustomerPicker && !isWhatsapp" class="mt-1.5 rounded border border-gray-200 p-1.5 space-y-1.5">
+                                <input type="text"
+                                    class="w-full text-xs rounded border border-gray-200 px-1.5 py-1 focus:outline-none"
+                                    :style="{ borderColor: themePrimary }"
+                                    :placeholder="ctrans('Customer name, reference or email')"
+                                    :value="customerQuery"
+                                    @input="searchCustomerCandidates(($event.target as HTMLInputElement).value)" />
+                                <div v-if="isSearchingCustomers" class="text-[11px] text-gray-400">{{ ctrans('Searching…') }}</div>
+                                <template v-else-if="customerQuery.trim().length >= 2">
+                                    <button v-for="candidate in customerCandidates" :key="candidate.id" type="button"
+                                        :disabled="isSyncing"
+                                        class="block w-full text-left text-xs rounded px-1.5 py-1 hover:bg-gray-50 disabled:opacity-60"
+                                        @click="pickCustomer(candidate.id)">
+                                        <span class="font-medium text-gray-800">{{ candidate.name }} ({{ candidate.reference }})</span>
+                                        <span class="block text-[11px] text-gray-400">{{ candidate.email }}</span>
+                                    </button>
+                                    <p v-if="!customerCandidates.length" class="text-[11px] text-gray-400">{{ ctrans('No customers found') }}</p>
+                                </template>
+                                <button type="button" class="text-[11px] text-gray-500 hover:underline" @click="showCustomerPicker = false">
+                                    {{ ctrans('Cancel') }}
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div v-if="session.shop_name" class="grid grid-cols-3 gap-2 items-start">
@@ -730,9 +879,26 @@ const copyChatId = async () => {
                             </div>
                         </div>
                     </div>
-                    <div v-if="session.assigned_agent" class="grid grid-cols-3 gap-2 items-center">
-                        <div class="text-gray-500 text-xs">Agent</div>
-                        <div class="col-span-2 text-xs font-medium text-gray-800">{{ session.assigned_agent }}</div>
+                    <div v-if="currentAgentName || canAssignAgent" class="grid grid-cols-3 gap-2 items-center">
+                        <div class="text-gray-500 text-xs">{{ ctrans("Agent") }}</div>
+                        <div v-if="!canAssignAgent" class="col-span-2 text-xs font-medium text-gray-800">{{ currentAgentName }}</div>
+                        <div v-else-if="!isEditingAgent" class="col-span-2">
+                            <button type="button"
+                                class="w-full text-left text-xs font-medium rounded-md border border-gray-200 px-2 py-1 hover:bg-gray-50"
+                                :class="currentAgentName ? 'text-gray-800' : 'text-gray-400'"
+                                @click="isEditingAgent = true">
+                                {{ currentAgentName || ctrans("Assign to an agent") }}
+                            </button>
+                        </div>
+                        <div v-else class="col-span-2">
+                            <SelectQuery :urlRoute="`${baseUrl}/app/api/chats/agents`" :label="'label'"
+                                :valueProp="'agent_id'" :object="true" :searchable="true" :closeOnSelect="true"
+                                :disabled="isAssigningAgent" :onChange="assignAgent" />
+                            <button type="button" class="mt-1 text-[10px] text-gray-500 hover:text-gray-700"
+                                :disabled="isAssigningAgent" @click="isEditingAgent = false">
+                                {{ ctrans("Cancel") }}
+                            </button>
+                        </div>
                     </div>
                     <div v-if="session.started" class="grid grid-cols-3 gap-2 items-center">
                         <div class="text-gray-500 text-xs">Started</div>

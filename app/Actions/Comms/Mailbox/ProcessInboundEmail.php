@@ -17,6 +17,7 @@ use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\HumanResources\Employee;
@@ -31,6 +32,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessInboundEmail
@@ -44,7 +46,32 @@ class ProcessInboundEmail
      */
     private const int GONE_TTL_DAYS = 7;
 
+    /**
+     * The row carrying the gmail id is what stops a message being taken in twice, but it is only
+     * written once the message has been taken in. Two jobs starting inside that window both read
+     * no row and both import, which is how one mailbox answered by two shops produced every mail
+     * twice. The claim closes the window, is not scoped to a shop, and is given back when the job
+     * fails so a retry is still allowed to import.
+     *
+     * ponytail: a claim, not an invariant. A unique index on the id would be one, at the price of
+     * the losing job having already opened a chat session and its events to unpick.
+     */
     public function handle(Shop $shop, string $gmailMessageId): ?ChatMessage
+    {
+        if (! Cache::add($this->claimKey($gmailMessageId), true, now()->addMinutes(10))) {
+            return null;
+        }
+
+        try {
+            return $this->import($shop, $gmailMessageId);
+        } catch (Throwable $exception) {
+            Cache::forget($this->claimKey($gmailMessageId));
+
+            throw $exception;
+        }
+    }
+
+    private function import(Shop $shop, string $gmailMessageId): ?ChatMessage
     {
         if (ChatMessage::where('metadata->gmail_message_id', $gmailMessageId)->exists()) {
             return null;
@@ -77,25 +104,31 @@ class ProcessInboundEmail
         $body    = GmailMessageParser::body($raw);
 
         // Kept beside the text, never instead of it: the text is what search, previews and
-        // translation read, and what is shown if the markup is ever refused.
-        $html = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
+        // translation read, and what is shown if the markup is ever refused. It is purified
+        // once the pictures it points at have been stored, because the purifier refuses the
+        // cid scheme they arrive under and there is no second chance to resolve them.
+        $rawHtml = GmailMessageParser::htmlBody($raw);
         $threadId = GmailMessageParser::threadId($raw);
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
 
         $mailboxAddress = Arr::get($shop->settings, 'gmail.email');
+        // Filed away like anything else we decide not to take in: left in the inbox it would be
+        // offered again by every sweep, and read as mail that never came through.
         if ($mailboxAddress && $from['address'] && strcasecmp($from['address'], $mailboxAddress) === 0) {
+            $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
+
             return null;
         }
 
         if ($this->isOneOfOurs($from['address'])) {
-            $client->addLabel($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
 
         $blocked = Arr::get($shop->settings, 'gmail.blocked_senders', []);
         if ($from['address'] && in_array(strtolower($from['address']), array_map('strtolower', $blocked), true)) {
-            $client->addLabel($gmailMessageId, 'aiku/spam');
+            $client->fileAway($gmailMessageId, 'aiku/spam', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
@@ -103,7 +136,7 @@ class ProcessInboundEmail
         $webUser = $this->matchWebUser($shop, $from['address']);
 
         if (! $webUser && self::isAutomatedMail($from['address'], $subject)) {
-            $client->addLabel($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
@@ -117,7 +150,7 @@ class ProcessInboundEmail
         // On its own it is not a conversation at all: answering a mail we never sent leaves
         // nobody to reply to, so it is filtered rather than opened as new work.
         if (! $existing && $isAutoReply) {
-            $client->addLabel($gmailMessageId, 'aiku/filtered');
+            $client->fileAway($gmailMessageId, 'aiku/filtered', Arr::get($raw, 'labelIds', []));
 
             return null;
         }
@@ -125,8 +158,9 @@ class ProcessInboundEmail
         // Pictures come in whoever sent them: with the markup discarded they are the only thing
         // left to look at, and mail whose images are missing reads as broken. A stranger's other
         // files still wait in Gmail until an agent has replied.
+        $contentIds  = [];
         $attachments = ImportPendingGmailAttachments::make()
-            ->download($client, $gmailMessageId, $raw, trusted: (bool) $webUser);
+            ->download($client, $gmailMessageId, $raw, trusted: (bool) $webUser, contentIds: $contentIds);
 
         $pendingAttachments = ImportPendingGmailAttachments::make()->countDeferred($client, $raw, trusted: (bool) $webUser);
 
@@ -141,6 +175,10 @@ class ProcessInboundEmail
             'sender_type'  => $webUser ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
             'sender_id'    => $webUser?->id,
         ]);
+
+        $html = app(HTMLSanitizer::class)->cleanEmail(
+            $this->resolveInlineImages($rawHtml, $message, $contentIds)
+        );
 
         if ($html !== '') {
             $message->update(['html_body' => $html]);
@@ -169,6 +207,7 @@ class ProcessInboundEmail
         $session->update([
             'metadata' => array_merge($session->metadata ?? [], [
                 'gmail_last_header_message_id' => $headerMessageId,
+                'gmail_references'             => SendChatMessageByGmail::references($session->metadata ?? [], $headerMessageId),
                 'name' => $from['name'] ?? $from['address'],
                 'email' => $from['address'],
             ]),
@@ -187,11 +226,51 @@ class ProcessInboundEmail
         }
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
-        $client->addLabel($gmailMessageId, $label);
+        $client->fileAway($gmailMessageId, $label, Arr::get($raw, 'labelIds', []));
 
         $this->importThreadHistory($client, $session, $threadId, $mailboxAddress, $webUser);
 
         return $message;
+    }
+
+    /**
+     * A picture inside an email is addressed as src="cid:something", which means nothing outside
+     * the mail itself: left alone the purifier drops the src and the message reads as "see the
+     * photo below" with nothing below it, while the file sits detached above the text. Each one
+     * is pointed at the copy we stored instead, so the mail shows the way it was written.
+     *
+     * The stored files are in the order they were downloaded, so position is what matches them.
+     *
+     * @param  array<int, string|null>  $contentIds
+     */
+    private function resolveInlineImages(?string $html, ChatMessage $message, array $contentIds): ?string
+    {
+        if (! $html || ! array_filter($contentIds)) {
+            return $html;
+        }
+
+        $files = $message->attachedFiles();
+
+        foreach ($contentIds as $index => $contentId) {
+            $media = $files[$index] ?? null;
+
+            if (! $contentId || ! $media) {
+                continue;
+            }
+
+            $html = str_ireplace(
+                ['cid:'.$contentId, 'cid:'.rawurlencode($contentId)],
+                $media->getUrl(),
+                $html
+            );
+        }
+
+        return $html;
+    }
+
+    private function claimKey(string $gmailMessageId): string
+    {
+        return "gmail-message-claim:$gmailMessageId";
     }
 
     private function goneKey(Shop $shop, string $gmailMessageId): string
@@ -204,20 +283,38 @@ class ProcessInboundEmail
      * and what we answered from Gmail itself. Written straight to the table at the time Gmail has
      * for them, because these were already sent and read: nothing is mailed, broadcast or counted.
      *
-     * ponytail: text and markup only, attachments of older mails stay in Gmail. An aiku reply whose
-     * send job has not yet stored its gmail id would come in twice; the job runs in seconds.
+     * ponytail: text and markup only, attachments of older mails stay in Gmail.
+     *
+     * What has already come in is asked of every message rather than of this conversation's own,
+     * because a thread that was ever split across two conversations would otherwise have its
+     * history written into both.
      */
     public function importThreadHistory(GmailClient $client, ChatSession $session, string $threadId, ?string $mailboxAddress, ?WebUser $webUser): int
     {
+        $thread = $client->getThreadMessages($threadId);
+
+        // Two mails of one thread arriving together used to read the same empty history and both
+        // write it. Held across the reading and the writing rather than left on each message, so
+        // a history that is deleted afterwards can still be fetched again.
+        return Cache::lock("gmail-thread-history:$threadId", 60)->get(
+            fn () => $this->writeThreadHistory($thread, $session, $mailboxAddress, $webUser)
+        ) ?: 0;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $thread
+     */
+    private function writeThreadHistory(array $thread, ChatSession $session, ?string $mailboxAddress, ?WebUser $webUser): int
+    {
         $imported = 0;
 
-        $known = ChatMessage::where('chat_session_id', $session->id)
+        $known = ChatMessage::whereIn('metadata->gmail_message_id', array_filter(array_column($thread, 'id')))
             ->pluck('metadata')
             ->map(fn ($metadata) => Arr::get($metadata, 'gmail_message_id'))
             ->filter()
             ->flip();
 
-        foreach ($client->getThreadMessages($threadId) as $raw) {
+        foreach ($thread as $raw) {
             $labels = Arr::get($raw, 'labelIds', []);
 
             if ($known->has(Arr::get($raw, 'id')) || array_intersect($labels, ['DRAFT', 'SPAM', 'TRASH'])) {
@@ -382,11 +479,22 @@ class ProcessInboundEmail
      */
     private function reuseSession(ChatSession $session, array $from, bool $isAutoReply): ChatSession
     {
+        // A customer writing back to a finished conversation is new work nobody holds yet, so it
+        // returns to the waiting queue rather than to the agent who closed it; assigning it is
+        // what makes it active again.
         if ($session->isClosed() && ! $isAutoReply) {
             $session->update([
-                'status'    => ChatSessionStatusEnum::ACTIVE,
+                'status'    => ChatSessionStatusEnum::WAITING,
+                'closed_by' => null,
                 'closed_at' => null,
             ]);
+
+            $session->assignments()
+                ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+                ->update([
+                    'status'      => ChatAssignmentStatusEnum::RESOLVED->value,
+                    'resolved_at' => now(),
+                ]);
         }
 
         $session->update([

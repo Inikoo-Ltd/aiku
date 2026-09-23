@@ -62,9 +62,9 @@ const isLoadingInitial = ref(false)
 const isLoadingMore = ref(false)
 
 
-const sortKey = ref("created_at")
-const isAscending = ref(true)
-const orderBy = ref("created_at")
+const sortKey = ref("product_categories.created_at")
+const isAscending = ref(false)
+const orderBy = ref("-product_categories.created_at")
 
 
 onMounted(() => {

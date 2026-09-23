@@ -28,6 +28,8 @@ use App\Actions\Comms\Outbox\NewCustomerPush\RunNewCustomerPushEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
+use App\Actions\Comms\Outbox\BasketOnOffer\RunBasketOnOfferEmailBulkRuns;
+use App\Actions\Comms\Outbox\FavouritesOnOffer\RunFavouritesOnOfferEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ProspectConversion\RunProspectConvertionEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRunsToSubscribers;
@@ -688,6 +690,24 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->job(RunBasketOnOfferEmailBulkRuns::makeJob())->dailyAt('10:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunBasketOnOfferEmailBulkRuns',
+                ),
+                name: 'RunBasketOnOfferEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunFavouritesOnOfferEmailBulkRuns::makeJob())->dailyAt('09:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunFavouritesOnOfferEmailBulkRuns',
+                ),
+                name: 'RunFavouritesOnOfferEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(RunPriceChangeEmailBulkRunsToSubscribers::makeJob())->everyTenMinutes()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'RunPriceChangeEmailBulkRunsToSubscribers',
                 ),
@@ -1079,6 +1099,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'SummarizeIdleChatSessions',
                 ),
                 name: 'SummarizeIdleChatSessions',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:close-empty')->hourlyAt(47)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'CloseEmptyChatSessions',
+                ),
+                name: 'CloseEmptyChatSessions',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

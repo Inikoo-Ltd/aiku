@@ -45,7 +45,7 @@ class UpdateReturnDeliveryNote extends OrgAction
                 foreach ($returnDeliveryNote->returnDeliveryNoteItem as $returnedItem) {
                     UpdateReturnDeliveryNoteItem::make()->action($returnedItem, [
                         'state'       => ReturnDeliveryNoteItemStateEnum::UNASSIGNED,
-                        'handling_at' => null,
+                        'handled_at'  => null,
                     ]);
                 }
             }

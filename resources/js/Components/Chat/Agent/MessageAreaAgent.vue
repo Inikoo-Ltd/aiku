@@ -19,11 +19,13 @@ import {
     faLock,
     faExclamationCircle,
     faCircle,
+    faShare,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
+import ForwardToColleagueModal from "@/Components/Chat/Agent/ForwardToColleagueModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
@@ -149,6 +151,45 @@ const isTicketModalOpen = ref(false)
 const openTicketModal = () => {
     isMenuOpen.value = false
     isTicketModalOpen.value = true
+}
+
+// Putting a conversation down again. Opening one takes it, and an agent who cannot answer it —
+// wrong language, not their decision — was left holding it while it looked answered to everyone else.
+const isReleasing = ref(false)
+const canRelease = computed(() =>
+    !props.readOnly && !isClosed.value && !isTrashed.value && !isWaiting.value && isMyChat.value
+)
+const releaseChat = async () => {
+    if (!props.session?.ulid || isReleasing.value) return
+    isMenuOpen.value = false
+    isReleasing.value = true
+    try {
+        await axios.patch(
+            route("grp.org.chat.agents.sessions.release", [currentOrganisation.value, props.session.ulid]),
+            {},
+            { withCredentials: true }
+        )
+        props.session.status = "waiting"
+        if (props.session.assigned_agent) {
+            props.session.assigned_agent = null
+        }
+        emit("assign-self-success")
+        notify({ title: ctrans("Given back"), text: ctrans("Anybody can pick this up now"), type: "success" })
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to give this conversation back"),
+            type: "error",
+        })
+    } finally {
+        isReleasing.value = false
+    }
+}
+
+const isForwardModalOpen = ref(false)
+const openForwardModal = () => {
+    isMenuOpen.value = false
+    isForwardModalOpen.value = true
 }
 
 const isSlackModalOpen = ref(false)
@@ -530,6 +571,17 @@ interface SelectedAttachment {
 
 const selectedFiles = ref<SelectedAttachment[]>([])
 const isEmailNotif = ref(false)
+
+const isEmailChat = computed(() => (props.session as any)?.channel === "email")
+
+// An email is written, not chatted: Enter opens a line and the message goes when it is finished.
+// A live chat is the other way round, a line at a time, so Enter still sends there.
+const onEnterKey = (event: KeyboardEvent) => {
+    if (isEmailChat.value) return
+
+    event.preventDefault()
+    sendMessage()
+}
 
 // Only worth offering where there is somebody to email and something to say: an email
 // conversation is already an email, and a stranger who left no address cannot be written to.
@@ -1311,6 +1363,15 @@ const handleClickOutside = (e: MouseEvent) => {
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width /> {{ ctrans("Create Ticket") }}
                         </button>
 
+                        <button v-if="canRelease" class="menu-item" :disabled="isReleasing" @click="releaseChat">
+                            <FontAwesomeIcon :icon="faRotateLeft" class="text-amber-600" fixed-width />
+                            {{ ctrans("Give it back to the queue") }}
+                        </button>
+
+                        <button class="menu-item" @click="openForwardModal">
+                            <FontAwesomeIcon :icon="faShare" class="text-teal-600" fixed-width /> {{ ctrans("Forward to a colleague") }}
+                        </button>
+
                         <button class="menu-item" @click="openSlackModal">
                             <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width /> {{ ctrans("Share to Slack") }}
                         </button>
@@ -1479,24 +1540,26 @@ const handleClickOutside = (e: MouseEvent) => {
                         isTyping = false
                         sendTypingStatus(false)
                     }
-                " @paste="onPasteAttachment" @keydown.enter.exact.prevent="sendMessage" rows="1" placeholder="Type message..."
+                " @paste="onPasteAttachment" @keydown.enter.exact="onEnterKey"
+                    @keydown.enter.meta.prevent="sendMessage" @keydown.enter.ctrl.prevent="sendMessage" rows="1"
+                    :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : 'Type message...'"
                     class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
                         <button @click="imageInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload image" :aria-label="ctrans('Upload image')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" v-tooltip="ctrans('Upload image')" :aria-label="ctrans('Upload image')">
                             <FontAwesomeIcon :icon="faImage" class="text-sm" fixed-width />
                         </button>
                         <button @click="fileInput?.click()"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" title="Upload file" :aria-label="ctrans('Upload file')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" v-tooltip="ctrans('Upload file')" :aria-label="ctrans('Upload file')">
                             <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
                         </button>
                         <div ref="emojiPickerContainer" class="relative">
                             <button type="button" @click.stop="showEmojiPicker = !showEmojiPicker"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                                 :class="showEmojiPicker ? 'text-indigo-600 bg-gray-100' : 'text-gray-500'"
-                                :title="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
+                                v-tooltip="ctrans('Emoji')" :aria-label="ctrans('Emoji')">
                                 <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                             </button>
 
@@ -1505,7 +1568,7 @@ const handleClickOutside = (e: MouseEvent) => {
                             </div>
                         </div>
                         <button @click="openTicketModal"
-                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" :title="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" v-tooltip="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
                     </div>
@@ -1520,6 +1583,13 @@ const handleClickOutside = (e: MouseEvent) => {
             :organisation="currentOrganisation"
             @created="onTicketCreated"
             @close="isTicketModalOpen = false"
+        />
+
+        <ForwardToColleagueModal
+            :is-open="isForwardModalOpen"
+            :organisation="currentOrganisation"
+            :session-ulid="session?.ulid"
+            @close="isForwardModalOpen = false"
         />
 
         <SlackShareModal

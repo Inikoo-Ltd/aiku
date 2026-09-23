@@ -125,6 +125,7 @@ use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
@@ -671,6 +672,7 @@ Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');
 Route::patch('customer/{customer:id}', UpdateCustomer::class)->name('customer.update')->withoutScopedBindings();
+Route::patch('customer/{customer:id}/credit-line', UpdateCustomerCreditLine::class)->name('customer.credit_line.update')->withoutScopedBindings();
 Route::patch('credit-transaction/{customer:id}/increase', IncreaseCreditTransactionCustomer::class)->name('credit_transaction.increase')->withoutScopedBindings();
 Route::patch('credit-transaction/{customer:id}/decrease', DecreaseCreditTransactionCustomer::class)->name('credit_transaction.decrease')->withoutScopedBindings();
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();

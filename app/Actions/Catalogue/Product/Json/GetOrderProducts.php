@@ -46,7 +46,7 @@ class GetOrderProducts extends OrgAction
         if ($order->isPartnerOrder()) {
             $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
         } else {
-            $queryBuilder->where('products.is_for_sale', true);
+            $queryBuilder->sellableToCustomer($order->customer_id);
         }
         $queryBuilder
             ->defaultSort('products.code')

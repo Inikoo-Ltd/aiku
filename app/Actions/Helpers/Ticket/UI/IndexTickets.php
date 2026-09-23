@@ -31,6 +31,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
+use Illuminate\Support\Carbon;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -208,6 +209,11 @@ class IndexTickets extends OrgAction
             $query->where('tickets.rated_at', '>=', $value);
         });
 
+        $ratedMonthFilter = AllowedFilter::callback('rated_month', function ($query, $value) {
+            $month = Carbon::createFromFormat('Y-m', $value)->startOfMonth();
+            $query->whereBetween('tickets.rated_at', [$month, $month->copy()->endOfMonth()]);
+        });
+
         $ratedFilter = AllowedFilter::callback('rated', function ($query, $value) {
             if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
                 $query->whereNotNull('tickets.rating');
@@ -277,7 +283,7 @@ class IndexTickets extends OrgAction
 
         return $queryBuilder
             ->select(['tickets.*', 'users.username as assignee_username'])
-            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter, $ratedFilter, $hasAssigneeFilter, $reporterFilter, $collaboratorFilter, $involvedFilter])
+            ->allowedFilters([$globalSearch, $assigneeFilter, $createdSinceFilter, $resolvedSinceFilter, $ratedSinceFilter, $ratedMonthFilter, $ratedFilter, $hasAssigneeFilter, $reporterFilter, $collaboratorFilter, $involvedFilter])
             ->defaultSort('-tickets.created_at')
             ->allowedSorts(['reference', 'subject', 'status', 'priority', 'created_at', 'updated_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())

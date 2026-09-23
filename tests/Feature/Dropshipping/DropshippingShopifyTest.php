@@ -274,7 +274,12 @@ test('the stock push resolves the variant by sku and never falls back to a sibli
         ->and(BulkUpdateShopifyPortfolio::resolveVariant($borrowsSiblingSku, $product('NMGC-04'), [$variant('1', 'NMGC-01')])['variantId'])->toBe('gid://shopify/ProductVariant/1');
 
     $deletedVariant = new Portfolio(['sku' => 'spbic-12', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/10']);
-    expect(BulkUpdateShopifyPortfolio::resolveVariant($deletedVariant, $product('SPBiC-12'), [$variant('10', 'spbic-10')]))->toBeNull();
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($deletedVariant, $product('SPBiC-12'), [$variant('10', 'spbic-10')], ['spbic-10', 'spbic-12']))->toBeNull();
+
+    $merchantRelabelled = new Portfolio(['sku' => 'aatom-27', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/58846736712028']);
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('58846736712028', 'EE-CALM-EVENING-01')], ['aatom-27', 'b-67494-1'])['variantId'])->toBe('gid://shopify/ProductVariant/58846736712028')
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('58846736712028', 'EE-CALM-EVENING-01'), $variant('2', 'x')], ['aatom-27', 'b-67494-1']))->toBeNull()
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('99', 'EE-CALM-EVENING-01')], ['aatom-27', 'b-67494-1']))->toBeNull();
 
     $merchantWithoutSkus = new Portfolio(['sku' => 'gel-08', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/dead']);
     expect(BulkUpdateShopifyPortfolio::resolveVariant($merchantWithoutSkus, $product('GEL-08'), [$variant('8', '')])['variantId'])->toBe('gid://shopify/ProductVariant/8')

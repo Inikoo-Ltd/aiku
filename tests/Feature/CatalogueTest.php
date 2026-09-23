@@ -892,6 +892,36 @@ test('a product can be exclusive to several customers and only they can see it',
         ->and($visibleTo(null))->toBeTrue();
 });
 
+test('a private product off the website can still be put on its own customer order', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $owner = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $other = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, [
+        'customer_ids' => [$owner->id],
+    ]);
+    $product->update(['is_for_sale' => false]);
+
+    $sellableTo = fn (?int $customerId) => \App\Models\Catalogue\Product::where('shop_id', $shop->id)
+        ->sellableToCustomer($customerId)
+        ->whereKey($product->id)
+        ->exists();
+
+    expect($sellableTo($owner->id))->toBeTrue()
+        ->and($sellableTo($other->id))->toBeFalse()
+        ->and($sellableTo(null))->toBeFalse();
+});
+
 test('repair records unrecorded exclusives among products hidden from the site', function () {
     list($organisation, $user, $shop) = createShop();
 
@@ -1643,3 +1673,30 @@ test('product webpage replaces characters not allowed in webpage urls', function
     expect($webpage->url)->toBe(strtolower(str_replace('.', '-', $product->code)))
         ->and($product->refresh()->webpage_id)->toBe($webpage->id);
 })->depends('create shop');
+
+test('product barcode is left alone when it stops being a single trade unit', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $this->tradeUnit1->update(['barcode' => '5060000000011']);
+    $this->tradeUnit2->update(['barcode' => '5060000000028']);
+
+    SyncProductTradeUnits::run($product, [
+        ['id' => $this->tradeUnit1->id, 'quantity' => 1],
+    ]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit::run(Product::find($product->id));
+    $product->refresh();
+
+    expect($product->barcode)->toBe('5060000000011');
+
+    SyncProductTradeUnits::run($product, [
+        ['id' => $this->tradeUnit1->id, 'quantity' => 1],
+        ['id' => $this->tradeUnit2->id, 'quantity' => 1],
+    ]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit::run(Product::find($product->id));
+    $product->refresh();
+
+    /* Clearing it here is what emptied 561 products and pushed blank GTINs to live listings. */
+    expect($product->barcode)->toBe('5060000000011');
+});

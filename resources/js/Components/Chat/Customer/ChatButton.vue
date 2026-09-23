@@ -318,6 +318,11 @@ const getMessages = async (loadMore = false) => {
 
         const sessionStatus = res.data?.data?.session_status
 
+        if (sessionStatus === "closed" && !loadMore && fetched.length === 0) {
+            await startNewSession()
+            return
+        }
+
         if (sessionStatus === "closed") {
             isRating.value = true
             rating.value = res.data?.data?.rating ?? 0

@@ -44,6 +44,7 @@ class ChatSessionResource extends JsonResource
             'shop_name'     => $chatSession->relationLoaded('shop') && $chatSession->shop ? $chatSession->shop->name : null,
             'contact_name'  => $contactName,
             'assigned_agent' => $activeAssignment?->chatAgent?->user?->contact_name,
+            'rating'        => $chatSession->rating,
             'ai_summary'    => Arr::get($chatSession->metadata ?? [], 'ai_summary'),
             'route'         => [
                 'name'       => 'grp.org.shops.show.crm.chat_sessions.show',

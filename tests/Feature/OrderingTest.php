@@ -61,6 +61,7 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
 use App\Actions\Catalogue\Product\StoreProduct;
@@ -69,6 +70,7 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
+use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
@@ -939,6 +941,13 @@ test('update order state to Finalised ', function (Order $order) {
 test('finalising an already invoiced order does not create a second invoice', function (Order $order) {
     expect(fn () => FinaliseOrder::make()->action($order))->toThrow(ValidationException::class)
         ->and($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->count())->toBe(1);
+})->depends('update order state to Finalised ');
+
+test('tbc shipping amount is refused once the order is finalised', function (Order $order) {
+    $shippingAmount = $order->shipping_amount;
+    expect(fn () => UpdateOrderShippingTBCAmount::make()->action($order, ['shipping_tbc_amount' => 115]))->toThrow(ValidationException::class)
+        ->and($order->fresh()->shipping_amount)->toEqual($shippingAmount)
+        ->and($order->fresh()->shipping_tbc_amount)->not->toEqual(115);
 })->depends('update order state to Finalised ');
 
 test('create customer client', function () {
@@ -3612,6 +3621,65 @@ test('paying with balance sends the order to the warehouse only when the balance
     $order->refresh();
     expect($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
         ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('a credit line lets the customer order on account down to minus the limit, never beyond', function () {
+    $newBasket = function () {
+        $modelData = Order::factory()->definition();
+        data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+        data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+        $order = StoreOrder::make()->action($this->customer, $modelData);
+        StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+
+        return $order->refresh();
+    };
+
+    $this->customer->refresh();
+    if ((float) $this->customer->balance != 0) {
+        StoreCreditTransaction::make()->action($this->customer, [
+            'amount' => -$this->customer->balance,
+            'date'   => now(),
+            'type'   => CreditTransactionTypeEnum::ADJUST,
+        ]);
+    }
+    expect((float) $this->customer->refresh()->balance)->toBe(0.0);
+
+    $order = $newBasket();
+    $total = (float) $order->total_amount;
+
+    $result = PayRetinaOrderWithBalance::make()->handle($order);
+    expect($result['success'])->toBeFalse()
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::CREATING);
+
+    UpdateCustomer::make()->action($this->customer, ['credit_limit' => $total - 0.01, 'payment_terms_days' => 30]);
+    $result = PayRetinaOrderWithBalance::make()->handle($order->refresh());
+    expect($result['success'])->toBeFalse()
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::CREATING);
+
+    UpdateCustomer::make()->action($this->customer, ['credit_limit' => $total]);
+    $result = PayRetinaOrderWithBalance::make()->handle($order->refresh());
+    expect($result['success'])->toBeTrue($result['reason'])
+        ->and($order->refresh()->state)->not->toBe(OrderStateEnum::CREATING)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and((float) $this->customer->refresh()->balance)->toBe(-$total)
+        ->and($this->customer->spendableBalance())->toBe(0.0);
+
+    $secondOrder = SubmitOrder::make()->action($newBasket());
+    $result      = PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($secondOrder->refresh());
+    expect($result['success'])->toBeFalse()
+        ->and((float) $this->customer->refresh()->balance)->toBe(-$total);
+
+    UpdateCustomer::make()->action($this->customer, ['credit_limit' => $total * 3]);
+    $result = PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($secondOrder->refresh(), canUseCredit: false);
+    expect($result['success'])->toBeFalse()
+        ->and((float) $this->customer->refresh()->balance)->toBe(-$total);
+
+    $result = PayOrderWithCustomerBalance::make()->initialisationFromShop($this->shop, [])->handle($secondOrder->refresh());
+    expect($result['success'])->toBeTrue($result['reason'])
+        ->and($secondOrder->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and((float) $this->customer->refresh()->balance)->toBe(round(-$total - (float) $secondOrder->total_amount, 2));
+
+    UpdateCustomer::make()->action($this->customer, ['credit_limit' => 0, 'payment_terms_days' => null]);
 });
 
 test('turning on recargo de equivalencia propagates to baskets migrated from aurora in aiku shops', function () {

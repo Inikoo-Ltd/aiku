@@ -177,14 +177,14 @@ const layout = inject('layout')
             </ModalConfirmationDelete>
         </template>
         <template #other>
-            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
             <Button v-if="can_email_customer" @click="isEmailModalOpen = true" :label="ctrans('New email')" style="secondary"
                 icon="fal fa-envelope" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
-                icon="plus" />            
+                icon="plus" />
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
         </template>
     </PageHeading>
 

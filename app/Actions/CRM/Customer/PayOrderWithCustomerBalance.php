@@ -21,6 +21,7 @@ use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ class PayOrderWithCustomerBalance extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): array
+    public function handle(Order $order, bool $canUseCredit = true): array
     {
         /** Round to cents: raw float subtraction of the DB decimals yields values like
          * 0.039999999999999 which StorePayment's decimal:0,2 rule rejects */
@@ -47,14 +48,12 @@ class PayOrderWithCustomerBalance extends OrgAction
             ];
         }
 
-        if ($order->customer->balance <= 0) {
+        if ($this->spendable($order->customer, $canUseCredit) <= 0) {
             return [
                 'success' => false,
                 'reason'  => 'Customer has no balance',
             ];
         }
-
-        $balance = $order->customer->balance;
 
         $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
         if (!$paymentAccountShop) {
@@ -64,21 +63,21 @@ class PayOrderWithCustomerBalance extends OrgAction
             ];
         }
 
-        $customer = $order->customer;
+        $paid = DB::transaction(function () use ($order, $toPayAmount, $paymentAccountShop, $canUseCredit) {
+            $customer    = Customer::lockForUpdate()->findOrFail($order->customer_id);
+            $toPayAmount = round(min($toPayAmount, $this->spendable($customer, $canUseCredit)), 2);
+            if ($toPayAmount <= 0) {
+                return false;
+            }
 
+            $paymentData = [
+                'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
+                'amount'                  => $toPayAmount,
+                'status'                  => PaymentStatusEnum::SUCCESS,
+                'state'                   => PaymentStateEnum::COMPLETED,
+                'payment_account_shop_id' => $paymentAccountShop->id
+            ];
 
-        $toPayAmount = round(min($toPayAmount, $balance), 2);
-
-
-
-        $paymentData = [
-            'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
-            'amount'                  => $toPayAmount,
-            'status'                  => PaymentStatusEnum::SUCCESS,
-            'state'                   => PaymentStateEnum::COMPLETED,
-            'payment_account_shop_id' => $paymentAccountShop->id
-        ];
-        DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData) {
             $payment = StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
@@ -93,8 +92,15 @@ class PayOrderWithCustomerBalance extends OrgAction
             ];
             StoreCreditTransaction::make()->action($customer, $creditTransactionData);
 
-            return $order;
+            return true;
         });
+
+        if (!$paid) {
+            return [
+                'success' => false,
+                'reason'  => 'Customer has no balance',
+            ];
+        }
 
         /** Outside the payment transaction on purpose: routing to the warehouse creates a delivery
          * note, and for a services only order finalises and dispatches it. A failure in any of that
@@ -116,10 +122,19 @@ class PayOrderWithCustomerBalance extends OrgAction
     /**
      * @throws \Throwable
      */
+    private function spendable(Customer $customer, bool $canUseCredit): float
+    {
+        return $canUseCredit ? $customer->spendableBalance() : (float)$customer->balance;
+    }
+
     public function asController(Order $order): void
     {
         $this->initialisationFromShop($order->shop, []);
-        $result = $this->handle($order);
+        $canUseCredit = request()->user()->authTo([
+            "crm.{$this->shop->id}.edit",
+            "accounting.{$this->organisation->id}.edit",
+        ]);
+        $result = $this->handle($order, $canUseCredit);
 
         request()->session()->flash('notification', [
             'status'      => $result['success'] ? 'success' : 'error',

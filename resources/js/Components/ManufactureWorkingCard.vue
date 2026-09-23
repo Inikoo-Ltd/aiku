@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     session: {
@@ -127,27 +127,27 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
     <div class="rounded-2xl border-2 border-indigo-500 bg-indigo-50 p-10">
         <div class="flex items-baseline justify-between">
             <div>
-                <div class="text-xs uppercase tracking-wide text-indigo-600">{{ trans('Working on') }}</div>
+                <div class="text-xs uppercase tracking-wide text-indigo-600">{{ ctrans('Working on') }}</div>
                 <div class="text-4xl font-semibold mt-1">{{ session.task.task_name }}</div>
                 <div class="text-2xl text-gray-600 mt-1">
                     {{ session.task.artefact_code }} — {{ session.task.artefact_name }}
                 </div>
                 <div class="text-lg text-gray-500 mt-1">
-                    {{ trans('Job order') }} {{ session.task.job_order_reference }}
+                    {{ ctrans('Job order') }} {{ session.task.job_order_reference }}
                 </div>
                 <button
                     type="button"
                     class="mt-3 rounded-lg border-2 border-dashed border-indigo-300 px-4 py-2 text-left hover:bg-indigo-100"
-                    :title="trans('Tap to fill quantity made')"
+                    :title="ctrans('Tap to fill quantity made')"
                     @click="quantityMade = remaining"
                 >
                     <span class="text-7xl font-semibold tabular-nums text-indigo-700">{{ remaining }}</span>
-                    <span class="ml-3 text-xl text-gray-500">{{ trans('to do') }} · {{ session.task.quantity_made }} / {{ session.task.quantity_required }}</span>
+                    <span class="ml-3 text-xl text-gray-500">{{ ctrans('to do') }} · {{ session.task.quantity_made }} / {{ session.task.quantity_required }}</span>
                 </button>
             </div>
             <div class="text-right">
                 <div class="text-7xl font-mono tabular-nums text-indigo-700">{{ elapsed }}</div>
-                <div v-if="session.break_minutes" class="text-sm text-gray-500">{{ session.break_minutes }} {{ trans('min on break') }}</div>
+                <div v-if="session.break_minutes" class="text-sm text-gray-500">{{ session.break_minutes }} {{ ctrans('min on break') }}</div>
             </div>
         </div>
 
@@ -155,7 +155,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
 
         <div v-if="!askOutcome" class="mt-6 flex items-end gap-4">
             <div>
-                <label class="block text-lg text-gray-600 mb-1">{{ trans('Quantity made') }}</label>
+                <label class="block text-lg text-gray-600 mb-1">{{ ctrans('Quantity made') }}</label>
                 <input
                     type="number" min="0" inputmode="numeric"
                     v-model.number="quantityMade"
@@ -163,7 +163,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
                 />
             </div>
             <div v-if="session.can_reject">
-                <label class="block text-sm text-gray-600 mb-1">{{ trans('Rejected') }}</label>
+                <label class="block text-sm text-gray-600 mb-1">{{ ctrans('Rejected') }}</label>
                 <input
                     type="number" min="0" inputmode="numeric"
                     v-model.number="quantityRejected"
@@ -176,36 +176,36 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
                 :disabled="processing || quantityMade === null"
                 @click="onDone"
             >
-                {{ trans('DONE') }}
+                {{ ctrans('DONE') }}
             </button>
         </div>
 
         <div v-if="askOutcome" class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
             <div class="flex items-baseline gap-6">
-                <div><span class="text-4xl font-semibold tabular-nums text-green-700">{{ quantityMade }}</span> <span class="text-lg text-gray-600">{{ trans('done') }}</span></div>
-                <div><span class="text-4xl font-semibold tabular-nums text-amber-700">{{ Math.max(0, remaining - (quantityMade ?? 0)) }}</span> <span class="text-lg text-gray-600">{{ trans('to do') }}</span></div>
+                <div><span class="text-4xl font-semibold tabular-nums text-green-700">{{ quantityMade }}</span> <span class="text-lg text-gray-600">{{ ctrans('done') }}</span></div>
+                <div><span class="text-4xl font-semibold tabular-nums text-amber-700">{{ Math.max(0, remaining - (quantityMade ?? 0)) }}</span> <span class="text-lg text-gray-600">{{ ctrans('to do') }}</span></div>
             </div>
             <div class="mt-3 grid gap-3 sm:grid-cols-3">
                 <button type="button" class="rounded-lg bg-indigo-600 text-white text-xl font-semibold py-4 disabled:opacity-40"
                     :disabled="processing" @click="closeSession('carry_over')">
-                    {{ trans('Continue later') }}
-                    <div class="text-xs font-normal opacity-80">{{ trans('New job for the rest') }}</div>
+                    {{ ctrans('Continue later') }}
+                    <div class="text-xs font-normal opacity-80">{{ ctrans('The rest keeps this job number') }}</div>
                 </button>
                 <button type="button" class="rounded-lg bg-green-600 text-white text-xl font-semibold py-4 disabled:opacity-40"
                     :disabled="processing" @click="closeSession('complete')">
-                    {{ trans('Job finished') }}
-                    <div class="text-xs font-normal opacity-80">{{ trans('Close with what was made') }}</div>
+                    {{ ctrans('Job finished') }}
+                    <div class="text-xs font-normal opacity-80">{{ ctrans('Close with what was made') }}</div>
                 </button>
                 <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold py-4"
                     @click="askOutcome = false">
-                    {{ trans('Back') }}
+                    {{ ctrans('Back') }}
                 </button>
             </div>
         </div>
 
         <div v-if="session.band_feedback" class="mt-6 border-t border-indigo-200 pt-4">
             <div class="text-center text-3xl font-semibold tabular-nums">
-                {{ currentRate.toFixed(1) }} <span class="text-base font-normal text-gray-600">{{ trans('units/hour') }}</span>
+                {{ currentRate.toFixed(1) }} <span class="text-base font-normal text-gray-600">{{ ctrans('units/hour') }}</span>
             </div>
 
             <div class="mt-3 flex gap-1">
@@ -228,8 +228,8 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null) {
             </div>
 
             <div v-if="nextBand" class="mt-2 text-center text-sm text-gray-600">
-                {{ trans('Next') }}: {{ trans('band') }} {{ nextBand.code }} {{ trans('at') }} {{ nextBand.target_units_per_hour }} {{ trans('units/h') }}
-                — +{{ session.band_feedback.currency_symbol }}{{ (nextBand.hourly_rate - currentBandRate).toFixed(2) }}/{{ trans('hour') }}
+                {{ ctrans('Next') }}: {{ ctrans('band') }} {{ nextBand.code }} {{ ctrans('at') }} {{ nextBand.target_units_per_hour }} {{ ctrans('units/h') }}
+                — +{{ session.band_feedback.currency_symbol }}{{ (nextBand.hourly_rate - currentBandRate).toFixed(2) }}/{{ ctrans('hour') }}
             </div>
         </div>
     </div>

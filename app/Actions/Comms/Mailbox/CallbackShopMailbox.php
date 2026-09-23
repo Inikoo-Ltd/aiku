@@ -44,9 +44,30 @@ class CallbackShopMailbox extends OrgAction
             ->get('https://gmail.googleapis.com/gmail/v1/users/me/profile')
             ->json();
 
+        $mailbox = Arr::get($profile, 'emailAddress');
+
+        // A mailbox belongs to one shop. Connected to two, both fetch the same inbox every minute
+        // and every mail is taken in twice, once under each shop: the same conversation appears
+        // twice in the inbox and two people can answer it separately. It has to be refused here,
+        // because by the time it is saved there is nothing left to tell the copies apart.
+        $takenBy = Shop::where('id', '!=', $shop->id)
+            ->where('settings->gmail->email', $mailbox)
+            ->first();
+
+        if ($takenBy) {
+            return Redirect::to($state['return'])->with('notification', [
+                'status'      => 'error',
+                'title'       => __('Gmail not connected'),
+                'description' => __(':mailbox is already the mailbox of :shop. Disconnect it there first, or connect this shop to a mailbox of its own.', [
+                    'mailbox' => $mailbox,
+                    'shop'    => $takenBy->name,
+                ]),
+            ]);
+        }
+
         $settings = $shop->settings ?? [];
         data_set($settings, 'gmail', [
-            'email'                => Arr::get($profile, 'emailAddress'),
+            'email'                => $mailbox,
             'refresh_token'        => Crypt::encryptString($refreshToken),
             'history_id'           => Arr::get($profile, 'historyId'),
             'connected_at'         => now()->toIso8601String(),

@@ -2,7 +2,7 @@
 import Image from "@common/Components/Image.vue"
 import { defineAsyncComponent, inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import LoadingOverlay2 from '@/Components/Utils/LoadingOverlay2.vue'
 import { faEnvelope, faHeart } from '@far'
@@ -311,7 +311,7 @@ defineExpose({
                         v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
+                        v-tooltip="product.is_back_in_stock ? ctrans('You will be notified') : ctrans('Remind me when back in stock')">
                         <LoadingIcon v-if="isLoadingRemindBackInStock" />
                         <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
                             fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
@@ -334,7 +334,7 @@ defineExpose({
 
                 <!-- Section: Login (overlay at the bottom of the image) -->
                 <div v-if="!layout?.iris?.is_logged_in && !hideLogin" class="absolute inset-x-0 bottom-2 z-10 px-3">
-                    <Button :label="trans('Login or Register for Wholesale Prices')"
+                    <Button :label="ctrans('Login or Register for Wholesale Prices')"
                         class="w-full rounded-none text-[9px] md:text-[10px] py-1 leading-tight" full
                         :injectStyle="buttonStyleLogin" @click.prevent.stop="goToLogin" />
                 </div>
@@ -368,7 +368,7 @@ defineExpose({
                 <div v-if="product.rrp_per_unit > 0" class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">
                     <!-- RRP + UNIT  -->
                     <span class="truncate min-w-0 overflow-hidden text-primary">
-                     {{ trans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
+                     {{ ctrans(screenType === 'mobile' ? 'RRP' : 'Recommended retail price') }} : {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }}/{{ product.unit }}
                     </span>
 
                 </div>

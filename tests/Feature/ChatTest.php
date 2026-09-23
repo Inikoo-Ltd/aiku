@@ -29,7 +29,9 @@ use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Actions\Helpers\Address\GetFormattedAddress;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
+use App\Actions\Chat\ChatSession\CloseEmptyChatSessions;
 use App\Actions\Chat\ChatSession\GetChatReports;
+use App\Actions\Chat\ChatSession\IndexChatConversations;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
@@ -105,6 +107,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Permission;
+use Illuminate\Http\Request;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
 use Illuminate\Http\JsonResponse;
@@ -3395,7 +3398,7 @@ test('inbound gmail from an unknown sender becomes a guest email session and a s
 
     expect(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders'))->toBe(['stranger@example.com'])
         ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop->fresh(), 'g2'))->toBeNull();
-    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g2/modify') && $request['addLabelIds'] === ['L2']);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g2/modify') && $request['addLabelIds'] === ['L2'] && $request['removeLabelIds'] === ['INBOX', 'UNREAD']);
 });
 
 test('a campaign send closes the promo-only session but leaves one an agent is handling open', function () {
@@ -4766,6 +4769,69 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         ->and($result['by_topic'][0])->toMatchArray(['topic' => 'order_status', 'conversations' => 1, 'share' => 100.0, 'website' => 1, 'unanswered' => 0])
         ->and($result['unclassified'])->toBe(1)
         ->and($widgetOnlyOpened->exists)->toBeTrue();
+
+    $agent = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]);
+    foreach ([4, 5] as $rating) {
+        $rated = $session('website', $reportShop->id);
+        $message($rated, ChatSenderTypeEnum::GUEST->value, 50);
+        $message($rated, ChatSenderTypeEnum::AGENT->value, 40)->update(['sender_id' => $agent->id]);
+        $message($rated, ChatSenderTypeEnum::AGENT->value, 30)->update(['sender_id' => $agent->id]);
+        $rated->update(['rating' => $rating]);
+    }
+
+    $result = GetChatReports::make()->handle(collect([$reportShop->id]), '1w');
+
+    expect($result['agents'][0])->toMatchArray(['rating' => 4.5, 'ratings' => 2])
+        ->and($result['agents'][0])->not->toHaveKey('rated_sessions')
+        ->and($result['agents_total'])->toMatchArray(['rating' => 4.5, 'ratings' => 2]);
+
+    $listed = function (array $filter) use ($reportShop) {
+        request()->query->replace(['filter' => $filter]);
+
+        return IndexChatConversations::make()->handle($reportShop)->getCollection()->pluck('rating')->sort()->values()->all();
+    };
+
+    expect($listed(['rated' => 1, 'replied' => $this->user->username.','.$result['window']]))->toBe([4.0, 5.0])
+        ->and($listed(['rated' => 1, 'replied' => 'nobody,'.$result['window']]))->toBe([])
+        ->and($listed(['rated' => 1, 'created_between' => now()->subDay()->toIso8601ZuluString().','.now()->toIso8601ZuluString()]))->toBe([4.0, 5.0]);
+});
+
+test('empty widget sessions are not counted open and the sweep closes them quietly', function () {
+    $this->freezeTime();
+    [, , $emptyShop] = createOwnShop(__FILE__.':chat-empty');
+
+    $session = fn () => ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $emptyShop->id,
+        'channel'          => ChatChannelEnum::WEBSITE,
+        'created_at'       => now()->subDays(3),
+        'updated_at'       => now(),
+    ]);
+
+    $widgetOnlyOpened = $session();
+    $waitingForReply  = $session();
+    ChatMessage::create([
+        'chat_session_id' => $waitingForReply->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'hello',
+        'is_read'         => false,
+    ]);
+
+    $open = fn () => collect(GetChatReports::make()->handle(collect([$emptyShop->id]), '1d')['daily'])->last()['open'];
+
+    expect($open())->toBe(1);
+
+    CloseEmptyChatSessions::make()->handle();
+
+    expect($widgetOnlyOpened->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($widgetOnlyOpened->messages()->count())->toBe(0)
+        ->and($waitingForReply->fresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($open())->toBe(1);
 });
 
 test('ignoring a conversation records why, and undoing it puts the conversation back', function () {
@@ -4930,13 +4996,60 @@ test('the closed list only holds what was closed today', function () {
     $today     = $closedSession(now());
     $lastMonth = $closedSession(now()->subMonth());
 
-    $ulids = collect(GetChatSessions::make()->handle([
-        'statuses' => [ChatSessionStatusEnum::CLOSED->value],
+    $mixed = collect(GetChatSessions::make()->handle([
+        'statuses' => [ChatSessionStatusEnum::ACTIVE->value, ChatSessionStatusEnum::CLOSED->value],
         'shop_id'  => $this->shop->id,
     ])->items())->pluck('ulid');
 
-    expect($ulids)->toContain($today->ulid)
-        ->and($ulids)->not->toContain($lastMonth->ulid);
+    expect($mixed)->toContain($today->ulid)
+        ->and($mixed)->not->toContain($lastMonth->ulid);
+});
+
+test('the closed list reaches back as far as the period asked for, newest first', function () {
+    $closedSession = function (\Carbon\Carbon $closedAt) {
+        $session = ChatSession::create([
+            'ulid'             => (string) Str::ulid(),
+            'status'           => ChatSessionStatusEnum::CLOSED,
+            'guest_identifier' => 'guest_'.Str::random(5),
+            'language_id'      => 68,
+            'priority'         => ChatPriorityEnum::NORMAL,
+            'shop_id'          => $this->shop->id,
+            'closed_at'        => $closedAt,
+            'created_at'       => $closedAt,
+            'updated_at'       => $closedAt,
+        ]);
+
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT->value,
+            'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+            'message_text'    => 'thanks',
+            'created_at'      => $closedAt,
+            'updated_at'      => $closedAt,
+        ]);
+
+        return $session;
+    };
+
+    $today     = $closedSession(now());
+    $lastMonth = $closedSession(now()->subMonth());
+
+    $ulids = collect(GetChatSessions::make()->handle([
+        'statuses'      => [ChatSessionStatusEnum::CLOSED->value],
+        'closed_period' => 'all',
+        'shop_id'       => $this->shop->id,
+    ])->items())->pluck('ulid');
+
+    $thisWeek = collect(GetChatSessions::make()->handle([
+        'statuses'      => [ChatSessionStatusEnum::CLOSED->value],
+        'closed_period' => '1w',
+        'shop_id'       => $this->shop->id,
+    ])->items())->pluck('ulid');
+
+    expect($ulids)->toContain($lastMonth->ulid)
+        ->and($thisWeek)->toContain($today->ulid)
+        ->and($thisWeek)->not->toContain($lastMonth->ulid)
+        ->and($ulids->search($today->ulid))->toBeLessThan($ulids->search($lastMonth->ulid));
 });
 
 test('GetChatSessions limits the list to the shops asked for', function () {
@@ -5576,6 +5689,55 @@ test('a website guest who gave a customer\'s email is suggested, never linked, u
     expect($outcomes['confirmed'])->toBeGreaterThanOrEqual(1)->and($outcomes['rejected'])->toBeGreaterThanOrEqual(1);
 });
 
+test('an agent links a customer by hand to one conversation, and the next email from that address is only suggested', function () {
+    actingAs($this->user);
+    StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $this->customer->update(['email' => 'buyer@janesgifts.test', 'searchable_text' => 'jane buyer janesgifts']);
+
+    $guest = fn () => ChatSession::create([
+        'ulid'     => (string) Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING,
+        'channel'  => ChatChannelEnum::WEBSITE,
+        'shop_id'  => $this->shop->id,
+        'metadata' => ['email' => 'jane.personal@gmail.com'],
+    ]);
+
+    $first = $guest();
+    $base  = '/app/api/chats/sessions/'.$first->ulid;
+
+    expect($this->getJson($base.'/customer-candidates?q=jane')->assertOk()->json('0.id'))->toBe($this->customer->id);
+    $this->putJson($base.'/customer', ['customer_id' => 999999999])->assertStatus(422);
+    $this->putJson($base.'/customer', ['customer_id' => $this->customer->id])->assertOk();
+
+    expect($first->refresh()->webUser->customer_id)->toBe($this->customer->id)
+        ->and($first->suggestion_basis)->toBe('manual')
+        ->and($this->customer->refresh()->email)->toBe('buyer@janesgifts.test')
+        ->and($first->audits()->where('event', 'updated')->latest('id')->first()->new_values['web_user_id'])->toBe($first->web_user_id)
+        ->and($first->audits()->latest('id')->first()->user_id)->toBe($this->user->id)
+        ->and($this->customer->audits()->where('event', 'chat_linked')->latest('id')->first()->new_values['chat_session'])->toBe($first->ulid);
+
+    $mistake = $guest();
+    $this->putJson('/app/api/chats/sessions/'.$mistake->ulid.'/customer', ['customer_id' => $this->customer->id])->assertOk();
+    $this->deleteJson('/app/api/chats/sessions/'.$mistake->ulid.'/customer')->assertOk();
+    $this->deleteJson('/app/api/chats/sessions/'.$mistake->ulid.'/customer')->assertStatus(422);
+
+    expect($mistake->refresh()->web_user_id)->toBeNull()
+        ->and($this->customer->audits()->where('event', 'chat_unlinked')->latest('id')->first()->user_id)->toBe($this->user->id)
+        ->and(\App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle($mistake)->refresh()->suggested_customer_id)->toBeNull();
+
+    $second = \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle($guest())->refresh();
+
+    expect($second->web_user_id)->toBeNull()
+        ->and($second->suggested_customer_id)->toBe($this->customer->id)
+        ->and($second->suggestion_basis)->toBe('previous_link');
+
+    $stranger = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), ['email' => 'jane.personal@gmail.com']));
+    StoreWebUser::make()->action($stranger, WebUser::factory()->definition());
+    $third = \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::make()->handle($guest())->refresh();
+
+    expect($third->suggested_customer_id)->toBe($stranger->id)->and($third->suggestion_basis)->toBe('email');
+});
+
 test('a WhatsApp guest is suggested by the number they write from, whatever way it was stored', function () {
     config(['chat.noise.greet_bare_hello' => false]);
     $this->customer->update(['phone' => '07500 111222']);
@@ -5813,8 +5975,6 @@ test('starting an email from the customer record opens an email conversation and
         ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(1)
         ->and($session->messages()->count())->toBe(1);
 
-    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($session->messages()->first());
-
     \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
         if (!str_ends_with($request->url(), 'users/me/messages/send')) {
             return false;
@@ -5825,10 +5985,34 @@ test('starting an email from the customer record opens an email conversation and
             && str_contains($raw, 'To: ')
             && str_contains($raw, 'buyer@example.com')
             && str_contains($raw, 'Subject: Your order')
+            && str_contains($raw, 'Message-ID: <')
             && !str_contains($raw, 'In-Reply-To:');
     });
 
-    expect(Arr::get($session->fresh()->metadata, 'gmail_thread_id'))->toBe('t9');
+    $firstMessageId = Arr::get($session->fresh()->metadata, 'gmail_last_header_message_id');
+    expect(Arr::get($session->fresh()->metadata, 'gmail_thread_id'))->toBe('t9')
+        ->and($firstMessageId)->toStartWith('<');
+
+    $second = $session->messages()->create([
+        'message_text' => 'Just checking in',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'sender_id'    => $session->assignments()->first()->chat_agent_id,
+    ]);
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($second);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($firstMessageId) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return ($request['threadId'] ?? null) === 't9'
+            && str_contains($raw, 'Subject: Re: Your order')
+            && str_contains($raw, "In-Reply-To: {$firstMessageId}")
+            && str_contains($raw, "References: {$firstMessageId}");
+    });
+    expect(Arr::get($session->fresh()->metadata, 'gmail_references'))->toHaveCount(2);
 });
 
 test('GetChatCustomerTimeline puts every channel, the orders and what is still owed in one line', function () {
@@ -6188,4 +6372,903 @@ test('the widget goes offline on a bank holiday even though the week says open',
         ->and($shop->workSchedules()->where('is_active', true)->first()->isOpenNow('Europe/London'))->toBeTrue();
 
     \Illuminate\Support\Carbon::setTestNow();
+});
+
+test('the customer picker for a new email only offers customers with an address', function () {
+    createCustomer($this->shop)->update(['email' => 'reachable@example.com']);
+    createCustomer($this->shop)->update(['email' => null]);
+
+    actingAs($this->user);
+
+    $total = function (array $filters) {
+        $response = $this->get(route('grp.json.shop.customers', ['shop' => $this->shop->id] + $filters));
+        $response->assertOk();
+
+        return $response->json('total');
+    };
+
+    $withoutEmail = \App\Models\CRM\Customer::where('shop_id', $this->shop->id)
+        ->where(fn ($query) => $query->whereNull('email')->orWhere('email', ''))
+        ->count();
+
+    expect($withoutEmail)->toBeGreaterThan(0)
+        ->and($total([]) - $total(['filter[has_email]' => 1]))->toBe($withoutEmail);
+});
+
+test('a customer replying to a closed email conversation puts it back in the waiting queue', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $gmailMessage = fn (string $id, string $text) => [
+        'id'       => $id,
+        'threadId' => 'th-reopen',
+        'labelIds' => ['INBOX'],
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => 'Returning Writer <returning.writer@example.com>'],
+                ['name' => 'Subject', 'value' => 'Missing lid'],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode($text), '+/', '-_'), '=')],
+        ],
+    ];
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/r1?*'  => \Illuminate\Support\Facades\Http::response($gmailMessage('r1', 'The lid is missing')),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/r2?*'  => \Illuminate\Support\Facades\Http::response($gmailMessage('r2', 'It still has not arrived')),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'         => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L9', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'r1')->chatSession;
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]
+    );
+
+    $assignment = $session->assignments()->create([
+        'chat_agent_id' => $agent->id,
+        'status'        => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'   => \App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'   => now(),
+    ]);
+
+    $session->update(['status' => ChatSessionStatusEnum::CLOSED, 'closed_at' => now()]);
+
+    \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'r2');
+
+    expect($session->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($session->closed_at)->toBeNull()
+        ->and($assignment->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::RESOLVED);
+});
+
+test('a colleague holding a whatsapp chat keeps it in the team list after they stop covering the shop', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $mine  = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628444555888',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $metaChatSession->assignments()->create([
+        'meta_channel_id' => $channel->id,
+        'chat_agent_id'   => $other->id,
+        'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    $team = collect(GetMetaChatSessions::make()->handle([
+        'assigned_to_me' => $this->user->id,
+        'view_team'      => true,
+        'statuses'       => [ChatSessionStatusEnum::ACTIVE->value],
+        'shop_id'        => $this->shop->id,
+    ])->items())->pluck('ulid');
+
+    expect($mine->id)->not->toBe($other->id)
+        ->and($team)->toContain($metaChatSession->ulid);
+});
+
+test('a closed whatsapp chat nobody ever picked up is in the team list, not in mine', function () {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628444555999',
+        'status'          => ChatSessionStatusEnum::CLOSED,
+        'closed_at'       => now(),
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $filters = [
+        'assigned_to_me' => $this->user->id,
+        'statuses'       => [ChatSessionStatusEnum::CLOSED->value],
+        'shop_id'        => $this->shop->id,
+    ];
+
+    $mineUlids = collect(GetMetaChatSessions::make()->handle($filters)->items())->pluck('ulid');
+    $teamUlids = collect(GetMetaChatSessions::make()->handle($filters + ['view_team' => true])->items())->pluck('ulid');
+
+    expect($mineUlids)->not->toContain($metaChatSession->ulid)
+        ->and($teamUlids)->toContain($metaChatSession->ulid);
+});
+
+test('replying to a waiting conversation nobody holds claims it instead of refusing the message', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $session = StoreChatSession::make()->handle([
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'channel'     => ChatChannelEnum::WEBSITE,
+    ]);
+
+    $session->update(['status' => ChatSessionStatusEnum::WAITING, 'closed_at' => now(), 'closed_by' => 'agent']);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]
+    );
+
+    actingAs($this->user);
+
+    $result = SendChatMessage::make()->asController(Request::create(
+        '/',
+        'POST',
+        ['message_text' => 'Back to you', 'message_type' => ChatMessageTypeEnum::TEXT->value, 'sender_type' => ChatSenderTypeEnum::AGENT->value],
+    )->setRouteResolver(fn () => new class ($session) {
+        public function __construct(private $session)
+        {
+        }
+
+        public function route($name)
+        {
+            return (string) $this->session->ulid;
+        }
+
+        public function parameter($name, $default = null)
+        {
+            return (string) $this->session->ulid;
+        }
+    }));
+
+    expect($result['ok'])->toBeTrue()
+        ->and($session->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and($session->closed_at)->toBeNull()
+        ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->where('chat_agent_id', $agent->id)->count())->toBe(1);
+});
+
+test('replying to a conversation another agent holds is still refused', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $session = StoreChatSession::make()->handle([
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'channel'     => ChatChannelEnum::WEBSITE,
+    ]);
+
+    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
+
+    $session->assignments()->create([
+        'chat_agent_id' => $other->id,
+        'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'   => now(),
+    ]);
+
+    ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]
+    );
+
+    actingAs($this->user);
+
+    $result = SendChatMessage::make()->asController(Request::create(
+        '/',
+        'POST',
+        ['message_text' => 'Mine now', 'message_type' => ChatMessageTypeEnum::TEXT->value, 'sender_type' => ChatSenderTypeEnum::AGENT->value],
+    )->setRouteResolver(fn () => new class ($session) {
+        public function __construct(private $session)
+        {
+        }
+
+        public function route($name)
+        {
+            return (string) $this->session->ulid;
+        }
+
+        public function parameter($name, $default = null)
+        {
+            return (string) $this->session->ulid;
+        }
+    }));
+
+    expect($result['ok'])->toBeFalse()
+        ->and($result['code'])->toBe(403)
+        ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(1);
+});
+
+test('assigning a conversation nobody holds creates the assignment instead of leaving it active and unheld', function () {
+    $session = StoreChatSession::make()->handle([
+        'shop_id'     => $this->shop->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'channel'     => ChatChannelEnum::EMAIL,
+    ]);
+
+    $session->update(['status' => ChatSessionStatusEnum::WAITING, 'closed_at' => now(), 'closed_by' => 'agent']);
+
+    $mine  = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
+    $other->update([
+        'is_online'         => true,
+        'is_available'      => true,
+        'presence_status'   => \App\Enums\CRM\Livechat\ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at' => now(),
+        'max_concurrent_chats' => 100,
+        'current_chat_count'   => 0,
+    ]);
+
+    $assignment = \App\Actions\Chat\ChatSession\AssignChatToAgent::make()->handle($session, $other->id, $mine->id);
+
+    expect($assignment->chat_agent_id)->toBe($other->id)
+        ->and($assignment->status)->toBe(ChatAssignmentStatusEnum::ACTIVE)
+        ->and($session->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE)
+        ->and($session->closed_at)->toBeNull()
+        ->and($session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(1);
+});
+
+test('an email reply does not also send a chat notification, and carries the shop sender name and an html signature', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $notificationsSent = fn () => collect(\Illuminate\Support\Facades\Queue::pushedJobs())
+        ->flatten(1)
+        ->pluck('job')
+        ->filter(fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator
+            && ($job->decorates(\App\Actions\Comms\Email\SendChatNotificationToCustomer::class)
+                || $job->decorates(\App\Actions\Comms\Email\SendChatNotificationToExternal::class)))
+        ->count();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $webUser  = StoreWebUser::make()->action($customer, array_merge(WebUser::factory()->definition(), ['email' => 'writer@example.com']));
+
+    $agentUser = createAdminGuest($this->organisation->group)->getUser();
+    $agent     = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], [
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'signature'            => '<p>Kind regards,<br>Sig Agent</p><p><img src="https://media.aiku.io/logo.png" alt="logo"></p>',
+    ]);
+
+    $newSession = fn (ChatChannelEnum $channel) => ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'web_user_id' => $webUser->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => $channel,
+    ]);
+
+    $agentReply = fn (ChatSession $session, string $text) => SendChatMessage::make()->handle($session, [
+        'message_text'   => $text,
+        'message_type'   => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'    => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'      => $agent->id,
+        'is_email_notif' => true,
+    ]);
+
+    // A live chat still needs telling there is an answer waiting.
+    $agentReply($newSession(ChatChannelEnum::WEBSITE), 'Answered on the website');
+    expect($notificationsSent())->toBe(1);
+
+    // The email reply is the notification: a second mail would reach the same inbox twice.
+    $emailSession = $newSession(ChatChannelEnum::EMAIL);
+    $emailSession->update(['metadata' => ['email_from' => 'writer@example.com', 'email_subject' => 'A question']]);
+
+    $reply = $agentReply($emailSession, 'Answered by email');
+
+    expect($notificationsSent())->toBe(1);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'sender_name'   => 'AW Artisan France',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent-html']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply->fresh());
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        preg_match_all('/Content-Transfer-Encoding: base64\r\n\r\n(.*?)\r\n--/s', $raw.'\r\n--', $matches);
+        $parts = array_map(fn ($part) => base64_decode($part), $matches[1]);
+
+        return str_contains($raw, 'From: AW Artisan France <care@shop.test>')
+            && str_contains($raw, 'Content-Type: multipart/alternative')
+            && collect($parts)->contains(fn ($part) => str_contains($part, "Answered by email\n\nKind regards,\nSig Agent") && !str_contains($part, '<img'))
+            && collect($parts)->contains(fn ($part) => str_contains($part, '<img src="https://media.aiku.io/logo.png"'));
+    });
+});
+
+test('an inline picture in an inbound email is shown inside the body where the sender put it', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    $png    = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/c1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'c1',
+            'threadId' => 'tc1',
+            'payload'  => [
+                'mimeType' => 'multipart/related',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Daryl <daryl@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Re: Thank you for your order'],
+                ],
+                'parts'    => [
+                    ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('It is broken, see picture below')]],
+                    ['mimeType' => 'text/html', 'filename' => '', 'body' => ['data' => $encode('<p>It is broken, see picture below</p><img src="cid:broken@mail">')]],
+                    [
+                        'mimeType' => 'image/png',
+                        'filename' => 'broken.png',
+                        'headers'  => [
+                            ['name' => 'Content-Disposition', 'value' => 'inline; filename="broken.png"'],
+                            ['name' => 'Content-ID', 'value' => '<broken@mail>'],
+                        ],
+                        'body'     => ['data' => $encode($png), 'size' => 9000],
+                    ],
+                ],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels' => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c1');
+    $media   = $message->attachedFiles()->first();
+
+    // Left alone the purifier drops a cid src and the picture is lost from the body, leaving
+    // "see picture below" with nothing below it.
+    expect($media?->name)->toBe('broken.png')
+        ->and($message->html_body)->toContain($media->getUrl())
+        ->and($message->html_body)->not->toContain('cid:');
+
+    // The bubble hides an attachment whose url the body already shows, so the two have to be
+    // the same string.
+    $resource = \App\Http\Resources\CRM\Livechat\ChatMessageResource::make($message->fresh())->resolve();
+    expect(collect($resource['attachments'])->pluck('original_url')->all())->toBe([$media->getUrl()]);
+});
+
+test('forwarding a conversation to a colleague opens one staff thread and optionally mails them', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+        'metadata'         => ['email_subject' => 'Invoice for October'],
+    ]);
+
+    $session->messages()->create([
+        'message_type' => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::GUEST->value,
+        'message_text' => 'Who do I send the paperwork to?',
+    ]);
+
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    $management = User::factory()->create(['group_id' => $this->organisation->group_id, 'email' => 'management@example.com']);
+    $warehouse  = User::factory()->create(['group_id' => $this->organisation->group_id, 'email' => 'warehouse@example.com']);
+
+    $conversation = \App\Actions\Chat\ChatSession\ForwardChatSessionToColleague::make()->handle($session, $agent, [
+        'user_ids'   => [$management->id],
+        'note'       => 'This one is for you to decide',
+        'also_email' => true,
+    ]);
+
+    expect($conversation->context_type)->toBe('ChatSession')
+        ->and($conversation->context_id)->toBe($session->id)
+        ->and($conversation->participants->pluck('id'))->toContain($management->id, $user->id)
+        ->and($conversation->messages()->first()->body)->toContain('This one is for you to decide')
+        ->and($conversation->messages()->first()->body)->toContain('Invoice for October');
+
+    \Illuminate\Support\Facades\Notification::assertSentTo($management, \App\Notifications\ForwardedChatSessionNotification::class);
+
+    // The second colleague joins the thread that already exists instead of getting a bare new one,
+    // and asking for no mail sends none.
+    $again = \App\Actions\Chat\ChatSession\ForwardChatSessionToColleague::make()->handle($session, $agent, [
+        'user_ids'   => [$warehouse->id],
+        'also_email' => false,
+    ]);
+
+    expect($again->id)->toBe($conversation->id)
+        ->and($again->messages()->count())->toBe(2)
+        ->and($again->participants()->count())->toBe(3);
+
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($warehouse, \App\Notifications\ForwardedChatSessionNotification::class);
+
+    $event = $session->chatEvents()->where('event_type', 'forward')->latest('id')->first();
+    expect($event->payload['recipient_user_ids'])->toBe([$warehouse->id])
+        ->and($event->payload['also_emailed'])->toBeFalse();
+});
+
+test('an agent can hand a conversation to another named agent', function () {
+    $user = $this->user;
+
+    actingAs($user);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $user->id],
+        [
+            'is_online'            => true,
+            'max_concurrent_chats' => 100,
+            'current_chat_count'   => 0,
+        ]
+    );
+
+    ShopHasChatAgent::firstOrCreate([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $agent->id,
+    ]);
+
+    $colleagueUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $colleague     = ChatAgent::create([
+        'user_id'              => $colleagueUser->id,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
+        'max_concurrent_chats' => 100,
+        'current_chat_count'   => 0,
+    ]);
+
+    ShopHasChatAgent::firstOrCreate([
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_agent_id'   => $colleague->id,
+    ]);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING->value,
+        'guest_identifier' => 'guest_assign_other',
+        'language_id'      => 68,
+        'shop_id'          => $this->shop->id,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'ai_model_version' => 'default',
+    ]);
+
+    app(AssignChatToAgent::class)->assignToSelf($this->organisation, $chatSession->ulid);
+
+    $chatSession->refresh();
+
+    $response = app(AssignChatToAgent::class)->asController(
+        $this->organisation->slug,
+        $chatSession,
+        Request::create('/', 'PATCH', ['agent_id' => $colleague->id, 'note' => 'This is yours'])
+    );
+
+    $data = $response->getData(true);
+
+    expect($data['success'])->toBeTrue()
+        ->and($data['data']['assigned_agent_id'])->toBe($colleague->id);
+
+    // One owner at a time: the active row moves to the colleague, it is not duplicated.
+    expect(ChatAssignment::where('chat_session_id', $chatSession->id)
+        ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+        ->pluck('chat_agent_id')->all())->toBe([$colleague->id]);
+
+    $event = $chatSession->chatEvents()->where('event_type', 'transfer_to_agent')->latest('id')->first();
+    expect($event->payload['to_agent_id'])->toBe($colleague->id)
+        ->and($event->payload['from_agent_id'])->toBe($agent->id);
+});
+
+test('an agent can give a conversation back to the queue', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    \App\Models\Chat\ChatAssignment::create([
+        'chat_session_id' => $session->id,
+        'chat_agent_id'   => $agent->id,
+        'status'          => \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value,
+        'assigned_by'     => \App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum::AGENT->value,
+        'assigned_at'     => now(),
+    ]);
+
+    \App\Actions\Chat\ChatSession\ReleaseChatSession::make()->handle($session, $agent, 'Cannot answer in Slovak');
+
+    // Waiting is what puts it back in front of the other agents, and no active assignment is left
+    // holding it.
+    expect($session->fresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and(\App\Models\Chat\ChatAssignment::where('chat_session_id', $session->id)
+            ->where('status', \App\Enums\CRM\Livechat\ChatAssignmentStatusEnum::ACTIVE->value)->count())->toBe(0);
+
+    $event = $session->chatEvents()->where('event_type', 'released')->latest('id')->first();
+    expect($event->payload['from_agent_id'])->toBe($agent->id)
+        ->and($event->payload['reason'])->toBe('agent_released')
+        ->and($event->payload['note'])->toBe('Cannot answer in Slovak');
+
+    // A closed conversation released by HR revoking someone's access stays closed: released is
+    // not reopened.
+    $closed = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::CLOSED->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    \App\Actions\Chat\ChatSession\ReleaseChatSession::make()->handle($closed, $agent, null, 'permission_revoked');
+
+    expect($closed->fresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($closed->chatEvents()->where('event_type', 'released')->first()->payload['reason'])->toBe('permission_revoked');
+});
+
+test('a mail that is not utf8 still comes through, and one left in the inbox is swept up', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    // Written in Latin-1 and labelled as such: stored as it arrived these are bytes Postgres
+    // refuses, and the whole mail used to be lost on the way in.
+    $latin1 = mb_convert_encoding('Où est ma commande ?', 'ISO-8859-1', 'UTF-8');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/u1?*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'u1',
+            'threadId' => 'tu1',
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Stranger <stranger@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Commande'],
+                    ['name' => 'Content-Type', 'value' => 'text/plain; charset="ISO-8859-1"'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode($latin1), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*'    => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'u1']]]),
+        'gmail.googleapis.com/gmail/v1/users/me/history*'      => \Illuminate\Support\Facades\Http::response(['history' => [], 'historyId' => '2']),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    // History knows nothing about it, which is the case for every mail whose job died: the inbox
+    // sweep is what still finds it.
+    Bus::fake();
+    expect(\App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop))->toBe(1);
+    Bus::assertDispatched(\Lorisleiva\Actions\Decorators\JobDecorator::class);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::make()->handle($this->shop->fresh(), 'u1');
+
+    expect($message->message_text)->toBe('Où est ma commande ?');
+});
+
+test('a mailbox already belonging to another shop is refused rather than connected to a second one', function () {
+    $this->shop->update(['settings' => Arr::except($this->shop->settings ?? [], 'gmail')]);
+
+    $other = \App\Models\Catalogue\Shop::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->organisation->group_id,
+        'settings'        => ['gmail' => ['email' => 'kundservice@shop.test']],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response([
+            'access_token'  => 'at',
+            'refresh_token' => 'rt',
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/profile'       => \Illuminate\Support\Facades\Http::response([
+            'emailAddress' => 'kundservice@shop.test',
+            'historyId'    => '7',
+        ]),
+    ]);
+
+    $state = ['shop_id' => $this->shop->id, 'user_id' => 1, 'return' => '/back'];
+
+    $response = \App\Actions\Comms\Mailbox\CallbackShopMailbox::make()->handle('code', $state);
+
+    // Refused, and nothing written: the second shop never gets a token, so it never fetches the
+    // same inbox and the mail is taken in once.
+    expect(session('notification')['status'])->toBe('error')
+        ->and(session('notification')['description'])->toContain($other->name)
+        ->and(Arr::get($this->shop->fresh()->settings, 'gmail'))->toBeNull()
+        ->and($response->getTargetUrl())->toContain('/back');
+});
+
+test('a gmail message already being imported is refused, and a failed import gives the id back', function () {
+    $original          = $this->shop->settings ?? [];
+    $settings          = $original;
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                        => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/m2*' => \Illuminate\Support\Facades\Http::response([], 500),
+        'gmail.googleapis.com/*'                             => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $sessions = ChatSession::count();
+
+    \Illuminate\Support\Facades\Cache::add('gmail-message-claim:m2', true, now()->addMinutes(10));
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm2'))->toBeNull()
+        ->and(ChatSession::count())->toBe($sessions);
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    \Illuminate\Support\Facades\Cache::forget('gmail-message-claim:m2');
+
+    expect(fn () => \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm2'))
+        ->toThrow(\Illuminate\Http\Client\RequestException::class)
+        ->and(\Illuminate\Support\Facades\Cache::has('gmail-message-claim:m2'))->toBeFalse();
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('a letter whose second byte looks like a line break survives the quoted reply trim', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    // The second byte of "a with ogonek" is 0x85, which PCRE's \R treats as a line break: splitting
+    // on it cut the letter in half and left bytes the database refuses.
+    $body = "Dzień dobry,\n\njestem zainteresowana Państwa ofertą produktów 📅\n\nOn Mon, Bob wrote:\n> old";
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/p1?*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'p1',
+            'threadId' => 'tp1',
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Aleksandra <ala@example.com>'],
+                    ['name' => 'Subject', 'value' => 'White Label'],
+                    ['name' => 'Content-Type', 'value' => 'text/plain; charset="UTF-8"'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode($body), '+/', '-_'), '=')],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'p1');
+
+    expect($message->message_text)->toBe("Dzień dobry,\n\njestem zainteresowana Państwa ofertą produktów 📅")
+        ->and(mb_check_encoding($message->message_text, 'UTF-8'))->toBeTrue();
+});
+
+test('thread history already taken in under another conversation is not written a second time', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $original          = $this->shop->settings ?? [];
+    $settings          = $original;
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $body = fn (string $text) => rtrim(strtr(base64_encode($text), '+/', '-_'), '=');
+    $mail = fn (string $id, string $subject, string $text) => [
+        'id'       => $id,
+        'threadId' => 't3',
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => 'Split Sender <split@example.com>'],
+                ['name' => 'Subject', 'value' => $subject],
+                ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+            ],
+            'body'     => ['data' => $body($text)],
+        ],
+        'internalDate' => '1758500000000',
+    ];
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                        => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/m3*' => \Illuminate\Support\Facades\Http::response($mail('m3', 'Second mail', 'The newer one')),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/t3*'  => \Illuminate\Support\Facades\Http::response([
+            'messages' => [$mail('old3', 'First mail', 'The older one'), $mail('m3', 'Second mail', 'The newer one')],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'      => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                             => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    // The same thread already read under another conversation, which is what a mailbox shared by
+    // two shops left behind: its history must not be written into this one as well.
+    $elsewhere = StoreChatSession::run([
+        'shop_id'     => $this->shop->id,
+        'language_id' => $this->shop->language_id,
+        'priority'    => \App\Enums\CRM\Livechat\ChatPriorityEnum::NORMAL,
+        'channel'     => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+    ]);
+    $elsewhere->messages()->create([
+        'message_text' => 'The older one',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::GUEST,
+        'metadata'     => ['gmail_message_id' => 'old3'],
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm3');
+
+    expect($message)->not->toBeNull()
+        ->and($message->chatSession->messages()->count())->toBe(1)
+        ->and(ChatMessage::where('metadata->gmail_message_id', 'old3')->count())->toBe(1);
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('the inbox sweep never reaches back past the day the mailbox was connected', function () {
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'connected_at'  => '2026-09-16T09:00:00+00:00',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/*'      => \Illuminate\Support\Facades\Http::response(['messages' => [], 'historyId' => '9']),
+    ]);
+
+    \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop);
+
+    // Years of mail predate the connection and were never offered to Aiku. Sweeping them would
+    // open a conversation dated today for every one of them.
+    \Illuminate\Support\Facades\Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'users/me/messages')
+            && str_contains(urldecode($request->url()), 'in:inbox after:2026/09/16');
+    });
+});
+
+test('filing an imported mail away writes down whether it was unread', function () {
+    $original          = $this->shop->settings ?? [];
+    $settings          = $original;
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                        => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/u1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'u1',
+            'threadId' => 'tu1',
+            'labelIds' => ['INBOX', 'UNREAD'],
+            'payload'  => [
+                'mimeType' => 'text/plain',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Unread Sender <unread@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Still unread'],
+                    ['name' => 'Message-ID', 'value' => '<u1@example.com>'],
+                ],
+                'body'     => ['data' => rtrim(strtr(base64_encode('Hello there'), '+/', '-_'), '=')],
+            ],
+            'internalDate' => '1758500000000',
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'      => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L2', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                             => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    \Illuminate\Support\Facades\Log::spy();
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'u1'))->not->toBeNull();
+
+    \Illuminate\Support\Facades\Log::shouldHaveReceived('info')
+        ->withArgs(fn ($message, $context = []) => $message === 'gmail-file-away'
+            && $context['message'] === 'u1'
+            && $context['was_unread'] === true
+            && $context['was_inbox'] === true);
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('email attachments over the media library limit are left in the mail', function () {
+    $isWorthImporting = fn (int $size) => (fn () => $this->isWorthImporting(['size' => $size, 'mimeType' => 'video/mp4', 'inline' => false], true))
+        ->call(new App\Actions\Comms\Mailbox\ImportPendingGmailAttachments());
+
+    expect($isWorthImporting(1024))->toBeTrue()
+        ->and($isWorthImporting(91 * 1024 * 1024))->toBeFalse();
 });

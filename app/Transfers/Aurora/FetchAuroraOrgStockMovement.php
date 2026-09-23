@@ -64,18 +64,16 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
             $type        = OrgStockMovementTypeEnum::PICKED;
             $isDelivered = true;
-            $forceFetch = true;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Adjust') {
             $type = OrgStockMovementTypeEnum::ADJUSTMENT;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'In') {
             $type = OrgStockMovementTypeEnum::PURCHASE;
             $note = $this->auroraModelData->{'Note'};
-            $forceFetch = true;
+            $forceFetch = $this->isProductionDeliveryNote($note);
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Found') {
             $type = OrgStockMovementTypeEnum::FOUND;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock') {
             $type = OrgStockMovementTypeEnum::RETURN_PICKED;
-            $forceFetch = true;
         } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Other Out') {
             if ($this->auroraModelData->{'Inventory Transaction Section'} == 'Lost') {
                 $type = OrgStockMovementTypeEnum::WRITE_OFF;
@@ -243,6 +241,18 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $this->parsedData['orgStockMovement']['quantity']         = $quantity;
             $this->parsedData['orgStockMovement']['audited_quantity'] = null;
         }
+    }
+
+    protected function isProductionDeliveryNote(?string $note): bool
+    {
+        if (!$note || !preg_match('/delivery\/(\d+)/', $note, $matches)) {
+            return false;
+        }
+
+        return DB::table('stock_deliveries')
+            ->where('source_id', $this->organisation->id.':'.$matches[1])
+            ->where('parent_type', 'Production')
+            ->exists();
     }
 
     /**

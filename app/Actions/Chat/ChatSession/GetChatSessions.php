@@ -29,6 +29,14 @@ class GetChatSessions
     use AsAction;
     use WithChatAgentAuthorisation;
     use WithUnclaimedChatSessions;
+    /**
+     * How far back the closed list reaches, the same words the tickets board uses for its own
+     * columns. Today is the default: the queue's closed capsule means what was finished today,
+     * and anything longer is somebody going back through the history on purpose.
+     */
+    public const array CLOSED_PERIODS = ['today', '24h', '1w', '1m', '1y', 'all'];
+
+    public const string DEFAULT_CLOSED_PERIOD = 'today';
 
     public function rules(): array
     {
@@ -43,6 +51,7 @@ class GetChatSessions
                 'string',
                 'in:' . implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))
             ],
+            'closed_period' => ['sometimes', 'string', 'in:' . implode(',', self::CLOSED_PERIODS)],
             'assigned_to_me' => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],
@@ -91,7 +100,37 @@ class GetChatSessions
      */
     public static function oldestFirst(array $filters): bool
     {
-        return empty($filters['is_spam']) && empty($filters['is_rubbish']) && empty($filters['trashed']);
+        return empty($filters['is_spam']) && empty($filters['is_rubbish']) && empty($filters['trashed'])
+            && !self::isClosedHistory($filters);
+    }
+
+    /**
+     * Asking for closed conversations and nothing else is the history view: it is read to find
+     * what was said to somebody weeks ago, so it reads newest first. Closed alongside waiting
+     * or active is still part of the queue and stays oldest first with the rest of it.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public static function isClosedHistory(array $filters): bool
+    {
+        $statuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
+
+        return array_values(array_unique($statuses)) === [ChatSessionStatusEnum::CLOSED->value];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public static function closedSince(array $filters): ?\Illuminate\Support\Carbon
+    {
+        return match ($filters['closed_period'] ?? self::DEFAULT_CLOSED_PERIOD) {
+            '24h'   => now()->subDay(),
+            '1w'    => now()->subWeek(),
+            '1m'    => now()->subMonth(),
+            '1y'    => now()->subYear(),
+            'all'   => null,
+            default => now()->startOfDay(),
+        };
     }
 
     public function handle(array $filters = [])
@@ -136,13 +175,13 @@ class GetChatSessions
         $statuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
 
         if ($statuses !== []) {
-            $query->where(function ($outer) use ($statuses) {
+            $query->where(function ($outer) use ($statuses, $filters) {
                 foreach ($statuses as $status) {
-                    $outer->orWhere(function ($q) use ($status) {
+                    $outer->orWhere(function ($q) use ($status, $filters) {
                         $q->where('status', $status);
 
                         if ($status === ChatSessionStatusEnum::CLOSED->value) {
-                            self::scopeClosedToday($q);
+                            self::scopeClosedSince($q, self::closedSince($filters));
                         }
                     });
                 }
@@ -211,12 +250,8 @@ class GetChatSessions
                     // my/team it belongs to is then decided from what comes back.
                     $query->whereIn('shop_id', $shopIds);
                 } elseif (!empty($filters['view_team'])) {
-                    $teamAgentIds = $this->agentIdsCovering($shopIds, $currentAgent->id);
-
-                    $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
-                        $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
-                            ->where('status', $assignmentStatus);
-                    });
+                    $query->whereIn('shop_id', $shopIds);
+                    $this->scopeHeldByColleague($query, $currentAgent->id, $assignmentStatus, $isClosed);
                 } else {
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been
@@ -307,16 +342,28 @@ class GetChatSessions
     }
 
     /**
-     * Closed conversations are kept forever, so the list and the capsule only ever mean the
-     * ones closed today; older ones are found through search or the reports.
+     * Closed conversations are kept forever, so a list of them always says how far back it
+     * reaches. The capsule counters mean today; the list itself is whatever period was picked.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      */
     public static function scopeClosedToday($query): void
     {
+        self::scopeClosedSince($query, now()->startOfDay());
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    public static function scopeClosedSince($query, ?\Illuminate\Support\Carbon $since): void
+    {
+        if (!$since) {
+            return;
+        }
+
         $table = $query->getModel()->getTable();
 
-        $query->whereRaw("coalesce({$table}.closed_at, {$table}.updated_at) >= ?", [now()->startOfDay()]);
+        $query->whereRaw("coalesce({$table}.closed_at, {$table}.updated_at) >= ?", [$since]);
     }
 
     protected function getCurrentAgent(int $userId): ?ChatAgent

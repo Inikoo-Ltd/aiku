@@ -347,7 +347,15 @@ const isFile = computed(() => props.message.message_type === "file")
 const fileMime = computed(() => props.message.file_mime ?? props.message.media_url?.mime ?? "")
 
 const attachmentList = computed<ChatAttachment[]>(() => {
-    if (props.message.attachments?.length) return props.message.attachments
+    // A picture the email already shows in its own body is not listed again underneath it,
+    // where it would read as a second, separate photograph.
+    if (props.message.attachments?.length) {
+        const body = props.message.html_body ?? ""
+
+        return props.message.attachments.filter(
+            (attachment) => !attachment.original_url || !body.includes(attachment.original_url)
+        )
+    }
 
     if (!props.message.media_url && !props.message.download_route) return []
 
@@ -500,6 +508,9 @@ const displayText = computed(() => {
 const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
 const showEmailBody = computed(() => shouldShowEmailBody(props.message))
+
+// Customers put the order reference in the subject line, so it is the first thing read.
+const emailSubject = computed(() => (props.message.metadata?.email_subject || "").trim())
 
 const location = computed(() => {
     if (props.message.metadata?.wa_type !== "location") return null
@@ -1065,7 +1076,13 @@ watch(selectedLanguage, async (val) => {
             </div>
 
             <!-- A received email keeps its layout; everything else is text. -->
-            <EmailBody v-else-if="showEmailBody" :html="message.html_body" />
+            <template v-else-if="showEmailBody">
+                <div v-if="emailSubject"
+                    class="mb-2 pb-1.5 border-b border-gray-200 text-[13px] font-semibold break-words">
+                    {{ emailSubject }}
+                </div>
+                <EmailBody :html="message.html_body" />
+            </template>
 
             <p v-else-if="!location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />

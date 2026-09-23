@@ -17,6 +17,7 @@ use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -62,9 +63,12 @@ class SettleShortJobOrderItemTask
             }
 
             $original = $item->jobOrder;
+            $root     = (int) Arr::get($original->data, 'carried_from', $original->id);
             $carried  = StoreJobOrder::make()->action($original->production, [
                 'employee_id' => $original->employee_id,
+                'reference'   => $this->carriedReference($original, $root),
             ]);
+            $carried->update(['data' => array_merge($carried->data, ['carried_from' => $root])]);
             $carriedItem = StoreJobOrderItem::make()->action($carried, [
                 'artefact_id' => $item->artefact_id,
                 'quantity'    => $remainingArtefacts,
@@ -76,6 +80,18 @@ class SettleShortJobOrderItemTask
 
             return $carried;
         });
+    }
+
+    /**
+     * A job carried to the next day keeps its number: the rest is the same reference with the
+     * next letter, so goods in read JOaroma-0002 and JOaroma-0002a as one job, not two.
+     */
+    private function carriedReference(JobOrder $original, int $root): string
+    {
+        $base    = preg_replace('/[a-z]+$/', '', (string) $original->reference);
+        $carried = JobOrder::withTrashed()->where('data->carried_from', $root)->count();
+
+        return $base.chr(ord('a') + min($carried, 25));
     }
 
     /**

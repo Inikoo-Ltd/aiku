@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInOrgStock;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -66,6 +67,7 @@ class ShowOrgStock extends OrgAction
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
+        $canDiscontinue = $request->user()->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
         $hasMaster     = $orgStock->stock;
         $subNavigation = $this->getOrgStockSubNavigation($orgStock, $request);
 
@@ -138,13 +140,6 @@ class ShowOrgStock extends OrgAction
                         ],
                         [
                             'type'  => 'button',
-                            'style' => 'negative',
-                            'key'   => 'discontinue',
-                            'label' => __('Discontinue'),
-                            'icon'  => ['fal', 'fa-ban'],
-                        ],
-                        [
-                            'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Packing'),
                             'icon'  => ['fal', 'fa-atom'],
@@ -156,7 +151,14 @@ class ShowOrgStock extends OrgAction
                                     'orgStock'     => $orgStock->slug,
                                 ]
                             ]
-                        ]
+                        ],
+                        ...($canDiscontinue ? [[
+                            'type'  => 'button',
+                            'style' => 'negative',
+                            'key'   => 'discontinue',
+                            'label' => __('Discontinue'),
+                            'icon'  => ['fal', 'fa-ban'],
+                        ]] : [])
                     ],
                     'subNavigation' => $subNavigation
                 ],
@@ -177,21 +179,21 @@ class ShowOrgStock extends OrgAction
                     'transfer'  => OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()),
                 ],
                 'org_stock_id'  => $orgStock->id,
-                'discontinue_preview_route' => [
+                'discontinue_preview_route' => $canDiscontinue ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue_preview',
                     'parameters' => [
                         'organisation' => $orgStock->organisation->slug,
                         'warehouse'    => $this->warehouse->slug,
                     ]
-                ],
-                'discontinue_route' => [
+                ] : null,
+                'discontinue_route' => $canDiscontinue ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue',
                     'parameters' => [
                         'organisation' => $orgStock->organisation->slug,
                         'warehouse'    => $this->warehouse->slug,
                     ],
                     'method'     => 'post',
-                ],
+                ] : null,
 
                 OrgStockTabsEnum::SHOWCASE->value => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)

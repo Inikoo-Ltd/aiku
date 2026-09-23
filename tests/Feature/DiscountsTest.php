@@ -80,6 +80,8 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\SysAdmin\User;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -401,6 +403,24 @@ test('an offer whose end date has passed is swept off, keeping its end date', fu
         ->and($offer->state)->toBe(OfferStateEnum::FINISHED)
         ->and($offer->end_at->toDateTimeString())->toBe($endAt->toDateTimeString());
     $this->travelBack();
+});
+
+test('the sweep finishes an offer whose whole window passed while it sat in process', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offer->update([
+        'state'    => OfferStateEnum::IN_PROCESS,
+        'status'   => false,
+        'start_at' => now()->subMonth(),
+        'end_at'   => now()->subWeek(),
+    ]);
+
+    $this->artisan('offer:update_status_from_dates')->assertExitCode(0);
+
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::FINISHED)
+        ->and($offer->status)->toBeFalse();
 });
 
 test('the sweep never resurrects a finished offer', function () {
@@ -742,6 +762,21 @@ test('store gifts offers', function () {
 
     return $offer;
 });
+
+test('a discounts clerk can open the gift offer edit page', function (Offer $offer) {
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    setPermissionsTeamId($this->organisation->group_id);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::DISCOUNTS_CLERK->value, $this->shop));
+    actingAs($clerk);
+
+    $response = get(route('grp.org.shops.show.discounts.campaigns.gift.edit', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $offer->offerCampaign->slug,
+        $offer->slug,
+    ]));
+    $response->assertOk();
+})->depends('store gifts offers');
 
 test('store product offers no-op', function () {
     StoreProductOffers::make()->handle([]);

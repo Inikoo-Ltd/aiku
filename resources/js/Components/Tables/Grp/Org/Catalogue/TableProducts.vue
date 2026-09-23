@@ -360,6 +360,7 @@ function productRoute(product: Product) {
                     product.shop_slug,
                     product.slug])
         case "grp.org.shops.show.catalogue.products.sales":
+        case "grp.org.shops.show.catalogue.products.duplicated_barcodes.index":
         case "grp.org.shops.show.catalogue.products.all_products.index":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.departments.show.collection.show":

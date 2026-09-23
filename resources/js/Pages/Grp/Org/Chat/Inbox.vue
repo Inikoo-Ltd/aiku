@@ -13,6 +13,7 @@ import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAre
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
 import SettingChat from "@/Components/Chat/SettingChat.vue"
 import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
+import NewEmailChatDialog from "@/Components/Chat/NewEmailChatDialog.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -39,6 +40,7 @@ const props = defineProps<{
         slug: string
         type: string | null
         is_read_only?: boolean
+        can_start_email?: boolean
         channels: Array<{
             key: string
             name: string
@@ -168,6 +170,25 @@ const statusCapsules = computed(() =>
 
 const onlyClosed = computed(() => selectedStatuses.value.length === 1 && selectedStatuses.value[0] === "closed")
 
+// Closed conversations are kept forever, so the list has to say how far back it reaches. Today
+// is what the capsule counts and what the queue means by closed; the longer periods are
+// somebody going back through the history, which is the same pair the tickets board uses.
+const closedPeriods: { key: string; label: string }[] = [
+    { key: "today", label: ctrans("Today") },
+    { key: "24h", label: ctrans("24h") },
+    { key: "1w", label: ctrans("1 week") },
+    { key: "1m", label: ctrans("1 month") },
+    { key: "1y", label: ctrans("1 year") },
+    { key: "all", label: ctrans("All") },
+]
+
+const closedPeriod = ref("today")
+
+const setClosedPeriod = (period: string) => {
+    closedPeriod.value = period
+    afterSelectionChanged()
+}
+
 // Nobody is waiting on a colleague's chat, so the team view drops that state and keeps
 // whatever else was picked, falling back to active rather than to nothing.
 const dropWaitingInTeamView = (): boolean => {
@@ -190,6 +211,14 @@ const highlightView = ref(false)
 // it spans every shop and every channel and carries no my/team of its own.
 const unclaimedView = ref(false)
 const unclaimedCount = ref(0)
+const spamCount = ref(0)
+
+// Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
+const spamRailTooltip = computed(() =>
+    spamCount.value
+        ? ctrans("Spam (:count)", { count: String(spamCount.value) })
+        : ctrans("Spam")
+)
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
@@ -250,6 +279,7 @@ const panelSession = computed(() => {
         status: s.status,
         priority: s.priority ?? null,
         assigned_agent: s.assigned_agent?.name ?? null,
+        assigned_agent_id: s.assigned_agent?.id ?? null,
         started: s.created_at ?? null,
         ai_summary: s.ai_summary ?? null,
     }
@@ -273,6 +303,7 @@ const chatSettingVisible = ref(false)
 const settingInitialTab = ref<"general" | "slack">("general")
 
 const newChatVisible = ref(false)
+const newEmailVisible = ref(false)
 const openChatSettings = () => {
     settingInitialTab.value = "general"
     chatSettingVisible.value = true
@@ -388,6 +419,7 @@ const storeSelection = () => {
             shopIds: selectedShopIds.value,
             cells: selectedCells.value,
             statuses: selectedStatuses.value,
+            closedPeriod: closedPeriod.value,
         }))
     } catch {
         // A private window, or storage turned off. Losing the choice is not worth an error.
@@ -422,6 +454,10 @@ const restoreSelection = (): boolean => {
 
     if (statuses.length) {
         selectedStatuses.value = statuses as ChatStatus[]
+    }
+
+    if (closedPeriods.some((p) => p.key === stored.closedPeriod)) {
+        closedPeriod.value = stored.closedPeriod
     }
 
     return true
@@ -531,6 +567,7 @@ const buildParams = (page: number) => ({
                     : highlightView.value
                         ? { highlighted: 1, statuses: selectedStatuses.value }
                         : { statuses: selectedStatuses.value }),
+    ...(isStatusOn("closed") ? { closed_period: closedPeriod.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
     page,
@@ -774,6 +811,12 @@ const selectedInbox = computed(() =>
     props.inboxes?.find((i) => i.id === selectedShopId.value) ?? props.inboxes?.[0] ?? null
 )
 
+// Writing a fresh email needs one shop, its mailbox, and the right to answer on it.
+const canStartEmail = computed(
+    () => selectedChannel.value === "email" && !isReadOnly.value && !!selectedShopId.value
+        && selectedInbox.value?.can_start_email === true
+)
+
 const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
 /* Two ways the rail can be folded, kept apart on purpose. The one above is what the user chose,
@@ -988,6 +1031,7 @@ function afterSelectionChanged() {
     linkedContact.value = null
     messages.value = []
     newChatVisible.value = false
+    newEmailVisible.value = false
     selectedAgentIds.value = []
     agentView.value = false
 
@@ -1134,6 +1178,15 @@ const onPriorityUpdated = (value: string) => {
     if (found) found.priority = value
 }
 
+const onAgentAssigned = (agent: { id: number; name: string }) => {
+    const ulid = selectedSession.value?.ulid
+    if (selectedSession.value) {
+        selectedSession.value.assigned_agent = { id: String(agent.id), name: agent.name }
+    }
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) found.agent = { id: String(agent.id), name: agent.name }
+}
+
 // A guest was matched to a registered Aiku customer by email: promote it to a customer.
 const onSessionSynced = (webUser: { id: number; name: string; email: string | null }) => {
     if (!selectedSession.value || !webUser) return
@@ -1147,6 +1200,24 @@ const onSessionSynced = (webUser: { id: number; name: string; email: string | nu
     if (found) {
         found.webUser = { id: webUser.id, name: webUser.name } as any
         found.name = webUser.name || found.name
+    }
+}
+
+const onSessionUnlinked = () => {
+    if (!selectedSession.value) return
+    const ulid = selectedSession.value.ulid
+    const guestName = (selectedSession.value as any).metadata?.name || (selectedSession.value as any).guest_profile?.name || selectedSession.value.guest_identifier || "Guest"
+    selectedSession.value = {
+        ...selectedSession.value,
+        web_user: null,
+        web_user_id: null,
+        is_guest: true,
+        contact_name: guestName,
+    } as SessionAPI
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) {
+        found.webUser = null
+        found.name = guestName
     }
 }
 
@@ -1291,6 +1362,7 @@ const fetchInboxNotifications = async () => {
         const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`)
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
         unclaimedCount.value = data?.data?.unclaimed ?? 0
+        spamCount.value = data?.data?.spam ?? 0
     } catch (e) {
         // silent — badges are non-critical
     }
@@ -1692,6 +1764,8 @@ onUnmounted(() => {
     <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
         @created="onWhatsappChatCreated" />
 
+    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="selectedShopId" />
+
     <div ref="chatArea" :style="{ height: chatAreaHeight }"
         class="relative flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
@@ -1929,7 +2003,7 @@ onUnmounted(() => {
             <!-- Spam -->
             <div v-if="!isReadOnly" class="border-t border-gray-200 py-1">
                 <button type="button" @click="selectSpam"
-                    v-tooltip="railCollapsed ? ctrans('Spam') : undefined"
+                    v-tooltip="railCollapsed ? spamRailTooltip : undefined"
                     class="w-full flex items-center text-sm transition-colors"
                     :class="[
                         railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
@@ -1937,7 +2011,12 @@ onUnmounted(() => {
                     ]"
                     :style="spamView ? selectedItemStyle : {}">
                     <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" fixed-width />
-                    <span v-if="!railCollapsed">{{ ctrans("Spam") }}</span>
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Spam") }}</span>
+                    <!-- Grey, unlike the unclaimed badge: what is in the bin is how much there is
+                         to clear out, never anything anybody has to hurry to. -->
+                    <span v-if="!railCollapsed && spamCount" class="text-[11px] tabular-nums text-gray-400 shrink-0">
+                        {{ spamCount }}
+                    </span>
                 </button>
                 <button type="button" @click="selectRubbish"
                     v-tooltip="railCollapsed ? ctrans('Ignored') : undefined"
@@ -2025,6 +2104,14 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
+                    <button v-if="canStartEmail" type="button"
+                        v-tooltip="ctrans('New email')"
+                        class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-indigo-600 text-[11px] font-medium"
+                        @click="newEmailVisible = true">
+                        <FontAwesomeIcon :icon="faPlus" class="text-xs" fixed-width />
+                        {{ ctrans("New email") }}
+                    </button>
+
                     <button v-if="selectedChannel === 'whatsapp' && !isReadOnly" type="button"
                         v-tooltip="ctrans('New WhatsApp chat')"
                         class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 text-green-600 text-[11px] font-medium"
@@ -2103,6 +2190,19 @@ onUnmounted(() => {
                             class="min-w-[15px] px-1 text-[9px] leading-[15px] rounded-full text-center"
                             :class="isStatusOn(capsule.key) ? 'text-white' : 'text-gray-600 bg-gray-200'"
                             :style="isStatusOn(capsule.key) ? { backgroundColor: 'var(--theme-color-4)' } : {}">{{ capsule.count }}</span>
+                    </button>
+                </div>
+
+                <!-- How far back the closed list reaches. Only on when closed is being looked
+                     at: waiting and active are open work and have no period. -->
+                <div v-if="isStatusOn('closed')" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
+                    <span class="uppercase tracking-wide text-gray-400">{{ ctrans("Closed") }}</span>
+                    <button v-for="period in closedPeriods" :key="period.key" type="button"
+                        class="px-1.5 py-0.5 rounded transition-colors"
+                        :class="closedPeriod === period.key ? 'font-semibold text-white' : 'hover:bg-gray-100'"
+                        :style="closedPeriod === period.key ? { backgroundColor: 'var(--theme-color-4)' } : {}"
+                        @click="setClosedPeriod(period.key)">
+                        {{ period.label }}
                     </button>
                 </div>
             </div>
@@ -2252,8 +2352,8 @@ onUnmounted(() => {
             @click="closeSidePanel" />
 
         <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
-            :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated"
-            @synced="onSessionSynced" @customer-synced="onCustomerSynced" />
+            :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
+            @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
 
         <!-- Row action menu (teleported so it is never clipped by the list's overflow) -->
         <Teleport to="body">

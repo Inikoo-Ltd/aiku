@@ -76,6 +76,7 @@ import PreferredShippingModal from '@/Components/Forms/Fields/PreferredShippingM
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
+import BarcodeChoice from '@/Components/Forms/Fields/BarcodeChoice.vue'
 import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
 import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSubscribetion.vue'
 import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
@@ -234,7 +235,8 @@ export const componentsList: { [key: string]: Component } = {
     'master_shop_price_exchanges' : MasterShopPriceExchanges,
     'contact_options_panel' : ContactOptionsPanel,
     'whatsapp_phone_status' : WhatsappPhoneStatus,
-    'category-comparison' : CategoryComparison
+    'category-comparison' : CategoryComparison,
+    'barcode_choice' : BarcodeChoice
 }
 
 export const getComponent = (componentName: string) => {

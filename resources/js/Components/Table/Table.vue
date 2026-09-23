@@ -746,12 +746,16 @@ const immediateVisit = () => {
 // TableElements reports the selection it read from the URL right after mount. The server already
 // rendered that selection, so the state is stored without letting the watcher fire off a visit for
 // a query string identical to the current one.
-const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false) => {
+const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false, isImmediate = false) => {
     if (isInitial) {
         skipNextDebouncedVisit = true;
     }
 
     queryBuilderData.value[key] = data;
+
+    if (isImmediate && !isInitial && isMounted) {
+        immediateVisit();
+    }
 };
 
 const inertiaListener = () => {
@@ -1091,14 +1095,14 @@ const getSeverity = (type?: string) => {
                     'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
                 }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('elementFilter', data, isInitial)"
+                        @checkboxChanged="(data, isInitial, isImmediate) => onElementFilterChanged('elementFilter', data, isInitial, isImmediate)"
                         :tableName="props.name"
                     />
                 </div>
 
                 <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
                     <TableElements :elements="queryBuilderProps.additionalElementGroups"
-                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('additionalElementFilter', data, isInitial)"
+                        @checkboxChanged="(data, isInitial, isImmediate) => onElementFilterChanged('additionalElementFilter', data, isInitial, isImmediate)"
                         :tableName="props.name"
                         :isAdditional="true"
                     />

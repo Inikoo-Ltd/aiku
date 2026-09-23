@@ -165,6 +165,20 @@ class ShowWebsite extends OrgAction
                 "color" => "#f59e0b",
                 'value' => $website->webStats->number_webpages_sub_type_blog,
             ],
+            [
+                'label' => __('Ads Testing'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.ads_testing',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug
+                    ]
+                ],
+                'icon'  => 'fal fa-ad',
+                "color" => "#db2777",
+                'value' => $website->webStats->number_webpages_sub_type_ads_testing,
+            ],
         ];
         $liveVisitorsEnabled = (bool) config('iris.analytics.live_visitors');
         $liveVisitors        = [];

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone } from "@far"
+import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone, faShare } from "@far"
 import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
@@ -24,6 +24,7 @@ const ICONS: Record<string, any> = {
     transfer_to_agent: faExchangeAlt,
     assignment_to_self: faUserCheck,
     phone_call: faPhone,
+    forward: faShare,
 }
 
 const icon = computed(() => ICONS[props.event.event_type ?? ""] ?? faInfoCircle)
@@ -47,6 +48,16 @@ const duration = computed(() => {
 // The call is only worth putting in the thread because of what was said on it, so the headline
 // names who spoke and the notes are shown in full underneath rather than hidden behind a hover.
 const headline = computed(() => {
+    // A forward chip with no names on it says nothing: the point of the chip is that the next
+    // agent to open the thread sees it already went to somebody, and to whom.
+    if (props.event.event_type === "forward") {
+        const names = (payload.value.recipient_names ?? []).join(", ")
+
+        return payload.value.also_emailed
+            ? ctrans("Forwarded to :names, and by email", { names })
+            : ctrans("Forwarded to :names", { names })
+    }
+
     if (!isPhoneCall.value) {
         return props.event.description ?? ""
     }

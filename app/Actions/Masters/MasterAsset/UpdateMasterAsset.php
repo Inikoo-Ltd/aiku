@@ -117,6 +117,15 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        /*
+         * A barcode on a master built from several trade units has no automatic answer, so the
+         * only way it gets one is a person choosing it here. Marking it independent is what
+         * keeps ProductHydrateBarcodeFromTradeUnit off it afterwards.
+         */
+        if (Arr::has($modelData, 'barcode')) {
+            data_set($modelData, 'independent_barcode', true);
+        }
+
         if (Arr::has($modelData, 'is_for_sale')) {
             if (!Arr::get($modelData, 'is_for_sale')) {
                 data_set($modelData, 'status', false);
@@ -386,6 +395,15 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($masterAsset->wasChanged('barcode')) {
+            /** A child that has had its own barcode chosen keeps it, like every other override. */
+            foreach ($masterAsset->products()->where('products.independent_barcode', false)->get() as $product) {
+                UpdateProduct::run($product, [
+                    'barcode' => $masterAsset->barcode,
+                ]);
+            }
+        }
+
         if ($masterAsset->wasChanged('is_golden_product')) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::make()->action($product, [
@@ -469,6 +487,13 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
+            'barcode'                       => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+                Rule::exists('barcodes', 'number')->whereNull('deleted_at')
+            ],
         ];
 
         if (!$this->strict) {

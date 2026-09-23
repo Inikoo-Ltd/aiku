@@ -129,6 +129,8 @@ class ShowOutbox extends OrgAction
             OutboxCodeEnum::REORDER_REMINDER_3RD,
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
