@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Head, router } from '@inertiajs/vue3'
+import { ref, computed, watch } from 'vue'
+import type { Component } from 'vue'
+import { Head, router, usePage } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Unlayer from "@/Components/CMS/Website/Outboxes/Unlayer/UnlayerV2.vue"
@@ -10,22 +11,28 @@ import axios from 'axios'
 import Dialog from 'primevue/dialog';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import 'v-calendar/style.css'
 import Multiselect from "@vueform/multiselect"
 import "@vueform/multiselect/themes/default.css"
 import Tag from '@/Components/Tag.vue'
 import { PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faSyncAlt, faThLarge, faList } from '@fal'
 import { faUserCog } from '@fas'
 
 
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
+import Tabs from '@/Components/Navigation/Tabs.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import TableEmailTemplate from '@/Components/Tables/TableEmailTemplate.vue'
+import TemplateGallery from '@/Components/Mailshot/TemplateGallery.vue'
+import { useTabChange } from '@/Composables/tab-change'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { data } from "autoprefixer"
 
-library.add(faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faThLarge, faList, faUserCog, faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
 const props = defineProps<{
     title: string,
@@ -112,8 +119,8 @@ const sendTestToServer = () => {
         { ...temporaryData.value, email: email.value }
     ).then((response) => {
         notify({
-            title: trans('Success!'),
-            text: trans('Test email sent successfully'),
+            title: ctrans('Success!'),
+            text: ctrans('Test email sent successfully'),
             type: 'success',
         });
         email.value = '';
@@ -149,8 +156,8 @@ const saveTemplate = async () => {
         .then((response) => {
             visibleSAveEmailTemplateModal.value = false
             notify({
-                title: trans('Success'),
-                text: trans('Saved successfully'),
+                title: ctrans('Success'),
+                text: ctrans('Saved successfully'),
                 type: 'success',
             })
         })
@@ -175,15 +182,15 @@ const updateActiveValue = async (action) => {
             onStart: () => console.log('start'),
             onSuccess: () => {
                 notify({
-                    title: trans('Success!'),
-                    text: trans('change status'),
+                    title: ctrans('Success!'),
+                    text: ctrans('change status'),
                     type: 'success',
                 })
             },
             onError: () => {
                 notify({
-                    title: trans('Something went wrong'),
-                    text: trans('Unsuccessfully change status'),
+                    title: ctrans('Something went wrong'),
+                    text: ctrans('Unsuccessfully change status'),
                     type: 'error',
                 })
             },
@@ -222,6 +229,38 @@ const onSchedulePublish = (event) => {
     _popover.value.toggle(event);
 }
 
+const isModalChooseTemplate = ref(false)
+const isBeefreeReady = ref(false)
+const activeSnapshot = ref(props.snapshot)
+
+const page = usePage()
+const tabs = computed(() => page.props.tabs)
+const currentTab = ref<string>(tabs.value.current)
+const tabData = computed(() => page.props[currentTab.value] ?? [])
+
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const templateView = ref<'gallery' | 'list'>((localStorage.getItem('mailshot-template-view') as 'gallery' | 'list') ?? 'gallery')
+
+const setTemplateView = (view: 'gallery' | 'list') => {
+    templateView.value = view
+    localStorage.setItem('mailshot-template-view', view)
+}
+
+const templateComponent = computed<Component>(() => templateView.value === 'gallery' ? TemplateGallery : TableEmailTemplate)
+
+const onSelectTemplateSnapshot = (snapshot: any) => {
+    activeSnapshot.value = snapshot
+    isModalChooseTemplate.value = false
+}
+
+watch(
+    () => tabs.value.current,
+    (val) => {
+        currentTab.value = val
+    }
+)
+
 const schedulePublish = async () => {
     try {
         const response = await axios.post(route('xxxxx'), {
@@ -250,13 +289,40 @@ const schedulePublish = async () => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #otherBefore>
+            <Button v-if="builder == 'beefree'" @click="() => isModalChooseTemplate = true" :label="ctrans('Choose Template')"
+                class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
+                :icon="faSyncAlt" :disabled="!isBeefreeReady" />
+        </template>
     </PageHeading>
+
+    <Modal :isOpen="isModalChooseTemplate" @onClose="isModalChooseTemplate = false" width="w-full max-w-6xl">
+        <div class="flex items-start justify-between gap-x-4">
+            <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" class="flex-1" />
+            <div class="flex items-center rounded-md border border-gray-300 overflow-hidden shrink-0">
+                <button v-tooltip="ctrans('Gallery')" class="px-2 py-1"
+                    :class="templateView === 'gallery' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
+                    @click="setTemplateView('gallery')">
+                    <FontAwesomeIcon icon="fal fa-th-large" fixed-width aria-hidden="true" />
+                </button>
+                <button v-tooltip="ctrans('List')" class="px-2 py-1"
+                    :class="templateView === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-600'"
+                    @click="setTemplateView('list')">
+                    <FontAwesomeIcon icon="fal fa-list" fixed-width aria-hidden="true" />
+                </button>
+            </div>
+        </div>
+
+        <component :is="templateComponent" :key="currentTab + templateView" :data="tabData" :tab="currentTab"
+            @select-snapshot="onSelectTemplateSnapshot" />
+    </Modal>
 
     <!-- beefree -->
     <Beetree v-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="snapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
+        :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
         :shopId="shopId" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree" />
+        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
+        @ready="isBeefreeReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"

@@ -27,7 +27,8 @@ class StoreWorkshopOutboxTemplate extends OrgAction
     {
 
         $data = [
-            'outboxes' => [$outbox->code->value]
+            'outboxes'      => [$outbox->code->value],
+            'common_outbox' => true,
         ];
         $emailTemplate =   StoreEmailTemplate::make()->action(
             $this->group,

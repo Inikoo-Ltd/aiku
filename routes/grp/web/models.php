@@ -1168,6 +1168,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
 
     Route::name('email-template.')->prefix('email-template')->group(function () {
         Route::post('', StoreMailshotTemplate::class)->name('store')->withoutScopedBindings();
+        Route::post('common-outbox', [StoreMailshotTemplate::class, 'inCommonOutbox'])->name('store.common-outbox')->withoutScopedBindings();
         Route::patch('{emailTemplate:id}', UpdateMailshotTemplate::class)->name('update')->withoutScopedBindings();
         Route::post('{emailTemplate:id}/as-new-template', StoreMailshotAsNewTemplate::class)->name('store.as-new-template')->withoutScopedBindings();
         Route::delete('{emailTemplate:id}', DeleteMailshotTemplate::class)->name('delete')->withoutScopedBindings();

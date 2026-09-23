@@ -19,7 +19,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreMailshotTemplate extends OrgAction
 {
-    public function handle(array $modelData): EmailTemplate
+    private bool $isCommonOutbox = false;
+
+    public function handle(array $modelData, bool $isCommonOutbox = false): EmailTemplate
     {
         //  Use default mailshot template
         $defaultMailshotTemplate = $this->group->emailTemplates()->where('builder', EmailTemplateBuilderEnum::BEEFREE->value)->where('slug', 'mailshot')->first();
@@ -31,7 +33,9 @@ class StoreMailshotTemplate extends OrgAction
         data_set($modelData, 'organisation_id', $this->organisation->id);
         data_set($modelData, 'shop_id', $this->shop->id);
         data_set($modelData, 'builder', EmailTemplateBuilderEnum::BEEFREE->value);
-        data_set($modelData, 'data', $defaultMailshotTemplate->data);
+        data_set($modelData, 'data', $isCommonOutbox
+            ? array_merge($defaultMailshotTemplate->data ?? [], ['common_outbox' => true])
+            : $defaultMailshotTemplate->data);
         data_set($modelData, 'language_id', $defaultMailshotTemplate->language_id);
         data_set($modelData, 'state', EmailTemplateStateEnum::ACTIVE->value);
         data_set($modelData, 'active_at', now());
@@ -64,10 +68,22 @@ class StoreMailshotTemplate extends OrgAction
         return $this->handle($this->validatedData);
     }
 
+    public function inCommonOutbox(Shop $shop, ActionRequest $request): EmailTemplate
+    {
+        $this->isCommonOutbox = true;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($this->validatedData, isCommonOutbox: true);
+    }
+
     public function htmlResponse(EmailTemplate $emailTemplate): \Symfony\Component\HttpFoundation\Response
     {
 
-        return Inertia::location(route('grp.org.shops.show.marketing.templates.workshop', [
+        $workshopRoute = $this->isCommonOutbox
+            ? 'grp.org.shops.show.dashboard.comms.templates.workshop'
+            : 'grp.org.shops.show.marketing.templates.workshop';
+
+        return Inertia::location(route($workshopRoute, [
             'organisation'      => $this->organisation->slug,
             'shop'              => $this->shop->slug,
             'emailTemplate'     => $emailTemplate->slug
