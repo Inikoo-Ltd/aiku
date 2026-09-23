@@ -47,7 +47,7 @@ class ProcessInboundEmail
      */
     private const int GONE_TTL_DAYS = 7;
 
-    private const array RETIRED_SERVICE_DOMAINS = ['luigisbox.com'];
+    private const array MACHINE_SENDER_DOMAINS = ['luigisbox.com', 'email-abuse.amazonses.com'];
 
     /**
      * The row carrying the gmail id is what stops a message being taken in twice, but it is only
@@ -460,10 +460,11 @@ class ProcessInboundEmail
     public static function isAutomatedMail(?string $address, ?string $subject): bool
     {
         $localPart = str_replace(['-', '_', '.'], '', strtolower((string) strstr((string) $address, '@', true)));
+        $domain    = strtolower(substr((string) strrchr((string) $address, '@'), 1));
         $subject   = strtolower(trim((string) $subject));
 
         return $localPart === 'mailerdaemon'
-            || in_array(strtolower(substr((string) strrchr((string) $address, '@'), 1)), self::RETIRED_SERVICE_DOMAINS, true)
+            || collect(self::MACHINE_SENDER_DOMAINS)->contains(fn (string $machineDomain) => $domain === $machineDomain || str_ends_with($domain, '.'.$machineDomain))
             || str_contains($localPart, 'noreply')
             || str_contains($localPart, 'donotreply')
             || str_contains($subject, 'report domain:')

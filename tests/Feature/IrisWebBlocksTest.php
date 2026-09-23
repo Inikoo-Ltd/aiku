@@ -761,7 +761,10 @@ test('logged-in product list prices a basket line of a fractional-units product 
     $row->quantity_ordered = 2;
     $row->net_amount       = 10;
 
-    expect((new IrisAuthenticatedProductsInWebpageResource($row))->toArray(request())['offer_price_per_unit'])->toEqual(10.0);
+    $prices = (new IrisAuthenticatedProductsInWebpageResource($row))->toArray(request());
+
+    expect($prices['offer_price_per_unit'])->toEqual(5.0)
+        ->and($prices['price_per_unit'])->toEqual(round((float) $row->price, 2));
 });
 
 test('department web block renders when the department lost its webpage link', function () {
