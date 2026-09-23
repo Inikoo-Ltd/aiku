@@ -18,6 +18,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
@@ -357,6 +358,38 @@ test('lines with nothing left to fulfil are skipped and a guest checkout without
         ->and($order->customerClient->contact_name)->toBe('Ada Lovelace')
         ->and($order->customerClient->email)->toBeNull()
         ->and($order->customerClient->platform_customer_id)->toBeNull();
+});
+
+test('a marketplace import line with only a sku and no shopify product still becomes an order, and one outside the portfolio leaves no client behind', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-sku-only');
+    $portfolio   = shopifyPortfolioFor($this, $shopifyUser);
+    $portfolio->update(['status' => true]);
+
+    $skuOnlyLine = fn (string $sku) => [['sku' => $sku, 'remainingQuantity' => 1, 'lineItem' => ['variant' => null, 'product' => null]]];
+    $accept      = ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder($skuOnlyLine(Str::lower($portfolio->item_code)), ['id' => 'gid://shopify/FulfillmentOrder/6090'])]),
+        'acceptFulfillmentRequest'  => $accept,
+    ]);
+
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6090')->first();
+    expect(ShopifyFake::calls('acceptFulfillmentRequest'))->toHaveCount(1)
+        ->and($order)->not->toBeNull()
+        ->and($order->transactions()->count())->toBe(1)
+        ->and($order->transactions()->first()->asset_id)->toBe($portfolio->item->asset_id)
+        ->and((float) $order->transactions()->first()->quantity_ordered)->toBe(1.0);
+
+    $channel = $shopifyUser->customerSalesChannel;
+    $order->customerClient->delete();
+
+    CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder($skuOnlyLine('not-ours'), ['id' => 'gid://shopify/FulfillmentOrder/6091']));
+
+    expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6091')->exists())->toBeFalse()
+        ->and($channel->clients()->count())->toBe(0);
 });
 
 test('a cancellation request is accepted for an order still in the office and rejected once the warehouse has it', function () {

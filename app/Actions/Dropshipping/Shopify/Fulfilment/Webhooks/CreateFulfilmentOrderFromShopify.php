@@ -44,7 +44,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
             $productId = data_get($lineItem, 'lineItem.product.id');
             $productVariantId = data_get($lineItem, 'lineItem.variant.id');
 
-            if (empty($productId)) {
+            if (empty($productId) && empty($productVariantId) && blank($lineItem['sku'] ?? null)) {
                 continue;
             }
 

@@ -74,7 +74,6 @@ class StoreOrderFromShopify extends OrgAction
             $deliveryAddress = $this->getFallbackDeliveryAddress($shopifyUser);
         }
 
-        $customerClient  = $this->digestShopifyCustomerClient($shopifyUser, $modelData, $deliveryAddress);
         $shopifyProducts = collect(Arr::get($modelData, 'line_items', []));
 
         $matchedShopifyProducts = [];
@@ -102,6 +101,12 @@ class StoreOrderFromShopify extends OrgAction
                 .json_encode($unmatchedShopifyProducts)
             );
         }
+
+        if (!$declinedReason && !$matchedShopifyProducts) {
+            return;
+        }
+
+        $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData, $deliveryAddress);
 
         if ($declinedReason) {
             StoreOrder::make()->action($customerClient, [
