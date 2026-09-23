@@ -12,7 +12,7 @@ import {
     faCameraRetro, faClock,
     faCube, faCubes, faQuoteLeft,
     faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling,
-    faTrashAlt
+    faTrashAlt, faSortAmountDown
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -29,7 +29,7 @@ import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.v
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeadingTypes } from "@/types/PageHeading";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route";
@@ -42,6 +42,7 @@ import axios from "axios"
 import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue";
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import FamiliesOrder from "@/Components/Catalogue/FamiliesOrder.vue"
 import { Department } from "@/types/department";
 
 library.add(
@@ -57,7 +58,7 @@ library.add(
     faDiagramNext,
     faCubes,
     faFolders, faBrowser, faSeedling, faQuoteLeft,
-    faTrashAlt
+    faTrashAlt, faSortAmountDown
 );
 
 
@@ -82,6 +83,7 @@ const props = defineProps<{
     salesData?: object
     mini_breadcrumbs?: any[]
     related_product_category? : object
+    families_order?: object
     delete_route?: routeType;
     delete_condition?: {
         can_delete: boolean;
@@ -105,6 +107,7 @@ const component = computed(() => {
         content : MasterContentProductCategory,
         sales: ProductCategoryTimeSeriesTable,
         related_product_category: RelatedProductCategory,
+        families_order: FamiliesOrder,
     };
     return components[currentTab.value] ?? null;
 });
@@ -134,15 +137,15 @@ async function deleteItem() {
         },
         onSuccess: () => {
             notify({
-                title: trans('Success'),
-                text: trans('Successfully deleted Master Department'),
+                title: ctrans('Success'),
+                text: ctrans('Successfully deleted Master Department'),
                 type: 'error'
             })
         },
         onError: () => {
             notify({
-                title: trans('Error'),
-                text: trans('Failed to delete bundle'),
+                title: ctrans('Error'),
+                text: ctrans('Failed to delete bundle'),
                 type: 'error'
             })
         },
@@ -162,7 +165,7 @@ async function deleteItem() {
           <template #other>
             <ModalConfirmationDelete
                 @onYes="deleteItem"
-                :title="trans('Are you sure you want to delete this Master Department?')"
+                :title="ctrans('Are you sure you want to delete this Master Department?')"
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">
@@ -180,7 +183,7 @@ async function deleteItem() {
 
         <template #afterTitle2>
             <div class="whitespace-nowrap">
-                <Link v-if="url_master" :href="route(url_master.name,url_master.parameters)" v-tooltip="trans('Go to Master')"
+                <Link v-if="url_master" :href="route(url_master.name,url_master.parameters)" v-tooltip="ctrans('Go to Master')"
                     class="mr-1" :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />
                 </Link>

@@ -24,12 +24,6 @@ class GetWebBlockFamilies
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $limit = data_get(
-            $webBlock,
-            'web_block.layout.data.fieldValue.department.number_visible',
-            20
-        );
-
         if ($webpage->model instanceof ProductCategory || $webpage->model instanceof Collection) {
             $hasOverviewPage = false;
 
@@ -39,14 +33,7 @@ class GetWebBlockFamilies
                 $hasOverviewPage = $model->webpages()->where('layout_style', 'families-overview')->exists();
             }
 
-            $families = $this->getFamilyList($webpage)
-                ->when(
-                    $hasOverviewPage,
-                    function ($query) use ($limit) {
-                        $query->limit($limit);
-                    }
-                )
-                ->get();
+            $families = $this->getFamilyList($webpage, useCuratedOrder: true)->get();
         } else {
             return $webBlock;
         }

@@ -32,14 +32,14 @@ const layout: any = inject("layout", {})
 const injectedWebpageData = inject<any>("webpage_data", null)
 
 const selectedOption = ref<string | null>(null)
-const sortKey = ref('created_at')
+const sortKey = ref('')
 const families = ref(
   Array.isArray(props.fieldValue?.families)
     ? props.fieldValue.families
     : (props.fieldValue?.families?.data ?? [])
 )
 const isAscending = ref(true)
-const orderBy = ref('-created_at')
+const orderBy = ref('')
 
 const sortOptions = computed(() => {
   const baseOptions = [
@@ -94,7 +94,7 @@ const loadFamilies = async (
       {
         params: {
           filter,
-          sort: orderBy.value,
+          ...(orderBy.value ? { sort: orderBy.value } : {}),
           page,
           per_page : 250
         },

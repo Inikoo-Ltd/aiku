@@ -156,6 +156,10 @@ class ShowMasterDepartment extends OrgAction
                     fn () => GetRelatedMasterProductCategories::run($masterDepartment)
                     : Inertia::optional(fn () => GetRelatedMasterProductCategories::run($masterDepartment)),
 
+                MasterDepartmentTabsEnum::FAMILIES_ORDER->value => $this->tab === MasterDepartmentTabsEnum::FAMILIES_ORDER->value ?
+                    fn () => GetMasterDepartmentFamiliesOrder::run($masterDepartment)
+                    : Inertia::optional(fn () => GetMasterDepartmentFamiliesOrder::run($masterDepartment)),
+
                 // MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
                 //     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
                 //     : Inertia::optional(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),

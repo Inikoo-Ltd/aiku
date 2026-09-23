@@ -15,16 +15,28 @@ import PasteProductOrderModal from "@/Components/Master/PasteProductOrderModal.v
 
 library.add(faCopy, faInfoCircle);
 
+interface SortOption {
+    key: string
+    label: string
+    type?: 'string' | 'number' | 'date'
+    defaultDirection?: 'asc' | 'desc'
+}
+
 const props = withDefaults(
     defineProps<{
         data: any
         useDelete?: boolean
         disabled?: boolean
         pasteLookupRoute?: { name: string; parameters?: Record<string, unknown> } | null
+        sortOptions?: SortOption[]
     }>(),
     {
         disabled : false,
-        useDelete: false
+        useDelete: false,
+        sortOptions: () => [
+            { key: 'name', label: 'Name', type: 'string' },
+            { key: 'code', label: 'Code', type: 'string' },
+        ]
     }
 )
 
@@ -46,7 +58,7 @@ const emits = defineEmits([
 
 
 
-const sortBy = ref<'name' | 'code'>('name')
+const sortBy = ref<string>('manual')
 const sortDirection = ref<'asc' | 'desc'>('asc')
 const history = ref<any[][]>([])
 const future = ref<any[][]>([])
@@ -142,26 +154,36 @@ const handleKey = (e: KeyboardEvent) => {
     }
 }
 
-const applySort = (type: 'manual' | 'name' | 'code') => {
-    // toggle direction if same type
-    if (sortBy.value === type) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-    } else {
-        sortBy.value = type
-        sortDirection.value = 'asc'
+const compareOn = (option: SortOption, a: any, b: any) => {
+    if (option.type === 'number') {
+        return (Number(a[option.key]) || 0) - (Number(b[option.key]) || 0)
     }
 
-    if (type === 'manual') return
+    if (option.type === 'date') {
+        return (Date.parse(a[option.key]) || 0) - (Date.parse(b[option.key]) || 0)
+    }
+
+    return (a[option.key] || '').toString().localeCompare((b[option.key] || '').toString())
+}
+
+const applySort = (key: string) => {
+    const option = props.sortOptions.find((candidate) => candidate.key === key)
+
+    // toggle direction if same type
+    if (sortBy.value === key) {
+        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+    } else {
+        sortBy.value = key
+        sortDirection.value = option?.defaultDirection ?? 'asc'
+    }
+
+    if (key === 'manual' || !option) return
 
     saveHistory()
 
     const dir = sortDirection.value === 'asc' ? 1 : -1
 
-    items.value.sort((a, b) => {
-        const aVal = (a[type] || '').toString()
-        const bVal = (b[type] || '').toString()
-        return aVal.localeCompare(bVal) * dir
-    })
+    items.value.sort((a, b) => compareOn(option, a, b) * dir)
 
     updateOrder()
 }
@@ -180,8 +202,8 @@ const applyPastedOrder = (orderedItems: any[]) => {
 
 const getImageSource = (item: any) => item?.image_thumbnail?.main?.thumbnail ?? item?.image_thumbnail
 
-const getArrow = (type: 'name' | 'code') => {
-    if (sortBy.value !== type) return ''
+const getArrow = (key: string) => {
+    if (sortBy.value !== key) return ''
     return sortDirection.value === 'asc' ? '↑' : '↓'
 }
 
@@ -210,20 +232,12 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-4">
                 <div class="inline-flex rounded-lg border bg-gray-100 p-1">
-                    <button @click="applySort('name')"
-                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === 'name'
+                    <button v-for="option in sortOptions" :key="option.key" @click="applySort(option.key)"
+                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === option.key
                             ? 'bg-white shadow text-gray-900'
                             : 'text-gray-500 hover:text-gray-700'">
-                        Name
-                        <span class="text-[10px]">{{ getArrow('name') }}</span>
-                    </button>
-
-                    <button @click="applySort('code')"
-                        class="px-3 py-1.5 text-xs rounded-md transition flex items-center gap-1" :class="sortBy === 'code'
-                            ? 'bg-white shadow text-gray-900'
-                            : 'text-gray-500 hover:text-gray-700'">
-                        Code
-                        <span class="text-[10px]">{{ getArrow('code') }}</span>
+                        {{ option.label }}
+                        <span class="text-[10px]">{{ getArrow(option.key) }}</span>
                     </button>
                 </div>
             </div>

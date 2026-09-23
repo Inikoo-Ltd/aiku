@@ -58,6 +58,7 @@ class GetWebBlockFamiliesOverview
                 ->where('webpages.state', WebpageStateEnum::LIVE->value)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->orderByRaw('product_categories.website_position ASC NULLS LAST')
                 ->orderByRaw('product_categories.created_at DESC')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
@@ -78,6 +79,7 @@ class GetWebBlockFamiliesOverview
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->orderByRaw('product_categories.website_position ASC NULLS LAST')
                 ->orderByRaw('product_categories.created_at DESC')
                 ->get();
         } else {

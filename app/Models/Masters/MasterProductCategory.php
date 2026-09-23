@@ -57,6 +57,7 @@ use App\Models\Traits\HasSearch;
  * @property string|null $source_department_id
  * @property string|null $source_family_id
  * @property bool $show_in_website
+ * @property int|null $website_position
  * @property array<array-key, mixed>|null $name_i8n
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
