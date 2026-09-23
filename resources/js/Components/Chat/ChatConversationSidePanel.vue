@@ -631,9 +631,9 @@ const copyChatId = async () => {
 </script>
 
 <template>
-    <!-- Wide enough and it takes its own column; narrower, it floats over the conversation
-         instead of squeezing it into a strip. -->
-    <div class="absolute inset-y-0 right-0 z-30 flex w-96 max-w-[85vw] shrink-0 flex-col overflow-hidden border-l border-gray-200 bg-white shadow-2xl xl:static xl:z-auto xl:max-w-none xl:shadow-none">
+    <!-- It floats over the conversation at every width. Taking a column of its own moved the
+         thread and re-wrapped every message the moment somebody looked at a profile. -->
+    <div class="absolute inset-y-0 right-0 z-30 flex w-96 max-w-[85vw] flex-col overflow-hidden border-l border-gray-200 bg-white shadow-2xl">
         <!-- Tabs -->
         <div class="flex border-b border-gray-100 shrink-0 text-xs pl-2">
             <template v-for="tab in tabs" :key="tab.key">
