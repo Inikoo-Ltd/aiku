@@ -8,7 +8,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faRocketLaunch, faTag, faInfoCircle } from "@fal"
-import PageSpeedInsights from "@/Components/DataDisplay/PageSpeedInsights.vue"
+import CruxHistory from "@/Components/DataDisplay/CruxHistory.vue"
 
 type EventType = "publish" | "price"
 
@@ -21,8 +21,6 @@ const props = defineProps<{
 		search: Array<{ clicks: number; impressions: number; keys: string[] }>
 		sales: Array<{ date: string; sales: number; orders: number }>
 		events: Array<{ date: string; datetime: string; type: EventType; label: string; user: string | null }>
-		pagespeed?: any[]
-		pagespeed_frequency?: "daily" | "weekly"
 	}
 }>()
 
@@ -280,7 +278,7 @@ const formatTotal = (key: keyof typeof series) =>
 			</div>
 		</div>
 
-		<PageSpeedInsights v-if="pagespeed !== null" :pagespeed="pagespeed" :history="data.pagespeed" :history-frequency="data.pagespeed_frequency" />
+		<CruxHistory v-if="pagespeed !== null" :report="pagespeed" />
 
 		<div class="rounded-lg bg-white shadow">
 			<div class="border-b px-6 py-3 text-sm font-semibold">{{ ctrans("Changes in this period") }}</div>

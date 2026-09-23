@@ -27,7 +27,7 @@ library.add(faGlobe, faLink, faFragile, faUser, faChartLine, faUserCheck, faUser
 
 import SearchAnalyticsDisplay from "@/Components/DataDisplay/Dashboard/Widget/SearchAnalyticsDisplay.vue"
 import SearchMerchandising from "@/Components/DataDisplay/Dashboard/Widget/SearchMerchandising.vue"
-import WebsitePageSpeed from "@/Components/DataDisplay/WebsitePageSpeed.vue"
+import CruxHistory from "@/Components/DataDisplay/CruxHistory.vue"
 
 // Deep link to the website's search analytics page; null (hidden) when the route
 // doesn't apply, e.g. fulfilment websites
@@ -112,12 +112,9 @@ const props = defineProps<{
     route_register?: routeType
     route_forgot_pass?: routeType
     pagespeed_history?: {
-        frequency: "daily" | "weekly"
-        start_date: string
-        end_date: string
-        measured_webpages: number
-        last_measured_on: string | null
-        history: any[]
+        scope: "page" | "website" | null
+        url: string | null
+        history: Record<string, any[]>
     }
 }>()
 
@@ -258,7 +255,7 @@ const links = computed(() => {
                     <div class="font-semibold w-fit text-lg mb-2">
                         {{ ctrans('Page Speed') }}
                     </div>
-                    <WebsitePageSpeed :pagespeed="props.pagespeed_history" />
+                    <CruxHistory :report="props.pagespeed_history" />
                 </div>
 
                 <!-- Section: PIC Webmaster and SEO -->

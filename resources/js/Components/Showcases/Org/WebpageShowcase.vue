@@ -21,7 +21,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
-import PageSpeedInsights from '@/Components/DataDisplay/PageSpeedInsights.vue'
+import CruxHistory from '@/Components/DataDisplay/CruxHistory.vue'
 import WebpageSeo from '@/Components/DataDisplay/WebpageSeo.vue'
 import WebpageEngagement from '@/Components/DataDisplay/WebpageEngagement.vue'
 
@@ -123,7 +123,21 @@ const visitRedirect = () => {
             </span>
           </div>
           <!-- Screen Mode SelectButton -->
-          <div class="flex items-center">
+          <div class="flex items-center gap-2">
+            <ModalConfirmationDelete
+              v-if="data?.state == 'live'"
+              :description="ctrans('Purge all cached files. Purging your cache may slow your website temporarily')"
+              :title="ctrans('Break cache')" :noLabel="ctrans('Confirm')" noIcon="" :routeDelete="{
+                name: 'grp.models.webpage.break_cache',
+                parameters: {
+                  webpage: data?.id
+                },
+                method: 'post'
+              }">
+              <template #default="{ changeModel }">
+                <Button v-tooltip="ctrans('Break cache')" @click="changeModel" type="tertiary" size="xs" :icon="faFragile" :aria-label="ctrans('Break cache')" />
+              </template>
+            </ModalConfirmationDelete>
             <SelectButton v-model="screenMode" :options="screenModeOptions" optionLabel="label" optionValue="value"
               class="p-button-outlined">
               <template #option="slotProps">
@@ -169,26 +183,10 @@ const visitRedirect = () => {
         </div>
       </div>
 
-      <!-- Right: Break cache, page speed, and the detail when there is no page speed to show -->
+      <!-- Right: real user speed, and the detail when there is no speed to show -->
       <div v-if="!redirected_to" class="space-y-6">
-        <div v-if="data?.state == 'live' || pagespeed !== null" class="rounded-lg border border-gray-200 bg-white shadow-sm">
-          <div v-if="data?.state == 'live'" class="p-4" :class="{ 'border-b border-gray-200': pagespeed !== null }">
-            <ModalConfirmationDelete
-              :description="ctrans('Purge all cached files. Purging your cache may slow your website temporarily')"
-              :title="ctrans('Break cache')" :noLabel="ctrans('Confirm')" noIcon="" :routeDelete="{
-                name: 'grp.models.webpage.break_cache',
-                parameters: {
-                  webpage: data?.id
-                },
-                method: 'post'
-              }">
-              <template #default="{ changeModel }">
-                <Button @click="changeModel" type="primary" :icon="faFragile" :label="ctrans('Break cache')" full />
-              </template>
-            </ModalConfirmationDelete>
-          </div>
-
-          <PageSpeedInsights v-if="pagespeed !== null" embedded :pagespeed="pagespeed" />
+        <div v-if="pagespeed !== null" class="rounded-lg border border-gray-200 bg-white shadow-sm">
+          <CruxHistory embedded :report="pagespeed" />
         </div>
 
         <WebpageEngagement v-if="detailBesidePreview" :engagement="engagement" />
