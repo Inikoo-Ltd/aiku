@@ -24,11 +24,12 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import { setColorStyleRoot } from "@/Composables/useApp"
-import { fetchUnreadCount } from "@/Composables/useNotificationSound"
+import { startWorkAlerts } from "@/Composables/useNotificationSound"
+import { useStaffMessaging } from "@/Stores/staff-messaging"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
@@ -152,24 +153,8 @@ const checkScreenType = () => {
 }
 provide("screenType", screenType)
 
-const requestNotificationPermission = () => {
-    if (!("Notification" in window)) return
-    if (Notification.permission === "default") {
-        Notification.requestPermission()
-    }
-    if (Notification.permission === "denied") {
-        notify({
-            title: trans("Alert"),
-            text: trans("You must allow notification to get notif from chat"),
-            type: "error"
-        })
-    }
-}
-
-const baseUrl = layout?.appUrl ?? ""
-const myAgentId = layout.user?.id
 onMounted(() => {
-    fetchUnreadCount(baseUrl, "", myAgentId)
+    startWorkAlerts(useStaffMessaging())
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
     onCheckAppVersion()

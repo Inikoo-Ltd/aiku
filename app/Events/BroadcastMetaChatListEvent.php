@@ -53,6 +53,8 @@ class BroadcastMetaChatListEvent implements ShouldBroadcastNow
     {
         return [
             'message' => $this->message ? [
+                'id'               => $this->message->id,
+                'channel'          => 'whatsapp',
                 'sender_type'      => $this->message->sender_type->value,
                 'sender_name'      => $this->resolveSenderName(),
                 'text'             => $this->resolveMessageText(),
@@ -66,6 +68,7 @@ class BroadcastMetaChatListEvent implements ShouldBroadcastNow
                 'assigned_user_id'              => $this->resolveAssignedAgentId(),
                 'assigned_agent_name'           => $this->resolveAssignedAgentName(),
                 'can_send_non_template_message' => $this->metaChatSession->can_send_non_template_message,
+                'url'                           => $this->inboxUrl(),
             ] : null,
         ];
     }
@@ -97,6 +100,13 @@ class BroadcastMetaChatListEvent implements ShouldBroadcastNow
     private function resolveAssignedAgentName(): ?string
     {
         return $this->activeAssignment()?->chatAgent?->user?->contact_name;
+    }
+
+    private function inboxUrl(): ?string
+    {
+        $organisationSlug = $this->metaChatSession?->shop?->organisation?->slug;
+
+        return $organisationSlug ? route('grp.org.chat.inbox', [$organisationSlug]) : null;
     }
 
     private function resolveMessageText(): string

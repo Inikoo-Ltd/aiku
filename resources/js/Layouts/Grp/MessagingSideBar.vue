@@ -15,12 +15,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
 import RailControls from "@/Layouts/Grp/RailControls.vue"
-const FooterMessage = defineAsyncComponent(() => import("@/Components/Footer/FooterMessage.vue"))
 const ManageTeamModal = defineAsyncComponent(() => import("@/Components/Messaging/ManageTeamModal.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
-import { fetchUnreadCount, totalUnread as crmUnread } from "@/Composables/useNotificationSound"
+import { useStaffMessaging, isAlerting, isWorkThread, type StaffCoworker } from "@/Stores/staff-messaging"
+import CustomersWaiting from "@/Layouts/Grp/CustomersWaiting.vue"
 import { useTruncate } from "@/Composables/useTruncate"
 
 library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStarRegular, faStarSolid, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube)
@@ -293,7 +292,7 @@ const tabs = computed(() => [
     { key: "all" as SideBarTab, icon: "fal fa-gopuram", color: "text-[var(--chat-green)]", label: ctrans('Everyone online'), count: allOnlineCount.value },
     { key: "org" as SideBarTab, icon: "fal fa-home-alt", color: "text-[var(--chat-cyan)]", label: ctrans('Online in my organisation'), count: orgOnlineCount.value },
     { key: "team" as SideBarTab, icon: "fal fa-heart", color: "text-[var(--chat-accent)]", label: ctrans('My team'), count: teamOnlineCount.value },
-    { key: "messages" as SideBarTab, icon: "fal fa-comments", color: "text-[var(--chat-label)]", label: ctrans('Messages'), count: conversationsSummary.value.total, badge: store.totalUnread },
+    { key: "messages" as SideBarTab, icon: "fal fa-comments", color: "text-[var(--chat-label)]", label: ctrans('Messages'), count: conversationsSummary.value.total, badge: store.alertingUnread, quietBadge: store.totalUnread - store.alertingUnread },
 ])
 
 const conversationUserIds = computed(() => new Set(
@@ -324,6 +323,14 @@ const sortedConversations = computed(() => {
         return conversationTitle(a).localeCompare(conversationTitle(b))
     })
 })
+
+const directConversations = computed(() => sortedConversations.value.filter((conversation) => !isWorkThread(conversation)))
+const workThreads = computed(() => sortedConversations.value.filter(isWorkThread))
+const workThreadsUnread = computed(() => workThreads.value.reduce((sum, conversation) => sum + (conversation.unread_count || 0), 0))
+const workThreadsOpen = ref(false)
+
+const unreadBadgeClass = (conversation: any) =>
+    conversation.has_mention ? 'bg-[var(--chat-accent)] text-white' : (isAlerting(conversation) ? 'bg-[var(--chat-red)] text-white' : 'bg-[var(--chat-line)] text-[var(--chat-text)]')
 
 const railOrdered = computed(() => {
     const withUnread = railCandidates.value
@@ -361,12 +368,7 @@ onMounted(() => {
     mobileQuery?.addEventListener("change", onMobileQueryChange)
     fetchCoworkers("")
     store.fetchConversations()
-    refreshInterval = setInterval(() => {
-        fetchCoworkers(search.value)
-        // FooterMessage owns this count but is unmounted in micro view; keep the strip's badge fresh
-        if (isMicro.value && layout?.user?.is_agent) fetchUnreadCount()
-    }, 60000)
-    if (isMicro.value && layout?.user?.is_agent) fetchUnreadCount()
+    refreshInterval = setInterval(() => fetchCoworkers(search.value), 60000)
     tickInterval = setInterval(() => { nowTick.value++ }, 60000)
 })
 
@@ -401,6 +403,7 @@ onUnmounted(() => {
 
         <!-- MICRO: super-thin strip with the counts; click to grow back to the rail -->
         <div v-if="isMicro" class="flex-1 flex flex-col items-center gap-y-2 pt-14 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="ctrans('Show messaging bar')" @click="handleToggle">
+            <CustomersWaiting v-if="layout?.user?.is_agent" micro />
             <template v-for="group in stripBadgeGroups" :key="'micro-badges-' + group.key">
                 <FontAwesomeIcon :icon="group.icon" class="text-[8px] text-[var(--chat-muted)]" fixed-width :title="group.label" aria-hidden="true" />
                 <span v-for="count in group.counts" :key="count.key" :class="count.class" :title="count.label">{{ count.value > 99 ? 99 : count.value }}</span>
@@ -410,7 +413,7 @@ onUnmounted(() => {
             <span class="text-[var(--chat-green)]">{{ allOnlineCount > 99 ? 99 : allOnlineCount }}</span>
             <span class="text-[var(--chat-cyan)]">{{ orgOnlineCount > 99 ? 99 : orgOnlineCount }}</span>
             <span class="text-[var(--chat-accent)]">{{ teamOnlineCount > 99 ? 99 : teamOnlineCount }}</span>
-            <span :class="store.totalUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : 'text-[var(--chat-label)]'">{{ store.totalUnread > 99 ? 99 : store.totalUnread }}</span>
+            <span :class="store.alertingUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : (store.totalUnread > 0 ? 'text-[var(--chat-text)]' : 'text-[var(--chat-label)]')">{{ Math.min(store.alertingUnread || store.totalUnread, 99) }}</span>
 
             <div class="w-3 border-t border-[var(--chat-line)]" />
 
@@ -425,12 +428,6 @@ onUnmounted(() => {
             </div>
             <span v-if="railOverflowCount > 0" class="text-[var(--chat-label)]">+{{ railOverflowCount }}</span>
 
-            <!-- Pending customer (CRM) chats: pinned near the bottom, where the rail keeps them -->
-            <span
-                v-if="layout?.user?.is_agent"
-                v-tooltip="ctrans('Customer chats')"
-                class="mt-auto mb-9"
-                :class="crmUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : 'text-[var(--chat-label)]'">{{ crmUnread > 99 ? 99 : crmUnread }}</span>
         </div>
 
         <template v-else>
@@ -449,6 +446,7 @@ onUnmounted(() => {
                 <span class="relative">
                     <FontAwesomeIcon :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
                     <span v-if="tab.badge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-red)] text-white rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.badge > 99 ? 99 : tab.badge }}</span>
+                    <span v-else-if="tab.quietBadge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-line)] text-[var(--chat-text)] rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.quietBadge > 99 ? 99 : tab.quietBadge }}</span>
                 </span>
                 <span class="text-xxs tabular-nums text-[var(--chat-text)]">{{ tab.count }}</span>
             </div>
@@ -466,6 +464,7 @@ onUnmounted(() => {
                 <span class="relative">
                     <FontAwesomeIcon :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
                     <span v-if="tab.badge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-red)] text-white rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.badge > 99 ? 99 : tab.badge }}</span>
+                    <span v-else-if="tab.quietBadge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-line)] text-[var(--chat-text)] rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.quietBadge > 99 ? 99 : tab.quietBadge }}</span>
                 </span>
                 <span class="tabular-nums" :class="activeTab === tab.key ? 'text-[var(--chat-text)]' : 'text-[var(--chat-label)]'">{{ tab.count }}</span>
             </div>
@@ -587,7 +586,7 @@ onUnmounted(() => {
                     <span>{{ tabHeader }}</span>
                 </div>
                 <button
-                    v-for="conversation in sortedConversations"
+                    v-for="conversation in directConversations"
                     :key="'conv-' + conversation.ulid"
                     class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
                     @click="store.openConversation(conversation.ulid)">
@@ -605,7 +604,7 @@ onUnmounted(() => {
                         <div class="text-xs truncate text-[var(--chat-text)]">{{ conversationTitle(conversation) }}</div>
                         <div class="text-xxs text-[var(--chat-muted)] truncate">{{ useTruncate(conversation.last_message ?? '', 26) }}</div>
                     </div>
-                    <span v-if="conversation.unread_count > 0" class="text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="conversation.has_mention ? 'bg-[var(--chat-accent)]' : 'bg-[var(--chat-red)]'">{{ conversation.unread_count }}</span>
+                    <span v-if="conversation.unread_count > 0" class="rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="unreadBadgeClass(conversation)">{{ conversation.unread_count }}</span>
                     <span
                         role="button" tabindex="0"
                         class="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
@@ -614,6 +613,46 @@ onUnmounted(() => {
                         <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                     </span>
                 </button>
+                <template v-if="workThreads.length">
+                    <button
+                        class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
+                        v-tooltip="ctrans('Order, delivery and task threads. They ring only when you are mentioned.')"
+                        @click="workThreadsOpen = !workThreadsOpen">
+                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-[var(--chat-muted)] text-xxs transition-transform" :class="workThreadsOpen ? '-rotate-90' : 'rotate-180'" fixed-width aria-hidden="true" />
+                        <span class="flex-1 text-xs truncate text-[var(--chat-label)]">{{ ctrans('Work threads') }} ({{ workThreads.length }})</span>
+                        <span v-if="workThreadsUnread > 0" class="rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0 bg-[var(--chat-line)] text-[var(--chat-text)]">{{ workThreadsUnread }}</span>
+                    </button>
+                    <template v-if="workThreadsOpen">
+                    <button
+                        v-for="conversation in workThreads"
+                        :key="'thread-' + conversation.ulid"
+                        class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left"
+                        @click="store.openConversation(conversation.ulid)">
+                        <div v-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
+                            <FontAwesomeIcon icon="fal fa-comments" class="text-[var(--chat-accent)]" fixed-width aria-hidden="true" />
+                        </div>
+                        <div v-else class="relative">
+                            <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
+                                <Image v-if="conversationAvatar(conversation)" :src="conversationAvatar(conversation)" :alt="conversationTitle(conversation)" image-cover />
+                                <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                            </div>
+                            <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="isOnline(conversationOtherId(conversation)) ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs truncate text-[var(--chat-text)]">{{ conversationTitle(conversation) }}</div>
+                            <div class="text-xxs text-[var(--chat-muted)] truncate">{{ useTruncate(conversation.last_message ?? '', 26) }}</div>
+                        </div>
+                        <span v-if="conversation.unread_count > 0" class="rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="unreadBadgeClass(conversation)">{{ conversation.unread_count }}</span>
+                        <span
+                            role="button" tabindex="0"
+                            class="shrink-0 opacity-0 group-hover:opacity-100 text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
+                            v-tooltip="ctrans('Archive chat')"
+                            @click.stop="store.closeConversation(conversation.ulid)">
+                            <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                        </span>
+                    </button>
+                    </template>
+                </template>
                 <div v-if="!sortedConversations.length" class="px-3 py-2 text-xxs text-[var(--chat-muted)]">{{ ctrans('No conversations yet') }}</div>
             </template>
 
@@ -677,11 +716,8 @@ onUnmounted(() => {
             </template>
         </div>
 
-        <!-- Bottom-pinned: micro-view button + customer chats trigger -->
+        <!-- Bottom-pinned: micro-view buttons -->
         <div class="mt-auto shrink-0 flex flex-col pb-2">
-            <div v-if="layout?.user?.is_agent" class="w-full border-t border-[var(--chat-line)] pt-2 pb-1">
-                <FooterMessage in-rail />
-            </div>
             <div class="w-full border-t border-[var(--chat-line)] pt-1 flex items-center gap-x-1" :class="layout.messagingSidebar.show ? 'flex-row justify-end pr-2' : 'flex-col gap-y-1'">
                 <button
                     v-if="!layout.messagingSidebar.show"

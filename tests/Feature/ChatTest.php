@@ -1356,10 +1356,13 @@ test('GetAgentUnreadMessagesSummary returns zero counts when agent has no shops 
 
     $summary = GetAgentUnreadMessagesSummary::make()->handle($chatAgent);
 
+    $nobodyWaiting = ['sessions' => 0, 'oldest_at' => null, 'url' => null, 'live' => ['sessions' => 0, 'oldest_at' => null, 'url' => null]];
+
     expect($summary)->toBe([
         'assigned_unread_count'   => 0,
         'unassigned_unread_count' => 0,
         'total_unread_count'      => 0,
+        'waiting'                 => ['chat' => $nobodyWaiting, 'email' => $nobodyWaiting],
     ]);
 });
 
@@ -1405,7 +1408,79 @@ test('GetAgentUnreadMessagesSummary counts unassigned unread visitor messages', 
     $summary = GetAgentUnreadMessagesSummary::make()->handle($chatAgent);
 
     expect($summary['unassigned_unread_count'])->toBeGreaterThanOrEqual(1)
-        ->and($summary['assigned_unread_count'])->toBe(0);
+        ->and($summary['assigned_unread_count'])->toBe(0)
+        ->and($summary['waiting']['chat']['live']['sessions'])->toBeGreaterThanOrEqual(1)
+        ->and($summary['waiting']['chat']['live']['url'])->toContain('/chat/inbox/');
+
+    $waitingSession = fn (ChatChannelEnum $channel, \Illuminate\Support\Carbon $writtenAt) => tap(ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'channel'          => $channel,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]), fn (ChatSession $session) => ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Still waiting',
+        'is_read'         => false,
+        'created_at'      => $writtenAt,
+        'updated_at'      => $writtenAt,
+    ]));
+
+    $waitingSession(ChatChannelEnum::WEBSITE, now()->subHours(3));
+    $waitingSession(ChatChannelEnum::EMAIL, now());
+
+    $after = GetAgentUnreadMessagesSummary::make()->handle($chatAgent);
+
+    expect($after['waiting']['chat']['sessions'])->toBe($summary['waiting']['chat']['sessions'] + 1)
+        ->and($after['waiting']['chat']['live']['sessions'])->toBe($summary['waiting']['chat']['live']['sessions'])
+        ->and($after['waiting']['email']['sessions'])->toBe($summary['waiting']['email']['sessions'] + 1)
+        ->and($after['waiting']['email']['live']['sessions'])->toBe($summary['waiting']['email']['live']['sessions'] + 1);
+});
+
+test('a chat list event tells the agent which channel it came from and links to the conversation', function () {
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'channel'          => ChatChannelEnum::EMAIL,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'metadata'         => ['email_subject' => 'Order GB586411'],
+    ]);
+
+    $message = ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Where is my order?',
+        'is_read'         => false,
+    ]);
+
+    $payload = (new \App\Events\BroadcastChatListEvent($message))->broadcastWith();
+
+    expect($payload['message']['id'])->toBe($message->id)
+        ->and($payload['message']['channel'])->toBe('email')
+        ->and($payload['message']['subject'])->toBe('Order GB586411')
+        ->and($payload['session']['url'])->toEndWith('/chat/inbox/'.$chatSession->ulid);
+});
+
+test('the shop chat list is open to agents by their position, not only by the retired assignment table', function () {
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $stranger = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+    expect((new \App\Broadcasting\ChatListChannel())->join($clerk, (string) $this->shop->id))->toBe(['id' => $clerk->id, 'name' => $clerk->contact_name])
+        ->and((new \App\Broadcasting\ChatListChannel())->join($stranger, (string) $this->shop->id))->toBeFalse();
 });
 
 test('SyncChatSessionByEmail links the session to an existing web user', function () {
@@ -2751,6 +2826,31 @@ describe('staff messaging chat theme', function () {
     test('invalid chat theme is rejected', function () {
         actingAs($this->user)
             ->patchJson(route('grp.models.profile.update'), ['chat_theme' => 'not-a-theme'])
+            ->assertStatus(422);
+    });
+
+    test('each person chooses their own alert sounds, which reach the layout', function () {
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['alert_sounds' => ['chat' => 'submarine', 'whatsapp' => 'fart', 'email' => 'voice', 'colleague' => 'silent', 'pager' => 'bells']])
+            ->assertOk();
+
+        $expected = ['chat' => 'submarine', 'whatsapp' => 'fart', 'email' => 'voice', 'colleague' => 'silent'];
+
+        expect(Arr::get($this->user->fresh()->settings, 'alert_sounds'))->toEqual($expected)
+            ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($this->user->fresh())['settings']['alert_sounds'])->toEqual($expected);
+
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['alert_sounds' => ['chat' => 'air-horn']])
+            ->assertStatus(422);
+
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['alert_preview_seconds' => 10])
+            ->assertOk();
+
+        expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($this->user->fresh())['settings']['alert_preview_seconds'])->toBe(10);
+
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['alert_preview_seconds' => 99])
             ->assertStatus(422);
     });
 });

@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import axios from 'axios'
 import { watchDebounced } from '@vueuse/core'
 import { useLayoutStore } from "@/Stores/layout"
@@ -19,7 +19,7 @@ import { faUser, faEdit, faChevronDown, faSearch, faSlidersH, faPaperclip, faSto
 import Image from '@common/Components/Image.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import MiniChatWindow from '@/Components/Chat/MiniChatWindow.vue'
-import { playNotificationSoundFile, buildStorageUrl, fetchUnreadCount, totalUnread } from "@/Composables/useNotificationSound"
+import { fetchUnreadCount, totalUnread, chatListVersion } from "@/Composables/useNotificationSound"
 import { useMiniChats } from "@/Composables/useMiniChats"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 
@@ -52,8 +52,6 @@ const props = withDefaults(defineProps<{ inRail?: boolean }>(), { inRail: false 
 const layout: any = useLayoutStore()
 const baseUrl = layout?.appUrl ?? ""
 const myAgentId = layout?.user?.id
-const agentShops: number[] = Array.isArray(layout?.user?.agent_shops) ? layout.user.agent_shops : []
-const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
 const showPopover = ref(false)
 const railTrigger = ref<HTMLElement | null>(null)
@@ -136,19 +134,16 @@ const onListScroll = (event: Event) => {
 }
 
 const RAIL_PANEL_MAX_HEIGHT = 520
-const RAIL_PANEL_BOTTOM_GAP = 30
+const RAIL_PANEL_EDGE_GAP = 8
 
 const positionRailPopover = () => {
     if (!props.inRail || !railTrigger.value) return
     const rect = railTrigger.value.getBoundingClientRect()
     const panelHeight = Math.min(RAIL_PANEL_MAX_HEIGHT, window.innerHeight * 0.8)
-    let bottom = RAIL_PANEL_BOTTOM_GAP
-    if (window.innerHeight - bottom - panelHeight < RAIL_PANEL_BOTTOM_GAP) {
-        bottom = Math.max(0, window.innerHeight - RAIL_PANEL_BOTTOM_GAP - panelHeight)
-    }
+    const top = Math.max(RAIL_PANEL_EDGE_GAP, Math.min(rect.top, window.innerHeight - panelHeight - RAIL_PANEL_EDGE_GAP))
     railPopoverStyle.value = {
         right: `${window.innerWidth - rect.left + 8}px`,
-        bottom: `${bottom}px`,
+        top: `${top}px`,
     }
 }
 
@@ -158,6 +153,7 @@ const togglePopover = async () => {
         useStaffMessaging().openWindows = []
         positionRailPopover()
         await Promise.all([fetchSessions(), fetchTabCounts()])
+        if (!tabUnread.value[activeTab.value] && tabUnread.value.waiting) activeTab.value = 'waiting'
     }
 }
 
@@ -213,7 +209,7 @@ const formatDate = (value?: string | null) => {
 const senderPrefix = (item: ChatSessionItem) => {
     const senderType = item.last_message?.sender_type
     if (!senderType) return ""
-    if (senderType === 'agent') return trans('You')
+    if (senderType === 'agent') return ctrans('You')
     return item.contact_name?.split(' ')[0] ?? ""
 }
 
@@ -224,104 +220,26 @@ const messagePreview = (item: ChatSessionItem) => {
     const message = item.last_message?.message ?? ""
 
     if (isAttachment(item)) {
-        return prefix ? trans(':sender sent an attachment', { sender: prefix }) : trans('Sent an attachment')
+        return prefix ? ctrans(':sender sent an attachment', { sender: prefix }) : ctrans('Sent an attachment')
     }
 
     return prefix ? `${prefix}: ${message}` : message
 }
 
-const joinedChannels: string[] = []
-let pollTimer: ReturnType<typeof setInterval> | null = null
 let stopNavigationTracking: (() => void) | null = null
-
-const isEchoReady = () =>
-    typeof window !== "undefined" &&
-    (window as any).Echo?.connector?.pusher
-
-const waitEchoReady = (callback: () => void) => {
-    if (isEchoReady()) {
-        callback()
-        return
-    }
-    const interval = setInterval(() => {
-        if (isEchoReady()) {
-            clearInterval(interval)
-            callback()
-        }
-    }, 300)
-}
 
 const refreshUnread = () => fetchUnreadCount(baseUrl, activeTab.value, myAgentId)
 
-const handleChatListEvent = async (e: any) => {
-    const msg = e?.message
-
-    // Assignment/status-only events (assign, take-over, close, reopen) carry no
-    // message: just refresh the counts, no sound.
-    if (!msg) {
-        await refreshUnread()
-        if (showPopover.value) await Promise.all([fetchTabCounts(), fetchSessions()])
-        return
-    }
-
-    // Agent's own messages still need to refresh the session list (last message
-    // preview, ordering) and the unread badge, just without a notification sound.
-    if (msg.sender_type === "agent") {
-        await refreshUnread()
-        if (showPopover.value) await Promise.all([fetchTabCounts(), fetchSessions()])
-        return
-    }
-
-    // Spam chats never ring; they are hidden from the normal inbox anyway.
-    if (msg.is_spam) return
-
-    // Assigned chats only notify their assigned agent; unassigned (waiting)
-    // chats have no assigned_user_id and notify every agent of the shop.
-    if (msg.assigned_user_id && msg.assigned_user_id !== myAgentId) return
-
-    playNotificationSoundFile(soundUrl)
-    await refreshUnread()
-    if (showPopover.value) await Promise.all([fetchTabCounts(), fetchSessions()])
-}
-
-const subscribeChannels = () => {
-    agentShops
-        .filter((shopId) => shopId !== null && shopId !== undefined)
-        .forEach((shopId) => {
-            const channel = `chat-list.${shopId}`
-            if (joinedChannels.includes(channel)) return
-            joinedChannels.push(channel)
-            window.Echo.join(channel)
-                .listen(".chatlist", handleChatListEvent)
-                // WhatsApp shares the presence channel but broadcasts under its own name,
-                // which is why the bell stayed silent for it.
-                .listen(".meta-chatlist", handleChatListEvent)
-        })
-}
+watch(chatListVersion, () => {
+    if (showPopover.value) Promise.all([fetchTabCounts(), fetchSessions()])
+})
 
 onMounted(() => {
     stopNavigationTracking = trackNavigation()
     window.addEventListener('resize', positionRailPopover)
-
-    if (!myAgentId) return
-
-    refreshUnread()
-
-    waitEchoReady(subscribeChannels)
-
-    // Safety net: keep the badge fresh even if a broadcast is missed
-    // or the agent handles shops org-wide (no per-shop channel).
-    // The per-tab counts only show inside the popover, which fetches them when it opens.
-    pollTimer = setInterval(() => {
-        if (!showPopover.value && !document.hidden) {
-            refreshUnread()
-        }
-    }, 30000)
 })
 
 onUnmounted(() => {
-    joinedChannels.forEach((channel) => window.Echo?.leave(channel))
-    if (pollTimer) clearInterval(pollTimer)
     stopNavigationTracking?.()
     window.removeEventListener('resize', positionRailPopover)
 })
@@ -331,15 +249,7 @@ onUnmounted(() => {
     <div v-if="inRail" class="relative w-full mb-1">
         <!-- Trigger: rail -->
         <div ref="railTrigger" class="cursor-pointer" @click="togglePopover">
-            <div v-if="layout?.messagingSidebar?.show" class="w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left">
-                <FontAwesomeIcon icon="fal fa-comment-alt-lines" class="text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
-                <span class="flex-1 text-xs truncate text-[var(--chat-text)]">{{ trans('Customer chats') }}</span>
-                <span v-if="totalUnread > 0" class="bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
-            </div>
-            <div v-else class="relative h-9 w-9 mx-auto rounded flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]">
-                <FontAwesomeIcon icon="fal fa-comment-alt-lines" fixed-width aria-hidden="true" />
-                <span v-if="totalUnread > 0" class="absolute -top-0.5 -right-0.5 bg-[var(--chat-red)] text-white rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
-            </div>
+            <slot />
         </div>
 
         <!-- Mini chats docked left of the rail -->
@@ -368,11 +278,11 @@ onUnmounted(() => {
                             <FontAwesomeIcon v-else :icon="faUser" class="text-xs" fixed-width />
                         </div>
                     </div>
-                    <span class="text-base font-semibold text-gray-900 truncate">{{ trans('Messages') }}</span>
+                    <span class="text-base font-semibold text-gray-900 truncate">{{ ctrans('Messages') }}</span>
                 </div>
 
                 <div class="flex items-center gap-1 shrink-0 text-gray-500">
-                    <button class="w-8 h-8 rounded-full hover:bg-gray-100" v-tooltip="trans('Close')"
+                    <button class="w-8 h-8 rounded-full hover:bg-gray-100" v-tooltip="ctrans('Close')"
                         @click="closePopover">
                         <FontAwesomeIcon :icon="faChevronDown" class="text-sm" fixed-width />
                     </button>
@@ -384,10 +294,10 @@ onUnmounted(() => {
                 <div class="relative">
                     <FontAwesomeIcon :icon="faSearch"
                         class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" fixed-width />
-                    <input v-model="searchQuery" type="text" :placeholder="trans('Search messages')"
+                    <input v-model="searchQuery" type="text" :placeholder="ctrans('Search messages')"
                         class="w-full pl-8 pr-9 py-1.5 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:border-gray-400 focus:ring-0" />
                    <!--  <button class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded hover:bg-gray-100 text-gray-500"
-                        v-tooltip="trans('Filter by shop')" @click="showSearch = !showSearch">
+                        v-tooltip="ctrans('Filter by shop')" @click="showSearch = !showSearch">
                         <FontAwesomeIcon :icon="faSlidersH" class="text-xs" />
                     </button> -->
                 </div>
@@ -404,7 +314,7 @@ onUnmounted(() => {
                         ? { color: 'var(--theme-color-4)', borderBottomColor: 'var(--theme-color-4)' }
                         : {}"
                     @click="activeTab = tab.key">
-                    {{ trans(tab.label) }}
+                    {{ ctrans(tab.label) }}
                     <span v-if="tabUnread[tab.key]"
                         class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none">
                         {{ tabUnread[tab.key] > 99 ? '99+' : tabUnread[tab.key] }}
@@ -421,8 +331,8 @@ onUnmounted(() => {
                 <div v-else-if="sessions.length === 0"
                     class="h-full flex flex-col items-center justify-center px-3 text-center">
                     <div class="text-2xl">💬</div>
-                    <div class="text-sm font-medium text-gray-700 mt-1">{{ trans('No conversations') }}</div>
-                    <div class="text-xs text-gray-500">{{ trans('You are all caught up') }}</div>
+                    <div class="text-sm font-medium text-gray-700 mt-1">{{ ctrans('No conversations') }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans('You are all caught up') }}</div>
                 </div>
 
                 <template v-else>
@@ -443,7 +353,7 @@ onUnmounted(() => {
                             <span
                                 class="absolute -bottom-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white"
                                 :class="isWhatsapp(item) ? 'bg-[#25D366] text-white' : 'bg-gray-200 text-gray-600'"
-                                :title="isWhatsapp(item) ? 'WhatsApp' : trans('Website chat')">
+                                :title="isWhatsapp(item) ? 'WhatsApp' : ctrans('Website chat')">
                                 <FontAwesomeIcon :icon="isWhatsapp(item) ? faWhatsapp : faGlobe" class="text-[8px]" fixed-width />
                             </span>
                         </div>
@@ -489,10 +399,10 @@ onUnmounted(() => {
                     <FontAwesomeIcon :icon="faMessage" class="text-[12px]" fixed-width />
                     <span v-if="totalUnread > 0" class="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-[2px]
                         bg-red-500 text-white text-[9px] font-semibold rounded-full whitespace-nowrap animate-pulse">
-                        {{ trans('New Messages') }} ({{ totalUnread }})
+                        {{ ctrans('New Messages') }} ({{ totalUnread }})
                     </span>
                 </div>
-                <span>{{ trans('Message') }}</span>
+                <span>{{ ctrans('Message') }}</span>
             </div>
         </div>
 
@@ -520,11 +430,11 @@ onUnmounted(() => {
                             <FontAwesomeIcon v-else :icon="faUser" class="text-xs" fixed-width />
                         </div>
                     </div>
-                    <span class="text-base font-semibold text-gray-900 truncate">{{ trans('Messages') }}</span>
+                    <span class="text-base font-semibold text-gray-900 truncate">{{ ctrans('Messages') }}</span>
                 </div>
 
                 <div class="flex items-center gap-1 shrink-0 text-gray-500">
-                    <button class="w-8 h-8 rounded-full hover:bg-gray-100" v-tooltip="trans('Close')"
+                    <button class="w-8 h-8 rounded-full hover:bg-gray-100" v-tooltip="ctrans('Close')"
                         @click="closePopover">
                         <FontAwesomeIcon :icon="faChevronDown" class="text-sm" fixed-width />
                     </button>
@@ -536,10 +446,10 @@ onUnmounted(() => {
                 <div class="relative">
                     <FontAwesomeIcon :icon="faSearch"
                         class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" fixed-width />
-                    <input v-model="searchQuery" type="text" :placeholder="trans('Search messages')"
+                    <input v-model="searchQuery" type="text" :placeholder="ctrans('Search messages')"
                         class="w-full pl-8 pr-9 py-1.5 text-xs border border-gray-300 rounded bg-white focus:outline-none focus:border-gray-400 focus:ring-0" />
                    <!--  <button class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded hover:bg-gray-100 text-gray-500"
-                        v-tooltip="trans('Filter by shop')" @click="showSearch = !showSearch">
+                        v-tooltip="ctrans('Filter by shop')" @click="showSearch = !showSearch">
                         <FontAwesomeIcon :icon="faSlidersH" class="text-xs" />
                     </button> -->
                 </div>
@@ -556,7 +466,7 @@ onUnmounted(() => {
                         ? { color: 'var(--theme-color-4)', borderBottomColor: 'var(--theme-color-4)' }
                         : {}"
                     @click="activeTab = tab.key">
-                    {{ trans(tab.label) }}
+                    {{ ctrans(tab.label) }}
                     <span v-if="tabUnread[tab.key]"
                         class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none">
                         {{ tabUnread[tab.key] > 99 ? '99+' : tabUnread[tab.key] }}
@@ -573,8 +483,8 @@ onUnmounted(() => {
                 <div v-else-if="sessions.length === 0"
                     class="h-full flex flex-col items-center justify-center px-3 text-center">
                     <div class="text-2xl">💬</div>
-                    <div class="text-sm font-medium text-gray-700 mt-1">{{ trans('No conversations') }}</div>
-                    <div class="text-xs text-gray-500">{{ trans('You are all caught up') }}</div>
+                    <div class="text-sm font-medium text-gray-700 mt-1">{{ ctrans('No conversations') }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans('You are all caught up') }}</div>
                 </div>
 
                 <template v-else>
@@ -595,7 +505,7 @@ onUnmounted(() => {
                             <span
                                 class="absolute -bottom-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white"
                                 :class="isWhatsapp(item) ? 'bg-[#25D366] text-white' : 'bg-gray-200 text-gray-600'"
-                                :title="isWhatsapp(item) ? 'WhatsApp' : trans('Website chat')">
+                                :title="isWhatsapp(item) ? 'WhatsApp' : ctrans('Website chat')">
                                 <FontAwesomeIcon :icon="isWhatsapp(item) ? faWhatsapp : faGlobe" class="text-[8px]" fixed-width />
                             </span>
                         </div>
