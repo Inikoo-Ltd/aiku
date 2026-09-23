@@ -18,6 +18,7 @@
  */
 
 use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
@@ -43,6 +44,8 @@ use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
+use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
+use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Http\UploadedFile;
@@ -699,4 +702,44 @@ test('families that sold the same are listed newest first', function () {
     expect($listed->pluck('total_sales')->unique())->toHaveCount(1)
         ->and($listed->pluck('code')->all())
         ->toBe([$families['newer']->code, $families['older']->code]);
+});
+
+test('cached family product list carries the same shop-wide offer prices as the logged-in list', function () {
+    [, $product] = createProduct($this->shop);
+
+    DB::table('products')->where('id', $product->id)->update([
+        'price'              => 20,
+        'available_quantity' => 10,
+        'offers_data'        => json_encode(['number_offers' => 1, 'best_percentage_off' => ['percentage_off' => 0.1]]),
+    ]);
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    expect($row)->not->toBeNull();
+
+    $cached    = (new IrisProductsInWebpageResource($row))->toArray(request());
+    $loggedIn  = (new IrisAuthenticatedProductsInWebpageResource($row))->toArray(request());
+    $offerKeys = [
+        'family_id',
+        'is_coming_soon',
+        'is_golden_product',
+        'variant',
+        'product_offers_data',
+        'discounted_price',
+        'discounted_price_per_unit',
+        'discounted_profit',
+        'discounted_profit_per_unit',
+        'discounted_margin',
+        'discounted_percentage',
+        'step_discount',
+    ];
+
+    expect(Arr::only($cached, $offerKeys))->toBe(Arr::only($loggedIn, $offerKeys))
+        ->and($cached)->toHaveKeys($offerKeys)
+        ->and($cached['discounted_price'])->toEqual(18.0)
+        ->and($cached['product_offers_data']['number_offers'])->toBe(1)
+        ->and($cached['family_id'])->toBe($product->family_id);
 });
