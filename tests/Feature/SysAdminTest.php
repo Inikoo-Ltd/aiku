@@ -80,9 +80,12 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use App\Stubs\Migrations\HasSysAdminStats;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
@@ -2401,4 +2404,25 @@ test('a guest with job positions and no phone is stored without a deprecation', 
 
     expect($guest->phone)->toBeNull()
         ->and($guest->getUser()->username)->toBe('nophone');
+});
+
+test('every audit event has its columns on the audit stats tables', function () {
+    $statsFields = new class () {
+        use HasSysAdminStats;
+    };
+
+    $auditFieldsByTable = [
+        'group_sysadmin_stats' => 'auditFields',
+        'organisation_stats'   => 'auditFields',
+        'user_stats'           => 'auditFieldsForNonSystem',
+        'web_user_stats'       => 'auditFieldsForNonSystem',
+        'supplier_user_stats'  => 'auditFieldsForNonSystem',
+    ];
+
+    foreach ($auditFieldsByTable as $tableName => $auditFields) {
+        $expectedColumns = collect($statsFields->{$auditFields}(new Blueprint(Schema::getConnection(), $tableName))->getColumns())
+            ->map(fn ($column) => $column->name);
+
+        expect($expectedColumns->diff(Schema::getColumnListing($tableName))->values()->all())->toBe([], $tableName);
+    }
 });
