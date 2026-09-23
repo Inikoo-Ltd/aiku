@@ -8,6 +8,7 @@
 
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\UI\Profile\StoreProfileApiToken;
@@ -50,6 +51,8 @@ use App\Mcp\Tools\ShopSalesTool;
 use App\Mcp\Tools\SlowStockTool;
 use App\Mcp\Tools\SqlQueryTool;
 use App\Mcp\Tools\StaffChatAnalyticsTool;
+use App\Mcp\Tools\StaffTasksTool;
+use App\Mcp\Tools\StaffTaskWriteTool;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
 use App\Mcp\Tools\TradeUnitFamilySalesTool;
@@ -62,6 +65,8 @@ use App\Models\Catalogue\ShopTimeSeries;
 use App\Models\Helpers\Address;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
+use App\Models\Inventory\Location;
+use App\Models\Tasks\StaffTask;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Guest;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -1562,5 +1567,82 @@ describe('org stock discontinue tools', function () {
         ])->assertHasErrors(['changed since the preview']);
 
         expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
+    });
+});
+
+describe('staff task tools', function () {
+    beforeEach(function () {
+        $this->location   = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $this->department = StaffTask::departments($this->group->id)[0]['value'];
+    });
+
+    test('any staff user asks a department to do something linked to a location', function () {
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'      => 'Count location '.$this->location->code,
+            'description'  => '15764 units, last counted January 2022',
+            'department'   => $this->department,
+            'priority'     => 'high',
+            'due_date'     => '2026-10-01',
+            'organisation' => $this->location->organisation->code,
+            'location'     => $this->location->code,
+        ])->assertOk()->assertSee('"created":"TASK-')->assertSee('tasks?task=TASK-');
+
+        $task = StaffTask::where('requester_id', $this->user->id)->latest('id')->first();
+
+        expect($task->department)->toBe($this->department)
+            ->and($task->model_type)->toBe('Location')
+            ->and($task->model_id)->toBe($this->location->id)
+            ->and($task->priority->value)->toBe('high')
+            ->and($task->due_at->toDateString())->toBe('2026-10-01')
+            ->and($task->conversation->messages()->first()->body)->toBe('15764 units, last counted January 2022');
+    });
+
+    test('assignees are usernames and engineers get tickets, not tasks', function () {
+        $engineer = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'gp-hd', 'scopes' => []]]]))->getUser();
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'  => 'Fix the bug',
+            'assignee' => $engineer->username,
+        ])->assertHasErrors(['Engineers and QA get tickets, not tasks']);
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'  => 'Check the shelf',
+            'assignee' => 'nobody-here',
+        ])->assertHasErrors(['No aiku user with username']);
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'  => 'Check the shelf',
+            'assignee' => $this->user->username,
+        ])->assertOk()->assertSee('"assignee":"'.$this->user->username.'"');
+    });
+
+    test('unknown department lists the valid ones and unknown links are refused', function () {
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'    => 'Count it',
+            'department' => 'nowhere',
+        ])->assertHasErrors(['Departments: ', $this->department]);
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'      => 'Count it',
+            'department'   => $this->department,
+            'organisation' => $this->location->organisation->code,
+            'sko'          => 'NOPE-999',
+        ])->assertHasErrors(['No OrgStock NOPE-999']);
+    });
+
+    test('the requester follows up on their tasks and reads the thread', function () {
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'     => 'Recount the shelf',
+            'description' => 'Please recount before Friday',
+            'department'  => $this->department,
+        ])->assertOk();
+
+        $task = StaffTask::where('requester_id', $this->user->id)->latest('id')->first();
+
+        AikuServer::actingAs($this->user)->tool(StaffTasksTool::class, [])
+            ->assertOk()->assertSee('"reference":"'.$task->reference.'"');
+
+        AikuServer::actingAs($this->user)->tool(StaffTasksTool::class, ['reference' => strtolower($task->reference)])
+            ->assertOk()->assertSee('Please recount before Friday');
     });
 });

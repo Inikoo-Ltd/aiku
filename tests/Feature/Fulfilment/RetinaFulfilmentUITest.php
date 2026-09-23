@@ -1118,6 +1118,8 @@ test('web user cannot update another customer', function () {
 });
 
 test('logging in flags the browser so the storefront can paint logged in before the first hit lands', function () {
+    $this->webUser->update(['password' => \Illuminate\Support\Facades\Hash::make('test')]);
+
     $response = $this->post(route('retina.login.store'), [
         'username' => $this->webUser->username,
         'password' => 'test',

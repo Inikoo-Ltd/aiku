@@ -34,6 +34,7 @@ use App\Actions\Chat\ChatSession\GetChatReports;
 use App\Actions\Chat\ChatSession\IndexChatConversations;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
+use App\Actions\Chat\ChatSession\GetAgentChatNotifications;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Actions\Chat\ChatSession\GetChatStatus;
 use App\Actions\HumanResources\WorkSchedule\GetChatConfig;
@@ -4999,6 +5000,7 @@ test('the closed list only holds what was closed today', function () {
     $mixed = collect(GetChatSessions::make()->handle([
         'statuses' => [ChatSessionStatusEnum::ACTIVE->value, ChatSessionStatusEnum::CLOSED->value],
         'shop_id'  => $this->shop->id,
+        'limit'    => 1000,
     ])->items())->pluck('ulid');
 
     expect($mixed)->toContain($today->ulid)
@@ -5265,6 +5267,23 @@ test('machine mail from a stranger is put aside by rule without asking the model
         ->and($newsletter->rubbish_reason)->toBe('marketing')
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->verdictByRules($voicemail))->toBeNull()
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($dmarc)['automatic'])->toBeTrue();
+});
+
+test('a colleague emailing a shop mailbox is put aside as one of our own staff', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $this->user->update(['email' => 'goods.in@staff-test.example']);
+
+    $colleague = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle(
+        noiseTestEmailSession($this->shop, 'Goods.In@Staff-Test.example', 'NEW / BACK IN STOCK', 'Following products are new in stock')
+    )->refresh();
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    expect($colleague->is_rubbish)->toBeTrue()
+        ->and($colleague->rubbish_reason)->toBe('not_for_us')
+        ->and($colleague->noise_source)->toBe('rule')
+        ->and($colleague->noise_note)->toContain('One of our own staff');
 });
 
 test('the waiting queue is worked oldest first and the bins are still newest first', function () {
@@ -6016,7 +6035,8 @@ test('starting an email from the customer record opens an email conversation and
 });
 
 test('GetChatCustomerTimeline puts every channel, the orders and what is still owed in one line', function () {
-    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
 
     $earlierWebsite = ChatSession::create([
         'ulid'             => (string) Str::ulid(),
@@ -6038,7 +6058,7 @@ test('GetChatCustomerTimeline puts every channel, the orders and what is still o
         'ulid'            => (string) Str::ulid(),
         'meta_channel_id' => $channel->id,
         'shop_id'         => $this->shop->id,
-        'customer_id'     => $this->customer->id,
+        'customer_id'     => $customer->id,
         'phone_number'    => '+628123456789',
         'status'          => ChatSessionStatusEnum::CLOSED,
         'language_id'     => 68,
@@ -6058,7 +6078,7 @@ test('GetChatCustomerTimeline puts every channel, the orders and what is still o
     ]);
 
     $unpaidInvoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()
-        ->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+        ->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
     $unpaidInvoice->update(['pay_status' => \App\Enums\Accounting\Invoice\InvoicePayStatusEnum::UNPAID]);
 
     $events = collect(GetChatCustomerTimeline::make()->handle($current)['events']);
@@ -6123,7 +6143,7 @@ test('a conversation nobody has taken past its channel time joins the group queu
         'last_visitor_message_at' => now()->subDays(2),
     ]);
 
-    $queue = collect(GetChatSessions::make()->handle(['unclaimed' => true])->items())->pluck('id')->all();
+    $queue = collect(GetChatSessions::make()->handle(['unclaimed' => true, 'limit' => 1000])->items())->pluck('id')->all();
 
     expect($queue)->toContain($stale->id)
         ->and($queue)->not->toContain($fresh->id)
@@ -6151,9 +6171,36 @@ test('the unclaimed queue is the whole group\'s, not the shops the person asking
     expect($scopeFor(['unclaimed' => true]))->not->toHaveKey('allowed_shop_ids')
         ->and($scopeFor([]))->toHaveKey('allowed_shop_ids');
 
-    $queue = collect($action->handle($scopeFor(['unclaimed' => true]))->items())->pluck('id')->all();
+    $queue = collect($action->handle($scopeFor(['unclaimed' => true]) + ['limit' => 1000])->items())->pluck('id')->all();
 
     expect($queue)->toContain($foreign->id);
+});
+
+test('the unclaimed count follows the shops picked on the rail, and every shop when none is', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    config(['chat.unclaimed.after_seconds.email' => 7200]);
+
+    [, , $otherShop] = createOwnShop('unclaimed-count-other-shop');
+
+    $here = noiseTestEmailSession($this->shop, 'here@example.com', 'Nobody answered', 'Where is my order');
+    $here->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $there = noiseTestEmailSession($otherShop, 'there@example.com', 'Nobody answered', 'Where is my order');
+    $there->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]
+    );
+
+    $everyShop = GetAgentChatNotifications::make()->handle($agent)['unclaimed'];
+    $thisShop  = GetAgentChatNotifications::make()->handle($agent, [$this->shop->id])['unclaimed'];
+    $bothShops = GetAgentChatNotifications::make()->handle($agent, [$this->shop->id, $otherShop->id])['unclaimed'];
+
+    expect($thisShop)->toBeLessThan($everyShop)
+        ->and($bothShops)->toBe($thisShop + 1)
+        ->and(GetAgentChatNotifications::make()->handle($agent, [$otherShop->id])['unclaimed'])->toBe(1);
 });
 
 test('the unclaimed alert reports the backlog once and stays quiet until it changes', function () {
@@ -6199,7 +6246,7 @@ test('a shop may set its own unclaimed time, and the rest follow the group defau
     $patient = noiseTestEmailSession($this->shop, 'patient@example.com', 'Shop waits longer', 'Where is my order');
     $patient->update(['last_visitor_message_at' => now()->subHours(3)]);
 
-    $queue = fn () => collect(GetChatSessions::make()->handle(['unclaimed' => true])->items())->pluck('id')->all();
+    $queue = fn () => collect(GetChatSessions::make()->handle(['unclaimed' => true, 'limit' => 1000])->items())->pluck('id')->all();
 
     expect($queue())->toContain($patient->id);
 
@@ -6850,6 +6897,18 @@ test('forwarding a conversation to a colleague opens one staff thread and option
     $event = $session->chatEvents()->where('event_type', 'forward')->latest('id')->first();
     expect($event->payload['recipient_user_ids'])->toBe([$warehouse->id])
         ->and($event->payload['also_emailed'])->toBeFalse();
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $this->actingAs($clerk)
+        ->postJson(route('grp.org.chat.agents.sessions.forward', [$this->organisation->slug, $session->ulid]), [
+            'user_ids'   => [$management->id],
+            'note'       => 'From the inbox',
+            'also_email' => true,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.staff_conversation_id', $conversation->id);
 });
 
 test('an agent can hand a conversation to another named agent', function () {
@@ -7233,16 +7292,16 @@ test('filing an imported mail away writes down whether it was unread', function 
 
     \Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/token'                        => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/u1*' => \Illuminate\Support\Facades\Http::response([
-            'id'       => 'u1',
-            'threadId' => 'tu1',
+        'gmail.googleapis.com/gmail/v1/users/me/messages/uf1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'uf1',
+            'threadId' => 'tuf1',
             'labelIds' => ['INBOX', 'UNREAD'],
             'payload'  => [
                 'mimeType' => 'text/plain',
                 'headers'  => [
                     ['name' => 'From', 'value' => 'Unread Sender <unread@example.com>'],
                     ['name' => 'Subject', 'value' => 'Still unread'],
-                    ['name' => 'Message-ID', 'value' => '<u1@example.com>'],
+                    ['name' => 'Message-ID', 'value' => '<uf1@example.com>'],
                 ],
                 'body'     => ['data' => rtrim(strtr(base64_encode('Hello there'), '+/', '-_'), '=')],
             ],
@@ -7254,11 +7313,11 @@ test('filing an imported mail away writes down whether it was unread', function 
 
     \Illuminate\Support\Facades\Log::spy();
 
-    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'u1'))->not->toBeNull();
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'uf1'))->not->toBeNull();
 
     \Illuminate\Support\Facades\Log::shouldHaveReceived('info')
         ->withArgs(fn ($message, $context = []) => $message === 'gmail-file-away'
-            && $context['message'] === 'u1'
+            && $context['message'] === 'uf1'
             && $context['was_unread'] === true
             && $context['was_inbox'] === true);
 

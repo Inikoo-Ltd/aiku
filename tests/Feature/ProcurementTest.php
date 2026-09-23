@@ -30,6 +30,7 @@ use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
+use App\Actions\Transfers\Aurora\FetchAuroraStockDeliveryItems;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
@@ -1003,6 +1004,23 @@ test('update supplier delivery items', function (StockDelivery $stockDelivery) {
 
     return $stockDeliveryItem;
 })->depends('create supplier delivery');
+
+test('aurora fetch moves an item to the stock delivery it now belongs to', function (StockDelivery $stockDelivery) {
+    $newStockDelivery = StoreStockDelivery::make()->action($stockDelivery->parent, [
+        'reference' => 'SP-01-1',
+        'date'      => date('Y-m-d')
+    ], strict: false);
+    $stockDeliveryItem = $stockDelivery->items()->first();
+
+    FetchAuroraStockDeliveryItems::make()->moveToStockDelivery($stockDeliveryItem, $newStockDelivery);
+
+    expect($stockDeliveryItem->refresh()->stock_delivery_id)->toBe($newStockDelivery->id)
+        ->and($newStockDelivery->items()->count())->toBe(1);
+
+    FetchAuroraStockDeliveryItems::make()->moveToStockDelivery($stockDeliveryItem, $stockDelivery);
+
+    expect($stockDeliveryItem->refresh()->stock_delivery_id)->toBe($stockDelivery->id);
+})->depends('create supplier delivery items');
 
 test('update org supplier product', function () {
     $supplier            = StoreSupplier::make()->action(
@@ -4698,7 +4716,8 @@ test('every organisation and group top menu subsection carries a label', functio
 });
 
 test('incoming stock tells the customer when an out of stock product is expected back', function () {
-    $orgStock = $this->orgStocks[0];
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
 
     $supplier    = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
     $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
@@ -4725,7 +4744,7 @@ test('incoming stock tells the customer when an out of stock product is expected
     );
 
     [, $product] = createProduct(StoreShop::run($this->organisation, Shop::factory()->definition()));
-    $product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
     $product->load('orgStocks');
 
     expect(GetProductIncomingStock::run($product))->toBe([]);

@@ -179,7 +179,7 @@ class ForwardChatSessionToColleague
             return response()->json(['success' => false, 'message' => __('Only agents of this shop can forward a conversation')], 403);
         }
 
-        $conversation = $this->handle($chatSession, $agent, $request->validate($this->rules()));
+        $conversation = $this->handle($chatSession, $agent, $request->validated());
 
         return response()->json([
             'success' => true,

@@ -640,7 +640,7 @@ test('UI supply chain dashboard', function () {
             ->component('SupplyChain/SupplyChainDashboard')
             ->has('title')
             ->has('pageHead')
-            ->has('dashboardCards', 6)
+            ->has('dashboardCards', 7)
             ->where('dashboardCards.0.route.name', 'grp.supply-chain.agents.index')
             ->where('dashboardCards.1.route.name', 'grp.supply-chain.suppliers.index')
             ->where('dashboardCards.1.metrics.0.route.name', 'grp.supply-chain.agent_suppliers.index')
@@ -650,6 +650,7 @@ test('UI supply chain dashboard', function () {
             ->where('dashboardCards.3.route.name', 'grp.supply-chain.agent_supplier_purchase_orders.index')
             ->where('dashboardCards.4.route.name', 'grp.supply-chain.control.dashboard')
             ->where('dashboardCards.5.route.name', 'grp.supply-chain.shopping_list.board')
+            ->where('dashboardCards.6.route.name', 'grp.supply-chain.po_journey.dashboard')
             ->missing('search_demand')
             ->has('breadcrumbs', 2);
     });

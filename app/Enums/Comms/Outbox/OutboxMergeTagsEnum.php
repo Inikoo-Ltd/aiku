@@ -47,6 +47,7 @@ enum OutboxMergeTagsEnum: string
     case DELIVERY_ADDRESS = 'Delivery Address';
     case INVOICE_ADDRESS = 'Invoice Address';
     case ABANDONED_CART_ITEMS = 'Abandoned Cart Items';
+    case BASKET_ON_OFFER_ITEMS = 'Basket on Offer Items';
     case FAVOURITES_ON_OFFER_ITEMS = 'Favourites on Offer Items';
 
 
@@ -188,6 +189,10 @@ enum OutboxMergeTagsEnum: string
             [
                 'name' => __('Abandoned Cart Items'),
                 'value' => '[Abandoned Cart Items]'
+            ],
+            [
+                'name' => __('Basket on Offer Items'),
+                'value' => '[Basket on Offer Items]'
             ],
             [
                 'name' => __('Favourites on Offer Items'),

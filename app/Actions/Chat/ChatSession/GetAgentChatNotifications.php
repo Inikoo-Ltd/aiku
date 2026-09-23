@@ -31,14 +31,25 @@ class GetAgentChatNotifications
         ChatSenderTypeEnum::USER->value,
     ];
 
-    public function handle(ChatAgent $agent): array
+    /**
+     * The folders follow the shops picked on the rail, so their numbers do too: none picked
+     * means every shop, which is how the folders read then.
+     *
+     * @param  array<int, int>  $shownShopIds
+     */
+    public function handle(ChatAgent $agent, array $shownShopIds = []): array
     {
-        $shopIds = collect($this->shopIdsWorkedBy($agent->user_id));
+        $shopIds = collect($this->shopIdsWorkedBy($agent->user_id))
+            ->when($shownShopIds !== [], fn ($ids) => $ids->intersect($shownShopIds)->values());
 
-        // Counted across every shop, not this agent's: the point of the unclaimed queue is that
+        // Not limited to the shops this agent works: the point of the unclaimed queue is that
         // somebody who does not work the shop is the one who ends up noticing.
-        $unclaimed = $this->unclaimedChatSessions()->count()
-            + $this->unclaimedMetaChatSessions()->count();
+        $unclaimed = $this->unclaimedChatSessions()
+            ->when($shownShopIds !== [], fn ($query) => $query->whereIn('shop_id', $shownShopIds))
+            ->count()
+            + $this->unclaimedMetaChatSessions()
+                ->when($shownShopIds !== [], fn ($query) => $query->whereIn('shop_id', $shownShopIds))
+                ->count();
 
         if ($shopIds->isEmpty()) {
             return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0];
@@ -130,7 +141,10 @@ class GetAgentChatNotifications
         return response()->json([
             'success' => true,
             'message' => 'Agent chat notifications retrieved successfully',
-            'data'    => $this->handle($user->chatAgent),
+            'data'    => $this->handle(
+                $user->chatAgent,
+                array_map('intval', array_filter((array) $request->query('shop_ids', []), 'is_numeric'))
+            ),
         ]);
     }
 }

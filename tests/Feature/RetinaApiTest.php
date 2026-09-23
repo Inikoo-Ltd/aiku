@@ -317,7 +317,7 @@ test('retina api dropshipping feeds expose product ingredients', function () {
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.index'));
     $response->assertOk();
-    expect($response->json('data.0.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+    expect(collect($response->json('data'))->firstWhere('id', $portfolioId)['ingredients'])->toBe('Aqua, Glycerin, Parfum');
 
     $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
     $response->assertOk();

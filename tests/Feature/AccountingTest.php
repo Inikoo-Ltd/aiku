@@ -2129,7 +2129,11 @@ test('only accounting managers set a customer credit line', function () {
     $user->refresh();
     actingAs($user);
 
-    patch(route('grp.models.customer.credit_line.update', $customer->id), ['credit_limit' => 500, 'payment_terms_days' => 30])->assertSessionHasNoErrors();
+    patch(route('grp.models.customer.credit_line.update', $customer->id), ['credit_limit' => 500, 'payment_terms_days' => 30], ['X-Inertia' => 'true'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+    patch(route('grp.models.customer.update', $customer->id), ['contact_name' => 'Credit Line Test'], ['X-Inertia' => 'true'])
+        ->assertRedirect();
     $customer->refresh();
     expect((float)$customer->credit_limit)->toBe(500.0)
         ->and($customer->payment_terms_days)->toBe(30)

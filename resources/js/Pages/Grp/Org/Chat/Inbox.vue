@@ -206,9 +206,8 @@ const rubbishView = ref(false)
 const trashView = ref(false)
 const highlightView = ref(false)
 
-// Nobody has taken these, past the time agreed for their channel. The group's queue, not this
-// agent's: which shops somebody works is exactly what let last week's chats go unanswered, so
-// it spans every shop and every channel and carries no my/team of its own.
+// Nobody has taken these, past the time agreed for their channel. Not limited to the shops this
+// agent works, and no my/team of its own; like every folder it reads the shops picked above.
 const unclaimedView = ref(false)
 const unclaimedCount = ref(0)
 const spamCount = ref(0)
@@ -222,7 +221,18 @@ const spamRailTooltip = computed(() =>
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
-const crossShopView = computed(() => trashView.value || rubbishView.value || spamView.value || highlightView.value || unclaimedView.value)
+const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || unclaimedView.value)
+    && selectedShopIds.value.length !== 1)
+
+// Folders read the shops picked above: somebody covering many shops clears their own backlog,
+// not everybody's.
+const folderScope = computed(() =>
+    selectedShopIds.value.length === 0
+        ? ctrans("Every shop")
+        : selectedShopIds.value.length === 1
+            ? (selectedInbox.value?.name ?? "")
+            : ctrans(":count shops", { count: String(selectedShopIds.value.length) })
+)
 
 const openMenuUlid = ref<string | null>(null)
 const menuPos = ref({ top: 0, left: 0 })
@@ -571,7 +581,7 @@ const buildParams = (page: number) => ({
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
     page,
-    ...(selectedShopIds.value.length && !highlightView.value && !unclaimedView.value && !agentView.value
+    ...(selectedShopIds.value.length && !agentView.value
         ? { shop_ids: selectedShopIds.value }
         : {}),
     ...(selectedCells.value.length && !agentView.value && !unclaimedView.value ? { pairs: selectedCells.value } : {}),
@@ -791,7 +801,7 @@ const revealViewFor = (contact: Contact): void => {
 
 const matchesCurrentView = (c: Contact) =>
     (spamView.value || trashView.value || unclaimedView.value ? true : selectedStatuses.value.includes(c.status as ChatStatus)) &&
-    (highlightView.value || unclaimedView.value || agentView.value || !selectedShopIds.value.length
+    (agentView.value || !selectedShopIds.value.length
         || (c.shop?.id && selectedShopIds.value.includes(c.shop.id))) &&
     (!selectedAgentIds.value.length ||
         (c.agent?.id && selectedAgentIds.value.includes(c.agent.id)))
@@ -1050,7 +1060,6 @@ const selectRubbish = () => {
     trashView.value = false
     highlightView.value = false
     unclaimedView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1066,7 +1075,6 @@ const selectSpam = () => {
     trashView.value = false
     highlightView.value = false
     unclaimedView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1082,7 +1090,6 @@ const selectTrash = () => {
     spamView.value = false
     highlightView.value = false
     unclaimedView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1100,7 +1107,6 @@ const selectUnclaimed = () => {
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1115,7 +1121,6 @@ const selectHighlight = () => {
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
-    setShop(null)
     selectedCells.value = []
     selectedSession.value = null
     messages.value = []
@@ -1356,10 +1361,28 @@ const reloadInboxCountsSoon = useDebounceFn(() => router.reload({ only: ["inboxe
 
 const fetchInboxNotifications = async () => {
     reloadInboxCountsSoon()
+    await Promise.all([fetchAgentNotifications(), fetchAllShopsTotals()])
+}
 
+const fetchAllShopsTotals = async () => {
+    if (!myAgentId || allShopIds.value.length < 2) return
+    try {
+        const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`, {
+            params: { shop_ids: allShopIds.value },
+        })
+        totalUnclaimed.value = data?.data?.unclaimed ?? 0
+        totalSpam.value = data?.data?.spam ?? 0
+    } catch (e) {
+        // silent — badges are non-critical
+    }
+}
+
+const fetchAgentNotifications = async () => {
     if (!myAgentId || isReadOnly.value) return
     try {
-        const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`)
+        const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`, {
+            params: { shop_ids: selectedShopIds.value },
+        })
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
         unclaimedCount.value = data?.data?.unclaimed ?? 0
         spamCount.value = data?.data?.spam ?? 0
@@ -1392,6 +1415,26 @@ const countByInbox = (tally: (channel: any) => number) =>
 const inboxUnread = computed(() => countByInbox((c) => c.customer?.waiting ?? 0))
 const inboxGuestsWaiting = computed(() => countByInbox((c) => c.guest?.waiting ?? 0))
 const inboxActive = computed(() => countByInbox((c) => (c.customer?.active ?? 0) + (c.guest?.active ?? 0)))
+
+// People work one shop at a time, so the folders follow it; the strip above keeps every shop
+// they may see in sight, and a click opens that folder across all of them.
+const allShopIds = computed(() => (props.inboxes ?? []).map((inbox) => inbox.id))
+const sumOf = (byInbox: Record<number, number>) => Object.values(byInbox).reduce((sum, n) => sum + n, 0)
+const totalCustomersWaiting = computed(() => sumOf(inboxUnread.value))
+const totalGuestsWaiting = computed(() => sumOf(inboxGuestsWaiting.value))
+const totalActive = computed(() => sumOf(inboxActive.value))
+const totalUnclaimed = ref(0)
+const totalSpam = ref(0)
+
+const openAcrossAllShops = (select: () => void, alreadyOpen: boolean) => {
+    selectedShopIds.value = [...allShopIds.value]
+    if (alreadyOpen) {
+        reloadContacts()
+
+        return
+    }
+    select()
+}
 
 const openChat = (c: Contact) => {
     // Moving to another chat retires the linked one, so it does not sit pinned above
@@ -1676,6 +1719,7 @@ onMounted(async () => {
 
     // Registered after the restore so putting the stored choice back does not write it again.
     watch([selectedShopIds, selectedCells, selectedStatuses], storeSelection, { deep: true })
+    watch(selectedShopIds, fetchAgentNotifications, { deep: true })
 
     const init = props.initialSession
 
@@ -1755,6 +1799,35 @@ onUnmounted(() => {
             </button>
         </template>
     </PageHeading>
+
+    <div v-if="inboxes.length > 1" class="mx-4 mb-3 flex flex-wrap gap-3">
+        <div class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums">
+            <span v-tooltip="ctrans('Customers waiting, every shop')" class="flex items-center gap-1.5">
+                <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
+                <span class="font-semibold text-gray-700">{{ totalCustomersWaiting }}</span>
+            </span>
+            <span v-tooltip="ctrans('Guests waiting, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                <span class="font-semibold text-gray-700">{{ totalGuestsWaiting }}</span>
+            </span>
+            <span v-tooltip="ctrans('Active, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                <span class="font-semibold text-gray-700">{{ totalActive }}</span>
+            </span>
+        </div>
+        <button type="button" v-tooltip="ctrans('Unclaimed, every shop')"
+            class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
+            @click="openAcrossAllShops(selectUnclaimed, unclaimedView)">
+            <FontAwesomeIcon :icon="faBell" :class="totalUnclaimed ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
+            <span class="font-semibold text-gray-700">{{ totalUnclaimed }}</span>
+        </button>
+        <button type="button" v-tooltip="ctrans('Spam, every shop')"
+            class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
+            @click="openAcrossAllShops(selectSpam, spamView)">
+            <FontAwesomeIcon :icon="faBan" class="text-gray-400" fixed-width aria-hidden="true" />
+            <span class="font-semibold text-gray-700">{{ totalSpam }}</span>
+        </button>
+    </div>
 
     <Dialog v-model:visible="chatSettingVisible" modal :header="ctrans('Chat Settings')"
         :style="{ width: '90vw', maxWidth: '560px' }" :breakpoints="{ '640px': '95vw' }">
@@ -2074,8 +2147,11 @@ onUnmounted(() => {
                     <div v-if="agentView" class="text-[11px] text-gray-500">
                         {{ ctrans("Across every shop") }}
                     </div>
-                    <div v-else-if="unclaimedView" class="text-[11px] text-gray-500">
-                        {{ ctrans("Every shop, waiting longer than agreed") }}
+                    <div v-else-if="unclaimedView" class="text-[11px] text-gray-500 truncate">
+                        {{ ctrans(":shops, waiting longer than agreed", { shops: folderScope }) }}
+                    </div>
+                    <div v-else-if="spamView || trashView || rubbishView || highlightView" class="text-[11px] text-gray-500 truncate">
+                        {{ folderScope }}
                     </div>
                     <div v-else-if="selectedShopIds.length > 1" class="text-[11px] text-gray-500">
                         {{ selectedShopIds.length }} {{ ctrans("shops, every channel") }}

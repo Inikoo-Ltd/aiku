@@ -600,7 +600,7 @@ test('UI show website showcase offers the ads testing card', function (Website $
 
     expect($adsTestingCard)->not->toBeNull()
         ->and($adsTestingCard['route']['name'])->toBe('grp.org.shops.show.web.webpages.index.sub_type.ads_testing')
-        ->and($adsTestingCard['value'])->toBe($website->webStats->number_webpages_sub_type_ads_testing);
+        ->and($adsTestingCard['value'])->toBe($website->refresh()->webStats->number_webpages_sub_type_ads_testing);
 })->depends('launch website');
 
 test('UI index websites in organisation', function () {

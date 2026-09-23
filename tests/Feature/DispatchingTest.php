@@ -4556,7 +4556,8 @@ test('a second return only covers what was not returned yet and waits for the fi
 });
 
 test('a pick that moves no state still tells the order transaction what was picked', function () {
-    [, $item] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->delete();
 
     $transaction = $item->transaction;
     $transaction->update(['quantity_picked' => 0]);
@@ -4569,6 +4570,7 @@ test('a pick that moves no state still tells the order transaction what was pick
 
 test('a late pick on a blocked note tells the order transaction what was picked', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->delete();
 
     $transaction = $item->transaction;
     $transaction->update(['quantity_picked' => 0]);
@@ -4685,7 +4687,8 @@ test('pickings only read as returned once the cancellation return is walked back
 });
 
 test('a cancelled delivery note row reports its pickings as returned to location (HELP-2693)', function () {
-    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($deliveryNoteItem->id)->delete();
 
     $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
         ->action($deliveryNote, $this->user, true, false, null, true);
