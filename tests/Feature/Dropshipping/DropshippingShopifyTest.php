@@ -389,7 +389,7 @@ test('uploading a product creates it, creates one variant with the right stock a
     $shopifyUser = shopifyProductChannel($this, 'product-upload');
     $channel     = $shopifyUser->customerSalesChannel;
     $channel->update(['max_quantity_advertise' => 5, 'stock_threshold' => 0]);
-    $this->product->update(['available_quantity' => 40]);
+    $this->product->update(['available_quantity' => 40, 'units' => 3, 'marketing_weight' => 430, 'gross_weight' => 1371]);
 
     $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
     $portfolio->update(['customer_price' => 19.5, 'sku' => 'UP-1']);
@@ -418,6 +418,7 @@ test('uploading a product creates it, creates one variant with the right stock a
         ->and($variantCalls[0]['variables']['productId'])->toBe('gid://shopify/Product/7100')
         ->and($variantCalls[0]['variables']['variants'][0]['inventoryItem']['sku'])->toBe($portfolio->sku)
         ->and((float) $variantCalls[0]['variables']['variants'][0]['price'])->toBe(19.5)
+        ->and($variantCalls[0]['variables']['variants'][0]['inventoryItem']['measurement']['weight'])->toBe(['unit' => 'GRAMS', 'value' => 1371])
         ->and($variantCalls[0]['variables']['variants'][0]['inventoryQuantities'])->toBe(['availableQuantity' => 5, 'locationId' => 'gid://shopify/Location/1001'])
         ->and($portfolio->platform_product_id)->toBe('gid://shopify/Product/7100')
         ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8101')
