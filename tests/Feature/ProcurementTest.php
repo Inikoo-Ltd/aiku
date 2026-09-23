@@ -825,6 +825,18 @@ test('delete purchase order', function () {
     expect($purchaseOrderDeleted)->toBeTrue()->and($supplier->stats->number_purchase_orders)->toBe(0);
 });
 
+test('a second purchase order for a supplier with an open one names the open purchase order', function () {
+    $openPurchaseOrder = $this->orgSupplier->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first()
+        ?? StorePurchaseOrder::make()->action($this->orgSupplier, PurchaseOrder::factory()->definition());
+
+    try {
+        StorePurchaseOrder::make()->action($this->orgSupplier, PurchaseOrder::factory()->definition());
+        $this->fail('A second open purchase order was created');
+    } catch (ValidationException $exception) {
+        expect($exception->errors()['purchase_order'][0])->toContain($openPurchaseOrder->reference);
+    }
+});
+
 test('update quantity items to 0 in purchase order', function ($purchaseOrder) {
     $item = $purchaseOrder->purchaseOrderTransactions()->first();
 

@@ -143,8 +143,12 @@ class StorePurchaseOrder extends OrgAction
             return;
         }
 
-        if ($this->parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->exists()) {
-            $validator->errors()->add('purchase_order', __('Are you sure want to create new purchase order?'));
+        $openPurchaseOrder = $this->parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first();
+        if ($openPurchaseOrder) {
+            $validator->errors()->add(
+                'purchase_order',
+                __('There is already an open purchase order (:reference). Add the products to it, or submit or cancel it before creating a new one.', ['reference' => $openPurchaseOrder->reference])
+            );
         }
 
         if ($this->parent instanceof OrgPartner) {
