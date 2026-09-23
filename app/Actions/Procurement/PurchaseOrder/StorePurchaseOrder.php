@@ -61,14 +61,7 @@ class StorePurchaseOrder extends OrgAction
         }
 
         if (!Arr::get($modelData, 'reference')) {
-            data_set(
-                $modelData,
-                'reference',
-                GetSerialReference::run(
-                    container: $parent->organisation,
-                    modelType: SerialReferenceModelEnum::PURCHASE_ORDER
-                )
-            );
+            data_set($modelData, 'reference', $this->getNewReference($parent));
         }
         if (!Arr::get($modelData, 'date')) {
             data_set($modelData, 'date', now());
@@ -99,6 +92,20 @@ class StorePurchaseOrder extends OrgAction
         GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay);
 
         return $purchaseOrder;
+    }
+
+    private function getNewReference(OrgSupplier|OrgAgent|OrgPartner $parent): string
+    {
+        $container = $parent instanceof OrgPartner || !$parent->purchaseOrderSerialReference ? $parent->organisation : $parent;
+
+        do {
+            $reference = GetSerialReference::run(
+                container: $container,
+                modelType: SerialReferenceModelEnum::PURCHASE_ORDER
+            );
+        } while ($parent->organisation->purchaseOrders()->where('reference', $reference)->exists());
+
+        return $reference;
     }
 
     public function rules(): array

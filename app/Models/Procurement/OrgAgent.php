@@ -8,7 +8,9 @@
 
 namespace App\Models\Procurement;
 
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Helpers\SerialReference;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -18,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -87,6 +90,16 @@ class OrgAgent extends Model
     public function purchaseOrders(): MorphMany
     {
         return $this->morphMany(PurchaseOrder::class, 'parent');
+    }
+
+    public function serialReferences(): MorphMany
+    {
+        return $this->morphMany(SerialReference::class, 'container');
+    }
+
+    public function purchaseOrderSerialReference(): MorphOne
+    {
+        return $this->morphOne(SerialReference::class, 'container')->where('model', SerialReferenceModelEnum::PURCHASE_ORDER);
     }
 
     public function stockDeliveries(): MorphMany

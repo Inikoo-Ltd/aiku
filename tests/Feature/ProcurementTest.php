@@ -62,6 +62,7 @@ use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateOrgSupplierP
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\RepairOrgSupplierProductsSupplierDrift;
+use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
@@ -889,6 +890,40 @@ test('a second purchase order for a supplier with an open one names the open pur
     } catch (ValidationException $exception) {
         expect($exception->errors()['purchase_order'][0])->toContain($openPurchaseOrder->reference);
     }
+});
+
+test('purchase orders are numbered with the org supplier format, skipping references already used', function () {
+    $supplier    = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $orderData   = Arr::except(PurchaseOrder::factory()->definition(), 'reference');
+
+    $organisationFormatReference = UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier);
+    expect($organisationFormatReference)->toStartWith('PO');
+
+    UpdateOrgSupplier::make()->action($orgSupplier, [
+        'purchase_order_reference_format' => 'Camacho-%04d_UK',
+        'purchase_order_last_number'      => 33,
+    ]);
+    $orgSupplier->refresh();
+
+    expect(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe('Camacho-0034_UK')
+        ->and(StorePurchaseOrder::make()->action($orgSupplier, $orderData, strict: false)->reference)->toBe('Camacho-0034_UK');
+
+    StorePurchaseOrder::make()->action($orgSupplier, array_merge($orderData, ['reference' => 'Camacho-0035_UK']), strict: false);
+
+    expect(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe('Camacho-0036_UK');
+
+    expect(StorePurchaseOrder::make()->action($orgSupplier, $orderData, strict: false)->reference)->toBe('Camacho-0036_UK')
+        ->and($orgSupplier->purchaseOrderSerialReference()->value('serial'))->toBe(36);
+
+    UpdateOrgSupplier::make()->action($orgSupplier, ['purchase_order_reference_format' => null]);
+    $orgSupplier->refresh();
+
+    expect($orgSupplier->purchaseOrderSerialReference)->toBeNull()
+        ->and(StorePurchaseOrder::make()->action($orgSupplier, $orderData, strict: false)->reference)->toBe($organisationFormatReference);
 });
 
 test('update quantity items to 0 in purchase order', function ($purchaseOrder) {
@@ -2577,6 +2612,8 @@ test('UI edit org supplier relationship (not owned)', function () {
                 fn (AssertableInertia $page) => $page
                     ->where('args.updateRoute.name', 'grp.models.org_supplier.update')
                     ->has('blueprint.0.fields.status')
+                    ->where('blueprint.1.fields.purchase_order_reference_format.updateRoute.name', 'grp.models.org_supplier.update')
+                    ->has('blueprint.1.fields.purchase_order_last_number')
                     ->etc()
             );
     });

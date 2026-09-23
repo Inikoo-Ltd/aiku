@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
@@ -87,7 +87,7 @@ const props = defineProps<{
                 payment_terms?: string
                 minimum_order?: number
                 cooling_period?: number
-                order_number_prefix?: string
+                next_purchase_order_reference?: string
             }
         }
         stats: {
@@ -109,7 +109,7 @@ const locale = inject('locale', aikuLocaleStructure)
 const contactCard = computed(() => props.data?.contactCard)
 
 const title = computed(
-    () => contactCard.value?.company || contactCard.value?.contact || trans('Agent')
+    () => contactCard.value?.company || contactCard.value?.contact || ctrans('Agent')
 )
 
 const currencyLabel = computed(() => {
@@ -130,7 +130,7 @@ const details = computed(() =>
     [
         {
             key: 'company',
-            label: trans('Company'),
+            label: ctrans('Company'),
             icon: 'fal fa-building',
             value: contactCard.value?.company,
             href: null as string | null,
@@ -139,7 +139,7 @@ const details = computed(() =>
         },
         {
             key: 'contact',
-            label: trans('Contact name'),
+            label: ctrans('Contact name'),
             icon: 'fal fa-user',
             value: contactCard.value?.contact,
             href: null as string | null,
@@ -148,7 +148,7 @@ const details = computed(() =>
         },
         {
             key: 'email',
-            label: trans('Email'),
+            label: ctrans('Email'),
             icon: 'fal fa-envelope',
             value: contactCard.value?.email,
             href: contactCard.value?.email ? `mailto:${contactCard.value.email}` : null,
@@ -157,7 +157,7 @@ const details = computed(() =>
         },
         {
             key: 'phone',
-            label: trans('Phone'),
+            label: ctrans('Phone'),
             icon: 'fal fa-phone',
             value: contactCard.value?.phone,
             href: contactCard.value?.phone ? `tel:${contactCard.value.phone}` : null,
@@ -166,7 +166,7 @@ const details = computed(() =>
         },
         {
             key: 'website',
-            label: trans('Website'),
+            label: ctrans('Website'),
             icon: 'fal fa-globe',
             value: contactCard.value?.website,
             href: contactCard.value?.website ?? null,
@@ -175,7 +175,7 @@ const details = computed(() =>
         },
         {
             key: 'currency',
-            label: trans('Currency'),
+            label: ctrans('Currency'),
             icon: 'fal fa-money-bill-wave-alt',
             value: contactCard.value?.currency?.name,
             href: null as string | null,
@@ -184,7 +184,7 @@ const details = computed(() =>
         },
         {
             key: 'created_at',
-            label: trans('Created at'),
+            label: ctrans('Created at'),
             icon: 'fal fa-calendar-plus',
             value: contactCard.value?.created_at
                 ? useFormatTime(contactCard.value.created_at, { formatTime: 'aiku' })
@@ -206,57 +206,57 @@ const supplierInfo = computed(() => {
     return [
         {
             key: 'delivery_type',
-            label: trans('Delivery type'),
+            label: ctrans('Delivery type'),
             icon: 'fal fa-truck-container',
-            value: info.delivery_type === 'container' ? trans('Container') : info.delivery_type === 'parcel' ? trans('Parcels') : info.delivery_type
+            value: info.delivery_type === 'container' ? ctrans('Container') : info.delivery_type === 'parcel' ? ctrans('Parcels') : info.delivery_type
         },
         {
             key: 'delivery_time',
-            label: trans('Delivery time'),
+            label: ctrans('Delivery time'),
             icon: 'fal fa-clock',
-            value: info.delivery_time ? trans(':days days', { days: info.delivery_time }) : null
+            value: info.delivery_time ? ctrans(':days days', { days: info.delivery_time }) : null
         },
         {
             key: 'production_waiting_time',
-            label: trans('Production time'),
+            label: ctrans('Production time'),
             icon: 'fal fa-clock',
-            value: info.production_waiting_time ? trans(':days days', { days: info.production_waiting_time }) : null
+            value: info.production_waiting_time ? ctrans(':days days', { days: info.production_waiting_time }) : null
         },
         {
             key: 'products_origin',
-            label: trans('Products origin'),
+            label: ctrans('Products origin'),
             icon: 'fal fa-globe',
             value: info.products_origin
         },
         {
             key: 'incoterm',
-            label: trans('Incoterm'),
+            label: ctrans('Incoterm'),
             icon: 'fal fa-file-invoice-dollar',
             value: info.incoterm
         },
         {
             key: 'ports',
-            label: trans('Ports'),
+            label: ctrans('Ports'),
             icon: 'fal fa-map-marked-alt',
             value: info.port_of_export && info.port_of_import ? `${info.port_of_export} → ${info.port_of_import}` : info.port_of_export || info.port_of_import
         },
         {
             key: 'payment_terms',
-            label: trans('Payment terms'),
+            label: ctrans('Payment terms'),
             icon: 'fal fa-file-invoice-dollar',
             value: info.payment_terms
         },
         {
             key: 'minimum_order',
-            label: trans('Minimum order'),
+            label: ctrans('Minimum order'),
             icon: 'fal fa-box-usd',
             value: info.minimum_order
         },
         {
-            key: 'order_number_prefix',
-            label: trans('Order number prefix'),
+            key: 'next_purchase_order_reference',
+            label: ctrans('Next order number'),
             icon: 'fal fa-hashtag',
-            value: info.order_number_prefix
+            value: info.next_purchase_order_reference
         }
     ].filter((row) => row.value)
 })
@@ -338,13 +338,13 @@ const supplierInfo = computed(() => {
                     </div>
                 </dl>
                 <p v-else class="px-6 py-8 text-center text-sm text-gray-400">
-                    {{ trans('No contact details recorded') }}
+                    {{ ctrans('No contact details recorded') }}
                 </p>
 
                 <template v-if="supplierInfo.length">
                     <div class="border-t border-gray-900/5 bg-gray-50/80 px-6 py-3">
                         <h3 class="text-xs font-medium uppercase tracking-wide text-gray-400">
-                            {{ trans('Supplying') }}
+                            {{ ctrans('Supplying') }}
                         </h3>
                     </div>
                     <dl class="divide-y divide-gray-900/5">
@@ -368,7 +368,7 @@ const supplierInfo = computed(() => {
                         class="text-gray-400"
                         fixed-width
                         aria-hidden="true" />
-                    <h2 class="text-base font-semibold text-gray-900">{{ trans('Address') }}</h2>
+                    <h2 class="text-base font-semibold text-gray-900">{{ ctrans('Address') }}</h2>
                 </div>
 
                 <div v-if="hasAddress" class="space-y-4 px-6 py-5 text-sm text-gray-700">
@@ -386,7 +386,7 @@ const supplierInfo = computed(() => {
                         v-html="contactCard.address.formatted_address" />
                 </div>
                 <p v-else class="px-6 py-8 text-center text-sm text-gray-400">
-                    {{ trans('No address recorded') }}
+                    {{ ctrans('No address recorded') }}
                 </p>
             </div>
         </div>

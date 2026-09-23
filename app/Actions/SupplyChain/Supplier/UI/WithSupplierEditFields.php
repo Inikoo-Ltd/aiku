@@ -134,11 +134,6 @@ trait WithSupplierEditFields
                         'value'   => Arr::get($supplier->settings, 'cooling_period'),
                         'options' => ['inputType' => 'number']
                     ],
-                    'order_number_prefix' => [
-                        'type'  => 'input',
-                        'label' => __('Order number prefix'),
-                        'value' => Arr::get($supplier->settings, 'order_number_prefix'),
-                    ],
                 ]
             ],
             [
