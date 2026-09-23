@@ -191,7 +191,7 @@ class ProposeAllegroProduct
             'type'        => $product->family?->name ?? null,
             'color'       => $product->color ?? null,
             'size'        => $product->size ?? null,
-            'weight'      => max((int) $product->gross_weight, (int) $product->marketing_weight) ?: null,
+            'weight'      => $product->gross_weight ?: $product->marketing_weight ?: null,
             'width'       => Arr::get($product->marketing_dimensions, 'w') ?: null,
             'height'      => Arr::get($product->marketing_dimensions, 'h') ?: null,
             'depth'       => Arr::get($product->marketing_dimensions, 'l') ?: null,
