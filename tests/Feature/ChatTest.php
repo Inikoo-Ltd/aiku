@@ -3457,6 +3457,9 @@ test('an agent email reply in another language goes out translated to the custom
     expect($reply->fresh()->original_text)->toBe('Shipped today')
         ->and(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session->fresh())->resolve()['customer_language'])
         ->toBe(['code' => 'es', 'name' => $spanish->name]);
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
 });
 
 test('inbound gmail from an unknown sender becomes a guest email session and a spammed sender is skipped next time', function () {
@@ -4773,42 +4776,44 @@ test('email does not sit under the website tab', function () {
         return $session;
     };
 
-    $session(ChatChannelEnum::WEBSITE);
-    $emailSession = $session(ChatChannelEnum::EMAIL);
-    $session(ChatChannelEnum::EMAIL)->update(['status' => ChatSessionStatusEnum::ACTIVE, 'is_rubbish' => true]);
+    try {
+        $session(ChatChannelEnum::WEBSITE);
+        $emailSession = $session(ChatChannelEnum::EMAIL);
+        $session(ChatChannelEnum::EMAIL)->update(['status' => ChatSessionStatusEnum::ACTIVE, 'is_rubbish' => true]);
 
-    $props = $this->actingAs($agent)
-        ->get(route('grp.org.shops.show.chat.inbox', [$this->organisation->slug, $this->shop->slug]))
-        ->assertOk()
-        ->viewData('page')['props'];
+        $props = $this->actingAs($agent)
+            ->get(route('grp.org.shops.show.chat.inbox', [$this->organisation->slug, $this->shop->slug]))
+            ->assertOk()
+            ->viewData('page')['props'];
 
-    $channels = collect($props['inboxes'])->firstWhere('slug', $this->shop->slug)['channels'];
+        $channels = collect($props['inboxes'])->firstWhere('slug', $this->shop->slug)['channels'];
 
-    // A bounce notice under a tab marked Website reads as somebody waiting on the other end.
-    expect(collect($channels)->pluck('key')->all())->toBe(['website', 'email', 'whatsapp']);
+        // A bounce notice under a tab marked Website reads as somebody waiting on the other end.
+        expect(collect($channels)->pluck('key')->all())->toBe(['website', 'email', 'whatsapp']);
 
-    // The columns are the same three for every shop so the rail reads down as one table; the
-    // ones nothing arrives on are held open and unpickable rather than dropped.
-    expect(collect($channels)->firstWhere('key', 'email')['available'])->toBeTrue();
+        // The columns are the same three for every shop so the rail reads down as one table; the
+        // ones nothing arrives on are held open and unpickable rather than dropped.
+        expect(collect($channels)->firstWhere('key', 'email')['available'])->toBeTrue();
 
-    // Put aside keeps its status, and the list leaves it out, so the rail must as well or it
-    // promises an active email nobody can find.
-    expect(collect($channels)->firstWhere('key', 'email')['guest']['active'])->toBe(0);
-    expect(collect($channels)->firstWhere('key', 'whatsapp')['available'])->toBeFalse();
+        // Put aside keeps its status, and the list leaves it out, so the rail must as well or it
+        // promises an active email nobody can find.
+        expect(collect($channels)->firstWhere('key', 'email')['guest']['active'])->toBe(0);
+        expect(collect($channels)->firstWhere('key', 'whatsapp')['available'])->toBeFalse();
 
-    $website = collect(GetChatSessions::make()->handle([
-        'shop_id' => $this->shop->id,
-        'pairs'   => ['website:customer', 'website:guest'],
-    ])->items());
+        $website = collect(GetChatSessions::make()->handle([
+            'shop_id' => $this->shop->id,
+            'pairs'   => ['website:customer', 'website:guest'],
+        ])->items());
 
-    expect($website->pluck('id')->all())->not->toContain($emailSession->id);
-
-    // One database serves the whole file, so anything left behind lands in the counts another
-    // test makes of the same shop.
-    ChatSession::whereIn('id', $created)->each(function (ChatSession $session) {
-        $session->messages()->forceDelete();
-        $session->forceDelete();
-    });
+        expect($website->pluck('id')->all())->not->toContain($emailSession->id);
+    } finally {
+        // One database serves the whole file, so anything left behind lands in the counts another
+        // test makes of the same shop.
+        ChatSession::whereIn('id', $created)->each(function (ChatSession $session) {
+            $session->messages()->forceDelete();
+            $session->forceDelete();
+        });
+    }
 });
 
 test('GetChatReports counts only conversations the visitor wrote in and measures the first reply', function () {
@@ -4957,7 +4962,13 @@ test('ignoring a conversation records why, and undoing it puts the conversation 
         'statuses' => ['waiting'],
     ])->total();
 
-    $before = $waiting();
+    $rubbish = fn () => GetChatSessions::make()->handle([
+        'shop_id'    => $this->shop->id,
+        'is_rubbish' => 1,
+    ])->total();
+
+    $before        = $waiting();
+    $rubbishBefore = $rubbish();
 
     MarkChatSessionAsRubbish::make()->handle($session, $agentProfile, true, ChatIgnoreReasonEnum::OUT_OF_OFFICE);
     $session->refresh();
@@ -4969,10 +4980,7 @@ test('ignoring a conversation records why, and undoing it puts the conversation 
         ->and($session->status)->toBe(ChatSessionStatusEnum::WAITING)
         ->and($waiting())->toBe($before - 1)
         ->and(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders', []))->toBe([])
-        ->and(GetChatSessions::make()->handle([
-            'shop_id'    => $this->shop->id,
-            'is_rubbish' => 1,
-        ])->total())->toBe(1);
+        ->and($rubbish())->toBe($rubbishBefore + 1);
 
     MarkChatSessionAsRubbish::make()->handle($session, $agentProfile, false);
 
