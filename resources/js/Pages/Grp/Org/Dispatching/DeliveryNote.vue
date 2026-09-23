@@ -859,8 +859,6 @@ const stopSocketListener = () => {
 		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">
-			<StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
-			<StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
 			<!-- toggle picking view -->
 			<div
 				v-if="
@@ -900,6 +898,11 @@ const stopSocketListener = () => {
 					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
 				</a>
 			</div> -->
+		</template>
+
+		<template #other>
+			<StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
+			<StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
 		</template>
 
 		<template #button-to-queue="{ action }">

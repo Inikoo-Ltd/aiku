@@ -138,13 +138,6 @@ class ShowOrgStock extends OrgAction
                                 'parameters' => $request->route()->originalParameters(),
                             ]
                         ],
-                        ...($canDiscontinue ? [[
-                            'type'  => 'button',
-                            'style' => 'negative',
-                            'key'   => 'discontinue',
-                            'label' => __('Discontinue'),
-                            'icon'  => ['fal', 'fa-ban'],
-                        ]] : []),
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -158,7 +151,14 @@ class ShowOrgStock extends OrgAction
                                     'orgStock'     => $orgStock->slug,
                                 ]
                             ]
-                        ]
+                        ],
+                        ...($canDiscontinue ? [[
+                            'type'  => 'button',
+                            'style' => 'negative',
+                            'key'   => 'discontinue',
+                            'label' => __('Discontinue'),
+                            'icon'  => ['fal', 'fa-ban'],
+                        ]] : [])
                     ],
                     'subNavigation' => $subNavigation
                 ],

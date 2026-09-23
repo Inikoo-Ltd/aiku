@@ -68,7 +68,11 @@ function familyRoute(masterFamily: MasterFamily) {
     } else if (
         routeCurrent == "grp.masters.master_shops.show.master_gr.index" ||
         routeCurrent == "grp.masters.master_shops.show.master_families.vol_gr_reward.index" ||
-        routeCurrent == 'grp.masters.master_shops.show.master_collections.show'
+        routeCurrent == 'grp.masters.master_shops.show.master_collections.show' || 
+        routeCurrent == 'grp.masters.master_departments.show.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_departments.show.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_sub_departments.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_collections.families'
     ) {
         return route(
             "grp.masters.master_shops.show.master_families.show",

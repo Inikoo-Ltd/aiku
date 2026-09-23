@@ -35,7 +35,11 @@ onMounted(load)
 
 <template>
     <div class="flex items-center gap-x-2 flex-wrap text-xs">
-        <button v-tooltip="trans('Ask a colleague or a department to do something about this')" class="flex items-center gap-x-1 px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50" @click="dialogOpen = true">
+        <button 
+            v-tooltip="trans('Ask a colleague or a department to do something about this')" 
+            class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed xmin-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded-md px-3 md:px-4 py-[6px] md:py-[9px] text-sm" 
+            @click="dialogOpen = true"
+        >
             <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />
             {{ trans('Task') }}
         </button>

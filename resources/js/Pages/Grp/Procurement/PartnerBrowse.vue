@@ -271,7 +271,7 @@ function commitQuantity(product: ProductCard) {
                                 <span class="text-right font-medium tabular-nums">~{{ useLocaleStore().number(Math.round(product.our_quarterly_usage)) }}</span>
                             </template>
                             <template v-if="product.our_days_of_cover !== null">
-                                <span class="text-gray-400">{{ trans("We run out in") }}</span>
+                                <span class="text-gray-400">{{ ctrans("Estimated: Would run out in") }}</span>
                                 <span
                                     class="text-right font-medium tabular-nums"
                                     :class="{ 'text-red-600': product.our_days_of_cover <= 14, 'text-amber-600': product.our_days_of_cover > 14 && product.our_days_of_cover <= 30 }"

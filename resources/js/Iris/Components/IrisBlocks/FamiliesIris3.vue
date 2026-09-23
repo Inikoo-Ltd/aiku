@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, computed, nextTick, onMounted, watch, onBeforeUnmount } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
@@ -229,7 +229,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
                     ...getStyles(props.fieldValue?.button?.view_more?.properties, props.screenType),
                   }"  class="flex-1 flex items-center justify-center bg-gray-100">
                     <span class="text-sm font-semibold">
-                      {{trans("View All")}}
+                      {{ctrans("View All")}}
                     </span>
                   </div>
                 </div>
