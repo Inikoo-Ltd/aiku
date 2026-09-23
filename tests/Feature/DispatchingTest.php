@@ -1572,6 +1572,58 @@ test('repacking a finalised delivery note is refused when the picks no longer ma
         ->and($order->refresh()->invoices()->count())->toBe(1);
 });
 
+test('a delivery note going to a box packing list destination is packed only once every picked item is in a box', function () {
+    [$deliveryNote, $item]               = handlingDeliveryNoteWithPicking($this);
+    [$skippedDeliveryNote, $skippedItem] = handlingDeliveryNoteWithPicking($this);
+    $destinations                        = collect([$deliveryNote, $skippedDeliveryNote])->map(fn (DeliveryNote $note) => [
+        'country_id' => $note->deliveryAddress->country_id,
+        'postcode'   => $note->deliveryAddress->postal_code,
+    ])->all();
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list_destinations' => $destinations]);
+    expect(\Illuminate\Support\Arr::get($this->organisation->refresh()->settings, 'dispatching.box_packing_list_destinations'))->toEqual($destinations)
+        ->and(\App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList::make()->isRequired($deliveryNote->refresh()))->toBeFalse();
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list' => true]);
+
+    foreach ([[$deliveryNote, $item], [$skippedDeliveryNote, $skippedItem]] as [$note, $noteItem]) {
+        $note = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($note->refresh());
+        \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($note, $this->user);
+        giveParcelDimensions($note);
+        StorePacking::make()->action($noteItem->refresh(), $this->user, []);
+    }
+
+    expect(\App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList::make()->isRequired($deliveryNote->refresh()))->toBeTrue()
+        ->and(fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Not in a box yet')
+        ->and(fn () => \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes::make()->action($item->refresh(), ['boxes' => [['box' => 1, 'quantity' => 11]]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes::make()->action($item->refresh(), ['boxes' => [['box' => 2, 'quantity' => 6], ['box' => 1, 'quantity' => 4]]]);
+    expect($item->refresh()->boxes)->toEqual([['box' => 1, 'quantity' => 4], ['box' => 2, 'quantity' => 6]])
+        ->and(fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Add a parcel for every box');
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes::make()->action($item->refresh(), ['boxes' => [['box' => 1, 'quantity' => 10]]]);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKED)
+        ->and(\App\Actions\Dispatching\DeliveryNote\PdfPackingList::run($deliveryNote)->getStatusCode())->toBe(200);
+
+    get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$deliveryNote->organisation->slug, $deliveryNote->warehouse->slug, $deliveryNote->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('box_stats.box_packing_list.number_boxes', 1)
+            ->where('box_stats.box_packing_list.missing_message', null)
+            ->where('box_stats.box_packing_list.pdf_route.name', 'grp.pdfs.packing-lists')
+            ->where('box_stats.box_packing_list.skip_route.name', 'grp.models.delivery_note.box_packing_list.skip')
+            ->etc());
+
+    \App\Actions\Dispatching\DeliveryNote\SkipDeliveryNoteBoxPackingList::make()->action($skippedDeliveryNote->refresh(), $this->user);
+    expect(UpdateDeliveryNoteStatePacked::make()->action($skippedDeliveryNote->refresh(), $this->user)->state)->toBe(DeliveryNoteStateEnum::PACKED)
+        ->and($skippedItem->refresh()->boxes)->toBeNull();
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list' => false, 'box_packing_list_destinations' => []]);
+});
+
 test('tax only and in process refund lines do not block repacking a finalised delivery note', function () {
     [$deliveryNote, $item] = finalisedDeliveryNote($this);
     $order                 = $deliveryNote->orders()->first();

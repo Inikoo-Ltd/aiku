@@ -167,6 +167,7 @@ trait WithDeliveryNoteItemUI
             'delivery_note_items.quantity_packed',
             'delivery_note_items.quantity_dispatched',
             'delivery_note_items.quantity_not_picked',
+            'delivery_note_items.boxes',
             'delivery_note_items.is_handled',
             'delivery_note_items.is_dirty',
             'delivery_note_items.batch_code_id',

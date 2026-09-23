@@ -52,7 +52,6 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue";
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import Modal from "@/Components/Utils/Modal.vue";
-import { trans } from "laravel-vue-i18n";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
@@ -239,8 +238,8 @@ const toggleScanToPick = async () => {
 	} catch (error: any) {
 		isScanToPickOn.value = !wanted
 		notify({
-			title: trans("Something went wrong"),
-			text: error?.response?.data?.message || trans("Could not save the scan setting, try again"),
+			title: ctrans("Something went wrong"),
+			text: error?.response?.data?.message || ctrans("Could not save the scan setting, try again"),
 			type: "error",
 		})
 	} finally {
@@ -287,7 +286,7 @@ const tabsNavigation = computed(() => {
 
 	const [todoTab, doneTab] = pair
 
-	navigation.items = { ...navigation.items, title: trans("All items"), number: counts.all }
+	navigation.items = { ...navigation.items, title: ctrans("All items"), number: counts.all }
 	navigation[todoTab] = { ...navigation[todoTab], number: counts.todo }
 	navigation[doneTab] = { ...navigation[doneTab], number: counts.done }
 
@@ -360,7 +359,7 @@ const onUpdatePicker = () => {
         {
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error"
                 });
@@ -401,7 +400,7 @@ const onSubmitShipment = () => {
                 // TODO: Make condition if the error related to delivery address then set to true
                 // set(listError.value, 'box_stats_delivery_address', true) // To make the Box stats delivery address error
                 notify({
-                    title: trans("Something went wrong."),
+                    title: ctrans("Something went wrong."),
                     text: errors.message,
                     type: "error"
                 });
@@ -441,8 +440,8 @@ const onSaveAddress = (submitShipment: Function) => {
                 submitShipment()
             },
             onError: () => notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to update the address, try again."),
+                title: ctrans("Something went wrong"),
+                text: ctrans("Failed to update the address, try again."),
                 type: "error"
             })
         }
@@ -467,7 +466,7 @@ provide("openModalAddShipment", openModalAddShipment);
 // Method: display error depends on the response on button Finalise and Dispatch
 const handleFinaliseError = (e: unknown) => {
     if (typeof e === 'string') {
-        notify({ title: trans('Something went wrong'), text: e, type: 'error' })
+        notify({ title: ctrans('Something went wrong'), text: e, type: 'error' })
         return
     }
 
@@ -480,7 +479,7 @@ const handleFinaliseError = (e: unknown) => {
 
     if (keys.length === 0) {
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             text: (e as { message?: string })?.message || 'Please try again later or contact administrator.',
             type: 'error',
         })
@@ -490,7 +489,7 @@ const handleFinaliseError = (e: unknown) => {
     if (keys.length === 1) {
         const value = errors[keys[0]]
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             text: Array.isArray(value) ? (value as string[]).join(', ') : String(value),
             type: 'error',
         })
@@ -787,7 +786,7 @@ const stopSocketListener = () => {
 	<PageHeading :data="pageHead" isButtonGroupWithBorder>
 		<template #afterTitle2>
 			<div v-if="hasReturn?.reference"
-				v-tooltip="trans('Go to Return')"
+				v-tooltip="ctrans('Go to Return')"
 				@click="() => {
 					router.visit(route(hasReturn.route.name, hasReturn.route.parameters))
 				}"
@@ -795,19 +794,19 @@ const stopSocketListener = () => {
 			>
 				<FontAwesomeIcon :icon="faExchange" class="opacity-75" fixed-width />
 				<span class="ml-2 font-normal text-lg leading-none text-indigo-500">
-					{{ trans("Returned") }}
+					{{ ctrans("Returned") }}
 				</span>
 			</div>
 			<FontAwesomeIcon
 				v-if="delivery_note.is_premium_dispatch"
-				v-tooltip="trans('Priority dispatch')"
+				v-tooltip="ctrans('Priority dispatch')"
 				icon="fas fa-star"
 				class="text-yellow-500 animate-bounce"
 				fixed-width
 				aria-hidden="true" />
 			<FontAwesomeIcon
 				v-if="delivery_note.has_extra_packing"
-				v-tooltip="trans('Extra packing')"
+				v-tooltip="ctrans('Extra packing')"
 				icon="fas fa-box-heart"
 				class="text-yellow-500 animate-bounce"
 				fixed-width
@@ -870,7 +869,7 @@ const stopSocketListener = () => {
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
 				<div class="flex items-center justify-between w-full">
 					<span class="text-sm text-gray-700 font-medium mx-2">
-						{{ trans("Worker View") }}
+						{{ ctrans("Worker View") }}
 					</span>
 					<ToggleSwitch v-model="pickingView">
 						<template #handle="{ checked }">
@@ -894,7 +893,7 @@ const stopSocketListener = () => {
 					as="a"
 					target="_blank"
 					class="flex items-center"
-					v-tooltip="trans('Download PDF of this Delivery Note')">
+					v-tooltip="ctrans('Download PDF of this Delivery Note')">
 					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
 				</a>
 			</div> -->
@@ -996,7 +995,7 @@ const stopSocketListener = () => {
     <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
         <FontAwesomeIcon :icon="faExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
         <div>
-            <div class="text-xl font-bold uppercase">{{ trans("Process in Aurora") }}</div>
+            <div class="text-xl font-bold uppercase">{{ ctrans("Process in Aurora") }}</div>
             <div class="text-base">{{ aurora_notice }}</div>
         </div>
     </div>
@@ -1006,7 +1005,7 @@ const stopSocketListener = () => {
 		<div class="inline-flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border-2 border-amber-500 bg-amber-300 px-4 py-3 shadow-sm">
 			<div class="flex items-center gap-2">
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-xl text-amber-900" fixed-width aria-hidden="true" />
-				<span class="text-sm font-bold uppercase tracking-wider text-amber-900">{{ trans("Packer must add") }}</span>
+				<span class="text-sm font-bold uppercase tracking-wider text-amber-900">{{ ctrans("Packer must add") }}</span>
 			</div>
 			<span v-for="consumable in consumables" :key="consumable.code"
 				class="flex items-center gap-2 rounded bg-amber-950 px-3 py-1 text-amber-50">
@@ -1173,6 +1172,7 @@ const stopSocketListener = () => {
 			:order_slug="order_slug"
 			:warehouse
 			:deliveryNote="delivery_note"
+			:boxPackingList="box_stats?.box_packing_list"
 			:total_unit_counts="total_unit_counts"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError"
@@ -1216,13 +1216,13 @@ const stopSocketListener = () => {
 	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
 		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
 			<div class="mx-auto font-semibold text-lg">
-				{{ trans("Select Picker") }}
+				{{ ctrans("Select Picker") }}
 			</div>
 			<div class="mt-4 flex items-center w-full gap-x-1.5">
 				<dd class="flex-1">
 					<!-- Label for Picker -->
 					<div class="text-sm font-medium">
-						{{ trans("Select picker") }}
+						{{ ctrans("Select picker") }}
 					</div>
 					<PureMultiselectInfiniteScroll
 						v-model="selectedPicker"
@@ -1231,7 +1231,7 @@ const stopSocketListener = () => {
                         "
 						required
 						:fetchRoute="routes.pickers_list"
-						:placeholder="trans('Select picker')"
+						:placeholder="ctrans('Select picker')"
 						labelProp="contact_name"
 						valueProp="id"
 						object
@@ -1279,14 +1279,14 @@ const stopSocketListener = () => {
 					@click="onUpdatePicker()"
 					:label="
 						delivery_note_state.value === 'queued'
-							? trans('Change picker')
-							: trans('Set Picker')
+							? ctrans('Change picker')
+							: ctrans('Set Picker')
 					"
 					:iconRight="['fas', 'fa-arrow-right']"
 					full
 					:loading="isLoadingToQueue"
 					:disabled="!selectedPicker"
-					v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+					v-tooltip="selectedPicker ? '' : ctrans('Select picker before set to queue')">
 				</Button>
 			</div>
 		</div>
@@ -1300,11 +1300,11 @@ const stopSocketListener = () => {
 		width="w-full max-w-2xl">
 		<div>
 			<div class="text-center font-bold mb-4">
-				{{ trans("Add shipment") }}
+				{{ ctrans("Add shipment") }}
 			</div>
 
 			<div class="w-full mt-3">
-				<span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
+				<span class="text-xs px-1 my-2">{{ ctrans("Shipping options") }}: </span>
 				<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
 					<div
 						v-if="isLoadingData === 'addTrackingNumber'"
@@ -1335,7 +1335,7 @@ const stopSocketListener = () => {
 							{{ shipment.tracking_url }}
 						</div>
 						<FontAwesomeIcon
-							v-tooltip="trans('Barcode print')"
+							v-tooltip="ctrans('Barcode print')"
 							icon="fal fa-print"
 							class="text-gray-500 absolute top-3 right-3"
 							fixed-width
@@ -1353,7 +1353,7 @@ const stopSocketListener = () => {
 						:fetchRoute="shipments?.fetch_route"
 						required
 						:disabled="isLoadingButton == 'addTrackingNumber'"
-						:placeholder="trans('Select shipping')"
+						:placeholder="ctrans('Select shipping')"
 						object
 						@optionsList="(e) => (optionShippingList = e)">
 						<template #singlelabel="{ value }">
@@ -1384,7 +1384,7 @@ const stopSocketListener = () => {
 						!formTrackingNumber.shipping_id?.api_shipper
 					"
 					class="mt-3">
-					<span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+					<span class="text-xs px-1 my-2">{{ ctrans("Tracking number") }}: </span>
 					<PureInput
 						v-model="formTrackingNumber.tracking_number"
 						placeholder="ABC-DE-1234567"

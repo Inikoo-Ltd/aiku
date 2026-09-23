@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes;
 use App\Actions\Dispatching\Picking\PickAllItem;
 use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse;
@@ -43,4 +44,6 @@ Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem
 
     Route::post('picking-from-waiting-warehouse', UpsertPickingFromWaitingWarehouse::class)->name('picking.upsert_from_waiting_warehouse');
     Route::post('picking-all-from-waiting-warehouse', PickAllItemFromWaitingWarehouse::class)->name('picking_all_from_waiting_warehouse.store')->withoutScopedBindings();
+
+    Route::patch('boxes', UpdateDeliveryNoteItemBoxes::class)->name('boxes.update')->withoutScopedBindings();
 });

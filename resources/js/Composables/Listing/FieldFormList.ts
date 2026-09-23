@@ -73,6 +73,7 @@ import PricingZoneMode from '@/Components/Forms/Fields/PricingZoneMode.vue'
 import TerritoryZone from '@/Components/Forms/Fields/TerritoryZone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import PreferredShippingModal from '@/Components/Forms/Fields/PreferredShippingModal.vue'
+import BoxPackingListDestinations from '@/Components/Forms/Fields/BoxPackingListDestinations.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
@@ -154,6 +155,7 @@ export const componentsList: { [key: string]: Component } = {
     'select_billing_cycle': SelectBillingCycle,
     'select_printer': SelectPrinter,
     'preferred_shipping': PreferredShippingModal,
+    'box_packing_list_destinations': BoxPackingListDestinations,
 
     'action': Action,
     'mailbox_connect': MailboxConnect,

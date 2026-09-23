@@ -1253,6 +1253,8 @@ test('UI show organisation setting', function () {
             ->has('breadcrumbs', 2)
             ->has('formData.blueprint.0.fields', 5)
             ->has('formData.blueprint.1.fields', 2)
+            ->where('formData.blueprint.10.fields.box_packing_list.type', 'toggle')
+            ->where('formData.blueprint.10.fields.box_packing_list_destinations.type', 'box_packing_list_destinations')
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
