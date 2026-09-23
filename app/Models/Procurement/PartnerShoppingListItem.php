@@ -19,6 +19,7 @@ use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Contracts\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -102,6 +103,18 @@ class PartnerShoppingListItem extends Model
                     ->orWhereNull("$orgStocks.state")
                     ->orWhereNotIn("$orgStocks.state", [OrgStockStateEnum::DISCONTINUING->value, OrgStockStateEnum::DISCONTINUED->value]);
             });
+    }
+
+    public static function openRestockRequestsFor(OrgStock $orgStock): EloquentBuilder
+    {
+        return static::query()
+            ->where('organisation_id', $orgStock->organisation_id)
+            ->where('stock_id', $orgStock->stock_id)
+            ->whereNull('partner_organisation_id')
+            ->whereNull('transaction_id')
+            ->whereNull('job_order_id')
+            ->whereNull('pre_picked_at')
+            ->where('state', ShoppingListItemStateEnum::OPEN);
     }
 
     public function jobOrder(): BelongsTo

@@ -3667,6 +3667,36 @@ describe('discontinue confirm', function () {
             ->toBeInstanceOf(PurchaseOrderTransaction::class);
     });
 
+    test('discontinuing a sko removes its open warehouse restock requests and nothing else', function () {
+        $orgStock = $this->orgStocks[1];
+        $line     = fn (array $attributes) => \App\Models\Procurement\PartnerShoppingListItem::create(array_merge([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'stock_id'        => $orgStock->stock_id,
+            'org_stock_id'    => $orgStock->id,
+            'quantity'        => 1,
+        ], $attributes));
+
+        $restock        = $line([]);
+        $otherRestock   = $line(['organisation_id' => $this->otherOrganisation->id, 'org_stock_id' => $this->otherOrgStocks[1]->id]);
+        $partnerRequest = $line(['organisation_id' => $this->otherOrganisation->id, 'partner_organisation_id' => $this->organisation->id]);
+
+        expect(GetOrgStockDiscontinuePreview::make()->action($this->organisation, [$orgStock->id])[0]['restock_requests'])->toBe(1);
+
+        DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$orgStock->id],
+            'state'               => OrgStockStateEnum::DISCONTINUING->value,
+            'organisation_states' => ['other' => OrgStockStateEnum::ACTIVE->value],
+            'reason'              => 'Running down',
+        ]);
+
+        expect($restock->refresh()->trashed())->toBeTrue()
+            ->and($otherRestock->refresh()->trashed())->toBeFalse()
+            ->and($partnerRequest->refresh()->trashed())->toBeFalse();
+
+        DiscontinueOrgStocks::make()->action($this->organisation, ['org_stock_ids' => [$orgStock->id], 'state' => OrgStockStateEnum::ACTIVE->value]);
+    });
+
     test('confirm refuses a sko that moved since the preview', function () {
         $orgStock = $this->orgStocks[1];
 

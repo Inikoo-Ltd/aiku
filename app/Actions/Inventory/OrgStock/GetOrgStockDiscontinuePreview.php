@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -61,6 +62,7 @@ class GetOrgStockDiscontinuePreview extends OrgAction
             'number_products' => count($productIds),
             'purchase_orders'  => $this->openPurchaseOrders($orgStock),
             'stock_deliveries' => $this->pendingStockDeliveries($orgStock),
+            'restock_requests' => $orgStock->stock_id ? PartnerShoppingListItem::openRestockRequestsFor($orgStock)->count() : 0,
             'portfolios'       => $this->portfolios($productIds),
             'external_shops'   => $this->externalShopProducts($productIds),
             'webpages'         => $this->liveWebpages($productIds),
