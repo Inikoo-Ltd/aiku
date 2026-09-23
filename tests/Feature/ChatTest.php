@@ -2104,9 +2104,9 @@ test('GetChatSessions returns a paginator of sessions with messages', function (
         'updated_at'      => now(),
     ]);
 
-    $result = GetChatSessions::make()->handle([]);
+    $result = GetChatSessions::make()->handle(['ulid' => $chatSession->ulid]);
 
-    expect($result->total())->toBeGreaterThanOrEqual(1);
+    expect($result->total())->toBe(1);
 
     $session = collect($result->items())->firstWhere('id', $chatSession->id);
     expect($session)->not->toBeNull()
@@ -5844,7 +5844,13 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
         ->viewData('page')['props']['data']['data'])
         ->firstWhere('contact', '+447500000004');
 
-    expect($row['claim'])->toBe(['order_reference' => $order->reference, 'photos' => 1]);
+    expect($row['claim'])->toBe(['order_reference' => $order->reference, 'photos' => 1])
+        ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($session->refresh()))->toBe(['order_reference' => $order->reference, 'photos' => 1]);
+
+    // Once an agent has answered, the inbox stops showing it: the case is being handled.
+    $session->update(['last_agent_message_at' => now()->addMinute()]);
+    expect(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($session->refresh()))->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList(noiseTestWhatsappSession($this->shop, '+447500000005', 'Hi')))->toBeNull();
 
     outOfHoursTestCleanUp($schedule);
 });

@@ -345,6 +345,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     open_tickets_count: Number((s as any).open_tickets_count ?? 0),
     blocking_tickets_count: Number((s as any).blocking_tickets_count ?? 0),
     noise: (s as any).noise ?? null,
+    claim: (s as any).claim ?? null,
     customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
@@ -2345,6 +2346,14 @@ onUnmounted(() => {
                                         class="shrink-0 rounded px-1 font-medium"
                                         :class="c.noise.automatic ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'">
                                         {{ c.noise.automatic ? ctrans("Put aside automatically") : ctrans("Possible noise") }}: {{ c.noise.label }}
+                                    </span>
+                                    <span v-if="c.claim" v-tooltip="ctrans('Asked out of hours for the order number, the items and photos. This is what has arrived since.')"
+                                        class="shrink-0 truncate rounded px-1 font-medium"
+                                        :class="c.claim.order_reference && c.claim.photos ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+                                        {{ ctrans("Claim") }}:
+                                        {{ c.claim.order_reference ? c.claim.order_reference : ctrans("no order number") }}
+                                        ·
+                                        {{ c.claim.photos ? ctrans(":count photos", { count: c.claim.photos }) : ctrans("no photos") }}
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">

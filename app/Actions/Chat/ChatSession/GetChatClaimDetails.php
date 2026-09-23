@@ -59,6 +59,32 @@ class GetChatClaimDetails
     }
 
     /**
+     * What the inbox shows beside a conversation whose customer was asked for claim details
+     * and has not been answered since: what has arrived, so the agent sees at a glance whether
+     * the case is ready to decide. Nothing for everybody else, and no query for them either.
+     *
+     * @return array{order_reference: ?string, photos: int}|null
+     */
+    public static function forList(ChatSession|MetaChatSession $chatSession): ?array
+    {
+        $askedAt = data_get($chatSession->metadata, SendOutOfHoursReply::CLAIM_KEY);
+
+        if (!$askedAt) {
+            return null;
+        }
+
+        $answeredAt = $chatSession->last_agent_message_at ? Carbon::parse($chatSession->last_agent_message_at) : null;
+
+        if ($answeredAt?->gt(Carbon::parse($askedAt))) {
+            return null;
+        }
+
+        $details = self::run($chatSession, $answeredAt);
+
+        return ['order_reference' => $details['order_reference'], 'photos' => $details['photos']];
+    }
+
+    /**
      * Customers write the number with the shop's letters or without them, so both are looked up,
      * and only a number that is really an order of this shop counts.
      */

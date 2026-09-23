@@ -81,6 +81,7 @@ class ChatSessionListResource extends JsonResource
                 : null,
             'customer_suggestion' => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($this->resource),
             'noise' => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
+            'claim' => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
