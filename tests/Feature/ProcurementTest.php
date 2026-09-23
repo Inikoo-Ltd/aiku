@@ -2348,6 +2348,45 @@ test('stock delivery item is booked in to a location the org stock did not have 
         ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED);
 });
 
+test('stock delivery item is checked and placed in SKOs while its quantities stay in units', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-IN-SKOS', [72]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = $stockDelivery->items()->first();
+    $packedIn          = $stockDeliveryItem->orgStock->packed_in;
+    $stockDeliveryItem->orgStock->update(['packed_in' => 6]);
+    $stockDeliveryItem = $stockDeliveryItem->fresh();
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['sko_quantity_checked' => 12]);
+    expect((float) $stockDeliveryItem->unit_quantity_checked)->toBe(72.0);
+
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_org_stock_id' => $locationOrgStock->id]);
+
+    expect((float) $locationOrgStock->fresh()->quantity)->toBe(4.0)
+        ->and((float) $stockDeliveryItem->unit_quantity_placed)->toBe(24.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::CHECKED);
+
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => $locationOrgStock->id]);
+
+    expect((float) $locationOrgStock->fresh()->quantity)->toBe(12.0)
+        ->and((float) $stockDeliveryItem->unit_quantity_placed)->toBe(72.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED);
+
+    $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
+});
+
+test('stock delivery item that did not arrive is checked as zero SKOs', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'CHECK-ZERO-SKOS', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['sko_quantity_checked' => 0]);
+
+    expect($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::NOT_RECEIVED);
+});
+
 test('stock delivery item can not be placed without a location', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-ALL-NO-LOCATION', [10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);

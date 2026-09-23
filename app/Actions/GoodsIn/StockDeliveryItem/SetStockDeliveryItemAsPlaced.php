@@ -19,7 +19,7 @@ class SetStockDeliveryItemAsPlaced extends OrgAction
     use WithProcurementEditAuthorisation;
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
-        $remaining = (float) $stockDeliveryItem->unit_quantity_checked - (float) $stockDeliveryItem->unit_quantity_placed;
+        $remaining = ((float) $stockDeliveryItem->unit_quantity_checked - (float) $stockDeliveryItem->unit_quantity_placed) / $stockDeliveryItem->unitsPerSko();
 
         data_set($modelData, 'quantity', $remaining);
 

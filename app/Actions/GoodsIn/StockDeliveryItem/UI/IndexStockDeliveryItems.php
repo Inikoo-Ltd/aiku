@@ -189,7 +189,7 @@ class IndexStockDeliveryItems extends OrgAction
                     ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
                     ->column(key: 'delivered_quantity', label: __('Delivered Quantity'), canBeHidden: false)
                     ->column(key: 'sowings', label: __('Sowings'), canBeHidden: false)
-                    ->column(key: 'checked_unit', label: __('Checked Unit'), canBeHidden: false, align: 'right')
+                    ->column(key: 'checked_unit', label: __('Checked SKOs'), canBeHidden: false, align: 'right')
                     ->column(key: 'placement', label: __('Placement'), canBeHidden: false, align: 'right')
                     ->defaultSort('part');
             } else {

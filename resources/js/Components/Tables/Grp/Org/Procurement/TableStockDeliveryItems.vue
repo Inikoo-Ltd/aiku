@@ -479,16 +479,16 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     @onError="(error: any) => {
                         proxyItem.errors = Object.values(error || {})
                     }"
-                    :modelValue="Number(item.unit_quantity_checked)"
+                    :modelValue="Number(item.sko_quantity_checked)"
                     @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
                     saveOnForm
                     isUseAxios
                     isWithRefreshModel
                     :routeSubmit="item.checkedRoute"
-                    keySubmit="unit_quantity_checked"
+                    keySubmit="sko_quantity_checked"
                     :bindToTarget="{
                         step: 1,
-                        min: Number(item.unit_quantity_placed)
+                        min: Number(item.sko_quantity_placed)
                     }"
                     autoSave
                     @onSuccess="onCheckedSaved"
@@ -511,15 +511,31 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                             >
                                 <template #label>
                                     <div>
-                                        {{ formatQuantity(Number(item.unit_quantity)) }}
+                                        {{ formatQuantity(Number(item.sko_quantity)) }}
                                     </div>
                                 </template>
                             </ButtonWithLink>
+                            <ButtonWithLink
+                                v-if="item.state === 'received'"
+                                v-tooltip="ctrans('Not received')"
+                                icon="fal fa-times"
+                                :size="screenType != 'mobile' ? 'xs' : 'md'"
+                                type="negative"
+                                :loading="isProcessing"
+                                class="py-0"
+                                :routeTarget="item.checkedRoute"
+                                :body="{ sko_quantity_checked: 0 }"
+                                :bind-to-link="{
+                                    preserveScroll: true,
+                                    preserveState: true,
+                                }"
+                                isWithError
+                            />
                         </div>
                     </template>
                 </NumberWithButtonSave>
             </div>
-            <span v-else>{{ formatQuantity(Number(item.unit_quantity_checked)) }}</span>
+            <span v-else>{{ formatQuantity(Number(item.sko_quantity_checked)) }}</span>
         </template>
 
         <template #cell(sowings)="{ item }">
@@ -632,8 +648,8 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     />
                 </div>
             </div>
-            <span v-else-if="Number(item.unit_quantity_placed) > 0" class="text-green-500">
-                {{ formatQuantity(Number(item.unit_quantity_placed)) }}
+            <span v-else-if="Number(item.sko_quantity_placed) > 0" class="text-green-500">
+                {{ formatQuantity(Number(item.sko_quantity_placed)) }}
             </span>
             <span v-else>
             </span>
