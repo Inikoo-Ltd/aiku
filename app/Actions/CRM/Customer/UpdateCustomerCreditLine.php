@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\User;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateCustomerCreditLine extends OrgAction
@@ -45,5 +46,10 @@ class UpdateCustomerCreditLine extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         return $this->handle($customer, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }
