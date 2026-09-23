@@ -46,6 +46,7 @@ use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
+use App\Http\Resources\Web\WebBlockDepartmentResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Http\UploadedFile;
@@ -742,4 +743,31 @@ test('cached family product list carries the same shop-wide offer prices as the 
         ->and($cached['discounted_price'])->toEqual(18.0)
         ->and($cached['product_offers_data']['number_offers'])->toBe(1)
         ->and($cached['family_id'])->toBe($product->family_id);
+});
+
+test('logged-in product list prices a basket line of a fractional-units product per unit', function () {
+    [, $product] = createProduct($this->shop);
+
+    DB::table('products')->where('id', $product->id)->update([
+        'units'              => 0.5,
+        'available_quantity' => 10,
+    ]);
+
+    PublishWebpage::make()->action(StoreProductWebpage::make()->action($product), ['comment' => 'product goes live']);
+
+    $row = collect(GetIrisProductsInProductCategory::run(productCategory: $product->family)->items())
+        ->firstWhere('id', $product->id);
+
+    $row->quantity_ordered = 2;
+    $row->net_amount       = 10;
+
+    expect((new IrisAuthenticatedProductsInWebpageResource($row))->toArray(request())['offer_price_per_unit'])->toEqual(10.0);
+});
+
+test('department web block renders when the department lost its webpage link', function () {
+    [, $product] = createProduct($this->shop);
+    $department  = $product->department;
+    $department->setRelation('webpage', null);
+
+    expect(WebBlockDepartmentResource::make($department)->resolve())->toHaveKey('url', null);
 });

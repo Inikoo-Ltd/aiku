@@ -127,7 +127,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             ...$this->getProductOfferPrices(),
 
             'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,
-            'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
+            'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $this->units : null,
 
         ];
     }

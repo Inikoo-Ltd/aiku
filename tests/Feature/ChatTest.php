@@ -8076,3 +8076,18 @@ test('an email reply goes to whoever wrote last and copies the colleagues the th
             && ! str_contains($raw, 'ops@bigaccount.test');
     });
 });
+
+test('a customer listing their own chat history is never offered disposal', function () {
+    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $session = $this->action->handle([
+        'web_user_id' => $webUser->id,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL->value,
+        'shop_id'     => $this->shop->id,
+    ]);
+
+    $request = request();
+    $request->setUserResolver(fn () => $webUser);
+
+    expect(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session)->resolve($request)['can_dispose'])->toBeFalse();
+});
