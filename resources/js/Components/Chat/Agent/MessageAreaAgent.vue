@@ -222,6 +222,10 @@ const canDispose = computed(() => {
 const instance = getCurrentInstance()
 const hasTicketsPanel = computed(() => Boolean((instance?.vnode?.props as any)?.onViewTickets))
 
+// Same for the message details view: the inbox folded it into the profile panel's Session
+// section, so offering it there opened the profile panel twice under two names.
+const hasMessageDetailsPanel = computed(() => Boolean((instance?.vnode?.props as any)?.onViewMessageDetails))
+
 const openTicketsCount = computed(() => Number((props.session as any)?.open_tickets_count ?? 0))
 const blockingTicketsCount = computed(() => Number((props.session as any)?.blocking_tickets_count ?? 0))
 
@@ -1335,7 +1339,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         <FontAwesomeIcon :icon="faLanguage" fixed-width /> {{ ctrans("Translate conversation") }}
                     </button>
 
-                    <button class="menu-item" @click="onViewMessageDetails">
+                    <button v-if="hasMessageDetailsPanel" class="menu-item" @click="onViewMessageDetails">
                         <FontAwesomeIcon :icon="faMessage" fixed-width /> {{ ctrans("Message Details") }}
                     </button>
 

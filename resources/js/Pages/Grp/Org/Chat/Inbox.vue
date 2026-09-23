@@ -1581,19 +1581,18 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, on
     }
 }
 
-const toggleSidePanel = () => {
-    sidePanelVisible.value = !sidePanelVisible.value
-    sidePanelPreferred.value = sidePanelVisible.value
-}
-const showHistoryPanel = () => toggleSidePanel()
-const showProfilePanel = () => toggleSidePanel()
-const sidePanelTab = ref<'profile' | 'tickets'>('profile')
-const showTicketsPanel = () => {
-    sidePanelTab.value = 'tickets'
+const sidePanelTab = ref<'profile' | 'tickets' | 'history'>('profile')
+
+// Asking for a tab is asking for that tab, never for the panel to go away: these used to
+// toggle, so pressing View Profile with the panel already open closed it instead.
+const openSidePanelOn = (tab: 'profile' | 'tickets' | 'history') => {
+    sidePanelTab.value = tab
     sidePanelVisible.value = true
     sidePanelPreferred.value = true
 }
-const showMessageDetailsPanel = () => toggleSidePanel()
+const showHistoryPanel = () => openSidePanelOn('history')
+const showProfilePanel = () => openSidePanelOn('profile')
+const showTicketsPanel = () => openSidePanelOn('tickets')
 const closeSidePanel = () => {
     sidePanelVisible.value = false
     sidePanelPreferred.value = false
@@ -2413,7 +2412,7 @@ onUnmounted(() => {
                     :read-only="isReadOnly" :ignore-reasons="ignoreReasons" :show-shop="crossShopView"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
-                    @view-user-profile="showProfilePanel" @view-message-details="showMessageDetailsPanel"
+                    @view-user-profile="showProfilePanel"
                     @transfer-agent-success="onTransferAgentSuccess"
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
                     @open-slack-settings="onOpenSlackSettings"

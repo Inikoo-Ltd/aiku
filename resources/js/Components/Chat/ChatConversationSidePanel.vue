@@ -453,9 +453,13 @@ watch(() => props.initialTab, (tab) => {
     if (tab) activeTab.value = tab
 })
 
+// The watcher below only fires once a tab changes, so a panel opened straight onto one has
+// to fetch for itself: history opened this way listed nothing and said there were no chats.
 onMounted(() => {
     loadCustomerProfile()
     if (props.initialTab === 'tickets') loadTickets()
+    if (props.initialTab === 'history') loadHistory()
+    if (props.initialTab === 'timeline') loadTimeline()
 })
 
 // When a guest gets matched to a registered Aiku customer, refresh the customer data.
