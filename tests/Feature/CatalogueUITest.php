@@ -947,3 +947,21 @@ test('products export ends with the weight unit columns', function () {
     expect(array_slice($export->headings(), -2))->toBe(['Unit weight (marketing) unit', 'Gross weight unit'])
         ->and(array_slice($row, -2))->toBe(['g', null]);
 });
+
+test('UI show product sends the available stock of each part', function () {
+    $this->withoutExceptionHandling();
+    $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->first();
+    $orgStock->update(['quantity_available' => 7]);
+    $this->product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->product->slug
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('showcase.org_stocks.0.id', $orgStock->id)
+            ->where('showcase.org_stocks.0.quantity_available', '7')
+            ->etc()
+    );
+});
