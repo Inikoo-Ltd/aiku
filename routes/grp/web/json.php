@@ -33,7 +33,6 @@ use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Ordering\Order\Json\GetOrderServices;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsForBeefreeSearch;
-use App\Actions\Comms\EmailTemplate\Json\GetEmailTemplateRows;
 use App\Actions\Catalogue\Product\Json\GetProductsForVolGrGift;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
@@ -395,7 +394,6 @@ Route::get('mailshot/{mailshot:id}/template', GetMailshotTemplate::class)->name(
 Route::get('mailshot/{mailshot:id}/urls', GetMailshotUrls::class)->name('mailshot.urls');
 Route::post('mailshot/{mailshot:id}/copy-suggestion', SuggestMailshotCopy::class)->name('mailshot.copy_suggestion');
 Route::get('email/templates/{emailTemplate:id}/layout', GetEmailTemplateLayout::class)->name('email_templates.layout');
-Route::get('shop/{shop:id}/email-template-rows', GetEmailTemplateRows::class)->name('email_template_rows.index');
 
 Route::get('charges-in-order/{order:id}', GetChargesInOrder::class)->name('charges_in_order.index');
 Route::get('product-category/{productCategory:id}/last-ordered-products', GetLastOrderedProducts::class)->name('product_category.last-ordered-products.index');

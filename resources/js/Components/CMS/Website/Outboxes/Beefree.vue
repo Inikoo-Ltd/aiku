@@ -7,7 +7,6 @@ import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import BeefreeDynamicProducts from './BeefreeDynamicProducts.vue'
-import BeefreeSavedRowDialog from './BeefreeSavedRowDialog.vue'
 import { ctrans } from '@/Composables/useTrans'
 
 const props = withDefaults(defineProps<{
@@ -31,16 +30,6 @@ const showBee = ref(false)
 const isLoading = ref(false)
 const beeInstance = ref<BeefreeSDK | null>(null)
 const dynamicProductsRef = ref<InstanceType<typeof BeefreeDynamicProducts> | null>(null)
-const savedRowDialogRef = ref<InstanceType<typeof BeefreeSavedRowDialog> | null>(null)
-
-const fetchSavedRows = async (otherShops: boolean) => {
-    const { data } = await axios.get(
-        route('grp.json.email_template_rows.index', { shop: props.shopId }),
-        { params: { other_shops: otherShops ? 1 : 0 } }
-    )
-
-    return data ?? []
-}
 
 
 
@@ -86,37 +75,6 @@ const initializeBeefree = async () => {
             language: 'en-US',
             loadingSpinnerDisableOnDialog: true,
             saveRows: true,
-            rowsConfiguration: props.shopId ? {
-                emptyRows: true,
-                defaultRows: true,
-                externalContentURLs: [
-                    {
-                        name: ctrans('Headers & footers'),
-                        value: `${props.shopId}:all`,
-                        handle: 'shop-rows',
-                        behaviors: { canEdit: true, canDelete: true },
-                    },
-                    {
-                        name: ctrans('Other shops'),
-                        value: `${props.shopId}:other`,
-                        handle: 'other-shop-rows',
-                        behaviors: { canEdit: false, canDelete: false },
-                    },
-                ],
-                maxRowsDisplayed: 40,
-            } : undefined,
-            hooks: props.shopId ? {
-                getRows: {
-                    handler: async (resolve: (rows: any[]) => void, reject: () => void, args: { handle: string }) => {
-                        try {
-                            resolve(await fetchSavedRows(args?.handle === 'other-shop-rows'))
-                        } catch (error) {
-                            console.error('Failed to load saved rows:', error)
-                            reject()
-                        }
-                    },
-                },
-            } : undefined,
             disableBaseColors: true,
             disableColorHistory: true,
             templateLanguageAutoTranslation: true,
@@ -144,36 +102,6 @@ const initializeBeefree = async () => {
             },
             autosave: 20,
             contentDialog: {
-                ...(props.shopId ? {
-                    saveRow: {
-                        label: ctrans('Save as header/footer'),
-                        handler: (resolve: (value: any) => void, reject: () => void, args: any) => {
-                            if (savedRowDialogRef.value) {
-                                savedRowDialogRef.value.openModal(args).then(resolve).catch(reject)
-                            } else {
-                                reject()
-                            }
-                        },
-                    },
-                    onEditRow: {
-                        handler: (resolve: (value: boolean) => void, reject: () => void, args: any) => {
-                            if (savedRowDialogRef.value) {
-                                savedRowDialogRef.value.openEditModal(args).then(resolve).catch(reject)
-                            } else {
-                                reject()
-                            }
-                        },
-                    },
-                    onDeleteRow: {
-                        handler: (resolve: (value: boolean) => void, reject: () => void, args: any) => {
-                            if (savedRowDialogRef.value) {
-                                savedRowDialogRef.value.openDeleteModal(args).then(resolve).catch(reject)
-                            } else {
-                                reject()
-                            }
-                        },
-                    },
-                } : {}),
                 mergeContents: {
                     label: ctrans('Insert Products'),
                     handler: function (resolve: (value: any) => void, reject: () => void) {
@@ -285,8 +213,6 @@ defineExpose({
     <!-- Dynamic Products Component -->
     <BeefreeDynamicProducts ref="dynamicProductsRef" :shopSlug="shopSlug" :shopId="shopId"
         :organisationSlug="organisationSlug" />
-
-    <BeefreeSavedRowDialog v-if="shopId" ref="savedRowDialogRef" :shopId="shopId" />
 </template>
 
 <style scoped>

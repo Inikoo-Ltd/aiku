@@ -87,9 +87,6 @@ use App\Actions\Catalogue\Variant\UpdateVariant;
 use App\Actions\Comms\Email\SendTestEmail;
 use App\Actions\Comms\Email\UpdateEmailUnpublishedSnapshot;
 use App\Actions\Comms\EmailTemplate\UpdateEmailTemplate;
-use App\Actions\Comms\EmailTemplate\UpdateEmailTemplateRow;
-use App\Actions\Comms\EmailTemplate\DeleteEmailTemplateRow;
-use App\Actions\Comms\EmailTemplate\StoreEmailTemplateRow;
 use App\Actions\Comms\EmailTemplate\UploadImagesToEmailTemplate;
 use App\Actions\Comms\Mailshot\CancelMailshotSchedule;
 use App\Actions\Comms\Mailshot\ConvertMailshotToBlog;
@@ -1164,7 +1161,6 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('send-test', SendTestEmail::class)->name('send-test');
     });
 
-    Route::post('email-template-row', StoreEmailTemplateRow::class)->name('email-template-row.store')->withoutScopedBindings();
 
     Route::name('email-template.')->prefix('email-template')->group(function () {
         Route::post('', StoreMailshotTemplate::class)->name('store')->withoutScopedBindings();
@@ -1416,8 +1412,6 @@ Route::patch('/{mailshot:id}/mailshot/utm-settings', UpdateMailshotUtmSettings::
 Route::name('email-templates.')->prefix('email-templates')->group(function () {
     Route::patch('{emailTemplate:id}/update', UpdateEmailTemplate::class)->name('content.update');
     Route::post('{emailTemplate:id}/images', UploadImagesToEmailTemplate::class)->name('images.store');
-    Route::patch('rows/{emailTemplate:id}', UpdateEmailTemplateRow::class)->name('rows.update');
-    Route::delete('rows/{emailTemplate:id}', DeleteEmailTemplateRow::class)->name('rows.delete');
 });
 
 Route::patch('/guest/{guest:id}', UpdateGuest::class)->name('guest.update');
