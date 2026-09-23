@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { inject, ref, watch } from "vue"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
@@ -26,6 +26,7 @@ const emit = defineEmits<{
     created: [task: any]
 }>()
 
+const layout: any = inject("layout", {})
 const departments = ref<{ value: string; label: string }[]>([])
 const priorities = ref<{ value: string; label: string }[]>([])
 const form = ref({ subject: "", description: "", department: "", assignee: null as StaffCoworker | null, collaborators: [] as any[], priority: "normal", due_at: "" })
@@ -70,6 +71,8 @@ const pickAssignee = (coworker: StaffCoworker) => {
     assigneeQuery.value = coworker.name
     assigneeResults.value = []
 }
+
+const pickMe = () => pickAssignee({ id: layout.user.id, name: layout.user.nickname || layout.user.contact_name || layout.user.username } as StaffCoworker)
 
 const submit = async () => {
     saving.value = true
@@ -120,7 +123,10 @@ const submit = async () => {
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="relative">
-                        <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Ask a person') }}</label>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-xs text-gray-500">{{ ctrans('Ask a person') }}</label>
+                            <button v-if="layout.user?.id" type="button" class="text-xs text-[--app-accent] hover:underline" @click="pickMe">{{ ctrans('For me') }}</button>
+                        </div>
                         <input
                             v-model="assigneeQuery"
                             type="text"

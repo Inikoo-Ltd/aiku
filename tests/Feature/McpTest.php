@@ -1640,6 +1640,34 @@ describe('staff task tools', function () {
         ])->assertOk()->assertSee('"assignee":"'.$this->user->username.'"');
     });
 
+    test('staff keep their own to-do list: assign to me, then tick it off', function () {
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'  => 'Call the supplier back',
+            'assignee' => 'me',
+        ])->assertOk()->assertSee('"assignee":"'.$this->user->username.'"');
+
+        $task = StaffTask::where('requester_id', $this->user->id)->latest('id')->first();
+        expect($task->assignee_id)->toBe($this->user->id);
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'reference' => strtolower($task->reference),
+            'status'    => 'cancelled',
+        ])->assertHasErrors();
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'reference' => $task->reference,
+            'status'    => 'done',
+        ])->assertOk()->assertSee('"status":"done"');
+
+        expect($task->refresh()->status->value)->toBe('done')
+            ->and($task->closed_at)->not->toBeNull();
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'reference' => 'TASK-0',
+            'status'    => 'done',
+        ])->assertHasErrors(['that you asked for or are assigned to']);
+    });
+
     test('unknown department lists the valid ones and unknown links are refused', function () {
         AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
             'subject'    => 'Count it',
