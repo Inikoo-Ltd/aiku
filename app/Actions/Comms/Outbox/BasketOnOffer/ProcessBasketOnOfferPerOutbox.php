@@ -70,7 +70,15 @@ class ProcessBasketOnOfferPerOutbox
             $query->where(function ($priceDrop) use ($since) {
                 $priceDrop->where('products.price_updated_at', '>', $since)
                     ->whereRaw($this->previousPriceSubQuery().' > products.price');
-            })->orWhereRaw("(products.offers_data::jsonb->'best_percentage_off'->>'percentage_off')::numeric > 0");
+            })->orWhere(function ($newOffer) use ($since) {
+                $newOffer->whereRaw("(products.offers_data::jsonb->'best_percentage_off'->>'percentage_off')::numeric > 0")
+                    ->whereExists(function ($offerQuery) use ($since) {
+                        $offerQuery->selectRaw('1')
+                            ->from('offers')
+                            ->whereRaw("offers.id = (products.offers_data::jsonb->'best_percentage_off'->>'offer_id')::bigint")
+                            ->where('offers.start_at', '>', $since);
+                    });
+            });
         });
 
         $baseQuery->select(
