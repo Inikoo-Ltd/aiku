@@ -72,6 +72,7 @@ class ChatSessionListResource extends JsonResource
         return [
             'ulid' => $this->ulid,
             'channel' => $this->channel?->value ?? 'website',
+            'customer_language' => ($this->activeUserLanguage ?? $this->userLanguage)?->only(['code', 'name']),
             'status' => $this->status,
             'is_spam' => (bool) $this->is_spam,
             'is_rubbish' => (bool) $this->is_rubbish,

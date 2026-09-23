@@ -567,6 +567,10 @@ const isEmailNotif = ref(false)
 
 const isEmailChat = computed(() => (props.session as any)?.channel === "email")
 
+const customerLanguage = computed<{ code: string, name: string } | null>(() =>
+    (props.session as any)?.channel === "whatsapp" ? null : (props.session as any)?.customer_language ?? null
+)
+
 const emailRecipient = computed(() => {
     const metadata = (props.session as any)?.metadata ?? {}
 
@@ -1553,6 +1557,11 @@ const handleClickOutside = (e: MouseEvent) => {
                         {{ person.name || person.address }}
                     </span>
                 </label>
+            </div>
+
+            <div v-if="customerLanguage" class="mb-1.5 flex items-center gap-1.5 px-1 text-xs text-gray-500">
+                <FontAwesomeIcon :icon="faLanguage" class="text-gray-400" fixed-width />
+                <span>{{ ctrans("The customer writes in :language. A reply in another language is translated to :language before it is sent.", { language: customerLanguage.name }) }}</span>
             </div>
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">

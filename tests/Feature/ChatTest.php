@@ -53,6 +53,9 @@ use App\Actions\Chat\ChatSession\StoreOfflineMessage;
 use App\Actions\Chat\ChatSession\SummarizeChatSession;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
 use App\Actions\Chat\ChatSession\TranslateChatMessage;
+use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\Translate;
+use App\Models\Helpers\Language;
 use App\Actions\Chat\ChatSession\TranslateSessionMessages;
 use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
@@ -1632,6 +1635,38 @@ test('TranslateChatMessage handle is a no-op when target language equals origina
 
     expect($chatMessage->refresh()->message_text)->toBe('Hola');
 });
+
+test('TranslateChatMessage leaves an agent reply alone when it is already in the customer language', function (?string $detectedLanguageCode) {
+    $spanish = Language::where('code', 'es')->firstOrFail();
+
+    $chatSession = ChatSession::create([
+        'ulid'                    => (string)Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier'        => 'guest_'.Str::random(5),
+        'language_id'             => $spanish->id,
+        'active_user_language_id' => $spanish->id,
+        'priority'                => ChatPriorityEnum::NORMAL,
+        'shop_id'                 => $this->shop->id,
+        'ai_model_version'        => 'default',
+    ]);
+
+    $chatMessage = ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::AGENT->value,
+        'message_text'    => 'Disculpe la demora en la respuesta.',
+        'original_text'   => 'Disculpe la demora en la respuesta.',
+        'is_read'         => false,
+    ]);
+
+    DetectLanguageWithAI::shouldRun()->andReturn($detectedLanguageCode ? Language::where('code', $detectedLanguageCode)->first() : null);
+    Translate::shouldNotRun();
+
+    TranslateChatMessage::make()->handle($chatMessage->id);
+
+    expect($chatMessage->refresh()->message_text)->toBe('Disculpe la demora en la respuesta.')
+        ->and($chatMessage->translations()->count())->toBe(0);
+})->with(['detected as spanish' => 'es', 'language not detected' => null]);
 
 test('IndexChatConversations returns a paginator scoped to organisation sessions with messages', function () {
     $chatSession = ChatSession::create([
@@ -3363,6 +3398,65 @@ test('inbound gmail message becomes an email chat session and the agent reply go
             && str_contains($raw, trim(chunk_split(base64_encode('invoice body'))))
             && str_contains($raw, 'Content-Disposition: attachment; filename="packing.txt"');
     });
+});
+
+test('an agent email reply in another language goes out translated to the customer language', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $spanish = Language::where('code', 'es')->firstOrFail();
+    $english = Language::where('code', 'en')->firstOrFail();
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent1']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'                    => (string)Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+        'guest_identifier'        => 'guest_'.Str::random(5),
+        'language_id'             => $spanish->id,
+        'active_user_language_id' => $spanish->id,
+        'priority'                => ChatPriorityEnum::NORMAL,
+        'shop_id'                 => $this->shop->id,
+        'ai_model_version'        => 'default',
+        'metadata'                => ['email_from' => 'cliente@example.com', 'email_subject' => 'Pedido', 'gmail_thread_id' => 't1'],
+    ]);
+
+    $reply = $session->messages()->create([
+        'message_text'  => 'Shipped today',
+        'original_text' => 'Shipped today',
+        'message_type'  => ChatMessageTypeEnum::TEXT,
+        'sender_type'   => ChatSenderTypeEnum::AGENT,
+    ]);
+
+    DetectLanguageWithAI::shouldRun()->andReturn($english);
+    Translate::shouldRun()->once()->andReturn('Enviado hoy');
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return str_contains(base64_decode(substr($raw, strpos($raw, "\r\n\r\n") + 4)), 'Enviado hoy');
+    });
+
+    expect($reply->fresh()->original_text)->toBe('Shipped today')
+        ->and(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session->fresh())->resolve()['customer_language'])
+        ->toBe(['code' => 'es', 'name' => $spanish->name]);
 });
 
 test('inbound gmail from an unknown sender becomes a guest email session and a spammed sender is skipped next time', function () {
