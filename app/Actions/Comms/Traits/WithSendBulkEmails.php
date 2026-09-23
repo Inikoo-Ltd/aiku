@@ -245,6 +245,8 @@ trait WithSendBulkEmails
 
             'abandoned-cart-items' => Arr::get($additionalData, 'abandoned_cart_items'),
 
+            'favourites-on-offer-items' => Arr::get($additionalData, 'favourites_on_offer_items'),
+
             default => $originalPlaceholder,
         };
     }

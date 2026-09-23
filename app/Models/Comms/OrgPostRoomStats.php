@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $org_post_room_id
  * @property int $number_outboxes
  * @property int $number_outboxes_type_basket_low_stock
+ * @property int $number_outboxes_type_favourites_on_offer
  * @property int $number_outboxes_type_basket_push
  * @property int $number_outboxes_type_new_customer_push
  * @property int $number_outboxes_type_new_customer
