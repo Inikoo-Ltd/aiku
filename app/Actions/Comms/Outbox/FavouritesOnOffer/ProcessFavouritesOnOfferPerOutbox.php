@@ -38,11 +38,6 @@ class ProcessFavouritesOnOfferPerOutbox
         $baseQuery->where('customers.shop_id', $outbox->shop_id);
         $baseQuery->whereNull('customers.deleted_at');
 
-        $baseQuery->join('customer_comms', function ($join) {
-            $join->on('customers.id', '=', 'customer_comms.customer_id')
-                ->where('customer_comms.is_subscribed_to_favourites_on_offer', true);
-        });
-
         $baseQuery->join('favourites', function ($join) {
             $join->on('customers.id', '=', 'favourites.customer_id')
                 ->whereNull('favourites.unfavourited_at');

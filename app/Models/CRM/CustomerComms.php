@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_subscribed_to_abandoned_cart
  * @property bool $is_subscribed_to_reorder_reminder
  * @property bool $is_subscribed_to_basket_low_stock
- * @property bool $is_subscribed_to_favourites_on_offer
  * @property bool $is_subscribed_to_basket_reminder
  * @property string|null $newsletter_unsubscribed_at
  * @property string|null $newsletter_unsubscribed_author_type Customer|User
@@ -49,11 +48,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $basket_low_stock_unsubscribed_author_id
  * @property string|null $basket_low_stock_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
  * @property string|null $basket_low_stock_unsubscribed_origin_id
- * @property string|null $favourites_on_offer_unsubscribed_at
- * @property string|null $favourites_on_offer_unsubscribed_author_type Customer|User
- * @property string|null $favourites_on_offer_unsubscribed_author_id
- * @property string|null $favourites_on_offer_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
- * @property string|null $favourites_on_offer_unsubscribed_origin_id
  * @property string|null $basket_reminder_unsubscribed_at
  * @property string|null $basket_reminder_unsubscribed_author_type Customer|User
  * @property string|null $basket_reminder_unsubscribed_author_id
