@@ -21,8 +21,11 @@ class CheckWooPortfolio
      * When the store cannot be asked (error page, timeout) the portfolio keeps whatever it had:
      * flipping a live listing to "missing" on a transient failure would drop it from stock sync
      * with nothing scheduled to put it back.
+     *
+     * The create reply already is the product, so an upload passes it in rather than asking a slow
+     * store again and marking a created product failed when that second call times out.
      */
-    public function handle(Portfolio $portfolio): Portfolio
+    public function handle(Portfolio $portfolio, ?array $productReply = null): Portfolio
     {
         if (!$portfolio->customerSalesChannel) {
             return $portfolio;
@@ -38,8 +41,10 @@ class CheckWooPortfolio
         $hasValidProductId      = CheckIfWooProductIDIsValid::run($portfolio->platform_product_id);
         $productExistsInWoo = false;
         $hasVariantAtLocation   = false;
+        $knownProduct           = null;
         if ($hasValidProductId) {
-            $reply  = $wooUser->getWooCommerceProduct($portfolio->platform_product_id);
+            $knownProduct = Arr::get($productReply, 'id') ? $productReply : null;
+            $reply        = $knownProduct ?? $wooUser->getWooCommerceProduct($portfolio->platform_product_id);
             $result = CheckIfProductExistInWoo::onlyProducts([$reply]);
 
             if (blank($result) && !CheckIfProductExistInWoo::isMissingProductReply($reply)) {
@@ -69,7 +74,7 @@ class CheckWooPortfolio
         ]);
 
         if ($hasVariantAtLocation) {
-            SaveWooProductData::run($portfolio);
+            SaveWooProductData::run($portfolio, $knownProduct);
         }
 
 

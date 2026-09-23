@@ -21,7 +21,11 @@ class SaveWooProductData extends RetinaAction
     use WithActionUpdate;
 
 
-    public function handle(Portfolio $portfolio): ?array
+    /**
+     * A product the store has just returned (the create reply) is saved as is, a slow store
+     * is not asked for it a second time.
+     */
+    public function handle(Portfolio $portfolio, ?array $productReply = null): ?array
     {
         /** @var WooCommerceUser $wooCommerce */
         $wooCommerce = $portfolio->customerSalesChannel->user;
@@ -29,7 +33,7 @@ class SaveWooProductData extends RetinaAction
         try {
             $productID = $portfolio->platform_product_id;
 
-            $result = $wooCommerce->getWooCommerceProduct($productID);
+            $result = $productReply ?? $wooCommerce->getWooCommerceProduct($productID);
 
             $data = $portfolio->data;
             data_set($data, 'woo_product', $result);

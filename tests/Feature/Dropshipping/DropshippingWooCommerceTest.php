@@ -33,6 +33,8 @@ use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWoo
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkDispatchProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
+use Illuminate\Support\Facades\Redis;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
@@ -1318,4 +1320,53 @@ test('a bulk upload shares one progress counter across its chunks and a killed p
     StoreNewProductToCurrentWooCommerce::make()->jobFailed(new RuntimeException('killed'), $wooCommerceUser, $portfolio, false, $bulkProgress);
 
     Event::assertDispatched(UploadProductToSalesChannelProgressEvent::class, fn ($event) => $event->statistics === ['total' => 1, 'success' => 0, 'fail' => 1]);
+});
+
+test('a created product is trusted from the create reply so a slow store is not asked again', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'aw-created-slow');
+
+    wooFake([
+        'POST products'    => Http::response(wooProduct(802, ['sku' => 'aw-created-slow']), 201),
+        'GET products/802' => Http::response('<html>Service Unavailable</html>', 503),
+    ]);
+
+    StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio);
+    $portfolio->refresh();
+
+    expect(wooSent('GET', 'products/802'))->toBeEmpty()
+        ->and($portfolio->platform_product_id)->toBe('802')
+        ->and($portfolio->platform_status)->toBeTrue()
+        ->and($portfolio->errors_response)->toBeNull()
+        ->and(Arr::get($portfolio->data, 'woo_product.id'))->toBe(802);
+});
+
+test('a product upload waits for a free slot when the store already has its maximum of creates running', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'aw-store-busy');
+    $funnel          = 'woo_product_create_'.$wooCommerceUser->id;
+
+    wooFake();
+
+    $job = Mockery::mock(JobDecorator::class);
+    $job->shouldReceive('release')->once()->with(StoreNewProductToCurrentWooCommerce::WAIT_FOR_SLOT_SECONDS);
+
+    $holdSlots = function (int $left) use (&$holdSlots, $funnel, $job, $wooCommerceUser, $portfolio) {
+        if ($left === 0) {
+            StoreNewProductToCurrentWooCommerce::make()->asJob($job, $wooCommerceUser, $portfolio, false);
+
+            return;
+        }
+
+        Redis::funnel($funnel)
+            ->limit(StoreNewProductToCurrentWooCommerce::MAX_CONCURRENT_CREATES_PER_STORE)
+            ->releaseAfter(60)
+            ->block(0)
+            ->then(fn () => $holdSlots($left - 1));
+    };
+
+    $holdSlots(StoreNewProductToCurrentWooCommerce::MAX_CONCURRENT_CREATES_PER_STORE);
+
+    expect(wooSent('POST', 'products'))->toBeEmpty()
+        ->and($portfolio->refresh()->platform_status)->toBeFalse();
 });
