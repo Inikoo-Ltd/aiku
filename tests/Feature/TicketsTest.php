@@ -350,6 +350,12 @@ test('staff reporter is told of the question by email and slack as their profile
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'question' => 'Fixed the voucher total'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
     expect($ticket->comments()->where('body', 'Fixed the voucher total')->count())->toBe(1);
+
+    app()->detectEnvironment(fn () => 'production');
+    $mail = (new TicketNotification($ticket, 'Subject', ['Line'], 'View'))->toMail($reporter);
+    app()->detectEnvironment(fn () => 'testing');
+    expect($mail->mailer)->toBe('ses')
+        ->and($mail->from)->toBe(['help@aiku.io', 'Aiku Help']);
 });
 
 test('browser channel queues a web push to the reporter devices and prunes expired endpoints', function () {
