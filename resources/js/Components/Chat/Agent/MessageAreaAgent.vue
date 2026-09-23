@@ -1325,7 +1325,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" fixed-width />
                 </button>
 
-                <div v-if="isMenuOpen && !isClosed && !isTrashed"
+                <div v-if="isMenuOpen"
                     class="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow z-50">
                     <button class="menu-item" @click="onViewUserProfile">
                         <FontAwesomeIcon :icon="faUser" fixed-width /> {{ ctrans("View Profile") }}
@@ -1339,7 +1339,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         <FontAwesomeIcon :icon="faMessage" fixed-width /> {{ ctrans("Message Details") }}
                     </button>
 
-                    <template v-if="!readOnly">
+                    <template v-if="!readOnly && !isTrashed">
                         <button v-if="canEmailNotify" class="menu-item" @click="isEmailNotif = !isEmailNotif">
                             <!-- The badge sits on the envelope's corner, with a white disc behind it so
                                  the two shapes stay separate instead of bleeding into one another. -->
@@ -1365,7 +1365,7 @@ const handleClickOutside = (e: MouseEvent) => {
 
                         <button v-if="canRelease" class="menu-item" :disabled="isReleasing" @click="releaseChat">
                             <FontAwesomeIcon :icon="faRotateLeft" class="text-amber-600" fixed-width />
-                            {{ ctrans("Give it back to the queue") }}
+                            <span class="text-left">{{ ctrans("Give it back to the queue") }}</span>
                         </button>
 
                         <button class="menu-item" @click="openForwardModal">
