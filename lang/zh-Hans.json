@@ -12387,7 +12387,7 @@
     "Your payment session has expired. Please try the transaction again.": "您的支付会话已过期。请重试交易。",
     "Your payment was received and your balance has been topped up.": "",
     "Your payment was received and your order has been submitted.": "",
-    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "",
+    "This is the :site QR code, and your device reports a location away from :site. Scan the QR code of the site you are at. If you are at :site, enable Precise Location for your browser and try again.": "",
     "Your platform has been connected.": "您的平台已连接。",
     "Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product": "您的产品尚未上架，请先将其发布到您的 eBay 店铺。或者，您可以使用“创建新产品”选项。",
     "Your product was successfully fetched and still processed in background.": "",

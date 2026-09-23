@@ -12387,7 +12387,7 @@
     "Your payment session has expired. Please try the transaction again.": "Sua sessão de pagamento expirou. Tente realizar a transação novamente.",
     "Your payment was received and your balance has been topped up.": "",
     "Your payment was received and your order has been submitted.": "",
-    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "",
+    "This is the :site QR code, and your device reports a location away from :site. Scan the QR code of the site you are at. If you are at :site, enable Precise Location for your browser and try again.": "",
     "Your platform has been connected.": "Sua plataforma foi conectada.",
     "Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product": "O seu produto ainda não está listado. Publique-o primeiro em sua loja do eBay. Ou você pode usar a opção: criar novo produto.",
     "Your product was successfully fetched and still processed in background.": "Seu produto foi obtido com sucesso e ainda está sendo processado em segundo plano.",

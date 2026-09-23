@@ -12387,7 +12387,7 @@
     "Your payment session has expired. Please try the transaction again.": "तपाईको भुक्तानी सत्र मुद्रित भएको छ। कृपया पुनः प्रयास गर्नुहोस्।",
     "Your payment was received and your balance has been topped up.": "तपाईको भुक्तानी प्राप्त भएको छ र तपाईको शेष टप अप गरिएको छ।",
     "Your payment was received and your order has been submitted.": "तपाईको भुक्तानी प्राप्त भएको छ र तपाईको आदेश बुझाइएको छ।",
-    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "तपाईंको फोनले कार्यस्थलको बाहिरको स्थानलाई रिपोर्ट गर्दछ। यदि तपाईं साइटमा हुनुहुन्छ भने, कृपया आफ्ना ब्राउज़रको लागि संतोषजनक स्थान सक्षम गर्नुहोस् र पुनः प्रयास गर्नुहोस्।",
+    "This is the :site QR code, and your device reports a location away from :site. Scan the QR code of the site you are at. If you are at :site, enable Precise Location for your browser and try again.": "",
     "Your platform has been connected.": "तपाईको प्लेटफर्म जडान गरिएको छ।",
     "Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product": "तपाईंको उत्पादन अझै सूचीमा छैन, कृपया पहिले यसलाई आफ्नो ईबे पसलमा प्रकाशित गर्नुहोस्। वा तपाई नयाँ उत्पादन सिर्जना गर्ने विकल्प प्रयोग गर्न सक्नुहुन्छ",
     "Your product was successfully fetched and still processed in background.": "तपाईंको उत्पादन सफलतापूर्वक fetched गरिएको छ र अब पृष्ठभूमिमा प्रशोधन भइरहेको छ।",

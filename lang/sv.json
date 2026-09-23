@@ -12387,7 +12387,7 @@
     "Your payment session has expired. Please try the transaction again.": "Din betalningssession har löpt ut. Försök att genomföra transaktionen igen.",
     "Your payment was received and your balance has been topped up.": "Din betalning har mottagits och ditt saldo har påfyllts.",
     "Your payment was received and your order has been submitted.": "Din betalning har mottagits och din beställning har skickats.",
-    "Your phone reports a location outside the workplace. If you are on site, enable Precise Location for your browser and try again.": "",
+    "This is the :site QR code, and your device reports a location away from :site. Scan the QR code of the site you are at. If you are at :site, enable Precise Location for your browser and try again.": "",
     "Your platform has been connected.": "Din plattform har anslutits.",
     "Your product is not in the listing yet, please publish it first in your ebay shop. Or you can use option: create new product": "Din produkt finns inte med i listan ännu, vänligen publicera den först i din eBay-butik. Eller så kan du använda alternativet: skapa ny produkt",
     "Your product was successfully fetched and still processed in background.": "Din produkt har hämtats och bearbetas fortfarande i bakgrunden.",
