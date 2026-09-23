@@ -349,6 +349,9 @@ class StoreWebpage extends OrgAction
                             'column' => 'website_id',
                             'value'  => $this->website->id
                         ],
+
+                        ['column' => 'deleted_at', 'operator' => 'null'],
+
                     ]
                 ),
             ];

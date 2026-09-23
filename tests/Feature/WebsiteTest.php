@@ -63,6 +63,7 @@ use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
+use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\GetWebpagePageSpeed;
 use App\Actions\Web\Webpage\GetWebpageSeo;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
@@ -1436,6 +1437,46 @@ test('update webpage', function (Website $website) {
 
     expect($updated)->toBeInstanceOf(Webpage::class)
         ->and($updated->id)->toBe($webpage->id);
+})->depends('launch website');
+
+test('delete webpage that is not yet live', function (Website $website) {
+    $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    expect($webpage->state)->toBe(WebpageStateEnum::IN_PROCESS);
+
+    $deleted = DeleteWebpage::make()->action($webpage, false, ['redirects' => null]);
+
+    expect($deleted->trashed())->toBeTrue()
+        ->and(Webpage::find($webpage->id))->toBeNull()
+        ->and(Redirect::where('website_id', $website->id)->where('from_path', $webpage->url)->exists())->toBeFalse();
+})->depends('launch website');
+
+test('url of a deleted webpage can be reused', function (Website $website) {
+    $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $url     = $webpage->url;
+    $code    = $webpage->code;
+
+    DeleteWebpage::make()->action($webpage, false, ['redirects' => null]);
+
+    $reused = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['url' => $url, 'code' => $code]
+    ));
+
+    expect($reused->id)->not->toBe($webpage->id)
+        ->and($reused->url)->toBe($url)
+        ->and($reused->code)->toBe($code);
+
+    $reusedUnderWebsite = StoreWebpage::make()->action($website, array_merge(
+        Webpage::factory()->definition(),
+        ['url' => $url.'-2', 'code' => $code.'-2']
+    ));
+    DeleteWebpage::make()->action($reusedUnderWebsite, false, ['redirects' => null]);
+
+    expect(StoreWebpage::make()->action($website, array_merge(
+        Webpage::factory()->definition(),
+        ['url' => $url.'-2', 'code' => $code.'-2']
+    ))->url)->toBe($url.'-2');
 })->depends('launch website');
 
 test('webpage title can skip the title prefix and suffix', function (Website $website) {
