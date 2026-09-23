@@ -386,7 +386,9 @@ test('create purchase order independent supplier', function (OrgSupplierProduct 
     expect($purchaseOrder)->toBeInstanceOf(PurchaseOrder::class)
         ->and($supplier->stats->number_purchase_orders)->toBe(1)
         ->and($purchaseOrder->parent_id)->toBe($orgSupplier->id)
-        ->and($purchaseOrder->supplier_id)->toBe($supplier->id);
+        ->and($purchaseOrder->supplier_id)->toBe($supplier->id)
+        ->and($purchaseOrder->org_exchange)->not->toBeNull()
+        ->and($purchaseOrder->grp_exchange)->not->toBeNull();
 
 
     return $purchaseOrder;
@@ -757,7 +759,34 @@ test('adding a product to a purchase order creates the missing org stock', funct
 
     expect($orgStock)->not->toBeNull()
         ->and($line->org_stock_id)->toBe($orgStock->id)
+        ->and($line->org_supplier_product_id)->toBe($orgSupplierProduct->id)
         ->and((float)$line->net_amount)->toBe(240.0);
+
+    $this->post(route('grp.models.purchase-order.transaction.store', [$purchaseOrder->id, $orgSupplierProduct->id]), ['quantity_ordered' => 5])
+        ->assertSessionHasErrors('org_supplier_product');
+
+    $otherSupplier           = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $otherOrgSupplier        = $otherSupplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $otherSupplierProduct    = StoreSupplierProduct::make()->action($otherSupplier, [
+        'code'             => 'other-supplier-product',
+        'name'             => 'Other supplier product',
+        'cost'             => 5,
+        'trade_units'      => [$tradeUnit->id],
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10
+    ]);
+    $otherOrgSupplierProduct = $otherOrgSupplier->orgSupplierProducts()->where('supplier_product_id', $otherSupplierProduct->id)->first()
+        ?? StoreOrgSupplierProduct::make()->action($otherOrgSupplier, $otherSupplierProduct);
+
+    $this->post(route('grp.models.purchase-order.transaction.store', [$purchaseOrder->id, $otherOrgSupplierProduct->id]), ['quantity_ordered' => 5])
+        ->assertSessionHasErrors('org_supplier_product');
+
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::CONFIRMED]);
+    $this->patch(route('grp.models.purchase-order.transaction.update', [$purchaseOrder->id, $line->id]), ['unit_cost' => 1])
+        ->assertSessionHasErrors('purchase_order_transaction');
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS]);
+
+    expect((float)$line->refresh()->net_amount)->toBe(240.0);
 });
 
 test('delete purchase order', function () {

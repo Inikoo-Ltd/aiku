@@ -30,7 +30,7 @@ trait WithStoreProcurementOrderItem
             $supplierProduct = $historicSupplierProduct->supplierProduct;
             data_set($modelData, 'supplier_product_id', $supplierProduct->id);
             data_set($modelData, 'historic_supplier_product_id', $historicSupplierProduct->id);
-            data_set($modelData, 'org_supplier_product_id', $supplierProduct->orgSupplierProducts()->where('organisation_id', $procurementOrder->organisation_id)->value('id'));
+            data_set($modelData, 'org_supplier_product_id', overwrite: false, value: $supplierProduct->orgSupplierProducts()->where('organisation_id', $procurementOrder->organisation_id)->value('id'));
 
 
             $quantity = $procurementOrder instanceof PurchaseOrder ? $modelData['quantity_ordered'] : $modelData['unit_quantity'];
@@ -40,7 +40,7 @@ trait WithStoreProcurementOrderItem
             }
 
             if ($procurementOrder instanceof PurchaseOrder) {
-                data_set($modelData, 'unit_cost', $quantity > 0 ? round($modelData['net_amount'] / $quantity, 4) : $supplierProduct->cost, overwrite: false);
+                data_set($modelData, 'unit_cost', $quantity > 0 ? round($modelData['net_amount'] / $quantity, 6) : $supplierProduct->cost, overwrite: false);
             }
 
             if ($procurementOrder instanceof PurchaseOrder && $supplierProduct->currency_id !== $procurementOrder->currency_id) {

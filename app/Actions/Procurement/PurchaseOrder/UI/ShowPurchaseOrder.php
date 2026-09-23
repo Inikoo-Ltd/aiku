@@ -37,6 +37,7 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -541,16 +542,27 @@ class ShowPurchaseOrder extends OrgAction
 
     public function getPrevious(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array
     {
-        $previous = PurchaseOrder::where('reference', '<', $purchaseOrder->reference)->orderBy('reference', 'desc')->first();
+        $previous = $this->siblingPurchaseOrders($purchaseOrder, $request)->where('reference', '<', $purchaseOrder->reference)->orderBy('reference', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(PurchaseOrder $purchaseOrder, ActionRequest $request): ?array
     {
-        $next = PurchaseOrder::where('reference', '>', $purchaseOrder->reference)->orderBy('reference')->first();
+        $next = $this->siblingPurchaseOrders($purchaseOrder, $request)->where('reference', '>', $purchaseOrder->reference)->orderBy('reference')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
+    }
+
+    private function siblingPurchaseOrders(PurchaseOrder $purchaseOrder, ActionRequest $request): Builder
+    {
+        $query = PurchaseOrder::where('organisation_id', $purchaseOrder->organisation_id);
+
+        if ($request->route()->getName() !== 'grp.org.procurement.purchase_orders.show') {
+            $query->where('parent_type', $purchaseOrder->parent_type)->where('parent_id', $purchaseOrder->parent_id);
+        }
+
+        return $query;
     }
 
     public function getNavigation(?PurchaseOrder $purchaseOrder, string $routeName): ?array

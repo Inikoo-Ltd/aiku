@@ -30,7 +30,10 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
+use App\Models\Helpers\Currency;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -73,6 +76,11 @@ class StorePurchaseOrder extends OrgAction
         if (!Arr::get($modelData, 'currency_id')) {
             data_set($modelData, 'currency_id', $parent->organisation->currency_id);
         }
+
+        $currency = Currency::find($modelData['currency_id']);
+        $date     = Carbon::parse($modelData['date'])->startOfDay();
+        data_set($modelData, 'org_exchange', GetHistoricCurrencyExchange::run($currency, $parent->organisation->currency, $date), overwrite: false);
+        data_set($modelData, 'grp_exchange', GetHistoricCurrencyExchange::run($currency, $parent->organisation->group->currency, $date), overwrite: false);
         /** @var PurchaseOrder $purchaseOrder */
         $purchaseOrder = $parent->purchaseOrders()->create($modelData);
         $purchaseOrder->refresh();

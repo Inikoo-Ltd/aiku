@@ -15,13 +15,16 @@ use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransact
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrderTransaction extends OrgAction
@@ -30,38 +33,61 @@ class UpdatePurchaseOrderTransaction extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
 
+    private PurchaseOrderTransaction $purchaseOrderTransaction;
+
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, array $modelData): PurchaseOrderTransaction
     {
-        $updateSupplierCost = (bool)Arr::pull($modelData, 'update_supplier_cost', false);
+        return DB::transaction(function () use ($purchaseOrderTransaction, $modelData) {
+            $updateSupplierCost = (bool)Arr::pull($modelData, 'update_supplier_cost', false);
 
-        if (Arr::has($modelData, 'net_amount')) {
-            $quantity = (float)Arr::get($modelData, 'quantity_ordered', $purchaseOrderTransaction->quantity_ordered);
-            if ($quantity > 0) {
-                data_set($modelData, 'unit_cost', round(Arr::get($modelData, 'net_amount') / $quantity, 4), overwrite: false);
+            if (Arr::has($modelData, 'net_amount')) {
+                $quantity = (float)Arr::get($modelData, 'quantity_ordered', $purchaseOrderTransaction->quantity_ordered);
+                if ($quantity > 0) {
+                    data_set($modelData, 'unit_cost', round(Arr::get($modelData, 'net_amount') / $quantity, 6), overwrite: false);
+                }
+            } elseif (Arr::hasAny($modelData, ['quantity_ordered', 'unit_cost'])) {
+                $unitCost = Arr::get($modelData, 'unit_cost', $purchaseOrderTransaction->unit_cost ?? $purchaseOrderTransaction->supplierProduct?->cost);
+
+                if ($unitCost !== null) {
+                    $unitCost = round((float)$unitCost, 6);
+                    data_set($modelData, 'unit_cost', $unitCost);
+                    data_set($modelData, 'net_amount', round($unitCost * Arr::get($modelData, 'quantity_ordered', $purchaseOrderTransaction->quantity_ordered), 2));
+                }
             }
-        } elseif (Arr::hasAny($modelData, ['quantity_ordered', 'unit_cost'])) {
-            $unitCost = Arr::get($modelData, 'unit_cost', $purchaseOrderTransaction->unit_cost ?? $purchaseOrderTransaction->supplierProduct?->cost);
 
-            if ($unitCost !== null) {
-                data_set($modelData, 'unit_cost', $unitCost);
-                data_set($modelData, 'net_amount', $unitCost * Arr::get($modelData, 'quantity_ordered', $purchaseOrderTransaction->quantity_ordered));
+            if (Arr::has($modelData, 'net_amount')) {
+                data_set($modelData, 'grp_net_amount', Arr::get($modelData, 'net_amount') * ($purchaseOrderTransaction->grp_exchange ?? 1), overwrite: false);
+                data_set($modelData, 'org_net_amount', Arr::get($modelData, 'net_amount') * ($purchaseOrderTransaction->org_exchange ?? 1), overwrite: false);
             }
+
+            $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, $modelData, ['data']);
+            CalculatePurchaseOrderTotalAmounts::run($purchaseOrderTransaction->purchaseOrder);
+            PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
+
+            if ($updateSupplierCost && $purchaseOrderTransaction->supplierProduct && Arr::has($modelData, 'unit_cost')) {
+                UpdateSupplierProduct::make()->action($purchaseOrderTransaction->supplierProduct, ['cost' => $modelData['unit_cost']]);
+            }
+
+            return $purchaseOrderTransaction;
+        });
+    }
+
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+        if ($this->asAction || !Arr::hasAny($validator->getData(), ['quantity_ordered', 'unit_cost'])) {
+            return;
         }
 
-        if (Arr::has($modelData, 'net_amount')) {
-            data_set($modelData, 'grp_net_amount', Arr::get($modelData, 'net_amount') * ($purchaseOrderTransaction->grp_exchange ?? 1), overwrite: false);
-            data_set($modelData, 'org_net_amount', Arr::get($modelData, 'net_amount') * ($purchaseOrderTransaction->org_exchange ?? 1), overwrite: false);
+        $editableStates = [PurchaseOrderTransactionStateEnum::IN_PROCESS, PurchaseOrderTransactionStateEnum::SUBMITTED];
+
+        if (!in_array($this->purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED])
+            || !in_array($this->purchaseOrderTransaction->state, $editableStates)) {
+            $validator->errors()->add('purchase_order_transaction', __('This line can no longer be changed'));
         }
 
-        $purchaseOrderTransaction = $this->update($purchaseOrderTransaction, $modelData, ['data']);
-        CalculatePurchaseOrderTotalAmounts::run($purchaseOrderTransaction->purchaseOrder);
-        PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
-
-        if ($updateSupplierCost && $purchaseOrderTransaction->supplierProduct && Arr::has($modelData, 'unit_cost')) {
-            UpdateSupplierProduct::make()->action($purchaseOrderTransaction->supplierProduct, ['cost' => $modelData['unit_cost']]);
+        if (Arr::get($validator->getData(), 'update_supplier_cost') && !$request->user()?->authTo('supply-chain.edit')) {
+            $validator->errors()->add('update_supplier_cost', __('You do not have permission to change supplier prices'));
         }
-
-        return $purchaseOrderTransaction;
     }
 
     public function rules(): array
@@ -86,6 +112,7 @@ class UpdatePurchaseOrderTransaction extends OrgAction
     {
         $this->asAction = true;
         $this->strict = $strict;
+        $this->purchaseOrderTransaction = $purchaseOrderTransaction;
 
         $this->hydratorsDelay = $hydratorsDelay;
 
@@ -96,6 +123,8 @@ class UpdatePurchaseOrderTransaction extends OrgAction
 
     public function asController(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction, ActionRequest $request): PurchaseOrderTransaction
     {
+        abort_unless($purchaseOrderTransaction->purchase_order_id === $purchaseOrder->id, 404);
+        $this->purchaseOrderTransaction = $purchaseOrderTransaction;
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
 
         return $this->handle($purchaseOrderTransaction, $this->validatedData);

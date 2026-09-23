@@ -28,6 +28,7 @@ class EditPurchaseOrder extends OrgAction
 
     public function asController(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
+        abort_unless($purchaseOrder->organisation_id === $organisation->id, 404);
         $this->initialisation($organisation, $request);
 
         return $this->handle($purchaseOrder);
@@ -56,7 +57,9 @@ class EditPurchaseOrder extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('id'),
+                            'label'  => __('Reference'),
+                            'title'  => __('Reference'),
+                            'icon'   => 'fal fa-fingerprint',
                             'fields' => [
                                 'reference' => [
                                     'type'     => 'input',
@@ -67,6 +70,7 @@ class EditPurchaseOrder extends OrgAction
                             ]
                         ],
                         [
+                            'label'  => __('Delivery'),
                             'title'  => __('Delivery'),
                             'icon'   => 'fal fa-truck',
                             'fields' => [
@@ -79,6 +83,7 @@ class EditPurchaseOrder extends OrgAction
                             ]
                         ],
                         [
+                            'label'  => __('Payments'),
                             'title'  => __('Payments'),
                             'icon'   => 'fal fa-money-bill',
                             'fields' => [

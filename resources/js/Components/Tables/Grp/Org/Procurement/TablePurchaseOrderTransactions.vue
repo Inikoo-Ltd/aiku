@@ -113,8 +113,12 @@ function amount(item: any) {
 const savingId = ref<number | null>(null)
 
 const isPriceEditable = computed(() => ['in_process', 'submitted'].includes(props.state ?? ''))
-const alsoUpdateSupplierPrice = ref(false)
+const alsoUpdateSupplierPrice = ref<Record<number, boolean>>({})
 const savingPriceId = ref<number | null>(null)
+
+function canEditPrice(item: any) {
+    return isPriceEditable.value && item.updateRoute && ['in_process', 'submitted'].includes(item.state)
+}
 
 function supplierLevelCostLabel(item: any) {
     return locale.currencyFormat(item.net_currency ?? 'EUR', Number(item.supplier_unit_cost) * unitsPerLevel(item))
@@ -124,17 +128,18 @@ function isPriceChanged(item: any) {
     return item.supplier_unit_cost !== undefined && item.supplier_unit_cost !== null && Number(item.supplier_unit_cost) !== Number(item.unit_cost)
 }
 
-async function onSavePrice(item: any, form: any) {
+async function savePrice(item: any, unitCost: number, updateSupplierCost: boolean, form?: any) {
     savingPriceId.value = item.id
     try {
         await axios.patch(
             route(item.updateRoute.name, item.updateRoute.parameters),
             {
-                unit_cost: Number(form.quantity) / unitsPerLevel(item),
-                update_supplier_cost: alsoUpdateSupplierPrice.value,
+                unit_cost: Number(unitCost.toFixed(6)),
+                update_supplier_cost: updateSupplierCost,
             }
         )
-        form.defaults()
+        form?.defaults()
+        alsoUpdateSupplierPrice.value[item.id] = false
         notify({ title: ctrans('Success'), text: ctrans('Price updated'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
@@ -146,6 +151,10 @@ async function onSavePrice(item: any, form: any) {
     } finally {
         savingPriceId.value = null
     }
+}
+
+function onSavePrice(item: any, form: any) {
+    savePrice(item, Number(form.quantity) / unitsPerLevel(item), !!alsoUpdateSupplierPrice.value[item.id], form)
 }
 
 async function onSaveQuantity(item: any, form: any) {
@@ -349,9 +358,9 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     </span>
                     {{ item.name }}
                 </div>
-                <div v-if="isPriceEditable && item.updateRoute" class="text-xs text-gray-500 space-y-1">
+                <div v-if="canEditPrice(item)" class="text-xs text-gray-500 space-y-1">
                     <div class="flex items-center gap-2">
-                        <span>{{ level.cost }} ({{ item.net_currency }}):</span>
+                        <span>{{ level.cost }}<template v-if="item.net_currency"> ({{ item.net_currency }})</template>:</span>
                         <NumberWithButtonSave
                             :key="`price-${item.id}-${currentLevel}`"
                             isWithRefreshModel
@@ -363,11 +372,20 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                             @onSave="(form) => onSavePrice(item, form)"
                         />
                     </div>
-                    <div v-if="isPriceChanged(item)" class="text-orange-600">
-                        {{ ctrans('Supplier price') }}: {{ supplierLevelCostLabel(item) }}
+                    <div v-if="isPriceChanged(item)" class="flex items-center gap-2 text-orange-600">
+                        <span>{{ ctrans('Supplier price') }}: {{ supplierLevelCostLabel(item) }}</span>
+                        <button
+                            v-if="item.can_update_supplier_cost"
+                            type="button"
+                            class="underline hover:text-orange-800 disabled:opacity-50"
+                            :disabled="savingPriceId === item.id"
+                            @click="savePrice(item, Number(item.unit_cost), true)"
+                        >
+                            {{ ctrans('Use this price as supplier price') }}
+                        </button>
                     </div>
-                    <label class="flex items-center gap-1 cursor-pointer select-none">
-                        <input v-model="alsoUpdateSupplierPrice" type="checkbox" class="rounded border-gray-300" />
+                    <label v-if="item.can_update_supplier_cost" class="flex items-center gap-1 cursor-pointer select-none">
+                        <input v-model="alsoUpdateSupplierPrice[item.id]" type="checkbox" class="rounded border-gray-300" />
                         {{ ctrans('Also update supplier price') }}
                     </label>
                 </div>

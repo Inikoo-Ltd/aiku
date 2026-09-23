@@ -24,6 +24,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -85,7 +86,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'supplier_products.slug',
                 'supplier_products.id as supplier_product_id',
                 'supplier_products.name',
-                'supplier_products.cost as unit_cost',
+                DB::raw('coalesce(purchase_order_transactions.unit_cost, supplier_products.cost) as unit_cost'),
                 'supplier_products.units_per_pack',
                 'supplier_products.units_per_carton',
                 'supplier_products.current_historic_supplier_product_id as historic_id',

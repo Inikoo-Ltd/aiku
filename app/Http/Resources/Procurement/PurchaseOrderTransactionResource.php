@@ -35,6 +35,7 @@ class PurchaseOrderTransactionResource extends JsonResource
 
             'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
             'supplier_unit_cost'   => $supplierProduct?->cost,
+            'can_update_supplier_cost' => (bool)$request->user()?->authTo('supply-chain.edit'),
             'units_per_pack'       => $supplierProduct?->units_per_pack,
             'units_per_carton'     => $supplierProduct?->units_per_carton,
             'quantity_ordered'     => $transaction->quantity_ordered,
