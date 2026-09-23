@@ -47,6 +47,8 @@ class ProcessInboundEmail
      */
     private const int GONE_TTL_DAYS = 7;
 
+    private const array RETIRED_SERVICE_DOMAINS = ['luigisbox.com'];
+
     /**
      * The row carrying the gmail id is what stops a message being taken in twice, but it is only
      * written once the message has been taken in. Two jobs starting inside that window both read
@@ -461,6 +463,7 @@ class ProcessInboundEmail
         $subject   = strtolower(trim((string) $subject));
 
         return $localPart === 'mailerdaemon'
+            || in_array(strtolower(substr((string) strrchr((string) $address, '@'), 1)), self::RETIRED_SERVICE_DOMAINS, true)
             || str_contains($localPart, 'noreply')
             || str_contains($localPart, 'donotreply')
             || str_contains($subject, 'report domain:')

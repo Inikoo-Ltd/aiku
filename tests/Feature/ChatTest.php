@@ -3740,13 +3740,14 @@ test('automated mail from senders that match no customer is labelled filtered an
         'gmail.googleapis.com/gmail/v1/users/me/messages/f1*' => $gmailMessage('f1', 'Mail Delivery <mailer-daemon@googlemail.com>', 'Undelivered'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/f2*' => $gmailMessage('f2', 'reports@dmarc.example', 'Report Domain: shop.test Submitter: example'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/f3*' => $gmailMessage('f3', 'Alerts <no-reply@accounts.example>', 'Security alert'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/f4*' => $gmailMessage('f4', "Luigi's Box <support@luigisbox.com>", 'The item data in the awgifts.hu catalog has not been updated for some time'),
         'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered']]]),
         'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
     ]);
 
     $sessionsBefore = ChatSession::count();
 
-    foreach (['f1', 'f2', 'f3'] as $id) {
+    foreach (['f1', 'f2', 'f3', 'f4'] as $id) {
         expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, $id))->toBeNull();
         \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), "messages/$id/modify") && $request['addLabelIds'] === ['LF']);
     }
