@@ -6867,6 +6867,18 @@ test('forwarding a conversation to a colleague opens one staff thread and option
     $event = $session->chatEvents()->where('event_type', 'forward')->latest('id')->first();
     expect($event->payload['recipient_user_ids'])->toBe([$warehouse->id])
         ->and($event->payload['also_emailed'])->toBeFalse();
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $this->actingAs($clerk)
+        ->postJson(route('grp.org.chat.agents.sessions.forward', [$this->organisation->slug, $session->ulid]), [
+            'user_ids'   => [$management->id],
+            'note'       => 'From the inbox',
+            'also_email' => true,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.staff_conversation_id', $conversation->id);
 });
 
 test('an agent can hand a conversation to another named agent', function () {
