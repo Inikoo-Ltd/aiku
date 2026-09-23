@@ -1100,6 +1100,7 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
 });
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
+    Route::post('email-chat', [StartCustomerEmailChat::class, 'inShop'])->name('email_chat.store');
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
     Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShot::class)->name('prospect.mailshot.send')->withoutScopedBindings();

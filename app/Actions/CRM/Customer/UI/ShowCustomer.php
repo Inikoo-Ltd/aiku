@@ -137,6 +137,7 @@ class ShowCustomer extends OrgAction
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B,
                 'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer),
+                'customer_email'     => $customer->email,
                 'emailCustomerRoute' => [
                     'name'       => 'grp.models.customer.email_chat.store',
                     'parameters' => ['customer' => $customer->id],

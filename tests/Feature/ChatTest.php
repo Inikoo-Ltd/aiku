@@ -6034,6 +6034,90 @@ test('starting an email from the customer record opens an email conversation and
     expect(Arr::get($session->fresh()->metadata, 'gmail_references'))->toHaveCount(2);
 });
 
+test('a new email can go to an address the customer does not have on file, or to somebody saved there and then as a prospect', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    actingAs($this->user);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+    $this->customer->update(['email' => 'buyer@example.com']);
+    $this->customer->refresh();
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent10', 'threadId' => 't10']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->customer, [
+        'email'   => 'hello@colleague.example.com',
+        'subject' => 'Your spare boxes',
+        'message' => 'They go out today',
+    ]);
+
+    expect(Arr::get($session->metadata, 'email_from'))->toBe('hello@colleague.example.com')
+        ->and(Arr::get($session->metadata, 'email_from_name'))->toBeNull()
+        ->and($session->suggested_customer_id)->toBe($session->web_user_id ? $this->customer->id : null)
+        ->and($session->suggestion_basis)->toBe($session->web_user_id ? \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::BASIS_MANUAL : null);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return str_contains($raw, 'hello@colleague.example.com') && !str_contains($raw, 'buyer@example.com');
+    });
+
+    $toStranger = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->shop, [
+        'email'            => 'owner@newshop.example.com',
+        'subject'          => 'Wholesale',
+        'message'          => 'Our trade prices',
+        'save_as_prospect' => true,
+        'contact_name'     => 'New Owner',
+        'company_name'     => 'New Shop',
+    ]);
+
+    $prospect = \App\Models\CRM\Prospect::where('shop_id', $this->shop->id)->where('email', 'owner@newshop.example.com')->first();
+
+    expect($toStranger->web_user_id)->toBeNull()
+        ->and(Arr::get($toStranger->metadata, 'email_from'))->toBe('owner@newshop.example.com')
+        ->and(Arr::get($toStranger->metadata, 'email_from_name'))->toBe('New Owner')
+        ->and($prospect)->not->toBeNull()
+        ->and($prospect->company_name)->toBe('New Shop')
+        ->and($prospect->user_id)->toBe($this->user->id);
+
+    \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->shop, [
+        'email'            => 'owner@newshop.example.com',
+        'subject'          => 'Wholesale again',
+        'message'          => 'Following up',
+        'save_as_prospect' => true,
+    ]);
+    expect(\App\Models\CRM\Prospect::where('shop_id', $this->shop->id)->where('email', 'owner@newshop.example.com')->count())->toBe(1);
+    expect(\App\Actions\CRM\Prospect\Json\GetProspectByEmail::make()->handle($this->shop, 'owner@newshop.example.com'))
+        ->toMatchArray(['name' => 'New Owner', 'company_name' => 'New Shop', 'owner' => $this->user->contact_name])
+        ->and(\App\Actions\CRM\Prospect\Json\GetProspectByEmail::make()->handle($this->shop, 'nobody@example.com'))->toBeNull();
+
+    $toKnownCustomer = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->shop, [
+        'email'   => 'buyer@example.com',
+        'subject' => 'Hello',
+        'message' => 'Typed the address of a customer',
+    ]);
+    expect(Arr::get($toKnownCustomer->metadata, 'email_from_name'))->toBe($this->customer->contact_name ?? $this->customer->name);
+
+    expect(fn () => \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->customer, [
+        'email'   => 'not an address',
+        'subject' => 'Your spare boxes',
+        'message' => 'They go out today',
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 test('GetChatCustomerTimeline puts every channel, the orders and what is still owed in one line', function () {
     $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());

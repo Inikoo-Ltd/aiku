@@ -74,6 +74,7 @@ const props = defineProps<{
     can_add_order: boolean
     can_email_customer?: boolean
     emailCustomerRoute?: routeType
+    customer_email?: string | null
     products?: {}
     dispatched_emails?: {}
     api_requests?: {}
@@ -122,6 +123,7 @@ const isEmailModalOpen = ref(false)
 const messageTextarea = ref<HTMLTextAreaElement | null>(null)
 
 const emailForm = useForm({
+    email: props.customer_email ?? '',
     subject: '',
     message: '',
 })
@@ -254,17 +256,22 @@ const layout = inject('layout')
             <h2 class="text-lg font-medium text-gray-900">{{ ctrans('New email to this customer') }}</h2>
             <p class="mt-1 text-sm text-gray-600">{{ ctrans('It opens a conversation in the chat inbox, and their reply comes back to it.') }}</p>
             <div class="mt-4 space-y-3">
+                <div>
+                    <label class="text-xs font-medium text-gray-600">{{ ctrans('To') }}</label>
+                    <PureInput v-model="emailForm.email" type="email" :placeholder="ctrans('Email address')" />
+                </div>
                 <PureInput v-model="emailForm.subject" :placeholder="ctrans('Subject')" />
                 <div :ref="(el: any) => (messageTextarea = el?.querySelector('textarea') ?? null)">
                     <ChatFormattingToolbar :textarea="messageTextarea" allow-underline class="mb-1" />
                     <PureTextarea v-model="emailForm.message" :rows="8" :placeholder="ctrans('Message')" />
                 </div>
+                <p v-if="emailForm.errors.email" class="text-sm text-red-500">{{ emailForm.errors.email }}</p>
                 <p v-if="emailForm.errors.message" class="text-sm text-red-500">{{ emailForm.errors.message }}</p>
                 <p v-if="emailForm.errors.subject" class="text-sm text-red-500">{{ emailForm.errors.subject }}</p>
             </div>
             <div class="mt-4 flex justify-end">
                 <Button :label="ctrans('Send')" style="primary" icon="fal fa-paper-plane" :loading="emailForm.processing"
-                    :disabled="!emailForm.subject || !emailForm.message" @click="submitEmail" />
+                    :disabled="!emailForm.email || !emailForm.subject || !emailForm.message" @click="submitEmail" />
             </div>
         </div>
     </Modal>
