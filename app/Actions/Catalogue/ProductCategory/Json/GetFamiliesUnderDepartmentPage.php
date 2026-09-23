@@ -20,7 +20,10 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Database\Eloquent\Builder;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class GetFamiliesUnderDepartmentPage extends IrisAction
 {
@@ -76,6 +79,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
                     'product_categories.web_images',
                     'product_categories.image_id',
                     'product_categories.created_at',
+                    'product_categories.website_position',
                     'webpages.canonical_url'
                 ]
             )
@@ -95,9 +99,21 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at');
 
+        $curatedSort = AllowedSort::custom(
+            'website_position',
+            new class () implements Sort {
+                public function __invoke(Builder $query, bool $descending, string $property)
+                {
+                    $direction = $descending ? 'DESC' : 'ASC';
+                    $query->orderByRaw("product_categories.website_position $direction NULLS LAST")
+                        ->orderByRaw('product_categories.created_at DESC');
+                }
+            }
+        );
+
         return $query
-            ->defaultSort('-created_at')
-            ->allowedSorts(['code', 'name', 'created_at'])
+            ->defaultSort($curatedSort)
+            ->allowedSorts(['code', 'name', 'created_at', $curatedSort])
             ->allowedFilters([$categorySearch, $collectionSearch])
             ->withIrisPaginator(500)
             ->withQueryString();

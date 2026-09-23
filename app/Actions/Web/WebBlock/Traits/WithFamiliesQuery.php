@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 
 trait WithFamiliesQuery
 {
-    public function getFamilyList(Webpage $webpage, ?array $customSelect = null)
+    public function getFamilyList(Webpage $webpage, ?array $customSelect = null, bool $useCuratedOrder = false)
     {
         $families = null;
 
@@ -48,7 +48,10 @@ trait WithFamiliesQuery
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', 'ProductCategory');
                 })
-                ->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                ->when(
+                    !$useCuratedOrder,
+                    fn ($query) => $query->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                )
                 ->select($select)
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where(function ($query) use ($webpage) {
@@ -78,7 +81,10 @@ trait WithFamiliesQuery
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
-                ->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                ->when(
+                    !$useCuratedOrder,
+                    fn ($query) => $query->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
+                )
                 ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id);
@@ -97,7 +103,16 @@ trait WithFamiliesQuery
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->whereNull('webpages.deleted_at')
-            ->orderByRaw('yearly_sales.total_sales DESC NULLS LAST')
-            ->orderByRaw('product_categories.created_at DESC');
+            ->when(
+                $useCuratedOrder,
+                function ($query) {
+                    $query->orderByRaw('product_categories.website_position ASC NULLS LAST')
+                        ->orderByRaw('product_categories.created_at DESC');
+                },
+                function ($query) {
+                    $query->orderByRaw('yearly_sales.total_sales DESC NULLS LAST')
+                        ->orderByRaw('product_categories.created_at DESC');
+                }
+            );
     }
 }

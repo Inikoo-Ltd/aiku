@@ -217,6 +217,10 @@ class ShowDepartment extends OrgAction
                     fn () => GetRelatedProductCategories::run($department)
                     : Inertia::optional(fn () => GetRelatedProductCategories::run($department)),
 
+                DepartmentTabsEnum::FAMILIES_ORDER->value => $this->tab == DepartmentTabsEnum::FAMILIES_ORDER->value ?
+                    fn () => GetDepartmentFamiliesOrder::run($department)
+                    : Inertia::optional(fn () => GetDepartmentFamiliesOrder::run($department)),
+
                 DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
                     fn () =>  GetProductCategoryImages::run($department)
                     : Inertia::optional(fn () => GetProductCategoryImages::run($department)),
