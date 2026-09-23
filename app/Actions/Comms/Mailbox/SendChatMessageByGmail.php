@@ -167,6 +167,12 @@ class SendChatMessageByGmail
             $headers[] = 'References: '.implode(' ', self::references($metadata));
         }
 
+        // RFC 3834: says it was sent by itself, so the other side's auto-responder does not answer it.
+        if (Arr::get($chatMessage->metadata ?? [], 'auto_submitted')) {
+            $headers[] = 'Auto-Submitted: auto-replied';
+            $headers[] = 'X-Auto-Response-Suppress: All';
+        }
+
         $headers[] = 'MIME-Version: 1.0';
 
         $signature = '';

@@ -27,6 +27,10 @@ class ProcessChatMessageSideEffects
         $this->updateSessionTimestamps($chatSession, $senderType);
         $this->logMessageEvent($chatSession, $senderType, $senderId, $chatMessage);
 
+        if ($chatSession->channel !== ChatChannelEnum::EMAIL && in_array($senderType, [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value], true)) {
+            SendOutOfHoursReply::dispatch($chatSession);
+        }
+
         if ($senderType === ChatSenderTypeEnum::GUEST->value && $chatSession->channel !== ChatChannelEnum::EMAIL) {
             $chatSession = SuggestChatSessionCustomer::run($chatSession->refresh());
 

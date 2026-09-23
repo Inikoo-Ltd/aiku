@@ -192,6 +192,14 @@ class GetGroupNavigation
                         'route'   => [
                             'name' => 'grp.chat.phone_calls.index',
                         ],
+                    ], [
+                        'label'   => __('AI'),
+                        'tooltip' => __('Everything the chat did on its own'),
+                        'icon'    => ['fal', 'fa-robot'],
+                        'root'    => 'grp.chat.ai',
+                        'route'   => [
+                            'name' => 'grp.chat.ai',
+                        ],
                     ]] : []),
                     [
                         'label'   => __('Reports'),

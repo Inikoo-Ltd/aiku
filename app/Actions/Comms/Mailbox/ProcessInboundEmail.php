@@ -12,6 +12,7 @@ use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
+use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -224,6 +225,8 @@ class ProcessInboundEmail
         if (! $existing && ! $webUser) {
             ClassifyChatSessionNoise::dispatch($session);
         }
+
+        SendOutOfHoursReply::dispatch($session, $message);
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
         $client->fileAway($gmailMessageId, $label, Arr::get($raw, 'labelIds', []));

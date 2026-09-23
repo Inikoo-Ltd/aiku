@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\Whatsapp;
 
 use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
+use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SetMetaChatMessageReaction;
@@ -154,6 +155,8 @@ class StoreIncomingWhatsappMessage
         if (ClassifyChatSessionNoise::isCandidate($metaChatSession)) {
             ClassifyChatSessionNoise::dispatch($metaChatSession);
         }
+
+        SendOutOfHoursReply::dispatch($metaChatSession);
 
         $metaChatMessage = $metaChatMessage->fresh(['attachment', 'metaChatSession']);
 

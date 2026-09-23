@@ -46,6 +46,10 @@ return [
 
     ],
 
+    // A message that arrives while the shop is closed is answered once per wait, with when the
+    // shop opens again. Email only to a person, never to mail that was generated or sent to a list.
+    'out_of_hours_reply' => (bool) env('CHAT_OUT_OF_HOURS_REPLY', true),
+
     'noise' => [
 
         'auto_put_aside' => (bool) env('CHAT_NOISE_AUTO_PUT_ASIDE', false),

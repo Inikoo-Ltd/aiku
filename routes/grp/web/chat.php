@@ -18,9 +18,11 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Chat\Agent\UI\ShowGroupAgents;
 use App\Actions\Chat\ChatSession\UI\RedirectToOrgChatInbox;
 use App\Actions\Chat\ChatSession\UI\ShowGroupChatDashboard;
+use App\Actions\Chat\UI\ShowGroupChatAutomation;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/reports', ShowGroupChatDashboard::class)->name('reports');
+Route::get('/ai', ShowGroupChatAutomation::class)->name('ai');
 Route::get('/agents', ShowGroupAgents::class)->name('agents.show');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
 Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');

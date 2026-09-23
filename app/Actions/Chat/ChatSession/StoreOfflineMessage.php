@@ -150,6 +150,8 @@ class StoreOfflineMessage
             'metadata' => array_merge($old, [
                 'name'  => $data['name']  ?? $old['name']  ?? null,
                 'email' => $data['email'] ?? $old['email'] ?? null,
+                // The form has just told them we are offline and will get back to them.
+                SendOutOfHoursReply::SENT_KEY => now()->toISOString(),
             ]),
         ]);
     }

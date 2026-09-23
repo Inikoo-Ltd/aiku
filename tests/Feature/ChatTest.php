@@ -5533,6 +5533,7 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
     $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['meta' => ['access_key' => 'token']])]);
 
     \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'wamid.greeting']]])]);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-23 10:00', $this->shop->timezoneName()));
 
     $hello = noiseTestWhatsappSession($this->shop->fresh(), '+447500000002', 'Hello');
 
@@ -5546,6 +5547,223 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
     expect($greeting->message_text)->toContain('How can we help you')
         ->and($hello->refresh()->last_agent_message_at)->toBeNull()
         ->and($hello->is_spam)->toBeFalse();
+
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
+function outOfHoursTestSchedule(\App\Models\Catalogue\Shop $shop): \App\Models\HumanResources\WorkSchedule
+{
+    $tz = \App\Models\Helpers\Timezone::where('name', 'Europe/London')->first();
+    $shop->update(['timezone_id' => $tz->id]);
+
+    $schedule = \App\Models\HumanResources\WorkSchedule::create([
+        'name'             => 'Chat hours',
+        'schedulable_type' => 'Shop',
+        'schedulable_id'   => $shop->id,
+        'timezone_id'      => $tz->id,
+        'type'             => 'default',
+        'is_active'        => true,
+    ]);
+
+    foreach (range(1, 7) as $dayOfWeek) {
+        $schedule->days()->create([
+            'day_of_week'    => $dayOfWeek,
+            'is_working_day' => $dayOfWeek <= 5,
+            'start_time'     => '10:00:00',
+            'end_time'       => '14:00:00',
+        ]);
+    }
+
+    return $schedule;
+}
+
+function outOfHoursTestCleanUp(\App\Models\HumanResources\WorkSchedule $schedule, array $sessions = []): void
+{
+    foreach ($sessions as $session) {
+        $session->messages()->withTrashed()->forceDelete();
+        $session->chatEvents()->delete();
+        $session->forceDelete();
+    }
+
+    $schedule->days()->delete();
+    $schedule->delete();
+    \Illuminate\Support\Carbon::setTestNow();
+}
+
+test('an email out of hours is answered only when a person wrote it, once a day per address', function () {
+    config(['chat.out_of_hours_reply' => true]);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        '*'                       => \Illuminate\Support\Facades\Http::response(['id' => 'sent-1', 'threadId' => 'th-ooh']),
+    ]);
+    $schedule = outOfHoursTestSchedule($this->shop);
+    $settings = $this->shop->settings ?? [];
+    data_set($settings, 'gmail.email', 'care@shop.test');
+    data_set($settings, 'gmail.refresh_token', \Illuminate\Support\Facades\Crypt::encryptString('rt'));
+    $this->shop->update(['settings' => $settings]);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
+
+    $reply    = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
+    $answered = function (ChatSession $session) use ($reply) {
+        return $reply->handle($session, $session->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->latest('id')->first());
+    };
+
+    $address = 'ooh.person.'.Str::lower(Str::random(8)).'@example.com';
+    $person  = noiseTestEmailSession($this->shop->fresh(), $address, 'Lavender oil', 'Is the lavender oil back in stock?');
+
+    expect($answered($person))->toBeTrue();
+
+    $sent = $person->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
+
+    expect($sent->metadata['auto_submitted'])->toBeTrue()
+        ->and($sent->message_text)->toContain('Monday 28 September');
+
+    \Illuminate\Support\Facades\Http::assertSent(function ($request) {
+        $raw = base64_decode(strtr((string) ($request->data()['raw'] ?? ''), '-_', '+/'));
+
+        return str_contains($request->url(), 'messages/send') && str_contains($raw, 'Auto-Submitted: auto-replied');
+    });
+
+    $sameAddress = noiseTestEmailSession($this->shop->fresh(), $address, 'Another question', 'And the rose oil?');
+    $outOfOffice = noiseTestEmailSession($this->shop->fresh(), 'ooh.away@example.com', 'Automatic reply: Lavender oil', 'I am away', ['auto_reply' => true]);
+    $newsletter  = noiseTestEmailSession($this->shop->fresh(), 'ooh.news@example.com', 'Our autumn offers', 'Big sale', ['email_headers' => ['list_unsubscribe' => true]]);
+    $generated   = noiseTestEmailSession($this->shop->fresh(), 'ooh.robot@example.com', 'Your ticket', 'Received', ['email_headers' => ['auto_submitted' => 'auto-generated']]);
+    $noReply     = noiseTestEmailSession($this->shop->fresh(), 'no-reply@example.com', 'Your invoice', 'Attached');
+
+    foreach ([$sameAddress, $outOfOffice, $newsletter, $generated, $noReply] as $session) {
+        expect($answered($session))->toBeFalse()
+            ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->exists())->toBeFalse();
+    }
+
+    \Illuminate\Support\Facades\Cache::forget('chat-out-of-hours-email:'.sha1($address));
+    outOfHoursTestCleanUp($schedule, [$person, $sameAddress, $outOfOffice, $newsletter, $generated, $noReply]);
+});
+
+test('website chat out of hours is answered in the conversation, but not after the offline form', function () {
+    config(['chat.out_of_hours_reply' => true]);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    $schedule = outOfHoursTestSchedule($this->shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+
+    $live = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => now(),
+    ]);
+
+    $reply = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
+
+    expect($reply->handle($live))->toBeTrue()
+        ->and($reply->handle($live))->toBeFalse()
+        ->and($live->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole()->message_text)->toContain('10:00 on Friday 25 September');
+
+    $viaForm = StoreOfflineMessage::make()->handle($this->shop->fresh(), [
+        'message'     => 'Nobody was on, please write back',
+        'name'        => 'Form Writer',
+        'email'       => 'form.writer@example.com',
+        'language_id' => 68,
+        'sender_type' => ChatSenderTypeEnum::GUEST->value,
+    ]);
+
+    expect($reply->handle($viaForm))->toBeFalse();
+
+    actingAs($this->user);
+    $rows = collect(get(route('grp.chat.ai', ['elements' => ['kind' => 'out_of_hours']]))
+        ->assertOk()
+        ->viewData('page')['props']['data']['data']);
+
+    expect($rows->pluck('kind')->unique()->all())->toBe(['out_of_hours'])
+        ->and($rows->firstWhere('url', route('grp.org.chat.inbox.conversation', [$this->organisation->slug, $live->ulid])))->not->toBeNull();
+
+    outOfHoursTestCleanUp($schedule, [$live, $viaForm]);
+});
+
+test('chat hours come from the work schedule, and the next opening skips closed days and bank holidays', function () {
+    $schedule = outOfHoursTestSchedule($this->shop);
+    $shop = $this->shop->fresh();
+
+    $at = fn (string $when) => \Illuminate\Support\Carbon::parse($when, 'Europe/London');
+
+    expect(IsWithinWorkingHours::run($shop, $at('2026-09-23 10:30')))->toBeTrue()
+        ->and(IsWithinWorkingHours::run($shop, $at('2026-09-23 09:30')))->toBeFalse()
+        ->and(IsWithinWorkingHours::run($shop, $at('2026-09-23 15:00')))->toBeFalse();
+
+    $next = fn (string $when) => IsWithinWorkingHours::make()->nextOpening($shop, $at($when))['opens']->format('Y-m-d H:i');
+
+    expect($next('2026-09-23 07:00'))->toBe('2026-09-23 10:00')
+        ->and($next('2026-09-23 15:00'))->toBe('2026-09-24 10:00')
+        ->and($next('2026-09-25 15:00'))->toBe('2026-09-28 10:00');
+
+    $holiday = $this->organisation->holidays()->create([
+        'group_id' => $this->organisation->group_id,
+        'type'     => \App\Enums\HumanResources\Holiday\HolidayTypeEnum::PUBLIC->value,
+        'year'     => 2026,
+        'label'    => 'Monday bank holiday',
+        'from'     => '2026-09-28',
+        'to'       => '2026-09-28',
+    ]);
+
+    expect($next('2026-09-25 15:00'))->toBe('2026-09-29 10:00');
+
+    \Illuminate\Support\Carbon::setTestNow($at('2026-09-25 15:00'));
+    $this->web->update(['settings' => array_merge($this->web->settings ?? [], ['enable_chat' => true])]);
+
+    $config = GetChatConfig::run($this->web->fresh());
+
+    expect($config['is_online'])->toBeFalse()
+        ->and($config['offline_info']['next_opening']['day_of_week'])->toBe(2)
+        ->and($config['offline_info']['next_opening']['start'])->toBe('10:00:00');
+
+    $holiday->delete();
+    outOfHoursTestCleanUp($schedule);
+});
+
+test('a WhatsApp message out of hours is answered once per wait with when the shop opens', function () {
+    config(['chat.out_of_hours_reply' => true]);
+    $schedule = outOfHoursTestSchedule($this->shop);
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '123']])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['meta' => ['access_key' => 'token']])]);
+
+    \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'wamid.closed']]])]);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
+
+    $session = noiseTestWhatsappSession($this->shop->fresh(), '+447500000003', 'Do you have the lavender oil in stock?');
+    $reply   = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
+
+    expect($reply->handle($session))->toBeTrue()
+        ->and($reply->handle($session))->toBeFalse();
+
+    $closed = $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
+
+    expect($closed->message_text)->toContain('10:00 on Monday 28 September')
+        ->and($session->refresh()->last_agent_message_at)->toBeNull();
+
+    // An agent answers just before closing: still taken to be there half an hour later.
+    $session->update(['last_agent_message_at' => \Illuminate\Support\Carbon::parse('2026-09-28 13:50', 'Europe/London')]);
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-28 13:30', 'Europe/London'));
+    expect($reply->handle($session))->toBeFalse();
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-28 14:20', 'Europe/London'));
+    expect($reply->handle($session))->toBeFalse();
+
+    // The customer writes again that night: a new wait, a new reply.
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-28 20:00', 'Europe/London'));
+    $session->messages()->create([
+        'meta_channel_id' => $session->meta_channel_id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => 'And the rose one?',
+    ]);
+    expect($reply->handle($session))->toBeTrue();
+
+    \Illuminate\Support\Facades\Http::assertSentCount(2);
+
+    outOfHoursTestCleanUp($schedule);
 });
 
 test('an inbound gmail message brings the rest of its gmail thread in as earlier chat messages', function () {
