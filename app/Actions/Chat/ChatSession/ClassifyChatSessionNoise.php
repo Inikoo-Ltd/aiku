@@ -17,11 +17,13 @@ use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Events\BroadcastMetaChatListEvent;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\HumanResources\Employee;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -284,11 +286,33 @@ class ClassifyChatSessionNoise
             return ['verdict' => ChatNoiseVerdictEnum::AUTOMATED_NOTIFICATION, 'note' => 'Sent by a machine: '.$from];
         }
 
+        if (self::isStaffEmail($from)) {
+            return ['verdict' => ChatNoiseVerdictEnum::NOT_FOR_US, 'note' => 'One of our own staff: '.$from];
+        }
+
         if (Arr::get($headers, 'list_unsubscribe') || strtolower((string) Arr::get($headers, 'precedence')) === 'list') {
             return ['verdict' => ChatNoiseVerdictEnum::MARKETING, 'note' => 'Sent to a mailing list'];
         }
 
         return null;
+    }
+
+    /**
+     * A colleague writing to a shop's mailbox, typically a stock list sent round every shop,
+     * is never a customer waiting for an answer.
+     */
+    private static function isStaffEmail(string $from): bool
+    {
+        $address = Str::lower(trim($from));
+
+        if (!str_contains($address, '@')) {
+            return false;
+        }
+
+        return Employee::where('state', '!=', EmployeeStateEnum::LEFT)
+            ->where(fn ($query) => $query->whereRaw('lower(work_email) = ?', [$address])->orWhereRaw('lower(email) = ?', [$address]))
+            ->exists()
+            || User::where('status', true)->whereRaw('lower(email) = ?', [$address])->exists();
     }
 
     /**

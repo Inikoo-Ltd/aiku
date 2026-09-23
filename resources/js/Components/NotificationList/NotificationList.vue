@@ -9,7 +9,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue"))
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useTruncate } from "@/Composables/useTruncate"
 
@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
             class="place-self-end text-sm select-none"
             :class="layout?.notifications?.every((notif:any) => notif.read) ? 'text-gray-400 cursor-not-allowed' : 'underline text-indigo-500 hover:text-indigo-700 cursor-pointer'">
             <LoadingIcon v-if="isLoading" />
-            {{ trans('Marks all as read') }}
+            {{ ctrans('Marks all as read') }}
         </div>
 
         <ul v-if="layout.notifications.length" role="list" class="w-full divide-y divide-gray-100 overflow-y-auto">
@@ -112,7 +112,7 @@ onBeforeUnmount(() => {
                         {{ useFormatTime(notif.created_at) }}
                     </span>
 
-                    <p :class="['mt-1 flex text-xs leading-5 truncate', notif.read ? 'text-gray-400' : 'text-gray-500']">
+                    <p :class="['mt-1 text-xs leading-5 whitespace-pre-line line-clamp-4', notif.read ? 'text-gray-400' : 'text-gray-500']">
                         {{ notif.body }}
                     </p>
                 </div>
@@ -120,13 +120,13 @@ onBeforeUnmount(() => {
         </ul>
 
         <div v-else class="mx-auto italic text-gray-400">
-            {{ trans('You have no new notifications') }}.
+            {{ ctrans('You have no new notifications') }}.
         </div>
 
         <div class="flex w-full justify-center border-t border-gray-200 mt-3 pt-3">
             <div @click="() => (close(), layout.stackedComponents.push({ component: Profile, data: { currentTab: 'notifications' }}))"
                 class="cursor-pointer px-2 text-gray-500 hover:text-gray-700 font-semibold">
-                {{ trans('Show all notification') }}
+                {{ ctrans('Show all notification') }}
             </div>
         </div>
     </div>

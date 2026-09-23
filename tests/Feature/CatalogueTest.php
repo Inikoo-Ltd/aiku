@@ -1700,3 +1700,26 @@ test('product barcode is left alone when it stops being a single trade unit', fu
     /* Clearing it here is what emptied 561 products and pushed blank GTINs to live listings. */
     expect($product->barcode)->toBe('5060000000011');
 });
+
+test('customer service is told once what came into stock, new apart from back', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $shop = Shop::first();
+    createProduct($shop);
+    $product = $shop->products()->orderByDesc('id')->first();
+    $shop->updateQuietly(['is_aiku' => true, 'state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    \Illuminate\Support\Facades\Cache::forget('shop-stock-arrivals-sent:'.$shop->id);
+
+    $agent = $this->adminGuest->getUser();
+    $agent->assignRole(Role::where('name', \App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_CLERK->value, $shop))->firstOrFail());
+
+    $product->updateQuietly(['is_for_sale' => true, 'state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'available_quantity' => 4, 'back_in_stock_since' => now()->subMinute(), 'first_in_stock_at' => now()->subMinute()]);
+
+    expect(\App\Actions\Catalogue\Shop\NotifyShopStockArrivals::run($shop))->toBe(1)
+        ->and(\App\Actions\Catalogue\Shop\NotifyShopStockArrivals::run($shop))->toBe(0);
+
+    \Illuminate\Support\Facades\Notification::assertSentTo($agent, \App\Notifications\ShopStockArrivalsNotification::class, function ($notification) use ($product) {
+        return in_array($product->code, $notification->newCodes, true)
+            && !in_array($product->code, $notification->backCodes, true)
+            && str_contains($notification->toArray(null)['body'], 'New in stock: ');
+    });
+});

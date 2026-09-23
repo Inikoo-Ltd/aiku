@@ -5267,6 +5267,23 @@ test('machine mail from a stranger is put aside by rule without asking the model
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($dmarc)['automatic'])->toBeTrue();
 });
 
+test('a colleague emailing a shop mailbox is put aside as one of our own staff', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $this->user->update(['email' => 'goods.in@staff-test.example']);
+
+    $colleague = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle(
+        noiseTestEmailSession($this->shop, 'Goods.In@Staff-Test.example', 'NEW / BACK IN STOCK', 'Following products are new in stock')
+    )->refresh();
+
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    expect($colleague->is_rubbish)->toBeTrue()
+        ->and($colleague->rubbish_reason)->toBe('not_for_us')
+        ->and($colleague->noise_source)->toBe('rule')
+        ->and($colleague->noise_note)->toContain('One of our own staff');
+});
+
 test('the waiting queue is worked oldest first and the bins are still newest first', function () {
     \Illuminate\Support\Facades\Http::fake();
 
