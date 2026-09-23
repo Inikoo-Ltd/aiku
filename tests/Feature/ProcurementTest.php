@@ -9,6 +9,10 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Goods\Stock\StoreStock;
+use App\Enums\Goods\Stock\StockStateEnum;
+use App\Actions\Goods\Stock\SyncStockTradeUnits;
+use App\Models\Goods\TradeUnit;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\HousekeepAgentSupplierPurchaseOrders;
 use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\StoreAgentSupplierPurchaseOrder;
@@ -273,7 +277,7 @@ beforeEach(function () {
 
     $this->orgPartner = $orgPartner;
 
-    $stockDelivery = StockDelivery::first();
+    $stockDelivery = StockDelivery::orderBy('id')->first();
     if (!$stockDelivery) {
         $stockDelivery = StoreStockDelivery::make()->action(
             $this->orgSupplier,
@@ -286,7 +290,7 @@ beforeEach(function () {
 
     $this->stockDelivery = $stockDelivery;
 
-    $purchaseOrder = PurchaseOrder::first();
+    $purchaseOrder = PurchaseOrder::orderBy('id')->first();
     if (!$purchaseOrder) {
         $purchaseOrder = StorePurchaseOrder::make()->action(
             $this->orgSupplier,
@@ -724,6 +728,36 @@ test('add more items to purchase order', function (PurchaseOrder $purchaseOrder)
 })->depends('add item to purchase order');
 
 
+test('adding a product to a purchase order creates the missing org stock', function () {
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    SyncStockTradeUnits::run($stock, [$tradeUnit->id => ['quantity' => 1]]);
+
+    $supplierProduct = StoreSupplierProduct::make()->action($this->orgSupplier->supplier, [
+        'code'             => 'no-org-stock',
+        'name'             => 'Product without org stock',
+        'cost'             => 12,
+        'trade_units'      => [$tradeUnit->id],
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($this->orgSupplier, $supplierProduct);
+    $purchaseOrder      = $this->orgSupplier->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first()
+        ?? StorePurchaseOrder::make()->action($this->orgSupplier, PurchaseOrder::factory()->definition());
+
+    expect(OrgStock::where('organisation_id', $this->organisation->id)->where('stock_id', $stock->id)->exists())->toBeFalse();
+
+    $this->post(route('grp.models.purchase-order.transaction.store', [$purchaseOrder->id, $orgSupplierProduct->id]), ['quantity_ordered' => 20])
+        ->assertSessionHasNoErrors();
+
+    $orgStock = OrgStock::where('organisation_id', $this->organisation->id)->where('stock_id', $stock->id)->first();
+    $line     = $purchaseOrder->purchaseOrderTransactions()->where('org_stock_id', $orgStock?->id)->first();
+
+    expect($orgStock)->not->toBeNull()
+        ->and($line->org_stock_id)->toBe($orgStock->id)
+        ->and((float)$line->net_amount)->toBe(240.0);
+});
+
 test('delete purchase order', function () {
     $supplier    = StoreSupplier::make()->action(
         parent: $this->group,
@@ -780,12 +814,49 @@ test('update quantity items in purchase order', function ($purchaseOrder) {
 })->depends('add item to purchase order');
 
 
+test('agreed line price survives quantity changes and can update the supplier price', function ($purchaseOrder) {
+    $item = $purchaseOrder->purchaseOrderTransactions()->first();
+
+    $this->patch(route('grp.models.purchase-order.transaction.update', [$purchaseOrder->id, $item->id]), [
+        'unit_cost'            => 3.5,
+        'update_supplier_cost' => true,
+    ])->assertSessionHasNoErrors();
+
+    $item->refresh();
+    expect((float)$item->unit_cost)->toBe(3.5)
+        ->and((float)$item->net_amount)->toBe(3.5 * (float)$item->quantity_ordered)
+        ->and((float)$item->supplierProduct->refresh()->cost)->toBe(3.5);
+
+    UpdatePurchaseOrderTransaction::make()->action($item, ['quantity_ordered' => 10]);
+    $item->refresh();
+
+    expect((float)$item->net_amount)->toBe(35.0);
+})->depends('add item to purchase order');
+
 test('update purchase order', function ($purchaseOrder) {
     $dataToUpdate  = [
         'reference' => 'PO-12345bis',
     ];
     $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, $dataToUpdate);
     $this->assertModelExists($purchaseOrder);
+})->depends('create purchase order independent supplier');
+
+test('UI edit purchase order sets reference and delivery address', function ($purchaseOrder) {
+    $purchaseOrder->refresh();
+
+    $this->get(route('grp.org.procurement.purchase_orders.edit', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint.0.fields.reference.value', $purchaseOrder->reference));
+
+    $this->patch(route('grp.models.purchase-order.update', $purchaseOrder->id), [
+        'reference'        => 'AWChina-93-SK-VAL270011',
+        'delivery_address' => 'CTPark Trnava, Zavar, Slovakia',
+    ])->assertSessionHasNoErrors();
+
+    $purchaseOrder->refresh();
+    expect($purchaseOrder->reference)->toBe('AWChina-93-SK-VAL270011')
+        ->and($purchaseOrder->data['delivery_address'])->toBe('CTPark Trnava, Zavar, Slovakia');
 })->depends('create purchase order independent supplier');
 
 test('update purchase order deposit retrospectively', function ($purchaseOrder) {

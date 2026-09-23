@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
+use App\Actions\Procurement\OrgSupplierProducts\ResolveOrgStockForSupplierProduct;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -18,10 +19,12 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliv
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Inventory\OrgStock;
+use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\HistoricSupplierProduct;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -69,7 +72,7 @@ class StorePurchaseOrderTransaction extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->strict) {
+        if (!$this->strict || !isset($this->orgStock)) {
             return;
         }
 
@@ -92,10 +95,36 @@ class StorePurchaseOrderTransaction extends OrgAction
         return $this->handle($purchaseOrder, $historicSupplierProduct, $orgStock, $this->validatedData);
     }
 
-    public function asController(PurchaseOrder $purchaseOrder, ?HistoricSupplierProduct $historicSupplierProduct, OrgStock $orgStock, ActionRequest $request): void
+    public function asController(PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct, ActionRequest $request): void
     {
-        $this->orgStock = $orgStock;
         $this->initialisation($purchaseOrder->organisation, $request);
-        $this->handle($purchaseOrder, $historicSupplierProduct, $orgStock, $this->validatedData);
+        $orgStock = $this->resolveOrgStock($purchaseOrder, $orgSupplierProduct);
+        $this->handle($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $orgStock, $this->validatedData);
     }
+
+    /**
+     * @throws ValidationException
+     */
+    private function resolveOrgStock(PurchaseOrder $purchaseOrder, OrgSupplierProduct $orgSupplierProduct): OrgStock
+    {
+        if ($orgSupplierProduct->organisation_id !== $purchaseOrder->organisation_id) {
+            throw ValidationException::withMessages(['org_supplier_product' => __('This product is not supplied to this organisation')]);
+        }
+
+        $orgStock = ResolveOrgStockForSupplierProduct::run($purchaseOrder->organisation, $orgSupplierProduct->supplierProduct);
+
+        if (!$orgStock) {
+            throw ValidationException::withMessages(['org_supplier_product' => __(':code has no active SKO to order, check its trade units in supply chain', ['code' => $orgSupplierProduct->supplierProduct->code])]);
+        }
+
+        if (in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED])) {
+            throw ValidationException::withMessages(['org_stock' => __('SKO :code is :state and cannot be ordered', [
+                'code'  => $orgStock->code,
+                'state' => $orgStock->state->labels()[$orgStock->state->value],
+            ])]);
+        }
+
+        return $orgStock;
+    }
+
 }

@@ -295,8 +295,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 					.post(
 						route(data.route?.name || "#", {
 							...data.route?.parameters,
-							historicSupplierProduct: product.data.historic_id,
-							orgStock: product.data.org_stock_id,
+							orgSupplierProduct: product.data.id,
 						}),
 						{
 							onError: () => {

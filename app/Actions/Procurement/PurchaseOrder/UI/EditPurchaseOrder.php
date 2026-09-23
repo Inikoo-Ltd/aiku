@@ -8,29 +8,30 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
-use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
-use App\Actions\InertiaAction;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditPurchaseOrder extends InertiaAction
+class EditPurchaseOrder extends OrgAction
 {
-    use WithProcurementAuthorisation;
+    use WithProcurementEditAuthorisation;
+
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         return $purchaseOrder;
     }
 
-    public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
+    public function asController(Organisation $organisation, PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
-        $this->initialisation($request);
+        $this->initialisation($organisation, $request);
 
         return $this->handle($purchaseOrder);
     }
-
-
 
     public function htmlResponse(PurchaseOrder $purchaseOrder): Response
     {
@@ -45,13 +46,11 @@ class EditPurchaseOrder extends InertiaAction
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name'       => 'grp.org.procurement.purchase_orders.show',
+                                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug]
                             ]
                         ]
                     ],
-
-
                 ],
 
                 'formData' => [
@@ -59,10 +58,23 @@ class EditPurchaseOrder extends InertiaAction
                         [
                             'title'  => __('id'),
                             'fields' => [
-                                'number' => [
-                                    'type'  => 'input',
-                                    'label' => __('number'),
-                                    'value' => $purchaseOrder->number
+                                'reference' => [
+                                    'type'     => 'input',
+                                    'label'    => __('reference'),
+                                    'required' => true,
+                                    'value'    => $purchaseOrder->reference
+                                ],
+                            ]
+                        ],
+                        [
+                            'title'  => __('Delivery'),
+                            'icon'   => 'fal fa-truck',
+                            'fields' => [
+                                'delivery_address' => [
+                                    'type'        => 'textarea',
+                                    'label'       => __('Deliver to'),
+                                    'placeholder' => __('Leave empty to use the warehouse address'),
+                                    'value'       => Arr::get($purchaseOrder->data, 'delivery_address'),
                                 ],
                             ]
                         ],

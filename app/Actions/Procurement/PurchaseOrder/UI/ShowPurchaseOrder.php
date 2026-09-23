@@ -144,8 +144,8 @@ class ShowPurchaseOrder extends OrgAction
                     ],
                     'edit' => $this->canEdit ? [
                         'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                            'parameters' => array_values($request->route()->originalParameters()),
+                            'name'       => 'grp.org.procurement.purchase_orders.edit',
+                            'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
                         ],
                     ] : false,
                     'actions' => $this->canEdit ? $this->getActions($purchaseOrder, $showProductsTab) : [],

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Table from '@/Components/Table/Table.vue'
@@ -112,6 +112,42 @@ function amount(item: any) {
 
 const savingId = ref<number | null>(null)
 
+const isPriceEditable = computed(() => ['in_process', 'submitted'].includes(props.state ?? ''))
+const alsoUpdateSupplierPrice = ref(false)
+const savingPriceId = ref<number | null>(null)
+
+function supplierLevelCostLabel(item: any) {
+    return locale.currencyFormat(item.net_currency ?? 'EUR', Number(item.supplier_unit_cost) * unitsPerLevel(item))
+}
+
+function isPriceChanged(item: any) {
+    return item.supplier_unit_cost !== undefined && item.supplier_unit_cost !== null && Number(item.supplier_unit_cost) !== Number(item.unit_cost)
+}
+
+async function onSavePrice(item: any, form: any) {
+    savingPriceId.value = item.id
+    try {
+        await axios.patch(
+            route(item.updateRoute.name, item.updateRoute.parameters),
+            {
+                unit_cost: Number(form.quantity) / unitsPerLevel(item),
+                update_supplier_cost: alsoUpdateSupplierPrice.value,
+            }
+        )
+        form.defaults()
+        notify({ title: ctrans('Success'), text: ctrans('Price updated'), type: 'success' })
+        router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
+    } catch (error: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to update price'),
+            type: 'error',
+        })
+    } finally {
+        savingPriceId.value = null
+    }
+}
+
 async function onSaveQuantity(item: any, form: any) {
     const quantityOrdered = Number(form.quantity) * unitsPerLevel(item)
     const saveRoute = item.saveRoute ?? item.updateRoute
@@ -124,12 +160,12 @@ async function onSaveQuantity(item: any, form: any) {
             { quantity_ordered: quantityOrdered }
         )
         form.defaults()
-        notify({ title: trans('Success'), text: trans('Quantity updated'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('Quantity updated'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to update quantity'),
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to update quantity'),
             type: 'error',
         })
     } finally {
@@ -146,10 +182,10 @@ function confirmDeleteItem(event: MouseEvent, item: any) {
 
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: trans('Remove this product from the purchase order?'),
+        message: ctrans('Remove this product from the purchase order?'),
         icon: 'pi pi-exclamation-triangle',
-        acceptLabel: trans('Delete'),
-        rejectLabel: trans('Cancel'),
+        acceptLabel: ctrans('Delete'),
+        rejectLabel: ctrans('Cancel'),
         acceptClass: 'p-button-danger',
         rejectClass: 'p-button-text',
         accept: () => onDeleteItem(item),
@@ -160,12 +196,12 @@ async function onDeleteItem(item: any) {
     deletingId.value = item.id
     try {
         await axios.delete(route(item.deleteRoute.name, item.deleteRoute.parameters))
-        notify({ title: trans('Success'), text: trans('Item removed'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('Item removed'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to remove item'),
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to remove item'),
             type: 'error',
         })
     } finally {
@@ -182,10 +218,10 @@ function confirmCancelItem(event: MouseEvent, item: any) {
 
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: trans('Cancel this item?'),
+        message: ctrans('Cancel this item?'),
         icon: 'pi pi-exclamation-triangle',
-        acceptLabel: trans('Cancel item'),
-        rejectLabel: trans('Keep'),
+        acceptLabel: ctrans('Cancel item'),
+        rejectLabel: ctrans('Keep'),
         acceptClass: 'p-button-danger',
         rejectClass: 'p-button-text',
         accept: () => onCancelItem(item),
@@ -196,12 +232,12 @@ async function onCancelItem(item: any) {
     cancellingId.value = item.id
     try {
         await axios.patch(route(item.cancelRoute.name, item.cancelRoute.parameters))
-        notify({ title: trans('Success'), text: trans('Item cancelled'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('Item cancelled'), type: 'success' })
         router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to cancel item'),
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to cancel item'),
             type: 'error',
         })
     } finally {
@@ -263,7 +299,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 <div class="flex items-center gap-1.5">
                     <Link
                         v-if="supplierProductRoute(item)"
-                        v-tooltip="trans('Supplier product code')"
+                        v-tooltip="ctrans('Supplier product code')"
                         :href="supplierProductRoute(item)"
                         class="primaryLink"
                     >
@@ -273,7 +309,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
                     <Link
                         v-if="orgStockRoute(item)"
-                        v-tooltip="trans('Part reference is same as supplier product code')"
+                        v-tooltip="ctrans('Part reference is same as supplier product code')"
                         :href="orgStockRoute(item)"
                         class="text-gray-400 hover:text-gray-600"
                     >
@@ -288,7 +324,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     <FontAwesomeIcon icon="fal fa-hand-holding-box" aria-hidden="true" fixed-width />
                     <Link
                         v-if="supplierRoute(item)"
-                        v-tooltip="trans('Supplier')"
+                        v-tooltip="ctrans('Supplier')"
                         :href="supplierRoute(item)"
                         class="primaryLink"
                     >
@@ -313,12 +349,34 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     </span>
                     {{ item.name }}
                 </div>
-                <div v-if="isInProcess" class="text-xs text-gray-500">
+                <div v-if="isPriceEditable && item.updateRoute" class="text-xs text-gray-500 space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span>{{ level.cost }} ({{ item.net_currency }}):</span>
+                        <NumberWithButtonSave
+                            :key="`price-${item.id}-${currentLevel}`"
+                            isWithRefreshModel
+                            noUndoButton
+                            :modelValue="levelCost(item)"
+                            :min="0"
+                            :bindToTarget="{ min: 0, maxFractionDigits: 4 }"
+                            :isLoading="savingPriceId === item.id"
+                            @onSave="(form) => onSavePrice(item, form)"
+                        />
+                    </div>
+                    <div v-if="isPriceChanged(item)" class="text-orange-600">
+                        {{ ctrans('Supplier price') }}: {{ supplierLevelCostLabel(item) }}
+                    </div>
+                    <label class="flex items-center gap-1 cursor-pointer select-none">
+                        <input v-model="alsoUpdateSupplierPrice" type="checkbox" class="rounded border-gray-300" />
+                        {{ ctrans('Also update supplier price') }}
+                    </label>
+                </div>
+                <div v-else-if="isInProcess" class="text-xs text-gray-500">
                     {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
                 <div class="text-xs text-gray-500">
-                    {{ trans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
-                    {{ trans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
+                    {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
+                    {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
                 </div>
             </div>
         </template>
@@ -333,7 +391,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     </span>
                     <FontAwesomeIcon
                         v-else
-                        v-tooltip="trans('Unknown weight')"
+                        v-tooltip="ctrans('Unknown weight')"
                         icon="fas fa-exclamation-circle"
                         class="text-orange-500"
                         fixed-width aria-hidden="true"
@@ -360,8 +418,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             <div class="flex justify-end items-center gap-2">
                 <Button
                     v-if="item.deleteRoute && state === 'in_process'"
-                    :label="trans('Remove')"
-                    :tooltip="trans('Remove this product from the purchase order')"
+                    :label="ctrans('Remove')"
+                    :tooltip="ctrans('Remove this product from the purchase order')"
                     icon="fal fa-trash-alt"
                     type="delete"
                     size="xs"
@@ -372,8 +430,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
                 <Button
                     v-if="state === 'submitted' && item.cancelRoute"
-                    :label="trans('Cancel')"
-                    :tooltip="trans('Cancel this item')"
+                    :label="ctrans('Cancel')"
+                    :tooltip="ctrans('Cancel this item')"
                     icon="fas fa-minus-circle"
                     type="delete"
                     size="xs"
@@ -383,7 +441,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 />
 
                 <span v-if="!item.deleteRoute && !item.cancelRoute" class="text-gray-400 text-sm">
-                    {{ trans('No actions needed') }}
+                    {{ ctrans('No actions needed') }}
                 </span>
             </div>
         </template>
@@ -392,7 +450,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             <span v-if="item.weight !== null">{{ locale.number(item.weight) }}Kg</span>
             <FontAwesomeIcon
                 v-else
-                v-tooltip="trans('Unknown weight')"
+                v-tooltip="ctrans('Unknown weight')"
                 icon="fas fa-exclamation-circle"
                 class="text-orange-500"
                 fixed-width aria-hidden="true"
@@ -403,7 +461,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             <span v-if="item.volume !== null">{{ locale.number(item.volume) }} m³</span>
             <FontAwesomeIcon
                 v-else
-                v-tooltip="trans('Unknown CBM')"
+                v-tooltip="ctrans('Unknown CBM')"
                 icon="fas fa-exclamation-circle"
                 class="text-orange-500"
                 fixed-width aria-hidden="true"

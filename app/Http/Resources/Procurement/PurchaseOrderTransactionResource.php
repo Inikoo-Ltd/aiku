@@ -33,7 +33,8 @@ class PurchaseOrderTransactionResource extends JsonResource
             'org_stock_id'         => $transaction->org_stock_id,
             'image_thumbnail'      => $tradeUnit?->imageSources(64, 64),
 
-            'unit_cost'            => $supplierProduct?->cost,
+            'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
+            'supplier_unit_cost'   => $supplierProduct?->cost,
             'units_per_pack'       => $supplierProduct?->units_per_pack,
             'units_per_carton'     => $supplierProduct?->units_per_carton,
             'quantity_ordered'     => $transaction->quantity_ordered,

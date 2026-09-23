@@ -50,9 +50,8 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
             : [
                 'name'       => 'grp.models.purchase-order.transaction.store',
                 'parameters' => [
-                    'purchaseOrder'           => $this->purchase_order_id,
-                    'historicSupplierProduct' => $this->historic_id,
-                    'orgStock'                => $this->org_stock_id,
+                    'purchaseOrder'      => $this->purchase_order_id,
+                    'orgSupplierProduct' => $this->id,
                 ],
                 'method'     => 'post',
             ];
