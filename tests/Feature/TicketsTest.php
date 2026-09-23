@@ -1504,6 +1504,43 @@ test('the ticket write tool closes after next deployment and holds the comment u
         ->and($ticket->comments()->where('body', 'Fixed, live after the deploy')->sole()->author_id)->toBe($this->user->id);
 });
 
+test('a deployment only closes a pending deploy ticket when it includes the fix commit', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Pack weight']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'commit' => 'F194AFF213', 'comment' => 'Live now'])->assertOk();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBe('f194aff213');
+
+    CloseTicketsAfterDeployment::run('910ba60751');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY)
+        ->and($ticket->comments()->count())->toBe(0);
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'Live now')->count())->toBe(1)
+        ->and(data_get($ticket->fresh()->data, 'deploy_commit'))->toBeNull();
+});
+
+test('the web ticket form records the fix commit when it sets the ticket to close on deployment', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Commit from the dialog']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    actingAs($this->user);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now', 'deploy_commit' => 'not a hash'])->assertSessionHasErrors('deploy_commit');
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now', 'deploy_commit' => ' F194AFF213 '])->assertSessionHasNoErrors();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBe('f194aff213')
+        ->and(data_get($ticket->fresh()->data, 'deploy_comment.body'))->toBe('Live now');
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now'])->assertSessionHasNoErrors();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBeNull();
+});
+
 test('the held deploy comment can be rewritten while the ticket waits for the deployment', function () {
     $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Edit the held comment']);
     UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);

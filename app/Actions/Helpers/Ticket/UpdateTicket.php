@@ -36,6 +36,7 @@ class UpdateTicket extends OrgAction
         $question      = trim((string) Arr::pull($modelData, 'question', ''));
         $statusComment = trim((string) Arr::pull($modelData, 'status_comment', ''));
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
+        $deployCommit = strtolower(trim((string) Arr::pull($modelData, 'deploy_commit', '')));
 
         $asker = auth()->user();
         if ($question !== '' && $asker instanceof User) {
@@ -44,6 +45,11 @@ class UpdateTicket extends OrgAction
             } else {
                 StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
             }
+        }
+
+        if (Arr::get($modelData, 'status') === TicketStatusEnum::PENDING_DEPLOY->value) {
+            $data = Arr::except(Arr::get($modelData, 'data', $ticket->data ?? []), 'deploy_commit');
+            data_set($modelData, 'data', $deployCommit === '' ? $data : array_merge($data, ['deploy_commit' => $deployCommit]));
         }
 
         if ($statusComment !== '' && $asker instanceof User) {
@@ -195,6 +201,7 @@ class UpdateTicket extends OrgAction
             'qa_note'       => ['sometimes', 'nullable', 'string', 'max:10000'],
             'qa_user_id'    => ['sometimes', 'nullable', Rule::in(GetTicketBadgeData::qaUsers($this->group->id)->pluck('id'))],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
+            'deploy_commit' => ['sometimes', 'nullable', 'string', 'regex:/^[0-9a-f]{7,40}$/i'],
             'tags.*'        => ['string', 'max:64'],
         ];
     }
