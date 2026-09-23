@@ -210,7 +210,7 @@ class ProcessInboundEmail
                 'gmail_references'             => SendChatMessageByGmail::references($session->metadata ?? [], $headerMessageId),
                 'name' => $from['name'] ?? $from['address'],
                 'email' => $from['address'],
-            ]),
+            ], $isAutoReply ? [] : $this->replyAllRecipients($session, $raw, $from, $mailboxAddress)),
         ]);
 
         foreach ($attachments as $attachment) {
@@ -266,6 +266,48 @@ class ProcessInboundEmail
         }
 
         return $html;
+    }
+
+    /**
+     * Bigger accounts copy colleagues in, and any of them may be the one who writes back. The
+     * answer goes to whoever wrote last, like a mail client's reply all, and everyone else the
+     * thread has named is offered as a copy. An out of office names nobody new worth writing to.
+     *
+     * @param  array{address: ?string, name: ?string}  $from
+     * @return array<string, mixed>
+     */
+    private function replyAllRecipients(ChatSession $session, array $raw, array $from, ?string $mailboxAddress): array
+    {
+        if (! $from['address']) {
+            return [];
+        }
+
+        $participants = Arr::get($session->metadata, 'email_participants', []);
+
+        $named = [
+            $from,
+            ...GmailMessageParser::addresses($raw, 'To'),
+            ...GmailMessageParser::addresses($raw, 'Cc'),
+        ];
+
+        foreach ($named as $person) {
+            $key = strtolower($person['address']);
+
+            if ($mailboxAddress && $key === strtolower($mailboxAddress)) {
+                continue;
+            }
+
+            $participants[$key] = [
+                'address' => $person['address'],
+                'name'    => $person['name'] ?? Arr::get($participants, "$key.name"),
+            ];
+        }
+
+        return [
+            'email_reply_to'      => $from['address'],
+            'email_reply_to_name' => $from['name'],
+            'email_participants'  => $participants,
+        ];
     }
 
     private function claimKey(string $gmailMessageId): string

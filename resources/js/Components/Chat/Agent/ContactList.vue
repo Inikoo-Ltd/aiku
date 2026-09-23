@@ -320,12 +320,13 @@ const back = () => {
     selectedSession.value = null
 }
 
-const handleSendMessage = async ({ text, files, message_type, tempId, is_email_notif }: {
+const handleSendMessage = async ({ text, files, message_type, tempId, is_email_notif, email_cc_excluded }: {
     text: string
     files?: File[]
     message_type: "text" | "image" | "file"
     tempId: number
     is_email_notif: boolean
+    email_cc_excluded?: string[]
 }) => {
     if (!selectedSession.value?.ulid) return
 
@@ -337,6 +338,7 @@ const handleSendMessage = async ({ text, files, message_type, tempId, is_email_n
         formData.append("message_type", message_type)
         formData.append("sender_type", "agent")
         formData.append("is_email_notif", is_email_notif ?? false)
+        email_cc_excluded?.forEach((address) => formData.append("email_cc_excluded[]", address))
 
         if (files?.length === 1) {
             formData.append(message_type === "image" ? "image" : "file", files[0])

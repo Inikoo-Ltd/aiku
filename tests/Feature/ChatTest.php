@@ -7386,3 +7386,78 @@ test('email attachments over the media library limit are left in the mail', func
     expect($isWorthImporting(1024))->toBeTrue()
         ->and($isWorthImporting(91 * 1024 * 1024))->toBeFalse();
 });
+
+test('an email reply goes to whoever wrote last and copies the colleagues the thread named, less those unticked', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class, \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::class]);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $gmailMessage = fn (string $id, array $headers) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => 'cc-thread',
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => $headers,
+            'body'     => ['data' => rtrim(strtr(base64_encode('About our order'), '+/', '-_'), '=')],
+        ],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                            => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/cc1*'   => $gmailMessage('cc1', [
+            ['name' => 'From', 'value' => 'Anna Buyer <anna@bigaccount.test>'],
+            ['name' => 'To', 'value' => 'Care <care@shop.test>'],
+            ['name' => 'Cc', 'value' => '"Doe, Jane" <jane@bigaccount.test>, ops@bigaccount.test'],
+            ['name' => 'Subject', 'value' => 'Big order'],
+            ['name' => 'Message-ID', 'value' => '<cc1@bigaccount.test>'],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/cc2*'   => $gmailMessage('cc2', [
+            ['name' => 'From', 'value' => '"Doe, Jane" <jane@bigaccount.test>'],
+            ['name' => 'To', 'value' => 'care@shop.test, Anna Buyer <anna@bigaccount.test>'],
+            ['name' => 'Subject', 'value' => 'Re: Big order'],
+            ['name' => 'Message-ID', 'value' => '<cc2@bigaccount.test>'],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'          => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send'   => \Illuminate\Support\Facades\Http::response(['id' => 'sent-cc']),
+        'gmail.googleapis.com/*'                                 => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'cc1');
+    $session = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'cc2')->chatSession->fresh();
+
+    expect(Arr::get($session->metadata, 'email_reply_to'))->toBe('jane@bigaccount.test')
+        ->and(array_keys(Arr::get($session->metadata, 'email_participants')))
+        ->toEqualCanonicalizing(['anna@bigaccount.test', 'jane@bigaccount.test', 'ops@bigaccount.test']);
+
+    $agentUser = createAdminGuest($this->organisation->group)->getUser();
+    $agent     = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0]);
+
+    $reply = SendChatMessage::make()->handle($session, [
+        'message_text'      => 'Sent today',
+        'message_type'      => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'       => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'         => $agent->id,
+        'email_cc_excluded' => ['OPS@bigaccount.test'],
+    ]);
+
+    expect(Arr::get($reply->fresh()->metadata, 'email_cc'))->toBe([['address' => 'anna@bigaccount.test', 'name' => 'Anna Buyer']]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply->fresh());
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (! str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return str_contains($raw, 'To: "Doe, Jane" <jane@bigaccount.test>')
+            && str_contains($raw, 'Cc: Anna Buyer <anna@bigaccount.test>')
+            && ! str_contains($raw, 'ops@bigaccount.test');
+    });
+});

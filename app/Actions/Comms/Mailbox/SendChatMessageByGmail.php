@@ -13,6 +13,7 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Actions\Chat\ChatSession\GetChatMediaContents;
 use App\Models\Chat\ChatMessage;
+use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -74,6 +75,27 @@ class SendChatMessageByGmail
         ])));
     }
 
+    /**
+     * Everyone the thread has named except whoever the answer goes to, less those the agent
+     * unticked. Fixed when the agent sends, so a colleague who writes in while the mail waits
+     * in the queue is not copied into an answer nobody chose to send them.
+     *
+     * @param  array<int, string>  $excluded
+     * @return array<int, array{address: string, name: ?string}>
+     */
+    public static function copyRecipients(ChatSession $session, array $excluded = []): array
+    {
+        $metadata  = $session->metadata ?? [];
+        $recipient = strtolower((string) (Arr::get($metadata, 'email_reply_to') ?: Arr::get($metadata, 'email_from')));
+        $excluded  = array_map('strtolower', $excluded);
+
+        return array_values(array_filter(
+            Arr::get($metadata, 'email_participants', []),
+            fn (array $person, string $key) => $key !== $recipient && ! in_array($key, $excluded, true),
+            ARRAY_FILTER_USE_BOTH
+        ));
+    }
+
     private function newHeaderMessageId($session): string
     {
         $domain = Str::after((string) Arr::get($session->shop->settings, 'gmail.email'), '@') ?: 'aiku.io';
@@ -86,8 +108,8 @@ class SendChatMessageByGmail
         $metadata = $session->metadata ?? [];
 
         $mailboxAddress = Arr::get($session->shop->settings, 'gmail.email');
-        $toAddress      = Arr::get($metadata, 'email_from');
-        $toName         = Arr::get($metadata, 'email_from_name');
+        $toAddress      = Arr::get($metadata, 'email_reply_to') ?: Arr::get($metadata, 'email_from');
+        $toName         = Arr::get($metadata, 'email_reply_to') ? Arr::get($metadata, 'email_reply_to_name') : Arr::get($metadata, 'email_from_name');
         $subject        = Arr::get($metadata, 'email_subject') ?? '';
         $replyToHeader  = Arr::get($metadata, 'gmail_last_header_message_id');
 
@@ -97,7 +119,7 @@ class SendChatMessageByGmail
             $subject = 'Re: '.$subject;
         }
 
-        $to = $toName ? $this->encodeHeader($toName)." <{$toAddress}>" : $toAddress;
+        $to = $this->mailbox($toAddress, $toName);
 
         // Without a name of our own on the From line the customer's mail client shows whatever
         // the Google account happens to be called, which is the mailbox owner, not the shop.
@@ -110,6 +132,15 @@ class SendChatMessageByGmail
             'Subject: '.$this->encodeHeader($subject),
             "Message-ID: {$messageId}",
         ];
+
+        $copies = array_map(
+            fn (array $person) => $this->mailbox($person['address'], $person['name']),
+            Arr::get($chatMessage->metadata ?? [], 'email_cc', [])
+        );
+
+        if ($copies) {
+            $headers[] = 'Cc: '.implode(', ', $copies);
+        }
 
         if ($replyToHeader) {
             $headers[] = "In-Reply-To: {$replyToHeader}";
@@ -241,6 +272,24 @@ class SendChatMessageByGmail
         $text = preg_replace('/<(br|\/p|\/div|\/tr|\/h[1-6])[^>]*>/i', "\n", $html) ?? $html;
 
         return trim(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    }
+
+    /**
+     * A name holding a comma, as "Doe, Jane" does, reads as two recipients unless it is quoted.
+     */
+    private function mailbox(string $address, ?string $name): string
+    {
+        if (! $name) {
+            return $address;
+        }
+
+        $name = match (true) {
+            (bool) preg_match('/[^\x20-\x7E]/', $name)    => mb_encode_mimeheader($name, 'UTF-8'),
+            (bool) preg_match('/[()<>@,;:\\\\".\[\]]/', $name) => '"'.addcslashes($name, '"\\').'"',
+            default                                         => $name,
+        };
+
+        return "{$name} <{$address}>";
     }
 
     private function encodeHeader(string $value): string

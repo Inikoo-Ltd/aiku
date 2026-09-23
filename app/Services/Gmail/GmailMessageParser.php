@@ -41,13 +41,50 @@ class GmailMessageParser
             return ['name' => null, 'address' => null];
         }
 
-        if (preg_match('/^(.*?)<(.+?)>$/', trim($from), $matches)) {
+        return self::parseAddress($from);
+    }
+
+    /**
+     * Everyone a header names. A comma inside a quoted name ("Doe, Jane" <jane@x.com>) is part
+     * of the name, not a separator.
+     *
+     * @return array<int, array{name: ?string, address: string}>
+     */
+    public static function addresses(array $raw, string $header): array
+    {
+        $value = self::header($raw, $header);
+
+        if (! $value) {
+            return [];
+        }
+
+        $addresses = [];
+
+        foreach (preg_split('/,(?=(?:[^"]*"[^"]*")*[^"]*$)/', $value) as $part) {
+            $address = self::parseAddress($part);
+
+            if ($address['address'] && filter_var($address['address'], FILTER_VALIDATE_EMAIL)) {
+                $addresses[] = $address;
+            }
+        }
+
+        return $addresses;
+    }
+
+    /**
+     * @return array{name: ?string, address: ?string}
+     */
+    private static function parseAddress(string $value): array
+    {
+        if (preg_match('/^(.*?)<(.+?)>$/', trim($value), $matches)) {
             $name = trim($matches[1], " \t\"'");
 
             return ['name' => $name !== '' ? $name : null, 'address' => trim($matches[2])];
         }
 
-        return ['name' => null, 'address' => trim($from)];
+        $address = trim($value);
+
+        return ['name' => null, 'address' => $address !== '' ? $address : null];
     }
 
     public static function body(array $raw): string

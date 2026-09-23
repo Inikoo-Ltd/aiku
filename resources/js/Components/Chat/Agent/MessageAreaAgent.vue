@@ -579,6 +579,33 @@ const isEmailNotif = ref(false)
 
 const isEmailChat = computed(() => (props.session as any)?.channel === "email")
 
+const emailRecipient = computed(() => {
+    const metadata = (props.session as any)?.metadata ?? {}
+
+    return String(metadata.email_reply_to || metadata.email_from || "").toLowerCase()
+})
+
+const emailCopyCandidates = computed<{ address: string; name: string | null }[]>(() => {
+    if (!isEmailChat.value) return []
+
+    return Object.values((props.session as any)?.metadata?.email_participants ?? {})
+        .filter((person: any) => person?.address && person.address.toLowerCase() !== emailRecipient.value) as any
+})
+
+const emailCopyExcluded = ref<string[]>([])
+
+watch(() => (props.session as any)?.ulid, () => {
+    emailCopyExcluded.value = []
+})
+
+const toggleEmailCopy = (address: string) => {
+    const key = address.toLowerCase()
+
+    emailCopyExcluded.value = emailCopyExcluded.value.includes(key)
+        ? emailCopyExcluded.value.filter((excluded) => excluded !== key)
+        : [...emailCopyExcluded.value, key]
+}
+
 // An email is written, not chatted: Enter opens a line and the message goes when it is finished.
 // A live chat is the other way round, a line at a time, so Enter still sends there.
 const onEnterKey = (event: KeyboardEvent) => {
@@ -808,6 +835,7 @@ const sendMessage = async () => {
         message_type: messageType,
         tempId,
         is_email_notif: isEmailNotif.value,
+        email_cc_excluded: emailCopyExcluded.value,
         onFailed: markFailed,
     })
 
@@ -1541,6 +1569,19 @@ const handleClickOutside = (e: MouseEvent) => {
             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
                 @change="handleImageSelect" />
             <input ref="fileInput" type="file" accept=".pdf,.xls,.xlsx" multiple class="hidden" @change="handleDocSelect" />
+
+            <div v-if="emailCopyCandidates.length" class="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-gray-500">
+                <span class="font-medium">{{ ctrans("Cc") }}</span>
+                <label v-for="person in emailCopyCandidates" :key="person.address"
+                    class="inline-flex cursor-pointer items-center gap-1.5" :title="person.address">
+                    <input type="checkbox" class="h-3.5 w-3.5 rounded border-gray-300"
+                        :checked="!emailCopyExcluded.includes(person.address.toLowerCase())"
+                        @change="toggleEmailCopy(person.address)" />
+                    <span :class="emailCopyExcluded.includes(person.address.toLowerCase()) ? 'text-gray-400 line-through' : 'text-gray-700'">
+                        {{ person.name || person.address }}
+                    </span>
+                </label>
+            </div>
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <textarea ref="messageInput" v-model="newMessage" @input="

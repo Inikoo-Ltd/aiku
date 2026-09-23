@@ -106,6 +106,14 @@ class SendChatMessage
         BroadcastChatListEvent::dispatch($chatMessage);
 
         if ($chatSession->channel === ChatChannelEnum::EMAIL && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+            $copies = SendChatMessageByGmail::copyRecipients($chatSession, $modelData['email_cc_excluded'] ?? []);
+
+            if ($copies) {
+                $chatMessage->updateQuietly([
+                    'metadata' => array_merge($chatMessage->metadata ?? [], ['email_cc' => $copies]),
+                ]);
+            }
+
             SendChatMessageByGmail::dispatch($chatMessage);
             ImportPendingGmailAttachments::dispatch($chatSession);
         }
@@ -321,7 +329,15 @@ class SendChatMessage
                 'sometimes',
                 'nullable',
                 'in:true,false'
-            ]
+            ],
+            'email_cc_excluded'   => [
+                'sometimes',
+                'array',
+            ],
+            'email_cc_excluded.*' => [
+                'string',
+                'max:255',
+            ],
         ];
     }
 
