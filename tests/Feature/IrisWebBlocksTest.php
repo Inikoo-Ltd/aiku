@@ -674,7 +674,11 @@ test('families that sold the same are listed newest first', function () {
         data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
         $family = StoreProductCategory::make()->action($subDepartment, $familyData);
 
-        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+        DB::table('product_categories')->where('id', $family->id)->update([
+            'created_at'      => now()->subDays($daysAgo),
+            'state'           => \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE->value,
+            'show_in_website' => true,
+        ]);
 
         PublishWebpage::make()->action(
             StoreProductCategoryWebpage::make()->action($family),

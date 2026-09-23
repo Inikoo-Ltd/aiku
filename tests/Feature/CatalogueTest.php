@@ -941,8 +941,11 @@ test('repair records unrecorded exclusives among products hidden from the site',
         'updated_at'      => now(),
     ]);
 
-    createProduct($shop);
-    $intercompany = $shop->products()->orderBy('id')->first();
+    [, $seedProduct] = createProduct($shop);
+    $intercompany    = StoreProduct::make()->action($seedProduct->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 1]
+    ));
     $public       = StoreProduct::make()->action($intercompany->family, array_merge(
         Product::factory()->definition(),
         ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]

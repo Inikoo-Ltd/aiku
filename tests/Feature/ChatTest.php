@@ -5000,6 +5000,7 @@ test('the closed list only holds what was closed today', function () {
     $mixed = collect(GetChatSessions::make()->handle([
         'statuses' => [ChatSessionStatusEnum::ACTIVE->value, ChatSessionStatusEnum::CLOSED->value],
         'shop_id'  => $this->shop->id,
+        'limit'    => 1000,
     ])->items())->pluck('ulid');
 
     expect($mixed)->toContain($today->ulid)
@@ -6034,7 +6035,8 @@ test('starting an email from the customer record opens an email conversation and
 });
 
 test('GetChatCustomerTimeline puts every channel, the orders and what is still owed in one line', function () {
-    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $webUser  = StoreWebUser::make()->action($customer, WebUser::factory()->definition());
 
     $earlierWebsite = ChatSession::create([
         'ulid'             => (string) Str::ulid(),
@@ -6056,7 +6058,7 @@ test('GetChatCustomerTimeline puts every channel, the orders and what is still o
         'ulid'            => (string) Str::ulid(),
         'meta_channel_id' => $channel->id,
         'shop_id'         => $this->shop->id,
-        'customer_id'     => $this->customer->id,
+        'customer_id'     => $customer->id,
         'phone_number'    => '+628123456789',
         'status'          => ChatSessionStatusEnum::CLOSED,
         'language_id'     => 68,
@@ -6076,7 +6078,7 @@ test('GetChatCustomerTimeline puts every channel, the orders and what is still o
     ]);
 
     $unpaidInvoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()
-        ->action($this->customer, \App\Models\Accounting\Invoice::factory()->definition());
+        ->action($customer, \App\Models\Accounting\Invoice::factory()->definition());
     $unpaidInvoice->update(['pay_status' => \App\Enums\Accounting\Invoice\InvoicePayStatusEnum::UNPAID]);
 
     $events = collect(GetChatCustomerTimeline::make()->handle($current)['events']);
@@ -6141,7 +6143,7 @@ test('a conversation nobody has taken past its channel time joins the group queu
         'last_visitor_message_at' => now()->subDays(2),
     ]);
 
-    $queue = collect(GetChatSessions::make()->handle(['unclaimed' => true])->items())->pluck('id')->all();
+    $queue = collect(GetChatSessions::make()->handle(['unclaimed' => true, 'limit' => 1000])->items())->pluck('id')->all();
 
     expect($queue)->toContain($stale->id)
         ->and($queue)->not->toContain($fresh->id)
@@ -6244,7 +6246,7 @@ test('a shop may set its own unclaimed time, and the rest follow the group defau
     $patient = noiseTestEmailSession($this->shop, 'patient@example.com', 'Shop waits longer', 'Where is my order');
     $patient->update(['last_visitor_message_at' => now()->subHours(3)]);
 
-    $queue = fn () => collect(GetChatSessions::make()->handle(['unclaimed' => true])->items())->pluck('id')->all();
+    $queue = fn () => collect(GetChatSessions::make()->handle(['unclaimed' => true, 'limit' => 1000])->items())->pluck('id')->all();
 
     expect($queue())->toContain($patient->id);
 
@@ -7290,16 +7292,16 @@ test('filing an imported mail away writes down whether it was unread', function 
 
     \Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/token'                        => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/u1*' => \Illuminate\Support\Facades\Http::response([
-            'id'       => 'u1',
-            'threadId' => 'tu1',
+        'gmail.googleapis.com/gmail/v1/users/me/messages/uf1*' => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'uf1',
+            'threadId' => 'tuf1',
             'labelIds' => ['INBOX', 'UNREAD'],
             'payload'  => [
                 'mimeType' => 'text/plain',
                 'headers'  => [
                     ['name' => 'From', 'value' => 'Unread Sender <unread@example.com>'],
                     ['name' => 'Subject', 'value' => 'Still unread'],
-                    ['name' => 'Message-ID', 'value' => '<u1@example.com>'],
+                    ['name' => 'Message-ID', 'value' => '<uf1@example.com>'],
                 ],
                 'body'     => ['data' => rtrim(strtr(base64_encode('Hello there'), '+/', '-_'), '=')],
             ],
@@ -7311,11 +7313,11 @@ test('filing an imported mail away writes down whether it was unread', function 
 
     \Illuminate\Support\Facades\Log::spy();
 
-    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'u1'))->not->toBeNull();
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'uf1'))->not->toBeNull();
 
     \Illuminate\Support\Facades\Log::shouldHaveReceived('info')
         ->withArgs(fn ($message, $context = []) => $message === 'gmail-file-away'
-            && $context['message'] === 'u1'
+            && $context['message'] === 'uf1'
             && $context['was_unread'] === true
             && $context['was_inbox'] === true);
 

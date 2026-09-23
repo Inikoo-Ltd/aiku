@@ -3571,10 +3571,10 @@ test('a batch size change flags open jobs raised with the old one and their quan
 });
 
 test('a discontinued SKO leaves the to produce board unless a job order already carries it', function () {
-    $stocks    = createStocks($this->group);
+    $stocks    = [\App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))];
     $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
-    $made = StoreArtefact::make()->action($this->production, ['code' => 'DISC-01', 'name' => 'Discontinued']);
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'DISC-SKO-01', 'name' => 'Discontinued']);
     $made->update(['org_stock_id' => $orgStocks[0]->id]);
     $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
 

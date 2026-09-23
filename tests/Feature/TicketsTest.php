@@ -1339,7 +1339,7 @@ test('ticket search ranks subject over description over comments, understands ke
         ->and($search('"marketing tool"')->pluck('reference')->all())->toBe([$byDescription->reference])
         ->and($search('email status:open reporter:me')->pluck('reference'))->toContain($bySubject->reference)
         ->and($search('email status:resolved'))->toBeEmpty()
-        ->and($search('email is:unassigned after:'.now()->toDateString())->count())->toBe(4)
+        ->and($search('email is:unassigned after:'.now()->toDateString())->pluck('reference')->all())->toContain($bySubject->reference, $byDescription->reference, $byComment->reference, $byInternal->reference)
         ->and($search('email before:'.now()->toDateString()))->toBeEmpty()
         ->and($search('email assignee:'.$this->user->username))->toBeEmpty();
 

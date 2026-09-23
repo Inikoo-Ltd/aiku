@@ -3477,15 +3477,25 @@ test('a low stock audit still open keeps its lock through the heartbeat', functi
     }
 });
 
+function ensureFirstWarehouseHasCountry(Organisation $organisation): void
+{
+    $warehouse = $organisation->warehouses()->oldest('id')->first();
+    if ($warehouse && !$warehouse->address?->country_code) {
+        $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $organisation->group_id, 'address_line_1' => 'Default warehouse'])->id]);
+    }
+}
+
 describe('discontinue preview', function () {
     beforeEach(function () {
+        ensureFirstWarehouseHasCountry($this->organisation);
         list(, , $this->shop) = createShop();
         $this->customer = createCustomer($this->shop);
         list($this->orgStocks, $this->product) = createProduct($this->shop);
     });
 
     test('preview counts the open purchase order and the portfolio carrying the stock', function () {
-        $orgStock = $this->orgStocks[0];
+        $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
         $this->product->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
 
         $supplier      = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
@@ -3514,7 +3524,8 @@ describe('discontinue preview', function () {
     });
 
     test('preview of a stock with nothing hanging off it is all zeros', function () {
-        $orgStock = $this->orgStocks[2];
+        $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
 
         $preview = GetOrgStockDiscontinuePreview::make()->action($this->organisation, [$orgStock->id]);
 
@@ -3575,8 +3586,10 @@ describe('discontinue preview', function () {
 
 describe('discontinue confirm', function () {
     beforeEach(function () {
-        createStocks($this->group);
-        $stocks          = $this->group->stocks()->orderBy('id')->limit(3)->get()->all();
+        $stocks = array_map(
+            fn () => StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])),
+            range(1, 3)
+        );
         $this->orgStocks = createOrgStocks($this->organisation, $stocks);
 
         $otherOrganisation = Organisation::where('code', 'other')->first();
@@ -3589,10 +3602,7 @@ describe('discontinue confirm', function () {
         $this->otherOrganisation = $otherOrganisation;
         $this->otherOrgStocks    = createOrgStocks($otherOrganisation, $stocks);
 
-        $warehouse = $this->organisation->warehouses()->oldest('id')->first();
-        if ($warehouse && !$warehouse->address?->country_code) {
-            $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $this->group->id, 'address_line_1' => 'Default warehouse'])->id]);
-        }
+        ensureFirstWarehouseHasCountry($this->organisation);
     });
 
     test('confirm discontinues the stock group wide, keeps an excepted organisation and audits the reason', function () {
@@ -3639,7 +3649,7 @@ describe('discontinue confirm', function () {
             ?? StoreOrgSupplier::make()->action($this->organisation, $supplier);
         $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
 
-        expect(fn () => StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $orgStock, PurchaseOrderTransaction::factory()->definition()))
+        expect(fn () => StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $orgStock->refresh(), PurchaseOrderTransaction::factory()->definition()))
             ->toThrow(ValidationException::class);
 
         DiscontinueOrgStocks::make()->action($this->organisation, ['org_stock_ids' => [$orgStock->id], 'state' => OrgStockStateEnum::ACTIVE->value]);
