@@ -2220,7 +2220,7 @@ test('delete picking on blocked line partly waiting with crm does not abort', fu
         ->and((float)$item->quantity_waiting_warehouse)->toBe(10.0);
 });
 
-test('picking upsert from waiting warehouse and magic place', function () {
+test('picking upsert from waiting warehouse', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
     $this->organisation->update(['settings' => $settings]);
@@ -2231,26 +2231,6 @@ test('picking upsert from waiting warehouse and magic place', function () {
 
     \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1, 'location_org_stock_id' => $los->id]);
     expect($item->refresh()->pickings()->exists())->toBeTrue();
-
-    $item->update([
-        'quantity_waiting_warehouse' => 0,
-        'quantity_required'          => 20,
-        'quantity_picked'            => 5,
-        'quantity_not_picked'        => 0,
-        'locked_at'                  => null,
-    ]);
-    // Magic pick creates a picking from a virtual place (no physical location_id).
-    // Only quantity + picker_user_id are validated fields, so that is all the real flow passes.
-    $magicPicking = \App\Actions\Dispatching\Picking\PickFromMagicPlace::run($item->refresh(), [
-        'quantity'       => 3,
-        'picker_user_id' => $this->user->id,
-    ]);
-
-    expect($magicPicking)->toBeInstanceOf(Picking::class)
-        ->and($magicPicking->type)->toBe(PickingTypeEnum::MAGIC_PICK)
-        ->and($magicPicking->location_id)->toBeNull()
-        ->and(floatval($magicPicking->quantity))->toBe(3.0)
-        ->and($magicPicking->last_picked_at)->not->toBeNull();
 });
 
 test('picking and delivery note item repairs and reindex', function () {
@@ -4723,4 +4703,32 @@ test('a delivery note item with nothing required does not break the tariff codes
     $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
 
     expect((float) $rows->firstWhere('tariff_code', '3304990000')->amount)->toBe(40.0);
+});
+
+test('sending the order again reuses the goods left on its cancellation return instead of taking them off the shelf twice (HELP-3329)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+    $shelfAfterFirstPick = (float)$locationOrgStock->refresh()->quantity;
+    expect($shelfAfterFirstPick)->toBe(90.0);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+    $returnItem = $cancelled->returnedDeliveryNote()->first()->returnDeliveryNoteItem()->first();
+
+    $order           = $cancelled->orders()->first()->refresh();
+    $newDeliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $this->warehouse->id]);
+    $newItem         = StoreDeliveryNoteItem::make()->action($newDeliveryNote, [
+        'delivery_note_id'  => $newDeliveryNote->id,
+        'org_stock_id'      => $deliveryNoteItem->org_stock_id,
+        'transaction_id'    => $deliveryNoteItem->transaction_id,
+        'quantity_required' => 6,
+    ]);
+
+    \App\Actions\Dispatching\DeliveryNote\ReusePicksFromCancelledDeliveryNote::make()->action($order, $newDeliveryNote);
+
+    expect((float)$newItem->refresh()->quantity_picked)->toBe(6.0)
+        ->and((float)$returnItem->refresh()->total_item_returned)->toBe(6.0)
+        ->and($returnItem->is_handled)->toBeFalse()
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBe($shelfAfterFirstPick);
 });

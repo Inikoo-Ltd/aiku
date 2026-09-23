@@ -359,59 +359,6 @@ const countStockInAllLocations = (loc?: {}[]) => {
 }
 
 
-// Section: Modal pick from magic place
-const selectedItemToPickMagicPlace = ref(null)
-const isModalEPickMagicPlace = ref(false)
-const onCloseModalPickMagicPlace = () => {
-    isModalEPickMagicPlace.value = false
-
-    setTimeout(() => {
-        selectedItemToPickMagicPlace.value = null
-    }, 300);
-}
-const isLoadingSubmitPickMagicPlace = ref(false)
-const onSubmitPickMagicPlace = () => {
-
-    if (!selectedItemToPickMagicPlace.value) {
-        console.log('No item expiry date selected')
-        return
-    }
-
-    router.post(
-        route('grp.models.delivery_note_item.picking.magic_place', {
-            deliveryNoteItem: selectedItemToPickMagicPlace.value?.id
-        }),
-        {
-            
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingSubmitPickMagicPlace.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully pick from magic place"),
-                    type: "success"
-                })
-                onCloseModalPickMagicPlace()
-            },
-            onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to pick from magic place. Try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmitPickMagicPlace.value = false
-            },
-        }
-    )
-}
-
 const GetQuantityToPickFractional = (item) => {
     if(props.shop_type == 'dropshipping'){
         return item.quantity_to_pick_fractional_ds
@@ -1423,29 +1370,6 @@ const warningMsg = computed(() => {
                                 </template>
                             </NumberWithButtonSave>
                             
-                            <!-- Button: Pick from magic place -->
-                            <Button
-                                v-if="!itemValue.is_handled
-                                    && Number(countStockInAllLocations(itemValue.locations)) < itemValue.quantity_to_pick
-                                "
-                                @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
-                                type="warning"
-                                key="4"
-                                v-tooltip="ctrans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
-                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                method="post"
-                            >
-                                <template #label>
-                                    <span class="flex items-center">
-                                        <div>
-                                            <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
-                                            <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
-                                        </div>
-                                        <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
-                                    </span>
-                                </template>
-                            </Button>
-
                             <!-- Button: Not Picked || Set as Waiting -->
                             <template v-if="!itemValue.is_handled">
                                 <!-- Button: Set Transaction as Waiting (only on Ecom) -->
@@ -1520,21 +1444,6 @@ const warningMsg = computed(() => {
                     <!-- {{ itemValue.quantity_to_pick }} -->
 
                     <div class="flex gap-x-2 gap-y-1 items-center">
-                        <Button
-                            @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
-                            type="warning"
-                            key="4"
-                            v-tooltip="ctrans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
-                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                        >
-                            <template #label>
-                                <span>
-                                    {{ itemValue.quantity_to_pick.toString() || '0' }}
-                                    <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
-                                </span>
-                            </template>
-                        </Button>
-                        
                         <ButtonWithLink
                             type="negative"
                             v-tooltip="ctrans('Set :numberNotPicked as not picked', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
@@ -1777,61 +1686,6 @@ const warningMsg = computed(() => {
                     full
                     :label="ctrans('Save')"
                 />
-            </div>
-        </div>
-    </Modal>
-
-    <!-- Modal: Magic Place -->
-    <Modal :isOpen="isModalEPickMagicPlace" @onClose="() => onCloseModalPickMagicPlace()" width="w-full max-w-lg">
-        <div
-            class="relative text-left sm:w-full sm:max-w-lg py-2">
-
-            <div class="sm:flex sm:items-start">
-                <div
-                    class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 sm:mx-0 sm:size-10">
-                    <FontAwesomeIcon
-                        icon="fal fa-exclamation-triangle"
-                        class="text-amber-600"
-                        fixed-width
-                        aria-hidden="true" />
-                </div>
-
-                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <div class="text-base font-semibold">
-                        {{ ctrans("Are you sure want to pick all from magic place?") }}
-                    </div>
-                    <div class="mt-2">
-                        <p class="text-sm text-gray-500">
-                            {{ ctrans("Yes, magic place.") }}
-                        </p>
-                    </div>
-
-                    <div class="mt-5 flex flex-row-reverse gap-2">
-                        <div class="xw-full sm:w-fit">
-                            <Button
-                                @click="() => onSubmitPickMagicPlace()"
-                                type="warning"
-                                key="2"
-                                :loading="isLoadingSubmitPickMagicPlace"
-                                iconRight="fas fa-wand-magic"
-                                full>
-                                <template #label>
-                                    <div class="whitespace-nowrap">
-                                        Yes, pick <FractionDisplay v-if="GetQuantityToPickFractional(selectedItemToPickMagicPlace)" :fractionData="GetQuantityToPickFractional(selectedItemToPickMagicPlace)" />
-                                        <span v-else>{{ locale.number(selectedItemToPickMagicPlace?.quantity_to_pick ?? 0) }}</span>
-                                    </div>
-                                </template>
-                            </Button>
-                        </div>
-                        <Button
-                            type="tertiary"
-                            icon="far fa-arrow-left"
-                            :disabled="isLoadingSubmitPickMagicPlace"
-                            :label="ctrans('Cancel')"
-                            full
-                            @click=" () => (isModalEPickMagicPlace = false)" />
-                    </div>
-                </div>
             </div>
         </div>
     </Modal>
