@@ -700,7 +700,7 @@ const copyChatId = async () => {
                         <div class="text-gray-500 text-xs">{{ ctrans("Address") }}</div>
                         <div class="col-span-2 text-xs space-y-0.5">
                             <AddressLocation v-if="customerProfile.location" :data="customerProfile.location" class="font-medium text-gray-800" />
-                            <div v-if="customerProfile.address" class="text-[11px] text-gray-500" v-html="customerProfile.address"></div>
+                            <div v-else-if="customerProfile.address" class="text-[11px] text-gray-500" v-html="customerProfile.address"></div>
                         </div>
                     </div>
                     <div v-if="session.is_guest && session.customer_suggestion && !suggestionDismissed"
