@@ -95,7 +95,9 @@ use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Queue;
@@ -1759,4 +1761,18 @@ test('repair moves never-validated australian tax numbers to the customer countr
     expect($customer->refresh()->taxNumber->country_code)->toBe('IT')
         ->and($customer->taxNumber->status)->not->toBe(TaxNumberStatusEnum::UNKNOWN)
         ->and($repair->query()->where('tax_numbers.owner_id', $customer->id)->exists())->toBeFalse();
+});
+
+test('a shop has one partner customer per organisation', function () {
+    DB::beginTransaction();
+    $partnerCustomers = [
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition())->id,
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition())->id,
+    ];
+    DB::table('customers')->where('id', $partnerCustomers[0])->update(['as_organisation_id' => $this->organisation->id]);
+
+    expect(fn () => DB::table('customers')->where('id', $partnerCustomers[1])->update(['as_organisation_id' => $this->organisation->id]))
+        ->toThrow(UniqueConstraintViolationException::class);
+
+    DB::rollBack();
 });
