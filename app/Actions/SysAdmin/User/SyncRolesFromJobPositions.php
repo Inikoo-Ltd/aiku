@@ -61,6 +61,18 @@ class SyncRolesFromJobPositions
                     setUserAuthorisedModels: false
                 );
             }
+
+            if (str_starts_with($accountingRole->name, 'accounting-supervisor-')) {
+                foreach ($organisation->shops()->where('type', ShopTypeEnum::B2B)->get() as $shop) {
+                    UserAddRoles::run(
+                        $user,
+                        [
+                            Role::where('name', RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $shop))->first()
+                        ],
+                        setUserAuthorisedModels: false
+                    );
+                }
+            }
         }
 
         if ($user->roles()->whereIn('name', [RolesEnum::GROUP_ADMIN->value, RolesEnum::HELP_DESK_CLERK->value, RolesEnum::HELP_DESK_SUPERVISOR->value, RolesEnum::QA->value])->exists()) {

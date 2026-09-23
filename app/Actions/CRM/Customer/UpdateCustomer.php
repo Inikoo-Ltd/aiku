@@ -457,11 +457,7 @@ class UpdateCustomer extends OrgAction
 
     private function canGrantCredit(): bool
     {
-        if ($this->shop->type !== ShopTypeEnum::B2B) {
-            return false;
-        }
-
-        return $this->asAction || $this->user?->authTo("accounting.{$this->organisation->id}.edit");
+        return $this->asAction && $this->shop->type === ShopTypeEnum::B2B;
     }
 
     public function asController(Customer $customer, ActionRequest $request): Customer

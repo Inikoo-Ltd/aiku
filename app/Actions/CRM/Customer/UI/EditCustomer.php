@@ -10,6 +10,7 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
+use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
@@ -28,7 +29,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditCustomer extends OrgAction
 {
-    use WithCRMEditAuthorisation;
+    use WithCRMEditAuthorisation {
+        authorize as authorizeCrmEdit;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->authorizeCrmEdit($request)
+            || UpdateCustomerCreditLine::canGrantCredit($request->user(), $request->route('customer'));
+    }
 
     public function handle(Customer $customer): Customer
     {
@@ -183,22 +192,34 @@ class EditCustomer extends OrgAction
                     'value'    => $customer->accounting_reference,
                     'required' => false,
                 ],
-                'credit_limit'         => [
-                    'type'     => 'input',
-                    'label'    => __('Credit limit'),
-                    'value'    => $customer->credit_limit,
-                    'hidden'   => $customer->shop->type != ShopTypeEnum::B2B || !$request->user()->authTo("accounting.{$customer->organisation_id}.edit"),
-                    'required' => false,
+            ]
+        ];
+        $creditLineUpdateRoute = [
+            'name'       => 'grp.models.customer.credit_line.update',
+            'parameters' => [$customer->id]
+        ];
+        $creditLine = [
+            'title'  => __('Credit line'),
+            'label'  => __('Credit line'),
+            'fields' => [
+                'credit_limit'       => [
+                    'type'        => 'input',
+                    'label'       => __('Credit limit'),
+                    'value'       => $customer->credit_limit,
+                    'updateRoute' => $creditLineUpdateRoute,
+                    'required'    => false,
                 ],
-                'payment_terms_days'   => [
-                    'type'     => 'input',
-                    'label'    => __('Payment terms (days)'),
-                    'value'    => $customer->payment_terms_days,
-                    'hidden'   => $customer->shop->type != ShopTypeEnum::B2B || !$request->user()->authTo("accounting.{$customer->organisation_id}.edit"),
-                    'required' => false,
+                'payment_terms_days' => [
+                    'type'        => 'input',
+                    'label'       => __('Payment terms (days)'),
+                    'value'       => $customer->payment_terms_days,
+                    'updateRoute' => $creditLineUpdateRoute,
+                    'required'    => false,
                 ],
             ]
         ];
+        $canGrantCredit = UpdateCustomerCreditLine::canGrantCredit($request->user(), $customer);
+
         $tags       = [
             'title'  => __('Tags'),
             'label'  => __('Tags'),
@@ -300,6 +321,12 @@ class EditCustomer extends OrgAction
             ];
         } else {
             $blueprint = [$contact, $identification, $accounting, $tags, $vip, $staff];
+        }
+
+        if (!$this->authorizeCrmEdit($request)) {
+            $blueprint = [$creditLine];
+        } elseif ($canGrantCredit) {
+            $blueprint[] = $creditLine;
         }
 
         return Inertia::render(
