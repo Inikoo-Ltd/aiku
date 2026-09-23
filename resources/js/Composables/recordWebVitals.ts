@@ -11,7 +11,8 @@ let isRecording = false
 /**
  * Measures the page the visitor landed on, as Google does: LCP, FCP and TTFB only exist for a full
  * page load, and CLS and INP keep growing until the page is hidden, so everything is sent once,
- * when the visitor leaves or switches away.
+ * when the visitor leaves or switches away. web-vitals finalises LCP and CLS on that same
+ * visibilitychange, before this listener runs; a pagehide without it would send them missing.
  */
 export const recordWebVitals = (webpageId: number | null) => {
 	if (isRecording) {
@@ -33,8 +34,8 @@ export const recordWebVitals = (webpageId: number | null) => {
 	onFCP(keep)
 	onTTFB(keep)
 
-	const send = (event: Event) => {
-		if (isSent || (event.type === "visibilitychange" && document.visibilityState !== "hidden") || !Object.keys(measured).length) {
+	const send = () => {
+		if (isSent || document.visibilityState !== "hidden" || !Object.keys(measured).length) {
 			return
 		}
 
@@ -55,5 +56,4 @@ export const recordWebVitals = (webpageId: number | null) => {
 	}
 
 	addEventListener("visibilitychange", send)
-	addEventListener("pagehide", send)
 }
