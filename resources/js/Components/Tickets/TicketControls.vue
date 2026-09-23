@@ -52,6 +52,7 @@ const props = defineProps<{
     routes: {
         update: { name: string; parameters: Record<string, unknown> }
         collaborators?: { name: string; parameters: Record<string, unknown> }
+        deploy_comment?: { name: string; parameters: Record<string, unknown> }
     }
 }>()
 
@@ -252,6 +253,41 @@ const update = (field: string, value: unknown, action: string = field) => {
         onSuccess: () => emit("updated"),
     })
 }
+
+const isEditingDeployComment = ref(false)
+const deployCommentDraft = ref("")
+
+const canEditDeployComment = computed(
+    () => props.can_contribute && props.ticket.status === "pending_deploy" && !!props.routes.deploy_comment
+)
+
+const startEditDeployComment = () => {
+    deployCommentDraft.value = props.ticket.deploy_comment ?? ""
+    isEditingDeployComment.value = true
+}
+
+const cancelEditDeployComment = () => {
+    isEditingDeployComment.value = false
+    deployCommentDraft.value = ""
+}
+
+const saveDeployComment = () => {
+    if (isBusy.value || !props.routes.deploy_comment) return
+
+    router.patch(
+        route(props.routes.deploy_comment.name, props.routes.deploy_comment.parameters),
+        { body: deployCommentDraft.value },
+        {
+            preserveScroll: true,
+            onStart: () => (pendingAction.value = "deploy_comment"),
+            onFinish: () => (pendingAction.value = null),
+            onSuccess: () => {
+                isEditingDeployComment.value = false
+                emit("updated")
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -364,9 +400,33 @@ const update = (field: string, value: unknown, action: string = field) => {
                         <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="trans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
                 </div>
                 </div>
-                <div v-if="ticket.status === 'pending_deploy' && ticket.deploy_comment" class="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
-                    <div class="mb-1 text-xs font-medium text-green-700">{{ trans("Posted to the reporter when the deployment lands") }}</div>
-                    <div class="whitespace-pre-wrap">{{ ticket.deploy_comment }}</div>
+                <div v-if="ticket.status === 'pending_deploy' && (ticket.deploy_comment || canEditDeployComment)" class="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
+                    <div class="mb-1 flex items-start justify-between gap-2">
+                        <div class="text-xs font-medium text-green-700">{{ trans("Posted to the reporter when the deployment lands") }}</div>
+                        <button v-if="canEditDeployComment && !isEditingDeployComment" v-tooltip="trans('Edit')" type="button" class="p-0.5 text-green-700 hover:text-green-900" @click="startEditDeployComment">
+                            <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
+
+                    <template v-if="isEditingDeployComment">
+                        <textarea
+                            v-model="deployCommentDraft"
+                            rows="4"
+                            class="w-full rounded-md border border-green-300 bg-white px-2 py-1 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            :placeholder="trans('Leave empty to post nothing when the deployment lands')" />
+                        <div class="mt-2 flex justify-end gap-2">
+                            <button type="button" class="rounded-md px-2 py-1 text-xs text-gray-500 hover:text-gray-700" @click="cancelEditDeployComment">
+                                {{ trans("Cancel") }}
+                            </button>
+                            <button type="button" class="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-60" :disabled="isPending('deploy_comment')" @click="saveDeployComment">
+                                <FontAwesomeIcon v-if="isPending('deploy_comment')" icon="fal fa-spinner" spin fixed-width aria-hidden="true" />
+                                {{ trans("Save") }}
+                            </button>
+                        </div>
+                    </template>
+
+                    <div v-else-if="ticket.deploy_comment" class="whitespace-pre-wrap">{{ ticket.deploy_comment }}</div>
+                    <div v-else class="text-xs italic text-gray-500">{{ trans("Nothing will be posted when the deployment lands.") }}</div>
                 </div>
             </div>
             <template v-if="can_manage || can_contribute">
