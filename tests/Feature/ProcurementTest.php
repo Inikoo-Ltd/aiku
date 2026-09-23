@@ -5059,7 +5059,7 @@ test('sko showcase shows days of cover and the purchase orders still to arrive',
         ->and((float) collect($showcase['future_orders'])->firstWhere('reference', $purchaseOrder->reference)['quantity'])->toBe(40.0);
 });
 
-test('purchase order products tab shows stock and quarterly usage of each product', function () {
+test('purchase order products and items tabs show stock and quarterly usage of each product', function () {
     $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
     $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $this->group->id])->id]);
     $shop      = $this->organisation->shops()->first() ?? StoreShop::run($this->organisation, Shop::factory()->definition());
@@ -5114,6 +5114,21 @@ test('purchase order products tab shows stock and quarterly usage of each produc
     expect($row['stock_in_locations'])->toBe('17')
         ->and($row['quarterly_usage'])->toHaveCount(1)
         ->and((float) $row['quarterly_usage'][0]['sales'])->toBe(6.0);
+
+    $transaction = StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $supplierProduct->historicSupplierProduct,
+        $orgStock,
+        PurchaseOrderTransaction::factory()->definition()
+    );
+
+    $items = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'items']))
+        ->assertOk()->viewData('page')['props']['items']['data'];
+    $item  = collect($items)->firstWhere('id', $transaction->id);
+
+    expect($item['stock_in_locations'])->toBe('17')
+        ->and($item['quarterly_usage'])->toHaveCount(1)
+        ->and((float) $item['quarterly_usage'][0]['sales'])->toBe(6.0);
 
     DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
 });

@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\OrgAction;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
@@ -163,19 +164,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
 
-        $quarterlyUsage = DB::table('delivery_note_items')
-            ->whereIn('org_stock_id', $orgStockIds)
-            ->where('quantity_dispatched', '>', 0)
-            ->where('created_at', '>=', now()->subMonths(12))
-            ->selectRaw("org_stock_id, to_char(date_trunc('quarter', created_at), 'YYYY\"Q\"Q') as period, sum(quantity_dispatched) as sales")
-            ->groupByRaw("org_stock_id, date_trunc('quarter', created_at)")
-            ->orderByRaw("date_trunc('quarter', created_at)")
-            ->get()
-            ->groupBy('org_stock_id')
-            ->map(fn ($records) => $records->take(-4)->values()->map(fn ($record) => [
-                'period' => $record->period,
-                'sales'  => round((float) $record->sales, 1),
-            ]));
+        $quarterlyUsage = GetOrgStocksQuarterlyUsage::run($orgStockIds);
 
         $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage) {
             $orgStock  = $orgStocks->get($row->org_stock_id);
