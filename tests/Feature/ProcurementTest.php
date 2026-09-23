@@ -142,6 +142,8 @@ use App\Models\Goods\Stock;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Helpers\Address;
+use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
@@ -5055,4 +5057,63 @@ test('sko showcase shows days of cover and the purchase orders still to arrive',
         ->and($showcase['stocks_management']['cover']['daily_usage'])->toBe(3.5)
         ->and(collect($showcase['future_orders'])->pluck('reference'))->toContain($purchaseOrder->reference)
         ->and((float) collect($showcase['future_orders'])->firstWhere('reference', $purchaseOrder->reference)['quantity'])->toBe(40.0);
+});
+
+test('purchase order products tab shows stock and quarterly usage of each product', function () {
+    $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
+    $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $this->group->id])->id]);
+    $shop      = $this->organisation->shops()->first() ?? StoreShop::run($this->organisation, Shop::factory()->definition());
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $orgStock->update(['quantity_in_locations' => 17]);
+
+    $deliveryNote = StoreDeliveryNote::make()->action(createOrder(createCustomer($shop), $product), [
+        'reference'        => 'DN-USAGE-'.uniqid(),
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'usage@example.com',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $warehouse->id,
+    ]);
+    DB::table('delivery_note_items')->insert([
+        'group_id'            => $deliveryNote->group_id,
+        'organisation_id'     => $deliveryNote->organisation_id,
+        'shop_id'             => $deliveryNote->shop_id,
+        'delivery_note_id'    => $deliveryNote->id,
+        'org_stock_id'        => $orgStock->id,
+        'quantity_required'   => 6,
+        'quantity_dispatched' => 6,
+        'data'                => '{}',
+        'created_at'          => now(),
+        'updated_at'          => now(),
+    ]);
+
+    $supplierProduct    = StoreSupplierProduct::make()->action($this->orgSupplier->supplier, [
+        'code'             => 'usage-product',
+        'name'             => 'Usage product',
+        'cost'             => 10,
+        'stock_id'         => $orgStock->stock_id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($this->orgSupplier, $supplierProduct);
+    StockHasSupplierProduct::firstOrCreate(
+        ['stock_id' => $orgStock->stock_id, 'supplier_product_id' => $supplierProduct->id],
+        ['available' => true]
+    );
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($this->orgSupplier, [
+        ...PurchaseOrder::factory()->definition(),
+        'reference' => 'PO-USAGE-'.PurchaseOrder::max('id'),
+    ], strict: false);
+
+    $products = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'products']))
+        ->assertOk()->viewData('page')['props']['products']['data'];
+    $row      = collect($products)->firstWhere('id', $orgSupplierProduct->id);
+
+    expect($row['stock_in_locations'])->toBe('17')
+        ->and($row['quarterly_usage'])->toHaveCount(1)
+        ->and((float) $row['quarterly_usage'][0]['sales'])->toBe(6.0);
+
+    DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
 });

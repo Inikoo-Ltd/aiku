@@ -108,7 +108,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
 
-        $this->attachImages($paginator);
+        $this->attachOrgStockData($paginator);
 
         return $paginator;
     }
@@ -153,7 +153,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return PurchaseOrderOrgSupplierProductsResource::collection($orgSupplierProducts);
     }
 
-    private function attachImages(LengthAwarePaginator $paginator): void
+    private function attachOrgStockData(LengthAwarePaginator $paginator): void
     {
         $orgStockIds = $paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values();
 
@@ -163,9 +163,27 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
 
-        $paginator->getCollection()->transform(function ($row) use ($orgStocks) {
-            $tradeUnit = $orgStocks->get($row->org_stock_id)?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
-            $row->image_sources = $tradeUnit?->imageSources(64, 64);
+        $quarterlyUsage = DB::table('delivery_note_items')
+            ->whereIn('org_stock_id', $orgStockIds)
+            ->where('quantity_dispatched', '>', 0)
+            ->where('created_at', '>=', now()->subMonths(12))
+            ->selectRaw("org_stock_id, to_char(date_trunc('quarter', created_at), 'YYYY\"Q\"Q') as period, sum(quantity_dispatched) as sales")
+            ->groupByRaw("org_stock_id, date_trunc('quarter', created_at)")
+            ->orderByRaw("date_trunc('quarter', created_at)")
+            ->get()
+            ->groupBy('org_stock_id')
+            ->map(fn ($records) => $records->take(-4)->values()->map(fn ($record) => [
+                'period' => $record->period,
+                'sales'  => round((float) $record->sales, 1),
+            ]));
+
+        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage) {
+            $orgStock  = $orgStocks->get($row->org_stock_id);
+            $tradeUnit = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+
+            $row->image_sources      = $tradeUnit?->imageSources(64, 64);
+            $row->stock_in_locations = $orgStock?->quantity_in_locations;
+            $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
 
             return $row;
         });

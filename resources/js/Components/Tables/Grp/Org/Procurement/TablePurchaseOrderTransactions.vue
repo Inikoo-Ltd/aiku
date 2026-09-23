@@ -396,6 +396,15 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
                     {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
                 </div>
+                <div v-if="item.stock_in_locations !== undefined && item.stock_in_locations !== null" class="text-xs text-gray-500">
+                    {{ ctrans('Stock') }}: <span class="font-medium">{{ formatQuantity(Number(item.stock_in_locations)) }}</span> {{ ctrans('SKOs') }}
+                </div>
+                <div v-if="item.quarterly_usage?.length" class="text-xs text-gray-500">
+                    {{ ctrans('Usage (SKOs)') }}:
+                    <span v-for="record in item.quarterly_usage" :key="record.period" class="mr-2">
+                        {{ record.period }}: <span class="font-medium">{{ formatQuantity(record.sales) }}</span>
+                    </span>
+                </div>
             </div>
         </template>
 
