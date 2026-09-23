@@ -40,8 +40,8 @@ import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
@@ -121,7 +121,7 @@ const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isEmailModalOpen = ref(false)
-const messageTextarea = ref<HTMLTextAreaElement | null>(null)
+const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 
 const emailForm = useForm({
     email: props.customer_email ?? '',
@@ -263,9 +263,10 @@ const layout = inject('layout')
                     <PureInput v-model="emailForm.email" type="email" :placeholder="ctrans('Email address')" />
                 </div>
                 <PureInput v-model="emailForm.subject" :placeholder="ctrans('Subject')" />
-                <div :ref="(el: any) => (messageTextarea = el?.querySelector('textarea') ?? null)">
-                    <ChatFormattingToolbar :textarea="messageTextarea" allow-underline class="mb-1" />
-                    <PureTextarea v-model="emailForm.message" :rows="8" :placeholder="ctrans('Message')" />
+                <div>
+                    <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline class="mb-1" />
+                    <ChatMessageEditor ref="messageEditor" v-model="emailForm.message" :placeholder="ctrans('Message')" allow-underline
+                        class="rounded-md border border-gray-300 px-3 py-2 focus-within:border-gray-500 [&_.ProseMirror]:min-h-40 [&_.ProseMirror]:max-h-80" />
                 </div>
                 <EmailAttachmentPicker v-model="emailForm.attachments" :errors="emailForm.errors" />
                 <p v-if="emailForm.errors.email" class="text-sm text-red-500">{{ emailForm.errors.email }}</p>

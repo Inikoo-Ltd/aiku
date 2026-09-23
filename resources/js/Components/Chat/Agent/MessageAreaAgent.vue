@@ -33,6 +33,7 @@ import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
@@ -496,7 +497,7 @@ const handleRedactAttachment = async ({ id }: { id: number }) => {
     }
 }
 
-const messageInput = ref<HTMLTextAreaElement>()
+const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 const messagesContainer = ref<HTMLDivElement>()
 
 const { jumpToMessage } = useJumpToMessage(messagesContainer)
@@ -505,22 +506,7 @@ const showEmojiPicker = ref(false)
 const emojiPickerContainer = ref<HTMLElement | null>(null)
 
 const pickEmoji = (emoji: string) => {
-    const el = messageInput.value
-    if (!el) {
-        newMessage.value += emoji
-        return
-    }
-
-    const start = el.selectionStart ?? newMessage.value.length
-    const end = el.selectionEnd ?? newMessage.value.length
-    newMessage.value = newMessage.value.slice(0, start) + emoji + newMessage.value.slice(end)
-
-    nextTick(() => {
-        el.focus()
-        const pos = start + emoji.length
-        el.setSelectionRange(pos, pos)
-        autoResize()
-    })
+    messageEditor.value?.insertText(emoji)
 }
 
 const handleClickOutsideEmoji = (event: MouseEvent) => {
@@ -606,15 +592,6 @@ const toggleEmailCopy = (address: string) => {
     emailCopyExcluded.value = emailCopyExcluded.value.includes(key)
         ? emailCopyExcluded.value.filter((excluded) => excluded !== key)
         : [...emailCopyExcluded.value, key]
-}
-
-// An email is written, not chatted: Enter opens a line and the message goes when it is finished.
-// A live chat is the other way round, a line at a time, so Enter still sends there.
-const onEnterKey = (event: KeyboardEvent) => {
-    if (isEmailChat.value) return
-
-    event.preventDefault()
-    sendMessage()
 }
 
 // Only worth offering where there is somebody to email and something to say: an email
@@ -777,12 +754,6 @@ const scrollBottom = () =>
         }
     })
 
-const autoResize = () => {
-    if (!messageInput.value) return
-    messageInput.value.style.height = "auto"
-    messageInput.value.style.height = Math.min(messageInput.value.scrollHeight, 120) + "px"
-}
-
 const sendMessage = async () => {
     const hasText = !!newMessage.value.trim()
     const hasFiles = selectedFiles.value.length > 0
@@ -814,7 +785,6 @@ const sendMessage = async () => {
 
     const text = newMessage.value
     newMessage.value = ""
-    autoResize()
     typingUser.value = null
 
     // The request itself is made by whoever owns this thread, so the bubble can only be told how
@@ -1586,20 +1556,12 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
-                <textarea ref="messageInput" v-model="newMessage" @input="
-                    () => {
-                        autoResize()
-                        handleTyping()
-                    }
-                " @blur="
-                    () => {
-                        isTyping = false
-                        sendTypingStatus(false)
-                    }
-                " @paste="onPasteAttachment" @keydown.enter.exact="onEnterKey"
-                    @keydown.enter.meta.prevent="sendMessage" @keydown.enter.ctrl.prevent="sendMessage" rows="1"
-                    :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : 'Type message...'"
-                    class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent" />
+                <ChatMessageEditor ref="messageEditor" v-model="newMessage" @update:model-value="handleTyping"
+                    @blur="() => { isTyping = false; sendTypingStatus(false) }"
+                    @paste="onPasteAttachment" @submit="sendMessage" :enter-sends="!isEmailChat"
+                    :allow-underline="(session as any)?.channel !== 'whatsapp'"
+                    :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : ctrans('Type message...')"
+                    class="px-4 pt-3 pb-1 [&_.ProseMirror]:max-h-[120px]" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
@@ -1628,7 +1590,7 @@ const handleClickOutside = (e: MouseEvent) => {
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
                         <div class="mx-1 h-5 w-px bg-gray-200" />
-                        <ChatFormattingToolbar :textarea="messageInput"
+                        <ChatFormattingToolbar :editor="messageEditor?.editor"
                             :allow-underline="(session as any)?.channel !== 'whatsapp'" />
                     </div>
                     <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="ctrans('Send message')"></Button>

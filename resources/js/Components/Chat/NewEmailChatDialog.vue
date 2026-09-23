@@ -5,8 +5,8 @@ import axios from "axios"
 import Dialog from "primevue/dialog"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useComposerDraft } from "@/Composables/useComposerDraft"
@@ -24,7 +24,7 @@ const isNotACustomer = ref(false)
 const existingProspect = ref<{ name: string | null, company_name: string | null, owner: string | null } | null>(null)
 let prospectLookupTimer: ReturnType<typeof setTimeout> | undefined
 
-const messageTextarea = ref<HTMLTextAreaElement | null>(null)
+const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 
 const form = useForm({
     email: "",
@@ -167,9 +167,10 @@ watch(visible, (isVisible) => {
             </div>
 
             <PureInput v-model="form.subject" :placeholder="ctrans('Subject')" />
-            <div :ref="(el: any) => (messageTextarea = el?.querySelector('textarea') ?? null)">
-                <ChatFormattingToolbar :textarea="messageTextarea" allow-underline class="mb-1" />
-                <PureTextarea v-model="form.message" :rows="8" :placeholder="ctrans('Message')" />
+            <div>
+                <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline class="mb-1" />
+                <ChatMessageEditor ref="messageEditor" v-model="form.message" :placeholder="ctrans('Message')" allow-underline
+                    class="rounded-md border border-gray-300 px-3 py-2 focus-within:border-gray-500 [&_.ProseMirror]:min-h-40 [&_.ProseMirror]:max-h-80" />
             </div>
             <EmailAttachmentPicker v-model="form.attachments" :errors="form.errors" />
 
