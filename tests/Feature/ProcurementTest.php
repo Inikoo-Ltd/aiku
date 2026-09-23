@@ -53,6 +53,8 @@ use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
 use App\Actions\Procurement\OrgPartner\StoreOrgPartner;
+use App\Actions\Procurement\OrgPartner\UI\GetOrgPartnerShowcase;
+use App\Models\CRM\Customer;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\Hydrators\OrgSupplierHydrateOrgSupplierProducts;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
@@ -1920,6 +1922,17 @@ test('UI show org partners', function () {
             )
             ->has('tabs');
     });
+});
+
+test('partner showcase lists the customer account the partner buys under', function () {
+    [, , $shop] = createOwnShop('partner-customer-accounts');
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    DB::table('customers')->where('id', $customer->id)->update(['as_organisation_id' => $this->orgPartner->partner_id]);
+
+    $accounts = GetOrgPartnerShowcase::run($this->orgPartner)['customerAccounts'];
+
+    expect(collect($accounts)->pluck('reference'))->toContain($customer->reference)
+        ->and(collect($accounts)->firstWhere('reference', $customer->reference)['shop'])->toBe($shop->name);
 });
 
 test('UI get section route index', function () {
