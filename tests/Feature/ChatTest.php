@@ -8092,3 +8092,11 @@ test('a customer listing their own chat history is never offered disposal', func
 
     expect(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($session)->resolve($request)['can_dispose'])->toBeFalse();
 });
+
+test('a customer cannot read chat history through the staff side panel endpoint', function () {
+    $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
+
+    $this->actingAs($webUser, 'retina')
+        ->getJson(route('grp.api.chats.customer.chat_history', ['customer_id' => $this->customer->id + 1]))
+        ->assertForbidden();
+});
