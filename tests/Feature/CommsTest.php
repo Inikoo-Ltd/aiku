@@ -238,7 +238,8 @@ test(
         $shop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
         expect($shop->group->commsStats->number_outboxes)->toBe($shop->group->outboxes()->count())
             ->and($shop->organisation->commsStats->number_outboxes)->toBe($shop->organisation->outboxes()->count())
-            ->and($shop->commsStats->number_outboxes)->toBe($shop->outboxes()->count());
+            ->and($shop->commsStats->number_outboxes)->toBe($shop->outboxes()->count())
+            ->and($shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER)->exists())->toBeFalse();
 
         return $shop;
     }
@@ -296,7 +297,8 @@ test(
         $fulfilment = createFulfilment($this->organisation);
         expect($fulfilment->group->commsStats->number_outboxes)->toBe($fulfilment->group->outboxes()->count())
             ->and($fulfilment->organisation->commsStats->number_outboxes)->toBe($fulfilment->organisation->outboxes()->count())
-            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe($fulfilment->shop->outboxes()->count());
+            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe($fulfilment->shop->outboxes()->count())
+            ->and($fulfilment->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER)->exists())->toBeTrue();
 
         return $fulfilment;
     }
