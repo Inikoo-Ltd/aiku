@@ -1256,13 +1256,21 @@ const handleClickOutside = (e: MouseEvent) => {
                 :description="ctrans('This closes the chat. Nothing is deleted, and it can be reopened.')"
                 @success="$emit('close-session')">
                 <template #default="{ changeModel }">
-                    <button @click="changeModel"
+                    <Button
+                        type="red"
+                        :label="ctrans('End chat')"
+                        @click="changeModel"
+                        icon="fal fa-times-circle"
+                        size="xs"
+                        key="3"
+                    />
+                    <!-- <button @click="changeModel"
                         class="inline-flex items-center justify-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md transition hover:opacity-90"
                         :class="isMyChat ? '' : 'border border-gray-300 text-gray-600 hover:bg-gray-100'"
                         :style="isMyChat ? { backgroundColor: 'var(--theme-color-4)', color: 'var(--theme-color-5)' } : {}">
                         <FontAwesomeIcon :icon="faTimesCircle" class="text-[11px]" fixed-width />
                         {{ ctrans("End chat") }}
-                    </button>
+                    </button> -->
                 </template>
             </ModalConfirmationDelete>
 
