@@ -4218,6 +4218,7 @@
     "Small Print": "Kleingedruckte",
     "Snapshot": "Schnappschuss",
     "Snapshots": "Schnappschüsse",
+    "So we can sort this out as soon as we open, please send us:": "Damit wir das gleich nach Öffnung klären können, senden Sie uns bitte:",
     "Social clerk": "Sozialangestellte",
     "Social media": "Soziale Medien",
     "Social supervisor": "Sozialbeauftragter",
@@ -4494,6 +4495,9 @@
     "Text updated successfully": "Text erfolgreich aktualisiert",
     "Th": "Th",
     "Thank you for applying!": "Vielen Dank für Ihre Bewerbung!",
+    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Vielen Dank für Ihre Nachricht. Wir haben gerade geschlossen und antworten Ihnen, sobald wir wieder da sind.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Vielen Dank für Ihre Nachricht. Wir haben gerade geschlossen und antworten Ihnen ab :time Uhr am :day.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Vielen Dank für Ihre Nachricht. Wir haben gerade geschlossen und antworten Ihnen ab :time Uhr am :day. Teilen Sie uns mit, wie wir helfen können, und wir kümmern uns gleich nach Öffnung darum.",
     "The Administrator ask you to reset password": "Der Administrator fordert Sie auf, Ihr Passwort zurückzusetzen",
     "The announcement should": "Die Ankündigung sollte",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "Der Kanal wird von Ihrem Shopify-Shop getrennt. Sie können ihn durch das Erstellen eines neuen Kanals wieder verknüpfen.",
@@ -5674,6 +5678,7 @@
     "personal email": "persönliche E-Mail",
     "personal information": "Persönliche Angaben",
     "phone": "Telefon",
+    "photos of the items and of the box they came in": "Fotos der Artikel und des Kartons, in dem sie ankamen",
     "physical good": "körperliches Gut",
     "physical goods": "physische Güter",
     "picked bay": "Picked Bay",
@@ -5878,6 +5883,7 @@
     "websites shown": "angezeigte Websites",
     "week": "Woche",
     "weekly cut off day": "wöchentlicher Stichtag",
+    "which items are affected and how many": "welche Artikel betroffen sind und wie viele",
     "width": "Breite",
     "will be notified when in Stock": "wird benachrichtigt, sobald auf Lager",
     "will be paid with balance": "wird mit dem Restsaldo bezahlt",
@@ -5889,7 +5895,6 @@
     "working place": "Arbeitsplatz",
     "workplace": "Arbeitsplatz",
     "workshop": "Werkstatt",
-    "Δ 1Y": "Δ 1Y",
-    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Vielen Dank für Ihre Nachricht. Wir haben gerade geschlossen und antworten Ihnen, sobald wir wieder da sind.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Vielen Dank für Ihre Nachricht. Wir haben gerade geschlossen und antworten Ihnen ab :time Uhr am :day. Teilen Sie uns mit, wie wir helfen können, und wir kümmern uns gleich nach Öffnung darum."
+    "your order number": "Ihre Bestellnummer",
+    "Δ 1Y": "Δ 1Y"
 }

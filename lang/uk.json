@@ -4123,6 +4123,7 @@
     "Small Print": "Дрібний шрифт",
     "Snapshot": "Знімок",
     "Snapshots": "Знімки",
+    "So we can sort this out as soon as we open, please send us:": "Щоб ми могли вирішити це одразу після відкриття, надішліть нам:",
     "Social clerk": "Соціальний службовець",
     "Social media": "Соціальні мережі",
     "Social supervisor": "Соціальний керівник",
@@ -4399,6 +4400,9 @@
     "Text updated successfully": "Текст успішно оновлено",
     "Th": "Чт",
     "Thank you for applying!": "Дякуємо за заявку!",
+    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Дякуємо за ваше повідомлення. Зараз ми зачинені й відповімо, щойно повернемося.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Дякуємо за ваше повідомлення. Зараз ми зачинені й відповімо з :time, :day.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Дякуємо за ваше повідомлення. Зараз ми зачинені й відповімо з :time, :day. Напишіть, чим ми можемо допомогти, і ми займемося цим одразу після відкриття.",
     "The Administrator ask you to reset password": "Адміністратор просить вас змінити пароль",
     "The announcement should": "Оголошення повинно",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "Канал буде від’єднано від вашого магазину Shopify. Ви можете повторно прив’язати його, створивши новий канал.",
@@ -5555,6 +5559,7 @@
     "personal email": "особиста електронна пошта",
     "personal information": "особиста інформація",
     "phone": "телефон",
+    "photos of the items and of the box they came in": "фото товарів і коробки, в якій вони прийшли",
     "physical good": "фізичне благо",
     "physical goods": "фізичні товари",
     "picked bay": "вибраний затока",
@@ -5763,6 +5768,7 @@
     "websites shown": "показані веб-сайти",
     "week": "тиждень",
     "weekly cut off day": "день тижневого відсіку",
+    "which items are affected and how many": "яких товарів це стосується і скільки їх",
     "width": "ширина",
     "will be notified when in Stock": "буде повідомлено, коли буде в наявності",
     "will be paid with balance": "буде сплачено з балансу",
@@ -5774,7 +5780,6 @@
     "working place": "робоче місце",
     "workplace": "робоче місце",
     "workshop": "майстерня",
-    "Δ 1Y": "Δ 1Y",
-    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Дякуємо за ваше повідомлення. Зараз ми зачинені й відповімо, щойно повернемося.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Дякуємо за ваше повідомлення. Зараз ми зачинені й відповімо з :time, :day. Напишіть, чим ми можемо допомогти, і ми займемося цим одразу після відкриття."
+    "your order number": "номер вашого замовлення",
+    "Δ 1Y": "Δ 1Y"
 }

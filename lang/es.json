@@ -4020,6 +4020,7 @@
     "Small Print": "Letra pequeña",
     "Snapshot": "Instantánea",
     "Snapshots": "Instantáneas",
+    "So we can sort this out as soon as we open, please send us:": "Para poder solucionarlo en cuanto abramos, envíanos:",
     "Social clerk": "Empleado social",
     "Social media": "Redes sociales",
     "Social supervisor": "Supervisor social",
@@ -4288,6 +4289,9 @@
     "Text updated successfully": "Texto actualizado exitosamente",
     "Th": "El",
     "Thank you for applying!": "¡Gracias por postularte!",
+    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos en cuanto volvamos.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos a partir de las :time del :day.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos a partir de las :time del :day. Cuéntanos en qué podemos ayudarte y lo atenderemos en cuanto abramos.",
     "The Administrator ask you to reset password": "El administrador le pide que restablezca la contraseña",
     "The announcement should": "El anuncio debería",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "El canal se desvinculará de tu tienda Shopify. Puedes volver a vincularlo creando un nuevo canal.",
@@ -5434,6 +5438,7 @@
     "personal email": "correo electrónico personal",
     "personal information": "informacion personal",
     "phone": "teléfono",
+    "photos of the items and of the box they came in": "fotos de los artículos y de la caja en la que llegaron",
     "physical good": "bien físico",
     "physical goods": "bienes físicos",
     "picked bay": "bahía recogida",
@@ -5637,6 +5642,7 @@
     "websites shown": "sitios web mostrados",
     "week": "semana",
     "weekly cut off day": "día de corte semanal",
+    "which items are affected and how many": "qué artículos están afectados y cuántos",
     "width": "ancho",
     "will be notified when in Stock": "Se le notificará cuando esté en stock",
     "will be paid with balance": "se pagará con el saldo",
@@ -5648,7 +5654,6 @@
     "working place": "Lugar de trabajo",
     "workplace": "lugar de trabajo",
     "workshop": "taller",
-    "Δ 1Y": "Δ1Y",
-    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos en cuanto volvamos.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos a partir de las :time del :day. Cuéntanos en qué podemos ayudarte y lo atenderemos en cuanto abramos."
+    "your order number": "tu número de pedido",
+    "Δ 1Y": "Δ1Y"
 }

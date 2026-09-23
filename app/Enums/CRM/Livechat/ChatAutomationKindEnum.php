@@ -20,6 +20,7 @@ enum ChatAutomationKindEnum: string
     use EnumHelperTrait;
 
     case OUT_OF_HOURS = 'out_of_hours';
+    case CLAIM_DETAILS = 'claim_details';
     case GREETING = 'greeting';
     case ASKED_IF_CUSTOMER = 'asked_if_customer';
     case NOISE_CHECK = 'noise_check';
@@ -28,6 +29,7 @@ enum ChatAutomationKindEnum: string
     {
         return match ($this) {
             self::OUT_OF_HOURS      => __('Closed-now reply'),
+            self::CLAIM_DETAILS     => __('Asked for claim details'),
             self::GREETING          => __('Greeting'),
             self::ASKED_IF_CUSTOMER => __('Asked if customer'),
             self::NOISE_CHECK       => __('Noise check'),

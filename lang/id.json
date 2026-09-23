@@ -3373,6 +3373,7 @@
     "Small Print": "Catatan Kecil",
     "Snapshot": "Foto",
     "Snapshots": "Jepretan",
+    "So we can sort this out as soon as we open, please send us:": "Agar kami bisa menyelesaikannya begitu buka, mohon kirimkan:",
     "Social clerk": "Petugas sosial",
     "Social media": "Media sosial",
     "Social supervisor": "Pengawas sosial",
@@ -3611,6 +3612,9 @@
     "Text color": "Warna teks",
     "Text updated successfully": "Teks berhasil diperbarui.",
     "Thank you for applying!": "Terima kasih atas lamaran Anda!",
+    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas segera setelah kami kembali.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas mulai pukul :time pada :day.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas mulai pukul :time pada :day. Beri tahu kami apa yang bisa kami bantu, dan kami akan menanganinya begitu buka.",
     "The Administrator ask you to reset password": "Administrator meminta Anda untuk mengatur ulang kata sandi",
     "The announcement should": "Pengumuman tersebut seharusnya",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "Saluran tersebut akan diputus tautannya dari toko Shopify Anda. Anda dapat menautkannya kembali dengan membuat saluran baru.",
@@ -4585,6 +4589,7 @@
     "personal email": "email pribadi",
     "personal information": "informasi pribadi",
     "phone": "telepon",
+    "photos of the items and of the box they came in": "foto barang dan kotak tempat barang itu datang",
     "physical good": "barang fisik",
     "physical goods": "barang fisik",
     "picking position": "memilih posisi",
@@ -4783,6 +4788,7 @@
     "websites shown": "situs web yang ditampilkan",
     "week": "pekan",
     "weekly cut off day": "hari libur mingguan",
+    "which items are affected and how many": "barang mana yang bermasalah dan berapa banyak",
     "width": "lebar",
     "will be notified when in Stock": "akan diberitahu saat stok tersedia",
     "will be paid with balance": "akan dibayar dengan saldo",
@@ -4794,7 +4800,6 @@
     "working place": "tempat bekerja",
     "workplace": "tempat kerja",
     "workshop": "bengkel",
-    "Δ 1Y": "Δ 1Y",
-    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas segera setelah kami kembali.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas mulai pukul :time pada :day. Beri tahu kami apa yang bisa kami bantu, dan kami akan menanganinya begitu buka."
+    "your order number": "nomor pesanan Anda",
+    "Δ 1Y": "Δ 1Y"
 }

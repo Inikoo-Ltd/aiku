@@ -3373,6 +3373,7 @@
     "Small Print": "小字说明",
     "Snapshot": "快照",
     "Snapshots": "快照",
+    "So we can sort this out as soon as we open, please send us:": "为了让我们开门后立即处理，请发送：",
     "Social clerk": "社工",
     "Social media": "社交媒体",
     "Social supervisor": "社会监督员",
@@ -3611,6 +3612,9 @@
     "Text color": "文本颜色",
     "Text updated successfully": "文本已成功更新",
     "Thank you for applying!": "感谢您的申请！",
+    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "感谢您的留言。我们目前不在营业时间，回来后会尽快回复您。",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "感谢您的留言。我们目前不在营业时间，将于:day :time起回复。",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "感谢您的留言。我们目前不在营业时间，将于:day :time起回复。请告诉我们需要什么帮助，我们开门后会第一时间处理。",
     "The Administrator ask you to reset password": "管理员要求您重置密码",
     "The announcement should": "该公告应该",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "该频道将与您的 Shopify 商店解除关联。您可以创建新频道并重新关联。",
@@ -4583,6 +4587,7 @@
     "personal email": "个人电邮",
     "personal information": "个人信息",
     "phone": "电话",
+    "photos of the items and of the box they came in": "商品及其包装箱的照片",
     "physical good": "实物商品",
     "physical goods": "实物商品",
     "picking position": "位置",
@@ -4781,6 +4786,7 @@
     "websites shown": "网站显示",
     "week": "星期",
     "weekly cut off day": "每周截止日",
+    "which items are affected and how many": "哪些商品有问题以及数量",
     "width": "宽度",
     "will be notified when in Stock": "到货时会通知您。",
     "will be paid with balance": "将与余额一起支付",
@@ -4792,7 +4798,6 @@
     "working place": "工作地点",
     "workplace": "工作场所",
     "workshop": "作坊",
-    "Δ 1Y": "Δ 1Y",
-    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "感谢您的留言。我们目前不在营业时间，回来后会尽快回复您。",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "感谢您的留言。我们目前不在营业时间，将于:day :time起回复。请告诉我们需要什么帮助，我们开门后会第一时间处理。"
+    "your order number": "您的订单号",
+    "Δ 1Y": "Δ 1Y"
 }

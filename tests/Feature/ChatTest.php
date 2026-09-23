@@ -5681,6 +5681,64 @@ test('website chat out of hours is answered in the conversation, but not after t
     outOfHoursTestCleanUp($schedule, [$live, $viaForm]);
 });
 
+test('a customer reporting a problem out of hours is asked for exactly the details still missing', function () {
+    config(['chat.out_of_hours_reply' => true, 'askbot-laravel.openai_api_key' => 'test-key']);
+    $schedule = outOfHoursTestSchedule($this->shop);
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '123']])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['meta' => ['access_key' => 'token']])]);
+
+    $order = \App\Models\Ordering\Order::where('shop_id', $this->shop->id)->whereRaw("reference ~ '[0-9]{4,}'")->orderBy('id')->first()
+        ?? createOrder($this->customer, Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1]);
+    $digits = preg_replace('/\D/', '', $order->reference);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => '{"claim": true}']]]]),
+        '*'                => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'wamid.claim']]]),
+    ]);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
+
+    $session = noiseTestWhatsappSession($this->shop->fresh(), '+447500000004', 'Hello');
+    $reply   = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
+
+    // A bare hello is not read by the model: it just gets the closed-now reply.
+    expect($reply->handle($session))->toBeTrue();
+    \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => str_contains($request->url(), 'openai'));
+
+    $session->messages()->create([
+        'meta_channel_id' => $session->meta_channel_id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => "Two of the candles from order $digits arrived broken",
+    ]);
+
+    expect($reply->handle($session))->toBeTrue()
+        ->and($reply->handle($session))->toBeFalse();
+
+    $asked = $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->latest('id')->first();
+
+    expect($asked->message_text)->toContain('which items are affected and how many')
+        ->and($asked->message_text)->toContain('photos of the items')
+        ->and($asked->message_text)->not->toContain('your order number')
+        ->and($asked->message_text)->not->toContain('We are closed');
+
+    $session->messages()->create([
+        'meta_channel_id' => $session->meta_channel_id,
+        'message_type'    => ChatMessageTypeEnum::IMAGE,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => '',
+    ]);
+
+    actingAs($this->user);
+    $row = collect(get(route('grp.chat.ai', ['elements' => ['kind' => 'claim_details']]))
+        ->assertOk()
+        ->viewData('page')['props']['data']['data'])
+        ->firstWhere('contact', '+447500000004');
+
+    expect($row['claim'])->toBe(['order_reference' => $order->reference, 'photos' => 1]);
+
+    outOfHoursTestCleanUp($schedule);
+});
+
 test('chat hours come from the work schedule, and the next opening skips closed days and bank holidays', function () {
     $schedule = outOfHoursTestSchedule($this->shop);
     $shop = $this->shop->fresh();

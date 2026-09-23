@@ -8,18 +8,23 @@
 
 namespace App\Actions\Chat\UI;
 
+use App\Actions\Chat\ChatSession\GetChatClaimDetails;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
 use App\Enums\CRM\Livechat\ChatAutomationKindEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Chat\ChatMessage;
+use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -106,6 +111,7 @@ class ShowGroupChatAutomation extends OrgAction
             ->select([
                 DB::raw("chat_messages.metadata->>'automated' as kind"),
                 'chat_messages.created_at as at',
+                'chat_sessions.id as session_id',
                 'chat_sessions.channel as channel',
                 'chat_sessions.ulid as session_ulid',
                 'chat_messages.message_text as text',
@@ -121,14 +127,16 @@ class ShowGroupChatAutomation extends OrgAction
             ->join('meta_chat_sessions', 'meta_chat_sessions.id', '=', 'meta_chat_messages.meta_chat_session_id')
             ->where('meta_chat_messages.sender_type', 'system')
             ->whereNull('meta_chat_messages.deleted_at')
-            ->whereRaw("coalesce(meta_chat_messages.metadata->>'out_of_hours_replied_at', meta_chat_messages.metadata->>'asked_if_customer', meta_chat_messages.metadata->>'greeted_at', meta_chat_messages.metadata->>'greeting') is not null")
+            ->whereRaw("coalesce(meta_chat_messages.metadata->>'claim_details_asked_at', meta_chat_messages.metadata->>'out_of_hours_replied_at', meta_chat_messages.metadata->>'asked_if_customer', meta_chat_messages.metadata->>'greeted_at', meta_chat_messages.metadata->>'greeting') is not null")
             ->tap(fn ($query) => $shops($query, 'meta_chat_sessions'))
             ->select([
                 DB::raw("case
+                    when meta_chat_messages.metadata->>'claim_details_asked_at' is not null then 'claim_details'
                     when meta_chat_messages.metadata->>'out_of_hours_replied_at' is not null then 'out_of_hours'
                     when meta_chat_messages.metadata->>'asked_if_customer' is not null then 'asked_if_customer'
                     else 'greeting' end as kind"),
                 'meta_chat_messages.created_at as at',
+                'meta_chat_sessions.id as session_id',
                 DB::raw("'whatsapp' as channel"),
                 DB::raw('null::char(26) as session_ulid'),
                 'meta_chat_messages.message_text as text',
@@ -146,6 +154,7 @@ class ShowGroupChatAutomation extends OrgAction
             ->select([
                 DB::raw("'noise_check' as kind"),
                 DB::raw('coalesce(chat_sessions.noise_checked_at, chat_sessions.updated_at) as at'),
+                'chat_sessions.id as session_id',
                 'chat_sessions.channel as channel',
                 'chat_sessions.ulid as session_ulid',
                 'chat_sessions.noise_note as text',
@@ -163,6 +172,7 @@ class ShowGroupChatAutomation extends OrgAction
             ->select([
                 DB::raw("'noise_check' as kind"),
                 DB::raw('coalesce(meta_chat_sessions.noise_checked_at, meta_chat_sessions.updated_at) as at'),
+                'meta_chat_sessions.id as session_id',
                 DB::raw("'whatsapp' as channel"),
                 DB::raw('null::char(26) as session_ulid'),
                 'meta_chat_sessions.noise_note as text',
@@ -225,6 +235,7 @@ class ShowGroupChatAutomation extends OrgAction
         $activity->getCollection()->transform(function ($row) {
             $kind    = ChatAutomationKindEnum::tryFrom((string) $row->kind);
             $verdict = ChatNoiseVerdictEnum::tryFrom((string) $row->verdict);
+            $claim   = $kind === ChatAutomationKindEnum::CLAIM_DETAILS ? $this->claimSoFar($row) : null;
 
             return [
                 'at'            => $row->at,
@@ -242,6 +253,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'source'        => $row->source,
                 'put_aside'     => (bool) $row->put_aside,
                 'reversed'      => (bool) $row->reversed,
+                'claim'         => $claim,
                 'url'           => $row->session_ulid
                     ? route('grp.org.chat.inbox.conversation', [$row->organisation_slug, trim($row->session_ulid)])
                     : route('grp.org.chat.inbox', [$row->organisation_slug]),
@@ -263,6 +275,30 @@ class ShowGroupChatAutomation extends OrgAction
                 'data' => JsonResource::collection($activity),
             ]
         )->table($this->tableStructure($this->group));
+    }
+
+    /**
+     * What the customer has sent in this wait, before and after being asked, looked up when the
+     * page is read, so the row says what is still missing when the agent gets to it.
+     *
+     * @return array{order_reference: ?string, photos: int}|null
+     */
+    private function claimSoFar(object $row): ?array
+    {
+        $session = $row->channel === 'whatsapp' ? MetaChatSession::find($row->session_id) : ChatSession::find($row->session_id);
+
+        if (!$session) {
+            return null;
+        }
+
+        $waitStarted = $session->messages()
+            ->where('sender_type', ChatSenderTypeEnum::AGENT)
+            ->where('created_at', '<', $row->at)
+            ->max('created_at');
+
+        $details = GetChatClaimDetails::run($session, $waitStarted ? Carbon::parse($waitStarted) : null);
+
+        return ['order_reference' => $details['order_reference'], 'photos' => $details['photos']];
     }
 
     public function getBreadcrumbs(): array

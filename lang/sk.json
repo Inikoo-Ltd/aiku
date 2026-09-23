@@ -4529,6 +4529,7 @@
     "Small Print": "Malé písmo",
     "Snapshot": "Snímka",
     "Snapshots": "Snímky",
+    "So we can sort this out as soon as we open, please send us:": "Aby sme to mohli vyriešiť hneď po otvorení, pošlite nám:",
     "Social clerk": "Sociálny referent",
     "Social media": "Sociálne médiá",
     "Social supervisor": "Sociálny dozorca",
@@ -4828,6 +4829,9 @@
     "Text updated successfully": "Text bol úspešne aktualizovaný",
     "Th": "Štv",
     "Thank you for applying!": "Ďakujeme za vašu žiadosť!",
+    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Ďakujeme za vašu správu. Momentálne máme zatvorené a odpovieme vám hneď, ako sa vrátime.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Ďakujeme za vašu správu. Momentálne máme zatvorené a odpovieme vám od :time v :day.",
+    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Ďakujeme za vašu správu. Momentálne máme zatvorené a odpovieme vám od :time v :day. Napíšte nám, s čím vám môžeme pomôcť, a hneď po otvorení sa tomu budeme venovať.",
     "The Administrator ask you to reset password": "Administrátor vás požiada o obnovenie hesla",
     "The announcement should": "Oznámenie by malo",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "Kanál bude odpojený od vášho obchodu Shopify. Môžete ho znova prepojiť vytvorením nového kanála.",
@@ -6026,6 +6030,7 @@
     "personal email": "osobný email",
     "personal information": "osobné informácie",
     "phone": "telefón",
+    "photos of the items and of the box they came in": "fotky položiek a krabice, v ktorej prišli",
     "physical good": "fyzický tovar",
     "physical goods": "fyzický tovar",
     "picked bay": "vybral záliv",
@@ -6233,6 +6238,7 @@
     "websites shown": "zobrazené webové stránky",
     "week": "týždeň",
     "weekly cut off day": "týždenný prerušený deň",
+    "which items are affected and how many": "ktorých položiek sa to týka a koľko kusov",
     "width": "šírka",
     "will be notified when in Stock": "budem informovaný, keď bude skladom",
     "will be paid with balance": "bude vyplatená so zostatkom",
@@ -6244,7 +6250,6 @@
     "working place": "pracovisko",
     "workplace": "pracovisko",
     "workshop": "dielňa",
-    "Δ 1Y": "Δ1Y",
-    "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Ďakujeme za vašu správu. Momentálne máme zatvorené a odpovieme vám hneď, ako sa vrátime.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Ďakujeme za vašu správu. Momentálne máme zatvorené a odpovieme vám od :time v :day. Napíšte nám, s čím vám môžeme pomôcť, a hneď po otvorení sa tomu budeme venovať."
+    "your order number": "číslo vašej objednávky",
+    "Δ 1Y": "Δ1Y"
 }

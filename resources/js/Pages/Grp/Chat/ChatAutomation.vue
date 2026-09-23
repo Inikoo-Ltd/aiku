@@ -53,7 +53,19 @@ const CHANNEL_ICON: Record<string, object> = {
         </template>
 
         <template #cell(text)="{ item }">
-            <p v-if="item.sends_message" class="max-w-2xl whitespace-pre-line text-gray-700">{{ item.text }}</p>
+            <div v-if="item.sends_message" class="max-w-2xl">
+                <p class="whitespace-pre-line text-gray-700">{{ item.text }}</p>
+                <div v-if="item.claim" class="mt-1.5 flex flex-wrap gap-1.5 text-xs">
+                    <span class="rounded-full px-2 py-0.5 ring-1 ring-inset"
+                        :class="item.claim.order_reference ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200'">
+                        {{ item.claim.order_reference ? ctrans("Order :reference", { reference: item.claim.order_reference }) : ctrans("No order number yet") }}
+                    </span>
+                    <span class="rounded-full px-2 py-0.5 ring-1 ring-inset"
+                        :class="item.claim.photos ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200'">
+                        {{ item.claim.photos ? ctrans(":count photos or files", { count: item.claim.photos }) : ctrans("No photos yet") }}
+                    </span>
+                </div>
+            </div>
             <div v-else class="max-w-2xl">
                 <div class="flex flex-wrap items-center gap-1.5">
                     <span class="rounded-full px-2 py-0.5 text-xs ring-1 ring-inset"
