@@ -2580,17 +2580,29 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $backlog = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->firstWhere('label', 'Backlog')['items'];
+    $toRestock = fn () => get(route('grp.org.productions.show.to_restock.index', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
 
     expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id)
         ->and($counts()['to_produce'])->toBe($before['to_produce'])
-        ->and($counts()['pre_pick'])->toBe($before['pre_pick'] + 1);
+        ->and($counts()['pre_pick'])->toBe($before['pre_pick'] + 1)
+        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->not->toContain($line->id)
+        ->and($toRestock()['sentFromStock'])->toBe($before['pre_pick'] + 1);
 
     $orgStocks[0]->update(['quantity_in_locations' => 2, 'quantity_available' => 2]);
     expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id);
 
     $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
     expect(collect($backlog())->pluck('id')->all())->toContain($line->id)
-        ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1);
+        ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1)
+        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->toContain($line->id);
+
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+    expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id)
+        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->not->toContain($line->id)
+        ->and($counts()['to_produce'])->toBe($before['to_produce']);
+
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
 });
 
 test('keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {

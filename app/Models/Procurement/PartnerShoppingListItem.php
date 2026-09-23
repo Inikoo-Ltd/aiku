@@ -9,6 +9,7 @@
 namespace App\Models\Procurement;
 
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Events\BroadcastProductionQueuesChanged;
 use App\Models\Goods\Stock;
@@ -17,6 +18,7 @@ use App\Models\Ordering\Transaction;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -85,6 +87,21 @@ class PartnerShoppingListItem extends Model
             'needed_by'      => 'date',
             'expiry_date'    => 'date',
         ];
+    }
+
+    public static function whereRoutedToProduction(Builder $query, string $items = 'partner_shopping_list_items', string $orgStocks = 'org_stocks'): Builder
+    {
+        return $query->whereNull("$items.pre_picked_at")
+            ->where(function ($query) use ($items, $orgStocks) {
+                $query->whereNotNull("$items.job_order_id")
+                    ->orWhereNull("$items.partner_organisation_id")
+                    ->orWhereRaw("coalesce($orgStocks.quantity_available, 0) <= 0");
+            })
+            ->where(function ($query) use ($items, $orgStocks) {
+                $query->whereNotNull("$items.job_order_id")
+                    ->orWhereNull("$orgStocks.state")
+                    ->orWhereNotIn("$orgStocks.state", [OrgStockStateEnum::DISCONTINUING->value, OrgStockStateEnum::DISCONTINUED->value]);
+            });
     }
 
     public function jobOrder(): BelongsTo
