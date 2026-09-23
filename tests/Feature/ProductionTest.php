@@ -1441,6 +1441,8 @@ test('completed job order into stock converts units and deducts raw materials', 
         'unit_cost'   => 10,
     ]);
     UpdateRawMaterial::make()->action($rawMaterial, ['org_stock_id' => $inputOrgStock->id]);
+    /* The recipe counts raw material units, the stock counts SKOs of five. */
+    $inputOrgStock->update(['packed_in' => 5]);
 
     AttachRawMaterialToRecipeStep::make()->action($recipeStep, [
         'raw_material_id'   => $rawMaterial->id,
@@ -1508,10 +1510,10 @@ test('completed job order into stock converts units and deducts raw materials', 
         ->where('quantity', '<', 0)
         ->first();
     expect($deductionMovement)->not->toBeNull()
-        ->and((float) $deductionMovement->quantity)->toBe(-5.0);
+        ->and((float) $deductionMovement->quantity)->toBe(-1.0);
 
     $inputLocationOrgStock->refresh();
-    expect((float) $inputLocationOrgStock->quantity)->toBe(95.0);
+    expect((float) $inputLocationOrgStock->quantity)->toBe(99.0);
 });
 
 test('artefact compliance status reflects its items', function () {
