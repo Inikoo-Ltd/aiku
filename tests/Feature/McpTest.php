@@ -531,6 +531,24 @@ describe('the sql query tool', function () {
         $response->assertOk();
     });
 
+    test('org stock answers point an enrolled user to the discontinue tools', function () {
+        $this->user->update(['can_use_mcp_sql' => true, 'can_use_mcp_discontinue' => true]);
+
+        AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+            'sql' => 'select count(*) as total from org_stocks',
+        ])->assertOk()->assertSee('org-stock-discontinue-preview-tool');
+
+        AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, [
+            'tables' => ['org_stocks'],
+        ])->assertOk()->assertSee('refresh the aiku connector');
+
+        $this->user->update(['can_use_mcp_discontinue' => false]);
+
+        AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+            'sql' => 'select count(*) as total from org_stocks',
+        ])->assertOk()->assertDontSee('org-stock-discontinue-preview-tool');
+    });
+
     test('unknown database is rejected', function () {
         $this->user->update(['can_use_mcp_sql' => true]);
 
