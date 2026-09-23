@@ -23,7 +23,9 @@ use App\Actions\Chat\UI\ShowGroupChatAutomation;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/reports', ShowGroupChatDashboard::class)->name('reports');
-Route::get('/ai', ShowGroupChatAutomation::class)->name('ai');
+Route::get('/ai', ShowGroupChatAutomation::class)->name('ai.dashboard');
+Route::get('/ai/sent', [ShowGroupChatAutomation::class, 'inSent'])->name('ai.sent');
+Route::get('/ai/noise-checks', [ShowGroupChatAutomation::class, 'inNoiseChecks'])->name('ai.noise_checks');
 Route::post('/ai/drafts/{chatAiDraft}/flag', FlagChatAiDraft::class)->name('ai.drafts.flag');
 Route::get('/agents', ShowGroupAgents::class)->name('agents.show');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');

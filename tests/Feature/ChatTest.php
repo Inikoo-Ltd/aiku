@@ -5788,9 +5788,19 @@ test('website chat out of hours is answered in the conversation, but not after t
     expect($reply->handle($viaForm))->toBeFalse();
 
     actingAs($this->user);
-    $rows = collect(get(route('grp.chat.ai', ['elements' => ['kind' => 'out_of_hours']]))
+    $rows = collect(get(route('grp.chat.ai.sent', ['elements' => ['kind' => 'out_of_hours']]))
         ->assertOk()
         ->viewData('page')['props']['data']['data']);
+
+    // The noise checks have their own tab, so they never bury what reached customers.
+    $checks = collect(get(route('grp.chat.ai.noise_checks'))->assertOk()->viewData('page')['props']['data']['data']);
+    $sentTab = collect(get(route('grp.chat.ai.sent'))->assertOk()->viewData('page')['props']['data']['data']);
+    expect($checks->pluck('kind')->unique()->values()->all())->toBeIn([[], ['noise_check']])
+        ->and($sentTab->pluck('kind')->contains('noise_check'))->toBeFalse();
+
+    $dashboard = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['dashboard'];
+    expect($dashboard['daily'])->toHaveCount(30)
+        ->and(collect($dashboard['by_kind'])->firstWhere('kind', 'out_of_hours')['total'])->toBeGreaterThanOrEqual(1);
 
     expect($rows->pluck('kind')->unique()->all())->toBe(['out_of_hours'])
         ->and($rows->firstWhere('url', route('grp.org.chat.inbox.conversation', [$this->organisation->slug, $live->ulid])))->not->toBeNull();
@@ -5846,7 +5856,7 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
     ]);
 
     actingAs($this->user);
-    $row = collect(get(route('grp.chat.ai', ['elements' => ['kind' => 'claim_details']]))
+    $row = collect(get(route('grp.chat.ai.sent', ['elements' => ['kind' => 'claim_details']]))
         ->assertOk()
         ->viewData('page')['props']['data']['data'])
         ->firstWhere('contact', '+447500000004');
@@ -5968,7 +5978,7 @@ test('a question about an order gets a draft written from that customer\'s order
     $ask($session, 'Can I change the delivery address of my next order?');
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
 
-    $stats = get(route('grp.chat.ai'))->assertOk()->viewData('page')['props']['draftStats'];
+    $stats = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['draftStats'];
     expect($stats['used'])->toBeGreaterThanOrEqual(1)->and($stats['superseded'])->toBeGreaterThanOrEqual(1);
 
     foreach ([$session, $stranger] as $each) {

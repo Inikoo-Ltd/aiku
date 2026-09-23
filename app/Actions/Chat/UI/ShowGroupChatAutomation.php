@@ -37,24 +37,47 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 /**
- * Everything the chat did on its own, newest first, in every channel: each fixed message it
- * sent a customer and each noise check that decided whether a stranger reached the queue, with
- * the words sent or the verdict and why. So nothing automatic ever happens out of sight.
+ * Everything the chat did on its own, in every channel, in three tabs. A dashboard of the last
+ * 30 days. What reached customers: each fixed message it sent and each reply the AI drafted,
+ * with what became of it. And the noise checks that decided whether a stranger reached the
+ * queue, with the verdict and why. The lists are kept apart because the checks outnumber what
+ * was sent a hundred to one, and the few messages that matter were lost among them. Nothing
+ * automatic ever happens out of sight.
  */
 class ShowGroupChatAutomation extends OrgAction
 {
     use WithInertia;
+
+    public const string DASHBOARD = 'dashboard';
+    public const string SENT = 'sent';
+    public const string NOISE_CHECKS = 'noise_checks';
+
+    private string $bucket = self::DASHBOARD;
 
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->hasGroupAccess();
     }
 
-    public function asController(ActionRequest $request): LengthAwarePaginator
+    public function asController(ActionRequest $request): ?LengthAwarePaginator
     {
         $this->initialisationFromGroup(app('group'), $request);
 
-        return $this->handle($this->group);
+        return $this->bucket === self::DASHBOARD ? null : $this->handle($this->group);
+    }
+
+    public function inSent(ActionRequest $request): ?LengthAwarePaginator
+    {
+        $this->bucket = self::SENT;
+
+        return $this->asController($request);
+    }
+
+    public function inNoiseChecks(ActionRequest $request): ?LengthAwarePaginator
+    {
+        $this->bucket = self::NOISE_CHECKS;
+
+        return $this->asController($request);
     }
 
     public function handle(Group $group, ?string $prefix = null): LengthAwarePaginator
@@ -70,7 +93,7 @@ class ShowGroupChatAutomation extends OrgAction
             });
         });
 
-        $query = QueryBuilder::for(ChatMessage::withoutGlobalScopes()->fromSub($this->activity($group), 'automation'));
+        $query = QueryBuilder::for(ChatMessage::withoutGlobalScopes()->fromSub($this->activity($group, $this->bucket), 'automation'));
 
         foreach ($this->getElementGroups($group) as $key => $elementGroup) {
             $query->whereElementGroup(
@@ -94,7 +117,7 @@ class ShowGroupChatAutomation extends OrgAction
      * tables; WhatsApp has its own, and its older messages are known by the key they were sent
      * under rather than a common marker.
      */
-    private function activity(Group $group): \Illuminate\Database\Query\Builder
+    private function activity(Group $group, string $bucket): \Illuminate\Database\Query\Builder
     {
         $shops = fn ($query, string $table) => $query
             ->join('shops', 'shops.id', '=', $table.'.shop_id')
@@ -214,19 +237,43 @@ class ShowGroupChatAutomation extends OrgAction
                 ...$common("coalesce(chat_sessions.metadata->>'name', chat_sessions.metadata->>'email_from', meta_chat_sessions.phone_number)"),
             ]);
 
-        return $sent->unionAll($sentOnWhatsapp)->unionAll($checked)->unionAll($checkedOnWhatsapp)->unionAll($drafted);
+        return $bucket === self::NOISE_CHECKS
+            ? $checked->unionAll($checkedOnWhatsapp)
+            : $sent->unionAll($sentOnWhatsapp)->unionAll($drafted);
     }
 
     private function getElementGroups(Group $group): array
     {
-        $counts = DB::query()->fromSub($this->activity($group), 'automation')
+        if ($this->bucket === self::NOISE_CHECKS) {
+            $counts = DB::query()->fromSub($this->activity($group, self::NOISE_CHECKS), 'automation')
+                ->selectRaw('verdict, count(*) as total')
+                ->groupBy('verdict')
+                ->pluck('total', 'verdict');
+
+            $elements = [];
+            foreach (ChatNoiseVerdictEnum::cases() as $case) {
+                $elements[$case->value] = [$case->label(), (int) ($counts[$case->value] ?? 0)];
+            }
+
+            return [
+                'verdict' => [
+                    'label'    => __('Verdict'),
+                    'elements' => $elements,
+                    'engine'   => fn ($query, $elements) => $query->whereIn('automation.verdict', $elements),
+                ],
+            ];
+        }
+
+        $counts = DB::query()->fromSub($this->activity($group, self::SENT), 'automation')
             ->selectRaw('kind, count(*) as total')
             ->groupBy('kind')
             ->pluck('total', 'kind');
 
         $elements = [];
         foreach (ChatAutomationKindEnum::cases() as $case) {
-            $elements[$case->value] = [$case->label(), (int) ($counts[$case->value] ?? 0)];
+            if ($case !== ChatAutomationKindEnum::NOISE_CHECK) {
+                $elements[$case->value] = [$case->label(), (int) ($counts[$case->value] ?? 0)];
+            }
         }
 
         return [
@@ -235,6 +282,29 @@ class ShowGroupChatAutomation extends OrgAction
                 'elements' => $elements,
                 'engine'   => fn ($query, $elements) => $query->whereIn('automation.kind', $elements),
             ],
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function subNavigation(Group $group): array
+    {
+        $tab = fn (string $label, string $routeName, string $bucket) => [
+            'label'  => $label,
+            'root'   => $routeName,
+            'route'  => ['name' => $routeName, 'parameters' => []],
+            'number' => DB::query()->fromSub($this->activity($group, $bucket), 'automation')->count(),
+        ];
+
+        return [
+            [
+                'label' => __('Dashboard'),
+                'root'  => 'grp.chat.ai.dashboard',
+                'route' => ['name' => 'grp.chat.ai.dashboard', 'parameters' => []],
+            ],
+            $tab(__('Sent to customers'), 'grp.chat.ai.sent', self::SENT),
+            $tab(__('Noise checks'), 'grp.chat.ai.noise_checks', self::NOISE_CHECKS),
         ];
     }
 
@@ -255,13 +325,28 @@ class ShowGroupChatAutomation extends OrgAction
                 ->column(key: 'kind', label: __('What'), canBeHidden: false, sortable: true)
                 ->column(key: 'shop_name', label: __('Shop'), sortable: true)
                 ->column(key: 'contact', label: __('Customer'))
-                ->column(key: 'text', label: __('Sent or decided'), canBeHidden: false)
+                ->column(key: 'text', label: $this->bucket === self::NOISE_CHECKS ? __('Verdict and why') : __('What was sent or drafted'), canBeHidden: false)
                 ->defaultSort('-at');
         };
     }
 
-    public function htmlResponse(LengthAwarePaginator $activity, ActionRequest $request): Response
+    public function htmlResponse(?LengthAwarePaginator $activity, ActionRequest $request): Response
     {
+        if (!$activity) {
+            return Inertia::render('Chat/ChatAutomationDashboard', [
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'title'       => __('AI'),
+                'pageHead'    => [
+                    'title'         => __('AI dashboard'),
+                    'icon'          => ['title' => __('AI'), 'icon' => ['fal', 'fa-robot']],
+                    'subNavigation' => $this->subNavigation($this->group),
+                ],
+                'dashboard'  => $this->dashboard($this->group),
+                'draftStats' => $this->draftStats($this->group),
+                'autoSend'   => $this->autoSend($this->group),
+            ]);
+        }
+
         $activity->getCollection()->transform(function ($row) {
             $kind    = ChatAutomationKindEnum::tryFrom((string) $row->kind);
             $verdict = ChatNoiseVerdictEnum::tryFrom((string) $row->verdict);
@@ -300,15 +385,14 @@ class ShowGroupChatAutomation extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('AI'),
                 'pageHead'    => [
-                    'title' => __('AI and automatic messages'),
+                    'title' => $this->bucket === self::NOISE_CHECKS ? __('Noise checks') : __('Sent to customers'),
                     'icon'  => [
                         'title' => __('AI'),
                         'icon'  => ['fal', 'fa-robot'],
                     ],
+                    'subNavigation' => $this->subNavigation($this->group),
                 ],
-                'data'       => JsonResource::collection($activity),
-                'draftStats' => $this->draftStats($this->group),
-                'autoSend'   => $this->autoSend($this->group),
+                'data' => JsonResource::collection($activity),
             ]
         )->table($this->tableStructure($this->group));
     }
@@ -389,6 +473,63 @@ class ShowGroupChatAutomation extends OrgAction
         ];
     }
 
+    /**
+     * The last 30 days at a glance: what was sent, drafted and checked each day, and how the
+     * noise checks came out.
+     *
+     * @return array<string, mixed>
+     */
+    private function dashboard(Group $group): array
+    {
+        $since = now()->subDays(29)->startOfDay();
+
+        $perDay = fn (string $bucket, string $column) => DB::query()
+            ->fromSub($this->activity($group, $bucket), 'automation')
+            ->where('at', '>=', $since)
+            ->selectRaw("to_char(at, 'YYYY-MM-DD') as day, $column as series, count(*) as total")
+            ->groupByRaw("1, 2")
+            ->get();
+
+        $sent   = $perDay(self::SENT, 'kind');
+        $checks = $perDay(self::NOISE_CHECKS, "case when verdict = 'genuine' then 'genuine' else 'noise' end");
+
+        $days = collect(range(0, 29))->map(fn (int $offset) => $since->copy()->addDays($offset)->format('Y-m-d'));
+        $sum  = fn ($rows, callable $match, string $day) => (int) $rows->where('day', $day)->filter($match)->sum('total');
+
+        $daily = $days->map(fn (string $day) => [
+            'date'          => $day,
+            'sent'          => $sum($sent, fn ($row) => $row->series !== ChatAutomationKindEnum::AI_DRAFT->value, $day),
+            'drafts'        => $sum($sent, fn ($row) => $row->series === ChatAutomationKindEnum::AI_DRAFT->value, $day),
+            'noise'         => $sum($checks, fn ($row) => $row->series === 'noise', $day),
+            'genuine'       => $sum($checks, fn ($row) => $row->series === 'genuine', $day),
+        ])->values()->all();
+
+        $byKind = $sent->groupBy('series')->map(fn ($rows) => (int) $rows->sum('total'));
+
+        $verdicts = DB::query()
+            ->fromSub($this->activity($group, self::NOISE_CHECKS), 'automation')
+            ->where('at', '>=', $since)
+            ->selectRaw('verdict, count(*) as total, count(*) filter (where put_aside) as put_aside, count(*) filter (where reversed) as overruled')
+            ->groupBy('verdict')
+            ->get();
+
+        return [
+            'daily'   => $daily,
+            'by_kind' => collect(ChatAutomationKindEnum::cases())
+                ->reject(fn (ChatAutomationKindEnum $kind) => $kind === ChatAutomationKindEnum::NOISE_CHECK)
+                ->map(fn (ChatAutomationKindEnum $kind) => ['kind' => $kind->value, 'label' => $kind->label(), 'total' => (int) ($byKind[$kind->value] ?? 0)])
+                ->values()->all(),
+            'verdicts' => $verdicts->map(fn ($row) => [
+                'verdict'  => $row->verdict,
+                'label'    => ChatNoiseVerdictEnum::tryFrom((string) $row->verdict)?->label() ?? $row->verdict,
+                'total'    => (int) $row->total,
+            ])->sortByDesc('total')->values()->all(),
+            'checks'    => (int) $verdicts->sum('total'),
+            'put_aside' => (int) $verdicts->sum('put_aside'),
+            'overruled' => (int) $verdicts->sum('overruled'),
+        ];
+    }
+
     public function getBreadcrumbs(): array
     {
         return array_merge(
@@ -398,7 +539,7 @@ class ShowGroupChatAutomation extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'icon'  => 'fal fa-robot',
-                        'route' => ['name' => 'grp.chat.ai'],
+                        'route' => ['name' => 'grp.chat.ai.dashboard'],
                         'label' => __('AI'),
                     ],
                 ],

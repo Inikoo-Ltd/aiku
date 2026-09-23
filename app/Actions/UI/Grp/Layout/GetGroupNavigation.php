@@ -196,9 +196,9 @@ class GetGroupNavigation
                         'label'   => __('AI'),
                         'tooltip' => __('AI'),
                         'icon'    => ['fal', 'fa-robot'],
-                        'root'    => 'grp.chat.ai',
+                        'root'    => 'grp.chat.ai.',
                         'route'   => [
-                            'name' => 'grp.chat.ai',
+                            'name' => 'grp.chat.ai.dashboard',
                         ],
                     ]] : []),
                     [
