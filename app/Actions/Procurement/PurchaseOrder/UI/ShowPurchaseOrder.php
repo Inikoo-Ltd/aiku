@@ -151,7 +151,22 @@ class ShowPurchaseOrder extends OrgAction
                             'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
                         ],
                     ] : false,
-                    'actions' => $this->canEdit ? $this->getActions($purchaseOrder, $showProductsTab) : [],
+                    'actions' => [
+                        [
+                            'type'   => 'button',
+                            'style'  => 'tertiary',
+                            'label'  => 'PDF',
+                            'target' => '_blank',
+                            'icon'   => 'fal fa-file-pdf',
+                            'key'    => 'pdf',
+                            'route'  => [
+                                'name'       => 'grp.org.procurement.purchase_orders.pdf',
+                                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+                            ],
+                        ],
+                        ...($this->emailToSupplierAction($purchaseOrder) ?? []),
+                        ...($this->canEdit ? $this->getActions($purchaseOrder, $showProductsTab) : []),
+                    ],
                 ],
                 'data'                     => PurchaseOrderResource::make($purchaseOrder),
                 'timelines'                => $this->getTimeline($purchaseOrder),
@@ -258,6 +273,32 @@ class ShowPurchaseOrder extends OrgAction
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource
     {
         return new PurchaseOrderResource($purchaseOrder);
+    }
+
+    private function emailToSupplierAction(PurchaseOrder $purchaseOrder): ?array
+    {
+        $supplier = $purchaseOrder->parent instanceof OrgSupplier ? $purchaseOrder->parent->supplier : null;
+
+        if (!$supplier || !Arr::get($supplier->settings, 'po_by_email')) {
+            return null;
+        }
+
+        $email   = Arr::get($supplier->settings, 'po_email') ?: $supplier->email;
+        $subject = __('Purchase order :reference from :organisation', ['reference' => $purchaseOrder->reference, 'organisation' => $purchaseOrder->organisation->name]);
+        $body    = __("Hello,\n\nPlease find attached our purchase order :reference.\n\nKind regards,\n:organisation", ['reference' => $purchaseOrder->reference, 'organisation' => $purchaseOrder->organisation->name]);
+
+        return [
+            [
+                'type'    => 'button',
+                'style'   => 'secondary',
+                'label'   => __('Email to supplier'),
+                'tooltip' => $email ? __('Opens your email with :email and downloads the PDF to attach', ['email' => $email]) : __('This supplier has no email address'),
+                'icon'    => 'fal fa-envelope',
+                'key'     => 'email_to_supplier',
+                'mailto'  => $email ? 'mailto:'.$email.'?subject='.rawurlencode($subject).'&body='.rawurlencode($body) : null,
+                'pdfUrl'  => route('grp.org.procurement.purchase_orders.pdf', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]),
+            ]
+        ];
     }
 
     public function getActions(PurchaseOrder $purchaseOrder, bool $showProductsTab): array

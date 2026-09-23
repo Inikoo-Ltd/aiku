@@ -499,6 +499,13 @@ const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
 	})
 }
 
+function openSupplierEmail(action: { mailto?: string, pdfUrl: string }) {
+	window.open(action.pdfUrl, '_blank')
+	if (action.mailto) {
+		window.location.href = action.mailto
+	}
+}
+
 const component = computed(() => {
 	const components: Component = {
 		items: TablePurchaseOrderTransactions,
@@ -538,6 +545,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #button-email-to-supplier="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:disabled="!action.mailto"
+				@click="() => openSupplierEmail(action)"
+			/>
+		</template>
+
 		<template #button-add-product="{ action }">
 			<Button
 				:style="action.style"

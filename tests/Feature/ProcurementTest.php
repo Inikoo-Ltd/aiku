@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Actions\Goods\Stock\SyncStockTradeUnits;
@@ -817,6 +818,31 @@ test('staff add notes to a purchase order and read them on its stock delivery', 
             ->component('Procurement/PurchaseOrder')
             ->has('notes.data')
             ->where('note_store_route.name', 'grp.models.purchase-order.note.store'));
+});
+
+test('purchase order pdf downloads', function () {
+    $purchaseOrder = $this->purchaseOrder;
+
+    $response = $this->get(route('grp.org.procurement.purchase_orders.pdf', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]));
+
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    expect(str_starts_with($response->getContent(), '%PDF'))->toBeTrue();
+});
+
+test('suppliers set to receive purchase orders by email get an email button on their purchase orders', function () {
+    $purchaseOrder = $this->purchaseOrder;
+    /** @var OrgSupplier $orgSupplier */
+    $orgSupplier = $purchaseOrder->parent;
+
+    UpdateSupplier::make()->action($orgSupplier->supplier, ['po_by_email' => true, 'po_email' => 'orders@supplier.test']);
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions', fn ($actions) => collect($actions)->contains(
+                fn ($action) => ($action['key'] ?? null) === 'email_to_supplier' && str_starts_with($action['mailto'], 'mailto:orders@supplier.test?subject=')
+            )));
+
+    UpdateSupplier::make()->action($orgSupplier->supplier, ['po_by_email' => false]);
 });
 
 test('delete purchase order', function () {
