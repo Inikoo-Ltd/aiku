@@ -8,6 +8,7 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\CalculateStockDeliveryItemTotalPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItem;
@@ -32,6 +33,8 @@ class FetchAuroraStockDeliveryItems
 
         if ($transactionData) {
             if ($stockDeliveryItem = StockDeliveryItem::where('source_id', $transactionData['stock_delivery_item']['source_id'])->first()) {
+                $this->moveToStockDelivery($stockDeliveryItem, $stockDelivery);
+
                 $placesInAiku = $stockDelivery->placesInAiku();
                 if ($placesInAiku) {
                     $transactionData['stock_delivery_item'] = StockDelivery::withoutAuroraPlacement($transactionData['stock_delivery_item']);
@@ -78,6 +81,21 @@ class FetchAuroraStockDeliveryItems
         }
 
         return null;
+    }
+
+    public function moveToStockDelivery(StockDeliveryItem $stockDeliveryItem, StockDelivery $stockDelivery): void
+    {
+        if ($stockDeliveryItem->stock_delivery_id === $stockDelivery->id) {
+            return;
+        }
+
+        $previousStockDelivery = $stockDeliveryItem->stockDelivery;
+        $stockDeliveryItem->update(['stock_delivery_id' => $stockDelivery->id]);
+        $stockDeliveryItem->setRelation('stockDelivery', $stockDelivery);
+
+        if ($previousStockDelivery) {
+            StockDeliveriesHydrateItems::dispatch($previousStockDelivery)->delay(5);
+        }
     }
 
     protected function recordError(SourceOrganisationService $organisationSource, Exception $e, array $modelData, $modelType, $errorOn): void
