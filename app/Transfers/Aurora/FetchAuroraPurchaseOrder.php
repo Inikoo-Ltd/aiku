@@ -20,16 +20,6 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 {
     protected function parseModel(): void
     {
-        if ($this->auroraModelData->{'Purchase Order Parent'} == 'Supplier') {
-            $supplierData = Db::connection('aurora')->table('Supplier Dimension')
-                ->select('aiku_ignore')
-                ->where('Supplier Key', $this->auroraModelData->{'Purchase Order Parent Key'})->first();
-            if ($supplierData && $supplierData->aiku_ignore == 'Yes') {
-                return;
-            }
-        }
-
-
         if (in_array($this->auroraModelData->{'Purchase Order Parent'}, ['Parcel', 'Container'])) {
             return;
         }
@@ -49,6 +39,15 @@ class FetchAuroraPurchaseOrder extends FetchAurora
         }
 
         if (!$orgParent) {
+            if ($this->auroraModelData->{'Purchase Order Parent'} == 'Supplier') {
+                $supplierData = Db::connection('aurora')->table('Supplier Dimension')
+                    ->select('aiku_ignore')
+                    ->where('Supplier Key', $this->auroraModelData->{'Purchase Order Parent Key'})->first();
+                if ($supplierData && $supplierData->aiku_ignore == 'Yes') {
+                    return;
+                }
+            }
+
             print "Error No parent found ".$this->auroraModelData->{'Purchase Order Parent'}."  ".$this->auroraModelData->{'Purchase Order Parent Key'}." ".$this->auroraModelData->{'Purchase Order Parent Name'}."  \n";
 
             return;
