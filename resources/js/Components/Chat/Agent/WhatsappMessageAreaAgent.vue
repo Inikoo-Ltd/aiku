@@ -6,6 +6,7 @@ import { chatSendErrorText } from "@/Composables/chatSendError"
 import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
+import { useComposerDraft } from "@/Composables/useComposerDraft"
     faPaperPlane,
     faArrowLeft,
     faImage,
@@ -200,6 +201,7 @@ const templateOnly = computed(() => canSendNonTemplate.value === false)
 const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
+useComposerDraft(() => props.session?.ulid, newMessage)
 
 const messageInput = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()

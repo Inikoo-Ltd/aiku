@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, toRef } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
@@ -7,6 +7,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { useComposerDraft } from "@/Composables/useComposerDraft"
 import { routeType } from "@/types/route"
 
 const visible = defineModel<boolean>("visible", { required: true })
@@ -24,6 +25,10 @@ const form = useForm({
     subject: "",
     message: "",
 })
+
+const newEmailDraftKey = (field: string) => () => `new-email:${props.shopId ?? "none"}:${field}`
+useComposerDraft(newEmailDraftKey("subject"), toRef(form, "subject"))
+useComposerDraft(newEmailDraftKey("message"), toRef(form, "message"))
 
 const fetchRoute = computed<routeType>(() => ({
     name: "grp.json.shop.customers",
@@ -44,6 +49,7 @@ const send = () => {
 
     form.post(route("grp.models.customer.email_chat.store", { customer: selectedCustomer.value.id }), {
         onSuccess: () => {
+            form.reset("subject", "message")
             visible.value = false
         },
     })
@@ -53,7 +59,6 @@ watch(visible, (isVisible) => {
     if (!isVisible) {
         customerId.value = null
         selectedCustomer.value = null
-        form.reset()
         form.clearErrors()
     }
 })

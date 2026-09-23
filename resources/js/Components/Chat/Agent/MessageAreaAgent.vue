@@ -4,6 +4,7 @@ import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import {
+import { useComposerDraft } from "@/Composables/useComposerDraft"
     faPaperPlane,
     faArrowLeft,
     faImage,
@@ -400,6 +401,7 @@ const reopenChat = async () => {
 
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
+useComposerDraft(() => props.session?.ulid, newMessage)
 
 const handleRetractMessage = async ({ id, reason }: { id: number; reason: string }) => {
     if (!props.session?.ulid) return

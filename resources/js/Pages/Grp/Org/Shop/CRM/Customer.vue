@@ -9,7 +9,8 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, toRef } from "vue"
+import { useComposerDraft } from "@/Composables/useComposerDraft"
 import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
@@ -124,8 +125,13 @@ const emailForm = useForm({
     subject: '',
     message: '',
 })
+const emailDraftKey = (field: string) => () => `customer-email:${props.shop_data.customer_id}:${field}`
+useComposerDraft(emailDraftKey('subject'), toRef(emailForm, 'subject'))
+useComposerDraft(emailDraftKey('message'), toRef(emailForm, 'message'))
 const submitEmail = () => {
-    emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters))
+    emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters), {
+        onSuccess: () => emailForm.reset('subject', 'message'),
+    })
 }
 
 const orderForm = useForm({
