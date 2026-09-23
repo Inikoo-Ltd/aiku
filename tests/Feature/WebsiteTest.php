@@ -65,6 +65,7 @@ use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Models\Web\CruxRecord;
+use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
 use App\Actions\Web\Webpage\GetWebpageSeo;
 use App\Actions\Web\Website\PruneWebsitePageViews;
@@ -1968,6 +1969,43 @@ test('the weekly chrome ux report fetch queues every live website and the pages 
     expect($queued)->toContain([$website->id, null])
         ->and($queued)->toContain([$website->id, $busyWebpage->id])
         ->and($queued)->not->toContain([$website->id, $quietWebpage->id]);
+})->depends('launch website');
+
+test('our visitors web vitals are reported as the daily 75th percentile, a page with too few loads shows the whole website', function (Website $website) {
+    $measuredWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $quietWebpage    = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    cache()->forget("web-vitals-report:$website->id");
+
+    $sample = fn (?Webpage $webpage, string $device, int $lcp, int $daysAgo = 0) => [
+        'website_id' => $website->id,
+        'webpage_id' => $webpage?->id,
+        'device'     => $device,
+        'lcp'        => $lcp,
+        'cls'        => 0.05,
+        'created_at' => now()->subDays($daysAgo),
+    ];
+
+    DB::table('web_vital_samples')->insert([
+        ...array_map(fn (int $lcp) => $sample($measuredWebpage, 'desktop', $lcp), [1000, 2000, 3000, 4000, 5000]),
+        ...array_map(fn (int $lcp) => $sample($measuredWebpage, 'phone', $lcp), [6000, 7000]),
+        ...array_map(fn (int $lcp) => $sample($quietWebpage, 'desktop', $lcp), [900, 900, 900, 900]),
+        $sample($measuredWebpage, 'desktop', 1000, GetWebVitalsReport::DAYS + 2),
+    ]);
+
+    $pageReport = GetWebVitalsReport::run($website, $measuredWebpage);
+    $today      = now()->utc()->toDateString();
+
+    expect($pageReport['scope'])->toBe('page')
+        ->and($pageReport['history']['desktop'])->toHaveCount(1)
+        ->and($pageReport['history']['desktop'][0])->toMatchArray(['period_end' => $today, 'samples' => 5, 'lcp' => 4000, 'cls' => 0.05, 'inp' => null])
+        ->and($pageReport['history'])->not->toHaveKey('phone')
+        ->and($pageReport['history']['all'][0]['samples'])->toBe(7);
+
+    $quietReport = GetWebVitalsReport::run($website, $quietWebpage);
+
+    expect($quietReport['scope'])->toBe('website')
+        ->and($quietReport['history']['desktop'][0]['samples'])->toBe(9)
+        ->and($quietReport['history']['all'][0]['samples'])->toBe(11);
 })->depends('launch website');
 
 test('UI show ads testing webpage does not offer page speed', function (Website $website) {

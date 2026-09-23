@@ -18,6 +18,7 @@ use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Website\GetCruxReport;
+use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
@@ -352,7 +353,10 @@ class ShowWebsite extends OrgAction
                 'route_forgot_pass'  => $route_forgot_pass_page,
 
                 'pagespeed_history' => $this->tab == WebsiteTabsEnum::SHOWCASE->value
-                    ? Inertia::defer(fn () => GetCruxReport::run($website), 'pagespeed_history')
+                    ? Inertia::defer(fn () => [
+                        'crux'     => GetCruxReport::run($website),
+                        'visitors' => GetWebVitalsReport::run($website),
+                    ], 'pagespeed_history')
                     : null,
 
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(

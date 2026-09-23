@@ -21,7 +21,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
-import CruxHistory from '@/Components/DataDisplay/CruxHistory.vue'
+import RealUserSpeed from '@/Components/DataDisplay/RealUserSpeed.vue'
 import WebpageSeo from '@/Components/DataDisplay/WebpageSeo.vue'
 import WebpageEngagement from '@/Components/DataDisplay/WebpageEngagement.vue'
 
@@ -186,7 +186,7 @@ const visitRedirect = () => {
       <!-- Right: real user speed, and the detail when there is no speed to show -->
       <div v-if="!redirected_to" class="space-y-6">
         <div v-if="pagespeed !== null" class="rounded-lg border border-gray-200 bg-white shadow-sm">
-          <CruxHistory embedded :report="pagespeed" />
+          <RealUserSpeed embedded :report="pagespeed" />
         </div>
 
         <WebpageEngagement v-if="detailBesidePreview" :engagement="engagement" />

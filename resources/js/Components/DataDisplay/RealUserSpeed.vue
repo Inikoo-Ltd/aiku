@@ -15,14 +15,16 @@ import { faDesktop, faMobile, faGlobe, faImage, faHandPointer, faArrowsAlt, faPa
 type FormFactor = "desktop" | "phone" | "all"
 type Metric = "lcp" | "inp" | "cls" | "fcp" | "ttfb"
 type Rating = "good" | "needs_improvement" | "poor" | null
-type Period = { period_start: string; period_end: string; histograms: Record<string, number[]> } & Record<Metric, number | null>
+type Source = "crux" | "visitors"
+type Period = { period_start: string; period_end: string; samples?: number; histograms: Record<string, number[]> } & Record<Metric, number | null>
+type SourceReport = {
+	scope: "page" | "website" | null
+	url: string | null
+	history: Partial<Record<FormFactor, Period[]>>
+}
 
 const props = defineProps<{
-	report?: {
-		scope: "page" | "website" | null
-		url: string | null
-		history: Partial<Record<FormFactor, Period[]>>
-	} | null
+	report?: Partial<Record<Source, SourceReport>> | null
 	embedded?: boolean
 }>()
 
@@ -43,7 +45,25 @@ const formFactors: Array<{ key: FormFactor; label: string; icon: typeof faDeskto
 	{ key: "all", label: ctrans("All devices"), icon: faGlobe },
 ]
 
-const availableFormFactors = computed(() => formFactors.filter((option) => (props.report?.history?.[option.key] ?? []).length > 0))
+const sources: Array<{ key: Source; label: string }> = [
+	{ key: "crux", label: ctrans("Google") },
+	{ key: "visitors", label: ctrans("Our visitors") },
+]
+
+const source = ref<Source>("crux")
+
+watch(
+	() => props.report,
+	(report) => {
+		if (report && !report[source.value]?.scope) {
+			source.value = sources.find((option) => report[option.key]?.scope)?.key ?? source.value
+		}
+	},
+	{ immediate: true }
+)
+
+const current = computed(() => props.report?.[source.value] ?? null)
+const availableFormFactors = computed(() => formFactors.filter((option) => (current.value?.history?.[option.key] ?? []).length > 0))
 const formFactor = ref<FormFactor>("desktop")
 
 watch(
@@ -57,7 +77,7 @@ watch(
 )
 
 const isLoading = computed(() => props.report === undefined)
-const periods = computed(() => props.report?.history?.[formFactor.value] ?? [])
+const periods = computed(() => current.value?.history?.[formFactor.value] ?? [])
 const latest = computed(() => periods.value[periods.value.length - 1] ?? null)
 const metricOf = (key: Metric) => metrics.find((metric) => metric.key === key)!
 
@@ -192,6 +212,10 @@ const chartOptions = computed(() => ({
 				title: (items: any[]) => {
 					const period = periods.value[items[0].dataIndex]
 
+					if (period.period_start === period.period_end) {
+						return `${useFormatTime(period.period_end, { formatTime: "PP" })} · ${ctrans(":count page loads", { count: period.samples ?? 0 })}`
+					}
+
 					return `${useFormatTime(period.period_start, { formatTime: "PP" })} – ${useFormatTime(period.period_end, { formatTime: "PP" })}`
 				},
 				label: (item: any) => `${item.dataset.label}: ${display(item.dataset.metric, item.dataset.values[item.dataIndex])}`,
@@ -211,9 +235,22 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-	<div :class="embedded ? '' : 'rounded-lg bg-white shadow'" data-crux-history>
+	<div :class="embedded ? '' : 'rounded-lg bg-white shadow'" data-real-user-speed>
 		<div class="flex flex-wrap items-center gap-3 border-b px-6 py-3">
 			<span class="text-sm font-semibold">{{ ctrans("Real user speed") }}</span>
+
+			<div class="flex rounded-md bg-gray-100 p-0.5">
+				<button
+					v-for="option in sources"
+					:key="option.key"
+					type="button"
+					:aria-pressed="source === option.key"
+					class="rounded px-2.5 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+					:class="source === option.key ? 'bg-white font-semibold text-gray-800 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+					@click="source = option.key">
+					{{ option.label }}
+				</button>
+			</div>
 
 			<div v-if="availableFormFactors.length > 1" class="flex rounded-md bg-gray-100 p-0.5">
 				<button
@@ -229,7 +266,7 @@ const chartOptions = computed(() => ({
 				</button>
 			</div>
 
-			<span v-if="latest" class="text-xs text-gray-600">
+			<span v-if="latest && source === 'crux'" class="text-xs text-gray-600">
 				{{ ctrans("Chrome visits :from – :to", { from: useFormatTime(latest.period_start, { formatTime: "PP" }), to: useFormatTime(latest.period_end, { formatTime: "PP" }) }) }}
 			</span>
 		</div>
@@ -239,8 +276,12 @@ const chartOptions = computed(() => ({
 			<div class="h-64 w-full animate-pulse rounded bg-gray-100" />
 		</div>
 
-		<div v-else-if="!report?.scope" class="px-6 py-6 text-sm text-gray-600">
-			{{ ctrans("Google has no real user data for this website yet. It needs enough visits from Chrome users over 28 days.") }}
+		<div v-else-if="!current?.scope" class="px-6 py-6 text-sm text-gray-600">
+			{{
+				source === "crux"
+					? ctrans("Google has no real user data for this website yet. It needs enough visits from Chrome users over 28 days.")
+					: ctrans("No measurements from our visitors yet. A day is shown once :count page loads have been measured.", { count: 5 })
+			}}
 		</div>
 
 		<div v-else class="space-y-4 px-6 py-6">
@@ -262,10 +303,18 @@ const chartOptions = computed(() => ({
 			</div>
 
 			<div class="space-y-1 text-xs text-gray-600">
-				<div v-if="report.scope === 'website'" data-crux-website-scope>
-					{{ ctrans("Whole website (:url): this page does not have enough visits for Google to report it on its own.", { url: report.url ?? "" }) }}
-				</div>
-				<div>{{ ctrans("75th percentile of real Chrome visits over 28 days, from the Chrome UX Report. Google adds a new point every week.") }}</div>
+				<template v-if="source === 'crux'">
+					<div v-if="current.scope === 'website'" data-crux-website-scope>
+						{{ ctrans("Whole website (:url): this page does not have enough visits for Google to report it on its own.", { url: current.url ?? "" }) }}
+					</div>
+					<div>{{ ctrans("75th percentile of real Chrome visits over 28 days, from the Chrome UX Report. Google adds a new point every week.") }}</div>
+				</template>
+				<template v-else>
+					<div v-if="current.scope === 'website'" data-web-vitals-website-scope>
+						{{ ctrans("Whole website: no day of this page has enough measured page loads yet.") }}
+					</div>
+					<div>{{ ctrans("75th percentile per day of every page load measured in our visitors' browsers, any browser. Updated as visitors browse.") }}</div>
+				</template>
 			</div>
 		</div>
 	</div>

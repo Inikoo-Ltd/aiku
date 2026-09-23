@@ -21,6 +21,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { irisStyleVariables } from '@/Composables/Workshop'
 import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
+import { recordWebVitals } from '@/Composables/recordWebVitals'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
@@ -199,6 +200,7 @@ const containerPaddingCss = (() => {
 layout.app.webpage_layout = theme
 
 onMounted(() => {
+    recordWebVitals((usePage().props?.webpage_id as number | undefined) ?? null)
     checkScreenType()
     setColorStyleRoot(theme?.color)
     window.addEventListener('resize', checkScreenType)

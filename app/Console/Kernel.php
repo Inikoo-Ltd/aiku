@@ -68,6 +68,7 @@ use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
 use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
+use App\Actions\Web\WebVital\PruneWebVitalSamples;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Traits\LoggableSchedule;
@@ -931,6 +932,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'PruneWebsitePageViews',
                 ),
                 name: 'PruneWebsitePageViews',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(PruneWebVitalSamples::makeJob())->dailyAt('03:38')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'PruneWebVitalSamples',
+                ),
+                name: 'PruneWebVitalSamples',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

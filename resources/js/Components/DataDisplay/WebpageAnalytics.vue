@@ -8,7 +8,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faRocketLaunch, faTag, faInfoCircle } from "@fal"
-import CruxHistory from "@/Components/DataDisplay/CruxHistory.vue"
+import RealUserSpeed from "@/Components/DataDisplay/RealUserSpeed.vue"
 
 type EventType = "publish" | "price"
 
@@ -278,7 +278,7 @@ const formatTotal = (key: keyof typeof series) =>
 			</div>
 		</div>
 
-		<CruxHistory v-if="pagespeed !== null" :report="pagespeed" />
+		<RealUserSpeed v-if="pagespeed !== null" :report="pagespeed" />
 
 		<div class="rounded-lg bg-white shadow">
 			<div class="border-b px-6 py-3 text-sm font-semibold">{{ ctrans("Changes in this period") }}</div>
