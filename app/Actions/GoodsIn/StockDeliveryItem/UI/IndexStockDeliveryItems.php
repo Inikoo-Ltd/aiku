@@ -16,10 +16,12 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexStockDeliveryItems extends OrgAction
 {
@@ -128,7 +130,12 @@ class IndexStockDeliveryItems extends OrgAction
             ->selectSub($weight, 'weight')
             ->selectRaw('round(sp.cbm * stock_delivery_items.unit_quantity / nullif(sp.units_per_carton, 0), 2) as volume')
             ->allowedSorts([
-                AllowedSort::field('code', 'sp.code'),
+                AllowedSort::custom('code', new class () implements Sort {
+                    public function __invoke(Builder $query, bool $descending, string $property): void
+                    {
+                        $query->orderByRaw('coalesce(sp.code, org_stocks.code) '.($descending ? 'desc' : 'asc'));
+                    }
+                }),
                 AllowedSort::field('part', 'org_stocks.code'),
                 'org_stock_code',
                 'org_stock_name',

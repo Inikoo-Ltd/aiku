@@ -2273,6 +2273,23 @@ test('UI stock delivery items offer a search over every warehouse location', fun
     });
 });
 
+test('UI stock delivery items without a supplier product sort by the SKO code', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'SORT-BY-SKO-CODE', [10, 10]);
+    $stockDelivery->items()->update(['supplier_product_id' => null]);
+    $skoCodes = $stockDelivery->items()->with('orgStock')->get()->pluck('orgStock.code')->sort()->values();
+
+    $this->withoutExceptionHandling();
+    $this->withoutVite();
+    $url = route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::ITEMS->value;
+
+    $this->get($url.'&items_sort=code')->assertInertia(
+        fn (AssertableInertia $page) => $page->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.code', $skoCodes->first())
+    );
+    $this->get($url.'&items_sort=-code')->assertInertia(
+        fn (AssertableInertia $page) => $page->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.code', $skoCodes->last())
+    );
+});
+
 test('UI edit stock delivery', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.procurement.stock_deliveries.edit', [$this->organisation->slug, $this->stockDelivery->slug]));
