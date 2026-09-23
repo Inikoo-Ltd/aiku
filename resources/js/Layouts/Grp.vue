@@ -153,6 +153,7 @@ const checkScreenType = () => {
     else screenType.value = "desktop"
 }
 provide("screenType", screenType)
+provide("isEmbedded", isEmbedded)
 
 onMounted(() => {
     if (!isEmbedded) {

@@ -75,6 +75,7 @@ interface CustomerStats {
 const props = defineProps<{
     session: PanelSession
     initialTab?: SidePanelTab
+    stacked?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -633,7 +634,8 @@ const copyChatId = async () => {
 <template>
     <!-- It floats over the conversation at every width. Taking a column of its own moved the
          thread and re-wrapped every message the moment somebody looked at a profile. -->
-    <div class="absolute inset-y-0 right-0 z-30 flex w-96 max-w-[85vw] flex-col overflow-hidden border-l border-gray-200 bg-white shadow-2xl">
+    <div class="flex flex-col overflow-hidden border-gray-200 bg-white"
+        :class="stacked ? 'shrink-0' : 'absolute inset-y-0 right-0 z-30 w-96 max-w-[85vw] border-l shadow-2xl'">
         <!-- Tabs -->
         <div class="flex border-b border-gray-100 shrink-0 text-xs pl-2">
             <template v-for="tab in tabs" :key="tab.key">

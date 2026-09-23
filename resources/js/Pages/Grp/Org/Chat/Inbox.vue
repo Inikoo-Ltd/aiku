@@ -6,6 +6,7 @@ import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
+import { followPointer } from "@/Composables/followPointer"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
@@ -60,6 +61,7 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
+const isEmbedded = inject("isEmbedded", false)
 const baseUrl = layout?.appUrl ?? ""
 const myAgentId = layout.user?.id
 
@@ -304,9 +306,23 @@ const selectedItemStyle = {
 
 const sidePanelVisible = ref(false)
 const sidePanelPreferred = useLocalStorage(`chat-inbox-side-panel:${layout.user?.id ?? "anonymous"}`, true)
+const stackedPanelHeight = useLocalStorage(`chat-pane-details-height:${layout.user?.id ?? "anonymous"}`, 50)
+const conversationColumn = ref<HTMLElement | null>(null)
+
+const startStackedPanelResize = (event: PointerEvent) => {
+    const column = conversationColumn.value?.getBoundingClientRect()
+
+    if (!column) {
+        return
+    }
+
+    followPointer(event, (move) => {
+        stackedPanelHeight.value = Math.round(Math.min(80, Math.max(20, ((column.bottom - move.clientY) / column.height) * 100)))
+    })
+}
 
 watch(() => [panelSession.value?.ulid, panelSession.value?.is_guest, !!panelSession.value?.customer_suggestion?.customer], ([ulid, isGuest, hasSuggestion]) => {
-    if (ulid && (!isGuest || hasSuggestion)) sidePanelVisible.value = sidePanelPreferred.value
+    if (ulid && (isEmbedded || !isGuest || hasSuggestion)) sidePanelVisible.value = sidePanelPreferred.value
 }, { immediate: true })
 
 const chatSettingVisible = ref(false)
@@ -883,7 +899,7 @@ const fitChatArea = () => {
         return
     }
 
-    const footer = document.querySelector("footer")
+    const footer = document.getElementById("grp_footer")
     const footerHeight = footer ? footer.getBoundingClientRect().height : 0
     const next = Math.max(320, window.innerHeight - element.getBoundingClientRect().top - footerHeight)
 
@@ -964,27 +980,15 @@ onUnmounted(() => {
 })
 
 const startResize = (section: "agents" | "folders", event: PointerEvent) => {
-    event.preventDefault()
-
     const startY = event.clientY
     const startHeight = railSectionHeight.value[section]
     const limit = Math.max(MIN_SECTION_HEIGHT, (railElement.value?.clientHeight ?? 600) * 0.6)
 
-    const onMove = (move: PointerEvent) => {
+    followPointer(event, (move) => {
         // The handle sits above the section, so dragging up makes it taller.
         const next = startHeight + (startY - move.clientY)
         railSectionHeight.value = { ...railSectionHeight.value, [section]: Math.min(limit, Math.max(MIN_SECTION_HEIGHT, next)) }
-    }
-
-    const onUp = () => {
-        window.removeEventListener("pointermove", onMove)
-        window.removeEventListener("pointerup", onUp)
-        document.body.style.userSelect = ""
-    }
-
-    document.body.style.userSelect = "none"
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
+    })
 }
 
 const SHOP_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"]
@@ -1504,6 +1508,30 @@ const handleClickContact = (c: Contact) => {
     openChat(c)
 }
 
+const stepConversation = (step: number) => {
+    const list = filteredContacts.value
+    const next = list[list.findIndex((c) => c.ulid === selectedSession.value?.ulid) + step]
+
+    if (next) {
+        handleClickContact(next)
+    }
+}
+
+const onChatPaneMessage = (event: MessageEvent) => {
+    if (event.source === window.parent && typeof event.data?.chatPaneStep === "number") {
+        stepConversation(event.data.chatPaneStep)
+    }
+}
+
+if (isEmbedded) {
+    window.addEventListener("message", onChatPaneMessage)
+    onUnmounted(() => window.removeEventListener("message", onChatPaneMessage))
+
+    watch([() => selectedSession.value?.ulid, filteredContacts], ([ulid, list]) => {
+        window.parent.postMessage({ chatPanePosition: { at: list.findIndex((c) => c.ulid === ulid) + 1, total: list.length } }, window.location.origin)
+    }, { immediate: true })
+}
+
 // In merged views the open conversation may belong to another channel than the one
 // selected in the sidebar, so the thread pane follows the conversation itself.
 const activeChannel = computed(
@@ -1785,6 +1813,7 @@ onUnmounted(() => {
 <template>
     <Head :title="title" />
 
+    <template v-if="!isEmbedded">
     <PageHeading :data="pageHead">
         <template #other>
             <button v-if="!isReadOnly" type="button" @click="openPhoneCall"
@@ -1830,6 +1859,7 @@ onUnmounted(() => {
             <span class="font-semibold text-gray-700">{{ totalSpam }}</span>
         </button>
     </div>
+    </template>
 
     <Dialog v-model:visible="chatSettingVisible" modal :header="ctrans('Chat Settings')"
         :style="{ width: '90vw', maxWidth: '560px' }" :breakpoints="{ '640px': '95vw' }">
@@ -1844,7 +1874,7 @@ onUnmounted(() => {
     <div ref="chatArea" :style="{ height: chatAreaHeight }"
         class="relative flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
-        <div ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
+        <div v-show="!isEmbedded" ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
             :class="railCollapsed ? 'w-16' : 'w-64'"
             @pointerdown="startRailIdle" @pointermove="startRailIdle" @wheel="startRailIdle"
             @focusin="startRailIdle" @keydown="startRailIdle">
@@ -2409,8 +2439,8 @@ onUnmounted(() => {
                 <div class="text-sm">{{ ctrans("Select a conversation") }}</div>
             </div>
 
-            <div v-else class="h-full">
-                <WhatsappMessageAreaAgent v-if="activeChannel === 'whatsapp'"
+            <div v-else ref="conversationColumn" class="h-full flex flex-col">
+                <WhatsappMessageAreaAgent v-if="activeChannel === 'whatsapp'" class="flex-1 min-h-0"
                     :messages="messages" :session="selectedSession"
                     :organisation-slug="organisation.slug"
                     :read-only="isReadOnly" :show-shop="crossShopView"
@@ -2419,7 +2449,7 @@ onUnmounted(() => {
                     @close-session="closeSession"
                     @spam-success="onSpamFromThread"
                     @view-profile="showProfilePanel" />
-                <MessageAreaAgent v-else :messages="messages" :session="selectedSession"
+                <MessageAreaAgent v-else class="flex-1 min-h-0" :messages="messages" :session="selectedSession"
                     :read-only="isReadOnly" :ignore-reasons="ignoreReasons" :show-shop="crossShopView"
                     @back="selectedSession = null" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
@@ -2430,14 +2460,22 @@ onUnmounted(() => {
                     @spam-success="onSpamFromThread"
                     @view-tickets="showTicketsPanel"
                     @restore-success="onRestoreFromThread" />
+
+                <template v-if="isEmbedded && panelSession && sidePanelVisible">
+                    <div class="h-1 shrink-0 cursor-row-resize bg-gray-200 hover:bg-[--app-accent]"
+                        v-tooltip="ctrans('Drag to resize')" @pointerdown="startStackedPanelResize" />
+                    <ChatConversationSidePanel stacked :style="{ height: `${stackedPanelHeight}%` }"
+                        :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
+                        @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
+                </template>
             </div>
         </div>
 
         <!-- RIGHT: conversation profile panel (Conversation-style) -->
-        <div v-if="panelSession && sidePanelVisible" class="absolute inset-0 z-20 bg-black/20 xl:hidden"
+        <div v-if="!isEmbedded && panelSession && sidePanelVisible" class="absolute inset-0 z-20 bg-black/20 xl:hidden"
             @click="closeSidePanel" />
 
-        <ChatConversationSidePanel v-if="panelSession && sidePanelVisible"
+        <ChatConversationSidePanel v-if="!isEmbedded && panelSession && sidePanelVisible"
             :session="panelSession" :initial-tab="sidePanelTab" @close="closeSidePanel" @priority-updated="onPriorityUpdated" @agent-assigned="onAgentAssigned"
             @synced="onSessionSynced" @customer-synced="onCustomerSynced" @unlinked="onSessionUnlinked" />
 

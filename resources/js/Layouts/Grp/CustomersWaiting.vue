@@ -12,7 +12,7 @@ import { faUserClock, faBell, faBellSlash } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { chatsWaiting, emailsWaiting, customerPeek, desktopAlerts, enableDesktopAlerts, waitedFor } from "@/Composables/useNotificationSound"
-import { openChatPane } from "@/Composables/useChatPane"
+import { chatPaneUrl, closeChatPane, openChatPane } from "@/Composables/useChatPane"
 
 library.add(faUserClock, faBell, faBellSlash)
 
@@ -52,6 +52,7 @@ const boxClass = computed(() => {
 
 const inboxSlug = computed(() => layout.currentParams?.organisation ?? layout.organisations?.data?.[0]?.slug)
 const open = (url: string | null) => openChatPane(url ?? (inboxSlug.value ? route("grp.org.chat.inbox", [inboxSlug.value]) : null))
+const toggle = (url: string | null) => chatPaneUrl.value ? closeChatPane() : open(url)
 
 const peekShownFor = computed(() => (layout.user?.settings?.alert_preview_seconds ?? 6) * 1000)
 const PEEK_GROW_TIME = 300
@@ -102,14 +103,14 @@ onUnmounted(holdPeek)
             <span
                 v-if="live.sessions"
                 class="text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1 animate-pulse"
-                @click.stop="open(live.url)">{{ live.sessions > 99 ? 99 : live.sessions }}</span>
+                @click.stop="toggle(live.url)">{{ live.sessions > 99 ? 99 : live.sessions }}</span>
             <span v-if="live.sessions" class="text-[var(--chat-red)]">{{ liveWait }}</span>
             <span
                 :class="backlogLevel.text"
-                @click.stop="open(backlogUrl)">{{ backlog > 99 ? 99 : backlog }}</span>
+                @click.stop="toggle(backlogUrl)">{{ backlog > 99 ? 99 : backlog }}</span>
         </div>
 
-        <div v-else-if="layout.user?.is_agent" class="w-full mb-1 cursor-pointer" @click="open(live.url ?? backlogUrl)">
+        <div v-else-if="layout.user?.is_agent" class="w-full mb-1 cursor-pointer" @click="toggle(live.url ?? backlogUrl)">
             <div class="border-2 mb-6" :class="[boxClass, layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2 rounded-xl px-2 pt-2 pb-3' : 'w-fit mx-auto flex flex-col items-center gap-y-2 rounded-2xl px-0.5 pt-2 pb-3']">
                 <FontAwesomeIcon icon="fal fa-user-clock" class="w-4 shrink-0 text-center text-sm" :class="live.sessions ? levelStyles.red.text : backlogLevel.text" fixed-width aria-hidden="true" />
                 <span v-if="layout.messagingSidebar.show" class="flex-1 text-xs font-semibold text-white">{{ ctrans('Customers waiting') }}</span>
