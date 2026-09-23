@@ -18,7 +18,7 @@ use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketImages;
-use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -69,7 +69,7 @@ class GetOrgStockShowcase
                 ],
                 'label_options'      => GetOrgStockLabelOptions::run($orgStock),
                 'future_orders'      => $this->getFutureOrders($orgStock),
-                'is_quantity_excess' => $orgStock->quantity_status === OrgStockQuantityStatusEnum::EXCESS,
+                'is_quantity_excess' => in_array(GetOrganisationStockCoverBuckets::make()->bucketOf($orgStock), ['excess', 'dead'], true),
                 'has_no_products'    => $this->hasNoProducts($orgStock),
                 'latest_movements'   => $this->getLatestMovements($orgStock),
                 'stock_history_route' => [

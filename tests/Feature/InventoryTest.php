@@ -847,6 +847,15 @@ test("UI index org stocks all", function () {
     });
 });
 
+test("export org stocks lists only this organisation's skos", function () {
+    $export = new \App\Exports\Inventory\OrgStocksExport($this->organisation);
+    $rows   = $export->query()->get();
+
+    expect($rows)->not->toBeEmpty()
+        ->and($rows->pluck('organisation_id')->unique()->all())->toBe([$this->organisation->id])
+        ->and(count($export->map($rows->first())))->toBe(count($export->headings()));
+});
+
 test("UI index org stocks discontinued", function () {
     $warehouse = Warehouse::first();
     $this->withoutExceptionHandling();

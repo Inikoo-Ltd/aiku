@@ -68,9 +68,13 @@ use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\UI\IndexOrganisationStockCoverItems;
+use App\Actions\Procurement\ExportOrganisationStockCoverItems;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProcurementDashboard::class)->name('dashboard');
+Route::get('/stock-cover', IndexOrganisationStockCoverItems::class)->name('stock_cover.index');
+Route::get('/stock-cover/export', ExportOrganisationStockCoverItems::class)->name('stock_cover.export');
 
 Route::prefix('agents')->as('org_agents.')->group(function () {
     Route::get('', IndexOrgAgents::class)->name('index');

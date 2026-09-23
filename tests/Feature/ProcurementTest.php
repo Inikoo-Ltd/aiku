@@ -173,6 +173,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -4697,6 +4698,75 @@ test('UI supplier cover bucket items index', function () {
             ->where('bucketLabel', 'We never stocked')
             ->has('items.data')
             ->has('orgSupplier.currency');
+    });
+});
+
+test('organisation stock cover buckets judge each active sko against its lead time', function () {
+    $orgStock = $this->orgStocks[0];
+    $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'estimated_lead_time_days' => 10, 'quantity_available' => 50]);
+    $buckets = App\Actions\Procurement\GetOrganisationStockCoverBuckets::make();
+
+    $bucketFor = function (array $stats) use ($orgStock, $buckets) {
+        $orgStock->stats->update($stats);
+
+        return $buckets->bucketOf($orgStock->fresh());
+    };
+
+    expect($bucketFor(['days_of_cover' => 5, 'predicted_daily_usage' => 10, 'stock_value' => 100]))->toBe('w1')
+        ->and($bucketFor(['days_of_cover' => 15, 'predicted_daily_usage' => 3, 'stock_value' => 100]))->toBe('w2')
+        ->and($bucketFor(['days_of_cover' => 60, 'predicted_daily_usage' => 1, 'stock_value' => 100]))->toBe('ok')
+        ->and($bucketFor(['days_of_cover' => 300, 'predicted_daily_usage' => 0.2, 'stock_value' => 100]))->toBe('excess')
+        ->and($bucketFor(['days_of_cover' => null, 'predicted_daily_usage' => 0, 'stock_value' => 100]))->toBe('dead');
+
+    $orgStock->update(['quantity_available' => 0]);
+    expect($buckets->bucketOf($orgStock->fresh()))->toBe('out');
+
+    $counts = collect(App\Actions\Procurement\GetOrganisationStockCoverBuckets::run($this->organisation))->pluck('count', 'bucket');
+    expect($counts->keys()->all())->toBe(array_keys(App\Actions\Procurement\GetOrganisationStockCoverBuckets::BUCKETS))
+        ->and($counts['out'])->toBeGreaterThanOrEqual(1);
+});
+
+test('UI organisation stock cover items index', function () {
+    $orgStock = $this->orgStocks[0];
+    $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
+
+    $response = $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'elements[cover]' => 'out']));
+    $response->assertOk();
+
+    $response->assertInertia(function (AssertableInertia $page) use ($orgStock) {
+        $page
+            ->component('Procurement/OrganisationStockCoverItems')
+            ->where('title', 'Stock levels')
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('bucket')->unique()->values()->all() === ['out']
+                && collect($rows)->pluck('code')->contains($orgStock->code))
+            ->has('queryBuilderProps.default.elementGroups')
+            ->has('exportRoute.name');
+    });
+});
+
+test('organisation stock cover export downloads the filtered buckets as csv', function () {
+    $orgStock = $this->orgStocks[0];
+    $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
+
+    $response = $this->get(route('grp.org.procurement.stock_cover.export', [$this->organisation->slug, 'elements[cover]' => 'out,w1']));
+    $response->assertOk();
+
+    expect($response->streamedContent())->toContain('Days of cover')->toContain($orgStock->code)->toContain('Out of stock');
+
+    $this->get(route('grp.org.procurement.stock_cover.export', [$this->organisation->slug, 'elements[cover]' => 'nope']))->assertRedirect();
+});
+
+test('procurement dashboard lists stock levels linking to each bucket', function () {
+    $response = $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->has('stockLevels', 7)
+            ->where('stockLevels.0.label', 'Out of stock')
+            ->where('stockLevels.0.route.name', 'grp.org.procurement.stock_cover.index')
+            ->where('stockLevels.0.route.parameters._query', ['elements[cover]' => 'out'])
+            ->where('stockLevels.5.bucket', 'excess')
+            ->etc();
     });
 });
 
