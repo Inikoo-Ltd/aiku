@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faCheckCircle, faTimesCircle, faCode } from "@fal"
 import { faFacebook, faXTwitter, faWhatsapp, faGoogle } from "@fortawesome/free-brands-svg-icons"
@@ -27,14 +27,15 @@ const props = defineProps<{
 		structured_data?: Record<string, any> | Array<Record<string, any>>
 		structured_data_types?: string[]
 	}
+	stacked?: boolean
 }>()
 
 const previewTabs: Array<{ key: PreviewTab; label: string; icon: typeof faGoogle }> = [
-	{ key: "search", label: trans("Search result"), icon: faGoogle },
-	{ key: "facebook", label: trans("Facebook"), icon: faFacebook },
-	{ key: "x", label: trans("X"), icon: faXTwitter },
-	{ key: "whatsapp", label: trans("WhatsApp"), icon: faWhatsapp },
-	{ key: "structured_data", label: trans("Structured data"), icon: faCode },
+	{ key: "search", label: ctrans("Search result"), icon: faGoogle },
+	{ key: "facebook", label: ctrans("Facebook"), icon: faFacebook },
+	{ key: "x", label: ctrans("X"), icon: faXTwitter },
+	{ key: "whatsapp", label: ctrans("WhatsApp"), icon: faWhatsapp },
+	{ key: "structured_data", label: ctrans("Structured data"), icon: faCode },
 ]
 
 const previewTab = ref<PreviewTab>("search")
@@ -52,33 +53,33 @@ const TITLE_LIMIT = 60
 const DESCRIPTION_LIMIT = 150
 
 const fields = computed(() => [
-	{ label: trans("Meta title"), value: props.seo?.title, limit: TITLE_LIMIT, hint: trans("Rendered with the prefix and suffix of the website") },
-	{ label: trans("Meta description"), value: props.seo?.description, limit: DESCRIPTION_LIMIT },
-	{ label: trans("Breadcrumb label"), value: props.seo?.breadcrumb_label },
-	{ label: trans("Canonical URL"), value: props.seo?.canonical_url },
-	{ label: trans("Title prefix"), value: props.seo?.use_title_prefix_suffix ? props.seo?.title_prefix : null },
-	{ label: trans("Title suffix"), value: props.seo?.use_title_prefix_suffix ? props.seo?.title_suffix : null },
-	{ label: trans("Share image alt"), value: props.seo?.share_image?.alt },
+	{ label: ctrans("Meta title"), value: props.seo?.title, limit: TITLE_LIMIT, hint: ctrans("Rendered with the prefix and suffix of the website") },
+	{ label: ctrans("Meta description"), value: props.seo?.description, limit: DESCRIPTION_LIMIT },
+	{ label: ctrans("Breadcrumb label"), value: props.seo?.breadcrumb_label },
+	{ label: ctrans("Canonical URL"), value: props.seo?.canonical_url },
+	{ label: ctrans("Title prefix"), value: props.seo?.use_title_prefix_suffix ? props.seo?.title_prefix : null },
+	{ label: ctrans("Title suffix"), value: props.seo?.use_title_prefix_suffix ? props.seo?.title_suffix : null },
+	{ label: ctrans("Share image alt"), value: props.seo?.share_image?.alt },
 ])
 
 const robotFlags = computed(() => [
-	{ label: trans("Indexed by search engines"), on: props.seo?.index_page },
-	{ label: trans("Links are followed"), on: props.seo?.follow_link },
+	{ label: ctrans("Indexed by search engines"), on: props.seo?.index_page },
+	{ label: ctrans("Links are followed"), on: props.seo?.follow_link },
 ])
 </script>
 
 <template>
 	<div class="rounded-lg bg-white shadow">
 		<div class="flex flex-wrap items-center gap-3 border-b px-6 py-3">
-			<span class="text-sm font-semibold">{{ trans("SEO and sharing") }}</span>
+			<span class="text-sm font-semibold">{{ ctrans("SEO and sharing") }}</span>
 			<span v-if="seo?.robots" class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ seo.robots }}</span>
 		</div>
 
 		<div v-if="!seo" class="px-6 py-6 text-sm text-gray-600">
-			{{ trans("No SEO data for this page") }}
+			{{ ctrans("No SEO data for this page") }}
 		</div>
 
-		<div v-else class="grid gap-6 p-6 lg:grid-cols-2">
+		<div v-else class="grid gap-6 p-6" :class="stacked ? '' : 'lg:grid-cols-2'">
 			<dl class="space-y-4">
 				<div v-for="field in fields" :key="field.label">
 					<dt class="flex items-baseline gap-2 text-xs text-gray-500">
@@ -88,7 +89,7 @@ const robotFlags = computed(() => [
 						</span>
 					</dt>
 					<dd v-if="field.value" class="break-words text-sm text-gray-800">{{ field.value }}</dd>
-					<dd v-else class="text-sm italic text-gray-400">{{ trans("Not set") }}</dd>
+					<dd v-else class="text-sm italic text-gray-400">{{ ctrans("Not set") }}</dd>
 					<dd v-if="field.hint && field.value" class="text-[11px] text-gray-500">{{ field.hint }}</dd>
 				</div>
 
@@ -118,8 +119,8 @@ const robotFlags = computed(() => [
 				<!-- How Google shows the page -->
 				<div v-if="previewTab === 'search'" class="rounded-lg border border-gray-200 p-4">
 					<div class="truncate text-xs text-gray-600">{{ searchUrl }}</div>
-					<div class="truncate text-lg text-[#1a0dab]">{{ shareTitle ?? trans("Not set") }}</div>
-					<p class="line-clamp-2 text-sm text-gray-600">{{ shareDescription ?? trans("Not set") }}</p>
+					<div class="truncate text-lg text-[#1a0dab]">{{ shareTitle ?? ctrans("Not set") }}</div>
+					<p class="line-clamp-2 text-sm text-gray-600">{{ shareDescription ?? ctrans("Not set") }}</p>
 				</div>
 
 				<!-- The JSON-LD the page carries -->
@@ -132,7 +133,7 @@ const robotFlags = computed(() => [
 						class="max-h-80 overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-xs text-gray-800"
 					>{{ structuredDataJson }}</pre>
 					<div v-else class="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
-						{{ trans("No structured data set for this page") }}
+						{{ ctrans("No structured data set for this page") }}
 					</div>
 				</div>
 
@@ -142,8 +143,8 @@ const robotFlags = computed(() => [
 						<div v-if="previewTab !== 'whatsapp'" class="aspect-[1.91/1] w-full bg-gray-100">
 							<img v-if="shareImage" :src="shareImage" :alt="seo?.share_image?.alt" class="h-full w-full object-cover" />
 							<div v-else class="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400">
-								<FontAwesomeIcon :icon="faImage" size="2x" fixed-width aria-hidden="true" />
-								<span class="text-xs">{{ trans("No share image set") }}</span>
+								<FontAwesomeIcon :icon="faImage" size="2x" aria-hidden="true" />
+								<span class="text-xs">{{ ctrans("No share image set") }}</span>
 							</div>
 						</div>
 
@@ -157,14 +158,14 @@ const robotFlags = computed(() => [
 
 							<div class="min-w-0">
 								<div class="truncate text-[11px] uppercase text-gray-500">{{ seo?.domain }}</div>
-								<div class="truncate text-sm font-semibold text-gray-800">{{ shareTitle ?? trans("Not set") }}</div>
-								<p class="line-clamp-2 text-xs text-gray-600">{{ shareDescription ?? trans("Not set") }}</p>
+								<div class="truncate text-sm font-semibold text-gray-800">{{ shareTitle ?? ctrans("Not set") }}</div>
+								<p class="line-clamp-2 text-xs text-gray-600">{{ shareDescription ?? ctrans("Not set") }}</p>
 							</div>
 						</div>
 					</div>
 
 					<p v-if="!shareImage" class="mt-2 text-[11px] text-gray-500">
-						{{ trans("Without a share image the site falls back to the first product image on the page") }}
+						{{ ctrans("Without a share image the site falls back to the first product image on the page") }}
 					</p>
 				</div>
 			</div>

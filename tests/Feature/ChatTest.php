@@ -31,6 +31,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\CloseEmptyChatSessions;
 use App\Actions\Chat\ChatSession\GetChatReports;
+use App\Actions\Chat\ChatSession\IndexChatConversations;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
@@ -4768,6 +4769,31 @@ test('GetChatReports counts only conversations the visitor wrote in and measures
         ->and($result['by_topic'][0])->toMatchArray(['topic' => 'order_status', 'conversations' => 1, 'share' => 100.0, 'website' => 1, 'unanswered' => 0])
         ->and($result['unclassified'])->toBe(1)
         ->and($widgetOnlyOpened->exists)->toBeTrue();
+
+    $agent = ChatAgent::firstOrCreate(['user_id' => $this->user->id], ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]);
+    foreach ([4, 5] as $rating) {
+        $rated = $session('website', $reportShop->id);
+        $message($rated, ChatSenderTypeEnum::GUEST->value, 50);
+        $message($rated, ChatSenderTypeEnum::AGENT->value, 40)->update(['sender_id' => $agent->id]);
+        $message($rated, ChatSenderTypeEnum::AGENT->value, 30)->update(['sender_id' => $agent->id]);
+        $rated->update(['rating' => $rating]);
+    }
+
+    $result = GetChatReports::make()->handle(collect([$reportShop->id]), '1w');
+
+    expect($result['agents'][0])->toMatchArray(['rating' => 4.5, 'ratings' => 2])
+        ->and($result['agents'][0])->not->toHaveKey('rated_sessions')
+        ->and($result['agents_total'])->toMatchArray(['rating' => 4.5, 'ratings' => 2]);
+
+    $listed = function (array $filter) use ($reportShop) {
+        request()->query->replace(['filter' => $filter]);
+
+        return IndexChatConversations::make()->handle($reportShop)->getCollection()->pluck('rating')->sort()->values()->all();
+    };
+
+    expect($listed(['rated' => 1, 'replied' => $this->user->username.','.$result['window']]))->toBe([4.0, 5.0])
+        ->and($listed(['rated' => 1, 'replied' => 'nobody,'.$result['window']]))->toBe([])
+        ->and($listed(['rated' => 1, 'created_between' => now()->subDay()->toIso8601ZuluString().','.now()->toIso8601ZuluString()]))->toBe([4.0, 5.0]);
 });
 
 test('empty widget sessions are not counted open and the sweep closes them quietly', function () {
@@ -7237,4 +7263,12 @@ test('filing an imported mail away writes down whether it was unread', function 
             && $context['was_inbox'] === true);
 
     $this->shop->update(['settings' => $original]);
+});
+
+test('email attachments over the media library limit are left in the mail', function () {
+    $isWorthImporting = fn (int $size) => (fn () => $this->isWorthImporting(['size' => $size, 'mimeType' => 'video/mp4', 'inline' => false], true))
+        ->call(new App\Actions\Comms\Mailbox\ImportPendingGmailAttachments());
+
+    expect($isWorthImporting(1024))->toBeTrue()
+        ->and($isWorthImporting(91 * 1024 * 1024))->toBeFalse();
 });

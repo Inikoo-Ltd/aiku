@@ -1833,9 +1833,7 @@ const warningMsg = computed(() => {
                     v-if="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                     :fractionData="GetQuantityToPickFractional(selectedTransactionToSetAsWaiting)"
                 />
-                <template v-else>{{ locale.number(selectedTransactionToSetAsWaiting.quantity_to_pick + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0) ?? 0) }}</template>
-                <!-- {{ Number(selectedTransactionToSetAsWaiting?.quantity_to_pick ?? 0) + Number(selectedTransactionToSetAsWaiting?.quantity_waiting_warehouse || 0) }} -->
-                
+                <template v-else>{{ locale.number(Number(selectedTransactionToSetAsWaiting.quantity_to_pick ?? 0) + Number(selectedTransactionToSetAsWaiting.quantity_waiting_warehouse || 0)) }}</template>
             </span>
         </div>
 

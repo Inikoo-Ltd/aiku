@@ -83,7 +83,7 @@ export default ({ mode }) => {
             },
             manualChunks(id) {
               if (id.includes("node_modules") &&
-                !id.includes("sentry")) {
+                !id.includes("sentry") && !id.includes("node_modules/primevue/")) {
                 return id.toString().
                   split("node_modules/")[1].split(
                   "/")[0].toString();

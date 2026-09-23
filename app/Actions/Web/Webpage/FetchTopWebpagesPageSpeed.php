@@ -136,6 +136,7 @@ class FetchTopWebpagesPageSpeed
             ])
             ->where('webpages.state', WebpageStateEnum::LIVE)
             ->whereNull('webpages.deleted_at')
+            ->whereNotIn('webpages.sub_type', WebpageSubTypeEnum::hiddenFromSearchEnginesValues())
             ->where(function (Builder $query) {
                 $query->where('webpages.type', WebpageTypeEnum::CONTENT->value)
                     ->orWhereIn('webpages.sub_type', [...self::UNCAPPED_BUCKETS, ...self::CAPPED_BUCKETS]);
