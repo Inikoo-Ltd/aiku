@@ -76,7 +76,7 @@ const layout: any = inject("layout", {})
 						<div :style="getStyles(fieldValue?.timeline?.bullet.properties, screenType)"
 							class="bg-blue-600 text-white font-bold rounded-full w-14 h-14 flex items-center justify-center">
 							<span v-if="fieldValue.timeline.bullet.type === 'number'">{{ idx + 1 }}</span>
-							<FontAwesomeIcon v-if="fieldValue.timeline.bullet.type === 'icon'" :icon="step.icon" />
+							<FontAwesomeIcon v-if="fieldValue.timeline.bullet.type === 'icon'" :icon="step.icon" fixed-width />
 						</div>
 					</div>
 

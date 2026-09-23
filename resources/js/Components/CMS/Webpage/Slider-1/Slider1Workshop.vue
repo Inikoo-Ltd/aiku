@@ -266,7 +266,7 @@ onBeforeUnmount(stopAutoMove)
                     v-else
                     class="flex items-center justify-center w-full bg-gray-100 h-36 cursor-pointer"
                   >
-                    <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                    <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" fixed-width />
                   </div>
 
                 </div>

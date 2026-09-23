@@ -43,7 +43,7 @@ onMounted(() => {
         <div class="grid grid-cols-1 gap-x-6 gap-y-1 p-4 lg:grid-cols-2">
             <div v-for="(article, idxArticle) in articles" :key="idxArticle" class="border border-gray-200 group relative flex gap-x-6 rounded-lg p-4 hover:bg-gray-100">
                 <div v-if="article.type" class="mt-1 flex size-11 flex-none items-center justify-center rounded-lg border border-gray-300 group-hover:bg-gray-200">
-                    <FontAwesomeIcon v-if="article.type == 'video'" icon="fal fa-film" class="size-6 text-gray-400 group-hover:text-indigo-500" aria-hidden="true" />
+                    <FontAwesomeIcon v-if="article.type == 'video'" icon="fal fa-film" class="size-6 text-gray-400 group-hover:text-indigo-500" fixed-width aria-hidden="true" />
                 </div>
                 
                 <div class="grid">

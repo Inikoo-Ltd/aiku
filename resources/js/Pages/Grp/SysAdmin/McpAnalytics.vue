@@ -149,8 +149,8 @@ const formatArguments = (args: Record<string, unknown> | null) => {
                         {{ insights.tool_calls.toLocaleString() }}<span class="text-lg text-gray-400"> / {{ insights.sql_calls.toLocaleString() }}</span>
                     </p>
                     <p class="text-sm text-gray-600">
-                        <FontAwesomeIcon icon="fal fa-tools" aria-hidden="true" /> {{ ctrans("Tools") }}
-                        / <FontAwesomeIcon icon="fal fa-database" aria-hidden="true" /> {{ ctrans("SQL") }}
+                        <FontAwesomeIcon icon="fal fa-tools" fixed-width aria-hidden="true" /> {{ ctrans("Tools") }}
+                        / <FontAwesomeIcon icon="fal fa-database" fixed-width aria-hidden="true" /> {{ ctrans("SQL") }}
                     </p>
                 </div>
             </div>
@@ -226,10 +226,10 @@ const formatArguments = (args: Record<string, unknown> | null) => {
 
         <template #cell(sql_access)="{ item }">
             <span v-if="item.sql_access" class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
-                <FontAwesomeIcon icon="fal fa-database" aria-hidden="true" /> {{ ctrans("SQL") }}
+                <FontAwesomeIcon icon="fal fa-database" fixed-width aria-hidden="true" /> {{ ctrans("SQL") }}
             </span>
             <span v-else class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                <FontAwesomeIcon icon="fal fa-tools" aria-hidden="true" /> {{ ctrans("Tools") }}
+                <FontAwesomeIcon icon="fal fa-tools" fixed-width aria-hidden="true" /> {{ ctrans("Tools") }}
             </span>
         </template>
 

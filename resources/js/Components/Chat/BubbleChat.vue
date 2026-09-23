@@ -7,6 +7,7 @@ import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircle
 import axios from "axios"
 import { useChatLanguages } from "@/Composables/useLanguages"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
+import { showEmailBody as shouldShowEmailBody } from "@/Composables/showEmailBody"
 import Image from "primevue/image"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
@@ -44,6 +45,7 @@ interface Message {
     is_offline_message: boolean
     sender_type: SenderType
     message_text: string
+    html_body?: string | null
     created_at: string
     media_url?: {
         original: string
@@ -345,7 +347,15 @@ const isFile = computed(() => props.message.message_type === "file")
 const fileMime = computed(() => props.message.file_mime ?? props.message.media_url?.mime ?? "")
 
 const attachmentList = computed<ChatAttachment[]>(() => {
-    if (props.message.attachments?.length) return props.message.attachments
+    // A picture the email already shows in its own body is not listed again underneath it,
+    // where it would read as a second, separate photograph.
+    if (props.message.attachments?.length) {
+        const body = props.message.html_body ?? ""
+
+        return props.message.attachments.filter(
+            (attachment) => !attachment.original_url || !body.includes(attachment.original_url)
+        )
+    }
 
     if (!props.message.media_url && !props.message.download_route) return []
 
@@ -497,13 +507,10 @@ const displayText = computed(() => {
 
 const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
-// Only the sender's own message is shown as markup. An edited, retracted or translated message
-// falls back to text, because what is on screen then is not what arrived.
-const showEmailBody = computed(() =>
-    !!props.message.html_body
-    && !isRetracted.value
-    && !showTranslation.value
-)
+const showEmailBody = computed(() => shouldShowEmailBody(props.message))
+
+// Customers put the order reference in the subject line, so it is the first thing read.
+const emailSubject = computed(() => (props.message.metadata?.email_subject || "").trim())
 
 const location = computed(() => {
     if (props.message.metadata?.wa_type !== "location") return null
@@ -852,7 +859,7 @@ watch(selectedLanguage, async (val) => {
         <button type="button"
             class="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[11px] text-gray-500 hover:bg-gray-100"
             @click="isPromotionFolded = false">
-            <FontAwesomeIcon :icon="faBullhorn" class="text-[10px]" />
+            <FontAwesomeIcon :icon="faBullhorn" class="text-[10px]" fixed-width />
             <span class="max-w-[260px] truncate">{{ promotionLabel }}</span>
             <span class="opacity-60">{{ time }}</span>
         </button>
@@ -884,14 +891,14 @@ watch(selectedLanguage, async (val) => {
                 <button v-if="canReplyToMessage" type="button" v-tooltip.top="ctrans('Reply')"
                     class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
                     @click="emit('reply', message)">
-                    <FontAwesomeIcon :icon="faReply" class="text-sm" />
+                    <FontAwesomeIcon :icon="faReply" class="text-sm" fixed-width />
                 </button>
 
                 <div class="relative" ref="emojiPickerRef">
                     <button type="button" v-tooltip.top="ctrans('Add reaction')"
                         class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
                         @click="isEmojiPickerOpen = !isEmojiPickerOpen">
-                        <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" />
+                        <FontAwesomeIcon :icon="faFaceSmile" class="text-sm" fixed-width />
                     </button>
 
                     <div v-if="isEmojiPickerOpen"
@@ -913,7 +920,7 @@ watch(selectedLanguage, async (val) => {
                 <button v-if="canForwardToSlack" type="button" v-tooltip.top="ctrans('Forward message…')"
                     class="w-[33px] h-[33px] flex items-center justify-center text-gray-500 rounded-full hover:bg-gray-100 hover:!text-indigo-600 hover:scale-110 transition-all"
                     @click="isForwardModalOpen = true">
-                    <FontAwesomeIcon :icon="faShare" class="text-sm" />
+                    <FontAwesomeIcon :icon="faShare" class="text-sm" fixed-width />
                 </button>
             </div>
 
@@ -921,7 +928,7 @@ watch(selectedLanguage, async (val) => {
                 :class="[bubbleClass, showHoverToolbar && viewerType === 'agent' ? 'min-w-[260px]' : '']">
 
             <div v-if="showSenderLabel" class="flex items-center gap-1 text-[11px] font-semibold mb-0.5 opacity-70">
-                <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px]" />
+                <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px]" fixed-width />
                 {{ senderLabel }}
             </div>
 
@@ -948,14 +955,14 @@ watch(selectedLanguage, async (val) => {
 
                     <div v-for="phone in contact.phones" :key="phone.number"
                         class="mt-1.5 flex items-center gap-2 border-t border-gray-100 pt-1.5">
-                        <FontAwesomeIcon :icon="faPhone" class="text-[10px] text-gray-400" />
+                        <FontAwesomeIcon :icon="faPhone" class="text-[10px] text-gray-400" fixed-width />
                         <div class="min-w-0 flex-1">
                             <div class="truncate text-[11px] text-gray-700">{{ phone.number }}</div>
                             <div v-if="phone.label" class="text-[10px] text-gray-400">{{ phone.label }}</div>
                         </div>
                         <button type="button" v-tooltip.top="ctrans('Copy number')" @click="useCopyText(phone.number)"
                             class="shrink-0 rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
-                            <FontAwesomeIcon :icon="faCopy" class="text-[10px]" />
+                            <FontAwesomeIcon :icon="faCopy" class="text-[10px]" fixed-width />
                         </button>
                     </div>
                 </div>
@@ -969,7 +976,7 @@ watch(selectedLanguage, async (val) => {
                         :style="{ left: `${tile.left}px`, top: `${tile.top}px`, width: '256px', height: '256px' }" />
 
                     <FontAwesomeIcon :icon="faLocationDot"
-                        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-xl text-red-500 drop-shadow" />
+                        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full text-xl text-red-500 drop-shadow" fixed-width />
 
                     <span class="absolute bottom-0 right-0 bg-white/75 px-1 text-[9px] leading-tight text-gray-500">
                         © OpenStreetMap
@@ -977,7 +984,7 @@ watch(selectedLanguage, async (val) => {
                 </div>
 
                 <div class="flex items-start gap-1.5 px-2.5 py-2">
-                    <FontAwesomeIcon :icon="faLocationDot" class="mt-0.5 text-[11px] text-red-500" />
+                    <FontAwesomeIcon :icon="faLocationDot" class="mt-0.5 text-[11px] text-red-500" fixed-width />
                     <div class="min-w-0">
                         <div class="truncate text-xs font-semibold text-gray-800">{{ location.name }}</div>
                         <div class="text-[11px] leading-snug text-gray-500">{{ location.address }}</div>
@@ -1032,12 +1039,12 @@ watch(selectedLanguage, async (val) => {
                 class="mt-1" :title="verificationReasoning">
                 <span v-if="activeMessage.is_ai_generated"
                     class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
-                    <FontAwesomeIcon :icon="faRobot" class="text-[10px]" />
+                    <FontAwesomeIcon :icon="faRobot" class="text-[10px]" fixed-width />
                     {{ ctrans("AI generated") }}
                 </span>
                 <span v-else
                     class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
-                    <FontAwesomeIcon :icon="faShieldCheck" class="text-[10px]" />
+                    <FontAwesomeIcon :icon="faShieldCheck" class="text-[10px]" fixed-width />
                     {{ ctrans("Verified") }}
                 </span>
             </div>
@@ -1046,7 +1053,7 @@ watch(selectedLanguage, async (val) => {
                 <button type="button" :disabled="isVerifyingImage" @click="verifyImage"
                     class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
                     <LoadingIcon v-if="isVerifyingImage" />
-                    <FontAwesomeIcon v-else :icon="faShieldCheck" class="text-[10px]" />
+                    <FontAwesomeIcon v-else :icon="faShieldCheck" class="text-[10px]" fixed-width />
                     {{ isVerifyingImage ? ctrans("Verifying…") : ctrans("Verify image") }}
                 </button>
             </div>
@@ -1055,7 +1062,7 @@ watch(selectedLanguage, async (val) => {
                  watching a message disappear from under them. -->
             <div v-if="isRetracted && viewerType !== 'agent'"
                 class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-70">
-                <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
+                <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" fixed-width />
                 <span v-if="(message.retracted_count ?? 1) > 1">
                     {{ ctrans(":count messages were removed", { count: message.retracted_count }) }}
                 </span>
@@ -1064,12 +1071,18 @@ watch(selectedLanguage, async (val) => {
 
             <div v-if="isUnsupportedMessage"
                 class="inline-flex w-fit items-center gap-1.5 text-[11px] italic opacity-60">
-                <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" />
+                <FontAwesomeIcon :icon="faCircleExclamation" class="text-[10px]" fixed-width />
                 <span>{{ displayText || ctrans("Unsupported message") }}</span>
             </div>
 
             <!-- A received email keeps its layout; everything else is text. -->
-            <EmailBody v-else-if="showEmailBody" :html="message.html_body" />
+            <template v-else-if="showEmailBody">
+                <div v-if="emailSubject"
+                    class="mb-2 pb-1.5 border-b border-gray-200 text-[13px] font-semibold break-words">
+                    {{ emailSubject }}
+                </div>
+                <EmailBody :html="message.html_body" />
+            </template>
 
             <p v-else-if="!location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />
@@ -1112,7 +1125,7 @@ watch(selectedLanguage, async (val) => {
                         class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
                         <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
                             class="w-3 h-3 rounded-sm" loading="lazy" decoding="async" />
-                        <FontAwesomeIcon :icon="faLanguage" />
+                        <FontAwesomeIcon :icon="faLanguage" fixed-width />
                         <span>{{ latestTranslation!.language_name }}</span>
 
                         <span v-if="isLongText" class="ml-2 cursor-pointer underline" @click="showTranslation = false">
@@ -1127,7 +1140,7 @@ watch(selectedLanguage, async (val) => {
             <div v-if="canTranslate" class="mt-1">
                 <button :disabled="isTranslating" @click="translateMessage"
                     class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
-                    <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" />
+                    <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" fixed-width />
                     {{ ctrans("Translate") }}
                 </button>
             </div>
@@ -1181,7 +1194,7 @@ watch(selectedLanguage, async (val) => {
                 </span>
 
                 <span v-if="isFromViewer && !isSending" class="leading-none" :title="readIconLabel">
-                    <FontAwesomeIcon :icon="readIcon" :class="readIconClass" />
+                    <FontAwesomeIcon :icon="readIcon" :class="readIconClass" fixed-width />
                 </span>
             </div>
         </div>
@@ -1219,19 +1232,21 @@ watch(selectedLanguage, async (val) => {
 <style scoped>
 .bubble-own-agent {
     @apply bg-white text-gray-800 border border-gray-200;
-    border-left: 3px solid v-bind("layout.app.theme[4]");
-    border-bottom-right-radius: 4px;
+    border-left: 4px solid v-bind("layout.app.theme[4]");
+    border-bottom-right-radius: 0px;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
 }
 
 .bubble-primary {
     background-color: v-bind("layout.app.theme[4]");
     color: v-bind("layout.app.theme[5]");
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 0px;
 }
 
 .bubble-secondary {
     @apply bg-white text-gray-800 border border-gray-200;
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 0px;
 }
 
 </style>

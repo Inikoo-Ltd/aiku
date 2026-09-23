@@ -22,24 +22,33 @@ use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\Catalogue\ProductCategory\UpdateFamilyDepartment;
+use App\Actions\Catalogue\ProductCategory\UpdateFamilySubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\RefreshGrpAssetUrls;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Webpage\CloseWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\ReopenWebpage;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Actions\Web\WebBlock\Iris\GetWebBlockProduct as IrisGetWebBlockProduct;
+use App\Actions\Web\WebBlock\Traits\WithFamiliesQuery;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockProduct as WorkshopGetWebBlockProduct;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotScopeEnum;
+use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 const PRODUCT_WEBPAGE_BLOCKS = [
     'product',
@@ -582,4 +591,108 @@ test('register dashboard 2 block keeps its default text, style and hero image th
         ->and(Arr::get($structure, 'card.google.show'))->toBeTrue()
         ->and(Arr::get($structure, 'faq.items'))->toHaveCount(6)
         ->and(public_path(ltrim(Arr::get($structure, 'hero.image_url'), '/')))->toBeFile();
+});
+
+test('changing a family drops the cache of the department and sub-department pages that list it', function () {
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+    $department  = $product->department;
+
+    $subDepartmentData = ProductCategory::factory()->definition();
+    data_set($subDepartmentData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value);
+    $subDepartment = StoreProductCategory::make()->action($department, $subDepartmentData);
+
+    $otherDepartmentData = ProductCategory::factory()->definition();
+    data_set($otherDepartmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
+    $otherDepartment = StoreProductCategory::make()->action($this->shop, $otherDepartmentData);
+
+    UpdateFamilySubDepartment::make()->action($family, ['sub_department_id' => $subDepartment->id]);
+    $family->refresh();
+
+    $familyWebpage        = StoreProductCategoryWebpage::make()->action($family);
+    $departmentWebpage    = StoreProductCategoryWebpage::make()->action($department);
+    $subDepartmentWebpage = StoreProductCategoryWebpage::make()->action($subDepartment);
+
+    expect(BreakWebpageCache::make()->getFamilyListingWebpages($family)->pluck('id'))
+        ->toContain($departmentWebpage->id)
+        ->toContain($subDepartmentWebpage->id);
+
+    $cacheKey = fn (Webpage $webpage, string $side): string => config('iris.cache.webpage.prefix')
+        .'_'.$webpage->website_id.'_'.$side.'_'.$webpage->id;
+
+    $warmListings = function (Webpage ...$listings) use ($cacheKey) {
+        foreach ($listings as $listing) {
+            foreach (['in', 'out'] as $side) {
+                Cache::put($cacheKey($listing, $side), 'families as they were');
+            }
+        }
+    };
+
+    $expectRebuilt = function (string $after, Webpage ...$listings) use ($cacheKey) {
+        foreach ($listings as $listing) {
+            foreach (['in', 'out'] as $side) {
+                expect(Cache::has($cacheKey($listing, $side)))
+                    ->toBeFalse($listing->url.' ('.$side.') still cached after '.$after);
+            }
+        }
+    };
+
+    $warmListings($departmentWebpage, $subDepartmentWebpage);
+    PublishWebpage::make()->action($familyWebpage, ['comment' => 'family goes live']);
+    $expectRebuilt('publishing the family webpage', $departmentWebpage, $subDepartmentWebpage);
+
+    PublishWebpage::make()->action($departmentWebpage, ['comment' => 'department goes live']);
+
+    $warmListings($departmentWebpage, $subDepartmentWebpage);
+    CloseWebpage::make()->action($familyWebpage, [
+        'redirect_type' => RedirectTypeEnum::PERMANENT->value,
+        'to_webpage_id' => $departmentWebpage->id,
+    ]);
+    $expectRebuilt('closing the family webpage', $departmentWebpage, $subDepartmentWebpage);
+
+    $warmListings($departmentWebpage, $subDepartmentWebpage);
+    ReopenWebpage::run($familyWebpage);
+    $expectRebuilt('reopening the family webpage', $departmentWebpage, $subDepartmentWebpage);
+
+    $warmListings($departmentWebpage, $subDepartmentWebpage);
+    UpdateFamilyDepartment::make()->action($family, ['department_id' => $otherDepartment->id]);
+    $expectRebuilt('moving the family to another department', $departmentWebpage, $subDepartmentWebpage);
+});
+
+test('families that sold the same are listed newest first', function () {
+    [, $product] = createProduct($this->shop);
+
+    $subDepartmentData = ProductCategory::factory()->definition();
+    data_set($subDepartmentData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value);
+    $subDepartment = StoreProductCategory::make()->action($product->department, $subDepartmentData);
+
+    $subDepartmentWebpage = StoreProductCategoryWebpage::make()->action($subDepartment);
+
+    $families = [];
+    foreach (['older' => 20, 'newer' => 2] as $label => $daysAgo) {
+        $familyData = ProductCategory::factory()->definition();
+        data_set($familyData, 'type', ProductCategoryTypeEnum::FAMILY->value);
+        $family = StoreProductCategory::make()->action($subDepartment, $familyData);
+
+        DB::table('product_categories')->where('id', $family->id)->update(['created_at' => now()->subDays($daysAgo)]);
+
+        PublishWebpage::make()->action(
+            StoreProductCategoryWebpage::make()->action($family),
+            ['comment' => 'family goes live']
+        );
+
+        $families[$label] = $family->fresh();
+    }
+
+    $runner = new class () {
+        use WithFamiliesQuery;
+    };
+
+    $listed = $runner->getFamilyList($subDepartmentWebpage, ['product_categories.code'])
+        ->addSelect(DB::raw('yearly_sales.total_sales'))
+        ->get();
+
+    expect($listed->pluck('total_sales')->unique())->toHaveCount(1)
+        ->and($listed->pluck('code')->all())
+        ->toBe([$families['newer']->code, $families['older']->code]);
 });

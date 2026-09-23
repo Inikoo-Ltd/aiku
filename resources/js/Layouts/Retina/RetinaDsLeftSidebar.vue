@@ -50,7 +50,7 @@ const handleToggleLeftBar = () => {
                     @click="useCopyText(layout?.iris_variables?.reference)" 
                     icon="far fa-copy"
                     class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-                    v-tooltip="trans('Copy reference to clipboard')"
+                    v-tooltip="trans('Copy reference to clipboard')" fixed-width
                 />
             </div>
         </div>
@@ -85,7 +85,7 @@ const handleToggleLeftBar = () => {
                         @click="useCopyText(layout?.iris_variables?.reference)" 
                         icon="far fa-copy"
                         class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
-                        v-tooltip="trans('Copy reference to clipboard')"
+                        v-tooltip="trans('Copy reference to clipboard')" fixed-width
                     />
                 </div>
             </div>
@@ -101,7 +101,7 @@ const handleToggleLeftBar = () => {
                 <div class="flex items-center justify-center transition-all duration-300 ease-in-out"
                     :class="{'rotate-180': !layout.leftSidebar.show}"
                 >
-                    <FontAwesomeIcon icon='far fa-chevron-left' class='h-[10px] leading-none' aria-hidden='true'
+                    <FontAwesomeIcon icon='far fa-chevron-left' class='h-[10px] leading-none' fixed-width aria-hidden='true'
                         :class="layout.leftSidebar.show ? '-translate-x-[1px]' : ''"
                     />
                 </div>
@@ -109,7 +109,7 @@ const handleToggleLeftBar = () => {
             
             <RetinaLeftSidebarNavigation>
                 <template #default>
-                    <a
+                    <!-- <a
                         v-if="layout.retina.portal_link && layout.retina.portal_link !== ''"
                         :href="layout.retina.portal_link"
                         class="relative group hover:underline rounded-md py-2 w-full group flex items-center text-sm gap-x-2" xclass="[open ? 'bg-black/25' : '']"
@@ -132,7 +132,7 @@ const handleToggleLeftBar = () => {
                         </Transition>
 
                         <FontAwesomeIcon v-if="layout.leftSidebar.show" icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100 absolute right-4 text-[var(--theme-color-1)]" fixed-width aria-hidden="true" />
-                    </a>
+                    </a> -->
                 </template>
             </RetinaLeftSidebarNavigation>
             

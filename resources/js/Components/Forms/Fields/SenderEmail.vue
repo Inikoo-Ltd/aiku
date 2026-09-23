@@ -95,9 +95,9 @@ const resendEmail = async () => {
                 <template #stateIcon>
                     <div class="mr-2 h-full flex items-center pointer-events-none">
                         <FontAwesomeIcon v-if="get(form, ['errors', `${fieldName}`])" icon="fas fa-exclamation-circle"
-                            class="h-5 w-5 text-red-500" aria-hidden="true" />
+                            class="h-5 w-5 text-red-500" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon v-if="form.recentlySuccessful" icon="fas fa-check-circle"
-                            class="h-5 w-5 text-green-500" aria-hidden="true" />
+                            class="h-5 w-5 text-green-500" fixed-width aria-hidden="true" />
                         <!-- <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third" class="h-5 w-5 animate-spin" /> -->
                     </div>
                 </template>
@@ -117,7 +117,7 @@ const resendEmail = async () => {
         <div v-if="fieldData.options.senderEmail?.email_address == value && fieldData.options.senderEmail" class="mt-2 text-xs flex gap-x-1 items-center"
             :class="fieldData.options.senderEmail?.state == 'verified' ? 'text-lime-500' : 'text-slate-500 '"
         >
-            <FontAwesomeIcon icon='fal fa-info-circle' class='h-5 opacity-70' aria-hidden='true' />
+            <FontAwesomeIcon icon='fal fa-info-circle' class='h-5 opacity-70' fixed-width aria-hidden='true' />
             <div>
                 <span>{{ fieldData.options.senderEmail?.message }}</span>
                 <div v-if="fieldData.options.senderEmail?.state != 'verified'">

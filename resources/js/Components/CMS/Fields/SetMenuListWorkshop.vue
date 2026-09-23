@@ -172,7 +172,7 @@ const updateNavigationFromDrawer = (value: any) => {
 				>
 					<FontAwesomeIcon
 						:icon="element.hidden ? faEyeSlash : faEye"
-						class="text-gray-400 hover:text-gray-700"
+						class="text-gray-400 hover:text-gray-700" fixed-width
 					/>
 				</button>
 
@@ -182,7 +182,7 @@ const updateNavigationFromDrawer = (value: any) => {
 				>
 					<FontAwesomeIcon
 						:icon="faCopy"
-						class="text-gray-400 hover:text-gray-700"
+						class="text-gray-400 hover:text-gray-700" fixed-width
 					/>
 				</button>
 
@@ -192,7 +192,7 @@ const updateNavigationFromDrawer = (value: any) => {
 				>
 					<FontAwesomeIcon
 						:icon="faTrash"
-						class="text-red-400 hover:text-red-700"
+						class="text-red-400 hover:text-red-700" fixed-width
 					/>
 				</button>
 			</div>

@@ -71,6 +71,12 @@ class GetOutboxMergeTagByOutbox extends OrgAction
                         OutboxMergeTagsEnum::BASKET_ON_OFFER_ITEMS,
                         OutboxMergeTagsEnum::UNSUBSCRIBE,
                     ]);
+            case OutboxCodeEnum::FAVOURITES_ON_OFFER:
+                return OutboxMergeTagsEnum::filterTags([
+                        OutboxMergeTagsEnum::CUSTOMER_NAME,
+                        OutboxMergeTagsEnum::FAVOURITES_ON_OFFER_ITEMS,
+                        OutboxMergeTagsEnum::UNSUBSCRIBE,
+                    ]);
             case OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER:
                 return OutboxMergeTagsEnum::filterTags([
                         OutboxMergeTagsEnum::CUSTOMER_NAME,

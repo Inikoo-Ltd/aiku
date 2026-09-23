@@ -62,6 +62,7 @@ use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
+use App\Actions\Dispatching\Shipment\FetchShipmentLabel;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipment\UpdateShipment;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
@@ -122,6 +123,7 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dispatching\Shipment;
+use Illuminate\Support\Facades\Http;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dispatching\Trolley;
 use App\Models\Fulfilment\Pallet;
@@ -641,6 +643,24 @@ test('update shipment', function ($lastShipment) {
     $shipment = UpdateShipment::make()->action($lastShipment, $arrayData);
 
     expect($shipment->reference)->toBe($arrayData['reference']);
+})->depends('create shipment');
+
+test('fetch shipment label refills an empty apc label', function ($lastShipment) {
+    $lastShipment->shipper->update(['api_shipper' => 'apc-gb']);
+    $lastShipment->update([
+        'label'        => '',
+        'api_response' => ['Orders' => ['Order' => ['OrderNumber' => '000000003884234503']]],
+    ]);
+
+    config(['app.sandbox.shipper_apc_token' => 'token']);
+
+    Http::fake([
+        '*/Orders/000000003884234503.json' => Http::response(['Orders' => ['Order' => ['Label' => ['Content' => 'TEST-LABEL']]]]),
+    ]);
+
+    $shipment = FetchShipmentLabel::run($lastShipment);
+
+    expect($shipment->refresh()->label)->toBe('TEST-LABEL');
 })->depends('create shipment');
 
 test("UI Index dispatching delivery-notes", function () {
@@ -4533,4 +4553,171 @@ test('a second return only covers what was not returned yet and waits for the fi
     $deliveryNoteItem->update(['quantity_returned' => 3]);
 
     expect($processReturn)->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('a pick that moves no state still tells the order transaction what was picked', function () {
+    [, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $transaction->update(['quantity_picked' => 0]);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked::make()->action($item->refresh());
+
+    expect((float)$transaction->refresh()->quantity_picked)
+        ->toBe((float)$transaction->quantity_ordered + (float)$transaction->quantity_bonus);
+});
+
+test('a late pick on a blocked note tells the order transaction what was picked', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $transaction = $item->transaction;
+    $transaction->update(['quantity_picked' => 0]);
+    $transaction->order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::HANDLING_BLOCKED]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked::make()->action($item->refresh());
+
+    expect((float)$transaction->refresh()->quantity_picked)
+        ->toBe((float)$transaction->quantity_ordered + (float)$transaction->quantity_bonus);
+});
+
+test('cancelling with create return raises a cancellation return and leaves the picked stock off the shelf (HELP-2693)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $pickingId         = $deliveryNoteItem->pickings()->first()->id;
+    $originalReference = $deliveryNote->reference;
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+
+    expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and($cancelled->is_returned)->toBeFalsy()
+        ->and(\App\Models\Dispatching\Picking::find($pickingId))->not->toBeNull();
+
+    $returnDeliveryNote = $cancelled->returnedDeliveryNote()->first();
+
+    expect($returnDeliveryNote)->not->toBeNull()
+        ->and($returnDeliveryNote->reference)->toBe($originalReference.'-cancel-pick')
+        ->and($returnDeliveryNote->reference)->not->toContain('CANCELLED')
+        ->and($returnDeliveryNote->type)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum::CANCELLATION)
+        ->and($returnDeliveryNote->state)->toBe(\App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RECEIVED)
+        ->and((float)$returnDeliveryNote->returnDeliveryNoteItem()->first()->total_expected_qty)
+        ->toBe((float)$deliveryNoteItem->refresh()->quantity_picked);
+});
+
+test('cancelling without create return keeps the legacy credit back (HELP-2693)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $pickingId = $deliveryNoteItem->pickings()->first()->id;
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user);
+
+    expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and(\App\Models\Dispatching\Picking::find($pickingId))->toBeNull()
+        ->and($cancelled->returnedDeliveryNote()->count())->toBe(0);
+});
+
+test('cancelling with nothing picked does not raise a return and still cancels (HELP-2693)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this, 0);
+
+    $deliveryNote->deliveryNoteItems()->update(['quantity_picked' => 0]);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote->refresh(), $this->user, true, false, null, true);
+
+    expect($cancelled->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and($cancelled->returnedDeliveryNote()->count())->toBe(0);
+});
+
+test('putting away a cancellation return writes cancel picked, a real return writes return picked (HELP-2693)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+
+    $returnItem = $cancelled->returnedDeliveryNote()->first()->returnDeliveryNoteItem()->first();
+
+    $sowing = \App\Actions\GoodsIn\Sowing\StoreSowing::make()->action($returnItem, $this->user, [
+        'quantity'              => 1,
+        'location_org_stock_id' => $locationOrgStock->id,
+    ]);
+
+    expect($sowing->orgStockMovement->type)
+        ->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::CANCEL_PICKED);
+
+    \App\Actions\GoodsIn\Sowing\DeleteSowing::make()->handle($sowing, $this->user);
+
+    $reversal = \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $deliveryNoteItem->org_stock_id)
+        ->orderByDesc('id')->first();
+
+    expect($reversal->type)->toBe(\App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PICKED);
+});
+
+test('pickings only read as returned once the cancellation return is walked back (HELP-2693)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+
+    $returnDeliveryNote = $cancelled->returnedDeliveryNote()->first();
+
+    $isReturned = fn () => \App\Models\GoodsIn\ReturnDeliveryNoteItem::query()
+        ->where('delivery_note_items_id', $deliveryNoteItem->id)
+        ->whereHas(
+            'returnDeliveryNote',
+            fn ($query) => $query
+                ->where('type', \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum::CANCELLATION)
+                ->whereIn('state', [
+                    \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED,
+                    \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::DONE,
+                ])
+        )
+        ->exists();
+
+    expect($isReturned())->toBeFalse();
+
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+
+    expect($isReturned())->toBeTrue();
+});
+
+test('a cancelled delivery note row reports its pickings as returned to location (HELP-2693)', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+
+    request()->setRouteResolver(fn () => (new Route('GET', 'test', []))->name('test'));
+
+    $row = fn () => \App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems::make()
+        ->handle($cancelled->refresh())
+        ->first();
+
+    expect((bool)$row()->is_returned_to_location)->toBeFalse();
+
+    $cancelled->returnedDeliveryNote()->first()
+        ->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNED]);
+
+    expect((bool)$row()->is_returned_to_location)->toBeTrue();
+});
+
+test('a delivery note item with nothing required does not break the tariff codes page (HELP-3277)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($deliveryNoteItem->id)->delete();
+    $deliveryNoteItem->transaction->update(['net_amount' => 40]);
+    $deliveryNoteItem->update(['quantity_required' => 0]);
+    $deliveryNoteItem->orgStock->update(['sku_commercial_value' => 9, 'current_supplier_sku_cost' => 3, 'sku_value' => 2]);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($deliveryNoteItem->orgStock->tradeUnits->first(), [
+        'tariff_code'       => '3304990000',
+        'origin_country_id' => $this->organisation->country_id,
+    ]);
+
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
+
+    expect((float) $rows->firstWhere('tariff_code', '3304990000')->amount)->toBe(40.0);
 });

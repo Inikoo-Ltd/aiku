@@ -43,9 +43,9 @@ trait WithInvoicesExport
         }
     }
 
-    public function processDataExportPdf(Invoice $invoice): \Symfony\Component\HttpFoundation\Response
+    public function processDataExportPdf(Invoice $invoice, ?string $locale = null): \Symfony\Component\HttpFoundation\Response
     {
-        $locale = $invoice->shop->language->code;
+        $locale ??= $invoice->shop->language->code;
         app()->setLocale($locale);
 
         try {

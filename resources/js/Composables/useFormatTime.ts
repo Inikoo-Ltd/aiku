@@ -1,9 +1,9 @@
-import { format, formatDuration, intervalToDuration, addSeconds,
+import { format, formatDuration, intervalToDuration, addSeconds, formatDistanceToNow,
     formatDistanceToNowStrict, startOfDay, isPast, parseISO, isAfter, differenceInDays  } from 'date-fns'
 import { formatInTimeZone } from 'date-fns-tz'
-import formatDistanceToNow from 'date-fns/formatDistanceToNow'
 import { zhCN, enUS, enGB, fr, de, id, ja, sk, es, bg, cs, hr, hu, it, nl, pl, pt, ro, sv, uk } from 'date-fns/locale'
-import { trans, getActiveLanguage } from 'laravel-vue-i18n'
+import { getActiveLanguage } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 
 export const localesCode: any = {
     zhCN, enUS, enGB, fr, de, id, ja, sk, es,
@@ -60,7 +60,7 @@ export const useRangeFromNow = (dateIso: string | Date, OptionsTime?: OptionsTim
 
 // Range from today to expected date: "3 days left"
 export const useDaysLeftFromToday = (isoDate?: string) => {
-    if (!isoDate) return trans('No date')
+    if (!isoDate) return ctrans('No date')
 
     let targetDate: Date
     try {
@@ -69,30 +69,30 @@ export const useDaysLeftFromToday = (isoDate?: string) => {
             targetDate = parseISO(isoDate)
         }
     } catch {
-        return trans('invalid date')
+        return ctrans('invalid date')
     }
 
     const today = startOfDay(new Date())
     targetDate = startOfDay(targetDate)
 
     if (!isAfter(targetDate, today)) {
-        return trans('passed')
+        return ctrans('passed')
     }
 
     const daysLeft = differenceInDays(targetDate, today)
 
     if (daysLeft === 1) {
-        return daysLeft + ' ' + trans('day left')
+        return daysLeft + ' ' + ctrans('day left')
     } else if (daysLeft === 0) {
         return 'today'
     } else  {
-        return daysLeft + ' ' + trans('days left')
+        return daysLeft + ' ' + ctrans('days left')
     }
 }
 
 //estimated time left for retina
 export const retinaUseDaysLeftFromToday = (isoDate?: string) => {
-    if (!isoDate) return trans('No date')
+    if (!isoDate) return ctrans('No date')
 
     let targetDate: Date
     try {
@@ -101,24 +101,24 @@ export const retinaUseDaysLeftFromToday = (isoDate?: string) => {
             targetDate = parseISO(isoDate)
         }
     } catch {
-        return trans('invalid date')
+        return ctrans('invalid date')
     }
 
     const today = startOfDay(new Date())
     targetDate = startOfDay(targetDate)
 
     if (!isAfter(targetDate, today)) {
-        return trans('passed')
+        return ctrans('passed')
     }
 
     const daysLeft = differenceInDays(targetDate, today)
 
     if (daysLeft === 1) {
-        return trans('in')  + ' ' + daysLeft + ' ' +  trans('days')
+        return ctrans('in')  + ' ' + daysLeft + ' ' +  ctrans('days')
     } else if (daysLeft === 0) {
         return 'today'
     } else  {
-        return trans('in') + ' ' + daysLeft + ' ' +  trans('days')
+        return ctrans('in') + ' ' + daysLeft + ' ' +  ctrans('days')
     }
 }
 

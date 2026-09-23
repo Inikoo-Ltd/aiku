@@ -52,7 +52,19 @@ class SaveModelImage
         }
 
         data_set($imageData, 'checksum', $checksum);
-        $media = StoreMediaFromFile::run($model, $imageData, 'image');
+
+        /**
+         * A person's own photograph is not stock the rest of the group may pick from: the image
+         * galleries list every media in the group whose collection is `image`, so a staff avatar
+         * kept there is offered to whoever is building a web page. Personal portraits get their
+         * own collection; a shop logo stays where marketing can reach it.
+         */
+        $collection = $model instanceof User
+            || $model instanceof WebUser
+            || $model instanceof Employee
+            || $model instanceof Guest ? 'avatar' : 'image';
+
+        $media = StoreMediaFromFile::run($model, $imageData, $collection);
 
         if ($oldImage && $oldImage->id == $media->id) {
             return $model;

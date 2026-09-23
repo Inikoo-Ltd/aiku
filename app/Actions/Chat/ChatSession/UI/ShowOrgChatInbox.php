@@ -16,11 +16,14 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
+use App\Enums\CRM\Livechat\ChatPhoneCallContactTypeEnum;
+use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatPhoneCall;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\SysAdmin\Organisation;
@@ -194,7 +197,7 @@ class ShowOrgChatInbox extends OrgAction
      * counted from the conversations rather than read off the agent's own counter, which drifts.
      *
      * @param  array<int, int>  $shopIds
-     * @return array<int, array{id: int, name: string|null, presence: string, open: int, max: int}>
+     * @return array<int, array{id: int, name: string|null, presence: string, open: int, max: int, on_call: bool, on_call_since: string|null}>
      */
     private function agentsCovering(array $shopIds): array
     {
@@ -210,15 +213,23 @@ class ShowOrgChatInbox extends OrgAction
             ->selectRaw('chat_assignments.chat_agent_id, count(*) as open')
             ->pluck('open', 'chat_agent_id');
 
+        // Somebody away from the keyboard on the telephone reads as idle otherwise, and the
+        // conversations they are not answering look like neglect rather than a call in progress.
+        $onCall = ChatPhoneCall::inProgress()
+            ->orderBy('started_at')
+            ->pluck('started_at', 'chat_agent_id');
+
         return ChatAgent::with('user')->get()
             ->filter(fn (ChatAgent $agent) => $agent->user?->status
                 && array_intersect($shopIds, $this->workableShopIdsFor($agent->user)) !== [])
             ->map(fn (ChatAgent $agent) => [
-                'id'       => $agent->id,
-                'name'     => $agent->user->contact_name,
-                'presence' => $agent->presenceStatus()->value,
-                'open'     => (int) ($open[$agent->id] ?? 0),
-                'max'      => $agent->max_concurrent_chats,
+                'id'            => $agent->id,
+                'name'          => $agent->user->contact_name,
+                'presence'      => $agent->presenceStatus()->value,
+                'open'          => (int) ($open[$agent->id] ?? 0),
+                'max'           => $agent->max_concurrent_chats,
+                'on_call'       => $onCall->has($agent->id),
+                'on_call_since' => $onCall->get($agent->id)?->toIso8601String(),
             ])
             ->sortBy([
                 fn (array $a, array $b) => array_search($a['presence'], ['online', 'away', 'offline']) <=> array_search($b['presence'], ['online', 'away', 'offline']),
@@ -255,8 +266,9 @@ class ShowOrgChatInbox extends OrgAction
 
         $shopIds = $shops->pluck('id');
         $counts  = $this->waitingAndActiveCounts($shopIds);
+        $phone   = $this->phoneCallCounts($shopIds);
 
-        return $shops->map(function ($shop) use ($user, $counts) {
+        return $shops->map(function ($shop) use ($user, $counts, $phone) {
             $channel = function (string $key, string $name) use ($shop, $counts): array {
                 $tally = function (string $kind) use ($shop, $counts, $key): array {
                     $row = $counts["{$shop->id}.{$key}.{$kind}"] ?? [];
@@ -298,11 +310,66 @@ class ShowOrgChatInbox extends OrgAction
                 'slug'     => $shop->slug,
                 'type'     => $shop->type?->value,
                 'channels' => $channels,
+                // The telephone is not a channel: nothing arrives on it, nothing waits on it and
+                // no conversation is held in it. It rides beside the channels as its own column
+                // so the rail says how much of the day went on the phone next to how much went
+                // on chat, which is the comparison anybody looking at this rail is making.
+                'phone'    => $phone[$shop->id] ?? ['in_progress' => 0, 'customer' => 0, 'guest' => 0],
                 // Writing is decided shop by shop, never once for the page: the same person is
                 // an agent on one shop and only oversees another.
                 'is_read_only' => !$this->userCanActOnChatOnShop($user, $shop),
+                // A shop with no mailbox connected can send nothing, so the inbox does not offer
+                // to write from it. The customer still has to have an address of their own.
+                'can_start_email' => filled(Arr::get($shop->settings, 'gmail.email')),
             ];
         })->values()->all();
+    }
+
+    /**
+     * Telephone time per shop: what is happening now, and what has been finished today.
+     *
+     * A call in progress is deliberately not split between customer and guest. Who was on the
+     * other end is chosen when the call is filed, so until then it belongs to neither row, and
+     * putting it in one would make that row wrong for as long as the call lasts.
+     *
+     * @param  Collection<int, int>  $shopIds
+     * @return array<int, array{in_progress: int, customer: int, guest: int}>
+     */
+    private function phoneCallCounts(Collection $shopIds): array
+    {
+        $counts = [];
+
+        $running = ChatPhoneCall::whereIn('shop_id', $shopIds)
+            ->inProgress()
+            ->groupBy('shop_id')
+            ->selectRaw('shop_id, count(*) as total')
+            ->pluck('total', 'shop_id');
+
+        $finished = ChatPhoneCall::whereIn('shop_id', $shopIds)
+            ->where('status', ChatPhoneCallStatusEnum::COMPLETED)
+            ->whereDate('ended_at', today())
+            ->groupBy('shop_id', 'contact_type')
+            ->get(['shop_id', 'contact_type', DB::raw('count(*) as total')]);
+
+        foreach ($shopIds as $shopId) {
+            $counts[$shopId] = [
+                'in_progress' => (int) ($running[$shopId] ?? 0),
+                'customer'    => 0,
+                'guest'       => 0,
+            ];
+        }
+
+        foreach ($finished as $row) {
+            $kind = $row->contact_type instanceof ChatPhoneCallContactTypeEnum
+                ? $row->contact_type->value
+                : (string) $row->contact_type;
+
+            if (isset($counts[$row->shop_id][$kind])) {
+                $counts[$row->shop_id][$kind] += (int) $row->total;
+            }
+        }
+
+        return $counts;
     }
 
     /**
@@ -419,9 +486,16 @@ class ShowOrgChatInbox extends OrgAction
             ." and a.status = case when {$sessions}.status = '".ChatSessionStatusEnum::CLOSED->value."'"
             ." then '".ChatAssignmentStatusEnum::RESOLVED->value."' else '".ChatAssignmentStatusEnum::ACTIVE->value."' end";
 
+        // Closed and not mine is the colleagues' column, whoever closed it: a conversation
+        // nobody ever picked up is still the shop's history, and counted in neither it sat
+        // in no column at all while its list showed it.
+        $colleague = "case when {$sessions}.status = '".ChatSessionStatusEnum::CLOSED->value."'"
+            ." then not exists ({$assigned} and a.chat_agent_id = {$agentId})"
+            ." else exists ({$assigned} and a.chat_agent_id is not null and a.chat_agent_id <> {$agentId}) end";
+
         return [
             DB::raw("exists ({$assigned} and a.chat_agent_id = {$agentId}) as by_me"),
-            DB::raw("exists ({$assigned} and a.chat_agent_id is not null and a.chat_agent_id <> {$agentId}) as by_colleague"),
+            DB::raw("({$colleague}) as by_colleague"),
         ];
     }
 

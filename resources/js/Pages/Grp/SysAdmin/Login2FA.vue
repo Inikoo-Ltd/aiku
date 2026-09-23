@@ -91,7 +91,7 @@ const onLogoutAuth = () => {
         <div class="flex space-x-2">
             <Button full native-type="submit" :loading="form.processing" :disabled="form.processing" label="Enter" type="indigo"/>
             <Button :type="'red-r-outline'" :injectStyle="['margin-top:unset', 'margin-left:8px']" @click="onLogoutAuth()">
-                <FontAwesomeIcon :icon="faSignOutAlt" />
+                <FontAwesomeIcon :icon="faSignOutAlt" fixed-width />
                 <LoadingIcon v-if="isLoadingLogout"/>
             </Button>
         </div>

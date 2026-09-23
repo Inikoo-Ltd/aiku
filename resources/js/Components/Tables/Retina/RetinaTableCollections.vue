@@ -70,9 +70,9 @@ function collectionRoute(collection): string {
         <template #cell(parents)="{ item: collection }">
             <template v-for="(parent, index) in collection.parents_data" :key="index">
                 <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1"
-                    v-tooltip="trans('Department')" />
+                    v-tooltip="trans('Department')" fixed-width />
                 <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1"
-                    v-tooltip="trans('Sub Department')" />
+                    v-tooltip="trans('Sub Department')" fixed-width />
             </template>
         </template>
     </Table>
@@ -100,7 +100,7 @@ function collectionRoute(collection): string {
                 <a v-if="item.public_url" :href="item.public_url" target="_blank"
                     class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-primary-600"
                     title="Open public page">
-                    <FontAwesomeIcon :icon="faExternalLink" />
+                    <FontAwesomeIcon :icon="faExternalLink" fixed-width />
                 </a>
             </div>
         </template>

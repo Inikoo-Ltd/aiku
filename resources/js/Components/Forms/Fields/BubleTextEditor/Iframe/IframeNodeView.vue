@@ -76,14 +76,14 @@ const cancelEditor = () => {
                 class="flex items-center justify-center h-7 w-7 rounded bg-green-500 text-white hover:bg-green-600"
                 @click="saveUrl"
             >
-                <FontAwesomeIcon :icon="faCheck" fixed-witdh class="h-3.5 w-3.5" />
+                <FontAwesomeIcon :icon="faCheck" fixed-witdh class="h-3.5 w-3.5" fixed-width />
             </button>
             <button
                 type="button"
                 class="flex items-center justify-center h-7 w-7 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
                 @click="cancelEditor"
             >
-                <FontAwesomeIcon :icon="faTimes" class="h-3.5 w-3.5" />
+                <FontAwesomeIcon :icon="faTimes" class="h-3.5 w-3.5" fixed-width />
             </button>
         </div>
     </NodeViewWrapper>

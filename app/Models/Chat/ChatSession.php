@@ -8,6 +8,7 @@
 
 namespace App\Models\Chat;
 
+use App\Models\Helpers\Ticket;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
@@ -15,11 +16,14 @@ use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Language;
+use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -60,10 +64,23 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ChatSession withLastMessageTime()
  * @mixin \Eloquent
  */
-class ChatSession extends Model
+class ChatSession extends Model implements Auditable
 {
     use HasFactory;
     use SoftDeletes;
+    use HasHistory;
+
+    public function generateTags(): array
+    {
+        return ['crm'];
+    }
+
+    protected array $auditInclude = [
+        'web_user_id',
+        'suggested_customer_id',
+        'suggestion_basis',
+        'suggestion_rejected_at',
+    ];
 
     protected $table = 'chat_sessions';
 
@@ -96,7 +113,7 @@ class ChatSession extends Model
     }
 
 
-    public function webUser()
+    public function webUser(): BelongsTo
     {
         return $this->belongsTo(WebUser::class, 'web_user_id');
     }
@@ -114,6 +131,14 @@ class ChatSession extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(ChatMessage::class, 'chat_session_id');
+    }
+
+    /**
+     * Raised off this conversation, so the thread can say what is outstanding on it.
+     */
+    public function tickets(): MorphMany
+    {
+        return $this->morphMany(Ticket::class, 'source');
     }
 
     public function assignments(): HasMany

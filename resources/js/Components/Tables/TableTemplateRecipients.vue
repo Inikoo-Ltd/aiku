@@ -440,7 +440,7 @@ watch(
                 </Menu>
 
                 <Button @click="filterMenu.toggle($event)" class="h-10 px-4" :type="'secondary'">
-                    <FontAwesomeIcon :icon="faPlus" />
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
                     <span>{{ trans("Filter") }}</span>
 
                     <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
@@ -474,7 +474,7 @@ watch(
                     :key="'ready-' + (selectedUpcoming === 'ready')" @click="toggleUpcoming('ready')"
                     :type="selectedUpcoming === 'ready' ? 'primary' : 'secondary'"
                     :tooltip="trans('Upcoming Transactions Ready')" class="h-10 px-4 shrink-0 whitespace-nowrap">
-                    <FontAwesomeIcon :icon="faCalendarPlus" />
+                    <FontAwesomeIcon :icon="faCalendarPlus" fixed-width />
                     <span>{{ trans("Upcoming Transactions") }}</span>
                     <Badge :value="upcomingReadyCount" class="ml-2" />
                 </Button>
@@ -483,7 +483,7 @@ watch(
                     :key="'oos-' + (selectedUpcoming === 'out_of_stock')" @click="toggleUpcoming('out_of_stock')"
                     :type="selectedUpcoming === 'out_of_stock' ? 'red' : 'red_outline'"
                     :tooltip="trans('Upcoming Transactions Out of Stock / Not for Sale')" class="h-10 px-4 shrink-0 whitespace-nowrap">
-                    <FontAwesomeIcon :icon="faBan" />
+                    <FontAwesomeIcon :icon="faBan" fixed-width />
                     <span>{{ trans("Upcoming Transactions") }}</span>
                     <Badge :value="upcomingOutOfStockCount" class="ml-2" />
                 </Button>
@@ -731,7 +731,7 @@ watch(
                                 <div v-if="filter.value.loadingMap"
                                     class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded">
                                     <div class="flex flex-col items-center gap-2 text-gray-600">
-                                        <FontAwesomeIcon :icon="faSpinner" class="text-2xl animate-spin" />
+                                        <FontAwesomeIcon :icon="faSpinner" class="text-2xl animate-spin" fixed-width />
                                         <span class="text-sm">{{ trans("Finding location...") }}</span>
                                     </div>
                                 </div>
@@ -777,7 +777,7 @@ watch(
                 </div>
 
                 <div class="h-16 w-16 rounded-full bg-indigo-50 flex items-center justify-center">
-                    <FontAwesomeIcon :icon="faUsers" class="text-indigo-600 text-2xl" />
+                    <FontAwesomeIcon :icon="faUsers" class="text-indigo-600 text-2xl" fixed-width />
                 </div>
 
             </div>

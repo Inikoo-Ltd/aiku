@@ -100,7 +100,7 @@ const shortLocation = (location: string[]) => {
                 :icon="faStar"
                 size="sm"
                 color="#FFC000"
-                v-tooltip="trans('VIP Customer')"
+                v-tooltip="trans('VIP Customer')" fixed-width
             />
         </template>
         <template #cell(shop)="{ item: customer }" class="primaryLink">

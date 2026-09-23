@@ -98,7 +98,7 @@ const bottomNavigation = computed(() => [
                 <transition>
                     <MenuItems class="absolute bottom-full -translate-y-2 w-52 p-1 origin-bottom-left rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                         <div class="flex items-center gap-x-1.5 px-1 mb-1">
-                            <FontAwesomeIcon :icon='bottomNav.icon' class='text-gray-400 text-xxs' aria-hidden='true' />
+                            <FontAwesomeIcon :icon='bottomNav.icon' class='text-gray-400 text-xxs' fixed-width aria-hidden='true' />
                             <span class="text-[9px] leading-none text-gray-400">{{ bottomNav.label }}</span>
                             <hr class="w-full rounded-full border-slate-300">
                         </div>
@@ -107,7 +107,7 @@ const bottomNavigation = computed(() => [
                         <template v-if="bottomNav.showAll">
                             <div @click="() => (router.visit(route(bottomNav.showAll.route.name, bottomNav.showAll.route.parameters)), closeMenu())"
                                 class="flex gap-x-2 items-center pl-3 py-1.5 text-xs cursor-pointer rounded text-slate-500 hover:bg-slate-200/75 hover:text-slate-600">
-                                <FontAwesomeIcon icon='fal fa-store-alt' class='' aria-hidden='true' />
+                                <FontAwesomeIcon icon='fal fa-store-alt' class='' fixed-width aria-hidden='true' />
                                 <span class="font-semibold">{{ bottomNav.showAll.label }}</span>
                             </div>
                             <hr class="w-11/12 mx-auto border-t border-slate-300 mt-1 mb-2.5">

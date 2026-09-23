@@ -214,6 +214,37 @@ class StockDelivery extends Model implements HasMedia, Auditable
         return $this->belongsToMany(PurchaseOrder::class);
     }
 
+    /**
+     * Supplier and agent deliveries are booked in to locations from aiku; Aurora still creates,
+     * dispatches, receives and checks them. Production job orders are fully Aurora's.
+     */
+    public function placesInAiku(): bool
+    {
+        return $this->organisation->is_aiku_stock_control && $this->parent_type !== 'Production';
+    }
+
+    /**
+     * Strips what Aurora knows about placement from a fetched delivery or item payload, so a
+     * re-fetch can never regress what aiku booked in. The state is dropped from checked onwards
+     * because aiku derives it from its own sowings.
+     *
+     * @param  array<string, mixed>  $modelData
+     * @return array<string, mixed>
+     */
+    public static function withoutAuroraPlacement(array $modelData): array
+    {
+        $state = $modelData['state'] ?? null;
+        if ($state instanceof \BackedEnum) {
+            $state = $state->value;
+        }
+        if (in_array($state, ['checked', 'placed'], true)) {
+            unset($modelData['state']);
+        }
+        unset($modelData['placed_at'], $modelData['unit_quantity_placed']);
+
+        return $modelData;
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(StockDeliveryItem::class);

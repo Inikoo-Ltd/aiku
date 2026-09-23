@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\SyncCustomerSalesChannelPortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
@@ -273,7 +274,12 @@ test('the stock push resolves the variant by sku and never falls back to a sibli
         ->and(BulkUpdateShopifyPortfolio::resolveVariant($borrowsSiblingSku, $product('NMGC-04'), [$variant('1', 'NMGC-01')])['variantId'])->toBe('gid://shopify/ProductVariant/1');
 
     $deletedVariant = new Portfolio(['sku' => 'spbic-12', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/10']);
-    expect(BulkUpdateShopifyPortfolio::resolveVariant($deletedVariant, $product('SPBiC-12'), [$variant('10', 'spbic-10')]))->toBeNull();
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($deletedVariant, $product('SPBiC-12'), [$variant('10', 'spbic-10')], ['spbic-10', 'spbic-12']))->toBeNull();
+
+    $merchantRelabelled = new Portfolio(['sku' => 'aatom-27', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/58846736712028']);
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('58846736712028', 'EE-CALM-EVENING-01')], ['aatom-27', 'b-67494-1'])['variantId'])->toBe('gid://shopify/ProductVariant/58846736712028')
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('58846736712028', 'EE-CALM-EVENING-01'), $variant('2', 'x')], ['aatom-27', 'b-67494-1']))->toBeNull()
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('99', 'EE-CALM-EVENING-01')], ['aatom-27', 'b-67494-1']))->toBeNull();
 
     $merchantWithoutSkus = new Portfolio(['sku' => 'gel-08', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/dead']);
     expect(BulkUpdateShopifyPortfolio::resolveVariant($merchantWithoutSkus, $product('GEL-08'), [$variant('8', '')])['variantId'])->toBe('gid://shopify/ProductVariant/8')
@@ -1179,4 +1185,19 @@ test('the borrowed sku repair gives an unlinked portfolio its own sku back and l
     expect($repair->handle($borrower->refresh()))->toBe(RepairPortfoliosBorrowedSku::REPAIRED)
         ->and($borrower->refresh()->sku)->toBe(Str::lower($this->product->code))
         ->and($repair->borrowedSkuQuery($channel)->count())->toBe(0);
+});
+
+test('a sync of a channel whose portfolios were never uploaded reports it has nothing to send', function () {
+    Queue::fake();
+    $channel = shopifyProductChannel($this, 'product-sync-nothing-to-send')->customerSalesChannel;
+
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeTrue();
+
+    $portfolio->update(['platform_product_id' => 'gid://shopify/Product/7600']);
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeFalse();
+
+    $portfolio->update(['status' => false]);
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeTrue();
 });

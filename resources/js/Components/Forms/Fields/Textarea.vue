@@ -60,9 +60,9 @@ delete attributes.value
             <div v-if="form.errors[fieldName] || form.recentlySuccessful"
                 class="absolute top-3 right-0 pr-3 flex items-center pointer-events-none">
                 <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]"
-                    class="h-5 w-5 text-red-500" aria-hidden="true" />
+                    class="h-5 w-5 text-red-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon icon="fas fa-check-circle" v-if="form.recentlySuccessful"
-                    class="mt-1.5  h-5 w-5 text-green-500" aria-hidden="true" />
+                    class="mt-1.5  h-5 w-5 text-green-500" fixed-width aria-hidden="true" />
             </div>
         </Transition>
         

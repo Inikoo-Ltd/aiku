@@ -189,7 +189,7 @@ const modalTitle = computed(() =>
                         v-model="form.code"
                         type="text"
                         :disabled="isEditMode"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent] disabled:bg-gray-100"
                     />
                     <div v-if="form.errors.code" class="mt-1 text-sm text-red-600">
                         {{ form.errors.code }}
@@ -203,7 +203,7 @@ const modalTitle = computed(() =>
                     <input
                         v-model="form.name"
                         type="text"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
                     />
                     <div v-if="form.errors.name" class="mt-1 text-sm text-red-600">
                         {{ form.errors.name }}
@@ -217,7 +217,7 @@ const modalTitle = computed(() =>
                     <input
                         v-model="form.color"
                         type="color"
-                        class="mt-1 block w-full h-9 rounded-md border border-gray-300 p-1 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full h-9 rounded-md border border-gray-300 p-1 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
                     />
                     <div v-if="form.errors.color" class="mt-1 text-sm text-red-600">
                         {{ form.errors.color }}
@@ -233,7 +233,7 @@ const modalTitle = computed(() =>
                 <textarea
                     v-model="form.description"
                     rows="3"
-                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <div v-if="form.errors.description" class="mt-1 text-sm text-red-600">
                     {{ form.errors.description }}
@@ -248,7 +248,7 @@ const modalTitle = computed(() =>
                     </label>
                     <select
                         v-model="form.category"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]"
                     >
                         <option value="">
                             {{ trans('Select category') }}
@@ -272,7 +272,7 @@ const modalTitle = computed(() =>
                     </label>
                     <select
                         v-model="form.compensation_type"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]"
                     >
                         <option value="">
                             {{ trans('Select compensation type') }}
@@ -302,7 +302,7 @@ const modalTitle = computed(() =>
                         type="number"
                         step="0.01"
                         min="0"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]"
                     />
                     <div v-if="form.errors.multiplier" class="mt-1 text-sm text-red-600">
                         {{ form.errors.multiplier }}
@@ -314,7 +314,7 @@ const modalTitle = computed(() =>
                         id="is_active"
                         v-model="form.is_active"
                         type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                     />
                     <label for="is_active" class="ml-2 block text-sm text-gray-700">
                         {{ trans('Active') }}

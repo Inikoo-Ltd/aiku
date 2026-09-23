@@ -59,7 +59,7 @@ const oneOffs = computed(() => notStocked.value.filter(o => o.customers <= 1 && 
                     <div class="flex justify-between gap-3">
                         <Link :href="queryUrl(item.query)" class="font-medium text-indigo-600 hover:underline truncate">{{ item.query }}</Link>
                         <span class="shrink-0 text-gray-500 tabular-nums whitespace-nowrap">
-                            {{ item.searches }} <FontAwesomeIcon icon="fal fa-users" class="text-gray-300 ml-1" aria-hidden="true" /> {{ item.customers }}
+                            {{ item.searches }} <FontAwesomeIcon icon="fal fa-users" class="text-gray-300 ml-1" fixed-width aria-hidden="true" /> {{ item.customers }}
                         </span>
                     </div>
                     <p class="text-xs text-gray-500 mt-0.5">
@@ -85,7 +85,7 @@ const oneOffs = computed(() => notStocked.value.filter(o => o.customers <= 1 && 
                 <div v-for="item in repeated" :key="item.query" class="flex justify-between gap-3 py-2">
                     <Link :href="queryUrl(item.query)" class="font-medium text-indigo-600 hover:underline truncate">{{ item.query }}</Link>
                     <span class="shrink-0 text-gray-500 tabular-nums whitespace-nowrap">
-                        {{ item.searches }} <FontAwesomeIcon icon="fal fa-users" class="text-gray-300 ml-1" aria-hidden="true" /> {{ item.customers }}
+                        {{ item.searches }} <FontAwesomeIcon icon="fal fa-users" class="text-gray-300 ml-1" fixed-width aria-hidden="true" /> {{ item.customers }}
                     </span>
                 </div>
             </div>

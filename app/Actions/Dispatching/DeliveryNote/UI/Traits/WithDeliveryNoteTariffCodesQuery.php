@@ -82,7 +82,7 @@ trait WithDeliveryNoteTariffCodesQuery
     {
         $cases = '';
         foreach ($this->getPartValueSources() as $key => $column) {
-            $cases .= " WHEN tp.all_have_$key THEN dni.quantity_required * os.$column / tp.{$key}_sum";
+            $cases .= " WHEN tp.all_have_$key AND tp.{$key}_sum > 0 THEN dni.quantity_required * os.$column / tp.{$key}_sum";
         }
 
         return "CASE$cases ELSE 1.0 / COALESCE(tp.parts_count, 1) END";

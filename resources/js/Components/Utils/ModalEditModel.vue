@@ -133,7 +133,7 @@ function connectToPlatform(routeName, parameters) {
                                 'background-color': `color-mix(in srgb, ${layout?.app?.theme[2]} 20%, white)`,
                                 'color': `color-mix(in srgb, ${layout?.app?.theme[3]} 50%, black)`,
                             } : {}]">
-                            <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true"
+                            <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true"
                                 class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[
                                     tabActive[key]
                                         ? 'text-gray-400 group-hover:text-gray-500'

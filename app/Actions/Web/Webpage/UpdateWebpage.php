@@ -150,6 +150,16 @@ class UpdateWebpage extends OrgAction
             data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
         }
 
+        $subType = Arr::has($modelData, 'sub_type')
+            ? WebpageSubTypeEnum::fromValue(Arr::get($modelData, 'sub_type'))
+            : $webpage->sub_type;
+
+        if ($subType?->isHiddenFromSearchEngines()) {
+            foreach ($subType->searchEngineVisibility() as $field => $isVisible) {
+                data_set($modelData, $field, $isVisible);
+            }
+        }
+
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
         $changes = Arr::except($webpage->getChanges(), ['updated_at', 'last_fetched_at']);

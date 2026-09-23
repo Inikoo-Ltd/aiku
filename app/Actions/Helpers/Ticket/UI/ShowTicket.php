@@ -217,6 +217,11 @@ class ShowTicket extends OrgAction
                         'avatar' => $engineer->imageSources(48, 48),
                         'is_me'  => $engineer->id === $user->id,
                     ])->sortBy('label')->values(),
+                'developers' => GetTicketBadgeData::engineers($ticket->group_id)
+                    ->map(fn (User $engineer) => [
+                        'username' => $engineer->username,
+                        'name'     => $engineer->contact_name ?: $engineer->username,
+                    ])->sortBy('name')->values(),
                 'mentionable' => $this->mentionableFor($ticket),
             ],
             'can_manage'             => Ticket::canBeManagedBy($user),
@@ -238,7 +243,6 @@ class ShowTicket extends OrgAction
                 'collaborators' => ['name' => 'grp.models.ticket.collaborators.update', 'parameters' => ['ticket' => $ticket->id]],
                 'comment'  => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
                 'rate'     => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
-                'escalate' => ['name' => 'grp.models.ticket.escalate', 'parameters' => ['ticket' => $ticket->id]],
                 'delete'   => ['name' => 'grp.models.ticket.delete', 'parameters' => ['ticket' => $ticket->id]],
             ],
         ];

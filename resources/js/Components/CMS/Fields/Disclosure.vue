@@ -52,7 +52,7 @@ const onChangeProperty = (index: number, data: object) => {
                             <span class="drag-handle cursor-move">☰</span>
                             <span>Disclosure {{ index + 1 }}</span>
                             <FontAwesomeIcon :icon="faTrash" class="text-red-500 hover:text-red-700"
-                                @click.stop="removeDisclosure(index)" />
+                                @click.stop="removeDisclosure(index)" fixed-width />
                         </DisclosureButton>
                         <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
                             <DisclosureProperty :modelValue="modelValue[index]" :uploadRoutes="uploadRoutes"

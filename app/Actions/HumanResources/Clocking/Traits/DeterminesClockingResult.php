@@ -19,7 +19,10 @@ trait DeterminesClockingResult
         }
 
         $gracePeriod = $employee->organisation->late_grace_period_minutes ?? 15;
-        $schedule = $selectedSchedule ?? $employee->organisation->getDefaultWorkSchedule();
+        // The shift they clocked into wins; after that it is this employee's own hours, and only
+        // then the organisation's. Judging a four day week against the organisation's Friday
+        // made somebody late for a day they do not work.
+        $schedule = $selectedSchedule ?? $employee->getEffectiveWorkSchedule();
 
         if (!$schedule) {
             return false;

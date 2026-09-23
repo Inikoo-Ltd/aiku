@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
@@ -536,6 +537,7 @@ class IndexOrgStocks extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $stocks, ActionRequest $request): Response
     {
+        $canDiscontinue = $this->parent instanceof Organisation && $request->user()->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
         $title      = __('SKOs');
         $model      = '';
         $icon       = [
@@ -612,6 +614,21 @@ class IndexOrgStocks extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrgStocksTabsEnum::navigation(),
                 ],
+                'discontinue_preview_route' => $canDiscontinue ? [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue_preview',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'warehouse'    => $this->warehouse->slug,
+                    ]
+                ] : null,
+                'discontinue_route' => $canDiscontinue ? [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.discontinue',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'warehouse'    => $this->warehouse->slug,
+                    ],
+                    'method'     => 'post',
+                ] : null,
 
                 OrgStocksTabsEnum::INDEX->value => $this->tab == OrgStocksTabsEnum::INDEX->value
                     ? fn () => OrgStocksResource::collection($stocks)

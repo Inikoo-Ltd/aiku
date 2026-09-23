@@ -6,7 +6,7 @@ import ImagePrime from "primevue/image"
 import { ref, computed, inject } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo} from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle, faTimesCircle } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
@@ -26,6 +26,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
+import { useFormatTime } from '@/Composables/useFormatTime'
+
+const locale = inject('locale', aikuLocaleStructure)
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -57,6 +60,20 @@ const props = defineProps<{
 		org_stocks: {
 
 		}
+		stock_locations?: {
+			location_code: string
+			warehouse_code: string
+			org_stock_code: string
+			quantity: number
+		}[]
+		incoming_stock?: {
+			type: string
+			reference: string
+			org_stock_code: string
+			state_label: string
+			quantity: number
+			eta: string | null
+		}[]
 		brands: {}[]
 		tags: {}[]
 		gpsr: {
@@ -127,10 +144,10 @@ const editIsForSale = () => {
 }
 
 const getTooltips = () => {
-	let tooltipText = props.data.availability_status?.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')
+	let tooltipText = props.data.availability_status?.is_for_sale ? ctrans('Product is currently for sale and available to be purchased') : ctrans('Product is currently not for sale and unavailable to be purchased')
 
 	if(props.data.availability_status?.from_master || props.data.availability_status?.parentLink){
-		tooltipText = props.data.availability_status?.from_master ? trans('This product For Sale status has been modified from the Master Product level') : trans('This product For Sale status has been modified from the Trade Unit level')
+		tooltipText = props.data.availability_status?.from_master ? ctrans('This product For Sale status has been modified from the Master Product level') : ctrans('This product For Sale status has been modified from the Trade Unit level')
 	}
 
 	return tooltipText;
@@ -169,15 +186,15 @@ const getTooltips = () => {
 				</template>
 
 				<template #col_name="{ data }">
-					<p>{{ data.org_stock_name }} <span class="text-orange-500">{{ trans('Units/SKO')}}:{{ data.units_per_sku }}</span></p>
+					<p>{{ data.org_stock_name }} <span class="text-orange-500">{{ ctrans('Units/SKO')}}:{{ data.units_per_sku }}</span></p>
 				</template>
 			</LabelSKU>
 
 			<span
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-help"
 				:class="data.availability_status.product_state_icon['class'].replace('text', 'border').replace('500', '300')">
-                <span class="opacity-50"> {{trans('Procurement')}}:</span>	 {{ data.availability_status.product_state}}
-				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']"/>
+                <span class="opacity-50"> {{ctrans('Procurement')}}:</span>	 {{ data.availability_status.product_state}}
+				<FontAwesomeIcon :icon="data.availability_status.product_state_icon['icon']" :class="data.availability_status.product_state_icon['class']" fixed-width/>
 			</span>
 
 			<span
@@ -187,18 +204,18 @@ const getTooltips = () => {
 				v-on:click="editIsForSale"
 				:class="data.availability_status.is_for_sale ? 'border-green-500' : 'border-red-500'"
 			>
-			{{ data.availability_status.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
-				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+			{{ data.availability_status.is_for_sale ? ctrans('For Sale') : ctrans('Not For Sale') }}
+				<FontAwesomeIcon :icon="data.availability_status.is_for_sale ? faCheckCircle : faTimesCircle" :class="data.availability_status.is_for_sale ? 'text-green-500' : 'text-red-500'" fixed-width/>
 				<FontAwesomeIcon
 					v-if="data.availability_status?.from_master"
 					icon="fab fa-octopus-deploy"
 					:class="'ms-1'"
-					color="#4B0082"
+					color="#4B0082" fixed-width
 				/>
 				<FontAwesomeIcon
 					v-if="data.availability_status?.from_trade_unit"
 					icon="fal fa-atom"
-					:class="'ms-1'"
+					:class="'ms-1'" fixed-width
 				/>
 			</span>
 		</div>
@@ -231,7 +248,7 @@ const getTooltips = () => {
 				<div v-else>
 					<div
 						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
 						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 					</div>
 					<!-- <div class="mt-2 text-sm italic text-gray-500">
@@ -260,15 +277,42 @@ const getTooltips = () => {
 		<div class="min-w-0 bg-white h-fit mx-4 shadow-sm">
 			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
 				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
 				<span>
 					{{
 					data?.product?.data?.stock > 0
-					? trans("In stock") + ` (${data?.product?.data?.stock} ` + trans("available") + `)`
-					: data.product.data.state=='discontinued' ? trans("Discontinued")  : trans("Out Of Stock")
+					? ctrans("In stock") + ` (${data?.product?.data?.stock} ` + ctrans("available") + `)`
+					: data.product.data.state=='discontinued' ? ctrans("Discontinued")  : ctrans("Out Of Stock")
 					}}
 				</span>
 			</div>
+
+			<!-- Section: Where the stock sits -->
+			<div v-if="data.stock_locations?.length" class="mb-4 px-2">
+				<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{{ ctrans("Locations") }}</div>
+				<table class="w-full text-sm">
+					<tr v-for="location in data.stock_locations" :key="location.location_code + location.org_stock_code" class="border-b border-gray-100 last:border-0">
+						<td class="py-1 font-medium">{{ location.location_code }}</td>
+						<td class="py-1 text-gray-500">{{ location.org_stock_code }}</td>
+						<td class="py-1 text-right tabular-nums">{{ locale.number(location.quantity) }}</td>
+					</tr>
+				</table>
+			</div>
+
+			<!-- Section: On its way -->
+			<div class="mb-4 px-2">
+				<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{{ ctrans("On its way") }}</div>
+				<table class="w-full text-sm">
+					<tr v-for="incoming in data.incoming_stock" :key="incoming.type + incoming.reference + incoming.org_stock_code" class="border-b border-gray-100 last:border-0">
+						<td class="py-1 font-medium" v-tooltip="incoming.type === 'purchase_order' ? ctrans('Purchase order') : ctrans('Stock delivery')">{{ incoming.reference }}</td>
+						<td class="py-1 text-gray-500">{{ incoming.state_label }}</td>
+						<td class="py-1 text-right tabular-nums">{{ locale.number(incoming.quantity) }}</td>
+						<td class="py-1 text-right text-gray-500 whitespace-nowrap">{{ incoming.eta ? useFormatTime(incoming.eta, { formatTime: "mdy" }) : "—" }}</td>
+					</tr>
+				</table>
+				<div v-if="!data.incoming_stock?.length" class="text-sm text-gray-500">{{ ctrans("Nothing on order") }}</div>
+			</div>
+
 			<!-- Section: Price -->
 			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" />
 			<!-- <div>

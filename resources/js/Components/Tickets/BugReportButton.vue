@@ -65,7 +65,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKey))
 
     <Modal :is-open="isOpen" width="w-full max-w-lg" @on-close="isOpen = false">
         <div v-if="sentReference" class="py-8 text-center text-lg font-semibold text-green-700">
-            <FontAwesomeIcon icon="fal fa-check-circle" class="mr-2" /> {{ sentReference }}
+            <FontAwesomeIcon icon="fal fa-check-circle" class="mr-2" fixed-width /> {{ sentReference }}
         </div>
         <div v-else class="space-y-3">
             <p class="text-base font-semibold text-gray-900">{{ trans("Report a bug") }}</p>

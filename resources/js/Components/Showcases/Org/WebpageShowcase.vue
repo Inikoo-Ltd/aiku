@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -17,12 +17,13 @@ import {
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
 import PageSpeedInsights from '@/Components/DataDisplay/PageSpeedInsights.vue'
 import WebpageSeo from '@/Components/DataDisplay/WebpageSeo.vue'
+import WebpageEngagement from '@/Components/DataDisplay/WebpageEngagement.vue'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -42,6 +43,7 @@ const props = defineProps<{
     canonical_url?: string
     url?: string
     search_in_website_availability?: any
+    is_hidden_from_search_engines?: boolean
     layout?: {
       web_blocks?: any[]
     }
@@ -52,8 +54,13 @@ const props = defineProps<{
     url?: string
   },
   pagespeed?: any,
+  engagement?: any,
   seo?: any
 }>()
+
+// A page kept out of the search engines has no page speed report to fill the column beside the
+// preview, so its detail is shown there instead of under the fold.
+const detailBesidePreview = computed(() => props.data?.is_hidden_from_search_engines ?? false)
 
 const filterBlock = ref<boolean>(true)
 const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
@@ -89,14 +96,14 @@ const visitRedirect = () => {
   <Message v-if="redirected_to" :severity="'error'" class="!bg-red-100">
     <div class="px-2 font-normal hover:underline cursor-pointer grid" @click="visitRedirect">
       <span class="!no-underline">
-        {{ trans('This webpage is being redirected to another page') }}:
+        {{ ctrans('This webpage is being redirected to another page') }}:
       </span>
       <span>
         [ <span class="font-semibold italic"> {{ redirected_to?.code }} </span> | ../{{ redirected_to?.url }} ]
         <FontAwesomeIcon
-          v-tooltip="trans('Click here to view page')"
+          v-tooltip="ctrans('Click here to view page')"
           :icon="faExternalLink"
-          class="ml-1 !no-underline"
+          class="ml-1 !no-underline" fixed-width
         />
       </span>
     </div>
@@ -109,10 +116,10 @@ const visitRedirect = () => {
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-3">
           <!-- Logged In / Logged Out Switch -->
           <div class="flex items-center gap-3">
-            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" class="text-gray-500" />
+            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" class="text-gray-500" fixed-width />
             <ToggleSwitch v-model="filterBlock" :true-value="true" :false-value="false" />
             <span class="text-sm font-medium text-gray-800">
-              {{ filterBlock ? trans('Logged In') : trans('Logged Out') }}
+              {{ filterBlock ? ctrans('Logged In') : ctrans('Logged Out') }}
             </span>
           </div>
           <!-- Screen Mode SelectButton -->
@@ -121,7 +128,7 @@ const visitRedirect = () => {
               class="p-button-outlined">
               <template #option="slotProps">
                 <div class="flex items-center gap-2">
-                  <FontAwesomeIcon :icon="slotProps.option.icon" />
+                  <FontAwesomeIcon :icon="slotProps.option.icon" fixed-width />
                   <span>{{ slotProps.option.label }}</span>
                 </div>
               </template>
@@ -162,29 +169,35 @@ const visitRedirect = () => {
         </div>
       </div>
 
-      <!-- Right: Break cache and page speed -->
-      <div v-if="!redirected_to" class="rounded-lg border border-gray-200 bg-white shadow-sm">
-        <div v-if="data?.state == 'live'" class="border-b border-gray-200 p-4">
-          <ModalConfirmationDelete
-            :description="trans('Purge all cached files. Purging your cache may slow your website temporarily')"
-            :title="trans('Break cache')" :noLabel="trans('Confirm')" noIcon="" :routeDelete="{
-              name: 'grp.models.webpage.break_cache',
-              parameters: {
-                webpage: data?.id
-              },
-              method: 'post'
-            }">
-            <template #default="{ changeModel }">
-              <Button @click="changeModel" type="primary" :icon="faFragile" :label="trans('Break cache')" full />
-            </template>
-          </ModalConfirmationDelete>
+      <!-- Right: Break cache, page speed, and the detail when there is no page speed to show -->
+      <div v-if="!redirected_to" class="space-y-6">
+        <div v-if="data?.state == 'live' || pagespeed !== null" class="rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div v-if="data?.state == 'live'" class="p-4" :class="{ 'border-b border-gray-200': pagespeed !== null }">
+            <ModalConfirmationDelete
+              :description="ctrans('Purge all cached files. Purging your cache may slow your website temporarily')"
+              :title="ctrans('Break cache')" :noLabel="ctrans('Confirm')" noIcon="" :routeDelete="{
+                name: 'grp.models.webpage.break_cache',
+                parameters: {
+                  webpage: data?.id
+                },
+                method: 'post'
+              }">
+              <template #default="{ changeModel }">
+                <Button @click="changeModel" type="primary" :icon="faFragile" :label="ctrans('Break cache')" full />
+              </template>
+            </ModalConfirmationDelete>
+          </div>
+
+          <PageSpeedInsights v-if="pagespeed !== null" embedded :pagespeed="pagespeed" />
         </div>
 
-        <PageSpeedInsights embedded :pagespeed="pagespeed" />
+        <WebpageEngagement v-if="detailBesidePreview" :engagement="engagement" />
+
+        <WebpageSeo v-if="detailBesidePreview" :seo="seo" stacked />
       </div>
     </div>
 
-    <WebpageSeo v-if="!redirected_to" :seo="seo" />
+    <WebpageSeo v-if="!redirected_to && !detailBesidePreview" :seo="seo" />
   </div>
 </template>
 

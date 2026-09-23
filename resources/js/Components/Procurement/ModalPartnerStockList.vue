@@ -24,6 +24,7 @@ import { trans } from "laravel-vue-i18n"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import StockCoverLabel from "@/Components/Procurement/StockCoverLabel.vue"
 
 library.add(faSearch, faPlus, faMinus, faSpinner, faExclamationTriangle)
 
@@ -237,6 +238,14 @@ watch(() => model.value, async (newValue) => {
                                         </div>
                                         <div class="text-xs text-teal-600">
                                             {{ trans("Your stock") }}: {{ slotProps.data.buyer_quantity_available ?? 0 }} {{ trans("SKO") }}
+                                            <template v-if="slotProps.data.buyer_days_of_cover !== null && slotProps.data.buyer_days_of_cover !== undefined">
+                                                &middot;
+                                                <StockCoverLabel
+                                                    :days="slotProps.data.buyer_days_of_cover"
+                                                    v-tooltip="slotProps.data.buyer_out_of_stock_at
+                                                        ? `${trans('At the current rate, empty on')} ${slotProps.data.buyer_out_of_stock_at}`
+                                                        : undefined" />
+                                            </template>
                                         </div>
                                         <div v-if="Number(slotProps.data.batch_size) > 1" class="text-xs text-gray-500">
                                             {{ trans("Made in batches of") }} <span class="font-medium">{{ slotProps.data.batch_size }}</span> {{ trans("units") }}

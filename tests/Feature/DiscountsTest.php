@@ -80,6 +80,8 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\SysAdmin\User;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -401,6 +403,24 @@ test('an offer whose end date has passed is swept off, keeping its end date', fu
         ->and($offer->state)->toBe(OfferStateEnum::FINISHED)
         ->and($offer->end_at->toDateTimeString())->toBe($endAt->toDateTimeString());
     $this->travelBack();
+});
+
+test('the sweep finishes an offer whose whole window passed while it sat in process', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offer->update([
+        'state'    => OfferStateEnum::IN_PROCESS,
+        'status'   => false,
+        'start_at' => now()->subMonth(),
+        'end_at'   => now()->subWeek(),
+    ]);
+
+    $this->artisan('offer:update_status_from_dates')->assertExitCode(0);
+
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::FINISHED)
+        ->and($offer->status)->toBeFalse();
 });
 
 test('the sweep never resurrects a finished offer', function () {
@@ -742,6 +762,21 @@ test('store gifts offers', function () {
 
     return $offer;
 });
+
+test('a discounts clerk can open the gift offer edit page', function (Offer $offer) {
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    setPermissionsTeamId($this->organisation->group_id);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::DISCOUNTS_CLERK->value, $this->shop));
+    actingAs($clerk);
+
+    $response = get(route('grp.org.shops.show.discounts.campaigns.gift.edit', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $offer->offerCampaign->slug,
+        $offer->slug,
+    ]));
+    $response->assertOk();
+})->depends('store gifts offers');
 
 test('store product offers no-op', function () {
     StoreProductOffers::make()->handle([]);
@@ -1423,6 +1458,30 @@ describe('calculate order discounts', function () {
         expect((float)$order->refresh()->amount_off)->toBe(9.24);
 
         $order->shop->update(['type' => $originalType]);
+    });
+
+    test('CalculateOrderDiscounts gives no shop offer to an intercompany order, a partner is not a customer to win', function () {
+        $order = Order::latest('id')->first();
+
+        $intercompany = \App\Models\Ordering\SalesChannel::where('group_id', $order->group_id)->where('code', 'intercompany')->first()
+            ?? \App\Actions\Ordering\SalesChannel\StoreSalesChannel::make()->action($order->group, [
+                'code' => 'intercompany',
+                'name' => 'Intercompany',
+                'type' => \App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum::OTHER,
+            ]);
+
+        $order->update(['sales_channel_id' => $intercompany->id]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe((float)$transaction->gross_amount);
+
+        expect(fn () => AddVoucherToOrder::run($order->refresh(), ['voucher' => 'ANYTHING']))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $order->update(['sales_channel_id' => null]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(80.0);
     });
 
     test('Faire discount targets the invoice, never a credit note', function () {

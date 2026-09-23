@@ -568,7 +568,7 @@ const submitEdit = () => {
 						</p>
 					</div>
 					<div class="text-3xl text-blue-200">
-						<FontAwesomeIcon icon="fal fa-calendar-check" />
+						<FontAwesomeIcon icon="fal fa-calendar-check" fixed-width />
 					</div>
 				</div>
 			</div>
@@ -585,7 +585,7 @@ const submitEdit = () => {
 						</p>
 					</div>
 					<div class="text-3xl text-red-200">
-						<FontAwesomeIcon icon="fal fa-medkit" />
+						<FontAwesomeIcon icon="fal fa-medkit" fixed-width />
 					</div>
 				</div>
 			</div>
@@ -602,7 +602,7 @@ const submitEdit = () => {
 						</p>
 					</div>
 					<div class="text-3xl text-gray-200">
-						<FontAwesomeIcon icon="fal fa-calendar-times" />
+						<FontAwesomeIcon icon="fal fa-calendar-times" fixed-width />
 					</div>
 				</div>
 			</div>
@@ -633,7 +633,7 @@ const submitEdit = () => {
 						<FontAwesomeIcon
 							v-if="isHalfDayLeave(leave)"
 							icon="fal fa-clock"
-							class="mr-1 text-blue-500" />
+							class="mr-1 text-blue-500" fixed-width />
 						{{ isHalfDayLeave(leave) ? "Half Day" : "Full Day" }}
 					</span>
 				</template>

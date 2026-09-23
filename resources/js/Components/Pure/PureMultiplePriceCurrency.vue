@@ -864,7 +864,7 @@ const saveRebel = async (rebel: PriceRebel) => {
                                         class="text-lg"
                                         :class="{ 'text-gray-300': !isRebelEdited(rebel) }"
                                         :style="isRebelEdited(rebel) ? { '--fa-secondary-color': 'rgb(0, 255, 4)' } : undefined"
-                                        aria-hidden="true"
+                                        fixed-width aria-hidden="true"
                                     />
                                 </button>
                             </div>

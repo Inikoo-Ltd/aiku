@@ -43,13 +43,13 @@ const textParts = computed(() =>
     <div @click="props.notification.close" :class="props.notification.class" class="flex pl-3 pr-4 py-2 gap-x-3">
         <div class="flex items-center justify-center">
             <FontAwesomeIcon v-if="['error', 'failure'].includes(props.notification.item.type)" icon='fal fa-times-circle' class='h-7'
-                aria-hidden='true' />
+                fixed-width aria-hidden='true' />
             <FontAwesomeIcon v-if="props.notification.item.type == 'success'" icon='fal fa-check-circle' class='h-7'
-                aria-hidden='true' />
+                fixed-width aria-hidden='true' />
             <FontAwesomeIcon v-if="props.notification.item.type == 'warning'" icon='fal fa-exclamation-circle' class='h-7'
-                aria-hidden='true' />
+                fixed-width aria-hidden='true' />
             <FontAwesomeIcon v-if="props.notification.item.type == 'info'" icon='fal fa-info-circle' class='h-7'
-                aria-hidden='true' />
+                fixed-width aria-hidden='true' />
         </div>
         <div class="grid flex-col justify-center">
             <p v-if="props.notification.item.title" class="font-bold">

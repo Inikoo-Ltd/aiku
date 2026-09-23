@@ -140,7 +140,7 @@ const openFile = (file: TicketAttachment) => {
                 :class="previewBlocked && 'cursor-not-allowed opacity-70 hover:!border-gray-200 hover:!shadow-none'"
                 @click="openFile(file)">
                 <div class="relative flex items-center justify-center overflow-hidden bg-gray-50" :class="compact ? 'h-20' : 'h-24'">
-                    <FontAwesomeIcon v-show="!loadedThumbnailUrls.includes(file.url)" :icon="iconFor(file).icon" :class="[iconFor(file).class, compact ? 'text-3xl' : 'text-4xl']" />
+                    <FontAwesomeIcon v-show="!loadedThumbnailUrls.includes(file.url)" :icon="iconFor(file).icon" :class="[iconFor(file).class, compact ? 'text-3xl' : 'text-4xl']" fixed-width />
                     <Image
                         v-if="file.thumbnail"
                         :src="file.thumbnail"

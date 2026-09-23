@@ -221,7 +221,7 @@ const saveDescription = debounce(async (key: string, value: string) => {
                     </template>
 
                     <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                        <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
+                        <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" fixed-width />
                     </div>
                 </div>
 
@@ -235,7 +235,7 @@ const saveDescription = debounce(async (key: string, value: string) => {
                         </template>
 
                         <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                            <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
+                            <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" fixed-width />
                         </div>
                     </div>
 
@@ -247,7 +247,7 @@ const saveDescription = debounce(async (key: string, value: string) => {
                         </template>
 
                         <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                            <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
+                            <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -260,7 +260,7 @@ const saveDescription = debounce(async (key: string, value: string) => {
                     </template>
 
                     <div v-else class="flex h-full w-full items-center justify-center bg-gray-100">
-                        <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" />
+                        <FontAwesomeIcon :icon="faImage" class="text-5xl text-gray-400" fixed-width />
                     </div>
 
                     <button @click="openGallery(0)" class="

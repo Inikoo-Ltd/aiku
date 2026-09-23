@@ -55,7 +55,7 @@ const props = defineProps<{
                                 class="w-full h-full object-cover object-center rounded-t-lg"
                             />
                             <div v-else class="flex justify-center items-center bg-gray-100 w-full h-full">
-                                <FontAwesomeIcon :icon="['fal', 'box']" class="w-10 h-10 text-gray-400" />
+                                <FontAwesomeIcon :icon="['fal', 'box']" class="w-10 h-10 text-gray-400" fixed-width />
                             </div>
                         </div>
                     </div>
@@ -72,7 +72,7 @@ const props = defineProps<{
                                 v-tooltip="data?.family_data?.state.tooltip"
                                 class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border"
                             >
-                                <FontAwesomeIcon :icon="data?.family_data?.state.icon" :class="data?.family_data?.state.class" />
+                                <FontAwesomeIcon :icon="data?.family_data?.state.icon" :class="data?.family_data?.state.class" fixed-width />
                                 <span :class="data?.family_data?.state.class">{{ data?.family_data?.state.label }}</span>
                             </span>
                         </div>

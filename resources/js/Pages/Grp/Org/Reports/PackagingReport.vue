@@ -171,7 +171,7 @@ const selectedRangeText = computed(() => {
                     <div class="flex-shrink-0 bg-slate-100 shadow ring-1 ring-slate-200 h-10 w-10 rounded-md flex justify-center items-center">
                         <FontAwesomeIcon
                             :icon="['fal', 'boxes']"
-                            class="text-xl text-gray-500"
+                            class="text-xl text-gray-500" fixed-width
                         />
                     </div>
                     <div class="flex-1 min-w-0">
@@ -196,7 +196,7 @@ const selectedRangeText = computed(() => {
 
             <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg p-5">
                 <div class="flex items-center gap-2 mb-4">
-                    <FontAwesomeIcon :icon="['fal', 'calendar']" class="text-gray-400 text-sm" />
+                    <FontAwesomeIcon :icon="['fal', 'calendar']" class="text-gray-400 text-sm" fixed-width />
                     <h3 class="text-sm font-semibold text-gray-900">
                         Select Date Range
                     </h3>
@@ -272,14 +272,14 @@ const selectedRangeText = computed(() => {
                     <template v-if="!isDownloading">
                         <FontAwesomeIcon
                             :icon="['fal', 'download']"
-                            class="mr-2"
+                            class="mr-2" fixed-width
                         />
                         Download Packaging Reports
                     </template>
                     <template v-else>
                         <FontAwesomeIcon
                             :icon="['fal', 'download']"
-                            class="mr-2 animate-bounce"
+                            class="mr-2 animate-bounce" fixed-width
                         />
                         Generating Reports...
                     </template>

@@ -36,7 +36,7 @@ onMounted(() => {
 		class="mobile-show-more-btn relative w-full rounded py-4 px-6 text-lg font-bold text-white flex items-center justify-center gap-x-3 active:scale-[0.98] transition"
 		@click="emit('show')">
 		{{ ctrans("Show :count more", { count: String(count) }) }}
-		<FontAwesomeIcon :icon="faChevronDown" aria-hidden="true" />
+		<FontAwesomeIcon :icon="faChevronDown" fixed-width aria-hidden="true" />
 	</button>
 </template>
 

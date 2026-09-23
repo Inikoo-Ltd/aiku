@@ -69,6 +69,7 @@ enum EmailOngoingRunCodeEnum: string
 
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
     case BASKET_ON_OFFER = 'basket_on_offer';
+    case FAVOURITES_ON_OFFER = 'favourites_on_offer';
     case PRICE_CHANGE = 'price_change';
 
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';

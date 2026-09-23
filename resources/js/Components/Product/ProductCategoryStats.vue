@@ -36,22 +36,22 @@ const outOfStockPercentage = computed(() => {
              <div class="grid grid-cols-4 min-w-max divide-x divide-gray-200 border border-gray-200 rounded mb-4">
                 <!-- In Process -->
                 <div v-tooltip="trans('In Process')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white first:rounded-l">
-                     <FontAwesomeIcon :icon="faChild" class="text-gray-500" />
+                     <FontAwesomeIcon :icon="faChild" class="text-gray-500" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_state_in_process }}</span>
                 </div>
                 <!-- Active -->
                 <div v-tooltip="trans('Active')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white">
-                     <FontAwesomeIcon :icon="faCube" class="text-gray-500" />
+                     <FontAwesomeIcon :icon="faCube" class="text-gray-500" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_state_active }}</span>
                 </div>
                 <!-- Discontinuing -->
                 <div v-tooltip="trans('Discontinuing')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white">
-                     <FontAwesomeIcon :icon="faCube" class="text-orange-500" />
+                     <FontAwesomeIcon :icon="faCube" class="text-orange-500" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_state_discontinuing }}</span>
                 </div>
                 <!-- Discontinued -->
                 <div v-tooltip="trans('Discontinued')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white last:rounded-r">
-                     <FontAwesomeIcon :icon="faCube" class="text-gray-300" />
+                     <FontAwesomeIcon :icon="faCube" class="text-gray-300" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_state_discontinued }}</span>
                 </div>
             </div>
@@ -60,12 +60,12 @@ const outOfStockPercentage = computed(() => {
             <div class="grid grid-cols-3 min-w-max divide-x divide-gray-200 border border-gray-200 rounded">
                 <!-- Product Online -->
                 <div v-tooltip="trans('Product Online')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white first:rounded-l">
-                     <FontAwesomeIcon :icon="faMicrophone" class="text-blue-500" />
+                     <FontAwesomeIcon :icon="faMicrophone" class="text-blue-500" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_current_products }}</span>
                 </div>
                 <!-- Out of Stock -->
                 <div v-tooltip="trans('Out of Stock')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white">
-                     <FontAwesomeIcon :icon="faBan" class="text-red-500" />
+                     <FontAwesomeIcon :icon="faBan" class="text-red-500" fixed-width />
                      <div class="flex items-baseline gap-1">
                         <span class="text-sm text-gray-900">{{ stats.number_products_status_out_of_stock }}</span>
                         <span class="text-xs text-gray-500">({{ outOfStockPercentage }}%)</span>
@@ -73,7 +73,7 @@ const outOfStockPercentage = computed(() => {
                 </div>
                 <!-- Product Offline -->
                 <div v-tooltip="trans('Product Offline')" class="flex justify-center items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 bg-white last:rounded-r">
-                     <FontAwesomeIcon :icon="faMicrophoneSlash" class="text-gray-400" />
+                     <FontAwesomeIcon :icon="faMicrophoneSlash" class="text-gray-400" fixed-width />
                      <span class="text-sm text-gray-900">{{ stats.number_products_status_not_for_sale }}</span>
                 </div>
             </div>

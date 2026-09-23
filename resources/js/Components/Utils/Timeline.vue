@@ -165,12 +165,12 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
                         class="text-xxs md:text-xs text-[#555] text-center select-none">
                         <template v-if="step.timestamp">
                             <FontAwesomeIcon v-if="step.timestamp_icon" v-tooltip="step.timestamp_tooltip"
-                                :icon="step.timestamp_icon" class="mr-1 text-xs text-gray-400" aria-hidden="true" />
+                                :icon="step.timestamp_icon" class="mr-1 text-xs text-gray-400" fixed-width aria-hidden="true" />
                             <span v-if="step.format_time">{{ useFormatTimeComposables(step.timestamp, { formatTime: step.format_time }) }}</span>
                             <span v-else>{{ useFormatTime(step.timestamp) }}</span>
                         </template>
                         <span v-else-if="step.sub_label" class="italic text-gray-400 whitespace-nowrap">
-                            <FontAwesomeIcon :icon="faInfoCircle" class="text-xxs" aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faInfoCircle" class="text-xxs" fixed-width aria-hidden="true" />
                             {{ step.sub_label }}
                         </span>
                         <span v-else>{{ useFormatTime(step.timestamp) }}</span>

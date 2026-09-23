@@ -155,7 +155,7 @@ const changeValue = (async () => {
           <FontAwesomeIcon
             :icon="faOctopusDeploy"
             v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
-            class="h-3.5 w-3.5"
+            class="h-3.5 w-3.5" fixed-width
           />
         </div>
         <div class="text-sm text-gray-700 whitespace-pre-wrap leading-6 flex-1 bg-gray-50 px-4 rounded-md border">
@@ -166,7 +166,7 @@ const changeValue = (async () => {
           <FontAwesomeIcon
             :icon="faArrowToRight"
             v-tooltip="trans(':_fieldName of the Master', {_fieldName: capitalizeFirstLetter(props.fieldName)})"
-            class="h-3.5 w-3.5"
+            class="h-3.5 w-3.5" fixed-width
           />
         </div>
       </div>
@@ -209,7 +209,7 @@ const changeValue = (async () => {
             :class="isTextarea ? 'top-2' : 'top-1/2 -translate-y-1/2'"
             v-tooltip="ctrans('Already reviewed by user')"
           >
-            <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5 button-primary" />
+            <FontAwesomeIcon :icon="faMale" class="h-3.5 w-3.5 button-primary" fixed-width />
           </button>
 
           <button
@@ -221,7 +221,7 @@ const changeValue = (async () => {
             v-tooltip="trans('get translation from AI')"
             v-if="fieldData.main"
           >
-            <FontAwesomeIcon v-if="!loading" :icon="faLanguage" class="h-3.5 w-3.5" />
+            <FontAwesomeIcon v-if="!loading" :icon="faLanguage" class="h-3.5 w-3.5" fixed-width />
             <LoadingIcon v-else />
           </button>
         </div>

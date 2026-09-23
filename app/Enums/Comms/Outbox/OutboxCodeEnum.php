@@ -66,6 +66,7 @@ enum OutboxCodeEnum: string
     case CHAT_NOTIFICATION_TO_CUSTOMER = 'chat_notification_to_customer';
     case PRICE_CHANGE_NOTIFICATION = 'price_change_notification';
     case BASKET_ON_OFFER = 'basket_on_offer';
+    case FAVOURITES_ON_OFFER = 'favourites_on_offer';
     case PRICE_CHANGE = 'price_change';
     case INVOICE_DATE_CHANGED = 'invoice_date_changed';
     case INVOICE_PAID = 'invoice_paid';
@@ -112,6 +113,7 @@ enum OutboxCodeEnum: string
 
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
 
             OutboxCodeEnum::REORDER_REMINDER,
             OutboxCodeEnum::REORDER_REMINDER_2ND,
@@ -203,6 +205,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::BASKET_ON_OFFER => 'Offer in basket',
+            OutboxCodeEnum::FAVOURITES_ON_OFFER => 'Favourites on offer',
             OutboxCodeEnum::PRICE_CHANGE => 'Price change',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
             OutboxCodeEnum::INVOICE_PAID => 'COD Payment Confirmation', //Noted: Now only for COD, later can be used for other payment methods
@@ -267,6 +270,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
             OutboxCodeEnum::BASKET_ON_OFFER => 'Offer in basket',
+            OutboxCodeEnum::FAVOURITES_ON_OFFER => 'Favourites on offer',
             OutboxCodeEnum::PRICE_CHANGE => 'Price change',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
             OutboxCodeEnum::INVOICE_PAID => 'Invoice paid',
@@ -299,7 +303,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::REGISTRATION_APPROVED,
             OutboxCodeEnum::REGISTRATION_REJECTED,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
-            OutboxCodeEnum::BASKET_ON_OFFER
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER
             => ['Website'],
             OutboxCodeEnum::NEW_CUSTOMER,
             OutboxCodeEnum::INVOICE_DELETED,
@@ -380,7 +385,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::BASKET_PUSH,
             OutboxCodeEnum::NEW_CUSTOMER_PUSH,
             OutboxCodeEnum::INVOICE_PAID,
-            OutboxCodeEnum::BASKET_ON_OFFER
+            OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER
             => ['b2b'],
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION
             => ['dropshipping'],
@@ -473,6 +479,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
@@ -539,6 +546,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::REVIEW_REMINDER,
             OutboxCodeEnum::ABANDONED_CART_REMINDER_1,
@@ -590,6 +598,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
             OutboxCodeEnum::BASKET_ON_OFFER,
+            OutboxCodeEnum::FAVOURITES_ON_OFFER,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::INVOICE_PAID
 

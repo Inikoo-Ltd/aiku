@@ -301,6 +301,29 @@ test('retina api dropshipping portfolio flow', function () {
     $response->assertOk();
 });
 
+test('retina api dropshipping feeds expose product ingredients', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $this->product->updateQuietly(['marketing_ingredients' => 'Aqua, Glycerin, Parfum']);
+
+    $response = getJson(route('retina.api.dropshipping.products.index'));
+    $response->assertOk();
+    $product = collect($response->json('data'))->firstWhere('id', $this->product->id);
+    expect($product['ingredients'])->toBe('Aqua, Glycerin, Parfum');
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+
+    $response = getJson(route('retina.api.dropshipping.products.my_product.index'));
+    $response->assertOk();
+    expect($response->json('data.0.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+
+    $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
+    $response->assertOk();
+    expect($response->json('data.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+});
+
 // ---- Dropshipping: order transactions ----
 
 test('retina api dropshipping order transactions flow', function () {

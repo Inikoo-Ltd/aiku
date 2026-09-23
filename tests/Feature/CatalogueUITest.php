@@ -374,6 +374,48 @@ test('UI show product navigation follows the list sort', function () {
     );
 });
 
+test('UI show product navigation skips non-main variants', function () {
+    $this->withoutExceptionHandling();
+
+    $makeProduct = function (string $code) {
+        $productData = \App\Models\Catalogue\Product::factory()->definition();
+        data_set($productData, 'code', $code);
+        data_set($productData, 'trade_units', [['id' => $this->product->tradeUnits()->first()->id, 'quantity' => 1]]);
+        data_set($productData, 'price', 100);
+
+        return \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->family, $productData);
+    };
+
+    $first = $makeProduct('VARA01');
+    $last  = $makeProduct('VARC03');
+
+    \App\Actions\Catalogue\Product\StoreProductVariant::run($first, [
+        'code'    => 'VARB02',
+        'ratio'   => 2,
+        'price'   => 200,
+        'name'    => $first->name.' 1000u',
+        'is_main' => false
+    ]);
+
+    $showRoute = fn ($product) => route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $product->slug
+    ]);
+
+    get($showRoute($first).'?bucket_sort=code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get($showRoute($last).'?bucket_sort=code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->etc()
+    );
+});
+
 test('UI Index catalogue product all', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.all_products.index', [
         $this->organisation->slug,

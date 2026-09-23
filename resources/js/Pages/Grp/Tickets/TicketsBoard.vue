@@ -826,6 +826,7 @@ const cancelAssign = () => {
 		status="resolved"
 		:update-route="{ name: updateRoute, parameters: { ticket: dropDialogTicket.id } }"
 		:can-wait-for-deployment="dropDialogTicket.status !== 'pending_deploy'"
+		:closes-conversation="dropDialogTicket.closes_source"
 		@updated="isDropDialogSaved = true" />
 	<TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>

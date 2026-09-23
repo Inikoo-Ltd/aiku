@@ -167,7 +167,7 @@ const confirmLocation = () => {
 
                 <div class="text-center space-y-3 max-w-xs">
                     <div class="text-4xl">
-                        <font-awesome-icon :icon="faMapPin" />
+                        <font-awesome-icon :icon="faMapPin" fixed-width />
                     </div>
                     <p class="text-sm text-gray-600">
                         The location has not been selected. <br>

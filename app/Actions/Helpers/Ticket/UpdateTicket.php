@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Actions\Chat\EndTicketConversation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -82,6 +83,12 @@ class UpdateTicket extends OrgAction
             data_set($modelData, 'closed_at', $status->isOpen() ? null : now());
         }
 
+        /* Whatever was said when the QA status changed, from either side: the assignee's note
+           when asking for a check, and QA's own when passing or failing. One field rather than
+           two, because the comment it posts is labelled with the status - "QA check requested:
+           ..." against the assignee's name, "QA failed: ..." against QA's - so who said what is
+           never in doubt. Only passed and failed need QA rights; asking is open to whoever can
+           contribute, which authorize() below relies on. */
         $qaNote = trim((string) Arr::pull($modelData, 'qa_note', ''));
         if (Arr::exists($modelData, 'qa_status')) {
             $qaStatus = Arr::get($modelData, 'qa_status') ? TicketQaStatusEnum::from(Arr::get($modelData, 'qa_status')) : null;
@@ -117,6 +124,16 @@ class UpdateTicket extends OrgAction
 
         if ($ticket->wasChanged('status') && $ticket->status === TicketStatusEnum::RESOLVED) {
             NotifyTicketUsers::make()->done($ticket, $asker instanceof User ? $asker : null);
+        }
+
+        // Settled, and the reporter asked for the customer to be told: the closing note goes to
+        // them in the conversation it came from, and that conversation ends.
+        if ($ticket->closes_source
+            && $statusComment !== ''
+            && $ticket->wasChanged('status')
+            && in_array($ticket->status, [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED], true)
+        ) {
+            $this->tellTheCustomer($ticket, $statusComment, $asker instanceof User ? $asker : null);
         }
 
         if ($ticket->wasChanged('status') && $this->reporterHearsAboutStatus($ticket, $asker instanceof User ? $asker : null)) {
@@ -206,12 +223,15 @@ class UpdateTicket extends OrgAction
             return $isVerdict ? Ticket::canCheckQa($user) : $ticket->canContributeBy($user);
         }
 
+        // The reporter's own cancel and reopen are additions to who could already do it: whoever
+        // holds the ticket keeps every status of it, or the assignee is shown a Cancel button
+        // that answers 403.
         if ($request->input('status') === TicketStatusEnum::CANCELLED->value && array_diff($fields, ['status', 'status_comment']) === []) {
-            return $ticket->canBeCancelledByReporter($user);
+            return $ticket->canBeCancelledByReporter($user) || $ticket->canBeUpdatedBy($user);
         }
 
         if ($request->input('status') === TicketStatusEnum::ANSWERED->value && $request->filled('status_comment') && array_diff($fields, ['status', 'status_comment']) === []) {
-            return $ticket->canBeReopenedByReporter($user);
+            return $ticket->canBeReopenedByReporter($user) || $ticket->canBeUpdatedBy($user);
         }
 
         if ($request->has('assignee_id')) {
@@ -235,6 +255,31 @@ class UpdateTicket extends OrgAction
         }
 
         return false;
+    }
+
+    /**
+     * Whatever happened is written on the ticket, because "the customer was told" and "we tried"
+     * are different things and the next person reading the ticket needs to know which it was.
+     */
+    private function tellTheCustomer(Ticket $ticket, string $note, ?User $actor): void
+    {
+        $outcome = EndTicketConversation::make()->handle($ticket, $note, $actor);
+
+        $body = match (true) {
+            $outcome['sent'] && $outcome['closed']  => __('This was sent to the customer and the conversation closed.'),
+            $outcome['sent']                        => __('This was sent to the customer, but the conversation could not be closed.'),
+            $outcome['reason'] === 'whatsapp_window_closed' => __('The conversation was closed. WhatsApp would not carry the message: the customer has not written in over a day.'),
+            $outcome['reason'] === 'already_closed' => __('The conversation was already closed, so nothing was sent.'),
+            $outcome['closed']                      => __('The conversation was closed, but the message could not be sent.'),
+            default                                 => __('The customer could not be told and the conversation is still open.'),
+        };
+
+        $ticket->comments()->create([
+            'author_type' => $actor ? 'User' : null,
+            'author_id'   => $actor?->id,
+            'body'        => $body,
+            'is_internal' => true,
+        ]);
     }
 
     private function reporterHearsAboutStatus(Ticket $ticket, ?User $actor): bool

@@ -157,7 +157,7 @@ watch(
                 </Menu>
 
                 <Button @click="filterMenu.toggle($event)" class="h-10 px-4" :type="'secondary'">
-                    <FontAwesomeIcon :icon="faPlus" />
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
                     <span>{{ trans("Filter") }}</span>
 
                     <Badge v-if="activeFilterCount" :value="activeFilterCount" class="ml-2" />
@@ -265,7 +265,7 @@ watch(
                 </div>
 
                 <div class="h-16 w-16 rounded-full bg-indigo-50 flex items-center justify-center">
-                    <FontAwesomeIcon :icon="faUsers" class="text-indigo-600 text-2xl" />
+                    <FontAwesomeIcon :icon="faUsers" class="text-indigo-600 text-2xl" fixed-width />
                 </div>
 
             </div>

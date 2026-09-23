@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -54,5 +55,17 @@ class SyncCustomerSalesChannelPortfolios
         }
 
         return $customerSalesChannel;
+    }
+
+    /**
+     * A sync only ever sends stock for portfolios already uploaded to the platform, so a channel
+     * whose portfolios were never uploaded has nothing to send and must not be told it has (HELP-3214).
+     */
+    public static function hasNothingToSend(CustomerSalesChannel $customerSalesChannel): bool
+    {
+        return !Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
+            ->where('status', true)
+            ->whereNotNull('platform_product_id')
+            ->exists();
     }
 }

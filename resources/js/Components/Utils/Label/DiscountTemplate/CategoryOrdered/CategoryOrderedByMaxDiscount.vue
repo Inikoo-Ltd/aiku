@@ -58,7 +58,7 @@ const maxDiscountLabel = computed(() => {
             </Popover>
         </div>
         <div v-if="props.offer.duration_label && use_duration" class="offer-valid-until">
-            <FontAwesomeIcon icon="fal fa-clock" class="text-[10px] sm:text-xs" />
+            <FontAwesomeIcon icon="fal fa-clock" class="text-[10px] sm:text-xs" fixed-width />
             <span class="truncate">
                 {{ props.offer.duration_label }}
             </span>

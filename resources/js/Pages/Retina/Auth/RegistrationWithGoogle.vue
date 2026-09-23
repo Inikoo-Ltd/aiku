@@ -146,7 +146,7 @@ onMounted(async () => {
 									<!-- make IconField full-width -->
 									<IconField class="w-full">
 										<InputIcon>
-											<FontAwesomeIcon :icon="faEnvelope" />
+											<FontAwesomeIcon :icon="faEnvelope" fixed-width />
 										</InputIcon>
 
 										<InputText

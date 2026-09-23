@@ -516,6 +516,7 @@
       "chat_notification_to_customer",
       "price_change_notification",
       "basket_on_offer",
+      "favourites_on_offer",
       "web_user_registration",
       "oos_in_order_notification",
       "review_reminder",

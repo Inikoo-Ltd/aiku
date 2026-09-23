@@ -240,7 +240,7 @@ console.log(props)
         </template>
         <template #other>
             <div class=" px-2 cursor-pointer" v-tooltip="'go to website'" @click="openWebsite">
-                <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
+                <FontAwesomeIcon :icon="faExternalLink" fixed-width aria-hidden="true" size="xl" />
             </div>
         </template>
     </PageHeading>
@@ -253,7 +253,7 @@ console.log(props)
                         class="px-3 py-0.5 sticky top-0 bg-gray-50 z-20 text-lg font-semibold flex items-center justify-end gap-3 border-b border-gray-300">
                         <div class="py-1 px-2 cursor-pointer" title="template" v-tooltip="'Template'"
                             @click="isModalOpen = true">
-                            <FontAwesomeIcon :icon="faThLarge" aria-hidden='true' />
+                            <FontAwesomeIcon :icon="faThLarge" fixed-width aria-hidden='true' />
                         </div>
                     </div>
                     <div class="">

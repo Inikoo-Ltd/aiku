@@ -10,6 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,7 @@ class GetChatReports
             'foreign'  => 'chat_session_id',
             'channel'  => 's.channel',
             'where'    => ' and s.is_rubbish = false',
+            'customer' => 's.web_user_id',
         ],
         'meta' => [
             'sessions' => 'meta_chat_sessions',
@@ -43,6 +45,7 @@ class GetChatReports
             'foreign'  => 'meta_chat_session_id',
             'channel'  => "'whatsapp'",
             'where'    => '',
+            'customer' => 's.customer_id',
         ],
     ];
 
@@ -74,6 +77,7 @@ class GetChatReports
             'interval'      => $interval,
             'from'          => $from->toDateString(),
             'to'            => $to->toDateString(),
+            'window'        => $from->toIso8601ZuluString().','.$to->toIso8601ZuluString(),
             'days'          => $days,
             'bucket'        => $bucket,
             'conversations' => $sessions->count(),
@@ -92,7 +96,8 @@ class GetChatReports
             'by_topic'      => $this->byTopic($sessions),
             'unclassified'  => $sessions->whereNull('topic')->count(),
             'noise'         => $this->noise($shopIds, $from, $to),
-            'agents'        => $agents,
+            'customer_suggestions' => $this->customerSuggestions($shopIds, $from, $to),
+            'agents'        => $agents->map(fn (array $agent) => Arr::except($agent, 'rated_sessions')),
             'agents_total'  => [
                 'name'          => __('Total'),
                 'conversations' => $agents->sum('conversations'),
@@ -101,6 +106,7 @@ class GetChatReports
                 'email'         => $agents->sum('email'),
                 'whatsapp'      => $agents->sum('whatsapp'),
                 'median_reply_minutes' => $this->median($answered->map(fn (object $row) => $this->replyMinutes($row))),
+                ...$this->ratingSummary($agents->flatMap(fn (array $agent) => $agent['rated_sessions'])),
             ],
         ];
     }
@@ -183,6 +189,42 @@ class GetChatReports
     }
 
     /**
+     * Guests the system took for a customer, by what it went on, and what the agent made of
+     * it. A basis that keeps being turned down is one to stop trusting.
+     *
+     * @param  Collection<int, int>  $shopIds
+     * @return array<int, array{basis: string, suggested: int, confirmed: int, rejected: int}>
+     */
+    private function customerSuggestions(Collection $shopIds, Carbon $from, Carbon $to): array
+    {
+        return $this->fromEverySource(
+            fn (array $source) => "
+                select s.suggestion_basis as basis,
+                    count(*) as suggested,
+                    count(*) filter (where {$source['customer']} is not null) as confirmed,
+                    count(*) filter (where s.suggestion_rejected_at is not null) as rejected
+                from {$source['sessions']} s
+                where s.deleted_at is null
+                    and s.suggested_customer_id is not null
+                    and s.shop_id in (:shops)
+                    and s.created_at between :from and :to
+                group by 1
+            ",
+            $shopIds,
+            ['from' => $from, 'to' => $to]
+        )
+            ->groupBy('basis')
+            ->map(fn (Collection $rows, string $basis) => [
+                'basis'     => $basis,
+                'suggested' => (int) $rows->sum('suggested'),
+                'confirmed' => (int) $rows->sum('confirmed'),
+                'rejected'  => (int) $rows->sum('rejected'),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Conversations already open when the window starts, so the open line does not restart at zero.
      *
      * @param  Collection<int, int>  $shopIds
@@ -200,6 +242,12 @@ class GetChatReports
                     and s.shop_id in (:shops)
                     and s.created_at < :from
                     and s.status in ({$statuses})
+                    and exists (
+                        select 1 from {$source['messages']} visitor
+                        where visitor.{$source['foreign']} = s.id
+                            and visitor.deleted_at is null
+                            and visitor.sender_type in ('user', 'guest')
+                    )
                     {$source['where']}
             ",
             $shopIds,
@@ -220,6 +268,7 @@ class GetChatReports
                     {$source['channel']} as channel,
                     count(*) as messages,
                     count(distinct s.id) as conversations,
+                    string_agg(distinct concat(s.id, ':', s.rating), ',') filter (where s.rating is not null) as rated_sessions,
                     percentile_cont(0.5) within group (
                         order by extract(epoch from msg.created_at - m.first_visitor_at) / 60
                     ) filter (where msg.created_at = m.first_agent_at) as median_reply_minutes
@@ -259,6 +308,13 @@ class GetChatReports
             ->groupBy('agent_id')
             ->map(function (Collection $agentRows, int|string $agentId) use ($users) {
                 $user = $users->get($agentId);
+                $ratedSessions = $agentRows->flatMap(fn (object $row) => collect(explode(',', (string) $row->rated_sessions))
+                    ->filter()
+                    ->mapWithKeys(function (string $pair) use ($row) {
+                        [$sessionId, $rating] = explode(':', $pair);
+
+                        return ["$row->channel:$sessionId" => (int) $rating];
+                    }));
                 $name = $user?->contact_name ?: $user?->username ?: __('Unknown');
 
                 return [
@@ -272,10 +328,24 @@ class GetChatReports
                     'email'         => (int) $agentRows->where('channel', 'email')->sum('conversations'),
                     'whatsapp'      => (int) $agentRows->where('channel', 'whatsapp')->sum('conversations'),
                     'median_reply_minutes' => $this->median($agentRows->pluck('median_reply_minutes')->filter(fn ($value) => $value !== null)),
+                    ...$this->ratingSummary($ratedSessions),
+                    'rated_sessions' => $ratedSessions,
                 ];
             })
             ->sortByDesc('conversations')
             ->values();
+    }
+
+    /**
+     * @param  Collection<string, int>  $ratedSessions
+     * @return array{rating: float|null, ratings: int}
+     */
+    private function ratingSummary(Collection $ratedSessions): array
+    {
+        return [
+            'rating'  => $ratedSessions->isEmpty() ? null : $this->rounded($ratedSessions->avg()),
+            'ratings' => $ratedSessions->count(),
+        ];
     }
 
     /**

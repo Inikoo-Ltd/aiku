@@ -244,7 +244,7 @@ const confirmTemplateChange = async () => {
                         <!-- ponytail: a shop has exactly one WhatsApp number in settings, so this
                              shows it rather than offering a picker over a list that does not exist -->
                         <div class="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                            <FontAwesomeIcon :icon="faWhatsapp" class="text-green-500" />
+                            <FontAwesomeIcon :icon="faWhatsapp" class="text-green-500" fixed-width />
                             {{ whatsappNumber ?? trans("No WhatsApp number configured") }}
                         </div>
                     </div>
@@ -325,7 +325,7 @@ const confirmTemplateChange = async () => {
                 </p>
 
                 <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                    <FontAwesomeIcon :icon="faUsers" class="text-gray-400" />
+                    <FontAwesomeIcon :icon="faUsers" class="text-gray-400" fixed-width />
                     {{ trans("Number of recipients") }}: {{ recipientsCount }}
                 </div>
             </div>
@@ -333,7 +333,7 @@ const confirmTemplateChange = async () => {
 
         <section class="rounded-xl border border-gray-200 overflow-hidden opacity-60">
             <header class="bg-gray-50 border-b border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 flex items-center gap-2">
-                <FontAwesomeIcon :icon="faBolt" class="text-gray-400 text-xs" />
+                <FontAwesomeIcon :icon="faBolt" class="text-gray-400 text-xs" fixed-width />
                 {{ trans("Automation") }}
                 <span class="text-xs font-normal text-gray-400">({{ trans("coming soon") }})</span>
             </header>

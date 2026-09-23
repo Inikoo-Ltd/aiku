@@ -206,7 +206,7 @@ const label = {
                               : layoutStore.group?.label, 44) }}</span>
                                 </Transition>
                             </div>
-                            <FontAwesomeIcon icon="far fa-chevron-down" class="hidden text-xs transition-all duration-200 ease-in-out lg:inline-block" :class="[open ? 'rotate-180' : '']" aria-hidden="true" />
+                            <FontAwesomeIcon icon="far fa-chevron-down" class="hidden text-xs transition-all duration-200 ease-in-out lg:inline-block" :class="[open ? 'rotate-180' : '']" fixed-width aria-hidden="true" />
                             <FontAwesomeIcon icon="fal fa-exchange" class="text-xs lg:hidden" fixed-width aria-hidden="true" />
                         </MenuButton>
 

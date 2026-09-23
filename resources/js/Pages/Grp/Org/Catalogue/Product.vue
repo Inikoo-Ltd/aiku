@@ -273,12 +273,12 @@ const saveProductReview = async () => {
              <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="trans('Go to Master')">
                 <FontAwesomeIcon
                     icon="fab fa-octopus-deploy"
-                    color="#4B0082"
+                    color="#4B0082" fixed-width
                 />
             </Link>
             <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
                 <FontAwesomeIcon
-                    icon="fal fa-atom"
+                    icon="fal fa-atom" fixed-width
                 />
             </Link>
 
@@ -287,7 +287,7 @@ const saveProductReview = async () => {
                 v-tooltip="trans('This product have independent Trade Unit setting')"
                 @click="goToEdit"
                 :icon="faHatCowboy"
-                class="text-red-500 cursor-pointer"
+                class="text-red-500 cursor-pointer" fixed-width
             />
 
             <FontAwesomeLayers
@@ -297,16 +297,16 @@ const saveProductReview = async () => {
             >
                 <FontAwesomeIcon 
                     :icon="faHatCowboy"
-                    :class="'text-red-500 text-[17px] !top-[-93%] !right-[-50%] !rotate-[17deg]'"
+                    :class="'text-red-500 text-[17px] !top-[-93%] !right-[-50%] !rotate-[17deg]'" fixed-width
                 />
                 <FontAwesomeIcon 
                     :icon="faCameraRetro"
-                    :class="'text-red-500'"
+                    :class="'text-red-500'" fixed-width
                 />
             </FontAwesomeLayers>
 
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
-                <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+                <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" fixed-width />
             </Link>
 
 
@@ -371,7 +371,7 @@ const saveProductReview = async () => {
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" fixed-width />
                         <span>{{ item.label || '-' }}</span> <span v-if="item.post_label" class="text-gray-400">{{ item.post_label }}</span>
                     </component>
                 </div>

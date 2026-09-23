@@ -79,7 +79,7 @@ const stateColorClass = computed(() => {
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div :class="[stateColorClass, 'px-3 py-1 rounded-full flex items-center gap-2']">
-                        <FontAwesomeIcon v-if="box_stats?.state_icon" :icon="box_stats.state_icon.icon" :class="box_stats.state_icon.class" />
+                        <FontAwesomeIcon v-if="box_stats?.state_icon" :icon="box_stats.state_icon.icon" :class="box_stats.state_icon.class" fixed-width />
                         <span class="font-medium">{{ box_stats?.state_label }}</span>
                     </div>
                 </div>
@@ -91,7 +91,7 @@ const stateColorClass = computed(() => {
             <!-- Customer Info -->
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center gap-2 text-gray-500 mb-2">
-                    <FontAwesomeIcon icon="fal fa-user" />
+                    <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     <span class="text-sm font-medium">Customer</span>
                 </div>
                 <Link v-if="box_stats?.customer?.route"
@@ -105,7 +105,7 @@ const stateColorClass = computed(() => {
             <!-- Order Info -->
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center gap-2 text-gray-500 mb-2">
-                    <FontAwesomeIcon icon="fal fa-box" />
+                    <FontAwesomeIcon icon="fal fa-box" fixed-width />
                     <span class="text-sm font-medium">Original Order</span>
                 </div>
                 <Link v-if="box_stats?.order?.route"
@@ -119,7 +119,7 @@ const stateColorClass = computed(() => {
             <!-- Items Summary -->
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center gap-2 text-gray-500 mb-2">
-                    <FontAwesomeIcon icon="fal fa-undo-alt" />
+                    <FontAwesomeIcon icon="fal fa-undo-alt" fixed-width />
                     <span class="text-sm font-medium">Items</span>
                 </div>
                 <div class="text-lg font-semibold">{{ box_stats?.items?.total }} items</div>

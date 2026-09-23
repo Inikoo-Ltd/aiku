@@ -37,8 +37,9 @@ class PortfoliosApiResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $quantity = 0;
-        $itemId   = null;
+        $quantity    = 0;
+        $itemId      = null;
+        $ingredients = null;
         if ($this->item instanceof StoredItem) {
             $quantity = $this->item->total_quantity;
             $itemId = $this->item->id;
@@ -51,6 +52,7 @@ class PortfoliosApiResource extends JsonResource
             $weight = $this->item->gross_weight;
             $price = $this->item->price;
             $image = $this->item->imageSources(64, 64);
+            $ingredients = $this->item->marketing_ingredients;
         }
 
         return [
@@ -60,6 +62,7 @@ class PortfoliosApiResource extends JsonResource
             'code'                      => $this->item?->code ?? $this->item_code,
             'currency_code'             => $this->item?->currency?->code,
             'name'                      => $this->item?->name ?? $this->item_name ?? $this->item?->code,
+            'ingredients'               => $ingredients,
             'quantity_left'             => $quantity,
             'weight'                    => $weight,
             'price'                     => $price,

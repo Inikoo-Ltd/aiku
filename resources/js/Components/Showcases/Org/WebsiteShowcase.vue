@@ -172,7 +172,7 @@ const links = computed(() => {
                         <a :href="props.data.url" target="_blank" v-tooltip="ctrans('Go To Website')"
                             class="hover:bg-gray-50 ring-1 ring-gray-300 cursor-pointer rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
                             <div class="bg-gray-200 py-2 px-2">
-                                <FontAwesomeIcon :icon="faGlobe" class="px-1" aria-hidden="true" />
+                                <FontAwesomeIcon :icon="faGlobe" class="px-1" fixed-width aria-hidden="true" />
                             </div>
                             <div class="flex items-center px-4">
                                 {{ props.data.url }}

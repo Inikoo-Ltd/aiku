@@ -97,6 +97,7 @@ trait WithFamiliesQuery
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->whereNull('product_categories.deleted_at')
             ->whereNull('webpages.deleted_at')
-            ->orderByRaw('yearly_sales.total_sales DESC NULLS LAST');
+            ->orderByRaw('yearly_sales.total_sales DESC NULLS LAST')
+            ->orderByRaw('product_categories.created_at DESC');
     }
 }

@@ -119,6 +119,7 @@ return [
         'gold_reward_reminder_3',
         'basket_low_stock',
         'basket_on_offer',
+        'favourites_on_offer',
         'basket_push',
         'new_customer_push',
         'oos_notification',

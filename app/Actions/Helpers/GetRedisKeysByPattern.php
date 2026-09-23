@@ -15,6 +15,7 @@ namespace App\Actions\Helpers;
 
 use Illuminate\Console\Command;
 use Illuminate\Redis\Connections\Connection as RedisConnection;
+use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -36,55 +37,23 @@ class GetRedisKeysByPattern
         $keys = [];
 
 
-        $match = $cachePrefix.$pattern;
+        $isPhpRedis = $redis instanceof PhpRedisConnection;
+        $match      = ($isPhpRedis ? $globalPrefix : '').$cachePrefix.$pattern;
+        $cursor     = $isPhpRedis ? null : '0';
 
-        $result = $redis->scan('0', [
-            'match' => $match,
-            'count' => 1000,
-        ]);
-
-
-        if (\is_array($result) && count($result) === 2) {
-            // Predis-like response: [cursor, keys]
+        do {
+            $result = $redis->scan($cursor, [
+                'match' => $match,
+                'count' => 1000,
+            ]);
+            if (!\is_array($result) || count($result) !== 2) {
+                break;
+            }
             $cursor = $result[0];
-            $batch  = $result[1] ?? [];
-            foreach ($batch as $k) {
+            foreach ($result[1] ?? [] as $k) {
                 $keys[] = $this->stripAllKnownPrefixes($k, $globalPrefix, $cachePrefix);
             }
-
-            while ($cursor !== '0') {
-                $result = $redis->scan($cursor, [
-                    'match' => $match,
-                    'count' => 1000,
-                ]);
-                if (!\is_array($result) || count($result) !== 2) {
-                    break;
-                }
-                $cursor = $result[0];
-                $batch  = $result[1] ?? [];
-                foreach ($batch as $k) {
-                    $keys[] = $this->stripAllKnownPrefixes($k, $globalPrefix, $cachePrefix);
-                }
-            }
-        } elseif (\is_array($result)) {
-            // Fallback: if a raw list is returned (unlikely), just process it
-            foreach ($result as $k) {
-                $keys[] = $this->stripAllKnownPrefixes($k, $globalPrefix, $cachePrefix);
-            }
-        }
-
-
-        // Fallback for environments where SCAN may not be supported or returns empty
-        if ($keys === []) {
-            try {
-                $all = $redis->keys($match);
-                foreach ($all as $k) {
-                    $keys[] = $this->stripAllKnownPrefixes($k, $globalPrefix, $cachePrefix);
-                }
-            } catch (\Throwable) {
-                // ignore and return empty
-            }
-        }
+        } while ((string)$cursor !== '0');
 
         // Ensure unique values in the case of duplicates across scans
         return array_values(array_unique($keys));

@@ -36,6 +36,7 @@ class GetChatActivity
                     ChatEventTypeEnum::TICKET,
                     ChatEventTypeEnum::SPAM,
                     ChatEventTypeEnum::NOT_SPAM,
+                    ChatEventTypeEnum::PHONE_CALL,
                 ])
                 ->orderBy('created_at', 'desc')
                 ->get()
@@ -162,9 +163,25 @@ class GetChatActivity
             case ChatEventTypeEnum::NOT_SPAM:
                 $formatted['details'] = ['description' => 'Chat session was removed from spam'];
                 break;
+
+            case ChatEventTypeEnum::PHONE_CALL:
+                $formatted['details'] = $this->formatPhoneCallEvent($event);
+                break;
         }
 
         return $formatted;
+    }
+
+    private function formatPhoneCallEvent($event): array
+    {
+        $payload = $event->payload ?? [];
+
+        return [
+            'description'      => 'Phone call with '.(Arr::get($payload, 'contact_name') ?: 'this contact'),
+            'notes'            => Arr::get($payload, 'notes'),
+            'duration_seconds' => Arr::get($payload, 'duration_seconds'),
+            'agent_name'       => Arr::get($payload, 'agent_name'),
+        ];
     }
 
     private function formatReopenEvent($event): array

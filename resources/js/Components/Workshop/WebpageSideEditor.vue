@@ -604,7 +604,7 @@ const showBlockVisibilityOptions = computed(
 														openedBlockSideEditor === index
 															? 'text-white/70'
 															: 'text-slate-300 group-hover:text-slate-400'
-													" />
+													" fixed-width />
 
 												<span
 													class="shrink-0 w-4 text-[10px] font-semibold tabular-nums text-center"
@@ -638,7 +638,7 @@ const showBlockVisibilityOptions = computed(
 																{{element.web_block.layout.data.fieldValue.blocks.name}}
 															</template>
 															<template v-else>
-																{{ element.type }}
+																{{ element.name || element.type }}
 															</template>
 														</span>
 														<span
@@ -777,7 +777,7 @@ const showBlockVisibilityOptions = computed(
 						<div
 							v-else
 							class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
-							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-2xl mb-1 text-slate-300" />
+							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-2xl mb-1 text-slate-300" fixed-width />
 							<span class="text-xs font-medium">{{trans("You don't have any blocks")}}</span>
 							<span class="text-[11px] text-slate-400">
 								{{ trans('Use the Block button above to add your first one.') }}
@@ -787,7 +787,7 @@ const showBlockVisibilityOptions = computed(
 						<div
 							v-if="webpage?.layout?.web_blocks.length && visibleBlockCount === 0"
 							class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
-							<FontAwesomeIcon :icon="faEyeSlash" class="text-2xl mb-1 text-slate-300" />
+							<FontAwesomeIcon :icon="faEyeSlash" class="text-2xl mb-1 text-slate-300" fixed-width />
 							<span class="text-xs font-medium">{{ trans('No blocks match this filter') }}</span>
 							<button
 								type="button"
@@ -870,7 +870,7 @@ const showBlockVisibilityOptions = computed(
 						<template v-else>
 							<div
 								class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
-								<FontAwesomeIcon :icon="faBrush" class="text-2xl mb-1 text-slate-300" />
+								<FontAwesomeIcon :icon="faBrush" class="text-2xl mb-1 text-slate-300" fixed-width />
 								<template v-if="openedBlockSideEditor !== null">
 									<span class="text-xs font-medium">{{ trans('Not editable') }}</span>
 									<span class="text-[11px] text-slate-400">
@@ -914,7 +914,7 @@ const showBlockVisibilityOptions = computed(
 
 		<ConfirmPopup>
 			<template #icon>
-				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
 			</template>
 		</ConfirmPopup>
 

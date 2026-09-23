@@ -24,7 +24,7 @@
                         <div class="h-0.5 w-full bg-black"></div>
                     </div>
                     <button type="button" class="relative flex size-8 items-center justify-center rounded-full bg-black hover:bg-black/90">
-                        <FontAwesomeIcon icon="fa fa-check-circle" class="text-white size-7" />
+                        <FontAwesomeIcon icon="fa fa-check-circle" class="text-white size-7" fixed-width />
                         <span class="sr-only">{{ step.name }}</span>
                     </button>
                 </template>

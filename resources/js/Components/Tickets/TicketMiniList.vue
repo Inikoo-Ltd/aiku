@@ -80,11 +80,11 @@ const daysAgo = (date?: string) => {
                 </button>
             </span>
         </div>
-        <ul v-if="tickets.length" class="divide-y divide-gray-100 text-sm">
-            <li v-for="ticket in shownTickets" :key="ticket.id" class="flex items-center gap-3 px-4 py-2" :class="openQuickLook && 'cursor-pointer transition duration-200 hover:bg-gray-50'" @click="onRowClick(ticket, $event)">
+        <ul v-if="tickets.length" class="thinScrollbar divide-y divide-gray-100 text-sm overflow-x-auto">
+            <li v-for="ticket in shownTickets" :key="ticket.id" class="flex items-center gap-3 px-4 py-2 min-w-max sm:min-w-0" :class="openQuickLook && 'cursor-pointer transition duration-200 hover:bg-gray-50'" @click="onRowClick(ticket, $event)">
                 <Icon :data="ticket.status_icon" />
                 <span class="inline-flex items-center whitespace-nowrap"><Icon v-if="ticket.type_icon" :data="ticket.type_icon" class="mr-1 text-gray-400" /><Link :href="ticketRoute(ticket.reference)" class="primaryLink whitespace-nowrap">{{ ticket.reference }}</Link></span>
-                <span class="truncate flex-1" :class="ticket.has_unread && 'font-semibold text-gray-900'" :title="ticket.subject">{{ ticket.subject }}</span>
+                <span class="whitespace-nowrap sm:truncate sm:flex-1 sm:min-w-0" :class="ticket.has_unread && 'font-semibold text-gray-900'" :title="ticket.subject">{{ ticket.subject }}</span>
                 <span v-if="ticket.has_unread" v-tooltip="ctrans('Unread update')" class="size-2 shrink-0 rounded-full bg-[--app-accent]" />
                 <Icon v-if="ticket.qa_status_icon" :data="ticket.qa_status_icon" />
                 <slot name="person" :ticket="ticket">
@@ -107,3 +107,23 @@ const daysAgo = (date?: string) => {
         <p v-else-if="!tickets.length" class="px-4 py-6 text-center text-sm text-gray-400">{{ empty }}</p>
     </div>
 </template>
+
+<style scoped>
+.thinScrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+}
+
+.thinScrollbar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.thinScrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.thinScrollbar::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray.300');
+    border-radius: 9999px;
+}
+</style>

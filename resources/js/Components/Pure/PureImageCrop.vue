@@ -139,7 +139,7 @@ watch(() => props.src_image, (val) => {
                     @click="numbKey++"
                     class="absolute top-2 right-2 px-2 py-1 text-white border border-gray-300 rounded cursor-pointer hover:bg-white/80 hover:text-gray-700"
                 >
-                    <FontAwesomeIcon icon="fal fa-undo-alt" />
+                    <FontAwesomeIcon icon="fal fa-undo-alt" fixed-width />
                     {{ trans("Refresh") }}
                 </div>
             </div>

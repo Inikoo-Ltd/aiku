@@ -204,7 +204,7 @@ defineExpose({ refreshModalData })
                 :avg_org_cost="avg_org_cost"
             />
             <small v-if="form.errors.master_prices" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                <FontAwesomeIcon :icon="faCircleExclamation" />
+                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                 {{ form.errors.master_prices.join(", ") }}
             </small>
         </div>
@@ -217,7 +217,7 @@ defineExpose({ refreshModalData })
                 :costs="priceByCurrency"
             />
             <small v-if="form.errors.master_rrps" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                <FontAwesomeIcon :icon="faCircleExclamation" />
+                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                 {{ form.errors.master_rrps.join(", ") }}
             </small>
         </div>

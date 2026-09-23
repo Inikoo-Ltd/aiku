@@ -97,7 +97,7 @@ const hasSide = computed(
 					<div class="relative flex-shrink-0 leading-none text-black">
 						<FontAwesomeIcon
 							icon="fal fa-file-download"
-							class="!text-[46px] !leading-none !text-black md:!text-[52px] xl:!text-[56px] 2xl:!text-[60px]" />
+							class="!text-[46px] !leading-none !text-black md:!text-[52px] xl:!text-[56px] 2xl:!text-[60px]" fixed-width />
 
 						<span
 							class="absolute bottom-[2px] left-[-2px] rounded-[2px] bg-black px-[3px] py-px text-[8px] font-bold leading-[1.2] tracking-[0.02em] text-white xl:text-[9px] 2xl:text-[10px]">
@@ -132,7 +132,7 @@ const hasSide = computed(
 
 								<FontAwesomeIcon
 									icon="fal fa-download"
-									class="!text-[14px] !text-white xl:!text-[15px] 2xl:!text-[16px]" />
+									class="!text-[14px] !text-white xl:!text-[15px] 2xl:!text-[16px]" fixed-width />
 							</button>
 						</a>
 					</div>
@@ -155,7 +155,7 @@ const hasSide = computed(
 						class="!m-0 flex items-start gap-[10px] text-[12px] leading-[1.6] md:text-[13px] xl:text-[14px] 2xl:text-[15px]">
 						<FontAwesomeIcon
 							icon="fas fa-check-circle"
-							class="!mt-0.5 !flex-shrink-0 !bg-transparent !text-[12px] !leading-none !text-[#C0899B] md:!text-[13px] xl:!text-[14px] 2xl:!text-[15px]" />
+							class="!mt-0.5 !flex-shrink-0 !bg-transparent !text-[12px] !leading-none !text-[#C0899B] md:!text-[13px] xl:!text-[14px] 2xl:!text-[15px]" fixed-width />
 
 						<span>{{ item.text }}</span>
 					</li>

@@ -78,6 +78,7 @@ class UpdateAgent extends OrgAction
             'code',
             'name',
             'last_fetched_at',
+            'production_lead_days',
             'data',
             'settings',
         ]), ['data', 'settings']);
@@ -130,6 +131,7 @@ class UpdateAgent extends OrgAction
             'language_id'  => ['sometimes', 'required', 'exists:languages,id'],
             'status'       => ['sometimes', 'required', 'boolean'],
             'image'        => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
+            'production_lead_days' => ['sometimes', 'nullable', 'integer', 'min:0'],
         ];
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules());

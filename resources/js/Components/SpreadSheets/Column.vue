@@ -80,7 +80,7 @@ const updateDataAndSetFocus = () => {
                         :lengthData="setData.length" :onCopyAllEmpty="onCopyAllEmpty" :onCopyRow ="onCopyRow" />
                 </template>
               <div class="setting" >
-                <font-awesome-icon :icon="['far', 'ellipsis-v']" />
+                <font-awesome-icon :icon="['far', 'ellipsis-v']" fixed-width />
               </div>
             </Popper>
         </div>

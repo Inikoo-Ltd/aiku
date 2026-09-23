@@ -34,7 +34,7 @@ const customerUrl = (row: { customer_slug?: string }) =>
             <h3 class="text-lg font-semibold mb-3">
                 {{ ctrans("Searches landing on this page") }}
                 <a :href="insights.clicked_url" target="_blank" class="text-sm font-normal text-indigo-600 hover:underline">
-                    <FontAwesomeIcon icon="fal fa-external-link" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-external-link" fixed-width aria-hidden="true" />
                     {{ ctrans("open page") }}
                 </a>
                 <span class="text-xs font-normal text-gray-400">{{ ctrans("last :days days", { days: String(insights.days) }) }}</span>

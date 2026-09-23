@@ -72,7 +72,7 @@ let filteredOptions = computed(() =>
                 <ComboboxInput class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
                     :displayValue="(abcde) => abcde.slug" @change="query = $event.target.value" />
                 <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <FontAwesomeIcon icon="fas fa-chevron-down" class="h-4 w-4 text-gray-400" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-chevron-down" class="h-4 w-4 text-gray-400" fixed-width aria-hidden="true" />
                 </ComboboxButton>
             </div>
 
@@ -106,7 +106,7 @@ let filteredOptions = computed(() =>
                                 <span v-if="selected" class="absolute inset-y-0 left-0 flex items-center pl-3"
                                     :class="{ 'text-white': active, 'text-teal-600': !active }">
                                     <FontAwesomeIcon icon="fas fa-check" class="h-4 w-4 text-indigo-600"
-                                        aria-hidden="true" />
+                                        fixed-width aria-hidden="true" />
                                 </span>
                             </li>
                         </ComboboxOption>

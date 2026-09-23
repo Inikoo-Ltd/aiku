@@ -60,7 +60,7 @@ const maxUserCalls = computed(() => Math.max(0, ...(props.widget?.top_users.map(
                 class="text-xs text-indigo-600 hover:underline whitespace-nowrap"
             >
                 {{ ctrans("All queries & per-user stats") }}
-                <FontAwesomeIcon icon="fal fa-arrow-right" aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
             </Link>
         </div>
 
@@ -123,9 +123,9 @@ const maxUserCalls = computed(() => Math.max(0, ...(props.widget?.top_users.map(
                             <div class="flex justify-between gap-2">
                                 <span class="text-gray-600 truncate min-w-0">
                                     {{ user.username }}
-                                    <FontAwesomeIcon v-if="user.sql_access" icon="fal fa-database" class="text-indigo-400" v-tooltip="ctrans('SQL access')" aria-hidden="true" />
+                                    <FontAwesomeIcon v-if="user.sql_access" icon="fal fa-database" class="text-indigo-400" v-tooltip="ctrans('SQL access')" fixed-width aria-hidden="true" />
                                 </span>
-                                <span class="shrink-0 tabular-nums font-medium">{{ user.calls }}<span v-if="user.errors" class="text-red-400 font-normal"> / {{ user.errors }} <FontAwesomeIcon icon='fal fa-exclamation-triangle' aria-hidden='true' /></span></span>
+                                <span class="shrink-0 tabular-nums font-medium">{{ user.calls }}<span v-if="user.errors" class="text-red-400 font-normal"> / {{ user.errors }} <FontAwesomeIcon icon='fal fa-exclamation-triangle' fixed-width aria-hidden='true' /></span></span>
                             </div>
                             <MiniBar :value="user.calls" :max="maxUserCalls" color="bg-indigo-400" />
                         </Link>

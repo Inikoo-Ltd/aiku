@@ -652,7 +652,7 @@ function getRequestedPalletStoredItems(item: any) {
 
                                 <div v-else-if="!['picking', 'picked', 'dispatched'].includes(palletReturn.state)" class="flex flex-nowrap gap-x-1 items-center tabular-nums">
                                     <span v-if="pallet_stored_item.state == 'cancel'" class="pr-2 mr-1 text-red-500 border-r-2 border-gray-300" v-tooltip="trans('Item quantity on storage left untouched')">
-                                        <FontAwesomeIcon :icon="faTimes" />
+                                        <FontAwesomeIcon :icon="faTimes" fixed-width />
                                         {{ trans('Cancelled') }}
                                     </span>
                                     {{ locale.number(pallet_stored_item.picked_quantity) }}/{{ locale.number(pallet_stored_item.selected_quantity) }}
@@ -706,7 +706,7 @@ function getRequestedPalletStoredItems(item: any) {
                     </span>
                     <template v-else>
                         <span v-if="pallet_stored_item.state == 'cancel'" class="text-red-500">
-                            <FontAwesomeIcon :icon="faTimes" />
+                            <FontAwesomeIcon :icon="faTimes" fixed-width />
                         </span>
                         <span>{{ locale.number(pallet_stored_item.picked_quantity || 0) }}/{{ locale.number(pallet_stored_item.selected_quantity || 0) }}</span>
                         <FontAwesomeIcon v-if="pallet_stored_item.state == 'picked'" v-tooltip="trans('Picked')" icon='fal fa-check' class='text-green-500' fixed-width aria-hidden='true' />

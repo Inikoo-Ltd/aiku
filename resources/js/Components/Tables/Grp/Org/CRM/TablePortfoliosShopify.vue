@@ -295,7 +295,7 @@ onMounted(() => {
         <!-- Close Button -->
         <button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
             aria-label="Close">
-            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
+            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" fixed-width />
         </button>
 
         <!-- Message Content -->

@@ -336,7 +336,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         v-tooltip="trans('Unknown weight')"
                         icon="fas fa-exclamation-circle"
                         class="text-orange-500"
-                        aria-hidden="true"
+                        fixed-width aria-hidden="true"
                     />
                 </div>
             </div>
@@ -395,7 +395,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 v-tooltip="trans('Unknown weight')"
                 icon="fas fa-exclamation-circle"
                 class="text-orange-500"
-                aria-hidden="true"
+                fixed-width aria-hidden="true"
             />
         </template>
 
@@ -406,7 +406,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 v-tooltip="trans('Unknown CBM')"
                 icon="fas fa-exclamation-circle"
                 class="text-orange-500"
-                aria-hidden="true"
+                fixed-width aria-hidden="true"
             />
         </template>
 

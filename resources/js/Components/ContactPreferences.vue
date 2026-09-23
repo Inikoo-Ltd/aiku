@@ -249,7 +249,7 @@ defineExpose({
         <div v-if="contactPreferences.dont_contact_me && !localDontContactMe && editable" class="mb-3 text-center">
             <button @click="toggleDontContactMe(true)"
                 class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors duration-200 flex items-center justify-center mx-auto w-full">
-                <FontAwesomeIcon :icon="faBan" class="text-white text-sm mr-2" />
+                <FontAwesomeIcon :icon="faBan" class="text-white text-sm mr-2" fixed-width />
                 {{ contactPreferences.dont_contact_me.label }}
             </button>
         </div>

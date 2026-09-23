@@ -47,6 +47,10 @@ enum ChatEventTypeEnum: string
 
     case REDACT = 'redact';
 
+    case FORWARD = 'forward';
+
+    case PHONE_CALL = 'phone_call';
+
     /**
      * Events shown as chips inside the conversation. Close and reopen are absent on
      * purpose: both channels already store a system message for them, which the thread
@@ -64,6 +68,7 @@ enum ChatEventTypeEnum: string
             self::TRASH->value,
             self::RESTORE->value,
             self::REDACT->value,
+            self::FORWARD->value,
             self::PRIORITY->value,
             self::TRANSFER->value,
             self::TRANSFER_ACCEPT->value,
@@ -71,6 +76,7 @@ enum ChatEventTypeEnum: string
             self::TRANSFER_TO_AGENT->value,
             self::ASSIGNMENT_TO_SELF->value,
             self::RELEASED->value,
+            self::PHONE_CALL->value,
         ];
     }
 
@@ -98,8 +104,10 @@ enum ChatEventTypeEnum: string
             'Assignment_to_self' => __('Assignment to Self'),
             'priority' => __('Priority Updated'),
             'guest_profile' => __('Guest Profile'),
+            'phone_call' => __('Phone Call'),
             'reopen' => __('Chat Reopened'),
             'ticket'      => __('Ticket Created'),
+            'forward'     => __('Forwarded to a Colleague'),
         ];
     }
 
@@ -181,10 +189,20 @@ enum ChatEventTypeEnum: string
                 'icon' => 'fas fa-user',
                 'class' => 'text-purple-500',
             ],
+            'phone_call' => [
+                'tooltip' => __('Phone Call'),
+                'icon' => 'fas fa-phone',
+                'class' => 'text-emerald-600',
+            ],
             'reopen' => [
                 'tooltip' => __('Chat Reopened'),
                 'icon' => 'fas fa-redo',
                 'class' => 'text-green-500',
+            ],
+            'forward' => [
+                'tooltip' => __('Forwarded to a Colleague'),
+                'icon' => 'fas fa-share',
+                'class' => 'text-teal-600',
             ],
             'ticket' => [
                 'tooltip' => __('Ticket Created'),

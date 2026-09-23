@@ -36,12 +36,14 @@ class GetCrossChannelSessions
             'pairs.*'         => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'statuses'        => ['sometimes', 'array'],
             'statuses.*'      => ['string', 'in:'.implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))],
+            'closed_period'   => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::CLOSED_PERIODS)],
             'assigned_to_me'  => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],
             'is_rubbish'      => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'unclaimed'       => ['sometimes', 'boolean'],
             'page'            => ['sometimes', 'integer', 'min:1'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
             'search'          => ['sometimes', 'string', 'max:100'],
@@ -91,7 +93,11 @@ class GetCrossChannelSessions
             ->concat(
                 collect($meta?->items() ?? [])->map(fn ($session) => ['channel' => 'whatsapp', 'session' => $session])
             )
-            ->sortByDesc(fn (array $row) => $this->lastActivityAt($row['session']))
+            ->sortBy(
+                fn (array $row) => $this->lastActivityAt($row['session']),
+                SORT_REGULAR,
+                !GetChatSessions::oldestFirst($filters)
+            )
             ->values();
 
         return [
