@@ -55,7 +55,7 @@ class StaffTask extends Model implements Auditable
     use SoftDeletes;
     use HasHistory;
 
-    public const array LINKABLE_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote'];
+    public const array LINKABLE_MODELS = ['Product', 'Customer', 'Order', 'DeliveryNote', 'Location', 'OrgStock'];
 
     protected $guarded = [];
 
