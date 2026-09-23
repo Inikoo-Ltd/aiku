@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithNoDepartment;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Models\Catalogue\ProductCategory;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -79,6 +80,13 @@ class UpdateFamilySubDepartment extends OrgAction
                 SubDepartmentHydrateProducts::dispatch($oldSubDepartment->id)->delay(2);
             }
         }
+
+        if ($family->webpage) {
+            BreakWebpageCache::run($family->webpage);
+        }
+
+        BreakWebpageCache::make()->breakProductCategoryWebpagesCache($oldDepartment);
+        BreakWebpageCache::make()->breakProductCategoryWebpagesCache($oldSubDepartment);
 
         return $family;
     }
