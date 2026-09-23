@@ -34,6 +34,7 @@ use App\Actions\Chat\ChatSession\GetChatReports;
 use App\Actions\Chat\ChatSession\IndexChatConversations;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
+use App\Actions\Chat\ChatSession\GetAgentChatNotifications;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Actions\Chat\ChatSession\GetChatStatus;
 use App\Actions\HumanResources\WorkSchedule\GetChatConfig;
@@ -6168,9 +6169,36 @@ test('the unclaimed queue is the whole group\'s, not the shops the person asking
     expect($scopeFor(['unclaimed' => true]))->not->toHaveKey('allowed_shop_ids')
         ->and($scopeFor([]))->toHaveKey('allowed_shop_ids');
 
-    $queue = collect($action->handle($scopeFor(['unclaimed' => true]))->items())->pluck('id')->all();
+    $queue = collect($action->handle($scopeFor(['unclaimed' => true]) + ['limit' => 1000])->items())->pluck('id')->all();
 
     expect($queue)->toContain($foreign->id);
+});
+
+test('the unclaimed count follows the shops picked on the rail, and every shop when none is', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    config(['chat.unclaimed.after_seconds.email' => 7200]);
+
+    [, , $otherShop] = createOwnShop('unclaimed-count-other-shop');
+
+    $here = noiseTestEmailSession($this->shop, 'here@example.com', 'Nobody answered', 'Where is my order');
+    $here->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $there = noiseTestEmailSession($otherShop, 'there@example.com', 'Nobody answered', 'Where is my order');
+    $there->update(['last_visitor_message_at' => now()->subHours(3)]);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]
+    );
+
+    $everyShop = GetAgentChatNotifications::make()->handle($agent)['unclaimed'];
+    $thisShop  = GetAgentChatNotifications::make()->handle($agent, [$this->shop->id])['unclaimed'];
+    $bothShops = GetAgentChatNotifications::make()->handle($agent, [$this->shop->id, $otherShop->id])['unclaimed'];
+
+    expect($thisShop)->toBeLessThan($everyShop)
+        ->and($bothShops)->toBe($thisShop + 1)
+        ->and(GetAgentChatNotifications::make()->handle($agent, [$otherShop->id])['unclaimed'])->toBe(1);
 });
 
 test('the unclaimed alert reports the backlog once and stays quiet until it changes', function () {
