@@ -87,6 +87,10 @@ organisation, group (parent only — group records table does not exist yet).
 - **Polymorphic columns store short aliases**, not class names: `'Customer'`,
   `'Employee'`, `'Shop'` — not `App\Models\...`.
 - Money columns are numeric; always state which currency you are reporting.
+- **Stock values are in organisation currency.** `org_stocks.value_in_locations` and
+  similar follow `organisations.currency_id` (GBP, EUR, IDR, USD...); summing them across
+  organisations adds pounds to euros. Report per organisation. Rows in `discontinuing` state still sell, so include
+  them when counting sales of a stock item.
 - **Marketing attribution**: a customer's credit is split across the channels that touched
   them (`model_has_traffic_sources.share`, summing to 1 per customer), so always multiply by
   `share`; revenue is credited to the ORDER date within the shop's attribution window

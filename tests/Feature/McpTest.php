@@ -795,6 +795,30 @@ describe('org sales tools', function () {
             ->assertSee('"stocks"');
     });
 
+    test('worst org stock sales lists only active stock held, biggest value first', function () {
+        createStocks($this->group);
+        [$heldActive, $heldDiscontinuing, $emptyActive] = createOrgStocks($this->organisation, $this->group->stocks()->orderBy('id')->limit(3)->get()->all());
+
+        $heldActive->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_in_locations' => 5, 'value_in_locations' => 999999]);
+        $heldDiscontinuing->update(['state' => OrgStockStateEnum::DISCONTINUING, 'quantity_in_locations' => 5, 'value_in_locations' => 999998]);
+        $emptyActive->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_in_locations' => 0, 'value_in_locations' => 0]);
+
+        $response = AikuServer::actingAs($this->user)->tool(OrgStockSalesTool::class, [
+            'organisation' => $this->organisation->slug,
+            'from'         => '2026-01-01',
+            'to'           => '2026-12-31',
+            'sort'         => 'worst',
+            'limit'        => 50,
+        ]);
+
+        $response->assertOk()
+            ->assertSee('"stocks":[{"code":"'.$heldActive->code.'"')
+            ->assertDontSee('"code":"'.$heldDiscontinuing->code.'"')
+            ->assertDontSee('"code":"'.$emptyActive->code.'"');
+
+        $heldDiscontinuing->update(['state' => OrgStockStateEnum::ACTIVE]);
+    });
+
     test('invalid sort fails validation', function () {
         $response = AikuServer::actingAs($this->user)->tool(OrgStockSalesTool::class, [
             'organisation' => $this->organisation->slug,
