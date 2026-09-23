@@ -189,6 +189,10 @@ enum OutboxMergeTagsEnum: string
                 'name' => __('Abandoned Cart Items'),
                 'value' => '[Abandoned Cart Items]'
             ],
+            [
+                'name' => __('Favourites on Offer Items'),
+                'value' => '[Favourites on Offer Items]'
+            ],
 
         ];
     }
