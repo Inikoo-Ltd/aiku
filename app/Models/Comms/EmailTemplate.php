@@ -115,9 +115,11 @@ class EmailTemplate extends Model implements HasMedia, Auditable
         return 'slug';
     }
 
-    public function scopeCommonOutbox(Builder $query): Builder
+    public function scopeCommonOutbox(Builder $query, bool $isCommonOutbox = true): Builder
     {
-        return $query->whereRaw("email_templates.data->>'common_outbox' = 'true'");
+        return $query->whereRaw(
+            "coalesce(email_templates.data->>'common_outbox', 'false') ".($isCommonOutbox ? '=' : '<>')." 'true'"
+        );
     }
 
     public function parent(): MorphTo

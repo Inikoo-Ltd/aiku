@@ -30,7 +30,7 @@ class IndexMailshotTemplates extends OrgAction
 
     public Shop $parent;
 
-    public function handle(Shop $parent, $prefix = null, bool $commonOutboxOnly = false): LengthAwarePaginator
+    public function handle(Shop $parent, $prefix = null, bool $isCommonOutbox = false): LengthAwarePaginator
     {
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -45,7 +45,7 @@ class IndexMailshotTemplates extends OrgAction
 
         $queryBuilder = QueryBuilder::for(EmailTemplate::class)
             ->where('shop_id', $parent->id)
-            ->when($commonOutboxOnly, fn ($query) => $query->commonOutbox());
+            ->commonOutbox($isCommonOutbox);
 
 
         return $queryBuilder
@@ -130,7 +130,7 @@ class IndexMailshotTemplates extends OrgAction
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, commonOutboxOnly: $this->isInComms($request));
+        return $this->handle($shop, isCommonOutbox: $this->isInComms($request));
     }
 
     private function isInComms(ActionRequest $request): bool
