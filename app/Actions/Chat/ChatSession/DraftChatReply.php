@@ -82,7 +82,7 @@ class DraftChatReply implements ShouldBeUnique
             return null;
         }
 
-        return DB::transaction(function () use ($chatSession, $shop, $trigger, $answer, $facts) {
+        $draft = DB::transaction(function () use ($chatSession, $shop, $trigger, $answer, $facts) {
             $this->pendingDraft($chatSession)?->update(['status' => ChatAiDraftStatusEnum::SUPERSEDED, 'decided_at' => now()]);
 
             $draft = ChatAiDraft::create([
@@ -102,6 +102,10 @@ class DraftChatReply implements ShouldBeUnique
 
             return $draft;
         });
+
+        SendChatAiAnswer::run($draft);
+
+        return $draft->refresh();
     }
 
     public static function pendingDraft(ChatSession|MetaChatSession $chatSession): ?ChatAiDraft

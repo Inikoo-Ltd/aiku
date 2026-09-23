@@ -178,6 +178,19 @@ class SendOutOfHoursReply implements ShouldBeUnique
 
     private function mayAnswerEmail(ChatSession $chatSession, ChatMessage $trigger): bool
     {
+        if (!self::isPersonsEmail($chatSession, $trigger)) {
+            return false;
+        }
+
+        return Cache::add('chat-out-of-hours-email:'.sha1(strtolower(trim((string) data_get($chatSession->metadata, 'email_from')))), true, now()->addDay());
+    }
+
+    /**
+     * An email that a person wrote and that is fit to answer automatically (RFC 3834): not
+     * generated, not from a list or a machine address, not one of our own staff, not noise.
+     */
+    public static function isPersonsEmail(ChatSession $chatSession, ChatMessage $trigger): bool
+    {
         $headers       = (array) data_get($trigger->metadata, 'email_headers', []);
         $autoSubmitted = strtolower(trim((string) Arr::get($headers, 'auto_submitted')));
         $from          = strtolower(trim((string) data_get($chatSession->metadata, 'email_from')));
@@ -193,7 +206,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
             return false;
         }
 
-        return Cache::add('chat-out-of-hours-email:'.sha1($from), true, now()->addDay());
+        return true;
     }
 
     private function lastAgentMessageAt(ChatSession|MetaChatSession $chatSession): ?Carbon

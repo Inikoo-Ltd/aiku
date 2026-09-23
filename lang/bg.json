@@ -6132,6 +6132,7 @@
     "This invoice category hasn't been invoiced": "В тази категория фактури не е издавана фактура",
     "This is a list of prepayment done for future purchases. A VAT invoice will be issued upon delivery of goods.": "Това е списък с авансови плащания за бъдещи покупки. Фактура с ДДС ще бъде издадена при доставка на стоките.",
     "This is a prepayment for future purchases. A VAT invoice will be issued upon delivery of goods.": "Това е авансово плащане за бъдещи покупки. Фактура по ДДС ще бъде издадена при доставка на стоките.",
+    "This is an automatic reply from our system. A member of the team will follow up if you need anything else.": "Това е автоматичен отговор от нашата система. Ако имате нужда от още нещо, член на екипа ще се свърже с вас.",
     "This is associated with a credit transaction": "Това е свързано с кредитна транзакция",
     "This is exactly what customers see when this charge appears in their basket": "Това е точно каквото клиентите виждат, когато тази такса се появи в количката им",
     "This is not a valid regex.": "Това не е валиден регулярен израз.",

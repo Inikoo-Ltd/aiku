@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -19,8 +19,18 @@ const props = defineProps<{
     title: string
     pageHead: object
     data: object
-    draftStats: { decided: number, used: number, edited: number, discarded: number, superseded: number, pending: number }
+    draftStats: { decided: number, used: number, edited: number, discarded: number, superseded: number, pending: number, auto_sent: number }
+    autoSend: {
+        enabled: boolean
+        min_decided: number
+        min_used_share: number
+        gates: { shop: string, topic: string, earned: boolean, decided: number, used_share: number, flagged: number }[]
+    }
 }>()
+
+const flag = (draftId: number) => {
+    router.post(route("grp.chat.ai.drafts.flag", [draftId]), {}, { preserveScroll: true })
+}
 
 const share = (count: number) => props.draftStats.decided ? Math.round(100 * count / props.draftStats.decided) + "%" : "—"
 
@@ -30,6 +40,7 @@ const DRAFT_CLASS: Record<string, string> = {
     edited: "bg-sky-50 text-sky-700 ring-sky-200",
     discarded: "bg-red-50 text-red-700 ring-red-200",
     superseded: "bg-gray-50 text-gray-600 ring-gray-200",
+    auto_sent: "bg-violet-50 text-violet-700 ring-violet-200",
 }
 
 const CHANNEL_ICON: Record<string, object> = {
@@ -51,6 +62,30 @@ const CHANNEL_ICON: Record<string, object> = {
         <span class="text-red-700">{{ ctrans("Discarded") }} {{ share(draftStats.discarded) }}</span>
         <span class="text-gray-500">{{ ctrans("Not used") }} {{ share(draftStats.superseded) }}</span>
         <span v-if="draftStats.pending" class="text-indigo-700">{{ ctrans(":count waiting for staff", { count: draftStats.pending }) }}</span>
+        <span v-if="draftStats.auto_sent" class="text-violet-700">{{ ctrans(":count sent without staff", { count: draftStats.auto_sent }) }}</span>
+    </div>
+
+    <div class="mx-4 mt-3 rounded-lg border border-gray-200 px-4 py-3 text-sm">
+        <div class="flex flex-wrap items-baseline gap-x-3">
+            <span class="font-medium text-gray-900">{{ ctrans("Sent without staff, out of hours") }}</span>
+            <span :class="autoSend.enabled ? 'text-emerald-700' : 'text-gray-500'">
+                {{ autoSend.enabled ? ctrans("Switched on where earned") : ctrans("Switched off") }}
+            </span>
+            <span class="text-xs text-gray-500">
+                {{ ctrans("Earned by a shop and topic with at least :count drafts decided in 30 days, :share sent as written, and none flagged as wrong", { count: autoSend.min_decided, share: Math.round(autoSend.min_used_share * 100) + "%" }) }}
+            </span>
+        </div>
+        <ul v-if="autoSend.gates.length" class="mt-2 space-y-1">
+            <li v-for="gate in autoSend.gates" :key="gate.shop + gate.topic" class="flex flex-wrap items-center gap-x-3 text-xs">
+                <span class="rounded-full px-2 py-0.5 ring-1 ring-inset"
+                    :class="gate.earned ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-gray-50 text-gray-600 ring-gray-200'">
+                    {{ gate.earned ? ctrans("Earned") : ctrans("Not yet") }}
+                </span>
+                <span class="text-gray-800">{{ gate.shop }} · {{ gate.topic }}</span>
+                <span class="text-gray-500">{{ ctrans(":count decided", { count: gate.decided }) }} · {{ Math.round(gate.used_share * 100) }}% {{ ctrans("sent as written") }}</span>
+                <span v-if="gate.flagged" class="text-red-700">{{ ctrans(":count flagged as wrong", { count: gate.flagged }) }}</span>
+            </li>
+        </ul>
     </div>
 
     <Table :resource="data" name="automation" class="mt-5">
@@ -93,6 +128,13 @@ const CHANNEL_ICON: Record<string, object> = {
                         {{ item.verdict_label }}
                     </span>
                     <span v-if="item.topic_label" class="text-xs text-gray-500">{{ item.topic_label }}</span>
+                    <span v-if="item.reversed" class="rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700 ring-1 ring-inset ring-red-200">
+                        {{ ctrans("Flagged as wrong") }}
+                    </span>
+                    <button v-else-if="item.draft_status === 'auto_sent'" type="button" @click="flag(item.draft_id)"
+                        class="rounded-md px-2 py-0.5 text-xs text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50">
+                        {{ ctrans("Flag as wrong") }}
+                    </button>
                 </div>
                 <p class="mt-1 whitespace-pre-line text-gray-700">{{ item.text }}</p>
             </div>

@@ -54,6 +54,16 @@ return [
     // Never sent by themselves.
     'ai_drafts' => (bool) env('CHAT_AI_DRAFTS', true),
 
+    // A draft goes to the customer without a person only out of hours, and only on a topic of a
+    // shop where staff sent nearly all recent drafts exactly as written and none sent this way
+    // was flagged as wrong. Off until switched on, and even then only where it is earned.
+    'ai_auto_send' => [
+        'enabled'        => (bool) env('CHAT_AI_AUTO_SEND', false),
+        'window_days'    => 30,
+        'min_decided'    => 50,
+        'min_used_share' => 0.9,
+    ],
+
     'noise' => [
 
         'auto_put_aside' => (bool) env('CHAT_NOISE_AUTO_PUT_ASIDE', false),

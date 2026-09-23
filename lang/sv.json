@@ -6580,6 +6580,7 @@
     "This invoice category hasn't been invoiced": "Denna fakturakategori har inte fakturerats",
     "This is a list of prepayment done for future purchases. A VAT invoice will be issued upon delivery of goods.": "Detta är en lista över förskottsbetalningar som gjorts för framtida köp. En momsfaktura utfärdas vid leverans av varor.",
     "This is a prepayment for future purchases. A VAT invoice will be issued upon delivery of goods.": "Detta är en förskottsbetalning för framtida köp. En momsfaktura utfärdas vid leverans av varorna.",
+    "This is an automatic reply from our system. A member of the team will follow up if you need anything else.": "Detta är ett automatiskt svar från vårt system. Om du behöver något mer hör någon i teamet av sig.",
     "This is associated with a credit transaction": "Detta är kopplat till en kredittransaktion",
     "This is exactly what customers see when this charge appears in their basket": "Det här är precis vad kunderna ser när den här avgiften visas i deras varukorg",
     "This is not a valid regex.": "Detta är inte ett giltigt regex.",

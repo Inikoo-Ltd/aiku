@@ -5733,6 +5733,7 @@
     "This invoice category hasn't been invoiced": "Ez a számlakategoria még nem lett számlázva",
     "This is a list of prepayment done for future purchases. A VAT invoice will be issued upon delivery of goods.": "Ez egy lista a jövőbeni vásárlásokhoz előre befizetett összegekről. Az áruk kiszállításakor ÁFA-s számlát állítunk ki.",
     "This is a prepayment for future purchases. A VAT invoice will be issued upon delivery of goods.": "Ez egy előrefizetés a jövőbeni vásárlásokhoz. ÁFA-s számla kerül kiállításra az áruk kiszállításakor.",
+    "This is an automatic reply from our system. A member of the team will follow up if you need anything else.": "Ez rendszerünk automatikus válasza. Ha másra is szüksége van, csapatunk egyik tagja jelentkezni fog.",
     "This is associated with a credit transaction": "Ez egy hitelügylethez kapcsolódik",
     "This is exactly what customers see when this charge appears in their basket": "Pontosan ezt látják az ügyfelek, amikor ez a díj megjelenik a kosarukban",
     "This is not work in workshop, try in website.": "Ez nem műhelymunka, próbáld ki a weboldalon.",

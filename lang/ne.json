@@ -3328,6 +3328,7 @@
     "This customer don't have any recurring bill yet": "यो पसलले परिवारको फोलो मास्टर सेटिङ सक्षम गर्यो। मास्टरमा गरिएको अपडेटहरूले स्थानीय परिवर्तनहरूलाई ओभरराइट गर्नेछन्।",
     "This customer has :count web user(s) with different login emails; changing this email will not affect them.": "यो पसलले उत्पादनको फोलो मास्टर सेटिङ सक्षम गर्यो। मास्टरमा गरिएको अपडेटहरूले स्थानीय परिवर्तनहरूलाई ओभरराइट गर्नेछन्।",
     "This customer has not received any pallet returns yet": "यो पसलले उप-विभागको फोलो मास्टर सेटिङ सक्षम गर्यो। मास्टरमा गरिएको अपडेटहरूले स्थानीय परिवर्तनहरूलाई ओभरराइट गर्नेछन्।",
+    "This is an automatic reply from our system. A member of the team will follow up if you need anything else.": "यो हाम्रो प्रणालीको स्वचालित जवाफ हो। तपाईंलाई अरू केही चाहिएमा टोलीको सदस्यले सम्पर्क गर्नुहुनेछ।",
     "This shop is connected to Google Ads. Set the Customer ID and User List ID below to sync customers to your Google Ads user list.": "यो पसल गुगल विज्ञापनसँग जडान गरिएको छ। तल ग्राहक आईडी र प्रयोगकर्ता सूची आईडी सेट गर्नुहोस् जसले ग्राहकहरूलाई तपाईंको गुगल विज्ञापन प्रयोगकर्ता सूचीमा समन्वय गर्दछ।",
     "This shop is now authorized to sync customers to Google Ads.": "यो पसल अब ग्राहकहरूलाई गुगल विज्ञापनमा समन्वय गर्न अधिकृत गरिएको छ।",
     "This show in product webpage": "यो उत्पादन वेबपृष्ठमा देखाइन्छ।",

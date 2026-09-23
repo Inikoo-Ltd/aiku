@@ -8,7 +8,9 @@
 
 namespace App\Actions\Chat\UI;
 
+use App\Actions\Chat\ChatSession\GetChatAutoSendGate;
 use App\Actions\Chat\ChatSession\GetChatClaimDetails;
+use App\Actions\Chat\ChatSession\SendChatAiAnswer;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
@@ -110,10 +112,12 @@ class ShowGroupChatAutomation extends OrgAction
             ->where('chat_messages.sender_type', 'system')
             ->whereNull('chat_messages.deleted_at')
             ->whereRaw("chat_messages.metadata->>'automated' is not null")
+            ->whereRaw("chat_messages.metadata->>'automated' <> ?", [SendChatAiAnswer::MESSAGE_MARKER])
             ->tap(fn ($query) => $shops($query, 'chat_sessions'))
             ->select([
                 DB::raw("chat_messages.metadata->>'automated' as kind"),
                 'chat_messages.created_at as at',
+                DB::raw('null::integer as draft_id'),
                 'chat_sessions.id as session_id',
                 'chat_sessions.channel as channel',
                 'chat_sessions.ulid as session_ulid',
@@ -139,6 +143,7 @@ class ShowGroupChatAutomation extends OrgAction
                     when meta_chat_messages.metadata->>'asked_if_customer' is not null then 'asked_if_customer'
                     else 'greeting' end as kind"),
                 'meta_chat_messages.created_at as at',
+                DB::raw('null::integer as draft_id'),
                 'meta_chat_sessions.id as session_id',
                 DB::raw("'whatsapp' as channel"),
                 DB::raw('null::char(26) as session_ulid'),
@@ -157,6 +162,7 @@ class ShowGroupChatAutomation extends OrgAction
             ->select([
                 DB::raw("'noise_check' as kind"),
                 DB::raw('coalesce(chat_sessions.noise_checked_at, chat_sessions.updated_at) as at'),
+                DB::raw('null::integer as draft_id'),
                 'chat_sessions.id as session_id',
                 'chat_sessions.channel as channel',
                 'chat_sessions.ulid as session_ulid',
@@ -175,6 +181,7 @@ class ShowGroupChatAutomation extends OrgAction
             ->select([
                 DB::raw("'noise_check' as kind"),
                 DB::raw('coalesce(meta_chat_sessions.noise_checked_at, meta_chat_sessions.updated_at) as at'),
+                DB::raw('null::integer as draft_id'),
                 'meta_chat_sessions.id as session_id',
                 DB::raw("'whatsapp' as channel"),
                 DB::raw('null::char(26) as session_ulid'),
@@ -194,6 +201,7 @@ class ShowGroupChatAutomation extends OrgAction
             ->select([
                 DB::raw("'ai_draft' as kind"),
                 'chat_ai_drafts.created_at as at',
+                'chat_ai_drafts.id as draft_id',
                 DB::raw('coalesce(chat_ai_drafts.chat_session_id, chat_ai_drafts.meta_chat_session_id) as session_id'),
                 DB::raw("case when chat_ai_drafts.meta_chat_session_id is not null then 'whatsapp' else chat_sessions.channel end as channel"),
                 'chat_sessions.ulid as session_ulid',
@@ -202,7 +210,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw('null::smallint as confidence'),
                 'chat_ai_drafts.topic as source',
                 DB::raw('false as put_aside'),
-                DB::raw('false as reversed'),
+                DB::raw('chat_ai_drafts.flagged_wrong_at is not null as reversed'),
                 ...$common("coalesce(chat_sessions.metadata->>'name', chat_sessions.metadata->>'email_from', meta_chat_sessions.phone_number)"),
             ]);
 
@@ -279,6 +287,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'put_aside'     => (bool) $row->put_aside,
                 'reversed'      => (bool) $row->reversed,
                 'claim'         => $claim,
+                'draft_id'      => $row->draft_id,
                 'url'           => $row->session_ulid
                     ? route('grp.org.chat.inbox.conversation', [$row->organisation_slug, trim($row->session_ulid)])
                     : route('grp.org.chat.inbox', [$row->organisation_slug]),
@@ -299,6 +308,7 @@ class ShowGroupChatAutomation extends OrgAction
                 ],
                 'data'       => JsonResource::collection($activity),
                 'draftStats' => $this->draftStats($this->group),
+                'autoSend'   => $this->autoSend($this->group),
             ]
         )->table($this->tableStructure($this->group));
     }
@@ -331,7 +341,7 @@ class ShowGroupChatAutomation extends OrgAction
      * How the drafts decided in the last 30 days were used: the number that says whether they
      * can ever be trusted to go out on their own.
      *
-     * @return array{decided: int, used: int, edited: int, discarded: int, superseded: int, pending: int}
+     * @return array{decided: int, used: int, edited: int, discarded: int, superseded: int, pending: int, auto_sent: int}
      */
     private function draftStats(Group $group): array
     {
@@ -344,12 +354,38 @@ class ShowGroupChatAutomation extends OrgAction
         $count = fn (ChatAiDraftStatusEnum $status) => (int) ($counts[$status->value] ?? 0);
 
         return [
-            'decided'    => $counts->sum() - $count(ChatAiDraftStatusEnum::PENDING),
+            'decided'    => $count(ChatAiDraftStatusEnum::USED) + $count(ChatAiDraftStatusEnum::EDITED) + $count(ChatAiDraftStatusEnum::DISCARDED) + $count(ChatAiDraftStatusEnum::SUPERSEDED),
             'used'       => $count(ChatAiDraftStatusEnum::USED),
             'edited'     => $count(ChatAiDraftStatusEnum::EDITED),
             'discarded'  => $count(ChatAiDraftStatusEnum::DISCARDED),
             'superseded' => $count(ChatAiDraftStatusEnum::SUPERSEDED),
             'pending'    => $count(ChatAiDraftStatusEnum::PENDING),
+            'auto_sent'  => $count(ChatAiDraftStatusEnum::AUTO_SENT),
+        ];
+    }
+
+    /**
+     * Where drafts may go out without a person, and how far each shop and topic is from it.
+     *
+     * @return array{enabled: bool, min_decided: int, min_used_share: float, gates: array<int, array<string, mixed>>}
+     */
+    private function autoSend(Group $group): array
+    {
+        $pairs = ChatAiDraft::where('group_id', $group->id)
+            ->where('created_at', '>=', now()->subDays((int) config('chat.ai_auto_send.window_days')))
+            ->select('shop_id', 'topic')
+            ->distinct()
+            ->with('shop:id,name')
+            ->get();
+
+        return [
+            'enabled'        => (bool) config('chat.ai_auto_send.enabled'),
+            'min_decided'    => (int) config('chat.ai_auto_send.min_decided'),
+            'min_used_share' => (float) config('chat.ai_auto_send.min_used_share'),
+            'gates'          => $pairs->map(fn (ChatAiDraft $pair) => [
+                'shop'  => $pair->shop?->name,
+                'topic' => $pair->topic->label(),
+            ] + GetChatAutoSendGate::run($pair->shop, $pair->topic))->values()->all(),
         ];
     }
 

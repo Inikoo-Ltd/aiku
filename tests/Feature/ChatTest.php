@@ -5965,6 +5965,109 @@ test('a question about an order gets a draft written from that customer\'s order
     }
 });
 
+test('a draft goes to the customer without staff only out of hours, only once earned, and a flag closes it again', function () {
+    config([
+        'chat.ai_drafts'                   => true,
+        'chat.ai_auto_send.enabled'        => true,
+        'chat.ai_auto_send.min_decided'    => 3,
+        'askbot-laravel.openai_api_key'    => 'test-key',
+    ]);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    $schedule = outOfHoursTestSchedule($this->shop);
+
+    $customer  = createOwnCustomer($this->shop, 'ai-auto-send');
+    $webUser   = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+    $reference = 'AAS'.random_int(100000, 999999);
+
+    \Illuminate\Support\Facades\DB::table('orders')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ord-'.uniqid(),
+        'reference'       => $reference,
+        'state'           => 'packed',
+        'net_amount'      => 100,
+        'org_net_amount'  => 100,
+        'grp_net_amount'  => 100,
+        'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::CREATING,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => '2026-09-24',
+        'submitted_at'    => '2026-09-24 09:00:00',
+        'created_at'      => '2026-09-24',
+        'updated_at'      => '2026-09-24',
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode([
+            'answerable' => true, 'topic' => 'order_status', 'reply' => "Your order $reference is packed and waiting for the courier.",
+        ])]]]]),
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'web_user_id'             => $webUser->id,
+        'last_visitor_message_at' => now(),
+    ]);
+    $askAt = function (string $when, string $text) use ($session) {
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse($when, 'Europe/London'));
+        $session->update(['last_agent_message_at' => now()->subHours(2)]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::USER,
+            'message_text'    => $text,
+        ]);
+
+        return \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+    };
+    $systemMessages = fn () => $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count();
+
+    // Out of hours, but nothing earned yet: the draft waits for staff.
+    $waiting = $askAt('2026-09-26 11:00', 'Where is my order please?');
+    expect($waiting->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING)->and($systemMessages())->toBe(0);
+
+    // Staff sent three drafts on this topic exactly as written: now it is earned.
+    foreach (range(1, 3) as $i) {
+        \App\Models\Chat\ChatAiDraft::create([
+            'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+            'chat_session_id' => $session->id, 'topic' => 'order_status', 'facts' => [], 'text' => 'earned '.$i,
+            'status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED,
+        ]);
+    }
+    expect(\App\Actions\Chat\ChatSession\GetChatAutoSendGate::run($this->shop, \App\Enums\CRM\Livechat\ChatTopicEnum::ORDER_STATUS)['earned'])->toBeTrue();
+
+    $sent = $askAt('2026-09-26 11:30', 'Is my order on its way?');
+    $answer = $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->latest('id')->first();
+
+    expect($sent->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::AUTO_SENT)
+        ->and($sent->reply_message_id)->toBe($answer->id)
+        ->and($answer->message_text)->toContain("Your order $reference is packed")
+        ->and($answer->message_text)->toContain('This is an automatic reply');
+
+    // In working hours a person is there: it waits for them, earned or not.
+    $inHours = $askAt('2026-09-28 11:00', 'And when will it be dispatched?');
+    expect($inHours->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING);
+
+    // Staff flag the automatic answer as wrong: the gate closes again.
+    actingAs($this->user);
+    $this->post(route('grp.chat.ai.drafts.flag', [$sent->id]))->assertRedirect();
+    expect($sent->refresh()->flagged_wrong_at)->not->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\GetChatAutoSendGate::run($this->shop, \App\Enums\CRM\Livechat\ChatTopicEnum::ORDER_STATUS)['earned'])->toBeFalse();
+
+    $afterFlag = $askAt('2026-09-28 20:00', 'Any news on my order?');
+    expect($afterFlag->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING);
+
+    \App\Models\Chat\ChatAiDraft::where('chat_session_id', $session->id)->delete();
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
 test('chat hours come from the work schedule, and the next opening skips closed days and bank holidays', function () {
     $schedule = outOfHoursTestSchedule($this->shop);
     $shop = $this->shop->fresh();

@@ -24,6 +24,7 @@ enum ChatAiDraftStatusEnum: string
     case EDITED = 'edited';
     case DISCARDED = 'discarded';
     case SUPERSEDED = 'superseded';
+    case AUTO_SENT = 'auto_sent';
 
     public function label(): string
     {
@@ -33,6 +34,7 @@ enum ChatAiDraftStatusEnum: string
             self::EDITED     => __('Sent after changes'),
             self::DISCARDED  => __('Discarded'),
             self::SUPERSEDED => __('Not used'),
+            self::AUTO_SENT  => __('Sent automatically'),
         };
     }
 }
