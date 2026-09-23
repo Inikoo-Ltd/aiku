@@ -212,6 +212,17 @@ class IndexMcpRequests extends OrgAction
                         'title' => __('AI analytics'),
                     ],
                     'title' => __('AI analytics'),
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'label' => __('AI changes'),
+                            'icon'  => ['fal', 'fa-history'],
+                            'route' => [
+                                'name' => 'grp.sysadmin.mcp.changes.index',
+                            ]
+                        ]
+                    ],
                 ],
                 'insights' => GetMcpAnalytics::run($this->group),
                 'data'     => McpRequestsResource::collection($mcpRequests),

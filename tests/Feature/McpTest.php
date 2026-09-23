@@ -1592,6 +1592,33 @@ describe('org stock discontinue tools', function () {
 
         expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
     });
+
+    test('a discontinue is logged as an ai change and reverting it puts the state back', function () {
+        $orgStock = $this->orgStocks[2];
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinueTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code],
+            'state'        => 'suspended',
+            'reason'       => 'Quality check',
+            'request_text' => 'hold '.$orgStock->code,
+        ])->assertOk()->assertSee('change_log_id');
+
+        $mcpChange = App\Models\SysAdmin\McpChange::latest('id')->first();
+
+        expect($mcpChange->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::ORG_STOCK_STATE)
+            ->and($mcpChange->request_text)->toBe('hold '.$orgStock->code)
+            ->and($mcpChange->data['after_text'])->toContain('suspended');
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [
+            'revert_id'    => $mcpChange->id,
+            'request_text' => 'undo that',
+        ])->assertOk()->assertSee('reverted_at');
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($mcpChange->refresh()->reverted_by_id)->toBe($this->user->id);
+    });
 });
 
 describe('staff task tools', function () {
@@ -1696,5 +1723,130 @@ describe('staff task tools', function () {
 
         AikuServer::actingAs($this->user)->tool(StaffTasksTool::class, ['reference' => strtolower($task->reference)])
             ->assertOk()->assertSee('Please recount before Friday');
+    });
+});
+
+describe('family related products tool', function () {
+    beforeEach(function () {
+        [, $this->product] = createProduct($this->shop);
+        $this->family      = $this->product->family;
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['catalog' => ['related_product_follow_master' => false]])]);
+        $this->user->update(['can_use_mcp_web' => true]);
+    });
+
+    test('a user not enrolled is refused and told not to retry', function () {
+        $this->user->update(['can_use_mcp_web' => false]);
+        $before = $this->family->relatedProducts()->pluck('products.id')->all();
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'          => $this->shop->slug,
+            'family'        => $this->family->code,
+            'product_codes' => [$this->product->code],
+            'request_text'  => 'add it',
+        ])->assertHasErrors(['Changing website content is not enabled for this user']);
+
+        expect($this->family->relatedProducts()->pluck('products.id')->all())->toBe($before);
+    });
+
+    test('replaces the list in order, then shows it', function () {
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'          => $this->shop->slug,
+            'family'        => strtolower($this->family->code),
+            'product_codes' => [strtolower($this->product->code)],
+            'request_text'  => 'add it to sells well with',
+        ])->assertOk()->assertSee('this shop only');
+
+        expect($this->family->relatedProducts()->pluck('products.id')->all())->toBe([$this->product->id]);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'   => $this->shop->slug,
+            'family' => $this->family->code,
+        ])->assertOk()->assertSee($this->product->code);
+    });
+
+    test('unknown codes change nothing', function () {
+        $before = $this->family->relatedProducts()->pluck('products.id')->all();
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'          => $this->shop->slug,
+            'family'        => $this->family->code,
+            'product_codes' => [$this->product->code, 'NOPE-999'],
+            'request_text'  => 'add them',
+        ])->assertHasErrors(['NOPE-999']);
+
+        expect($this->family->relatedProducts()->pluck('products.id')->all())->toBe($before);
+    });
+});
+
+describe('ai changes log', function () {
+    beforeEach(function () {
+        [, $this->product] = createProduct($this->shop);
+        $this->family      = $this->product->family;
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['catalog' => ['related_product_follow_master' => false]])]);
+        App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts::make()->action($this->family, ['product_ids' => []]);
+        $this->user->update(['can_use_mcp_web' => true]);
+    });
+
+    function changeRelatedProducts($test): App\Models\SysAdmin\McpChange
+    {
+        AikuServer::actingAs($test->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'          => $test->shop->slug,
+            'family'        => $test->family->code,
+            'product_codes' => [$test->product->code],
+            'request_text'  => 'add it',
+        ])->assertOk()->assertSee('change_log_id');
+
+        return App\Models\SysAdmin\McpChange::latest('id')->first();
+    }
+
+    test('a write is logged with before and after and the ai can revert it once', function () {
+        $mcpChange = changeRelatedProducts($this);
+
+        expect($mcpChange->before)->toBe(['ids' => []])
+            ->and($mcpChange->after)->toBe(['ids' => [$this->product->id]])
+            ->and($mcpChange->data['after_text'])->toBe($this->product->code);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [])
+            ->assertOk()->assertSee('"id":'.$mcpChange->id);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [
+            'revert_id'    => $mcpChange->id,
+            'request_text' => 'undo that',
+        ])->assertOk();
+
+        expect($this->family->relatedProducts()->count())->toBe(0);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [
+            'revert_id'    => $mcpChange->id,
+            'request_text' => 'undo that again',
+        ])->assertHasErrors(['already reverted']);
+    });
+
+    test('a revert is refused when someone changed it again afterwards', function () {
+        $mcpChange = changeRelatedProducts($this);
+
+        App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts::make()->action($this->family, ['product_ids' => []]);
+
+        expect(fn () => App\Actions\SysAdmin\McpChange\RevertMcpChange::run($mcpChange, $this->user))
+            ->toThrow(Illuminate\Validation\ValidationException::class);
+
+        expect($mcpChange->refresh()->reverted_at)->toBeNull();
+    });
+
+    test('the changes table lists it and the revert button works', function () {
+        Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+        $mcpChange = changeRelatedProducts($this);
+
+        $this->actingAs($this->user)
+            ->get(route('grp.sysadmin.mcp.changes.index'))
+            ->assertOk()
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('SysAdmin/McpChanges'));
+
+        $this->actingAs($this->user)
+            ->post(route('grp.models.mcp_change.revert', $mcpChange->id))
+            ->assertRedirect();
+
+        expect($mcpChange->refresh()->reverted_at)->not->toBeNull()
+            ->and($this->family->relatedProducts()->count())->toBe(0);
     });
 });

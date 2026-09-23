@@ -63,6 +63,7 @@ use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\RehydrateChildProductImages;
 use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\SyncProductCategoryRelatedProductCategories;
 use App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts;
+use App\Actions\SysAdmin\McpChange\RevertMcpChange;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -695,6 +696,7 @@ Route::patch('master-product-category/{masterProductCategory:id}/related-assets'
 Route::patch('master-product-category/{masterProductCategory:id}/related-master-product-categories', SyncMasterProductCategoryRelatedMasterProductCategories::class)->name('master_product_category.related_master_product_categories.sync')->withoutScopedBindings();
 
 Route::patch('product-category/{productCategory:id}/related-products', SyncProductCategoryRelatedProducts::class)->name('product_category.related_products.sync')->withoutScopedBindings();
+Route::post('mcp-change/{mcpChange:id}/revert', RevertMcpChange::class)->name('mcp_change.revert');
 Route::patch('product-category/{productCategory:id}/related-product-categories', SyncProductCategoryRelatedProductCategories::class)->name('product_category.related_product_categories.sync')->withoutScopedBindings();
 
 Route::patch('master-product-category/{masterProductCategory:id}/reorder-index', UpdateMasterAssetIndex::class)->name('master_product_category.reorder_index');
