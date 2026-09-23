@@ -12,23 +12,25 @@ namespace App\Actions\Retina\Ecom\Basket;
 
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class RetinaEcomUpdateTransaction extends RetinaAction
 {
+    use WithCustomerPurchasableProduct;
+
     private Order $order;
-    private Transaction $transaction;
 
     public function handle(Transaction $transaction, array $modelData)
     {
+        $this->ensureCustomerCanChangeLine($transaction, Arr::get($modelData, 'quantity_ordered'));
+
         $transaction->order->update([
             'updated_by_customer_at' => now()
         ]);
@@ -55,7 +57,7 @@ class RetinaEcomUpdateTransaction extends RetinaAction
     public function rules(): array
     {
         return [
-            'quantity_ordered' => ['sometimes', 'numeric', 'min:0', 'max:999999'],
+            'quantity_ordered' => ['sometimes', 'integer', 'min:0', 'max:999999'],
         ];
     }
 
@@ -71,29 +73,9 @@ class RetinaEcomUpdateTransaction extends RetinaAction
         }
     }
 
-    public function afterValidator(Validator $validator): void
-    {
-        if ((float) $this->get('quantity_ordered', 0) <= (float) $this->transaction->quantity_ordered) {
-            return;
-        }
-
-        $product = $this->transaction->model;
-        if (!$product instanceof Product
-            || $product->is_on_demand
-            || $this->order->platform_order_id
-            || $this->order->shop->type == ShopTypeEnum::EXTERNAL) {
-            return;
-        }
-
-        if (($product->available_quantity ?? 0) <= 0) {
-            $validator->errors()->add('quantity_ordered', __(':product is out of stock', ['product' => $product->code]));
-        }
-    }
-
     public function action(Transaction $transaction, Customer $customer, array $modelData): Transaction
     {
         $this->asAction    = true;
-        $this->transaction = $transaction;
         $this->order       = $transaction->order;
         $this->initialisationActions($customer, $modelData);
 
@@ -102,7 +84,6 @@ class RetinaEcomUpdateTransaction extends RetinaAction
 
     public function asController(Transaction $transaction, ActionRequest $request): void
     {
-        $this->transaction = $transaction;
         $this->order       = $transaction->order;
         $this->initialisation($request);
 

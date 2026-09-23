@@ -10,7 +10,6 @@ import { faPencil, faTimes, faTrashAlt, faMoneyCheckEditAlt, faPlus, faMinus } f
 import { faBarcode, faGift, faRepeat, faTrash, faUndo } from "@fal"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
 import { debounce, get, set, toInteger } from "lodash-es"
 import Modal from "@/Components/Utils/Modal.vue"
 import ProductsSelectorAutoSelect from "@/Components/Dropshipping/ProductsSelectorAutoSelect.vue"
@@ -64,11 +63,14 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", {})
+const isCustomer = layout?.app?.name === 'retina'
+const isCutView = (proxyItem: { is_cut_view?: boolean }): boolean => !isCustomer && !!proxyItem.is_cut_view
 const locale = inject("locale", {})
 
 const editingIds = ref<Set<number>>(new Set())
 const createNewQty = reactive<Record<number, ProductRow>>({})
 const isLoading = ref<string | null>(null)
+const refusedQuantityCount = reactive<Record<number, number>>({})
 const isModalProductListOpen = ref(false)
 const loadingsaveModify = ref(false)
 const currentAction = ref(null)
@@ -140,9 +142,10 @@ const onUpdateQuantity = (
         sendData,
         {
             onError: (e: any) => {
+                refusedQuantityCount[idTransaction] = (refusedQuantityCount[idTransaction] ?? 0) + 1
                 notify({
                     title: ctrans("Something went wrong"),
-                    text: e.quantity_ordered || e.message,
+                    text: e.message || e.quantity_ordered,
                     type: "error"
                 })
             },
@@ -311,15 +314,15 @@ const updateQuantityOrdered = (item: ProductRow, is_cut_view: boolean) => {
         onSuccess: () => {
             editingIds.value.delete(item.id)
             notify({
-                title: trans("Success"),
-                text: trans("Quantity updated, warehouse has been notified"),
+                title: ctrans("Success"),
+                text: ctrans("Quantity updated, warehouse has been notified"),
                 type: "success"
             })
         },
         onError: (errors) => {
             notify({
-                title: trans("Something went wrong"),
-                text: Object.values(errors).join(", ") || trans("Failed to update quantity"),
+                title: ctrans("Something went wrong"),
+                text: Object.values(errors).join(", ") || ctrans("Failed to update quantity"),
                 type: "error"
             })
         }
@@ -467,8 +470,7 @@ const onSetCutView = async (proxyItem: {}, routeUpdate: routeType, newVal: boole
                 set(proxyItem, 'is_transaction_loading', true)
 
             },
-            onError: () => {
-                console.log('eeerr', error)
+            onError: (error: any) => {
                 notify({
                     title: ctrans("Something went wrong"),
                     text: error.message || ctrans("Please try again or contact administrator"),
@@ -580,13 +582,13 @@ const isOffersData = (offersData: any): boolean => {
                                 min: 0,
                                 max: item.available_quantity,
                             }"
-                            :denominator="proxyItem.is_cut_view ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
+                            :denominator="isCutView(proxyItem) ? (Number(item.product_units) > 1 ? Number(item.product_units) : undefined) : undefined"
                         /> -->
                         <InputNumber 
-                            :model-value="proxyItem.is_cut_view ? (
+                            :model-value="isCutView(proxyItem) ? (
                                 (item.quantity_ordered_fractional[0] * item.quantity_ordered_fractional[1][1]) + item.quantity_ordered_fractional[1][0]
                             ) : item.quantity_ordered" 
-                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, proxyItem.is_cut_view)"
+                            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e, isCutView(proxyItem))"
                             :disabled="loadingsaveModify"
                             inputId="horizontal-buttons" 
                             showButtons 
@@ -594,18 +596,18 @@ const isOffersData = (offersData: any): boolean => {
                             :step="1" 
                             min='0'
                             v-bind="bindToTarget" 
-                            :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
+                            :suffix="isCutView(proxyItem) && Number(item.quantity_ordered_fractional[1][1]) > 1
                                 ? `/${Number(item.quantity_ordered_fractional[1][1])}`
                                 : undefined
                                 " 
                             :inputStyle="{
                                     width: bindToTarget?.fluid
                                         ? undefined
-                                        : quantityInputWidth(item.quantity_ordered, proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1),
+                                        : quantityInputWidth(item.quantity_ordered, isCutView(proxyItem) && Number(item.quantity_ordered_fractional[1][1]) > 1),
                                     textAlign: 'center',
                                 }" 
                             fluid
-                            :key="proxyItem.is_cut_view + item.id"
+                            :key="`${isCutView(proxyItem)}-${item.id}-${refusedQuantityCount[item.id] ?? 0}`"
                         >
                             <template #incrementbuttonicon>
                                 <FontAwesomeIcon :icon="faPlus" fixed-width />
@@ -619,11 +621,11 @@ const isOffersData = (offersData: any): boolean => {
                         <!-- Toggle: is_cut_view -->
                         <span
                             xv-if="layout.app.environment == 'local'"
-                            v-if="Number(item.product_units) !== 1"
+                            v-if="Number(item.product_units) !== 1 && !isCustomer"
                             @click="() => proxyItem.is_transaction_loading ? '' : onSetCutView(proxyItem, item.updateRoute, !proxyItem.is_cut_view)"
                             v-tooltip="ctrans('Cut view')"
                             class="text-lg align-middle opacity-60 cursor-pointer hover:opacity-100 flex items-center"
-                            :class="proxyItem.is_cut_view ? 'text-orange-500' : ''"
+                            :class="isCutView(proxyItem) ? 'text-orange-500' : ''"
                         >
                             <LoadingIcon v-if="proxyItem.is_transaction_loading" class="text-gray-700" />
                             <FontAwesomeIcon v-else icon="fas fa-fragile" class="" fixed-width aria-hidden="true" />
