@@ -1215,3 +1215,24 @@ test('a customer client arriving from a channel is accepted with only a country'
 
     expect(StoreCustomerClient::make()->action($customerSalesChannel, $definition))->toBeInstanceOf(CustomerClient::class);
 });
+
+test('manual channel pricing policy shows an example price and says it only prices products added from now on', function () {
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $manualPlatform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
+    $channel        = StoreCustomerSalesChannel::make()->action($customer, $manualPlatform, ['reference' => 'test_manual_pricing_policy']);
+    $channel->update(['settings' => ['pricing' => ['type' => 'percent', 'value' => 200]]]);
+
+    $request = \Lorisleiva\Actions\ActionRequest::create('/');
+    $route   = (new \Illuminate\Routing\Route('GET', '/', []))->name('retina.dropshipping.customer_sales_channels.edit')->bind($request);
+    $request->setRouteResolver(fn () => $route);
+
+    $response = \App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel::make()->handle($channel->refresh(), $request);
+    $props    = (new ReflectionProperty($response, 'props'))->getValue($response);
+    $fields   = collect($props['formData']['blueprint'])->firstWhere(fn ($section) => isset($section['fields']['pricing_type']))['fields'];
+
+    expect($fields['pricing_type']['type'])->toBe('pricing_policy')
+        ->and($fields['pricing_type']['value'])->toBe('percent')
+        ->and($fields['pricing_type']['applies_to_new_products_only'])->toBeTrue()
+        ->and($fields['pricing_type']['hasOther'][0])->toBe(['name' => 'pricing_value', 'value' => 200])
+        ->and($fields)->not->toHaveKey('pricing_value');
+});

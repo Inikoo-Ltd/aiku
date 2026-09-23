@@ -76,7 +76,7 @@ If the price is not a clean multiple of the RRP and no rule explains it, raise a
 
 ### Where the customer clicks
 
-- **Set the pricing rule** — their sales channel's settings, **Pricing Type** and **Pricing Value**.
+- **Set the pricing rule** — their sales channel's settings, **Pricing Policy**. It shows an example RRP and the price it becomes.
 - **Reprice products already added** — **My Products**, select products, **Edit Price**.
 
 ### Permissions you need

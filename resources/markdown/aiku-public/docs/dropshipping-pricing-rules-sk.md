@@ -77,7 +77,7 @@ Ak cena nie je presným násobkom RRP a žiadne pravidlo ju nevysvetľuje, zalo�
 
 ### Kde klikne zákazník
 
-- **Nastaviť cenové pravidlo** — nastavenia jeho predajného kanála, **Pricing Type** a **Pricing Value**.
+- **Nastaviť cenové pravidlo** — nastavenia jeho predajného kanála, **Pricing Policy**. Zobrazuje príklad RRP a cenu, ktorá z neho vznikne.
 - **Prepočítať už pridané produkty** — **My Products**, označiť produkty, **Edit Price**.
 
 ### Potrebné oprávnenia

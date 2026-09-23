@@ -77,7 +77,7 @@ Si el precio no es un múltiplo exacto del PVP y ninguna regla lo explica, abrir
 
 ### Dónde hace clic el cliente
 
-- **Poner la regla de precio** — en los ajustes de su canal de venta, **Pricing Type** y **Pricing Value**.
+- **Poner la regla de precio** — en los ajustes de su canal de venta, **Pricing Policy**. Muestra un PVP de ejemplo y el precio que resulta.
 - **Recalcular productos ya añadidos** — **Mis productos**, seleccionar productos, **Edit Price**.
 
 ### Permisos necesarios
