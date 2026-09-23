@@ -10,6 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +77,7 @@ class GetChatReports
             'interval'      => $interval,
             'from'          => $from->toDateString(),
             'to'            => $to->toDateString(),
+            'window'        => $from->toIso8601ZuluString().','.$to->toIso8601ZuluString(),
             'days'          => $days,
             'bucket'        => $bucket,
             'conversations' => $sessions->count(),
@@ -95,7 +97,7 @@ class GetChatReports
             'unclassified'  => $sessions->whereNull('topic')->count(),
             'noise'         => $this->noise($shopIds, $from, $to),
             'customer_suggestions' => $this->customerSuggestions($shopIds, $from, $to),
-            'agents'        => $agents,
+            'agents'        => $agents->map(fn (array $agent) => Arr::except($agent, 'rated_sessions')),
             'agents_total'  => [
                 'name'          => __('Total'),
                 'conversations' => $agents->sum('conversations'),
@@ -104,6 +106,7 @@ class GetChatReports
                 'email'         => $agents->sum('email'),
                 'whatsapp'      => $agents->sum('whatsapp'),
                 'median_reply_minutes' => $this->median($answered->map(fn (object $row) => $this->replyMinutes($row))),
+                ...$this->ratingSummary($agents->flatMap(fn (array $agent) => $agent['rated_sessions'])),
             ],
         ];
     }
@@ -265,6 +268,7 @@ class GetChatReports
                     {$source['channel']} as channel,
                     count(*) as messages,
                     count(distinct s.id) as conversations,
+                    string_agg(distinct concat(s.id, ':', s.rating), ',') filter (where s.rating is not null) as rated_sessions,
                     percentile_cont(0.5) within group (
                         order by extract(epoch from msg.created_at - m.first_visitor_at) / 60
                     ) filter (where msg.created_at = m.first_agent_at) as median_reply_minutes
@@ -304,6 +308,13 @@ class GetChatReports
             ->groupBy('agent_id')
             ->map(function (Collection $agentRows, int|string $agentId) use ($users) {
                 $user = $users->get($agentId);
+                $ratedSessions = $agentRows->flatMap(fn (object $row) => collect(explode(',', (string) $row->rated_sessions))
+                    ->filter()
+                    ->mapWithKeys(function (string $pair) use ($row) {
+                        [$sessionId, $rating] = explode(':', $pair);
+
+                        return ["$row->channel:$sessionId" => (int) $rating];
+                    }));
                 $name = $user?->contact_name ?: $user?->username ?: __('Unknown');
 
                 return [
@@ -317,10 +328,24 @@ class GetChatReports
                     'email'         => (int) $agentRows->where('channel', 'email')->sum('conversations'),
                     'whatsapp'      => (int) $agentRows->where('channel', 'whatsapp')->sum('conversations'),
                     'median_reply_minutes' => $this->median($agentRows->pluck('median_reply_minutes')->filter(fn ($value) => $value !== null)),
+                    ...$this->ratingSummary($ratedSessions),
+                    'rated_sessions' => $ratedSessions,
                 ];
             })
             ->sortByDesc('conversations')
             ->values();
+    }
+
+    /**
+     * @param  Collection<string, int>  $ratedSessions
+     * @return array{rating: float|null, ratings: int}
+     */
+    private function ratingSummary(Collection $ratedSessions): array
+    {
+        return [
+            'rating'  => $ratedSessions->isEmpty() ? null : $this->rounded($ratedSessions->avg()),
+            'ratings' => $ratedSessions->count(),
+        ];
     }
 
     /**

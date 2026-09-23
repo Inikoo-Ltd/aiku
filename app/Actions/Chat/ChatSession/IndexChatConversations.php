@@ -12,7 +12,11 @@ use App\Actions\OrgAction;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
+use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -72,18 +76,59 @@ class IndexChatConversations extends OrgAction
                 'chat_sessions.web_user_id',
                 'chat_sessions.shop_id',
                 'chat_sessions.metadata',
+                'chat_sessions.rating',
             ])
             ->allowedSorts([
                 AllowedSort::field('created_at', 'chat_sessions.created_at'),
                 AllowedSort::field('closed_at', 'chat_sessions.closed_at'),
                 AllowedSort::field('status', 'chat_sessions.status'),
+                AllowedSort::field('rating', 'chat_sessions.rating'),
             ])
             ->allowedFilters([
                 $globalSearch,
                 AllowedFilter::exact('status'),
+                AllowedFilter::callback('rated', fn ($query) => $query->whereNotNull('chat_sessions.rating')),
+                AllowedFilter::callback('created_between', fn ($query, $value) => $query->whereBetween('chat_sessions.created_at', $this->window($value))),
+                AllowedFilter::callback('replied', fn ($query, $value) => $this->repliedByAgent($query, $value)),
             ])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
+    }
+
+    /**
+     * Conversations an agent replied to in a window, as the chat report counts them:
+     * value "username,from,to", or "*,from,to" for any agent.
+     */
+    private function repliedByAgent(Builder $query, string|array $value): void
+    {
+        [$username, $from, $to] = array_pad(is_array($value) ? $value : explode(',', $value), 3, null);
+
+        $query->whereExists(function ($messages) use ($username, $from, $to) {
+            $messages->selectRaw('1')
+                ->from('chat_messages')
+                ->whereColumn('chat_messages.chat_session_id', 'chat_sessions.id')
+                ->whereNull('chat_messages.deleted_at')
+                ->where('chat_messages.sender_type', ChatSenderTypeEnum::AGENT->value)
+                ->whereNotNull('chat_messages.sender_id')
+                ->whereBetween('chat_messages.created_at', $this->window([$from, $to]));
+
+            if ($username !== '*') {
+                $messages->whereIn('chat_messages.sender_id', ChatAgent::query()
+                    ->join('users', 'users.id', '=', 'chat_agents.user_id')
+                    ->where('users.username', $username)
+                    ->select('chat_agents.id'));
+            }
+        });
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function window(string|array $value): array
+    {
+        [$from, $to] = array_pad(is_array($value) ? $value : explode(',', $value), 2, null);
+
+        return [Carbon::parse($from), Carbon::parse($to)];
     }
 
     public function tableStructure(?string $prefix = null, bool $withShopColumn = true): Closure
@@ -114,7 +159,8 @@ class IndexChatConversations extends OrgAction
                 ->column(key: 'assigned_agent', label: __('Agent'), canBeHidden: true)
                 ->column(key: 'ai_summary', label: __('Summary'), canBeHidden: true)
                 ->column(key: 'created_at', label: __('Started'), canBeHidden: false, sortable: true)
-                ->column(key: 'closed_at', label: __('Closed'), canBeHidden: true, sortable: true);
+                ->column(key: 'closed_at', label: __('Closed'), canBeHidden: true, sortable: true)
+                ->column(key: 'rating', label: __('Rating'), canBeHidden: true, sortable: true);
 
             $table->defaultSort('-created_at');
         };

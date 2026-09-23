@@ -107,6 +107,10 @@ class ImportPendingGmailAttachments
                 default => GmailMessageParser::decodeData((string) $attachment['data']),
             };
 
+            if (strlen((string) $content) > config('media-library.max_file_size')) {
+                continue;
+            }
+
             $path = tempnam(sys_get_temp_dir(), 'gmail-attachment-');
             file_put_contents($path, $content);
 
@@ -182,6 +186,10 @@ class ImportPendingGmailAttachments
         $isImage = str_starts_with((string) $attachment['mimeType'], 'image/');
 
         if (($attachment['inline'] ?? false) && $size < self::INLINE_IMAGE_MIN_BYTES) {
+            return false;
+        }
+
+        if ($size > config('media-library.max_file_size')) {
             return false;
         }
 
