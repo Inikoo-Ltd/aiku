@@ -31,6 +31,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import { useChatLanguages } from "@/Composables/useLanguages"
@@ -1412,7 +1413,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     <div v-else class="flex rounded-lg transition-colors"
                         :data-message-id="entry.message.id"
                         :class="entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
-                        <BubbleChat :message="entry.message" viewerType="agent"
+                        <BubbleChat :message="entry.message" viewerType="agent" format-markup
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :agentName="session?.assigned_agent?.name"
                             :canEdit="isMyChat && !isClosed && !isWaiting"
@@ -1583,6 +1584,9 @@ const handleClickOutside = (e: MouseEvent) => {
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" v-tooltip="ctrans('Create ticket')" :aria-label="ctrans('Create ticket')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
+                        <div class="mx-1 h-5 w-px bg-gray-200" />
+                        <ChatFormattingToolbar :textarea="messageInput"
+                            :allow-underline="(session as any)?.channel !== 'whatsapp'" />
                     </div>
                     <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="ctrans('Send message')"></Button>
                 </div>

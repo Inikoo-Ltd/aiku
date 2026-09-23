@@ -6776,6 +6776,61 @@ test('an email reply does not also send a chat notification, and carries the sho
     });
 });
 
+test('formatting an agent picks reaches the customer as html beside the readable text', function () {
+    $markupToHtml = fn (string $text) => \App\Actions\Comms\Mailbox\SendChatMessageByGmail::markupToHtml($text);
+
+    expect($markupToHtml("*Bold* _italic_ __under__ ~gone~\n• one"))->toBe("<strong>Bold</strong> <em>italic</em> <u>under</u> <s>gone</s><br />\n• one")
+        ->and($markupToHtml('snake_case_name costs 2*3*4'))->toBe('snake_case_name costs 2*3*4')
+        ->and($markupToHtml('*<script>alert(1)</script>*'))->toBe('<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>');
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent-formatted']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $agentUser = createAdminGuest($this->organisation->group)->getUser();
+    $agent     = ChatAgent::updateOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'signature' => "Kind regards,\nSig Agent"]);
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => ChatChannelEnum::EMAIL,
+        'metadata'    => ['email_from' => 'buyer@example.com', 'email_subject' => 'Order'],
+    ]);
+
+    $reply = $session->messages()->create([
+        'message_text' => "Your order is *on its way*\n• Tracking: _AB123_",
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'sender_id'    => $agent->id,
+    ]);
+
+    \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        preg_match_all('/Content-Type: (text\/\w+); charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n(.*?)\r\n--/s', $raw, $matches);
+        $parts = array_combine($matches[1], array_map(fn ($part) => base64_decode($part), $matches[2]));
+
+        return str_contains($raw, 'Content-Type: multipart/alternative')
+            && $parts['text/plain'] === "Your order is *on its way*\n• Tracking: _AB123_\n\nKind regards,\nSig Agent"
+            && $parts['text/html'] === "Your order is <strong>on its way</strong><br />\n• Tracking: <em>AB123</em><br><br>Kind regards,<br />\nSig Agent";
+    });
+});
+
 test('an inline picture in an inbound email is shown inside the body where the sender put it', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
 

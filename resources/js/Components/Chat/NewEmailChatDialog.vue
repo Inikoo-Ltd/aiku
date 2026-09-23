@@ -5,6 +5,7 @@ import Dialog from "primevue/dialog"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
@@ -16,6 +17,8 @@ const props = defineProps<{
 
 const customerId = ref<number | null>(null)
 const selectedCustomer = ref<any | null>(null)
+
+const messageTextarea = ref<HTMLTextAreaElement | null>(null)
 
 const form = useForm({
     subject: "",
@@ -88,7 +91,10 @@ watch(visible, (isVisible) => {
             </div>
 
             <PureInput v-model="form.subject" :placeholder="ctrans('Subject')" />
-            <PureTextarea v-model="form.message" :rows="8" :placeholder="ctrans('Message')" />
+            <div :ref="(el: any) => (messageTextarea = el?.querySelector('textarea') ?? null)">
+                <ChatFormattingToolbar :textarea="messageTextarea" allow-underline class="mb-1" />
+                <PureTextarea v-model="form.message" :rows="8" :placeholder="ctrans('Message')" />
+            </div>
 
             <p v-if="form.errors.subject" class="text-xs text-red-500 leading-snug">{{ form.errors.subject }}</p>
             <p v-if="form.errors.message" class="text-xs text-red-500 leading-snug">{{ form.errors.message }}</p>

@@ -25,7 +25,9 @@ const wrap = (text: string, marker: string, tag: string) => {
 
 /**
  * Renders the markup WhatsApp itself understands, so a message written on a phone reads
- * the same in the inbox instead of showing its raw markers.
+ * the same in the inbox instead of showing its raw markers. __underline__ is ours, WhatsApp
+ * has none, so it is only offered on website and email conversations. The email a customer
+ * receives is rendered by SendChatMessageByGmail::markupToHtml, which must stay in step.
  */
 export const formatWhatsappMarkup = (value?: string | null): string => {
     if (!value) {
@@ -39,6 +41,7 @@ export const formatWhatsappMarkup = (value?: string | null): string => {
         '<code class="rounded bg-black/10 px-1 py-0.5 font-mono text-[0.9em]">$1</code>'
     )
 
+    text = wrap(text, "__", "u")
     text = wrap(text, "*", "strong")
     text = wrap(text, "_", "em")
     text = wrap(text, "~", "s")

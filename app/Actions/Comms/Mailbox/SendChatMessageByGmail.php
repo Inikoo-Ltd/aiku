@@ -163,26 +163,29 @@ class SendChatMessageByGmail
     }
 
     /**
-     * A signature holding a logo is HTML, and HTML in a text/plain mail is read as its own
-     * source. Such a mail goes as both: the readable text for anything that cannot show HTML,
-     * and the marked-up version beside it. A plain signature keeps the mail plain as before.
+     * A mail goes as HTML beside its readable text whenever there is something to show: the
+     * formatting the agent picked, or a signature holding a logo, since HTML in a text/plain
+     * mail is read as its own source. A mail with neither stays plain as it always was.
      *
      * @return array<int, string>  the MIME lines for the body, header first
      */
     private function bodyPart(string $messageText, string $signature): array
     {
         $isHtmlSignature = $signature !== '' && $signature !== strip_tags($signature);
+        $messageHtml     = self::markupToHtml($messageText);
 
-        if (! $isHtmlSignature) {
+        if (! $isHtmlSignature && $messageHtml === nl2br(e($messageText))) {
             return $this->textPart(trim($messageText."\n\n".$signature));
         }
 
-        $textPart = $this->textPart(trim($messageText."\n\n".$this->htmlToText($signature)));
+        $signatureHtml = $isHtmlSignature ? $signature : nl2br(e($signature));
+
+        $textPart = $this->textPart(trim($messageText."\n\n".($isHtmlSignature ? $this->htmlToText($signature) : $signature)));
         $htmlPart = [
             'Content-Type: text/html; charset=utf-8',
             'Content-Transfer-Encoding: base64',
             '',
-            chunk_split(base64_encode(nl2br(e($messageText)).'<br><br>'.$signature)),
+            chunk_split(base64_encode($signature === '' ? $messageHtml : $messageHtml.'<br><br>'.$signatureHtml)),
         ];
 
         $boundary = 'aiku-alt-'.bin2hex(random_bytes(12));
@@ -196,6 +199,28 @@ class SendChatMessageByGmail
             ...$htmlPart,
             "--{$boundary}--",
         ];
+    }
+
+    /**
+     * The same markers the chat bubble renders (formatWhatsappMarkup in useWhatsappMarkup.ts),
+     * so the customer's mail reads as the agent saw it. The text is escaped before any tag is
+     * put back, and a marker only counts where it touches a word, so snake_case and 2*3*4
+     * are left alone.
+     */
+    public static function markupToHtml(string $text): string
+    {
+        $html = preg_replace('/```([\s\S]+?)```/u', '<code style="font-family:monospace">$1</code>', e($text)) ?? e($text);
+
+        foreach (['__' => 'u', '*' => 'strong', '_' => 'em', '~' => 's'] as $marker => $tag) {
+            $m    = preg_quote($marker, '/');
+            $html = preg_replace(
+                "/(^|[^\\w{$m}]){$m}([^\\s{$m}][^{$m}\\n]*[^\\s{$m}]|[^\\s{$m}]){$m}(?![\\w{$m}])/u",
+                "\$1<{$tag}>\$2</{$tag}>",
+                $html
+            ) ?? $html;
+        }
+
+        return nl2br($html);
     }
 
     /**

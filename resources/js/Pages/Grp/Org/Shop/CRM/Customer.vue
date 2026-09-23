@@ -40,6 +40,7 @@ import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
@@ -117,6 +118,8 @@ const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isEmailModalOpen = ref(false)
+const messageTextarea = ref<HTMLTextAreaElement | null>(null)
+
 const emailForm = useForm({
     subject: '',
     message: '',
@@ -246,7 +249,10 @@ const layout = inject('layout')
             <p class="mt-1 text-sm text-gray-600">{{ ctrans('It opens a conversation in the chat inbox, and their reply comes back to it.') }}</p>
             <div class="mt-4 space-y-3">
                 <PureInput v-model="emailForm.subject" :placeholder="ctrans('Subject')" />
-                <PureTextarea v-model="emailForm.message" :rows="8" :placeholder="ctrans('Message')" />
+                <div :ref="(el: any) => (messageTextarea = el?.querySelector('textarea') ?? null)">
+                    <ChatFormattingToolbar :textarea="messageTextarea" allow-underline class="mb-1" />
+                    <PureTextarea v-model="emailForm.message" :rows="8" :placeholder="ctrans('Message')" />
+                </div>
                 <p v-if="emailForm.errors.message" class="text-sm text-red-500">{{ emailForm.errors.message }}</p>
                 <p v-if="emailForm.errors.subject" class="text-sm text-red-500">{{ emailForm.errors.subject }}</p>
             </div>

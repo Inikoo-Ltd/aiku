@@ -28,6 +28,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
+import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -1226,6 +1227,10 @@ onUnmounted(() => {
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" v-tooltip="ctrans('Create ticket from this chat')" :aria-label="ctrans('Create ticket from this chat')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
+                        <template v-if="!hasTemplate && !templateOnly">
+                            <div class="mx-1 h-5 w-px bg-gray-200" />
+                            <ChatFormattingToolbar :textarea="messageInput" />
+                        </template>
                     </div>
                     <Button @click="sendMessage" :loading="isSending"
                         :disabled="hasTemplate ? !canSendTemplate : templateOnly"

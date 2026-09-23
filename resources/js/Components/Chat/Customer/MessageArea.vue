@@ -507,7 +507,7 @@ defineExpose({
 
                 <div v-for="m in group" :key="m.id" class="flex"
                     :class="isUserMessage(m) ? 'justify-end' : 'justify-start'">
-                    <BubbleChat :message="m" viewerType="user" :agentName="props.assignedAgent"
+                    <BubbleChat :message="m" viewerType="user" format-markup :agentName="props.assignedAgent"
                         :sessionUlid="session?.ulid" :apiBase="baseUrl" />
                 </div>
             </template>
