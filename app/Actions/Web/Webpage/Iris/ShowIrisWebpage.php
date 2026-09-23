@@ -83,6 +83,7 @@ class ShowIrisWebpage
 
 
         $webpageImg = $this->getWebpageShareImageSources($webpage);
+        $visibility = $webpage->searchEngineVisibility();
 
         $title = $this->getWebpageSeoTitle($webpage);
         $baseWebpageData = [
@@ -109,8 +110,8 @@ class ShowIrisWebpage
                     : null,
             ],
             'webpage_img'                       => $webpageImg,
-            'index_page'                        => $webpage->index_page,
-            'follow_link'                       => $webpage->follow_link,
+            'index_page'                        => $visibility['index_page'],
+            'follow_link'                       => $visibility['follow_link'],
             'webpage_slug'                      => $webpage->slug,
             'webpage_id'                        => $webpage->id,
             'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),

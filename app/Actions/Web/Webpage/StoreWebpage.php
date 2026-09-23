@@ -72,6 +72,12 @@ class StoreWebpage extends OrgAction
             $modelData['sub_type'] = WebpageSubTypeEnum::CONTENT;
         }
 
+        $subType = WebpageSubTypeEnum::fromValue($modelData['sub_type']);
+
+        foreach ($subType?->searchEngineVisibility() ?? [] as $field => $isVisible) {
+            data_set($modelData, $field, $isVisible, overwrite: $subType->isHiddenFromSearchEngines());
+        }
+
         if (Arr::exists($modelData, 'seo_structure_type')) {
             $modelData['data'] = [
                 'seo_structure_type' => Arr::pull($modelData, 'seo_structure_type')
@@ -330,6 +336,8 @@ class StoreWebpage extends OrgAction
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
             'seo_data'           => ['sometimes', 'array'],
+            'index_page'         => ['sometimes', 'boolean'],
+            'follow_link'        => ['sometimes', 'boolean'],
             'layout_style'       => ['sometimes', 'string'],
             'fieldValue'         => ['sometimes', 'array'],
             'fromCSV'            => ['sometimes', 'boolean']

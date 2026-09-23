@@ -2031,7 +2031,9 @@ test('report totals, ratings and reporters link to matching ticket lists', funct
         ->and($references(['reporter' => 'User-'.$reporter->id, 'rated' => 1])->all())->toBe([$rated->reference])
         ->and($references(['has_assignee' => 1])->all())->toContain($rated->reference, $someone->reference)
         ->and($references(['has_assignee' => 1])->all())->not->toContain($unrated->reference)
-        ->and($references(['reporter' => 'WebUser-'.$reporter->id])->all())->toBe([]);
+        ->and($references(['reporter' => 'WebUser-'.$reporter->id])->all())->toBe([])
+        ->and($references(['rated_month' => now()->format('Y-m')])->all())->toContain($rated->reference)
+        ->and($references(['rated_month' => now()->subMonth()->format('Y-m')])->all())->not->toContain($rated->reference);
 
     $reporterRow = collect(ShowTicketsReports::make()->handle($this->group, 'all')['reporters'])->firstWhere('key', 'User-'.$reporter->id);
     expect($reporterRow)->toHaveKey('avatar')
