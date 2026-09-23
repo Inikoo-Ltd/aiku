@@ -31,6 +31,10 @@ use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Transfers\Aurora\FetchAuroraStockDeliveryItems;
+use App\Jobs\BoundedUniqueJobDecorator;
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
+use Illuminate\Support\Facades\Queue;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItemBySelectedPurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToCheckedStockDeliveryItem;
@@ -1020,6 +1024,24 @@ test('aurora fetch moves an item to the stock delivery it now belongs to', funct
     FetchAuroraStockDeliveryItems::make()->moveToStockDelivery($stockDeliveryItem, $stockDelivery);
 
     expect($stockDeliveryItem->refresh()->stock_delivery_id)->toBe($stockDelivery->id);
+})->depends('create supplier delivery items');
+
+test('stock delivery hydrators queue once per delivery, not once for all deliveries', function (StockDelivery $stockDelivery) {
+    Queue::fake();
+    $otherStockDelivery = StoreStockDelivery::make()->action($stockDelivery->parent, [
+        'reference' => 'SP-02',
+        'date'      => date('Y-m-d')
+    ], strict: false);
+
+    StockDeliveriesHydrateItems::dispatch($stockDelivery);
+    StockDeliveriesHydrateItems::dispatch($otherStockDelivery);
+    StockDeliveriesHydrateCosts::dispatch($stockDelivery);
+    StockDeliveriesHydrateCosts::dispatch($otherStockDelivery);
+
+    $pushedFor = fn (string $hydrator) => Queue::pushed(BoundedUniqueJobDecorator::class, fn (BoundedUniqueJobDecorator $job) => $job->getAction() instanceof $hydrator)->count();
+
+    expect($pushedFor(StockDeliveriesHydrateItems::class))->toBe(2)
+        ->and($pushedFor(StockDeliveriesHydrateCosts::class))->toBe(2);
 })->depends('create supplier delivery items');
 
 test('update org supplier product', function () {
