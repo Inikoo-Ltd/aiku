@@ -204,7 +204,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER => 'Credit balance notification for customer',
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER => 'Chat notification to customer',
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION => 'Price change notification',
-            OutboxCodeEnum::BASKET_ON_OFFER => 'Offer in basket',
+            OutboxCodeEnum::BASKET_ON_OFFER => 'Basket on offer',
             OutboxCodeEnum::FAVOURITES_ON_OFFER => 'Favourites on offer',
             OutboxCodeEnum::PRICE_CHANGE => 'Price change',
             OutboxCodeEnum::INVOICE_DATE_CHANGED => 'Invoice date changed',
