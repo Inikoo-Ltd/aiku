@@ -875,6 +875,10 @@ test('user status change', function (User $user) {
     expect($user->status)->toBeTrue();
     $user = UpdateUserStatus::make()->action($user, false);
     expect($user->status)->toBeFalse();
+
+    actingAs($user);
+    get(route('grp.dashboard.show'))->assertRedirect(route('grp.login.show'));
+    $this->assertGuest();
 })->depends('update user password');
 
 test('delete guest', function (User $user) {
