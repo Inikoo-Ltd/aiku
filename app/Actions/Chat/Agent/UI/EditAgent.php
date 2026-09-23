@@ -112,9 +112,13 @@ class EditAgent extends OrgAction
                             'title'  => __('Edit Email Signature'),
                             'fields' => [
                                 'signature' => [
-                                    'type'        => 'textarea',
+                                    'type'        => 'textEditor',
                                     'label'       => __('Email Signature'),
                                     'placeholder' => __('Enter email signature'),
+                                    'toggle'      => [
+                                        'bold', 'italic', 'underline', 'fontSize', 'color',
+                                        'link', 'image', 'alignLeft', 'alignCenter', 'clear', 'undo', 'redo',
+                                    ],
                                     'value'       => $agent->signature,
                                 ],
                             ],

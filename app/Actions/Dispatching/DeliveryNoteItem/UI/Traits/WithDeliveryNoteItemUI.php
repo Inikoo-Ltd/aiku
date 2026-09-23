@@ -5,6 +5,8 @@ namespace App\Actions\Dispatching\DeliveryNoteItem\UI\Traits;
 use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Database\Query\Builder;
@@ -64,6 +66,30 @@ trait WithDeliveryNoteItemUI
                             )
                         )
                     ");
+    }
+
+    /**
+     * A cancellation return holds the picked goods off the shelf until someone walks them back.
+     * Once it reaches returned the ledger pair is closed, so the pickings are history and undoing
+     * one would credit the stock back a second time.
+     */
+    protected function getIsReturnedToLocationSubquery(): Builder
+    {
+        return DB::table('return_delivery_note_items')
+            ->join(
+                'return_delivery_notes',
+                'return_delivery_notes.id',
+                '=',
+                'return_delivery_note_items.return_delivery_note_id'
+            )
+            ->whereColumn('return_delivery_note_items.delivery_note_items_id', 'delivery_note_items.id')
+            ->where('return_delivery_notes.type', ReturnDeliveryNoteTypeEnum::CANCELLATION->value)
+            ->whereIn('return_delivery_notes.state', [
+                ReturnDeliveryNoteStateEnum::RETURNED->value,
+                ReturnDeliveryNoteStateEnum::DONE->value,
+            ])
+            ->whereNull('return_delivery_notes.deleted_at')
+            ->selectRaw('count(*) > 0');
     }
 
     protected function hasPickingsWithBatchCodes(DeliveryNote $deliveryNote): bool

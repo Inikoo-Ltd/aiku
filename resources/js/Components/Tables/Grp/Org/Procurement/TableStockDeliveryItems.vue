@@ -61,7 +61,7 @@ function confirmChangeState(event: MouseEvent, item: any, stateRoute: any, messa
         message,
         icon: 'pi pi-exclamation-triangle',
         acceptLabel,
-        rejectLabel: trans('Cancel'),
+        rejectLabel: ctrans('Cancel'),
         acceptClass: 'p-button-success',
         rejectClass: 'p-button-text',
         accept: () => changeState(item, stateRoute),
@@ -77,12 +77,12 @@ async function changeState(item: any, stateRoute: any) {
     try {
         const method = String(stateRoute.method ?? 'patch').toLowerCase()
         await axios[method](route(stateRoute.name, stateRoute.parameters))
-        notify({ title: trans('Success'), text: trans('Item state updated'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('Item state updated'), type: 'success' })
         reloadStockDelivery()
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to update item state'),
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to update item state'),
             type: 'error',
         })
     } finally {
@@ -225,12 +225,12 @@ async function saveCost(item: any) {
 
     try {
         await axios.patch(route(item.updateCostRoute.name, item.updateCostRoute.parameters), costDraft[item.id])
-        notify({ title: trans('Success'), text: trans('Item costs updated'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('Item costs updated'), type: 'success' })
         reloadStockDelivery()
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to update item costs'),
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to update item costs'),
             type: 'error',
         })
     } finally {
@@ -252,12 +252,12 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             amount: Number(extraCostToDistribute.value) || 0,
             type,
         })
-        notify({ title: trans('Success'), text: trans('Extra costs distributed'), type: 'success' })
+        notify({ title: ctrans('Success'), text: ctrans('Extra costs distributed'), type: 'success' })
         reloadStockDelivery()
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
-            text: error?.response?.data?.message || trans('Failed to distribute the extra costs'),
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message || ctrans('Failed to distribute the extra costs'),
             type: 'error',
         })
     } finally {
@@ -272,7 +272,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
         <template #before-table>
             <div v-if="costing?.distributeExtraCostRoute" class="flex flex-wrap items-center gap-3 px-6 py-3">
                 <label for="extra-cost-to-distribute" class="text-sm text-gray-600">
-                    {{ trans('Set extra costs') }} <span v-if="costing.currency">({{ costing.currency }})</span>
+                    {{ ctrans('Set extra costs') }} <span v-if="costing.currency">({{ costing.currency }})</span>
                 </label>
                 <input
                     id="extra-cost-to-distribute"
@@ -283,10 +283,10 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     class="border border-gray-300 rounded text-sm py-1 px-2 w-32"
                 />
 
-                <span class="text-sm text-gray-600">{{ trans('Distribute') }}:</span>
+                <span class="text-sm text-gray-600">{{ ctrans('Distribute') }}:</span>
 
                 <Button
-                    :tooltip="trans('Distribute equally each items')"
+                    :tooltip="ctrans('Distribute equally each items')"
                     icon="fal fa-equals"
                     type="tertiary"
                     size="xs"
@@ -296,7 +296,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                 />
 
                 <Button
-                    :tooltip="trans('Distribute depending on value')"
+                    :tooltip="ctrans('Distribute depending on value')"
                     icon="fal fa-dollar-sign"
                     type="tertiary"
                     size="xs"
@@ -331,7 +331,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             <div class="flex items-center gap-1.5">
                 <Link
                     v-if="supplierProductRoute(item)"
-                    v-tooltip="trans('Supplier product code')"
+                    v-tooltip="ctrans('Supplier product code')"
                     :href="supplierProductRoute(item)"
                     class="primaryLink"
                 >
@@ -341,7 +341,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
 
                 <Link
                     v-if="orgStockRoute(item)"
-                    v-tooltip="trans('Part reference is same as supplier product code')"
+                    v-tooltip="ctrans('Part reference is same as supplier product code')"
                     :href="orgStockRoute(item)"
                     class="text-gray-400 hover:text-gray-600"
                 >
@@ -354,8 +354,8 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             <div class="space-y-0.5">
                 <div>{{ item.name }}</div>
                 <div class="text-xs text-gray-500">
-                    {{ trans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
-                    {{ trans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
+                    {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
+                    {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
                 </div>
             </div>
         </template>
@@ -368,7 +368,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             <span v-if="item.weight !== null">{{ locale.number(item.weight) }}Kg</span>
             <FontAwesomeIcon
                 v-else
-                v-tooltip="trans('Unknown weight')"
+                v-tooltip="ctrans('Unknown weight')"
                 icon="fas fa-exclamation-circle"
                 class="text-orange-500"
                 fixed-width aria-hidden="true"
@@ -379,7 +379,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             <span v-if="item.volume !== null">{{ locale.number(item.volume) }} m³</span>
             <FontAwesomeIcon
                 v-else
-                v-tooltip="trans('Unknown CBM')"
+                v-tooltip="ctrans('Unknown CBM')"
                 icon="fas fa-exclamation-circle"
                 class="text-orange-500"
                 fixed-width aria-hidden="true"
@@ -394,8 +394,8 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             <div class="flex justify-end items-center gap-2">
                 <Button
                     v-if="item.updateCostRoute"
-                    :label="trans('Save')"
-                    :tooltip="trans('Save the costs of this item')"
+                    :label="ctrans('Save')"
+                    :tooltip="ctrans('Save the costs of this item')"
                     icon="fal fa-save"
                     type="save"
                     size="xs"
@@ -406,30 +406,30 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
 
                 <Button
                     v-else-if="item.confirmRoute"
-                    :label="trans('Confirm')"
-                    :tooltip="trans('Confirm item')"
+                    :label="ctrans('Confirm')"
+                    :tooltip="ctrans('Confirm item')"
                     icon="fal fa-spell-check"
                     type="positive"
                     size="xs"
                     :loading="changingId === item.id"
                     :disabled="changingId === item.id"
-                    @click="confirmChangeState($event, item, item.confirmRoute, trans('Confirm this item?'), trans('Confirm'))"
+                    @click="confirmChangeState($event, item, item.confirmRoute, ctrans('Confirm this item?'), ctrans('Confirm'))"
                 />
 
                 <Button
                     v-else-if="item.readyToShipRoute"
-                    :label="trans('Ready to ship')"
-                    :tooltip="trans('Set ready to ship')"
+                    :label="ctrans('Ready to ship')"
+                    :tooltip="ctrans('Set ready to ship')"
                     icon="fal fa-box-check"
                     type="secondary"
                     size="xs"
                     :loading="changingId === item.id"
                     :disabled="changingId === item.id"
-                    @click="confirmChangeState($event, item, item.readyToShipRoute, trans('Set this item as ready to ship?'), trans('Ready to ship'))"
+                    @click="confirmChangeState($event, item, item.readyToShipRoute, ctrans('Set this item as ready to ship?'), ctrans('Ready to ship'))"
                 />
 
                 <span v-if="!item.updateCostRoute && !item.confirmRoute && !item.readyToShipRoute" class="text-gray-400 text-sm">
-                    {{ trans('No actions needed') }}
+                    {{ ctrans('No actions needed') }}
                 </span>
             </div>
         </template>
@@ -438,7 +438,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
             <div class="flex items-center gap-1.5">
                 <Link
                     v-if="orgStockRoute(item)"
-                    v-tooltip="trans('Part reference')"
+                    v-tooltip="ctrans('Part reference')"
                     :href="orgStockRoute(item)"
                     class="primaryLink"
                 >
@@ -496,7 +496,7 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     <template #save="{ isProcessing }">
                         <div class="flex gap-x-8 w-fit">
                             <ButtonWithLink
-                                v-tooltip="trans('Check all the delivered quantity')"
+                                v-tooltip="ctrans('Check all the delivered quantity')"
                                 icon="fal fa-check"
                                 :size="screenType != 'mobile' ? 'xs' : 'md'"
                                 type="positive"
@@ -534,9 +534,9 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                             {{ sowing.location_code }}
                         </Link>
                         <span v-else>
-                            {{ sowing.location_code ?? trans('Unknown') }}
+                            {{ sowing.location_code ?? ctrans('Unknown') }}
                         </span>
-                        <div v-tooltip="trans('Total placed quantity in this location')" class="text-gray-500 whitespace-nowrap">
+                        <div v-tooltip="ctrans('Total placed quantity in this location')" class="text-gray-500 whitespace-nowrap">
                             <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr-1 text-gray-500" fixed-width aria-hidden="true" />
                             {{ formatQuantity(Number(sowing.quantity)) }}
                         </div>

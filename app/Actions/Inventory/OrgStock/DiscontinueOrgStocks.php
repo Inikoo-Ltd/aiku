@@ -10,7 +10,7 @@ namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
-use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -133,7 +133,7 @@ class DiscontinueOrgStocks extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation));
+        return $request->user()->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
     }
 
     public function rules(): array
@@ -164,7 +164,8 @@ class DiscontinueOrgStocks extends OrgAction
     /**
      * The stale guard compares the updated_at the caller saw at preview time with what the row
      * carries now; any drift means someone else touched the stock and the caller must look again.
-     * Overrides may only name organisations the user can edit stock in.
+     * Overrides may only name organisations that exist: discontinuing is a supply chain decision,
+     * so whoever may do it may do it in any organisation.
      */
     public function afterValidator(Validator $validator): void
     {
@@ -187,12 +188,9 @@ class DiscontinueOrgStocks extends OrgAction
             }
         }
 
-        if ($this->user && !$this->asAction) {
-            foreach (array_keys(Arr::get($input, 'organisation_states', [])) as $organisationCode) {
-                $organisation = Organisation::where('code', $organisationCode)->first();
-                if (!$organisation || !$this->user->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($organisation))) {
-                    $validator->errors()->add('organisation_states', __('You cannot set stock state in :organisation', ['organisation' => $organisationCode]));
-                }
+        foreach (array_keys(Arr::get($input, 'organisation_states', [])) as $organisationCode) {
+            if (!Organisation::where('code', $organisationCode)->exists()) {
+                $validator->errors()->add('organisation_states', __('Unknown organisation :organisation', ['organisation' => $organisationCode]));
             }
         }
     }

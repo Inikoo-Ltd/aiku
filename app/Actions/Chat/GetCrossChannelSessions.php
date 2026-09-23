@@ -36,6 +36,7 @@ class GetCrossChannelSessions
             'pairs.*'         => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'statuses'        => ['sometimes', 'array'],
             'statuses.*'      => ['string', 'in:'.implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))],
+            'closed_period'   => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::CLOSED_PERIODS)],
             'assigned_to_me'  => ['sometimes', 'integer'],
             'view_team'       => ['sometimes', 'boolean'],
             'is_spam'         => ['sometimes', 'boolean'],

@@ -36,6 +36,7 @@ class GetMetaChatSessions
                 'string',
                 'in:' . implode(',', array_column(ChatSessionStatusEnum::cases(), 'value'))
             ],
+            'closed_period' => ['sometimes', 'string', 'in:'.implode(',', GetChatSessions::CLOSED_PERIODS)],
             'statuses' => ['sometimes', 'array'],
             'statuses.*' => [
                 'string',
@@ -78,11 +79,11 @@ class GetMetaChatSessions
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  array<int, string>  $requestedStatuses
      */
-    protected function applyStatusFilter($query, array $requestedStatuses): void
+    protected function applyStatusFilter($query, array $requestedStatuses, array $filters = []): void
     {
-        $query->where(function ($outer) use ($requestedStatuses) {
+        $query->where(function ($outer) use ($requestedStatuses, $filters) {
             foreach ($requestedStatuses as $status) {
-                $outer->orWhere(function ($q) use ($status) {
+                $outer->orWhere(function ($q) use ($status, $filters) {
                     match ($status) {
                         ChatSessionStatusEnum::WAITING->value => $q
                             ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
@@ -90,8 +91,9 @@ class GetMetaChatSessions
                         ChatSessionStatusEnum::ACTIVE->value => $q
                             ->where('status', '!=', ChatSessionStatusEnum::CLOSED->value)
                             ->whereHas('assignments', fn ($a) => $a->where('status', ChatAssignmentStatusEnum::ACTIVE->value)),
-                        ChatSessionStatusEnum::CLOSED->value => GetChatSessions::scopeClosedToday(
-                            $q->where('status', $status)
+                        ChatSessionStatusEnum::CLOSED->value => GetChatSessions::scopeClosedSince(
+                            $q->where('status', $status),
+                            GetChatSessions::closedSince($filters)
                         ),
                         default => $q->where('status', $status),
                     };
@@ -137,7 +139,7 @@ class GetMetaChatSessions
         $requestedStatuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
 
         if ($requestedStatuses) {
-            $this->applyStatusFilter($query, $requestedStatuses);
+            $this->applyStatusFilter($query, $requestedStatuses, $filters);
         }
 
         // WhatsApp carries the customer on the session itself rather than through a web user.
@@ -203,12 +205,8 @@ class GetMetaChatSessions
                     // my/team it belongs to is then decided from what comes back.
                     $query->whereIn('shop_id', $shopIds);
                 } elseif (!empty($filters['view_team'])) {
-                    $teamAgentIds = $this->agentIdsCovering($shopIds, $currentAgent->id);
-
-                    $query->whereHas('assignments', function ($assignmentQ) use ($teamAgentIds, $assignmentStatus) {
-                        $assignmentQ->whereIn('chat_agent_id', $teamAgentIds)
-                            ->where('status', $assignmentStatus);
-                    });
+                    $query->whereIn('shop_id', $shopIds);
+                    $this->scopeHeldByColleague($query, $currentAgent->id, $assignmentStatus, $isClosed);
                 } else {
                     // "Mine" means currently held by me. Matching any assignment row
                     // regardless of status would keep threads that have since been

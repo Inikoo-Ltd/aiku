@@ -28,13 +28,15 @@ class PdfInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $options = []): Response
     {
+        $locale = Arr::pull($options, 'lang');
+
         if ($options) {
             $data                = $invoice->data;
             $data['pdf_columns'] = $options + Arr::get($data, 'pdf_columns', []);
             $invoice->updateQuietly(['data' => $data]);
         }
 
-        return $this->processDataExportPdf($invoice);
+        return $this->processDataExportPdf($invoice, $locale);
     }
 
     public function rules(): array
@@ -55,6 +57,7 @@ class PdfInvoice extends OrgAction
             'show_batch_code'      => ['sometimes', 'boolean'],
             'separate_out_of_stock' => ['sometimes', 'boolean'],
             'show_discounts'        => ['sometimes', 'boolean'],
+            'lang'                  => ['sometimes', 'string', 'in:en'],
         ];
     }
 

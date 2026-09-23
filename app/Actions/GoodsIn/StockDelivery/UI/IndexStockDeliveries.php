@@ -145,7 +145,8 @@ class IndexStockDeliveries extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->where('stock_deliveries.reference', 'ILIKE', "$value%");
+                $query->whereAnyWordStartWith('stock_deliveries.reference', $value)
+                    ->orWhereAnyWordStartWith('stock_deliveries.parent_name', $value);
             });
         });
 

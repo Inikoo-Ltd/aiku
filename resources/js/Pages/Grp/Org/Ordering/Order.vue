@@ -2726,11 +2726,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             :minFractionDigits="0" :maxFractionDigits="2"
                                             :inputClass="[
                                                 'w-20 !px-1.5 !py-0 !text-sm !rounded !text-right',
-                                                ['dispatched'].some((item) => item == props.state) ? '!text-gray-500 !border-none' : ''
+                                                ['dispatched', 'finalised', 'cancelled'].includes(props.state) ? '!text-gray-500 !border-none' : ''
                                             ]"
                                             :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
                                             :min="0"
-                                            :readonly="['dispatched'].some((item) => item == props.state)"
+                                            :readonly="['dispatched', 'finalised', 'cancelled'].includes(props.state)"
                                         />
                                     </div>
                                 </Transition>

@@ -10,6 +10,7 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Traits\Hydrators\WithWeightFromTradeUnits;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -27,16 +28,21 @@ class ProductHydrateBarcodeFromTradeUnit implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
-        if ($product->is_single_trade_unit) {
-            $tradeUnit = $product->tradeUnits()->first();
-            if ($tradeUnit) {
-                $product->updateQuietly(
-                    [
-                        'barcode' => $tradeUnit->barcode,
-                    ]
-                );
-            }
+        /** A barcode chosen by hand on the master, or on this product, is never overwritten here. */
+        if ($product->independent_barcode || !$product->is_single_trade_unit) {
+            return;
         }
+
+        $barcode = $product->tradeUnits()->first()?->barcode;
+
+        if ($product->barcode === $barcode) {
+            return;
+        }
+
+        $product->update(['barcode' => $barcode]);
+        $product->portfolios()->update(['barcode' => $barcode]);
+
+        ShopHydrateProductsWithDuplicatedBarcode::dispatch($product->shop)->delay(2);
     }
 
 }

@@ -15,6 +15,7 @@ use App\Actions\Chat\ChatSession\GetChatMediaContents;
 use App\Models\Chat\ChatMessage;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SendChatMessageByGmail
@@ -37,19 +38,25 @@ class SendChatMessageByGmail
             return;
         }
 
-        $raw = $this->buildRawMessage($session, $chatMessage);
+        $messageId = $this->newHeaderMessageId($session);
+        $raw       = $this->buildRawMessage($session, $chatMessage, $messageId);
 
         $result = $client->send($raw, $threadId);
 
+        $session->refresh();
+
         // A conversation we started has no thread until Gmail gives it one. Without it kept here
         // the customer's reply matches nothing and opens a second conversation beside this one.
-        if (! $threadId && Arr::get($result, 'threadId')) {
-            $session->update([
-                'metadata' => array_merge($session->metadata ?? [], [
-                    'gmail_thread_id' => Arr::get($result, 'threadId'),
-                ]),
-            ]);
-        }
+        // The Gmail thread id only groups mail inside our own mailbox. The customer's mail client
+        // threads by these headers, so every mail we send must name the one before it, agent or
+        // customer alike, or three answers in a row land as three separate emails.
+        $session->update([
+            'metadata' => array_merge($session->metadata ?? [], array_filter([
+                'gmail_thread_id'              => $threadId ?: Arr::get($result, 'threadId'),
+                'gmail_last_header_message_id' => $messageId,
+                'gmail_references'             => $this->references($session->metadata ?? [], $messageId),
+            ])),
+        ]);
 
         $chatMessage->update([
             'metadata' => array_merge($chatMessage->metadata ?? [], [
@@ -58,7 +65,23 @@ class SendChatMessageByGmail
         ]);
     }
 
-    private function buildRawMessage($session, ChatMessage $chatMessage): string
+    public static function references(array $metadata, ?string ...$append): array
+    {
+        return array_values(array_unique(array_filter([
+            ...Arr::get($metadata, 'gmail_references', []),
+            Arr::get($metadata, 'gmail_last_header_message_id'),
+            ...$append,
+        ])));
+    }
+
+    private function newHeaderMessageId($session): string
+    {
+        $domain = Str::after((string) Arr::get($session->shop->settings, 'gmail.email'), '@') ?: 'aiku.io';
+
+        return '<'.Str::ulid().'@'.$domain.'>';
+    }
+
+    private function buildRawMessage($session, ChatMessage $chatMessage, string $messageId): string
     {
         $metadata = $session->metadata ?? [];
 
@@ -76,39 +99,38 @@ class SendChatMessageByGmail
 
         $to = $toName ? $this->encodeHeader($toName)." <{$toAddress}>" : $toAddress;
 
+        // Without a name of our own on the From line the customer's mail client shows whatever
+        // the Google account happens to be called, which is the mailbox owner, not the shop.
+        $senderName = Arr::get($session->shop->settings, 'gmail.sender_name') ?: $session->shop->name;
+        $from       = $senderName ? $this->encodeHeader($senderName)." <{$mailboxAddress}>" : $mailboxAddress;
+
         $headers = [
-            "From: {$mailboxAddress}",
+            "From: {$from}",
             "To: {$to}",
             'Subject: '.$this->encodeHeader($subject),
+            "Message-ID: {$messageId}",
         ];
 
         if ($replyToHeader) {
             $headers[] = "In-Reply-To: {$replyToHeader}";
-            $headers[] = "References: {$replyToHeader}";
+            $headers[] = 'References: '.implode(' ', self::references($metadata));
         }
 
         $headers[] = 'MIME-Version: 1.0';
 
-        $messageBody = $chatMessage->message_text ?? '';
+        $signature = '';
 
         if ($chatMessage->sender_type === ChatSenderTypeEnum::AGENT && $chatMessage->sender_id) {
-            $agent = ChatAgent::find($chatMessage->sender_id);
-            if ($agent && $agent->signature) {
-                $messageBody .= "\n\n".$agent->signature;
-            }
+            $agent     = ChatAgent::find($chatMessage->sender_id);
+            $signature = $agent?->signature ?: '';
         }
 
-        $textPart = [
-            'Content-Type: text/plain; charset=utf-8',
-            'Content-Transfer-Encoding: base64',
-            '',
-            chunk_split(base64_encode($messageBody)),
-        ];
+        $bodyPart = $this->bodyPart($chatMessage->message_text ?? '', $signature);
 
         $attachments = $chatMessage->attachedFiles();
 
         if ($attachments->isEmpty()) {
-            return implode("\r\n", [...$headers, ...$textPart]);
+            return implode("\r\n", [...$headers, ...$bodyPart]);
         }
 
         $boundary = 'aiku-'.bin2hex(random_bytes(12));
@@ -118,7 +140,7 @@ class SendChatMessageByGmail
             "Content-Type: multipart/mixed; boundary=\"{$boundary}\"",
             '',
             "--{$boundary}",
-            ...$textPart,
+            ...$bodyPart,
         ];
 
         foreach ($attachments as $attachment) {
@@ -138,6 +160,62 @@ class SendChatMessageByGmail
         $lines[] = "--{$boundary}--";
 
         return implode("\r\n", $lines);
+    }
+
+    /**
+     * A signature holding a logo is HTML, and HTML in a text/plain mail is read as its own
+     * source. Such a mail goes as both: the readable text for anything that cannot show HTML,
+     * and the marked-up version beside it. A plain signature keeps the mail plain as before.
+     *
+     * @return array<int, string>  the MIME lines for the body, header first
+     */
+    private function bodyPart(string $messageText, string $signature): array
+    {
+        $isHtmlSignature = $signature !== '' && $signature !== strip_tags($signature);
+
+        if (! $isHtmlSignature) {
+            return $this->textPart(trim($messageText."\n\n".$signature));
+        }
+
+        $textPart = $this->textPart(trim($messageText."\n\n".$this->htmlToText($signature)));
+        $htmlPart = [
+            'Content-Type: text/html; charset=utf-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode(nl2br(e($messageText)).'<br><br>'.$signature)),
+        ];
+
+        $boundary = 'aiku-alt-'.bin2hex(random_bytes(12));
+
+        return [
+            "Content-Type: multipart/alternative; boundary=\"{$boundary}\"",
+            '',
+            "--{$boundary}",
+            ...$textPart,
+            "--{$boundary}",
+            ...$htmlPart,
+            "--{$boundary}--",
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function textPart(string $body): array
+    {
+        return [
+            'Content-Type: text/plain; charset=utf-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode($body)),
+        ];
+    }
+
+    private function htmlToText(string $html): string
+    {
+        $text = preg_replace('/<(br|\/p|\/div|\/tr|\/h[1-6])[^>]*>/i', "\n", $html) ?? $html;
+
+        return trim(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 
     private function encodeHeader(string $value): string

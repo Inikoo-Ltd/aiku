@@ -1014,20 +1014,31 @@ const warningMsg = computed(() => {
         <!-- Section: Pickings -->
         <template #cell(picking_locations)="{ item }">
             <div v-if="item.picking_locations && item.picking_locations.length > 0" class="flex flex-col gap-1">
-                <div v-for="picking in item.picking_locations" :key="picking.id" class="text-sm flex items-center gap-2 flex-wrap">
+                <div v-for="picking in item.picking_locations" :key="picking.id"
+                    class="text-sm flex items-center gap-2 flex-wrap"
+                    :class="picking.is_returned_to_location ? 'opacity-60' : ''">
                     <Link v-if="picking.location_code"
                           :href="route('grp.org.warehouses.show.infrastructure.locations.show', [route().params.organisation, picking.warehouse_slug, picking.location_slug])"
-                          :class="['primaryLink font-medium', picking.location_code ? '' : 'text-gray-400 italic']">
+                          :class="picking.is_returned_to_location ? 'font-medium text-gray-400 line-through' : 'primaryLink font-medium'">
                         {{ picking.location_code }}
                     </Link>
                     <span v-else class="text-gray-400 italic">No Location</span>
-                    <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium">
+                    <div class="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium"
+                        :class="picking.is_returned_to_location ? 'text-gray-400 line-through' : ''">
                         {{ picking.quantity_picked }}
                     </div>
 
+                    <!-- Label: walked back to its location, so the pick is history -->
+                    <span v-if="picking.is_returned_to_location"
+                        v-tooltip="ctrans('Picked, then walked back to this location when the delivery note was cancelled')"
+                        class="text-xs px-1.5 py-0.5 rounded border border-gray-200 bg-gray-100 text-gray-500 whitespace-nowrap">
+                        <FontAwesomeIcon icon="fal fa-undo-alt" class="mr-1" fixed-width aria-hidden="true" />
+                        {{ ctrans('Returned') }}
+                    </span>
+
                     <!-- Batch code display and edit -->
                     <button
-                        v-if="picking.show_batch_code_ui"
+                        v-if="picking.show_batch_code_ui && !picking.is_returned_to_location"
                         @click="() => (isModalPickingBatchCode = true, selectedPickingForBatchCode = picking)"
                         v-tooltip="picking.batch_code ? ctrans('Change batch code: :code', { code: picking.batch_code }) : ctrans('Set batch code')"
                         class="text-xs px-1.5 py-0.5 rounded border transition-colors"
@@ -1039,7 +1050,7 @@ const warningMsg = computed(() => {
 
                     <!-- Split picking button -->
                     <button
-                        v-if="picking.show_batch_code_ui && Number(picking.quantity_picked) > 1"
+                        v-if="picking.show_batch_code_ui && !picking.is_returned_to_location && Number(picking.quantity_picked) > 1"
                         @click="() => (isModalSplitPicking = true, selectedPickingForSplit = picking)"
                         v-tooltip="ctrans('Split picking')"
                         class="text-xs px-1.5 py-0.5 rounded border transition-colors border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 bg-white"

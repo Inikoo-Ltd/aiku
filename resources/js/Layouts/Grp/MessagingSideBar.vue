@@ -557,9 +557,11 @@ onUnmounted(() => {
                     class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left cursor-pointer"
                     :class="presence(coworker) !== 'offline' ? '' : 'opacity-40'"
                     @click="openSearchResult(coworker)">
-                    <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
-                        <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                        <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                    <div class="relative">
+                        <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
+                            <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
+                            <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                        </div>
                         <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
                     </div>
                     <div class="flex-1 flex flex-col min-w-0">
@@ -592,9 +594,11 @@ onUnmounted(() => {
                     <div v-if="conversation.type === 'group'" class="h-6 w-6 rounded-full bg-[var(--chat-line)] flex items-center justify-center shrink-0">
                         <FontAwesomeIcon icon="fal fa-comments" class="text-[var(--chat-accent)]" fixed-width aria-hidden="true" />
                     </div>
-                    <div v-else class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
-                        <Image v-if="conversationAvatar(conversation)" :src="conversationAvatar(conversation)" :alt="conversationTitle(conversation)" image-cover />
-                        <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                    <div v-else class="relative">
+                        <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
+                            <Image v-if="conversationAvatar(conversation)" :src="conversationAvatar(conversation)" :alt="conversationTitle(conversation)" image-cover />
+                            <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                        </div>
                         <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="isOnline(conversationOtherId(conversation)) ? 'bg-[var(--chat-green)]' : 'bg-[var(--chat-muted)]'" />
                     </div>
                     <div class="flex-1 min-w-0">
@@ -636,9 +640,11 @@ onUnmounted(() => {
                 class="group w-full flex items-center gap-x-2 px-3 py-1.5 hover:bg-[var(--chat-line)] text-left cursor-pointer"
                 :class="presence(coworker) !== 'offline' ? '' : 'opacity-40'"
                 @click="openUser(coworker.id)">
-                <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
-                    <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
-                    <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                <div class="relative">
+                    <div class="relative h-6 w-6 rounded-full overflow-hidden bg-[var(--chat-line)] shrink-0">
+                        <Image v-if="coworker.avatar" :src="coworker.avatar" :alt="coworker.name" image-cover />
+                        <FontAwesomeIcon v-else icon="fal fa-user" class="flex items-center justify-center h-full text-[var(--chat-muted)]" fixed-width aria-hidden="true" />
+                    </div>
                     <span class="absolute bottom-0 right-0 h-1.5 w-1.5 rounded-full ring-1 ring-[var(--chat-bg)]" :class="[presence(coworker) === 'online' ? 'bg-[var(--chat-green)]' : (presence(coworker) === 'idle' ? 'bg-[var(--chat-yellow)]' : 'bg-[var(--chat-muted)]')]" :title="presence(coworker) === 'idle' ? ctrans('Idle') : ''" />
                 </div>
                 <div class="flex-1 flex flex-col min-w-0">

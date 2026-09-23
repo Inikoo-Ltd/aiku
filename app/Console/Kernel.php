@@ -1094,6 +1094,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('chat:close-empty')->hourlyAt(47)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'CloseEmptyChatSessions',
+                ),
+                name: 'CloseEmptyChatSessions',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:classify-noise')->hourlyAt(37)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'ClassifyIdleChatSessionsNoise',
                 ),

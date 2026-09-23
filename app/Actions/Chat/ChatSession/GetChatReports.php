@@ -239,6 +239,12 @@ class GetChatReports
                     and s.shop_id in (:shops)
                     and s.created_at < :from
                     and s.status in ({$statuses})
+                    and exists (
+                        select 1 from {$source['messages']} visitor
+                        where visitor.{$source['foreign']} = s.id
+                            and visitor.deleted_at is null
+                            and visitor.sender_type in ('user', 'guest')
+                    )
                     {$source['where']}
             ",
             $shopIds,

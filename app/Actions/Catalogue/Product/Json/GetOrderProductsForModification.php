@@ -40,7 +40,7 @@ class GetOrderProductsForModification extends OrgAction
         if ($order->isPartnerOrder()) {
             $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
         } else {
-            $queryBuilder->where('products.is_for_sale', true);
+            $queryBuilder->sellableToCustomer($order->customer_id);
         }
         $queryBuilder->whereNotIn('products.id', $order->transactions()->where('model_type', 'Product')->pluck('model_id'));
         $queryBuilder

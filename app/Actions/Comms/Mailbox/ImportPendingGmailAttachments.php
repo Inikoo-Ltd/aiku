@@ -78,12 +78,19 @@ class ImportPendingGmailAttachments
     private const int GUEST_MAX_BYTES = 5242880;
 
     /**
+     * $contentIds comes back holding, for each file at the same position, the Content-ID the
+     * markup points at with src="cid:...", or null for a file the markup never mentions. It is
+     * returned alongside rather than looked up again because only this loop knows which
+     * candidates were actually imported.
+     *
      * @param  array<int, array<string, mixed>>  $attachments
+     * @param  array<int, string|null>  $contentIds
      * @return array<int, UploadedFile>
      */
-    public function download(GmailClient $client, string $gmailMessageId, array $raw, bool $trusted = true, array $skip = []): array
+    public function download(GmailClient $client, string $gmailMessageId, array $raw, bool $trusted = true, array $skip = [], ?array &$contentIds = null): array
     {
-        $files = [];
+        $files      = [];
+        $contentIds = [];
 
         foreach ($this->candidates($client, $raw) as $attachment) {
             if (! $this->isWorthImporting($attachment, $trusted)) {
@@ -103,7 +110,8 @@ class ImportPendingGmailAttachments
             $path = tempnam(sys_get_temp_dir(), 'gmail-attachment-');
             file_put_contents($path, $content);
 
-            $files[] = new UploadedFile($path, basename($attachment['filename']), $attachment['mimeType'], null, true);
+            $files[]      = new UploadedFile($path, basename($attachment['filename']), $attachment['mimeType'], null, true);
+            $contentIds[] = $attachment['contentId'] ?? null;
         }
 
         return $files;
@@ -115,7 +123,7 @@ class ImportPendingGmailAttachments
      * any of the rules below can judge it. A file the sender never shared with us answers
      * nothing, and is left as the link the customer sent.
      *
-     * @return array<int, array{filename: string, mimeType: string, attachmentId: ?string, driveFileId: ?string, data: ?string, inline: bool, size: int}>
+     * @return array<int, array{filename: string, mimeType: string, attachmentId: ?string, driveFileId: ?string, data: ?string, inline: bool, contentId: ?string, size: int}>
      */
     private function candidates(GmailClient $client, array $raw): array
     {
@@ -138,6 +146,7 @@ class ImportPendingGmailAttachments
                 'driveFileId'  => $fileId,
                 'data'         => null,
                 'inline'       => false,
+                'contentId'    => null,
                 'size'         => $file['size'],
             ];
         }

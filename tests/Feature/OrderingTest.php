@@ -69,6 +69,7 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
+use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
@@ -939,6 +940,13 @@ test('update order state to Finalised ', function (Order $order) {
 test('finalising an already invoiced order does not create a second invoice', function (Order $order) {
     expect(fn () => FinaliseOrder::make()->action($order))->toThrow(ValidationException::class)
         ->and($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->count())->toBe(1);
+})->depends('update order state to Finalised ');
+
+test('tbc shipping amount is refused once the order is finalised', function (Order $order) {
+    $shippingAmount = $order->shipping_amount;
+    expect(fn () => UpdateOrderShippingTBCAmount::make()->action($order, ['shipping_tbc_amount' => 115]))->toThrow(ValidationException::class)
+        ->and($order->fresh()->shipping_amount)->toEqual($shippingAmount)
+        ->and($order->fresh()->shipping_tbc_amount)->not->toEqual(115);
 })->depends('update order state to Finalised ');
 
 test('create customer client', function () {
