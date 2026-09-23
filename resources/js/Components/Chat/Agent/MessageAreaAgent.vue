@@ -29,6 +29,7 @@ import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import ForwardToColleagueModal from "@/Components/Chat/Agent/ForwardToColleagueModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
@@ -1563,6 +1564,8 @@ const handleClickOutside = (e: MouseEvent) => {
                 <FontAwesomeIcon :icon="faLanguage" class="text-gray-400" fixed-width />
                 <span>{{ ctrans("The customer writes in :language. A reply in another language is translated to :language before it is sent.", { language: customerLanguage.name }) }}</span>
             </div>
+
+            <ChatAiDraftBox :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" />
 
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <ChatMessageEditor ref="messageEditor" v-model="newMessage" @update:model-value="handleTyping"

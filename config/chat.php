@@ -50,6 +50,10 @@ return [
     // shop opens again. Email only to a person, never to mail that was generated or sent to a list.
     'out_of_hours_reply' => (bool) env('CHAT_OUT_OF_HOURS_REPLY', true),
 
+    // Replies the AI writes from order and stock facts for staff to send, change or discard.
+    // Never sent by themselves.
+    'ai_drafts' => (bool) env('CHAT_AI_DRAFTS', true),
+
     'noise' => [
 
         'auto_put_aside' => (bool) env('CHAT_NOISE_AUTO_PUT_ASIDE', false),

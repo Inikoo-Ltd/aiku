@@ -24,6 +24,7 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreGuestProfile;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
 use App\Actions\Chat\ChatSession\ConfirmSuggestedChatCustomer;
+use App\Actions\Chat\ChatSession\HandleChatAiDraft;
 use App\Actions\Chat\ChatSession\LinkChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
 use App\Actions\Chat\ChatSession\ToggleChatMessageReaction;
@@ -97,6 +98,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/sessions/{chatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'reject'])->name('sessions.suggested_customer.reject');
     Route::put('/meta/sessions/{metaChatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'inMetaChatSession'])->name('meta.sessions.suggested_customer.confirm');
     Route::delete('/meta/sessions/{metaChatSession:ulid}/suggested-customer', [ConfirmSuggestedChatCustomer::class, 'rejectInMetaChatSession'])->name('meta.sessions.suggested_customer.reject');
+    Route::get('/sessions/{chatSession:ulid}/ai-draft', HandleChatAiDraft::class)->name('sessions.ai_draft.show');
+    Route::get('/meta/sessions/{metaChatSession:ulid}/ai-draft', [HandleChatAiDraft::class, 'inMetaChatSession'])->name('meta.sessions.ai_draft.show');
+    Route::post('/ai-drafts/{chatAiDraft}/take', [HandleChatAiDraft::class, 'take'])->name('ai_drafts.take');
+    Route::post('/ai-drafts/{chatAiDraft}/discard', [HandleChatAiDraft::class, 'discard'])->name('ai_drafts.discard');
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-profile', GetMetaChatCustomerProfile::class)->name('meta.sessions.customer_profile')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-timeline', GetMetaChatCustomerTimeline::class)->name('meta.sessions.customer_timeline')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/tickets', [GetChatSessionTickets::class, 'inMetaChatSession'])->name('meta.sessions.tickets')->withTrashed();

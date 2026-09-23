@@ -9,17 +9,28 @@ import { Head, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faGlobe, faEnvelope, faPaperPlane, faFilter } from "@fal"
+import { faGlobe, faEnvelope, faPaperPlane, faFilter, faRobot } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-defineProps<{
+const props = defineProps<{
     title: string
     pageHead: object
     data: object
+    draftStats: { decided: number, used: number, edited: number, discarded: number, superseded: number, pending: number }
 }>()
+
+const share = (count: number) => props.draftStats.decided ? Math.round(100 * count / props.draftStats.decided) + "%" : "—"
+
+const DRAFT_CLASS: Record<string, string> = {
+    pending: "bg-indigo-50 text-indigo-700 ring-indigo-200",
+    used: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    edited: "bg-sky-50 text-sky-700 ring-sky-200",
+    discarded: "bg-red-50 text-red-700 ring-red-200",
+    superseded: "bg-gray-50 text-gray-600 ring-gray-200",
+}
 
 const CHANNEL_ICON: Record<string, object> = {
     website: faGlobe,
@@ -32,6 +43,16 @@ const CHANNEL_ICON: Record<string, object> = {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
+    <div class="mx-4 mt-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 rounded-lg border border-gray-200 px-4 py-3 text-sm">
+        <span class="font-medium text-gray-900">{{ ctrans("AI draft replies, last 30 days") }}</span>
+        <span class="text-gray-600">{{ ctrans(":count decided", { count: draftStats.decided }) }}</span>
+        <span class="text-emerald-700">{{ ctrans("Sent as written") }} {{ share(draftStats.used) }}</span>
+        <span class="text-sky-700">{{ ctrans("Sent after changes") }} {{ share(draftStats.edited) }}</span>
+        <span class="text-red-700">{{ ctrans("Discarded") }} {{ share(draftStats.discarded) }}</span>
+        <span class="text-gray-500">{{ ctrans("Not used") }} {{ share(draftStats.superseded) }}</span>
+        <span v-if="draftStats.pending" class="text-indigo-700">{{ ctrans(":count waiting for staff", { count: draftStats.pending }) }}</span>
+    </div>
+
     <Table :resource="data" name="automation" class="mt-5">
         <template #cell(at)="{ item }">
             <span class="whitespace-nowrap">{{ useFormatTime(item.at, { formatTime: "short-datetime" }) }}</span>
@@ -39,7 +60,7 @@ const CHANNEL_ICON: Record<string, object> = {
 
         <template #cell(kind)="{ item }">
             <span class="inline-flex items-center gap-1.5 whitespace-nowrap">
-                <FontAwesomeIcon :icon="item.sends_message ? faPaperPlane : faFilter" class="text-xs text-gray-400" fixed-width />
+                <FontAwesomeIcon :icon="item.draft_status ? faRobot : (item.sends_message ? faPaperPlane : faFilter)" class="text-xs text-gray-400" fixed-width />
                 {{ item.kind_label }}
             </span>
         </template>
@@ -65,6 +86,15 @@ const CHANNEL_ICON: Record<string, object> = {
                         {{ item.claim.photos ? ctrans(":count photos or files", { count: item.claim.photos }) : ctrans("No photos yet") }}
                     </span>
                 </div>
+            </div>
+            <div v-else-if="item.draft_status" class="max-w-2xl">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="rounded-full px-2 py-0.5 text-xs ring-1 ring-inset" :class="DRAFT_CLASS[item.draft_status]">
+                        {{ item.verdict_label }}
+                    </span>
+                    <span v-if="item.topic_label" class="text-xs text-gray-500">{{ item.topic_label }}</span>
+                </div>
+                <p class="mt-1 whitespace-pre-line text-gray-700">{{ item.text }}</p>
             </div>
             <div v-else class="max-w-2xl">
                 <div class="flex flex-wrap items-center gap-1.5">

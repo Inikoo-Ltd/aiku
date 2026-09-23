@@ -5747,6 +5747,122 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
     outOfHoursTestCleanUp($schedule);
 });
 
+test('a question about an order gets a draft written from that customer\'s order, and what staff do with it is counted', function () {
+    config(['chat.ai_drafts' => true, 'askbot-laravel.openai_api_key' => 'test-key']);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    $customer  = createOwnCustomer($this->shop, 'ai-draft-orders');
+    $webUser   = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+    $reference = 'AID'.random_int(100000, 999999);
+
+    \Illuminate\Support\Facades\DB::table('orders')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ord-'.uniqid(),
+        'reference'       => $reference,
+        'state'           => 'dispatched',
+        'net_amount'      => 100,
+        'org_net_amount'  => 100,
+        'grp_net_amount'  => 100,
+        'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => '2026-09-21',
+        'submitted_at'    => '2026-09-21 10:00:00',
+        'dispatched_at'   => '2026-09-22 15:00:00',
+        'created_at'      => '2026-09-21',
+        'updated_at'      => '2026-09-22',
+    ]);
+
+    $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hi, your order $reference was dispatched on 22 September."];
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => function () use (&$modelAnswer) {
+            return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode($modelAnswer)]]]]);
+        },
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'web_user_id'             => $webUser->id,
+        'last_visitor_message_at' => now(),
+    ]);
+    $ask = fn (ChatSession $session, string $text, ChatSenderTypeEnum $as = ChatSenderTypeEnum::USER) => ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => $as,
+        'message_text'    => $text,
+    ]);
+
+    $ask($session, 'Hello, where is my order please? I have not received it yet');
+    $draft = \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+
+    expect($draft->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING)
+        ->and($draft->topic)->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::ORDER_STATUS)
+        ->and($draft->facts['order_facts']['order']['reference'])->toBe($reference)
+        ->and($draft->facts['order_facts']['order']['dispatched_on'])->toBe('2026-09-22');
+
+    // The model is handed the facts, and only this customer's: the order is in what it was sent.
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->body(), $reference));
+
+    // A stranger asking the same thing gets nothing from any customer's orders, so no draft at all.
+    $stranger = ChatSession::create([
+        'ulid'    => (string) Str::ulid(),
+        'status'  => ChatSessionStatusEnum::WAITING,
+        'channel' => ChatChannelEnum::WEBSITE,
+        'shop_id' => $this->shop->id,
+    ]);
+    $ask($stranger, "Where is my order $reference please?", ChatSenderTypeEnum::GUEST);
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($stranger))->toBeNull();
+
+    actingAs($this->user);
+    $shown = $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()->json('data');
+    expect($shown['id'])->toBe($draft->id)->and($shown['text'])->toBe($draft->text);
+
+    $this->postJson(route('grp.api.chats.ai_drafts.take', [$draft->id]))->assertOk()->assertJsonPath('data.text', $draft->text);
+
+    $agent = ChatAgent::where('user_id', $this->user->id)->firstOrFail();
+    $reply = $ask($session, "  Hi, your order $reference was dispatched on 22 September. ", ChatSenderTypeEnum::AGENT);
+    $reply->update(['sender_id' => $agent->id]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $reply);
+
+    expect($draft->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED)
+        ->and($draft->decided_by_user_id)->toBe($this->user->id);
+
+    // A new question gets a new draft; the agent answers in their own words, so it was not used.
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, "Thanks. And is it coming with DPD or Royal Mail?");
+    $second = \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+    $mine   = $ask($session, 'It is with APC, the tracking came by email.', ChatSenderTypeEnum::AGENT);
+    $mine->update(['sender_id' => $agent->id]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $mine);
+
+    expect($second->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED);
+
+    // When the facts do not answer the question the model says so, and there is no draft.
+    $modelAnswer = ['answerable' => false];
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Can I change the delivery address of my next order?');
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
+
+    $stats = get(route('grp.chat.ai'))->assertOk()->viewData('page')['props']['draftStats'];
+    expect($stats['used'])->toBeGreaterThanOrEqual(1)->and($stats['superseded'])->toBeGreaterThanOrEqual(1);
+
+    foreach ([$session, $stranger] as $each) {
+        \App\Models\Chat\ChatAiDraft::where('chat_session_id', $each->id)->delete();
+        $each->messages()->withTrashed()->forceDelete();
+        $each->forceDelete();
+    }
+});
+
 test('chat hours come from the work schedule, and the next opening skips closed days and bank holidays', function () {
     $schedule = outOfHoursTestSchedule($this->shop);
     $shop = $this->shop->fresh();

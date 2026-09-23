@@ -12,10 +12,13 @@ use App\Actions\Chat\ChatSession\GetChatClaimDetails;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
+use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
 use App\Enums\CRM\Livechat\ChatAutomationKindEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
@@ -184,7 +187,26 @@ class ShowGroupChatAutomation extends OrgAction
                 ...$common('meta_chat_sessions.phone_number'),
             ]);
 
-        return $sent->unionAll($sentOnWhatsapp)->unionAll($checked)->unionAll($checkedOnWhatsapp);
+        $drafted = DB::table('chat_ai_drafts')
+            ->leftJoin('chat_sessions', 'chat_sessions.id', '=', 'chat_ai_drafts.chat_session_id')
+            ->leftJoin('meta_chat_sessions', 'meta_chat_sessions.id', '=', 'chat_ai_drafts.meta_chat_session_id')
+            ->tap(fn ($query) => $shops($query, 'chat_ai_drafts'))
+            ->select([
+                DB::raw("'ai_draft' as kind"),
+                'chat_ai_drafts.created_at as at',
+                DB::raw('coalesce(chat_ai_drafts.chat_session_id, chat_ai_drafts.meta_chat_session_id) as session_id'),
+                DB::raw("case when chat_ai_drafts.meta_chat_session_id is not null then 'whatsapp' else chat_sessions.channel end as channel"),
+                'chat_sessions.ulid as session_ulid',
+                'chat_ai_drafts.text as text',
+                'chat_ai_drafts.status as verdict',
+                DB::raw('null::smallint as confidence'),
+                'chat_ai_drafts.topic as source',
+                DB::raw('false as put_aside'),
+                DB::raw('false as reversed'),
+                ...$common("coalesce(chat_sessions.metadata->>'name', chat_sessions.metadata->>'email_from', meta_chat_sessions.phone_number)"),
+            ]);
+
+        return $sent->unionAll($sentOnWhatsapp)->unionAll($checked)->unionAll($checkedOnWhatsapp)->unionAll($drafted);
     }
 
     private function getElementGroups(Group $group): array
@@ -236,6 +258,7 @@ class ShowGroupChatAutomation extends OrgAction
             $kind    = ChatAutomationKindEnum::tryFrom((string) $row->kind);
             $verdict = ChatNoiseVerdictEnum::tryFrom((string) $row->verdict);
             $claim   = $kind === ChatAutomationKindEnum::CLAIM_DETAILS ? $this->claimSoFar($row) : null;
+            $draft   = $kind === ChatAutomationKindEnum::AI_DRAFT ? ChatAiDraftStatusEnum::tryFrom((string) $row->verdict) : null;
 
             return [
                 'at'            => $row->at,
@@ -247,7 +270,9 @@ class ShowGroupChatAutomation extends OrgAction
                 'contact'       => $row->contact,
                 'text'          => $row->text,
                 'verdict'       => $row->verdict,
-                'verdict_label' => $verdict?->label(),
+                'verdict_label' => $draft ? $draft->label() : $verdict?->label(),
+                'draft_status'  => $draft?->value,
+                'topic_label'   => $draft ? ChatTopicEnum::tryFrom((string) $row->source)?->label() : null,
                 'is_noise'      => (bool) $verdict?->isNoise(),
                 'confidence'    => $row->confidence,
                 'source'        => $row->source,
@@ -272,7 +297,8 @@ class ShowGroupChatAutomation extends OrgAction
                         'icon'  => ['fal', 'fa-robot'],
                     ],
                 ],
-                'data' => JsonResource::collection($activity),
+                'data'       => JsonResource::collection($activity),
+                'draftStats' => $this->draftStats($this->group),
             ]
         )->table($this->tableStructure($this->group));
     }
@@ -299,6 +325,32 @@ class ShowGroupChatAutomation extends OrgAction
         $details = GetChatClaimDetails::run($session, $waitStarted ? Carbon::parse($waitStarted) : null);
 
         return ['order_reference' => $details['order_reference'], 'photos' => $details['photos']];
+    }
+
+    /**
+     * How the drafts decided in the last 30 days were used: the number that says whether they
+     * can ever be trusted to go out on their own.
+     *
+     * @return array{decided: int, used: int, edited: int, discarded: int, superseded: int, pending: int}
+     */
+    private function draftStats(Group $group): array
+    {
+        $counts = ChatAiDraft::where('group_id', $group->id)
+            ->where('created_at', '>=', now()->subDays(30))
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $count = fn (ChatAiDraftStatusEnum $status) => (int) ($counts[$status->value] ?? 0);
+
+        return [
+            'decided'    => $counts->sum() - $count(ChatAiDraftStatusEnum::PENDING),
+            'used'       => $count(ChatAiDraftStatusEnum::USED),
+            'edited'     => $count(ChatAiDraftStatusEnum::EDITED),
+            'discarded'  => $count(ChatAiDraftStatusEnum::DISCARDED),
+            'superseded' => $count(ChatAiDraftStatusEnum::SUPERSEDED),
+            'pending'    => $count(ChatAiDraftStatusEnum::PENDING),
+        ];
     }
 
     public function getBreadcrumbs(): array
