@@ -66,14 +66,6 @@ const props = defineProps<{
 const layout = inject("layout", {})
 const locale = inject("locale", {})
 
-function customerStockLimit(item: ProductRow, isCutView: boolean): number | undefined {
-    if (layout?.app?.name !== 'retina' || item.model_type !== 'Product' || item.available_quantity === undefined) {
-        return undefined
-    }
-
-    return isCutView ? item.available_quantity * Number(item.quantity_ordered_fractional[1][1]) : item.available_quantity
-}
-
 const editingIds = ref<Set<number>>(new Set())
 const createNewQty = reactive<Record<number, ProductRow>>({})
 const isLoading = ref<string | null>(null)
@@ -601,7 +593,6 @@ const isOffersData = (offersData: any): boolean => {
                             buttonLayout="horizontal"
                             :step="1" 
                             min='0'
-                            :max="customerStockLimit(item, proxyItem.is_cut_view)"
                             v-bind="bindToTarget" 
                             :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
                                 ? `/${Number(item.quantity_ordered_fractional[1][1])}`
@@ -703,7 +694,6 @@ const isOffersData = (offersData: any): boolean => {
                                 buttonLayout="horizontal"
                                 :step="1" 
                                 min='0'
-                                :max="customerStockLimit(item, proxyItem.is_cut_view)"
                                 v-bind="bindToTarget" 
                                 :suffix="proxyItem.is_cut_view && Number(item.quantity_ordered_fractional[1][1]) > 1
                                     ? `/${Number(item.quantity_ordered_fractional[1][1])}`
