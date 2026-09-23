@@ -16,6 +16,7 @@ use App\Actions\UI\WithInertia;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
+use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
 use App\Actions\Web\Webpage\GetWebpagePageSpeedReport;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\GetWebpageSeo;
@@ -296,6 +297,19 @@ class ShowWebpage extends OrgAction
         $tabsNavigation = WebpageTabsEnum::navigation();
         data_set($tabsNavigation, 'redirects.number', $webpage->stats->number_redirects);
 
+        $isHiddenFromSearchEngines = (bool)$webpage->sub_type?->isHiddenFromSearchEngines();
+
+        /**
+         * A page kept out of the index is never measured: nobody tunes an advert page for search
+         * results, so its report is not offered and no PageSpeed run is spent on it. What it is
+         * judged on instead is how the visitors it is bought for behave.
+         */
+        $pagespeed = match (true) {
+            $isHiddenFromSearchEngines => null,
+            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed'),
+            default => Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+        };
+
         return Inertia::render(
             'Org/Web/Webpage',
             [
@@ -357,9 +371,11 @@ class ShowWebpage extends OrgAction
                     fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
                     : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
 
-                'pagespeed' => in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value])
-                    ? Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed')
-                    : Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+                'pagespeed' => $pagespeed,
+
+                'engagement' => $isHiddenFromSearchEngines && $this->tab == WebpageTabsEnum::SHOWCASE->value
+                    ? Inertia::defer(fn () => GetWebpageEngagementMetrics::run($webpage), 'engagement')
+                    : null,
 
                 'seo' => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => GetWebpageSeo::run($webpage)
