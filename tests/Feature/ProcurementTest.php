@@ -2108,6 +2108,21 @@ test('UI show stock delivery pending and done item tabs', function () {
     });
 });
 
+test('UI stock delivery items offer a search over every warehouse location', function () {
+    $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
+    $stockDelivery = createStockDeliveryWithItems($this, 'SEARCH-ANY-LOCATION', [10]);
+
+    $this->withoutExceptionHandling();
+    $this->withoutVite();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::ITEMS->value);
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/StockDelivery')
+            ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.searchLocationsRoute.name', 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock');
+    });
+});
+
 test('UI edit stock delivery', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.procurement.stock_deliveries.edit', [$this->organisation->slug, $this->stockDelivery->slug]));

@@ -102,6 +102,7 @@ class IndexStockDeliveryItems extends OrgAction
             ->defaultSort('org_stocks.code')
             ->select([
                 'stock_delivery_items.id',
+                'stock_delivery_items.organisation_id',
                 'stock_delivery_items.stock_delivery_id',
                 'stock_delivery_items.state',
                 'stock_delivery_items.cost_items',
