@@ -5576,8 +5576,6 @@
     "Th": "Čet",
     "Thank you for applying!": "Hvala što ste se prijavili!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Hvala na poruci. Trenutačno ne radimo i odgovorit ćemo vam čim se vratimo.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Hvala na poruci. Trenutačno ne radimo i odgovorit ćemo vam od :time, :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Hvala na poruci. Trenutačno ne radimo i odgovorit ćemo vam od :time, :day. Recite nam kako vam možemo pomoći i time ćemo se pozabaviti čim otvorimo.",
     "The Administrator ask you to reset password": "Administrator će vas zamoliti da poništite lozinku",
     "The OpenAI service is currently unreachable, please try again later.": "OpenAI servis trenutno nije dostupan, pokušajte kasnije.",
     "The announcement should": "Objava bi trebala",
@@ -7214,5 +7212,10 @@
     "workshop": "radionica",
     "your order number": "broj narudžbe",
     "{0} items selected": "{0} stavki odabrano",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Hvala na poruci. Trenutačno ne radimo i odgovorit ćemo vam :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Hvala na poruci. Trenutačno ne radimo i odgovorit ćemo vam :when. Recite nam kako vam možemo pomoći i time ćemo se pozabaviti čim otvorimo.",
+    "from :time today": "danas od :time",
+    "from :time tomorrow": "sutra od :time",
+    "from :time on :day": "od :time, :day"
 }

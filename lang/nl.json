@@ -6175,8 +6175,6 @@
     "Th": "E",
     "Thank you for applying!": "Bedankt voor uw aanmelding!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Bedankt voor je bericht. We zijn op dit moment gesloten en antwoorden zodra we terug zijn.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Bedankt voor je bericht. We zijn op dit moment gesloten en antwoorden vanaf :time op :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Bedankt voor je bericht. We zijn op dit moment gesloten en antwoorden vanaf :time op :day. Laat ons weten waarmee we kunnen helpen, dan pakken we het meteen bij opening op.",
     "The Administrator ask you to reset password": "De beheerder vraagt u om uw wachtwoord opnieuw in te stellen",
     "The OpenAI service is currently unreachable, please try again later.": "De OpenAI-service is momenteel niet bereikbaar, probeer het later opnieuw.",
     "The agent will be restored and become active again.": "De agent wordt hersteld en is weer actief.",
@@ -7971,5 +7969,10 @@
     "workshop": "werkplaats",
     "your order number": "je bestelnummer",
     "{0} items selected": "{0} artikelen geselecteerd",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Bedankt voor je bericht. We zijn op dit moment gesloten en antwoorden :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Bedankt voor je bericht. We zijn op dit moment gesloten en antwoorden :when. Laat ons weten waarmee we kunnen helpen, dan pakken we het meteen bij opening op.",
+    "from :time today": "vandaag vanaf :time",
+    "from :time tomorrow": "morgen vanaf :time",
+    "from :time on :day": "vanaf :time op :day"
 }

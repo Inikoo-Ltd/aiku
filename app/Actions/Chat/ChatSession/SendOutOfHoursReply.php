@@ -248,18 +248,15 @@ class SendOutOfHoursReply implements ShouldBeUnique
         $shop   = $chatSession->shop;
         $locale = $shop->language?->code;
         $next   = IsWithinWorkingHours::make()->nextOpening($shop, now());
-        $when   = $next ? [
-            'time' => $next['opens']->format('H:i'),
-            'day'  => $next['opens']->locale($locale ?? 'en')->isoFormat('dddd D MMMM'),
-        ] : null;
+        $when   = $next ? ['when' => $this->whenWeOpen($next['opens'], $shop->timezoneName(), $locale)] : null;
 
         $parts = [];
 
         if ($closedLine) {
             $parts[] = match (true) {
                 !$when            => __('Thank you for your message. We are closed at the moment and will reply as soon as we are back.', [], $locale),
-                $claimLines !== null || $saidWhatTheyNeed => __('Thank you for your message. We are closed at the moment and will reply from :time on :day.', $when, $locale),
-                default           => __('Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.', $when, $locale),
+                $claimLines !== null || $saidWhatTheyNeed => __('Thank you for your message. We are closed at the moment and will reply :when.', $when, $locale),
+                default           => __('Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.', $when, $locale),
             };
         }
 
@@ -268,5 +265,25 @@ class SendOutOfHoursReply implements ShouldBeUnique
         }
 
         return implode("\n\n", $parts);
+    }
+
+    /**
+     * Said the way a person would, in the shop's own time: from 8am today, from 8am tomorrow,
+     * from 8am on Monday, and the full date only when it is more than a week away.
+     */
+    private function whenWeOpen(Carbon $opens, string $timezone, ?string $locale): string
+    {
+        $locale   = $locale ?? 'en';
+        $daysAway = (int) now($timezone)->startOfDay()->diffInDays($opens->copy()->startOfDay());
+        $time     = $locale === 'en' ? $opens->format($opens->minute ? 'g:ia' : 'ga') : $opens->format('H:i');
+
+        return match (true) {
+            $daysAway === 0 => __('from :time today', ['time' => $time], $locale),
+            $daysAway === 1 => __('from :time tomorrow', ['time' => $time], $locale),
+            default         => __('from :time on :day', [
+                'time' => $time,
+                'day'  => $opens->locale($locale)->isoFormat($daysAway < 7 ? 'dddd' : 'dddd D MMMM'),
+            ], $locale),
+        };
     }
 }

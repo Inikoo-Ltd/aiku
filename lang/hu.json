@@ -5581,8 +5581,6 @@
     "Th": "Cs",
     "Thank you for applying!": "Köszönjük a jelentkezést!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Köszönjük üzenetét. Jelenleg zárva vagyunk, és amint visszatérünk, válaszolunk.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Köszönjük üzenetét. Jelenleg zárva vagyunk, és :day :time órától válaszolunk.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Köszönjük üzenetét. Jelenleg zárva vagyunk, és :day :time órától válaszolunk. Írja meg, miben segíthetünk, és nyitáskor elsőként foglalkozunk vele.",
     "The Administrator ask you to reset password": "A rendszer admin kéri, hogy állítsa vissza a jelszót",
     "The OpenAI service is currently unreachable, please try again later.": "Az OpenAI szolgáltatás jelenleg nem érhető el, kérjük, próbálja újra később.",
     "The announcement should": "A bejelentésnek",
@@ -7230,5 +7228,10 @@
     "workshop": "műhely",
     "your order number": "a rendelésszámát",
     "{0} items selected": "{0} elem kiválasztva",
-    "Δ 1Y": "Δ1Y"
+    "Δ 1Y": "Δ1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Köszönjük üzenetét. Jelenleg zárva vagyunk, és :when válaszolunk.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Köszönjük üzenetét. Jelenleg zárva vagyunk, és :when válaszolunk. Írja meg, miben segíthetünk, és nyitáskor elsőként foglalkozunk vele.",
+    "from :time today": "ma :time órától",
+    "from :time tomorrow": "holnap :time órától",
+    "from :time on :day": ":day :time órától"
 }

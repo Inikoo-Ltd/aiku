@@ -5969,8 +5969,6 @@
     "Th": "-ти",
     "Thank you for applying!": "Благодарим Ви, че кандидатствахте!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Благодарим ви за съобщението. В момента не работим и ще ви отговорим веднага щом се върнем.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Благодарим ви за съобщението. В момента не работим и ще ви отговорим от :time ч. на :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Благодарим ви за съобщението. В момента не работим и ще ви отговорим от :time ч. на :day. Кажете ни с какво можем да помогнем и ще се заемем веднага щом отворим.",
     "The Administrator ask you to reset password": "Администраторът ви моли да смените паролата си",
     "The OpenAI service is currently unreachable, please try again later.": "Услугата на OpenAI в момента е недостъпна, моля, опитайте отново по-късно.",
     "The announcement should": "Обявата трябва",
@@ -7710,5 +7708,10 @@
     "workshop": "редактор",
     "your order number": "номера на поръчката",
     "{0} items selected": "{0} избрани артикула",
-    "Δ 1Y": "Δ 1Г"
+    "Δ 1Y": "Δ 1Г",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Благодарим ви за съобщението. В момента не работим и ще ви отговорим :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Благодарим ви за съобщението. В момента не работим и ще ви отговорим :when. Кажете ни с какво можем да помогнем и ще се заемем веднага щом отворим.",
+    "from :time today": "от :time ч. днес",
+    "from :time tomorrow": "от :time ч. утре",
+    "from :time on :day": "от :time ч. на :day"
 }

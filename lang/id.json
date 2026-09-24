@@ -3613,8 +3613,6 @@
     "Text updated successfully": "Teks berhasil diperbarui.",
     "Thank you for applying!": "Terima kasih atas lamaran Anda!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas segera setelah kami kembali.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas mulai pukul :time pada :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas mulai pukul :time pada :day. Beri tahu kami apa yang bisa kami bantu, dan kami akan menanganinya begitu buka.",
     "The Administrator ask you to reset password": "Administrator meminta Anda untuk mengatur ulang kata sandi",
     "The announcement should": "Pengumuman tersebut seharusnya",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "Saluran tersebut akan diputus tautannya dari toko Shopify Anda. Anda dapat menautkannya kembali dengan membuat saluran baru.",
@@ -4802,5 +4800,10 @@
     "workplace": "tempat kerja",
     "workshop": "bengkel",
     "your order number": "nomor pesanan Anda",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Terima kasih atas pesan Anda. Saat ini kami sedang tutup dan akan membalas :when. Beri tahu kami apa yang bisa kami bantu, dan kami akan menanganinya begitu buka.",
+    "from :time today": "hari ini mulai pukul :time",
+    "from :time tomorrow": "besok mulai pukul :time",
+    "from :time on :day": "pada :day mulai pukul :time"
 }

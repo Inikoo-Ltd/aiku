@@ -3094,8 +3094,6 @@
     "Thank you for applying!": "मात्रा पूर्णांक हुनु पर्छ",
     "Thank you for your hard work :name!, Well done!": "मात्रा कम्तिमा 1 हुनु पर्छ",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "तपाईंको सन्देशका लागि धन्यवाद। हामी अहिले बन्द छौं र फर्किनेबित्तिकै जवाफ दिनेछौं।",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "तपाईंको सन्देशका लागि धन्यवाद। हामी अहिले बन्द छौं र :day :time बजेदेखि जवाफ दिनेछौं।",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "तपाईंको सन्देशका लागि धन्यवाद। हामी अहिले बन्द छौं र :day :time बजेदेखि जवाफ दिनेछौं। हामीले कसरी मद्दत गर्न सक्छौं भन्नुहोस्, खुल्नेबित्तिकै हामी यसमा काम गर्नेछौं।",
     "Thanks": "प्रत्येक व्यापार इकाईको मात्रा प्याकका एकाइहरूसँग अनुक्रम अनुसरण गर्दछ",
     "That time has already passed, pick a later one": "कोर बन्उनु पर्छ",
     "The AI service has run out of credit, please contact IT Leader to fix the issue.": "ताका खाली छ",
@@ -4787,5 +4785,10 @@
     "{1} :count order has not been dispatched and was placed at the current pack size. Its lines keep the quantity and the price already agreed, so the warehouse would ship the new pack size at the old price. Check the order before saving.|[2,*] :count orders have not been dispatched and were placed at the current pack size. Their lines keep the quantity and the price already agreed, so the warehouse would ship the new pack size at the old price. Check them before saving.": "{1} 1 खुला अर्डरको अर्थ के हुन्छ भनेर परिवर्तन गर्दै|[2,*] :count खुला अर्डरहरूको अर्थ के हुन्छ भनेर परिवर्तन गर्दै",
     "± % over live RRP": "\u000394 1Y",
     "± :currency over live RRP": "\u0012 अङ्कन कोड तपाईलाई इमेल गर्न सकिन्छ, यसलाई जारी राख्न प्रविष्ट गर्नुहोस्।",
-    "Δ 1Y": "यो तपाईंका लागि 16f4b9d2638a74f4a3f62f15 हो"
+    "Δ 1Y": "यो तपाईंका लागि 16f4b9d2638a74f4a3f62f15 हो",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "तपाईंको सन्देशका लागि धन्यवाद। हामी अहिले बन्द छौं र :when जवाफ दिनेछौं।",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "तपाईंको सन्देशका लागि धन्यवाद। हामी अहिले बन्द छौं र :when जवाफ दिनेछौं। हामीले कसरी मद्दत गर्न सक्छौं भन्नुहोस्, खुल्नेबित्तिकै हामी यसमा काम गर्नेछौं।",
+    "from :time today": "आज :time बजेदेखि",
+    "from :time tomorrow": "भोलि :time बजेदेखि",
+    "from :time on :day": ":day :time बजेदेखि"
 }

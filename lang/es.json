@@ -4290,8 +4290,6 @@
     "Th": "El",
     "Thank you for applying!": "¡Gracias por postularte!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos en cuanto volvamos.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos a partir de las :time del :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos a partir de las :time del :day. Cuéntanos en qué podemos ayudarte y lo atenderemos en cuanto abramos.",
     "The Administrator ask you to reset password": "El administrador le pide que restablezca la contraseña",
     "The announcement should": "El anuncio debería",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "El canal se desvinculará de tu tienda Shopify. Puedes volver a vincularlo creando un nuevo canal.",
@@ -5656,5 +5654,10 @@
     "workplace": "lugar de trabajo",
     "workshop": "taller",
     "your order number": "tu número de pedido",
-    "Δ 1Y": "Δ1Y"
+    "Δ 1Y": "Δ1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Gracias por tu mensaje. En este momento estamos cerrados y te responderemos :when. Cuéntanos en qué podemos ayudarte y lo atenderemos en cuanto abramos.",
+    "from :time today": "hoy a partir de las :time",
+    "from :time tomorrow": "mañana a partir de las :time",
+    "from :time on :day": "el :day a partir de las :time"
 }

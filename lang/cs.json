@@ -4688,8 +4688,6 @@
     "Th": "Čt",
     "Thank you for applying!": "Děkujeme za vaši přihlášku!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Děkujeme za vaši zprávu. Momentálně máme zavřeno a odpovíme vám, jakmile se vrátíme.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Děkujeme za vaši zprávu. Momentálně máme zavřeno a odpovíme vám od :time v :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Děkujeme za vaši zprávu. Momentálně máme zavřeno a odpovíme vám od :time v :day. Napište nám, s čím vám můžeme pomoci, a hned po otevření se tomu budeme věnovat.",
     "The Administrator ask you to reset password": "Správce vás požádá o resetování hesla",
     "The announcement should": "Oznámení by mělo",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "Kanál bude odpojen od vašeho obchodu Shopify. Můžete jej znovu propojit vytvořením nového kanálu.",
@@ -6097,5 +6095,10 @@
     "workplace": "pracoviště",
     "workshop": "dílna",
     "your order number": "číslo vaší objednávky",
-    "Δ 1Y": "Δ1Y"
+    "Δ 1Y": "Δ1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Děkujeme za vaši zprávu. Momentálně máme zavřeno a odpovíme vám :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Děkujeme za vaši zprávu. Momentálně máme zavřeno a odpovíme vám :when. Napište nám, s čím vám můžeme pomoci, a hned po otevření se tomu budeme věnovat.",
+    "from :time today": "dnes od :time",
+    "from :time tomorrow": "zítra od :time",
+    "from :time on :day": "od :time v :day"
 }

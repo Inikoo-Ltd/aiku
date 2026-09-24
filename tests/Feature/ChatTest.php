@@ -5677,7 +5677,7 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
 function outOfHoursTestSchedule(\App\Models\Catalogue\Shop $shop): \App\Models\HumanResources\WorkSchedule
 {
     $tz = \App\Models\Helpers\Timezone::where('name', 'Europe/London')->first();
-    $shop->update(['timezone_id' => $tz->id]);
+    $shop->update(['timezone_id' => $tz->id, 'language_id' => \App\Models\Helpers\Language::where('code', 'en')->value('id')]);
 
     $schedule = \App\Models\HumanResources\WorkSchedule::create([
         'name'             => 'Chat hours',
@@ -5747,7 +5747,7 @@ test('an email out of hours is answered only when a person wrote it, once a day 
     $sent = $person->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
 
     expect($sent->metadata['auto_submitted'])->toBeTrue()
-        ->and($sent->message_text)->toContain('Monday 28 September')
+        ->and($sent->message_text)->toContain('will reply from 10am on Monday.')
         ->and($sent->message_text)->not->toContain('Please tell us how we can help');
 
     \Illuminate\Support\Facades\Http::assertSent(function ($request) {
@@ -5789,7 +5789,7 @@ test('website chat out of hours is answered in the conversation, but not after t
 
     expect($reply->handle($live))->toBeTrue()
         ->and($reply->handle($live))->toBeFalse()
-        ->and($live->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole()->message_text)->toContain('10:00 on Friday 25 September');
+        ->and($live->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole()->message_text)->toContain('will reply from 10am tomorrow.');
 
     $viaForm = StoreOfflineMessage::make()->handle($this->shop->fresh(), [
         'message'     => 'Nobody was on, please write back',
@@ -6163,7 +6163,7 @@ test('a WhatsApp message out of hours is answered once per wait with when the sh
 
     $closed = $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
 
-    expect($closed->message_text)->toContain('10:00 on Monday 28 September')
+    expect($closed->message_text)->toContain('will reply from 10am on Monday.')
         ->and($session->refresh()->last_agent_message_at)->toBeNull();
 
     // An agent answers just before closing: still taken to be there half an hour later.

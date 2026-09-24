@@ -3613,8 +3613,6 @@
     "Text updated successfully": "文本已成功更新",
     "Thank you for applying!": "感谢您的申请！",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "感谢您的留言。我们目前不在营业时间，回来后会尽快回复您。",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "感谢您的留言。我们目前不在营业时间，将于:day :time起回复。",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "感谢您的留言。我们目前不在营业时间，将于:day :time起回复。请告诉我们需要什么帮助，我们开门后会第一时间处理。",
     "The Administrator ask you to reset password": "管理员要求您重置密码",
     "The announcement should": "该公告应该",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "该频道将与您的 Shopify 商店解除关联。您可以创建新频道并重新关联。",
@@ -4800,5 +4798,10 @@
     "workplace": "工作场所",
     "workshop": "作坊",
     "your order number": "您的订单号",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "感谢您的留言。我们目前不在营业时间，将于:when回复。",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "感谢您的留言。我们目前不在营业时间，将于:when回复。请告诉我们需要什么帮助，我们开门后会第一时间处理。",
+    "from :time today": "今天:time起",
+    "from :time tomorrow": "明天:time起",
+    "from :time on :day": ":day :time起"
 }

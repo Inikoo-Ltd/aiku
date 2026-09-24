@@ -4275,8 +4275,6 @@
     "Th": "O",
     "Thank you for applying!": "Obrigado por se candidatar!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Obrigado pela sua mensagem. De momento estamos fechados e responderemos assim que voltarmos.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Obrigado pela sua mensagem. De momento estamos fechados e responderemos a partir das :time de :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Obrigado pela sua mensagem. De momento estamos fechados e responderemos a partir das :time de :day. Diga-nos como podemos ajudar e trataremos do assunto logo que abrirmos.",
     "The Administrator ask you to reset password": "O administrador pede que você redefina a senha",
     "The announcement should": "O anúncio deveria",
     "The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.": "O canal será desvinculado da sua loja Shopify. Você poderá vinculá-lo novamente criando um novo canal.",
@@ -5635,5 +5633,10 @@
     "workplace": "local de trabalho",
     "workshop": "oficina",
     "your order number": "o seu número de encomenda",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Obrigado pela sua mensagem. De momento estamos fechados e responderemos :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Obrigado pela sua mensagem. De momento estamos fechados e responderemos :when. Diga-nos como podemos ajudar e trataremos do assunto logo que abrirmos.",
+    "from :time today": "hoje a partir das :time",
+    "from :time tomorrow": "amanhã a partir das :time",
+    "from :time on :day": "a partir das :time de :day"
 }
