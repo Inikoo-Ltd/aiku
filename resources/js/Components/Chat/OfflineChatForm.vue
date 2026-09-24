@@ -16,6 +16,11 @@ const props = defineProps({
         default: null,
     },
     isLoggedIn: Boolean,
+    /* Supplied when the widget runs outside Iris, where there is no website layout to read. */
+    shopId: {
+        type: Number,
+        default: null,
+    },
 })
 
 const emit = defineEmits(["session-created"])
@@ -48,7 +53,7 @@ const submitOffline = async () => {
     error.value = null
     try {
         const payload: any = {
-            shop_id: layout?.iris?.shop?.id,
+            shop_id: props.shopId ?? layout?.iris?.shop?.id,
             session_ulid: props.session?.ulid,
             web_user_id: layout.user?.id ?? null,
             sender_id: layout.user?.id ?? null,

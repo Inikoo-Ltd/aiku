@@ -10,11 +10,14 @@
 import { createApp, h } from "vue"
 import axios from "axios"
 import Notifications from "@kyvg/vue3-notification"
+import PrimeVue from "primevue/config"
+import Aura from "@primevue/themes/aura"
 import { i18nVue } from "laravel-vue-i18n"
 import ChatButton from "@/Components/Chat/Customer/ChatButton.vue"
 import widgetStyles from "../css/chat-widget.css?inline"
 import { useColorTheme } from "@/Composables/useStockList"
 import { setColorStyleRootByEl } from "@/Composables/useApp"
+import { ctrans } from "@/Composables/useTrans"
 
 const CONTAINER_ID = "aiku-chat-widget"
 
@@ -59,6 +62,36 @@ const mount = (config: WidgetConfig, baseUrl: string, stylesheet: string | null)
 
     const container = document.createElement("div")
     container.id = CONTAINER_ID
+
+    /*
+     * The shadow root protects what is inside the widget, not the element holding it. In the light
+     * DOM this container has no children at all, so a storefront rule as ordinary as
+     * `div:empty { display: none }` hides the whole widget, and a transform or filter on it would
+     * quietly become the containing block for the fixed positioned bubble. These are pinned so the
+     * host page cannot reach the one element we cannot hide behind the boundary.
+     */
+    const pinned: Record<string, string> = {
+        display: "block",
+        visibility: "visible",
+        opacity: "1",
+        position: "static",
+        width: "auto",
+        height: "auto",
+        margin: "0",
+        padding: "0",
+        border: "0",
+        transform: "none",
+        filter: "none",
+        perspective: "none",
+        contain: "none",
+        "clip-path": "none",
+        "pointer-events": "auto",
+    }
+
+    Object.entries(pinned).forEach(([property, value]) => {
+        container.style.setProperty(property, value, "important")
+    })
+
     document.body.appendChild(container)
 
     /*
@@ -112,9 +145,26 @@ const mount = (config: WidgetConfig, baseUrl: string, stylesheet: string | null)
     })
 
     app.use(Notifications)
+
+    /* The offline form and the message bubbles are built from PrimeVue inputs, which read their
+       options off the plugin and throw without it. */
+    app.use(PrimeVue, {
+        theme: {
+            preset: Aura,
+            options: {
+                /* Keep PrimeVue's own styles inside the shadow root with everything else. */
+                cssLayer: false,
+            },
+        },
+    })
+
     app.use(i18nVue, {
         resolve: async () => ({ default: {} }),
     })
+
+    /* Templates call ctrans() without importing it, so it has to be global here as it is in the
+       other apps; the widget ships no translations and it falls back to the original text. */
+    app.config.globalProperties.ctrans = ctrans
 
     app.mount(root)
 }

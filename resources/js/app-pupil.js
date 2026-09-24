@@ -21,6 +21,7 @@ import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import { definePreset } from '@primevue/themes';
 import { usePupilSessionToken } from '@/Composables/usePupilSessionToken';
+import { ctrans } from "@/Composables/useTrans";
 
 usePupilSessionToken();
 
@@ -89,8 +90,11 @@ createInertiaApp(
                     '../../lang/*.json');
                 return await languages[`../../lang/${lang}.json`]();
               },
-            }).
-            mount(el);
+            });
+
+        app.config.globalProperties.ctrans = ctrans;  // global function for <template> -- Custom translation
+
+        app.mount(el);
 
       },
       progress: {

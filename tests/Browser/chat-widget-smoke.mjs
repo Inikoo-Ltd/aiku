@@ -16,13 +16,19 @@ const widgetCss = readFileSync("public/chat-widget/v1.css", "utf8")
 
 const STOREFRONT_PAGE = `<!doctype html>
 <html><head><meta charset="utf-8"><title>HatiNest</title>
-<style>button { background: red !important; font-size: 40px; }</style>
+<style>
+  button { background: red !important; font-size: 40px; }
+  /* Storefront themes really do ship these, and both killed the widget in the wild. */
+  div:empty { display: none; }
+  body > div { transform: translateY(2rem); }
+</style>
 </head>
 <body><h1>Hats</h1>
 <script src="/chat-widget/v1.js" data-key="testkey"></script>
 </body></html>`
 
 const requests = []
+let offlineBody = null
 
 const server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost")
@@ -53,7 +59,23 @@ const server = createServer((req, res) => {
     if (url.pathname === "/app/api/chats/status") {
         res.writeHead(200, { "content-type": "application/json" })
 
-        return res.end(JSON.stringify({ chat_config: { is_online: true } }))
+        /* Offline by default: a shop with no agent on duty draws the offline form, which pulls in
+           more of the UI than the online path. Set CHAT_ONLINE=1 for the other branch. */
+        return res.end(
+            JSON.stringify({ chat_config: { is_online: process.env.CHAT_ONLINE === "1" } })
+        )
+    }
+
+    if (url.pathname === "/app/api/chats/offline-message") {
+        let body = ""
+        req.on("data", (c) => (body += c))
+        req.on("end", () => {
+            offlineBody = body
+            res.writeHead(200, { "content-type": "application/json" })
+            res.end(JSON.stringify({ data: { ulid: "01JOFFLINE000000000000000A" } }))
+        })
+
+        return
     }
 
     if (url.pathname === "/app/api/chats/sessions") {
@@ -66,6 +88,27 @@ const server = createServer((req, res) => {
         res.writeHead(200, { "content-type": "text/html; charset=utf-8" })
 
         return res.end(STOREFRONT_PAGE)
+    }
+
+    /* A real message so the bubble list renders: an empty thread skips most of the chat UI. */
+    if (url.pathname.includes("/messages")) {
+        res.writeHead(200, { "content-type": "application/json" })
+
+        return res.end(
+            JSON.stringify({
+                data: [
+                    {
+                        id: 1,
+                        chat_session_id: 1,
+                        message_type: "text",
+                        sender_type: "agent",
+                        message_text: "Hello from the shop",
+                        is_read: true,
+                        created_at: "2026-09-24T10:00:00.000000Z",
+                    },
+                ],
+            })
+        )
     }
 
     res.writeHead(200, { "content-type": "application/json" })
@@ -116,6 +159,19 @@ results.hostCssDidNotLeak = await page.evaluate(() => {
     return { fontSize: style.fontSize, background: style.backgroundColor }
 })
 
+results.hostNotHiddenByTheme = await page.evaluate(() => {
+    const host = document.getElementById("aiku-chat-widget")
+    const style = getComputedStyle(host)
+    const rect = host.shadowRoot.querySelector("button").getBoundingClientRect()
+
+    return {
+        display: style.display,
+        transform: style.transform,
+        buttonVisible: rect.width > 0 && rect.height > 0,
+        onScreen: rect.bottom <= window.innerHeight + 1 && rect.right <= window.innerWidth + 1,
+    }
+})
+
 results.themeVarApplied = await page.evaluate(() => {
     const shadow = document.getElementById("aiku-chat-widget")?.shadowRoot
     const root = shadow?.querySelector("div")
@@ -130,7 +186,53 @@ await page.evaluate(() => {
 })
 await page.waitForTimeout(1500)
 
+/* Clicking inside the panel must not shut it: inside a shadow root the event is retargeted to
+   the host, which used to read as a click outside. */
+results.panelStaysOpenOnInsideClick = await page.evaluate(async () => {
+    const shadow = document.getElementById("aiku-chat-widget")?.shadowRoot
+    const field = shadow?.querySelector("input, textarea")
+
+    if (!field) {
+        return "no field rendered"
+    }
+
+    field.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, composed: true }))
+    await new Promise((r) => setTimeout(r, 300))
+
+    return !!shadow.querySelector("input, textarea")
+})
+
+/* The offline form must carry the shop id: it comes from Iris everywhere else. */
+results.offlineMessageCarriesShop = await page.evaluate(async () => {
+    const shadow = document.getElementById("aiku-chat-widget")?.shadowRoot
+    const fields = shadow?.querySelectorAll("input, textarea")
+
+    if (!fields || fields.length < 3) {
+        return "offline form not rendered"
+    }
+
+    const setValue = (el, value) => {
+        const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement : HTMLInputElement
+        Object.getOwnPropertyDescriptor(proto.prototype, "value").set.call(el, value)
+        el.dispatchEvent(new Event("input", { bubbles: true, composed: true }))
+    }
+
+    setValue(fields[0], "Tester")
+    setValue(fields[1], "tester@example.com")
+    setValue(fields[2], "hello")
+
+    await new Promise((r) => setTimeout(r, 100))
+    ;[...shadow.querySelectorAll("button")]
+        .find((b) => /offline/i.test(b.textContent || ""))
+        ?.click()
+
+    await new Promise((r) => setTimeout(r, 800))
+
+    return true
+})
+
 results.sessionRequested = requests.some((r) => r.startsWith("/app/api/chats/sessions"))
+results.offlineBody = offlineBody
 results.requests = requests
 results.consoleErrors = consoleErrors
 

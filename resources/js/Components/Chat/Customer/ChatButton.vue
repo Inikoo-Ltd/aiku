@@ -786,20 +786,31 @@ onMounted(() => {
 
     handleChatFromUrl()
 
+    /*
+     * Composed path rather than the target: when the widget runs inside a shadow root the event
+     * is retargeted to the host by the time it reaches the document, so every click on the panel
+     * reads as a click outside it and shuts the panel the moment anyone tries to type.
+     */
+    const isInside = (element: HTMLElement | null | undefined, event: Event): boolean => {
+        if (!element) {
+            return false
+        }
+
+        const path = typeof event.composedPath === "function" ? event.composedPath() : []
+
+        return path.length ? path.includes(element) : element.contains(event.target as Node)
+    }
+
     document.addEventListener("mousedown", (e) => {
-        if (
-            isMenuOpen.value &&
-            menuRef.value &&
-            !menuRef.value.contains(e.target as Node)
-        ) {
+        if (isMenuOpen.value && menuRef.value && !isInside(menuRef.value, e)) {
             isMenuOpen.value = false
         }
 
         if (
             open.value &&
             panelRef.value &&
-            !panelRef.value.contains(e.target as Node) &&
-            !buttonRef.value?.contains(e.target as Node)
+            !isInside(panelRef.value, e) &&
+            !isInside(buttonRef.value, e)
         ) {
             open.value = false
         }
@@ -1013,7 +1024,7 @@ if (isClient) {
 
                     <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat"
                         :hours="chatHours" :offlineInfo="chatOfflineInfo" :session="chatSession" :isLoggedIn="isLoggedIn"
-                        @session-created="handleOfflineSession" />
+                        :shopId="shopId" @session-created="handleOfflineSession" />
 
                     <div v-if="activeMenu === 'history'" :class="isMobile
                         ? 'flex-1 min-h-0 bg-gray-50 scroll-smooth flex flex-col'

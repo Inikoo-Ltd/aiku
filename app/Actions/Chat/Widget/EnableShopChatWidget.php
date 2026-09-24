@@ -44,6 +44,29 @@ class EnableShopChatWidget
         ];
     }
 
+    /**
+     * The tag a storefront loads the widget with. The key travels in the query string rather than
+     * as an attribute so that the whole embed is one URL, which survives being retyped.
+     *
+     * It appends to the head rather than the body: a tag manager firing on initialisation runs
+     * while the document is still being parsed, and document.body is null that early.
+     */
+    public function embedSnippet(string $key): string
+    {
+        $src = url('/chat-widget/v1.js').'?k='.$key;
+
+        return <<<HTML
+        <script>
+          (function () {
+            var s = document.createElement('script');
+            s.src = '$src';
+            s.async = true;
+            (document.head || document.documentElement).appendChild(s);
+          })();
+        </script>
+        HTML;
+    }
+
     public function asCommand(Command $command): int
     {
         $shop = Shop::where('slug', $command->argument('shop'))->first();
@@ -64,8 +87,15 @@ class EnableShopChatWidget
         }
 
         $command->info('Chat enabled for '.$shop->name);
+        $command->newLine();
         $command->line('Widget key: '.$result['key']);
-        $command->line('Script:     '.route('grp.api.chats.widget.config').'  (embed uses key='.$result['key'].')');
+        $command->newLine();
+        $command->line('Paste this on the storefront, in Google Tag Manager as a Custom HTML tag');
+        $command->line('firing on All Pages, or straight into the theme before </body>:');
+        $command->newLine();
+        $command->line($this->embedSnippet($result['key']));
+        $command->newLine();
+        $command->comment('The host comes from APP_URL. When testing through a tunnel, swap it for the tunnel host.');
 
         return 0;
     }
