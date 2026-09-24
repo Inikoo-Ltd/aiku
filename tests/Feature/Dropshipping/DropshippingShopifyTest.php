@@ -10,6 +10,7 @@
 
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Dropshipping\Bundle\StoreBundle;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
@@ -1137,7 +1138,7 @@ dataset('retina platform write routes', [
 test('retina platform write routes refuse the channel, portfolio and client of another customer and let the owner through', function (string $verb, string $routeName) {
     Queue::fake();
 
-    $fixtures = function (string $name): array {
+    $fixtures = function (string $name) use ($routeName): array {
         $channel = shopifyProductChannel($this, $name)->customerSalesChannel;
 
         return [
@@ -1155,7 +1156,9 @@ test('retina platform write routes refuse the channel, portfolio and client of a
                 'delivery_address'          => new Address(Address::factory()->definition()),
                 'billing_address'           => new Address(Address::factory()->definition()),
             ]),
-            'product'                    => $this->product,
+            'product'                    => str_contains($routeName, '.images.')
+                ? StoreBundle::make()->action($channel, ['products' => [['product_id' => $this->product->id, 'quantity' => 1]]])->bundleable
+                : $this->product,
             'productCategory'            => $this->product->family ?? $this->product->department,
         ];
     };
@@ -1177,6 +1180,10 @@ test('retina platform write routes refuse the channel, portfolio and client of a
     $mixed = [...$own, 'portfolio' => $other['portfolio'], 'customerClient' => $other['customerClient'], 'targetCustomerSalesChannel' => $other['customerSalesChannel']];
     if (array_intersect($route->parameterNames(), ['portfolio', 'customerClient', 'targetCustomerSalesChannel']) && in_array('customerSalesChannel', $route->parameterNames())) {
         expect($this->json($verb, $url($mixed))->status())->toBeIn([403, 422], $routeName.' with the customer own channel and a foreign second model');
+    }
+
+    if (str_contains($routeName, '.images.')) {
+        expect($this->json($verb, $url([...$own, 'product' => $this->product]))->status())->toBe(403, $routeName.' with the customer own channel and a catalogue product');
     }
 
     expect($this->json($verb, $url($own))->status())->not->toBe(403, $routeName.' with the customer own ids');
