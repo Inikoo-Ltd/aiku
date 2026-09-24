@@ -5877,6 +5877,7 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
         ->firstWhere('contact', '+447500000004');
 
     expect($row['claim'])->toBe(['order_reference' => $order->reference, 'photos' => 1])
+        ->and($row['url'])->toBe(route('grp.org.chat.inbox', [$this->organisation->slug, 'channel' => 'whatsapp', 'session' => $session->ulid]))
         ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($session->refresh()))->toBe(['order_reference' => $order->reference, 'photos' => 1]);
 
     // Once an agent has answered, the inbox stops showing it: the case is being handled.
