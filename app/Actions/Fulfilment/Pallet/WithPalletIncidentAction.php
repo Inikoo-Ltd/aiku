@@ -17,8 +17,15 @@ use Illuminate\Support\Arr;
 trait WithPalletIncidentAction
 {
     use WithActionUpdate;
+    use WithVirtualPalletGuard;
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function processIncident(Pallet $pallet, PalletStateEnum $incidentState, $modelData): Pallet
     {
+        $this->assertPalletIsPhysical($pallet);
+
         $reporterId = Arr::pull($modelData, 'reporter_id');
         data_set($modelData, 'state', $incidentState);
         data_set($modelData, 'status', PalletStatusEnum::INCIDENT);

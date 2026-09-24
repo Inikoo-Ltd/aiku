@@ -17,7 +17,9 @@ use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletReturn;
+use App\Rules\PalletIsPhysical;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsCommand;
@@ -32,6 +34,10 @@ class AttachPalletsToReturn extends OrgAction
     public function handle(PalletReturn $palletReturn, array $modelData): PalletReturn
     {
         $selectedPalletIds = Arr::get($modelData, 'pallets', []);
+
+        if (Pallet::whereIn('id', $selectedPalletIds)->where('is_virtual', true)->exists()) {
+            throw ValidationException::withMessages(['pallets' => PalletIsPhysical::message()]);
+        }
 
         if (count($selectedPalletIds) === 0) {
             $allAttachedPalletIds = $palletReturn->pallets()->pluck('pallets.id')->toArray();

@@ -19,7 +19,9 @@ import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import StockItemsMovements from '@/Components/Showcases/Grp/StockItemsMovements.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faExchange, faFragile, faNarwhal } from '@fal'
+import { faExchange, faFragile, faNarwhal, faGhost } from '@fal'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import Tag from '@/Components/Tag.vue'
 import TableStoredItemsInWarehouse from '@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsInWarehouse.vue'
 import ModalConfirmation from '@/Components/Utils/ModalConfirmation.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -29,7 +31,7 @@ import ModalSupervisorList from '@/Components/Utils/ModalSupervisorList.vue'
 import axios, { Axios } from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 
-library.add(faFragile, faNarwhal, faExchange)
+library.add(faFragile, faNarwhal, faExchange, faGhost)
 
 const props = defineProps<{
     title: string
@@ -60,7 +62,7 @@ const component = computed(() => {
 const setPalletUsable = (pallet) => {
     if(confirm('Are you sure you want to set this pallet back into storing? This would remove the pallet from its current open pallet order')){
         router.patch(
-            route('grp.models.pallet.pallet.back-to-storing', {pallet: pallet.data.id}), 
+            route('grp.models.pallet.pallet.back-to-storing', {pallet: pallet.data.id}),
             {},
             {
                 onSuccess: () => {
@@ -87,6 +89,23 @@ const setPalletUsable = (pallet) => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #afterTitle2>
+            <Tag
+                v-if="pallet.data?.is_virtual"
+                :theme="11"
+                size="sm"
+                noHoverColor
+                :closeButton="false"
+                v-tooltip="trans('This pallet can not be delivered or returned')"
+            >
+                <template #label>
+                    <div class="whitespace-nowrap">
+                        <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                        {{ trans("Virtual pallet") }}
+                    </div>
+                </template>
+            </Tag>
+        </template>
         <template #button-set-pallet-usable>
             <Button type="secondary" @click="setPalletUsable(pallet)">
                 {{ trans('Set pallet as usable again') }}

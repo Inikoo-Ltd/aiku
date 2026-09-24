@@ -69,6 +69,7 @@ class IndexStoredItemDeltasInProcess extends OrgAction
                 'pallets.customer_reference',
                 'pallets.state',
                 'pallets.status',
+                'pallets.is_virtual',
                 'pallets.rental_id',
                 'pallets.type',
                 'pallets.received_at',

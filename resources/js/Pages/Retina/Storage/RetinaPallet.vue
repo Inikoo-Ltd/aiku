@@ -18,15 +18,19 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import StockItemsMovements from "@/Components/Showcases/Grp/StockItemsMovements.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExchange, faFragile, faNarwhal } from "@fal"
+import { faExchange, faFragile, faNarwhal, faGhost } from "@fal"
 import TableStoredItemsInWarehouse from "@/Components/Tables/Grp/Org/Fulfilment/TableStoredItemsInWarehouse.vue"
+import Tag from "@/Components/Tag.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
 
-library.add(faFragile, faNarwhal, faExchange)
+library.add(faFragile, faNarwhal, faExchange, faGhost)
 
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     tabs: TSTabs
+    is_virtual?: boolean
     stored_items?: {}
     movements?: {}
     history?: {}
@@ -51,7 +55,19 @@ console.log("plm", props)
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template #afterTitle2>
+            <Tag v-if="is_virtual" :theme="11" size="sm" noHoverColor :closeButton="false"
+                v-tooltip="trans('Goods stored on the floor, only their SKOs can be returned')">
+                <template #label>
+                    <div class="whitespace-nowrap">
+                        <FontAwesomeIcon icon="fal fa-ghost" fixed-width aria-hidden="true" />
+                        {{ trans("Virtual pallet") }}
+                    </div>
+                </template>
+            </Tag>
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 </template>
