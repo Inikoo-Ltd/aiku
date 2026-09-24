@@ -120,7 +120,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         <div class="bg-white rounded-lg overflow-hidden">
           <Image v-if="data.image" :src="data.image" imageCover class="w-full h-36 object-cover" />
           <div v-else class="h-36 flex items-center justify-center bg-gray-100 flex-col">
-            <FontAwesomeIcon :icon="faImage" class="text-gray-400 w-6 h-6" />
+            <FontAwesomeIcon :icon="faImage" class="text-gray-400 w-6 h-6" fixed-width />
             <span class="text-xs text-gray-500">{{ trans('No image') }}</span>
           </div>
         </div>

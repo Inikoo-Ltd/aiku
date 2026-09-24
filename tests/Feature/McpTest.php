@@ -8,6 +8,7 @@
 
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\HumanResources\Employee\StoreEmployee;
+use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\UI\Profile\StoreProfileApiToken;
@@ -39,6 +40,8 @@ use App\Mcp\Tools\OffersOverviewTool;
 use App\Mcp\Tools\OrderFunnelTool;
 use App\Mcp\Tools\OrderStatusTool;
 use App\Mcp\Tools\OrgFamilySalesTool;
+use App\Mcp\Tools\OrgStockDiscontinuePreviewTool;
+use App\Mcp\Tools\OrgStockDiscontinueTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\ProductsWithoutImagesTool;
 use App\Mcp\Tools\PaymentMethodsTool;
@@ -48,6 +51,8 @@ use App\Mcp\Tools\ShopSalesTool;
 use App\Mcp\Tools\SlowStockTool;
 use App\Mcp\Tools\SqlQueryTool;
 use App\Mcp\Tools\StaffChatAnalyticsTool;
+use App\Mcp\Tools\StaffTasksTool;
+use App\Mcp\Tools\StaffTaskWriteTool;
 use App\Mcp\Tools\StockLevelsTool;
 use App\Mcp\Tools\TopProductsTool;
 use App\Mcp\Tools\TradeUnitFamilySalesTool;
@@ -60,8 +65,11 @@ use App\Models\Catalogue\ShopTimeSeries;
 use App\Models\Helpers\Address;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
+use App\Models\Inventory\Location;
+use App\Models\Tasks\StaffTask;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Guest;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\SysAdmin\McpRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -523,6 +531,24 @@ describe('the sql query tool', function () {
         $response->assertOk();
     });
 
+    test('org stock answers point an enrolled user to the discontinue tools', function () {
+        $this->user->update(['can_use_mcp_sql' => true, 'can_use_mcp_discontinue' => true]);
+
+        AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+            'sql' => 'select count(*) as total from org_stocks',
+        ])->assertOk()->assertSee('org-stock-discontinue-preview-tool');
+
+        AikuServer::actingAs($this->user)->tool(DescribeTablesTool::class, [
+            'tables' => ['org_stocks'],
+        ])->assertOk()->assertSee('refresh the aiku connector');
+
+        $this->user->update(['can_use_mcp_discontinue' => false]);
+
+        AikuServer::actingAs($this->user)->tool(SqlQueryTool::class, [
+            'sql' => 'select count(*) as total from org_stocks',
+        ])->assertOk()->assertDontSee('org-stock-discontinue-preview-tool');
+    });
+
     test('unknown database is rejected', function () {
         $this->user->update(['can_use_mcp_sql' => true]);
 
@@ -785,6 +811,30 @@ describe('org sales tools', function () {
         $response->assertOk()
             ->assertSee('"sort":"best"')
             ->assertSee('"stocks"');
+    });
+
+    test('worst org stock sales lists only active stock held, biggest value first', function () {
+        createStocks($this->group);
+        [$heldActive, $heldDiscontinuing, $emptyActive] = createOrgStocks($this->organisation, $this->group->stocks()->orderBy('id')->limit(3)->get()->all());
+
+        $heldActive->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_in_locations' => 5, 'value_in_locations' => 999999]);
+        $heldDiscontinuing->update(['state' => OrgStockStateEnum::DISCONTINUING, 'quantity_in_locations' => 5, 'value_in_locations' => 999998]);
+        $emptyActive->update(['state' => OrgStockStateEnum::ACTIVE, 'quantity_in_locations' => 0, 'value_in_locations' => 0]);
+
+        $response = AikuServer::actingAs($this->user)->tool(OrgStockSalesTool::class, [
+            'organisation' => $this->organisation->slug,
+            'from'         => '2026-01-01',
+            'to'           => '2026-12-31',
+            'sort'         => 'worst',
+            'limit'        => 50,
+        ]);
+
+        $response->assertOk()
+            ->assertSee('"stocks":[{"code":"'.$heldActive->code.'"')
+            ->assertDontSee('"code":"'.$heldDiscontinuing->code.'"')
+            ->assertDontSee('"code":"'.$emptyActive->code.'"');
+
+        $heldDiscontinuing->update(['state' => OrgStockStateEnum::ACTIVE]);
     });
 
     test('invalid sort fails validation', function () {
@@ -1492,5 +1542,329 @@ describe('discord message tool', function () {
         ])->assertHasErrors(['No aiku user with username']);
 
         Http::assertNothingSent();
+    });
+});
+
+describe('org stock discontinue tools', function () {
+    beforeEach(function () {
+        createStocks($this->group);
+        $this->orgStocks = createOrgStocks($this->organisation, $this->group->stocks()->orderBy('id')->limit(3)->get()->all());
+        $this->user->update(['can_use_mcp_discontinue' => true]);
+    });
+
+    test('a user not enrolled is refused and told not to retry', function () {
+        $this->user->update(['can_use_mcp_discontinue' => false]);
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinuePreviewTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$this->orgStocks[0]->code],
+        ])->assertHasErrors(['Discontinuing SKOs is not enabled for this user']);
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinueTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$this->orgStocks[0]->code],
+            'state'        => 'discontinued',
+            'reason'       => 'x',
+            'request_text' => 'discontinue it',
+        ])->assertHasErrors(['Discontinuing SKOs is not enabled for this user']);
+
+        expect($this->orgStocks[0]->refresh()->state)->not->toBe(OrgStockStateEnum::DISCONTINUED);
+    });
+
+    test('preview lists what hangs off the sko and names unknown codes', function () {
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinuePreviewTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$this->orgStocks[0]->code, 'NOPE-999'],
+        ])->assertOk()
+            ->assertSee('"not_found":["NOPE-999"]')
+            ->assertSee('"code":"'.$this->orgStocks[0]->code.'"')
+            ->assertSee('"purchase_orders"')
+            ->assertSee('"updated_at"');
+    });
+
+    test('confirm changes the state with the request text in the audit and refuses a stale sko', function () {
+        $orgStock = $this->orgStocks[1];
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinueTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code],
+            'state'        => 'discontinuing',
+            'reason'       => 'Supplier closed',
+            'request_text' => 'please discontinue '.$orgStock->code,
+        ])->assertOk()->assertSee('"changed":1');
+
+        $audit = $orgStock->audits()->where('event', 'state_change')->latest('id')->first();
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING)
+            ->and($audit->new_values['source'])->toBe('mcp')
+            ->and($audit->new_values['request_text'])->toBe('please discontinue '.$orgStock->code)
+            ->and($audit->new_values['requested_by'])->toBe($this->user->username);
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinueTool::class, [
+            'organisation'        => $this->organisation->code,
+            'codes'               => [$orgStock->code],
+            'state'               => 'active',
+            'request_text'        => 'back to active',
+            'expected_updated_at' => [$orgStock->code => now()->subDay()->toIso8601String()],
+        ])->assertHasErrors(['changed since the preview']);
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
+    });
+
+    test('a discontinue is logged as an ai change and reverting it puts the state back', function () {
+        $orgStock = $this->orgStocks[2];
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+
+        AikuServer::actingAs($this->user)->tool(OrgStockDiscontinueTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code],
+            'state'        => 'suspended',
+            'reason'       => 'Quality check',
+            'request_text' => 'hold '.$orgStock->code,
+        ])->assertOk()->assertSee('change_log_id');
+
+        $mcpChange = App\Models\SysAdmin\McpChange::latest('id')->first();
+
+        expect($mcpChange->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::ORG_STOCK_STATE)
+            ->and($mcpChange->request_text)->toBe('hold '.$orgStock->code)
+            ->and($mcpChange->data['after_text'])->toContain('suspended');
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [
+            'revert_id'    => $mcpChange->id,
+            'request_text' => 'undo that',
+        ])->assertOk()->assertSee('reverted_at');
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($mcpChange->refresh()->reverted_by_id)->toBe($this->user->id);
+    });
+});
+
+describe('staff task tools', function () {
+    beforeEach(function () {
+        $this->location   = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $this->department = StaffTask::departments($this->group->id)[0]['value'];
+    });
+
+    test('any staff user asks a department to do something linked to a location', function () {
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'      => 'Count location '.$this->location->code,
+            'description'  => '15764 units, last counted January 2022',
+            'department'   => $this->department,
+            'priority'     => 'high',
+            'due_date'     => '2026-10-01',
+            'organisation' => $this->location->organisation->code,
+            'location'     => $this->location->code,
+        ])->assertOk()->assertSee('"created":"TASK-')->assertSee('tasks?task=TASK-');
+
+        $task = StaffTask::where('requester_id', $this->user->id)->latest('id')->first();
+
+        expect($task->department)->toBe($this->department)
+            ->and($task->model_type)->toBe('Location')
+            ->and($task->model_id)->toBe($this->location->id)
+            ->and($task->priority->value)->toBe('high')
+            ->and($task->due_at->toDateString())->toBe('2026-10-01')
+            ->and($task->conversation->messages()->first()->body)->toBe('15764 units, last counted January 2022');
+    });
+
+    test('assignees are usernames and engineers get tickets, not tasks', function () {
+        $engineer = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => [['slug' => 'gp-hd', 'scopes' => []]]]))->getUser();
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'  => 'Fix the bug',
+            'assignee' => $engineer->username,
+        ])->assertHasErrors(['Engineers and QA get tickets, not tasks']);
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'  => 'Check the shelf',
+            'assignee' => 'nobody-here',
+        ])->assertHasErrors(['No aiku user with username']);
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'  => 'Check the shelf',
+            'assignee' => $this->user->username,
+        ])->assertOk()->assertSee('"assignee":"'.$this->user->username.'"');
+    });
+
+    test('staff keep their own to-do list: assign to me, then tick it off', function () {
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'  => 'Call the supplier back',
+            'assignee' => 'me',
+        ])->assertOk()->assertSee('"assignee":"'.$this->user->username.'"');
+
+        $task = StaffTask::where('requester_id', $this->user->id)->latest('id')->first();
+        expect($task->assignee_id)->toBe($this->user->id);
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'reference' => strtolower($task->reference),
+            'status'    => 'cancelled',
+        ])->assertHasErrors();
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'reference' => $task->reference,
+            'status'    => 'done',
+        ])->assertOk()->assertSee('"status":"done"');
+
+        expect($task->refresh()->status->value)->toBe('done')
+            ->and($task->closed_at)->not->toBeNull();
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'reference' => 'TASK-0',
+            'status'    => 'done',
+        ])->assertHasErrors(['that you asked for or are assigned to']);
+    });
+
+    test('unknown department lists the valid ones and unknown links are refused', function () {
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'    => 'Count it',
+            'department' => 'nowhere',
+        ])->assertHasErrors(['Departments: ', $this->department]);
+
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'      => 'Count it',
+            'department'   => $this->department,
+            'organisation' => $this->location->organisation->code,
+            'sko'          => 'NOPE-999',
+        ])->assertHasErrors(['No OrgStock NOPE-999']);
+    });
+
+    test('the requester follows up on their tasks and reads the thread', function () {
+        AikuServer::actingAs($this->user)->tool(StaffTaskWriteTool::class, [
+            'subject'     => 'Recount the shelf',
+            'description' => 'Please recount before Friday',
+            'department'  => $this->department,
+        ])->assertOk();
+
+        $task = StaffTask::where('requester_id', $this->user->id)->latest('id')->first();
+
+        AikuServer::actingAs($this->user)->tool(StaffTasksTool::class, [])
+            ->assertOk()->assertSee('"reference":"'.$task->reference.'"');
+
+        AikuServer::actingAs($this->user)->tool(StaffTasksTool::class, ['reference' => strtolower($task->reference)])
+            ->assertOk()->assertSee('Please recount before Friday');
+    });
+});
+
+describe('family related products tool', function () {
+    beforeEach(function () {
+        [, $this->product] = createProduct($this->shop);
+        $this->family      = $this->product->family;
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['catalog' => ['related_product_follow_master' => false]])]);
+        $this->user->update(['can_use_mcp_web' => true]);
+    });
+
+    test('a user not enrolled is refused and told not to retry', function () {
+        $this->user->update(['can_use_mcp_web' => false]);
+        $before = $this->family->relatedProducts()->pluck('products.id')->all();
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'          => $this->shop->slug,
+            'family'        => $this->family->code,
+            'product_codes' => [$this->product->code],
+            'request_text'  => 'add it',
+        ])->assertHasErrors(['Changing website content is not enabled for this user']);
+
+        expect($this->family->relatedProducts()->pluck('products.id')->all())->toBe($before);
+    });
+
+    test('replaces the list in order, then shows it', function () {
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'          => $this->shop->slug,
+            'family'        => strtolower($this->family->code),
+            'product_codes' => [strtolower($this->product->code)],
+            'request_text'  => 'add it to sells well with',
+        ])->assertOk()->assertSee('this shop only');
+
+        expect($this->family->relatedProducts()->pluck('products.id')->all())->toBe([$this->product->id]);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'   => $this->shop->slug,
+            'family' => $this->family->code,
+        ])->assertOk()->assertSee($this->product->code);
+    });
+
+    test('unknown codes change nothing', function () {
+        $before = $this->family->relatedProducts()->pluck('products.id')->all();
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'          => $this->shop->slug,
+            'family'        => $this->family->code,
+            'product_codes' => [$this->product->code, 'NOPE-999'],
+            'request_text'  => 'add them',
+        ])->assertHasErrors(['NOPE-999']);
+
+        expect($this->family->relatedProducts()->pluck('products.id')->all())->toBe($before);
+    });
+});
+
+describe('ai changes log', function () {
+    beforeEach(function () {
+        [, $this->product] = createProduct($this->shop);
+        $this->family      = $this->product->family;
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['catalog' => ['related_product_follow_master' => false]])]);
+        App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts::make()->action($this->family, ['product_ids' => []]);
+        $this->user->update(['can_use_mcp_web' => true]);
+    });
+
+    function changeRelatedProducts($test): App\Models\SysAdmin\McpChange
+    {
+        AikuServer::actingAs($test->user)->tool(App\Mcp\Tools\FamilyRelatedProductsTool::class, [
+            'shop'          => $test->shop->slug,
+            'family'        => $test->family->code,
+            'product_codes' => [$test->product->code],
+            'request_text'  => 'add it',
+        ])->assertOk()->assertSee('change_log_id');
+
+        return App\Models\SysAdmin\McpChange::latest('id')->first();
+    }
+
+    test('a write is logged with before and after and the ai can revert it once', function () {
+        $mcpChange = changeRelatedProducts($this);
+
+        expect($mcpChange->before)->toBe(['ids' => []])
+            ->and($mcpChange->after)->toBe(['ids' => [$this->product->id]])
+            ->and($mcpChange->data['after_text'])->toBe($this->product->code);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [])
+            ->assertOk()->assertSee('"id":'.$mcpChange->id);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [
+            'revert_id'    => $mcpChange->id,
+            'request_text' => 'undo that',
+        ])->assertOk();
+
+        expect($this->family->relatedProducts()->count())->toBe(0);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [
+            'revert_id'    => $mcpChange->id,
+            'request_text' => 'undo that again',
+        ])->assertHasErrors(['already reverted']);
+    });
+
+    test('a revert is refused when someone changed it again afterwards', function () {
+        $mcpChange = changeRelatedProducts($this);
+
+        App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts::make()->action($this->family, ['product_ids' => []]);
+
+        expect(fn () => App\Actions\SysAdmin\McpChange\RevertMcpChange::run($mcpChange, $this->user))
+            ->toThrow(Illuminate\Validation\ValidationException::class);
+
+        expect($mcpChange->refresh()->reverted_at)->toBeNull();
+    });
+
+    test('the changes table lists it and the revert button works', function () {
+        Illuminate\Support\Facades\Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+        $mcpChange = changeRelatedProducts($this);
+
+        $this->actingAs($this->user)
+            ->get(route('grp.sysadmin.mcp.changes.index'))
+            ->assertOk()
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->component('SysAdmin/McpChanges'));
+
+        $this->actingAs($this->user)
+            ->post(route('grp.models.mcp_change.revert', $mcpChange->id))
+            ->assertRedirect();
+
+        expect($mcpChange->refresh()->reverted_at)->not->toBeNull()
+            ->and($this->family->relatedProducts()->count())->toBe(0);
     });
 });

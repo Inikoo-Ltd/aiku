@@ -36,7 +36,7 @@ function enableSearch(key) {
     class="w-auto">
     <template #button>
       <div class="h-5 w-5 flex justify-center items-center" title="Search by columns">
-        <FontAwesomeIcon icon="fas fa-filter" class="h-4 w-4 text-gray-400" aria-hidden="true" />
+        <FontAwesomeIcon icon="fas fa-filter" class="h-4 w-4 text-gray-400" fixed-width aria-hidden="true" />
       </div>
     </template>
 

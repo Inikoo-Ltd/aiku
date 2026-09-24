@@ -17,7 +17,8 @@ trait WithShopifyPortfolioMatching
         CustomerSalesChannel $customerSalesChannel,
         ?string $platformProductId,
         ?string $platformProductVariantId,
-        ?string $sku
+        ?string $sku,
+        bool $healPlatformIds = true
     ): ?Portfolio {
         $portfolio = $this->findPortfolioByPlatformId($customerSalesChannel, 'platform_product_variant_id', $platformProductVariantId);
 
@@ -29,7 +30,7 @@ trait WithShopifyPortfolioMatching
             $portfolio = $this->findPortfolioBySku($customerSalesChannel, $sku);
         }
 
-        if ($portfolio) {
+        if ($portfolio && $healPlatformIds) {
             $this->healPortfolioPlatformIds($portfolio, $platformProductId, $platformProductVariantId);
         }
 

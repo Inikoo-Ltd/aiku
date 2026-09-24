@@ -183,6 +183,7 @@ class StoreProspect extends OrgAction
                 'nullable',
                 'exists:customers,id,shop_id,'.$this->shop->id,
             ];
+            $rules['user_id'] = ['sometimes', 'nullable', 'exists:users,id'];
         }
 
         if (!$this->strict) {

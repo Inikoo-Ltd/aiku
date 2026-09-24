@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNotePercentage;
+use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
@@ -18,6 +19,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 
 class CalculateDeliveryNoteItemTotalPicked extends OrgAction
@@ -153,7 +156,35 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 
         CalculateDeliveryNotePercentage::make()->action($deliveryNoteItem->deliveryNote);
 
+        $this->syncTransactionPickedQuantity($deliveryNoteItem, $deliveryNote);
+
         return $deliveryNoteItem;
+    }
+
+    /**
+     * The order's transaction learned what was picked only when the order changed state, so a pick
+     * that moves no state - a late pick on a note already blocked - left the transaction reading
+     * zero and the order page struck a line that was in the tote (HELP-3235). Only the quantity is
+     * written: the amounts stay as the customer submitted them until the picks are final, which is
+     * still the order state transition's job.
+     */
+    protected function syncTransactionPickedQuantity(DeliveryNoteItem $deliveryNoteItem, DeliveryNote $deliveryNote): void
+    {
+        $transaction = $deliveryNoteItem->transaction;
+
+        if (!$transaction || $transaction->is_follow_on || $transaction->model_type != 'Product') {
+            return;
+        }
+
+        if (!in_array($transaction->order?->state, [OrderStateEnum::HANDLING, OrderStateEnum::HANDLING_BLOCKED], true)) {
+            return;
+        }
+
+        $quantityPicked = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNote)['quantity'];
+
+        if ($transaction->quantity_picked === null || (float)$transaction->quantity_picked !== (float)$quantityPicked) {
+            $transaction->update(['quantity_picked' => $quantityPicked]);
+        }
     }
 
     public function action(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem

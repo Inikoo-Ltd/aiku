@@ -274,7 +274,7 @@ const resetSelection = () => {
                 <template #title>
                     <div class="text-red-500 font-semibold text-lg">
                         <FontAwesomeIcon
-                            :icon="faTriangleExclamation"
+                            :icon="faTriangleExclamation" fixed-width
                         />
                         {{ ctrans('Set as Offline') }}
                     </div>

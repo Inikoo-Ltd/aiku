@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Fulfilment\FulfilmentTransaction;
 
 use App\Actions\Fulfilment\FulfilmentTransaction\StoreFulfilmentTransaction;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\FulfilmentTransaction;
 use App\Models\Fulfilment\PalletReturn;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaFulfilmentTransaction extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     protected Organisation $organisation;
 
     public function handle(PalletDelivery|PalletReturn $parent, array $modelData): FulfilmentTransaction

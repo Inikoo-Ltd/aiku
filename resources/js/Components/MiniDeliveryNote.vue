@@ -318,12 +318,12 @@ onMounted(() => {
                 </dl>
 
                 <dl class="flex items-center gap-2">
-                    <dt><FontAwesomeIcon icon="fal fa-cube" class="text-gray-500" /></dt>
+                    <dt><FontAwesomeIcon icon="fal fa-cube" class="text-gray-500" fixed-width /></dt>
                     <dd>{{ locale.number(data.delivery_note.products?.number_items || 0) }} items</dd>
                 </dl>
 
                 <dl class="flex items-center gap-2">
-                    <dt><FontAwesomeIcon icon="fal fa-weight" class="text-gray-500" /></dt>
+                    <dt><FontAwesomeIcon icon="fal fa-weight" class="text-gray-500" fixed-width /></dt>
                     <dd>{{ locale.number(data.delivery_note?.products.estimated_weight) || '-' }} kg</dd>
                 </dl>
 
@@ -336,7 +336,7 @@ onMounted(() => {
                             class="text-gray-500 cursor-pointer hover:text-gray-700"
                             @click="onOpenModalParcels">
                             {{ data.delivery_note?.parcels?.length ? trans("Edit") : trans("Add") }}
-                            <FontAwesomeIcon :icon="data.delivery_note?.parcels?.length ? 'fal fa-pencil' : 'fas fa-plus'" size="sm" />
+                            <FontAwesomeIcon :icon="data.delivery_note?.parcels?.length ? 'fal fa-pencil' : 'fas fa-plus'" size="sm" fixed-width />
                         </div>
                     </div>
                     <ul class="list-disc pl-4 mt-1 text-gray-600 text-xs space-y-0.5">

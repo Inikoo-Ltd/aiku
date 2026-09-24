@@ -17,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetEbayProducts extends OrgAction
 {
+    use WithRetinaOwnedCustomerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array|null
     {
         return GetProductForEbay::run(

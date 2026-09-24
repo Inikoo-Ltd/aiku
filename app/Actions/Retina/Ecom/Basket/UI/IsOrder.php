@@ -176,7 +176,7 @@ trait IsOrder
                 $clientRoute
             );
         }
-        $deliveryNotes     = $order->deliveryNotes;
+        $deliveryNotes     = $order->deliveryNotes->loadMissing('shipments.shipper');
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
@@ -209,7 +209,7 @@ trait IsOrder
                         ]
                     ],
                     'shipper_directive'            => $this->getShipperDirective($deliveryNote),
-                    'shipments'                    => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
+                    'shipments'                    => ShipmentsResource::collection($deliveryNote->shipments)->resolve(),
                     'shipments_routes'             => [
                         'submit_route' => [
                             'name'       => 'grp.models.delivery_note.shipment.store',
@@ -288,7 +288,7 @@ trait IsOrder
             ];
         }
 
-        $orderSummary[] = [
+        $chargesGroup = [
             [
                 'label'       => __('Charges'),
                 'information_icon' => __('A small administration, picking and packing charge of £5 +VAT applies to orders under £50 +VAT'),
@@ -296,8 +296,26 @@ trait IsOrder
                 'price_total' => $order->charges_amount,
                 'slot_name'   => 'charges',
             ],
-            [
-                'label'       => __('Shipping'),
+        ];
+
+        if ((float) $order->packaging_amount > 0) {
+            $chargesGroup[] = [
+                'label'       => __('Packaging'),
+                'information' => '',
+                'price_total' => $order->packaging_amount,
+            ];
+        }
+
+        if ((float) $order->leaflet_amount > 0) {
+            $chargesGroup[] = [
+                'label'       => __('Add-ons'),
+                'information' => '',
+                'price_total' => $order->leaflet_amount,
+            ];
+        }
+
+        $chargesGroup[] = [
+            'label'       => __('Shipping'),
                 'information' => '',
                 'price_total_old'   => $order->discounted_shipping_offer_id
                     ? null  //  TODO: check CalculateOrderShipping::make()->getUndiscountedShippingAmount($order)
@@ -324,8 +342,9 @@ trait IsOrder
                     'is_shipper_locked'   => (bool) $order->is_shipper_locked,
                     'shipping_options'    => GetOrderShippingOptions::run($order),
                 ]
-            ]
         ];
+
+        $orderSummary[] = $chargesGroup;
 
         if ($order->amount_off != 0) {
             $orderSummary[] = [

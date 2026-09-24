@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Ordering;
 
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
@@ -21,11 +22,19 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaTransaction extends RetinaAction
 {
+    use WithCustomerPurchasableProduct;
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Order $order, array $modelData): Transaction
     {
-        $historicAssetId = $modelData['historic_asset_id'];
+        $this->ensureCustomerCanChangeOrder($order);
 
-        $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAssetId)->first();
+        $historicAsset = HistoricAsset::find($modelData['historic_asset_id']);
+        $product       = $historicAsset->model;
+
+        $existingTransaction = $product instanceof Product ? $this->findCustomerLine($order, $product) : null;
 
         if ($existingTransaction) {
             return UpdateRetinaTransaction::run(
@@ -36,19 +45,16 @@ class StoreRetinaTransaction extends RetinaAction
             );
         }
 
+        $this->ensureHistoricAssetIsPurchasableByCustomer($historicAsset, $order->customer);
+
         $order->update([
             'updated_by_customer_at' => now()
         ]);
-
-        $historicAsset = HistoricAsset::find($historicAssetId);
 
         $transaction = StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
         ]);
 
-
-        /** @var Product $product */
-        $product = $historicAsset->model;
         $gtm = [
             'ecommerce' => [
                 'transaction_id' => $order->id,
@@ -73,7 +79,7 @@ class StoreRetinaTransaction extends RetinaAction
     public function rules(): array
     {
         return [
-            'quantity'          => ['required', 'numeric', 'min:0'],
+            'quantity'          => ['required', 'integer', 'min:0'],
             'historic_asset_id' => ['required', Rule::exists('historic_assets', 'id')->where('model_type', 'Product')],
         ];
     }

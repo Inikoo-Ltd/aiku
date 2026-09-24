@@ -13,7 +13,6 @@ interface SelectedProductDetail {
     detailData: Ref<Record<string, any>>
     loadDetail: (product?: ProductLike) => Promise<void>
     selectProduct: (product: ProductLike) => void
-    applyBlockProduct: (product: ProductLike) => void
 }
 
 /**
@@ -24,6 +23,11 @@ interface SelectedProductDetail {
  * reloads the detail instead of assuming a previous load still applies. Reloading on
  * a slug change alone loses the detail whenever a selection resolves to the product
  * already on screen, which is what reselecting the variant leader from the URL does.
+ *
+ * Reselecting the product already on screen keeps the detail in place and refreshes it
+ * in the background, so the step discount never blinks out and back. Only a move to a
+ * different product drops it, where holding it would price the new product from the
+ * old one's offer.
  */
 export const useSelectedProductDetail = (options: SelectedProductDetailOptions): SelectedProductDetail => {
     const selectedProduct = ref<ProductLike>(options.initialProduct)
@@ -56,13 +60,6 @@ export const useSelectedProductDetail = (options: SelectedProductDetailOptions):
     }
 
     const selectProduct = (product: ProductLike): void => {
-        detailData.value = {}
-        selectedProduct.value = { ...product }
-        options.onSelect?.(product)
-        loadDetail(product)
-    }
-
-    const applyBlockProduct = (product: ProductLike): void => {
         if (selectedProduct.value?.id !== product.id) {
             detailData.value = {}
         }
@@ -72,5 +69,5 @@ export const useSelectedProductDetail = (options: SelectedProductDetailOptions):
         loadDetail(product)
     }
 
-    return { selectedProduct, detailData, loadDetail, selectProduct, applyBlockProduct }
+    return { selectedProduct, detailData, loadDetail, selectProduct }
 }

@@ -10,6 +10,7 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\SourceOrganisationService;
@@ -77,6 +78,8 @@ class FetchAuroraPurchaseOrders extends FetchAuroraAction
                 }
             }
 
+            $this->linkFetchedStockDeliveries($purchaseOrder);
+
             if (in_array('transactions', $this->with)) {
                 $this->fetchTransactions($organisationSource, $purchaseOrder);
             }
@@ -88,6 +91,33 @@ class FetchAuroraPurchaseOrders extends FetchAuroraAction
         return null;
     }
 
+
+    /**
+     * A stock delivery fetched before its purchase order finds nothing to link to, so the order
+     * picks up its deliveries when it arrives.
+     */
+    private function linkFetchedStockDeliveries(PurchaseOrder $purchaseOrder): void
+    {
+        $sourceData = explode(':', $purchaseOrder->source_id);
+
+        $stockDeliverySourceIds = DB::connection('aurora')
+            ->table('Supplier Delivery Dimension')
+            ->where('Supplier Delivery Purchase Order Key', $sourceData[1])
+            ->pluck('Supplier Delivery Key')
+            ->map(fn ($key) => $purchaseOrder->organisation_id.':'.$key)
+            ->all();
+
+        if (!$stockDeliverySourceIds) {
+            return;
+        }
+
+        StockDelivery::whereIn('source_id', $stockDeliverySourceIds)->each(function (StockDelivery $stockDelivery) use ($purchaseOrder) {
+            $stockDelivery->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
+            $stockDelivery->update([
+                'number_purchase_orders' => $stockDelivery->purchaseOrders()->count(),
+            ]);
+        });
+    }
 
     private function fetchTransactions($organisationSource, PurchaseOrder $purchaseOrder): void
     {

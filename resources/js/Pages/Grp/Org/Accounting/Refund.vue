@@ -436,7 +436,7 @@ const getInvoiceRoute = () => {
           <span>{{ original_invoice?.tax_number }}</span>
           <FontAwesomeIcon :icon="getStatusIcon(original_invoice.tax_number_status, original_invoice.tax_number_valid)"
             :class="getStatusColor(original_invoice.tax_number_status, original_invoice.tax_number_valid)" size="xs"
-            v-tooltip="taxNumberStatusText" />
+            v-tooltip="taxNumberStatusText" fixed-width />
         </dd>
       </dl>
 

@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Http\Resources\Catalogue\OrderProductsForModifyResource;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
@@ -35,7 +36,12 @@ class GetOrderProductsForModification extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->where('products.shop_id', $order->shop_id)->where('products.is_for_sale', true);
+        $queryBuilder->where('products.shop_id', $order->shop_id);
+        if ($order->isPartnerOrder()) {
+            $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING]);
+        } else {
+            $queryBuilder->sellableToCustomer($order->customer_id);
+        }
         $queryBuilder->whereNotIn('products.id', $order->transactions()->where('model_type', 'Product')->pluck('model_id'));
         $queryBuilder
             ->defaultSort('products.code')

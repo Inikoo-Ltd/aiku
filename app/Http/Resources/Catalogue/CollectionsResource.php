@@ -84,6 +84,7 @@ class CollectionsResource extends JsonResource
             'website_slug'         => $this->website_slug,
             'master_collection_id' => $this->master_collection_id,
             'url_master'           => $urlMaster,
+            'not_follow_master_items' => (bool) $this->not_follow_master_items,
 
             'state'           => $this->state,
             'state_icon'      => $this->state ? CollectionStateEnum::from($this->state->value)->stateIcon()[$this->state->value] : null,

@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Tiktok\User;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\TiktokUser;
 use Illuminate\Support\Arr;
@@ -18,6 +19,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdateTiktokUser extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;

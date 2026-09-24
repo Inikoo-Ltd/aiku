@@ -65,7 +65,7 @@ const containerStyle = computed(() => ({
             <DisclosureButton class="ml-2 flex h-[44px] w-[44px] items-center justify-center transition "
               :name="'disclosure-button-' + index"
               :aria-label="open ? ctrans('Hide answer') : ctrans('Show answer')">
-              <font-awesome-icon :icon="open ? 'minus' : 'plus'" aria-hidden="true" />
+              <font-awesome-icon :icon="open ? 'minus' : 'plus'" fixed-width aria-hidden="true" />
             </DisclosureButton>
           </dt>
           <DisclosurePanel as="dd" :unmount="false" class="px-4 pb-4 text-base text-gray-600 transition-all duration-300 ease-in-out !text-left">

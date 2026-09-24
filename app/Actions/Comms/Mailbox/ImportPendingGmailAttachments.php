@@ -9,9 +9,14 @@
 namespace App\Actions\Comms\Mailbox;
 
 use App\Actions\Chat\ChatSession\SendChatMessage;
+use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Http\Resources\CRM\Livechat\ChatMessageResource;
+use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,6 +33,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ImportPendingGmailAttachments
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(ChatSession $chatSession): int
     {
@@ -37,35 +43,73 @@ class ImportPendingGmailAttachments
             return 0;
         }
 
-        $imported = 0;
+        return $messages->sum(fn (ChatMessage $message) => $this->importMessage($client, $message));
+    }
 
-        foreach ($messages as $message) {
-            $gmailMessageId = Arr::get($message->metadata, 'gmail_message_id');
+    public function importMessage(GmailClient $client, ChatMessage $message): int
+    {
+        $gmailMessageId = Arr::get($message->metadata, 'gmail_message_id');
 
-            // The pictures came in when the mail did. Downloading everything again would attach
-            // them a second time, so what is already here is left alone.
-            $already = $message->attachedFiles()->pluck('name')->all();
+        // The pictures came in when the mail did. Downloading everything again would attach
+        // them a second time, so what is already here is left alone.
+        $already = $message->attachedFiles()->pluck('name')->all();
 
-            $files = $this->download(
-                $client,
-                $gmailMessageId,
-                $client->getMessage($gmailMessageId),
-                skip: $already
-            );
+        $files = $this->download(
+            $client,
+            $gmailMessageId,
+            $client->getMessage($gmailMessageId),
+            skip: $already
+        );
 
-            if ($files) {
-                SendChatMessage::make()->processMessageAttachments($message, $files);
-            }
-
-            foreach ($files as $file) {
-                @unlink($file->getPathname());
-            }
-
-            $message->update(['metadata' => Arr::except($message->metadata, 'gmail_pending_attachments')]);
-            $imported += count($files);
+        if ($files) {
+            SendChatMessage::make()->processMessageAttachments($message, $files);
         }
 
-        return $imported;
+        foreach ($files as $file) {
+            @unlink($file->getPathname());
+        }
+
+        $message->update(['metadata' => Arr::except($message->metadata, 'gmail_pending_attachments')]);
+
+        return count($files);
+    }
+
+    /**
+     * Waiting for a reply keeps a stranger's files out, but a reply is often exactly what the file
+     * is needed for: a form to fill in, a document to check. The agent can ask for them first.
+     */
+    public function asController(string $organisation, ChatSession $chatSession, ChatMessage $chatMessage): JsonResponse
+    {
+        if (! $this->getAuthorisedChatAgent($chatSession) instanceof ChatAgent) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Only agents can open these files'),
+            ], 403);
+        }
+
+        if ($chatMessage->chat_session_id !== $chatSession->id) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Message does not belong to this chat session'),
+            ], 422);
+        }
+
+        if (Arr::get($chatMessage->metadata, 'gmail_pending_attachments')) {
+            if (! $client = GmailClient::forShop($chatSession->shop)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('The shop mailbox is not connected'),
+                ], 422);
+            }
+
+            $this->importMessage($client, $chatMessage);
+            $chatMessage->refresh();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => (new ChatMessageResource($chatMessage))->resolve(),
+        ]);
     }
 
     /**
@@ -78,14 +122,21 @@ class ImportPendingGmailAttachments
     private const int GUEST_MAX_BYTES = 5242880;
 
     /**
+     * $contentIds comes back holding, for each file at the same position, the Content-ID the
+     * markup points at with src="cid:...", or null for a file the markup never mentions. It is
+     * returned alongside rather than looked up again because only this loop knows which
+     * candidates were actually imported.
+     *
      * @param  array<int, array<string, mixed>>  $attachments
+     * @param  array<int, string|null>  $contentIds
      * @return array<int, UploadedFile>
      */
-    public function download(GmailClient $client, string $gmailMessageId, array $raw, bool $trusted = true, array $skip = []): array
+    public function download(GmailClient $client, string $gmailMessageId, array $raw, bool $trusted = true, array $skip = [], ?array &$contentIds = null): array
     {
-        $files = [];
+        $files      = [];
+        $contentIds = [];
 
-        foreach (GmailMessageParser::attachments(Arr::get($raw, 'payload', [])) as $attachment) {
+        foreach ($this->candidates($client, $raw) as $attachment) {
             if (! $this->isWorthImporting($attachment, $trusted)) {
                 continue;
             }
@@ -94,17 +145,61 @@ class ImportPendingGmailAttachments
                 continue;
             }
 
-            $content = $attachment['attachmentId']
-                ? $client->getAttachment($gmailMessageId, $attachment['attachmentId'])
-                : GmailMessageParser::decodeData((string) $attachment['data']);
+            $content = match (true) {
+                (bool) $attachment['driveFileId'] => $client->driveFileContents($attachment['driveFileId']),
+                (bool) $attachment['attachmentId'] => $client->getAttachment($gmailMessageId, $attachment['attachmentId']),
+                default => GmailMessageParser::decodeData((string) $attachment['data']),
+            };
+
+            if (strlen((string) $content) > config('media-library.max_file_size')) {
+                continue;
+            }
 
             $path = tempnam(sys_get_temp_dir(), 'gmail-attachment-');
             file_put_contents($path, $content);
 
-            $files[] = new UploadedFile($path, basename($attachment['filename']), $attachment['mimeType'], null, true);
+            $files[]      = new UploadedFile($path, basename($attachment['filename']), $attachment['mimeType'], null, true);
+            $contentIds[] = $attachment['contentId'] ?? null;
         }
 
         return $files;
+    }
+
+    /**
+     * Everything the message offers, wherever it is kept. A photograph over Gmail's attachment
+     * limit is not in the mail at all: it is a Drive link, and Drive is asked what it is before
+     * any of the rules below can judge it. A file the sender never shared with us answers
+     * nothing, and is left as the link the customer sent.
+     *
+     * @return array<int, array{filename: string, mimeType: string, attachmentId: ?string, driveFileId: ?string, data: ?string, inline: bool, contentId: ?string, size: int}>
+     */
+    private function candidates(GmailClient $client, array $raw): array
+    {
+        $candidates = array_map(
+            fn (array $attachment) => $attachment + ['driveFileId' => null],
+            GmailMessageParser::attachments(Arr::get($raw, 'payload', []))
+        );
+
+        foreach (GmailMessageParser::driveFileIds(GmailMessageParser::htmlBody($raw)) as $fileId) {
+            $file = $client->driveFile($fileId);
+
+            if (! $file) {
+                continue;
+            }
+
+            $candidates[] = [
+                'filename'     => $file['name'],
+                'mimeType'     => $file['mimeType'],
+                'attachmentId' => null,
+                'driveFileId'  => $fileId,
+                'data'         => null,
+                'inline'       => false,
+                'contentId'    => null,
+                'size'         => $file['size'],
+            ];
+        }
+
+        return $candidates;
     }
 
     /**
@@ -114,13 +209,13 @@ class ImportPendingGmailAttachments
      *
      * @param  array<string, mixed>  $raw
      */
-    public function countDeferred(array $raw, bool $trusted): int
+    public function countDeferred(GmailClient $client, array $raw, bool $trusted): int
     {
         if ($trusted) {
             return 0;
         }
 
-        return collect(GmailMessageParser::attachments(Arr::get($raw, 'payload', [])))
+        return collect($this->candidates($client, $raw))
             ->filter(fn (array $attachment) => $this->isWorthImporting($attachment, true)
                 && ! $this->isWorthImporting($attachment, false))
             ->count();
@@ -135,6 +230,10 @@ class ImportPendingGmailAttachments
         $isImage = str_starts_with((string) $attachment['mimeType'], 'image/');
 
         if (($attachment['inline'] ?? false) && $size < self::INLINE_IMAGE_MIN_BYTES) {
+            return false;
+        }
+
+        if ($size > config('media-library.max_file_size')) {
             return false;
         }
 

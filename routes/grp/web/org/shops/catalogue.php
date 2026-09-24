@@ -30,6 +30,7 @@ use App\Actions\Catalogue\Product\UI\IndexProductsWithNoFamily;
 use App\Actions\Catalogue\Product\UI\IndexMissingDescriptionProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsNotOnline;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithMismatchedFamily;
+use App\Actions\Catalogue\Product\UI\IndexProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithNoImage;
 use App\Actions\Catalogue\Product\UI\IndexRRPViolationProducts;
 use App\Actions\Catalogue\Product\UI\ShowProduct;
@@ -199,6 +200,10 @@ Route::prefix('products')->as('products.')
                 Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
                 Route::get('invoices', IndexInvoicesInProduct::class)->name('invoices');
             });
+        });
+
+        Route::prefix('duplicated-barcodes')->as('duplicated_barcodes.')->group(function () {
+            Route::get('', IndexProductsWithDuplicatedBarcode::class)->name('index');
         });
 
         Route::prefix('rrp-violation')->as('rrp_violation_products.')->group(function () {

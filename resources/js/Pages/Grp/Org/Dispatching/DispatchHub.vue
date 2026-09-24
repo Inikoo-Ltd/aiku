@@ -11,7 +11,7 @@ import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, reactive, ref, watch } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry, faClipboardListCheck, faSave, faLock, faChevronDown } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import DispatchDashboard from "@/Components/Warehouse/DispatchDashboard.vue"
@@ -58,7 +58,10 @@ const props = defineProps<{
             artisan: string | null
             code: string
             name: string
-            destinations: { type: 'partner' | 'stock', label: string, quantity: number, location_code: string | null, locations: { code: string, quantity: number }[] }[]
+            quantity_made: number
+            quantity_total: number
+            in_progress: boolean
+            destinations: { type: 'partner' | 'stock', label: string, quantity: number, location_code: string | null, locations: { code: string, quantity: number }[], item_ids: number[], job_order_ids: number[] }[]
         }[]
     } | null
     can_edit?: boolean
@@ -94,8 +97,8 @@ function putAway(item: ProductionItem, destination: ProductionDestination, quant
     const key = destinationKey(item, destination)
     if (!props.put_away_route || isPuttingAway.value || !putAwayLocation[key]) return
     router.post(route(props.put_away_route.name, props.put_away_route.parameters), {
-        item_locations: { [item.id]: putAwayLocation[key] },
-        job_order_ids: [item.job_order_id],
+        item_locations: Object.fromEntries(destination.item_ids.map(itemId => [itemId, putAwayLocation[key]])),
+        job_order_ids: destination.job_order_ids,
         ...(quantity ? { item_quantities: { [item.id]: quantity } } : {}),
         allow_new_locations: allowNewLocations,
     }, {
@@ -104,7 +107,7 @@ function putAway(item: ProductionItem, destination: ProductionDestination, quant
         onFinish: () => isPuttingAway.value = false,
         onSuccess: () => delete putAwayQuantity[key],
         onError: errors => {
-            if (errors.new_location && window.confirm(errors.new_location + '. ' + trans('Add this location to the stock?'))) {
+            if (errors.new_location && window.confirm(errors.new_location + '. ' + ctrans('Add this location to the stock?'))) {
                 isPuttingAway.value = false
                 putAway(item, destination, quantity, true)
             }
@@ -139,7 +142,7 @@ function stage(task: NonNullable<typeof props.partner_staging>[number]) {
     })
 }
 function release(task: NonNullable<typeof props.partner_staging>[number]) {
-    if (!props.release_route || !window.confirm(trans("Send what is left to move back to production?"))) return
+    if (!props.release_route || !window.confirm(ctrans("Send what is left to move back to production?"))) return
     const key = stagingKey(task)
     router.post(route(props.release_route.name, props.release_route.parameters), {
         org_partner_id: task.org_partner_id,
@@ -179,12 +182,12 @@ const trolleyRoute = (trolley: { slug: string }) =>
         <table class="w-full text-sm">
             <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-gray-800">
                 <tr>
-                    <th class="px-4 py-2">{{ trans("For") }}</th>
-                    <th class="px-4 py-2">{{ trans("SKO") }}</th>
-                    <th class="px-4 py-2">{{ trans("From") }}</th>
-                    <th class="px-4 py-2">{{ trans("To") }}</th>
-                    <th class="px-4 py-2 text-right">{{ trans("Moved") }}</th>
-                    <th class="px-4 py-2 text-right">{{ trans("To move") }}</th>
+                    <th class="px-4 py-2">{{ ctrans("For") }}</th>
+                    <th class="px-4 py-2">{{ ctrans("SKO") }}</th>
+                    <th class="px-4 py-2">{{ ctrans("From") }}</th>
+                    <th class="px-4 py-2">{{ ctrans("To") }}</th>
+                    <th class="px-4 py-2 text-right">{{ ctrans("Moved") }}</th>
+                    <th class="px-4 py-2 text-right">{{ ctrans("To move") }}</th>
                     <th class="px-4 py-2"></th>
                 </tr>
             </thead>
@@ -201,7 +204,7 @@ const trolleyRoute = (trolley: { slug: string }) =>
                                 {{ location.code }} ({{ location.quantity }})
                             </option>
                         </select>
-                        <span v-else class="text-red-600">{{ trans("Nowhere to take it from") }}</span>
+                        <span v-else class="text-red-600">{{ ctrans("Nowhere to take it from") }}</span>
                     </td>
                     <td class="px-4 py-2 font-mono">{{ task.to_location }}</td>
                     <td class="px-4 py-2 text-right tabular-nums text-gray-500">{{ task.quantity_staged }}</td>
@@ -215,24 +218,24 @@ const trolleyRoute = (trolley: { slug: string }) =>
                             </span>
                             <InputNumber v-model="stagingQuantity[stagingKey(task)]" :min="0" :maxFractionDigits="3" showButtons buttonLayout="horizontal" inputClass="w-16 text-center" class="mr-2">
                                 <template #incrementbuttonicon>
-                                    <FontAwesomeIcon :icon="faPlus" />
+                                    <FontAwesomeIcon :icon="faPlus" fixed-width />
                                 </template>
                                 <template #decrementbuttonicon>
-                                    <FontAwesomeIcon :icon="faMinus" />
+                                    <FontAwesomeIcon :icon="faMinus" fixed-width />
                                 </template>
                             </InputNumber>
                         </template>
                         <button v-if="can_edit && task.from_locations.length" type="button" class="relative rounded bg-indigo-600 px-3 py-1 text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-80" :disabled="stagingInProgress !== null" @click="stage(task)">
-                            <span :class="{ invisible: stagingInProgress === stagingKey(task) }">{{ trans("Set as Moved") }}</span>
-                            <FontAwesomeIcon v-if="stagingInProgress === stagingKey(task)" :icon="faSpinnerThird" spin class="absolute inset-0 m-auto" />
+                            <span :class="{ invisible: stagingInProgress === stagingKey(task) }">{{ ctrans("Set as Moved") }}</span>
+                            <FontAwesomeIcon v-if="stagingInProgress === stagingKey(task)" :icon="faSpinnerThird" spin class="absolute inset-0 m-auto" fixed-width />
                         </button>
                         <button v-if="can_edit && task.org_stock_id" type="button" class="ml-2 rounded border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-80 dark:border-gray-600 dark:text-gray-200" :disabled="stagingInProgress !== null" @click="release(task)">
-                            {{ trans("Back to production") }}
+                            {{ ctrans("Back to production") }}
                         </button>
                     </td>
                 </tr>
                 <tr v-if="!partner_staging?.length">
-                    <td colspan="7" class="px-4 py-6 text-center text-gray-400">{{ trans("Nothing to stage") }}</td>
+                    <td colspan="7" class="px-4 py-6 text-center text-gray-400">{{ ctrans("Nothing to stage") }}</td>
                 </tr>
             </tbody>
         </table>
@@ -240,25 +243,32 @@ const trolleyRoute = (trolley: { slug: string }) =>
 
     <div v-else-if="isProductionTab && production_output">
         <Table :resource="production_output" name="production_output">
+            <template #cell(job_order_reference)="{ item }">
+                <div class="font-mono">{{ item.job_order_reference }}</div>
+                <div v-if="item.in_progress" class="text-xs tabular-nums text-amber-700">
+                    {{ item.quantity_made }}/{{ item.quantity_total }} · {{ ctrans("still in progress") }}
+                </div>
+                <div v-else class="text-xs tabular-nums text-gray-500">{{ item.quantity_total }}</div>
+            </template>
             <template #cell(code)="{ item }">
                 <span class="font-medium">{{ item.code }}</span>
             </template>
             <template #cell(actions)="{ item }">
                 <div v-for="destination in item.destinations" :key="destinationKey(item, destination)" class="flex items-center justify-between gap-x-6 py-0.5">
                     <div>
-                        <div v-if="destination.type === 'partner'" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="trans('Goods out bay of partner :partner', { partner: destination.label })">
-                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-hands-helping" class="text-indigo-500" aria-hidden="true" /></span>
+                        <div v-if="destination.type === 'partner'" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="ctrans('Goods out bay of partner :partner', { partner: destination.label })">
+                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-hands-helping" class="text-indigo-500" fixed-width aria-hidden="true" /></span>
                             {{ putAwayLocation[destinationKey(item, destination)] }}
                         </div>
-                        <div v-else-if="destination.locations.length === 1" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="trans('The only location of this stock')">
-                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" aria-hidden="true" /></span>
+                        <div v-else-if="destination.locations.length === 1" class="flex items-center gap-x-2 font-mono text-base" v-tooltip="ctrans('The only location of this stock')">
+                            <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" /></span>
                             {{ putAwayLocation[destinationKey(item, destination)] }}
                         </div>
                         <div v-else-if="destination.locations.length > 1" class="relative w-fit">
                             <Popover position="left-0" width="w-64">
                                 <template #button>
-                                    <div class="flex items-center gap-x-2 font-mono text-base hover:text-indigo-700" v-tooltip="trans('This stock has :count locations, choose one', { count: String(destination.locations.length) })">
-                                        <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-chevron-down" class="text-gray-400" aria-hidden="true" /></span>
+                                    <div class="flex items-center gap-x-2 font-mono text-base hover:text-indigo-700" v-tooltip="ctrans('This stock has :count locations, choose one', { count: String(destination.locations.length) })">
+                                        <span class="inline-flex w-6 shrink-0 justify-center"><FontAwesomeIcon icon="fal fa-chevron-down" class="text-gray-400" fixed-width aria-hidden="true" /></span>
                                         {{ putAwayLocation[destinationKey(item, destination)] }}
                                     </div>
                                 </template>
@@ -272,19 +282,19 @@ const trolleyRoute = (trolley: { slug: string }) =>
                                                 <FontAwesomeIcon icon="fal fa-check" fixed-width :class="putAwayLocation[destinationKey(item, destination)] === location.code ? 'text-indigo-600' : 'text-transparent'" aria-hidden="true" />
                                                 <span class="font-mono text-base font-semibold">{{ location.code }}</span>
                                             </span>
-                                            <span class="text-xs tabular-nums text-gray-500">{{ trans("stock in location") }}: {{ location.quantity }}</span>
+                                            <span class="text-xs tabular-nums text-gray-500">{{ ctrans("stock in location") }}: {{ location.quantity }}</span>
                                         </button>
                                     </div>
                                 </template>
                             </Popover>
                         </div>
-                        <input v-else v-model.trim="putAwayLocation[destinationKey(item, destination)]" type="text" :placeholder="trans('Location code')" :disabled="!can_edit"
+                        <input v-else v-model.trim="putAwayLocation[destinationKey(item, destination)]" type="text" :placeholder="ctrans('Location code')" :disabled="!can_edit"
                             class="w-32 rounded py-0.5 font-mono text-base uppercase" :class="putAwayLocation[destinationKey(item, destination)] ? 'border-gray-300' : 'border-amber-400 bg-amber-50'" />
                         <div class="pl-8 text-xs tabular-nums" :class="destination.type === 'partner' ? 'text-indigo-700' : putAwayLocation[destinationKey(item, destination)] ? 'text-gray-500' : 'text-amber-700'">
-                            <template v-if="destination.type === 'partner'">{{ trans("Partner bay") }} · {{ destination.label }}</template>
-                            <template v-else-if="!putAwayLocation[destinationKey(item, destination)]">{{ trans("No location yet, type one") }}</template>
-                            <template v-else-if="stockInLocation(item, destination) !== undefined">({{ trans("stock in location") }}: {{ stockInLocation(item, destination) }})</template>
-                            <template v-else>({{ trans("new location for this stock") }})</template>
+                            <template v-if="destination.type === 'partner'">{{ ctrans("Partner bay") }} · {{ destination.label }}</template>
+                            <template v-else-if="!putAwayLocation[destinationKey(item, destination)]">{{ ctrans("No location yet, type one") }}</template>
+                            <template v-else-if="stockInLocation(item, destination) !== undefined">({{ ctrans("stock in location") }}: {{ stockInLocation(item, destination) }})</template>
+                            <template v-else>({{ ctrans("new location for this stock") }})</template>
                         </div>
                     </div>
                     <NumberWithButtonSave v-if="can_edit" :key="destinationKey(item, destination) + '-' + destination.quantity" :modelValue="0" noUndoButton noSaveButton
@@ -293,10 +303,10 @@ const trolleyRoute = (trolley: { slug: string }) =>
                         <template #suffix>
                             <div class="ml-1 flex items-center gap-x-1">
                                 <Button v-if="putAwayQuantity[destinationKey(item, destination)] > 0" type="primary" size="xs" icon="fal fa-save" :loading="isPuttingAway"
-                                    v-tooltip="trans('Put away :quantity', { quantity: String(putAwayQuantity[destinationKey(item, destination)]) })"
+                                    v-tooltip="ctrans('Put away :quantity', { quantity: String(putAwayQuantity[destinationKey(item, destination)]) })"
                                     @click="putAway(item, destination, putAwayQuantity[destinationKey(item, destination)])" />
                                 <Button type="secondary" size="xs" icon="fal fa-clipboard-list-check" :label="String(destination.quantity)" :loading="isPuttingAway" :disabled="!putAwayLocation[destinationKey(item, destination)]"
-                                    v-tooltip="trans('Put away all :quantity in :location', { quantity: String(destination.quantity), location: putAwayLocation[destinationKey(item, destination)] || '-' })"
+                                    v-tooltip="ctrans('Put away all :quantity in :location', { quantity: String(destination.quantity), location: putAwayLocation[destinationKey(item, destination)] || '-' })"
                                     @click="putAway(item, destination)" />
                             </div>
                         </template>
@@ -315,14 +325,14 @@ const trolleyRoute = (trolley: { slug: string }) =>
                     :href="route(gate_route.name, gate_route.parameters)"
                     class="text-sm text-indigo-600 hover:underline"
                 >
-                    {{ trans("The gate") }} →
+                    {{ ctrans("The gate") }} →
                 </Link>
                 <Link
                     v-if="reports_route"
                     :href="route(reports_route.name, reports_route.parameters)"
                     class="text-sm text-indigo-600 hover:underline"
                 >
-                    {{ trans("Performance reports") }} →
+                    {{ ctrans("Performance reports") }} →
                 </Link>
             </div>
             <Table :resource="currentWorkData" :name="currentTab + '_current'">

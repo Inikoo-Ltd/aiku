@@ -1102,3 +1102,62 @@ test('a declined card does not corrupt the amount still outstanding', function (
     expect((float)$order->payment_amount)->toBe(5.0)
         ->and($order->pay_status)->toBe(App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID);
 });
+
+test('a staff payment link is bound to the order and its capture pays a submitted order without touching its state', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+    $order->update(['state' => OrderStateEnum::IN_WAREHOUSE, 'total_amount' => 174.26, 'payment_amount' => 165.52]);
+
+    $sentRequest = null;
+    App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink::partialMock()
+        ->shouldReceive('createCheckoutComPaymentLink')
+        ->once()
+        ->andReturnUsing(function ($paymentAccountShop, $paymentLinkRequest) use (&$sentRequest) {
+            $sentRequest = $paymentLinkRequest;
+
+            return ['id' => 'pl_test_link', '_links' => ['redirect' => ['href' => 'https://pay.sandbox.checkout.com/link/pl_test_link']]];
+        });
+
+    $orderPaymentApiPoint = App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink::make()->action($order);
+
+    expect($sentRequest->amount)->toBe(874)
+        ->and($sentRequest->reference)->toBe($order->reference)
+        ->and($sentRequest->metadata['operation'])->toBe('order')
+        ->and($sentRequest->metadata['api_point_id'])->toBe($orderPaymentApiPoint->id)
+        ->and($orderPaymentApiPoint->data['payment_link']['url'])->toBe('https://pay.sandbox.checkout.com/link/pl_test_link')
+        ->and($orderPaymentApiPoint->data['payment_methods']['checkout'])->toBe(App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink::checkoutPaymentAccountShop($order)->id);
+
+    ProcessCheckoutComPaymentGatewayLog::partialMock()
+        ->shouldReceive('getCheckOutPayment')
+        ->andReturn([
+            'id'     => 'pay_test_link_captured',
+            'status' => 'Captured',
+            'amount' => 874,
+            'source' => ['type' => 'card'],
+        ]);
+
+    $paymentGatewayLog = $this->group->paymentGatewayLogs()->create([
+        'payload' => fakeCheckoutComWebhookPayload('payment_captured', 'evt_test_link_captured', 'pay_test_link_captured', $orderPaymentApiPoint, 874),
+        'gateway' => 'checkout-com',
+    ]);
+
+    PreProcessCheckoutComPaymentGatewayLog::run($paymentGatewayLog);
+
+    $order->refresh();
+
+    expect($paymentGatewayLog->refresh()->status)->toBe(PaymentGatewayLogStatusEnum::OK)
+        ->and($orderPaymentApiPoint->refresh()->state)->toBe(OrderPaymentApiPointStateEnum::SUCCESS)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->payments()->where('reference', 'pay_test_link_captured')->count())->toBe(1);
+});
+
+test('a payment link is refused when the order owes nothing', function () {
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+    $order->update(['total_amount' => 20, 'payment_amount' => 20]);
+
+    expect(fn () => App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink::make()->action($order))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+});

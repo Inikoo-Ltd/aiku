@@ -376,6 +376,25 @@ class Webpage extends Model implements Auditable, HasMedia
         );
     }
 
+    /**
+     * What is told to search engines about this webpage. A sub type hidden from search engines
+     * overrules the stored columns, so a page that must never be indexed stays that way whatever
+     * an import, a migration or an older row left behind.
+     *
+     * @return array{index_page: bool, follow_link: bool}
+     */
+    public function searchEngineVisibility(): array
+    {
+        if ($this->sub_type?->isHiddenFromSearchEngines()) {
+            return $this->sub_type->searchEngineVisibility();
+        }
+
+        return [
+            'index_page'  => (bool)$this->index_page,
+            'follow_link' => (bool)$this->follow_link,
+        ];
+    }
+
     public function getUrl($withWWW = false): string
     {
         $domain = $this->website->domain;

@@ -301,13 +301,13 @@ const leaveChartData = computed(() => {
 					<input
 						v-model="startDate"
 						type="date"
-						class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
 						@change="updateFilters" />
 					<span class="text-gray-500">{{ trans("to") }}</span>
 					<input
 						v-model="endDate"
 						type="date"
-						class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
 						@change="updateFilters" />
 				</div>
 			</div>

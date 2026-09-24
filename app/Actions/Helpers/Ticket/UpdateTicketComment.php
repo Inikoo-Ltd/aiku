@@ -35,7 +35,19 @@ class UpdateTicketComment extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction) {
+            return true;
+        }
+
         return $request->route('ticketComment')->isAuthoredBy($request->user());
+    }
+
+    public function action(TicketComment $ticketComment, array $modelData): TicketComment
+    {
+        $this->asAction = true;
+        $this->initialisationFromGroup($ticketComment->ticket->group, $modelData);
+
+        return $this->handle($ticketComment, $this->validatedData);
     }
 
     public function asController(TicketComment $ticketComment, ActionRequest $request): TicketComment

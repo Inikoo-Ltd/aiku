@@ -291,7 +291,7 @@ defineExpose({
     <template #caret="{ handleCaretClick, isOpen }">
       <slot name="caret" :handleCaretClick="handleCaretClick" :isOpen="isOpen">
         <div class="px-2">
-          <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-xs mr-2" />
+          <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-xs mr-2" fixed-width />
         </div>
       </slot>
     </template>

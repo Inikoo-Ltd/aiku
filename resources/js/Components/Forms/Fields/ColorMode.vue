@@ -10,14 +10,14 @@
                 <span
                     :class="[isDark ? 'opacity-0 duration-100 ease-out' : 'opacity-100 duration-200 ease-in', 'absolute inset-0 flex h-full w-full items-center justify-center transition-opacity']"
                     aria-hidden="true">
-                    <FontAwesomeIcon aria-hidden="true" icon="fa-light fa-moon-stars" class="text-xs text-gray-100" />
+                    <FontAwesomeIcon fixed-width aria-hidden="true" icon="fa-light fa-moon-stars" class="text-xs text-gray-100" />
                 </span>
 
                 <!-- Dark -->
                 <span
                     :class="[isDark ? 'opacity-100 duration-200 ease-in' : 'opacity-0 duration-100 ease-out', 'absolute inset-0 flex h-full w-full items-center justify-center transition-opacity']"
                     aria-hidden="true">
-                    <FontAwesomeIcon aria-hidden="true" icon="fa-light fa-lightbulb-on" class="text-xs text-slate-800" />
+                    <FontAwesomeIcon fixed-width aria-hidden="true" icon="fa-light fa-lightbulb-on" class="text-xs text-slate-800" />
                 </span>
             </span>
         </Switch>

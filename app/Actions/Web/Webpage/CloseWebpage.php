@@ -47,10 +47,12 @@ class CloseWebpage extends OrgAction
 
         $webpage->update([
             'state'               => WebpageStateEnum::CLOSED->value,
+            'closed_at'           => now(),
             'redirect_webpage_id' => Arr::get($modelData, 'to_webpage_id')
         ]);
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
+        BreakWebpageCache::run($webpage);
 
         return $webpage;
     }

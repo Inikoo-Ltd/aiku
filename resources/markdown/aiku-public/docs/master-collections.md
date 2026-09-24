@@ -48,7 +48,9 @@ Engineering has a way to fill a master collection with every product that shares
 
 ## What the shops see
 
-Each shop copy shows a **Go to Master collection** link. A shop can still add its own products on top of what the master sends, which is useful for a local extra, but anything the master removes goes from the shop copy too. Sales and product counts on the master collection roll up from the shop copies.
+Each shop copy shows a **Go to Master collection** link. While a shop copy follows the master, the shop cannot change its families and products, and anything you add or remove here reaches it. Sales and product counts on the master collection roll up from the shop copies.
+
+A shop can opt out on its copy, from **Edit** → **Master**. **Do not follow master items** lets the shop pick its own families and products, and your changes here stop reaching that copy. **Do not follow master content** keeps the shop's own name and descriptions, and they stop coming back to the master as translations. When the shop turns a switch off again, the copy is made to match the master once more. See <a href="/docs/shop-collections">Shop collections</a> for what the shop sees.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>

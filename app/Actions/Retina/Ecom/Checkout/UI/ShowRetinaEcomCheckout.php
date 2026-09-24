@@ -98,9 +98,11 @@ class ShowRetinaEcomCheckout extends RetinaAction
             return Redirect::route('retina.ecom.basket.show');
         }
 
+        $isPlacedOnAccount = $this->customer->credit_limit > 0 && $this->customer->spendableBalance() >= $order->total_amount;
+
         $paymentAmounts = $this->calculatePaymentWithBalance(
             $order->total_amount,
-            $this->customer->balance
+            $isPlacedOnAccount ? $this->customer->spendableBalance() : $this->customer->balance
         );
 
         $toPay          = $paymentAmounts['total'];
@@ -125,6 +127,9 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 'earlier_delivery_address' => GetEarlierDeliveryAddressWarning::run($order, withCustomerActions: true),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,
+                'on_account'     => $isPlacedOnAccount ? [
+                    'available_credit' => $this->customer->spendableBalance(),
+                ] : null,
                 'total_amount'   => $order->total_amount,
                 'currency_code'  => $order->currency->code,
                 'to_pay_data'    => [

@@ -49,6 +49,7 @@ class GetCatalogueShowcase
                 $this->buildOutOfStockStat($shop, $orgSlug, $shopSlug),
                 $this->buildMissingDescriptionProductsStat($shop, $orgSlug, $shopSlug),
                 $this->buildProductsNotOnlineStat($shop, $orgSlug, $shopSlug),
+                $this->buildDuplicatedBarcodeStat($shop, $orgSlug, $shopSlug),
             ];
         }
 
@@ -551,6 +552,21 @@ class GetCatalogueShowcase
             'icon'            => 'fal fa-cube',
             'backgroundColor' => '#ff000011',
             'value'           => $shop->stats->number_products_with_rrp_violation,
+        ];
+    }
+
+    private function buildDuplicatedBarcodeStat(Shop $shop, string $orgSlug, string $shopSlug): array
+    {
+        return [
+            'label'           => __('Listings sharing a barcode'),
+            'is_negative'     => true,
+            'route'           => [
+                'name'       => 'grp.org.shops.show.catalogue.products.duplicated_barcodes.index',
+                'parameters' => ['organisation' => $orgSlug, 'shop' => $shopSlug],
+            ],
+            'icon'            => 'fal fa-barcode',
+            'backgroundColor' => '#ff000011',
+            'value'           => $shop->stats->number_products_with_duplicated_barcode,
         ];
     }
 

@@ -55,7 +55,7 @@ defineProps<{
         <template #cell(public_url)="{ item: department }">
             <div class="flex justify-center">
                 <a v-if="department.public_url" :href="department.public_url" target="_blank">
-                    <FontAwesomeIcon :icon="faExternalLink" />
+                    <FontAwesomeIcon :icon="faExternalLink" fixed-width />
                 </a>
             </div>
         </template>

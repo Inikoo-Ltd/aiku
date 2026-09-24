@@ -26,6 +26,7 @@ class GetWebpageSeo
         $website     = $webpage->website;
         $title       = $this->getWebpageSeoTitle($webpage);
         $imageSources = $this->getWebpageShareImageSources($webpage);
+        $visibility   = $webpage->searchEngineVisibility();
 
         return [
             'title'                  => $title,
@@ -36,15 +37,15 @@ class GetWebpageSeo
             'url'                    => $webpage->getUrl(),
             'domain'                 => $website->domain,
             'site_name'              => $website->name,
-            'index_page'             => (bool)$webpage->index_page,
-            'follow_link'            => (bool)$webpage->follow_link,
-            'robots'                 => ($webpage->index_page ? 'index' : 'noindex') . ', ' . ($webpage->follow_link ? 'follow' : 'nofollow'),
+            'index_page'             => $visibility['index_page'],
+            'follow_link'            => $visibility['follow_link'],
+            'robots'                 => ($visibility['index_page'] ? 'index' : 'noindex').', '.($visibility['follow_link'] ? 'follow' : 'nofollow'),
             'use_title_prefix_suffix' => (bool)Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true),
             'title_prefix'           => data_get($webpage->settings, 'webpage.title_prefix') ?: data_get($website->settings, 'webpage.title_prefix'),
             'title_suffix'           => data_get($webpage->settings, 'webpage.title_suffix') ?: data_get($website->settings, 'webpage.title_suffix'),
             'share_image'            => [
                 'url' => Arr::get($imageSources, 'png') ?? Arr::get($imageSources, 'original') ?? Arr::get($imageSources, 'url'),
-                'alt' => Arr::get($webpage->seo_data, 'image_alt') ?: $title,
+                'alt' => $this->getWebpageShareImageAlt($webpage),
             ],
             'structured_data'        => $this->structuredData($webpage),
             'structured_data_types'  => $this->structuredDataTypes($webpage),

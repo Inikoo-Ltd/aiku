@@ -423,7 +423,7 @@ const successEditTradeUnit = (data) => {
                 {{ trans("Create Master Product") }}
             </h2>
             <button @click="toggleFull" class="text-gray-500 hover:text-gray-700 mx-3">
-                <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" />
+                <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" fixed-width />
             </button>
         </template>
 
@@ -465,7 +465,7 @@ const successEditTradeUnit = (data) => {
                                     </span>
                                     <button type="button" class="text-gray-400 hover:text-gray-600 transition"
                                         title="Edit" @click="() => openModalTradeUnit(data)">
-                                        <FontAwesomeIcon :icon="faPencil" class="w-3.5 h-3.5 text-blue-500" />
+                                        <FontAwesomeIcon :icon="faPencil" class="w-3.5 h-3.5 text-blue-500" fixed-width />
                                     </button>
                                 </div>
 
@@ -500,11 +500,11 @@ const successEditTradeUnit = (data) => {
                     </template>
                 </ListSelector>
                 <small v-if="form.errors.trade_units" class="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <FontAwesomeIcon :icon="faCircleExclamation" />
+                    <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                     {{ form.errors.trade_units }}
                 </small>
                 <small class="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                    <FontAwesomeIcon :icon="faInfoCircle" class="text-sm" />
+                    <FontAwesomeIcon :icon="faInfoCircle" class="text-sm" fixed-width />
                     {{ trans('When multiple trade units are selected, it will automatically be set as the outer unit (value: 1).') }}
                 </small>
 
@@ -516,7 +516,7 @@ const successEditTradeUnit = (data) => {
                     class="w-full flex items-center justify-between border-b pb-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
                     @click="detailsVisible = !detailsVisible">
                     <span>{{ trans("Product Details") }}</span>
-                    <FontAwesomeIcon :icon="detailsVisible ? faChevronUp : faChevronDown" class="text-xs" />
+                    <FontAwesomeIcon :icon="detailsVisible ? faChevronUp : faChevronDown" class="text-xs" fixed-width />
                 </button>
 
                 <div v-if="detailsVisible" class="grid grid-cols-[140px_1fr] gap-6 mt-4 bg-white">
@@ -536,7 +536,7 @@ const successEditTradeUnit = (data) => {
 
                             <!-- Kalau kosong -->
                             <div v-else class="flex flex-col items-center text-gray-400 text-xs">
-                                <FontAwesomeIcon :icon="faCamera" class="text-lg mb-1" />
+                                <FontAwesomeIcon :icon="faCamera" class="text-lg mb-1" fixed-width />
                                 <span>Upload</span>
                             </div>
 
@@ -544,7 +544,7 @@ const successEditTradeUnit = (data) => {
                             <button v-if="previewUrl || form.image && form.trade_units.length > 1"
                                 @click.stop="resetImage"
                                 class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow hover:text-red-500">
-                                <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" />
+                                <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" fixed-width />
                             </button>
                         </div>
 
@@ -560,7 +560,7 @@ const successEditTradeUnit = (data) => {
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
                             <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.code.join(", ") }}
                             </small>
                         </div>
@@ -569,7 +569,7 @@ const successEditTradeUnit = (data) => {
                             <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
                                 class="w-full" />
                             <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.name.join(", ") }}
                             </small>
                         </div>
@@ -583,12 +583,12 @@ const successEditTradeUnit = (data) => {
                                         class="text-xs text-gray-400 ml-1"
                                         v-tooltip="trans(
                                             'Is Follower indicates that this product is a follower item and will not generate its own webpage.'
-                                        )"
+                                        )" fixed-width
                                     />
                                 </label>
                                 <Toggle v-model="form.is_minion_variant" />
                                 <small v-if="form.errors.is_minion_variant" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                    <FontAwesomeIcon :icon="faCircleExclamation" />
+                                    <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                     {{ form.errors.is_minion_variant.join(", ") }}
                                 </small>
                             </div>
@@ -600,12 +600,12 @@ const successEditTradeUnit = (data) => {
                                         class="text-xs text-gray-400 ml-1"
                                         v-tooltip="trans(
                                             'Is Follower indicates that this product is a follower item and will not generate its own webpage.'
-                                        )"
+                                        )" fixed-width
                                     />
                                 </label>
                                 <Toggle v-model="form.is_for_sale" />
                                 <small v-if="form.errors.is_for_sale" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                    <FontAwesomeIcon :icon="faCircleExclamation" />
+                                    <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                     {{ form.errors.is_for_sale.join(", ") }}
                                 </small>
                             </div>
@@ -615,7 +615,7 @@ const successEditTradeUnit = (data) => {
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
                                 class="w-full" />
                             <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.unit.join(", ") }}
                             </small>
                         </div>
@@ -637,7 +637,7 @@ const successEditTradeUnit = (data) => {
                                 :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.marketing_weight.join(", ") }}
                             </small>
                         </div>
@@ -648,7 +648,7 @@ const successEditTradeUnit = (data) => {
                                 @update:model-value="form.errors.net_weight = null" class="w-full" :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.net_weight.join(", ") }}
                             </small>
                         </div>
@@ -659,7 +659,7 @@ const successEditTradeUnit = (data) => {
                                 @update:model-value="form.errors.gross_weight = null" class="w-full" :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.gross_weight.join(", ") }}
                             </small>
                         </div>
@@ -671,7 +671,7 @@ const successEditTradeUnit = (data) => {
                                 @update:model-value="form.errors.marketing_dimensions = null" class="w-full" />
                             <small v-if="form.errors.marketing_dimensions"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.marketing_dimensions.join(", ") }}
                             </small>
                         </div>
@@ -684,7 +684,7 @@ const successEditTradeUnit = (data) => {
                                 @update:model-value="form.errors.description = null" class="w-full" />
                             <small v-if="form.errors.description"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.description.join(", ") }}
                             </small>
                         </div>
@@ -695,7 +695,7 @@ const successEditTradeUnit = (data) => {
                                 @update:model-value="form.errors.description_extra = null" class="w-full" />
                             <small v-if="form.errors.description_extra"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.description_extra.join(", ") }}
                             </small>
                         </div>
@@ -710,7 +710,7 @@ const successEditTradeUnit = (data) => {
                             />
                             <small v-if="form.errors.master_prices"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.master_prices.join(", ") }}
                             </small>
                         </div>
@@ -725,7 +725,7 @@ const successEditTradeUnit = (data) => {
                             />
                             <small v-if="form.errors.master_rrps"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                                 {{ form.errors.master_rrps.join(", ") }}
                             </small>
                         </div>
@@ -740,7 +740,7 @@ const successEditTradeUnit = (data) => {
                     class="w-full flex items-center justify-between border-b pb-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
                     @click="tableVisible = !tableVisible">
                     <span>{{ trans("Shop Product") }}</span>
-                    <FontAwesomeIcon :icon="tableVisible ? faChevronUp : faChevronDown" class="text-xs" />
+                    <FontAwesomeIcon :icon="tableVisible ? faChevronUp : faChevronDown" class="text-xs" fixed-width />
                 </button>
 
                 <div v-if="tableVisible" class="mt-4">

@@ -4,7 +4,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
@@ -67,6 +67,8 @@ type AgentRow = {
 	email: number
 	whatsapp: number
 	median_reply_minutes: number | null
+	rating: number | null
+	ratings: number
 }
 
 type ShopRow = {
@@ -86,10 +88,12 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	intervals: Record<string, string>
 	showShops: boolean
+	conversationsRoute: { name: string; parameters: Record<string, string> } | null
 	stats: {
 		interval: string
 		from: string
 		to: string
+		window: string
 		days: number
 		bucket: "day" | "week" | "month"
 		conversations: number
@@ -118,6 +122,8 @@ const props = defineProps<{
 			email: number
 			whatsapp: number
 			median_reply_minutes: number | null
+			rating: number | null
+			ratings: number
 		}
 	}
 }>()
@@ -258,6 +264,10 @@ const csatChart = computed(() => ({
 
 const csatOptions = {
 	responsive: true,
+	onClick: (event: unknown, elements: { index: number }[]) => onCsatClick(event, elements),
+	onHover: (event: { native?: { target?: HTMLElement } }, elements: unknown[]) => {
+		if (event.native?.target) event.native.target.style.cursor = elements.length ? "pointer" : "default"
+	},
 	maintainAspectRatio: false,
 	plugins: { legend: { display: false } },
 	scales: {
@@ -310,6 +320,7 @@ const agentColumns = [
 	{ key: "email", label: ctrans("Email") },
 	{ key: "whatsapp", label: ctrans("WhatsApp") },
 	{ key: "median_reply_minutes", label: ctrans("Median reply") },
+	{ key: "rating", label: ctrans("Average rating") },
 ]
 
 const shopColumns = [
@@ -322,6 +333,30 @@ const shopColumns = [
 	{ key: "whatsapp", label: ctrans("WhatsApp") },
 	{ key: "median_reply_minutes", label: ctrans("Median reply") },
 ]
+
+const ratedConversationsUrl = (filter: Record<string, string>) =>
+	props.conversationsRoute
+		? route(props.conversationsRoute.name, {
+				...props.conversationsRoute.parameters,
+				"filter[rated]": 1,
+				...Object.fromEntries(Object.entries(filter).map(([key, value]) => [`filter[${key}]`, value])),
+			})
+		: null
+
+const repliedUrl = (username: string | null) =>
+	username ? ratedConversationsUrl({ replied: `${username},${props.stats.window}` }) : null
+
+const monthUrl = (month: string) => {
+	const start = new Date(`${month}-01T00:00:00Z`)
+	const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1) - 1000)
+	return ratedConversationsUrl({ created_between: `${start.toISOString()},${end.toISOString()}` })
+}
+
+const onCsatClick = (_event: unknown, elements: { index: number }[]) => {
+	const row = props.stats.csat_by_month[elements[0]?.index]
+	const url = row?.total ? monthUrl(row.month) : null
+	if (url) router.visit(url)
+}
 
 const sortedAgents = computed(() => sortRows(props.stats.agents, "agents"))
 const topicColumns = [
@@ -564,6 +599,16 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 							<td class="px-4 py-2 text-right">
 								{{ minutes(agent.median_reply_minutes) }}
 							</td>
+							<td class="px-4 py-2 text-right">
+								<component
+									:is="repliedUrl(agent.username) ? Link : 'span'"
+									v-if="agent.rating !== null"
+									:href="repliedUrl(agent.username) ?? undefined"
+									:class="{ 'text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline': repliedUrl(agent.username) }">
+									{{ agent.rating }}<span class="text-gray-400">/5 ({{ agent.ratings }})</span>
+								</component>
+								<template v-else>-</template>
+							</td>
 						</tr>
 						<tr v-if="!stats.agents.length">
 							<td
@@ -587,6 +632,16 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 							<td class="px-4 py-2 text-right">{{ stats.agents_total.whatsapp }}</td>
 							<td class="px-4 py-2 text-right">
 								{{ minutes(stats.agents_total.median_reply_minutes) }}
+							</td>
+							<td class="px-4 py-2 text-right">
+								<component
+									:is="repliedUrl('*') ? Link : 'span'"
+									v-if="stats.agents_total.rating !== null"
+									:href="repliedUrl('*') ?? undefined"
+									:class="{ 'text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline': repliedUrl('*') }">
+									{{ stats.agents_total.rating }}<span class="text-gray-400">/5 ({{ stats.agents_total.ratings }})</span>
+								</component>
+								<template v-else>-</template>
 							</td>
 						</tr>
 					</tfoot>

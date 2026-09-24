@@ -54,6 +54,8 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
                 'customer_sales_channels.number_portfolios',
                 'customer_sales_channels.number_fulfilment_orders',
                 'customer_sales_channels.platform_id',
+                'customer_sales_channels.platform_user_type',
+                'customer_sales_channels.platform_user_id',
             ])
             ->selectSub(function ($subquery) {
                 $subquery->from('pallet_returns')

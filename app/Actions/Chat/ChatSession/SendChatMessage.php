@@ -8,6 +8,8 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\Email\SendChatNotificationToCustomer;
 use App\Actions\Comms\Email\SendChatNotificationToExternal;
@@ -15,16 +17,20 @@ use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
 use App\Actions\Comms\Mailbox\SendChatMessageByGmail;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Events\BroadcastRealtimeChat;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -36,6 +42,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SendChatMessage
 {
     use WithTrustedChatWebUser;
+    use WithChatAgentAuthorisation;
     use AsAction;
 
     /**
@@ -94,16 +101,33 @@ class SendChatMessage
             $chatMessage
         );
 
-        TranslateChatMessage::dispatch(messageId: $chatMessage->id);
+        $isEmailReply = $chatSession->channel === ChatChannelEnum::EMAIL && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value;
+
+        if (!$isEmailReply) {
+            TranslateChatMessage::dispatch(messageId: $chatMessage->id);
+        }
+
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch($chatMessage);
 
-        if ($chatSession->channel === ChatChannelEnum::EMAIL && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+        if ($isEmailReply) {
+            $copies = SendChatMessageByGmail::copyRecipients($chatSession, $modelData['email_cc_excluded'] ?? []);
+
+            if ($copies) {
+                $chatMessage->updateQuietly([
+                    'metadata' => array_merge($chatMessage->metadata ?? [], ['email_cc' => $copies]),
+                ]);
+            }
+
             SendChatMessageByGmail::dispatch($chatMessage);
             ImportPendingGmailAttachments::dispatch($chatSession);
         }
 
-        $shouldNotifyByEmail = $modelData['is_email_notif'] ?? false;
+        // On an email conversation the reply is itself the email, so a chat notification beside it
+        // reaches the same inbox twice. The composers hide the switch, but the guard belongs here:
+        // it is the one place every composer sends through.
+        $shouldNotifyByEmail = ($modelData['is_email_notif'] ?? false)
+            && $chatSession->channel !== ChatChannelEnum::EMAIL;
 
         if ($shouldNotifyByEmail && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
             $this->sendExternalNotification($chatSession);
@@ -310,7 +334,15 @@ class SendChatMessage
                 'sometimes',
                 'nullable',
                 'in:true,false'
-            ]
+            ],
+            'email_cc_excluded'   => [
+                'sometimes',
+                'array',
+            ],
+            'email_cc_excluded.*' => [
+                'string',
+                'max:255',
+            ],
         ];
     }
 
@@ -377,6 +409,57 @@ class SendChatMessage
     }
 
 
+    /**
+     * Writing into a conversation nobody holds is how an agent picks it up: a customer who
+     * answers a closed email thread comes back to the waiting queue unassigned, and every
+     * composer in the app used to refuse the reply with no way to claim it from there.
+     * A conversation somebody else is holding still has to be taken over on purpose.
+     *
+     * @return array{ok: bool, message: string, code: int}|null  a refusal, or null once claimed
+     */
+    private function claimUnheldChat(ChatSession $chatSession, User $user, ChatAgent $agent): ?array
+    {
+        $heldByAnother = $chatSession->assignments()
+            ->where('status', ChatAssignmentStatusEnum::ACTIVE->value)
+            ->exists();
+
+        if ($heldByAnother) {
+            return [
+                'ok'      => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
+                'code'    => 403,
+            ];
+        }
+
+        $shop = $chatSession->shop;
+
+        if (!$shop instanceof Shop || !$this->userCanActOnChatOnShop($user, $shop)) {
+            return [
+                'ok'      => false,
+                'message' => __('You do not work chat on this shop.'),
+                'code'    => 403,
+            ];
+        }
+
+        $chatSession->assignments()->create([
+            'chat_agent_id' => $agent->id,
+            'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+            'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
+            'note'          => 'Claimed by replying',
+            'assigned_at'   => now(),
+        ]);
+
+        $chatSession->update([
+            'status'    => ChatSessionStatusEnum::ACTIVE->value,
+            'closed_at' => null,
+            'closed_by' => null,
+        ]);
+
+        ChatAgentHydrateChats::run($agent);
+
+        return null;
+    }
+
     protected function determineSenderData(array $validated, ChatSession $chatSession): array
     {
         $senderType = $validated['sender_type'] ?? null;
@@ -393,7 +476,7 @@ class SendChatMessage
         if ($senderType === ChatSenderTypeEnum::AGENT->value) {
             $user = Auth::user();
 
-            if (!$user) {
+            if (!$user instanceof User) {
                 return [
                     'ok'      => false,
                     'message' => 'Only authenticated agents can send chats',
@@ -417,11 +500,11 @@ class SendChatMessage
                 ->exists();
 
             if (!$isAssigned) {
-                return [
-                    'ok'      => false,
-                    'message' => 'Agent is not assigned to this chat session.',
-                    'code'    => 403,
-                ];
+                $claim = $this->claimUnheldChat($chatSession, $user, $agent);
+
+                if ($claim !== null) {
+                    return $claim;
+                }
             }
 
             return [

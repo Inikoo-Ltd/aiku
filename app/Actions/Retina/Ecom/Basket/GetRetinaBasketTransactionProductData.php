@@ -10,12 +10,14 @@
 namespace App\Actions\Retina\Ecom\Basket;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetRetinaBasketTransactionProductData extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     public function handle(Transaction $transaction): array
     {
         /** @var Product $product */

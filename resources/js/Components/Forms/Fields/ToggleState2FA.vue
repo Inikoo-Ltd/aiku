@@ -235,7 +235,7 @@ const copyTextToClipboard = () =>  {
                             triggers: ['hover', 'click']
                         }" 
                         v-on:click="copyTextToClipboard()">
-                            {{ trans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" />
+                            {{ trans('Copy Code') }} <FontAwesomeIcon :icon="faCopy" fixed-width />
                         </span>
                     </div>
                     <div v-if="!initialValue" class="text-center font-semibold w-full px-8">

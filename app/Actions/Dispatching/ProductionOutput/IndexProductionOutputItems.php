@@ -21,7 +21,8 @@ class IndexProductionOutputItems
     use AsAction;
 
     /**
-     * The finished trips flattened to one row per made item, so the usual table can sort, search and page them.
+     * The finished trips flattened to one row per job and artefact, so the usual table can sort, search and page them.
+     * A job carried to another day is one row, under one number, with the amount the whole job asks for.
      * What is still owed and where it goes is worked out by the trips, never by this query.
      *
      * @param  array<int, array<string, mixed>>  $trips  as returned by GetFinishedProductionJobOrders
@@ -29,16 +30,20 @@ class IndexProductionOutputItems
     public function handle(array $trips, string $prefix): LengthAwarePaginator
     {
         $destinationsByItem = [];
+        $jobByItem          = [];
         foreach ($trips as $trip) {
             foreach ($trip['jobs'] as $job) {
                 foreach ($job['items'] as $item) {
-                    $destinationsByItem[$item['id']][] = [
+                    $destinationsByItem[$item['item_id']][] = [
                         'type'          => $trip['destination']['type'],
                         'label'         => $trip['destination']['label'],
                         'quantity'      => $item['quantity'],
                         'location_code' => $trip['destination']['location_code'] ?? $item['location_code'],
                         'locations'     => $item['locations'],
+                        'item_ids'      => $item['item_ids'],
+                        'job_order_ids' => $item['job_order_ids'],
                     ];
+                    $jobByItem[$item['item_id']] = $item;
                 }
             }
         }
@@ -74,10 +79,13 @@ class IndexProductionOutputItems
             ->through(fn (JobOrderItem $item) => [
                 'id'                  => $item->id,
                 'job_order_id'        => $item->job_order_id,
-                'job_order_reference' => $item->job_order_reference,
+                'job_order_reference' => $jobByItem[$item->id]['reference'],
                 'artisan'             => $item->artisan,
                 'code'                => $item->code,
                 'name'                => $item->name,
+                'quantity_made'       => $jobByItem[$item->id]['quantity_made'],
+                'quantity_total'      => $jobByItem[$item->id]['quantity_total'],
+                'in_progress'         => $jobByItem[$item->id]['in_progress'],
                 'destinations'        => $destinationsByItem[$item->id],
             ]);
     }

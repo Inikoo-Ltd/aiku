@@ -82,19 +82,19 @@ const marketingMaterialUrl = computed(() => {
                     <!-- Floating Like -->
                     <div
                         class="absolute left-2 top-4 z-20 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-xl">
-                        <FontAwesomeIcon icon="fal fa-heart" class="text-2xl text-purple-500" />
+                        <FontAwesomeIcon icon="fal fa-heart" class="text-2xl text-purple-500" fixed-width />
                     </div>
 
                     <!-- Floating Hashtag -->
                     <div
                         class="absolute right-2 top-10 z-20 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-xl">
-                        <FontAwesomeIcon icon="fal fa-hashtag" class="text-2xl text-pink-500" />
+                        <FontAwesomeIcon icon="fal fa-hashtag" class="text-2xl text-pink-500" fixed-width />
                     </div>
 
                     <!-- Floating Notification -->
                     <div
                         class="absolute bottom-5 left-4 z-20 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-xl">
-                        <FontAwesomeIcon icon="fal fa-bell" class="text-2xl text-blue-500" />
+                        <FontAwesomeIcon icon="fal fa-bell" class="text-2xl text-blue-500" fixed-width />
                     </div>
 
                     <!-- Phone -->

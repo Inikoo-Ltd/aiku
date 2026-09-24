@@ -175,7 +175,7 @@ class UpdateAgent extends OrgAction
                 'sometimes',
                 'nullable',
                 'string',
-                'max:2000',
+                'max:20000',
             ],
         ];
     }

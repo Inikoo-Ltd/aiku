@@ -1,7 +1,7 @@
 <template>
     <div>
         <button class="text-red-500" type="button" @click="remove(components.indexOf(file))" title="Remove file">
-            <FontAwesomeIcon :icon="['fas', 'trash-alt']" class="text-xs sm:text-sm" />
+            <FontAwesomeIcon :icon="['fas', 'trash-alt']" class="text-xs sm:text-sm" fixed-width />
             Delete
         </button>
     </div>

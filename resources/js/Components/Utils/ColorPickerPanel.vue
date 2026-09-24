@@ -70,7 +70,7 @@ const applyPaletteColor = (color: string): void => {
 
             <button v-if="closable" type="button" :aria-label="trans('Close')" @click="emits('close')"
                 class="-mr-1 flex h-5 w-5 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
-                <FontAwesomeIcon :icon="faTimes" class="h-3 w-3" aria-hidden="true" />
+                <FontAwesomeIcon :icon="faTimes" class="h-3 w-3" fixed-width aria-hidden="true" />
             </button>
         </div>
 
@@ -95,7 +95,7 @@ const applyPaletteColor = (color: string): void => {
 
                     <button type="button" :disabled="!canSaveCurrentColor" @click="saveColor(currentColor)"
                         class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-transparent">
-                        <FontAwesomeIcon :icon="faPlus" class="h-2.5 w-2.5" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faPlus" class="h-2.5 w-2.5" fixed-width aria-hidden="true" />
                         {{ trans('Save') }}
                     </button>
                 </div>
@@ -109,7 +109,7 @@ const applyPaletteColor = (color: string): void => {
                         <button type="button" :aria-label="trans('Remove :color', { color: saved })"
                             class="absolute -right-1 -top-1 hidden h-3 w-3 items-center justify-center rounded-full bg-gray-400 text-white hover:bg-red-500 group-hover:flex"
                             @click.stop="forgetColor(saved)">
-                            <FontAwesomeIcon :icon="faTimes" class="h-1.5 w-1.5" aria-hidden="true" />
+                            <FontAwesomeIcon :icon="faTimes" class="h-1.5 w-1.5" fixed-width aria-hidden="true" />
                         </button>
                     </div>
                 </div>

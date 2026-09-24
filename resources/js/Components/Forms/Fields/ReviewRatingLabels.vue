@@ -113,7 +113,7 @@ const stopEditingLabelTab = (): void => {
                     class="rounded-full  border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                     @click.stop="editLabelTab(context.key)"
                 >
-                <FontAwesomeIcon :icon="faPen" class="h-3 w-3 pr-1" />   
+                <FontAwesomeIcon :icon="faPen" class="h-3 w-3 pr-1" fixed-width />   
                 {{ trans('label') }}
                 </button>
 

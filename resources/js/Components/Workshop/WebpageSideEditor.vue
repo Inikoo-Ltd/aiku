@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, onUnmounted, toRaw, computed, watch, nextTick } from 'vue'
+import { ref, inject, onMounted, onUnmounted, computed, watch, nextTick, Ref } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import draggable from 'vuedraggable'
@@ -22,11 +22,14 @@ import {
 	getDeletePermissions,
 	getHiddenPermissions,
 	getRenamePermision,
+	getCopyPermissions,
+	BLOCKS_WITHOUT_VISIBILITY_OPTIONS,
 } from '@/Composables/getBlueprintWorkshop'
 import { Root, Daum } from '@/types/webBlockTypes'
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import { Collapse } from 'vue-collapsed'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
+import { formatShortcutCombo, CopiedWebBlock } from '@/Composables/useWorkshopShortcuts'
 import WeblockList from '@/Components/CMS/Webpage/WeblockList.vue'
 import WebpageTemplateList from '@/Components/Workshop/WebpageTemplateList.vue'
 import {
@@ -207,9 +210,9 @@ const setShowBlock = (e: Event, value: Daum) => {
 const confirmDelete = (event: Event, data: Daum) => {
 	confirm.require({
 		target: event.currentTarget,
-		message: trans("move this block? This action can't be undone."),
-		rejectProps: { label: trans('Cancel'), severity: 'secondary', outlined: true },
-		acceptProps: { label: trans('Yes, delete'), severity: 'danger' },
+		message: ctrans("move this block? This action can't be undone."),
+		rejectProps: { label: ctrans('Cancel'), severity: 'secondary', outlined: true },
+		acceptProps: { label: ctrans('Yes, delete'), severity: 'danger' },
 		accept: () => sendDeleteBlock(data),
 		onHide: () => closeContextMenu(),
 	})
@@ -245,7 +248,9 @@ const contextMenu = ref({
 	left: 0,
 	block: null as Daum | null,
 })
-const copiedBlock = ref<Daum | null>(null)
+const copiedBlock = inject<Ref<CopiedWebBlock | null>>('copiedWebBlock', ref(null))
+const copyWebBlock = inject<(block: Daum) => void>('copyWebBlock', () => {})
+const pasteWebBlock = inject<(position?: number) => void>('pasteWebBlock', () => {})
 
 const contextMenuEl = ref<HTMLElement | null>(null)
 const CONTEXT_MENU_MARGIN = 8
@@ -287,19 +292,26 @@ const closeContextMenu = () => {
 
 const copyBlock = () => {
 	if (contextMenu.value.block) {
-		copiedBlock.value = structuredClone(toRaw(contextMenu.value.block))
+		copyWebBlock(contextMenu.value.block)
 	}
 	closeContextMenu()
 }
-const pasteBlock = () => {
+
+const pasteBlock = (position: number = props.webpage.layout.web_blocks.length) => {
 	if (!copiedBlock.value) return
-	emits('onDuplicateBlock', copiedBlock.value.id)
+	pasteWebBlock(position)
 	closeContextMenu()
 }
 
+const pasteBelowContextBlock = () => {
+	const index = props.webpage.layout.web_blocks.findIndex(
+		(block) => block.id === contextMenu.value.block?.id
+	)
+	pasteBlock(index === -1 ? undefined : index + 1)
+}
+
 const duplicateBlock = (block: Daum) => {
-	copiedBlock.value = structuredClone(toRaw(block))
-	emits('onDuplicateBlock', copiedBlock.value.id)
+	emits('onDuplicateBlock', block.id)
 	closeContextMenu()
 }
 
@@ -454,14 +466,7 @@ const blockNotEditableVisible = [
 
 ]
 
-const blockWithoutVisibilityOptions = [
-	"login",
-	"register",
-	"register-dashboard",
-	"register-dashboard-2",
-	"forgot-password",
-	"blog-categories",
-]
+const blockWithoutVisibilityOptions = BLOCKS_WITHOUT_VISIBILITY_OPTIONS
 
 const openedBlockType = computed(
 	() => props.webpage?.layout?.web_blocks?.[openedBlockSideEditor.value]?.type
@@ -527,8 +532,8 @@ const showBlockVisibilityOptions = computed(
 								label="Block" />
 							<select
 								id="block-visibility-filter"
-								:aria-label="trans('Show')"
-								v-tooltip="trans('Preview which blocks visitors see when logged in or out')"
+								:aria-label="ctrans('Show')"
+								v-tooltip="ctrans('Preview which blocks visitors see when logged in or out')"
 								class="flex-1 min-w-0 text-xs border border-slate-300 rounded px-1.5 py-0.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
 								:value="filterBlock"
 								@change="(event: { target: { value: any } }) => filterBlock = event.target.value">
@@ -541,7 +546,7 @@ const showBlockVisibilityOptions = computed(
 								</option>
 							</select>
 							<span
-								v-tooltip="trans('Blocks shown by this filter of the total on the page')"
+								v-tooltip="ctrans('Blocks shown by this filter of the total on the page')"
 								class="shrink-0 text-[10px] tabular-nums text-slate-400">
 								{{ visibleBlockCount }}/{{ webpage?.layout?.web_blocks?.length ?? 0 }}
 							</span>
@@ -576,8 +581,8 @@ const showBlockVisibilityOptions = computed(
 												!editable
 													? ''
 													: getEditPermissions(element.web_block.layout.data)
-													? trans('Double-click to open Style')
-													: trans(
+													? ctrans('Double-click to open Style')
+													: ctrans(
 															'This block is reserved by system. Not editable.'
 													  )
 											"
@@ -598,13 +603,13 @@ const showBlockVisibilityOptions = computed(
 												">
 												<FontAwesomeIcon
 													icon="fal fa-bars"
-													v-tooltip="editable ? trans('Drag to reorder') : ''"
+													v-tooltip="editable ? ctrans('Drag to reorder') : ''"
 													class="handle shrink-0 text-xs cursor-grab active:cursor-grabbing"
 													:class="
 														openedBlockSideEditor === index
 															? 'text-white/70'
 															: 'text-slate-300 group-hover:text-slate-400'
-													" />
+													" fixed-width />
 
 												<span
 													class="shrink-0 w-4 text-[10px] font-semibold tabular-nums text-center"
@@ -622,7 +627,7 @@ const showBlockVisibilityOptions = computed(
 														v-if="editingIndex === index"
 														v-model="renameValue"
 														:maxlength="MAX_RENAME_LENGTH"
-														:aria-label="trans('Rename')"
+														:aria-label="ctrans('Rename')"
 														class="text-xs font-medium border border-slate-300 rounded px-1 py-0.5 w-full text-gray-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
 														@vue:mounted="(vnode: any) => (vnode.el.focus(), vnode.el.select())"
 														@keydown.enter.prevent="saveRename(index)"
@@ -638,7 +643,7 @@ const showBlockVisibilityOptions = computed(
 																{{element.web_block.layout.data.fieldValue.blocks.name}}
 															</template>
 															<template v-else>
-																{{ element.type }}
+																{{ element.name || element.type }}
 															</template>
 														</span>
 														<span
@@ -656,20 +661,20 @@ const showBlockVisibilityOptions = computed(
 
 												<span
 													v-if="!element.show"
-													v-tooltip="trans('This block is hidden on the page')"
+													v-tooltip="ctrans('This block is hidden on the page')"
 													class="shrink-0 px-1 py-px rounded text-[10px] font-medium leading-tight"
 													:class="
 														openedBlockSideEditor === index
 															? 'bg-white/20 text-white'
 															: 'bg-slate-100 text-slate-500'
 													">
-													{{ trans('Hidden') }}
+													{{ ctrans('Hidden') }}
 												</span>
 
 												<span
 													v-if="element.show && getRevealSetting(element)"
 													v-tooltip="
-														trans('Revealed when this link is clicked') +
+														ctrans('Revealed when this link is clicked') +
 														': #' +
 														getRevealSetting(element)?.key
 													"
@@ -679,7 +684,7 @@ const showBlockVisibilityOptions = computed(
 															? 'bg-white/20 text-white'
 															: 'bg-indigo-50 text-indigo-600'
 													">
-													{{ trans('On click') }}
+													{{ ctrans('On click') }}
 												</span>
 
 												<LoadingIcon v-if="isLoadingBlock === element.id" class="shrink-0" />
@@ -696,7 +701,7 @@ const showBlockVisibilityOptions = computed(
 														!blockNotEditableVisible.includes(element.type) &&
 														!blockWithoutVisibilityOptions.includes(element.type)
 													"
-													v-tooltip="trans('Duplicate this block')"
+													v-tooltip="ctrans('Duplicate this block')"
 													@click.stop.prevent="duplicateBlock(element)"
 													class="h-5 w-5 flex items-center justify-center rounded text-[11px] transition-colors"
 													:class="[
@@ -717,8 +722,8 @@ const showBlockVisibilityOptions = computed(
 													"
 													v-tooltip="
 														element.show
-															? trans('Hide this block from the page')
-															: trans('Show this block on the page')
+															? ctrans('Hide this block from the page')
+															: ctrans('Show this block on the page')
 													"
 													@click.stop.prevent="
 														setShowBlock($event, element)
@@ -748,7 +753,7 @@ const showBlockVisibilityOptions = computed(
 															element.web_block.layout.data
 														) && !blockNotEditableVisible.includes(element.type)
 													"
-													v-tooltip="trans('Delete this block')"
+													v-tooltip="ctrans('Delete this block')"
 													@click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
 													class="h-5 w-5 flex items-center justify-center rounded text-[11px] transition-colors"
 													:class="[
@@ -777,23 +782,23 @@ const showBlockVisibilityOptions = computed(
 						<div
 							v-else
 							class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
-							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-2xl mb-1 text-slate-300" />
-							<span class="text-xs font-medium">{{trans("You don't have any blocks")}}</span>
+							<FontAwesomeIcon :icon="['fal', 'browser']" class="text-2xl mb-1 text-slate-300" fixed-width />
+							<span class="text-xs font-medium">{{ctrans("You don't have any blocks")}}</span>
 							<span class="text-[11px] text-slate-400">
-								{{ trans('Use the Block button above to add your first one.') }}
+								{{ ctrans('Use the Block button above to add your first one.') }}
 							</span>
 						</div>
 
 						<div
 							v-if="webpage?.layout?.web_blocks.length && visibleBlockCount === 0"
 							class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
-							<FontAwesomeIcon :icon="faEyeSlash" class="text-2xl mb-1 text-slate-300" />
-							<span class="text-xs font-medium">{{ trans('No blocks match this filter') }}</span>
+							<FontAwesomeIcon :icon="faEyeSlash" class="text-2xl mb-1 text-slate-300" fixed-width />
+							<span class="text-xs font-medium">{{ ctrans('No blocks match this filter') }}</span>
 							<button
 								type="button"
 								class="text-[11px] underline text-theme"
 								@click="filterBlock = 'all'">
-								{{ trans('Show all blocks') }}
+								{{ ctrans('Show all blocks') }}
 							</button>
 						</div>
 						<div
@@ -870,17 +875,17 @@ const showBlockVisibilityOptions = computed(
 						<template v-else>
 							<div
 								class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
-								<FontAwesomeIcon :icon="faBrush" class="text-2xl mb-1 text-slate-300" />
+								<FontAwesomeIcon :icon="faBrush" class="text-2xl mb-1 text-slate-300" fixed-width />
 								<template v-if="openedBlockSideEditor !== null">
-									<span class="text-xs font-medium">{{ trans('Not editable') }}</span>
+									<span class="text-xs font-medium">{{ ctrans('Not editable') }}</span>
 									<span class="text-[11px] text-slate-400">
-										{{ trans('This block is reserved by system. Not editable.') }}
+										{{ ctrans('This block is reserved by system. Not editable.') }}
 									</span>
 								</template>
 								<template v-else>
-									<span class="text-xs font-medium">{{ trans('No block selected') }}</span>
+									<span class="text-xs font-medium">{{ ctrans('No block selected') }}</span>
 									<span class="text-[11px] text-slate-400">
-										{{ trans('Pick a block in the Layer tab to edit its style.') }}
+										{{ ctrans('Pick a block in the Layer tab to edit its style.') }}
 									</span>
 								</template>
 							</div>
@@ -914,7 +919,7 @@ const showBlockVisibilityOptions = computed(
 
 		<ConfirmPopup>
 			<template #icon>
-				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
 			</template>
 		</ConfirmPopup>
 
@@ -938,25 +943,35 @@ const showBlockVisibilityOptions = computed(
 							: 'text-gray-400 cursor-not-allowed pointer-events-none',
 					]">
 					<font-awesome-icon :icon="faEdit" fixed-width />
-					{{ trans('Rename') }}
+					{{ ctrans('Rename') }}
 				</li>
 
 				<!-- Copy -->
 				<li
-					@click="
-						getEditPermissions(contextMenu.block.web_block.layout.data) &&
-							!blockWithoutVisibilityOptions.includes(contextMenu.block.type) &&
-							copyBlock()
-					"
+					@click="getCopyPermissions(contextMenu.block) && copyBlock()"
 					:class="[
 						'flex items-center gap-2 px-2.5 py-1',
-						getEditPermissions(contextMenu.block.web_block.layout.data) &&
-						!blockWithoutVisibilityOptions.includes(contextMenu.block.type)
+						getCopyPermissions(contextMenu.block)
 							? 'hover:bg-slate-100 text-slate-800 cursor-pointer'
 							: 'text-gray-400 cursor-not-allowed pointer-events-none',
 					]">
 					<font-awesome-icon :icon="faCopy" fixed-width />
-					{{ trans('Copy') }}
+					{{ ctrans('Copy') }}
+					<kbd class="ml-auto pl-3 font-sans text-[10px] text-slate-400">{{ formatShortcutCombo(['Mod', 'C']) }}</kbd>
+				</li>
+
+				<!-- Paste below -->
+				<li
+					@click="pasteBelowContextBlock"
+					:class="[
+						'flex items-center gap-2 px-2.5 py-1',
+						copiedBlock
+							? 'hover:bg-slate-100 text-slate-800 cursor-pointer'
+							: 'text-gray-400 cursor-not-allowed pointer-events-none',
+					]">
+					<font-awesome-icon :icon="faPaste" fixed-width />
+					{{ ctrans('Paste below') }}
+					<kbd class="ml-auto pl-3 font-sans text-[10px] text-slate-400">{{ formatShortcutCombo(['Mod', 'V']) }}</kbd>
 				</li>
 
 				<!-- Toggle Visibility -->
@@ -974,7 +989,8 @@ const showBlockVisibilityOptions = computed(
 					<font-awesome-icon
 						:icon="contextMenu.block?.show ? faEyeSlash : faEye"
 						fixed-width />
-					{{ contextMenu.block?.show ? trans('Hide') : trans('Unhide') }}
+					{{ contextMenu.block?.show ? ctrans('Hide') : ctrans('Unhide') }}
+					<kbd class="ml-auto pl-3 font-sans text-[10px] text-slate-400">{{ formatShortcutCombo(['Mod', 'Shift', 'H']) }}</kbd>
 				</li>
 
 				<li class="my-0.5 h-px bg-slate-200" aria-hidden="true" />
@@ -992,16 +1008,18 @@ const showBlockVisibilityOptions = computed(
 							: 'text-gray-400 cursor-not-allowed pointer-events-none',
 					]">
 					<font-awesome-icon :icon="faTrashAlt" fixed-width />
-					{{ trans('Delete') }}
+					{{ ctrans('Delete') }}
+					<kbd class="ml-auto pl-3 font-sans text-[10px] text-slate-400">{{ formatShortcutCombo(['Delete']) }}</kbd>
 				</li>
 			</template>
 			<template v-else>
 				<li
-					@click="pasteBlock"
+					@click="pasteBlock()"
 					class="flex items-center gap-2 px-2.5 py-1 hover:bg-slate-100 cursor-pointer"
 					:class="{ 'text-gray-400 pointer-events-none': !copiedBlock }">
 					<font-awesome-icon :icon="faPaste" fixed-width />
-					{{ copiedBlock ? trans('Paste') : trans('Nothing to paste') }}
+					{{ copiedBlock ? ctrans('Paste') : ctrans('Nothing to paste') }}
+					<kbd v-if="copiedBlock" class="ml-auto pl-3 font-sans text-[10px] text-slate-400">{{ formatShortcutCombo(['Mod', 'V']) }}</kbd>
 				</li>
 			</template>
 		</ul>

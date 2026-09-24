@@ -147,9 +147,9 @@ const updateFormValue = (newValue) => {
                 <template #stateIcon>
                     <div class="mr-2 h-full flex items-center pointer-events-none">
                         <FontAwesomeIcon v-if="get(form, ['errors', `${fieldName}`])" icon="fas fa-exclamation-circle"
-                            class="h-5 w-5 text-red-500" aria-hidden="true" />
+                            class="h-5 w-5 text-red-500" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon v-if="form.recentlySuccessful" icon="fas fa-check-circle"
-                            class="h-5 w-5 text-green-500" aria-hidden="true" />
+                            class="h-5 w-5 text-green-500" fixed-width aria-hidden="true" />
                         <!-- <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third" class="h-5 w-5 animate-spin" /> -->
                     </div>
                 </template>

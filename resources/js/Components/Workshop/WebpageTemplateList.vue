@@ -153,7 +153,7 @@ const onShowAllTemplates = () => {
 	<div class="flex flex-col h-full min-h-0">
 		<ConfirmDialog :group="DELETE_CONFIRM_GROUP">
 			<template #icon>
-				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500" />
+				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500" fixed-width />
 			</template>
 		</ConfirmDialog>
 
@@ -212,7 +212,7 @@ const onShowAllTemplates = () => {
 			<div
 				v-else-if="errorMessage"
 				class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-red-200 text-slate-500">
-				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-2xl mb-1 text-red-300" />
+				<FontAwesomeIcon :icon="faExclamationTriangle" class="text-2xl mb-1 text-red-300" fixed-width />
 				<span class="text-xs font-medium">{{ trans('Unable to load templates') }}</span>
 				<span class="text-[11px] text-slate-400">{{ errorMessage }}</span>
 				<button
@@ -287,7 +287,7 @@ const onShowAllTemplates = () => {
 			<div
 				v-else
 				class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
-				<FontAwesomeIcon :icon="faShapes" class="text-2xl mb-1 text-slate-300" />
+				<FontAwesomeIcon :icon="faShapes" class="text-2xl mb-1 text-slate-300" fixed-width />
 				<template v-if="search || isMatchingFilterActive">
 					<span class="text-xs font-medium">
 						{{ isMatchingFilterActive && !search

@@ -69,15 +69,15 @@ const showText = computed(() => {
     }">
         <!-- Best Seller 1 Icon -->
         <FontAwesomeIcon v-if="props.topSeller === 1 && get(props.data, ['bestseller1', 'icon', 'use_icon'], true)" :icon="faMedal"
-            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-1-icon': props.topSeller === 1 }" />
+            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-1-icon': props.topSeller === 1 }" fixed-width />
 
         <!-- Best Seller 2 Icon -->
         <FontAwesomeIcon v-if="props.topSeller === 2 && get(props.data, ['bestseller2', 'icon', 'use_icon'], true)" :icon="faMedal"
-            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-2-icon': props.topSeller === 2 }" />
+            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-2-icon': props.topSeller === 2 }" fixed-width />
 
         <!-- Best Seller 3 Icon -->
         <FontAwesomeIcon v-if="props.topSeller === 3 && get(props.data, ['bestseller3', 'icon', 'use_icon'], true)" :icon="faMedal"
-            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-3-icon': props.topSeller === 3 }" />
+            class="w-3.5 h-3.5 mr-1" :class="{ 'best-seller-3-icon': props.topSeller === 3 }" fixed-width />
 
         <span v-if="showText" :class="{
             'best-seller-1-text': props.topSeller === 1,

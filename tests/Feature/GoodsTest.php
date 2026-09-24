@@ -191,20 +191,19 @@ test('show ingredient', function (Ingredient $ingredient) {
 })->depends('update ingredient');
 
 test("UI Show Goods Dashboard", function () {
-    $response = get(
-        route("grp.goods.dashboard")
-    );
+    $response = get(route("grp.goods.dashboard", ["condition" => "oos", "sort" => "code"]));
+
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component("Goods/GoodsDashboard")
+            ->component("Goods/ProductCommandControl")
             ->has("breadcrumbs", 2)
             ->has("title")
-            ->has(
-                "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'Goods strategy')
-                    ->etc()
-            )
-            ->has("flatTreeMaps");
+            ->where("pageHead.title", "Product Command & Control")
+            ->has("kpis")
+            ->has("rows")
+            ->has("organisations")
+            ->where("filters.condition", "oos")
+            ->where("filters.sort", "code");
     });
 });
 

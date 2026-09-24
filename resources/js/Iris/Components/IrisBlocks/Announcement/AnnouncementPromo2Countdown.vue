@@ -4,7 +4,7 @@ import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, ref, onMounted, onUnmounted } from "vue"
 import type { BlockProperties, LinkProperties } from "@/types/Announcement"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 
 library.add(faTimes)
@@ -110,25 +110,25 @@ onUnmounted(() => {
                     <div id="countdown-days" class="text-base w-fit flex justify-center overflow-hidden relative rounded-md tabular-nums">
                         {{ days }}
                     </div>
-                    <div class="text-xs opacity-60">{{ trans("Days") }}</div>
+                    <div class="text-xs opacity-60">{{ ctrans("Days") }}</div>
                 </div>
                 <div class="flex flex-col items-center">
                     <div id="countdown-hours" class="text-base w-fit flex justify-center overflow-hidden relative rounded-md tabular-nums">
                         {{ hours }}
                     </div>
-                    <div class="text-xs opacity-60">{{ trans("Hours") }}</div>
+                    <div class="text-xs opacity-60">{{ ctrans("Hours") }}</div>
                 </div>
                 <div class="flex flex-col items-center">
                     <div id="countdown-minutes" class="text-base w-fit flex justify-center overflow-hidden relative rounded-md tabular-nums">
                         {{ minutes }}
                     </div>
-                    <div class="text-xs opacity-60">{{ trans("Minutes") }}</div>
+                    <div class="text-xs opacity-60">{{ ctrans("Minutes") }}</div>
                 </div>
                 <div class="flex flex-col items-center">
                     <div id="countdown-seconds" class="text-base w-fit flex justify-center overflow-hidden relative rounded-md tabular-nums">
                         {{ seconds }}
                     </div>
-                    <div class="text-xs opacity-60">{{ trans("Seconds") }}</div>
+                    <div class="text-xs opacity-60">{{ ctrans("Seconds") }}</div>
                 </div>
             </div>
 

@@ -18,7 +18,6 @@ import { UploadPallet } from '@/types/Pallet'
 import { Link, router } from "@inertiajs/vue3"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal'
 import Papa from 'papaparse'
-import * as XLSX from 'xlsx'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from './LoadingIcon.vue'
@@ -85,7 +84,8 @@ const onUploadFile = async (fileUploaded: File) => {
     } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
         selectedFile.value = fileUploaded;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
+            const XLSX = await import('xlsx');
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             const sheetName = workbook.SheetNames[0];
@@ -288,7 +288,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                             <a v-if="upload_spreadsheet?.route?.download?.name" :href="route(upload_spreadsheet?.route?.download?.name, upload_spreadsheet?.route?.download?.parameters)"
                                 class="group text-xs text-gray-600 cursor-pointer px-2 -mr-1.5 w-fit" download>
                                 <span class="text-xs text-gray-400 group-hover:text-gray-600">
-                                    <FontAwesomeIcon icon='fas fa-file-download' class='text-gray-400 group-hover:text-gray-600' aria-hidden='true' />
+                                    <FontAwesomeIcon icon='fas fa-file-download' class='text-gray-400 group-hover:text-gray-600' fixed-width aria-hidden='true' />
                                     {{ upload_spreadsheet?.template?.label || trans(`Download template .xlsx`) }}
                                 </span>
                             </a>
@@ -309,7 +309,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                         <div v-if="selectedFile" class="text-gray-500 flex flex-col items-center gap-y-2">
                             <div class="flex items-center gap-x-1">
                                 <FontAwesomeIcon icon="fal fa-file" class="mx-auto h-5 w-5 text-gray-300"
-                                    aria-hidden="true" />
+                                    fixed-width aria-hidden="true" />
                                 {{ selectedFile?.name }}
                             </div>
                             <Button @click="() => clearAll()" label="Remove file" type="negative" size="s" />

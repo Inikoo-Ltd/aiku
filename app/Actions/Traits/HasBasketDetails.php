@@ -84,8 +84,9 @@ trait HasBasketDetails
         $grGiftsData = Arr::get($offersData, 'gr.gifts_products');
         if ($grGiftsData) {
             $selectedGrGift = Arr::get($order->data, 'gr.selected_gift');
+            $giftProducts   = Product::whereIn('id', array_column($grGiftsData, 'id'))->get()->keyBy('id');
             foreach ($grGiftsData as $key => $gift) {
-                $product = Product::find($gift['id']);
+                $product = $giftProducts->get($gift['id']);
                 if ($product) {
                     $grGiftsData[$key]['web_images_main'] = $product->web_images['main'];
                 }

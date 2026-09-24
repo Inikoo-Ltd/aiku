@@ -16,9 +16,13 @@ import "floating-vue/dist/style.css"
 import PrimeVue from "primevue/config"
 import Aura from "@primevue/themes/aura"
 import { definePreset } from "@primevue/themes"
+import { i18nVue } from "laravel-vue-i18n"
 import { ctrans } from "@/Composables/useTrans"
+import { irisI18nOptions, loadLocaleMessages, normalizeLocale } from "@/Composables/useIrisTranslations"
 import IrisLayout from "@/Layouts/Iris.vue"
 import cluster from "node:cluster"
+import { existsSync, readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 
 if (cluster.isPrimary) {
 	cluster.on("exit", (worker, code, signal) => {
@@ -30,6 +34,42 @@ if (cluster.isPrimary) {
 	})
 }
 
+
+const loadIrisManifest = () => {
+	try {
+		return JSON.parse(readFileSync(fileURLToPath(new URL("../../public/iris/manifest.json", import.meta.url)), "utf8"))
+	} catch {
+		return {}
+	}
+}
+
+const irisManifest = loadIrisManifest()
+
+const collectChunkCss = (key, cssFiles, visited = new Set()) => {
+	if (visited.has(key) || !irisManifest[key]) {
+		return cssFiles
+	}
+	visited.add(key)
+	irisManifest[key].css?.forEach((file) => cssFiles.add(file))
+	irisManifest[key].imports?.forEach((imported) => collectChunkCss(imported, cssFiles, visited))
+
+	return cssFiles
+}
+
+const entryCss = collectChunkCss("resources/js/app-iris.js", new Set())
+
+const renderedBlocksStylesheets = (renderedModules) => {
+	if (existsSync(fileURLToPath(new URL("../../public/iris.hot", import.meta.url)))) {
+		return []
+	}
+
+	const cssFiles = new Set()
+	renderedModules.forEach((module) => collectChunkCss(module, cssFiles))
+
+	return [...cssFiles]
+		.filter((file) => !entryCss.has(file))
+		.map((file) => `<link rel="stylesheet" href="/iris/${file}">`)
+}
 
 const MyPreset = definePreset(Aura, {
 	semantic: {
@@ -50,10 +90,21 @@ const MyPreset = definePreset(Aura, {
 })
 
 createServer(
-	(page) =>
-		createInertiaApp({
+	async (page) => {
+		const irisLocale = normalizeLocale(page.props?.iris?.locale)
+		const irisLocaleMessages = await loadLocaleMessages(irisLocale)
+
+		const renderedModules = new Set()
+
+		const response = await createInertiaApp({
 			page,
-			render: renderToString,
+			render: async (app) => {
+				const ssrContext = {}
+				const html = await renderToString(app, ssrContext)
+				ssrContext.modules?.forEach((module) => renderedModules.add(module))
+
+				return html
+			},
 			title: (title) => `${title}`,
 			resolve: (name) => {
 				const pages = {
@@ -80,6 +131,7 @@ createServer(
 				app.config.globalProperties.ctrans = ctrans
 
 				return app
+					.use(i18nVue, irisI18nOptions(irisLocale, irisLocaleMessages))
 					.use(Notifications)
 					.use(FloatingVue)
 					.use(PrimeVue, {
@@ -99,7 +151,12 @@ createServer(
 						location: new URL(page.props.ziggy.location),
 					})
 			},
-		}),
+		})
+
+		response.head.unshift(...renderedBlocksStylesheets(renderedModules))
+
+		return response
+	},
 	{
 		port: import.meta.env.VITE_INERTIA_SSR_PORT ?? 13714,
 		cluster: true,

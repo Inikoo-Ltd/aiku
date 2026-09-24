@@ -213,7 +213,7 @@ watch(
           @click="onClear"
           class="ml-1 flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition"
         >
-          <FontAwesomeIcon icon="fal fa-times" />
+          <FontAwesomeIcon icon="fal fa-times" fixed-width />
           <span>{{ trans('Clear') }}</span>
         </button>
 

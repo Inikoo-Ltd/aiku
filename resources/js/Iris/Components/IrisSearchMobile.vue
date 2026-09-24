@@ -309,11 +309,11 @@ const visitSearchPage = () => {
                 <div v-if="isDragHintVisible" class="pointer-events-none absolute inset-0" aria-hidden="true">
                     <FontAwesomeIcon
                         icon="far fa-chevron-up"
-                        class="dragHintArrowUp absolute left-1/2 -top-6 text-[var(--theme-color-0)]"
+                        class="dragHintArrowUp absolute left-1/2 -top-6 text-[var(--theme-color-0)]" fixed-width
                     />
                     <FontAwesomeIcon
                         icon="far fa-chevron-down"
-                        class="dragHintArrowDown absolute left-1/2 -bottom-6 text-[var(--theme-color-0)]"
+                        class="dragHintArrowDown absolute left-1/2 -bottom-6 text-[var(--theme-color-0)]" fixed-width
                     />
                     <span class="absolute right-[calc(100%+0.75rem)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-900/85 px-2 py-1 text-xs text-white shadow-lg">
                         {{ ctrans('Drag up or down to move') }}

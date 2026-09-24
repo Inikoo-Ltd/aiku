@@ -19,6 +19,7 @@ use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -49,12 +50,14 @@ class PayRetinaOrderWithBalance extends RetinaAction
             ];
         }
 
-        if ($order->customer->balance < $order->total_amount) {
-            return [
-                'success' => false,
-                'reason'  => 'Insufficient balance',
-                'order'   => $order,
-            ];
+        $insufficientBalance = [
+            'success' => false,
+            'reason'  => 'Insufficient balance',
+            'order'   => $order,
+        ];
+
+        if ($order->customer->spendableBalance() < $order->total_amount) {
+            return $insufficientBalance;
         }
 
         $customer = $order->customer;
@@ -79,7 +82,12 @@ class PayRetinaOrderWithBalance extends RetinaAction
             'payment_account_shop_id' => $paymentAccountShop->id
         ];
 
-        $order = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $submitOrder) {
+        $paidOrder = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $submitOrder) {
+            $customer = Customer::lockForUpdate()->findOrFail($customer->id);
+            if ($customer->spendableBalance() < $order->total_amount) {
+                return null;
+            }
+
             $payment = StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
@@ -111,10 +119,14 @@ class PayRetinaOrderWithBalance extends RetinaAction
             return $order;
         });
 
+        if (!$paidOrder) {
+            return $insufficientBalance;
+        }
+
         return [
             'success' => true,
             'reason'  => 'Order paid successfully',
-            'order'   => $order,
+            'order'   => $paidOrder,
         ];
     }
 

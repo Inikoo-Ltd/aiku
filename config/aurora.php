@@ -32,6 +32,7 @@ return [
         'JobOrders',
         'OrgStockMovements',
         'PurchaseOrgStockMovements',
+        'PurchaseOrderNotes',
         'PurchaseOrders',
         'PurchaseOrderTransactions',
         'RawMaterials',

@@ -8,10 +8,10 @@
 
 namespace App\Actions\Dropshipping\Shopify\Order;
 
-use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -33,7 +33,7 @@ class FetchShopifyOrdersFromApi
      */
     public function handle(ShopifyUser $shopifyUser, int $days = 30): void
     {
-        $fields = $this->orderWithFulfilmentOrdersFields();
+        $fields = $this->orderWithFulfilmentOrdersFields($shopifyUser);
 
         $query = <<<QUERY
             query getUnfulfilledOrders(\$query: String!) {
@@ -70,13 +70,9 @@ class FetchShopifyOrdersFromApi
                 continue;
             }
 
-            $fulfilmentOrder = $this->buildFulfilmentOrderPayload($order);
-
-            if (!$fulfilmentOrder) {
-                continue;
+            foreach ($this->buildFulfilmentOrderPayloads($shopifyUser, $order) as $fulfilmentOrder) {
+                ImportShopifyFulfilmentOrder::run($shopifyUser, $fulfilmentOrder);
             }
-
-            CreateFulfilmentOrderFromShopify::run($shopifyUser, $fulfilmentOrder);
         }
     }
 
@@ -94,6 +90,8 @@ class FetchShopifyOrdersFromApi
 
             return 1;
         }
+
+        Nightwatch::dontSample();
 
         $this->handle($shopifyUser, (int)$command->option('days'));
 

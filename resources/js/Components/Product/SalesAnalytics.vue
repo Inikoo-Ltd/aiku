@@ -115,7 +115,7 @@ const getTooltip = (current: number, previous: number, delta: number, deltaPerce
             <!-- Customer Metrics Card -->
             <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 <div class="text-sm text-gray-600 mb-2 flex items-center gap-2">
-                    <FontAwesomeIcon :icon="faUsers" class="text-gray-500" />
+                    <FontAwesomeIcon :icon="faUsers" class="text-gray-500" fixed-width />
                     Customers
                 </div>
                 <div class="text-3xl font-bold text-gray-900">{{ customerMetrics.total }}</div>

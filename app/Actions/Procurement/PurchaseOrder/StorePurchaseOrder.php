@@ -30,7 +30,11 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
+use App\Models\Helpers\Currency;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -58,14 +62,7 @@ class StorePurchaseOrder extends OrgAction
         }
 
         if (!Arr::get($modelData, 'reference')) {
-            data_set(
-                $modelData,
-                'reference',
-                GetSerialReference::run(
-                    container: $parent->organisation,
-                    modelType: SerialReferenceModelEnum::PURCHASE_ORDER
-                )
-            );
+            data_set($modelData, 'reference', $this->getNewReference($parent));
         }
         if (!Arr::get($modelData, 'date')) {
             data_set($modelData, 'date', now());
@@ -73,6 +70,14 @@ class StorePurchaseOrder extends OrgAction
         if (!Arr::get($modelData, 'currency_id')) {
             data_set($modelData, 'currency_id', $parent->organisation->currency_id);
         }
+        if (!array_key_exists('buyer_id', $modelData) && auth()->user() instanceof User) {
+            data_set($modelData, 'buyer_id', auth()->id());
+        }
+
+        $currency = Currency::find($modelData['currency_id']);
+        $date     = Carbon::parse($modelData['date'])->startOfDay();
+        data_set($modelData, 'org_exchange', GetHistoricCurrencyExchange::run($currency, $parent->organisation->currency, $date), overwrite: false);
+        data_set($modelData, 'grp_exchange', GetHistoricCurrencyExchange::run($currency, $parent->organisation->group->currency, $date), overwrite: false);
         /** @var PurchaseOrder $purchaseOrder */
         $purchaseOrder = $parent->purchaseOrders()->create($modelData);
         $purchaseOrder->refresh();
@@ -93,6 +98,20 @@ class StorePurchaseOrder extends OrgAction
         return $purchaseOrder;
     }
 
+    private function getNewReference(OrgSupplier|OrgAgent|OrgPartner $parent): string
+    {
+        $container = $parent instanceof OrgPartner || !$parent->purchaseOrderSerialReference ? $parent->organisation : $parent;
+
+        do {
+            $reference = GetSerialReference::run(
+                container: $container,
+                modelType: SerialReferenceModelEnum::PURCHASE_ORDER
+            );
+        } while ($parent->organisation->purchaseOrders()->where('reference', $reference)->exists());
+
+        return $reference;
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -108,6 +127,7 @@ class StorePurchaseOrder extends OrgAction
             'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
             'date'           => ['sometimes', 'required'],
             'currency_id'    => ['sometimes', 'required'],
+            'buyer_id'       => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
         ];
 
         if ($this->strict) {
@@ -135,8 +155,12 @@ class StorePurchaseOrder extends OrgAction
             return;
         }
 
-        if ($this->parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->exists()) {
-            $validator->errors()->add('purchase_order', __('Are you sure want to create new purchase order?'));
+        $openPurchaseOrder = $this->parent->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->first();
+        if ($openPurchaseOrder) {
+            $validator->errors()->add(
+                'purchase_order',
+                __('There is already an open purchase order (:reference). Add the products to it, or submit or cancel it before creating a new one.', ['reference' => $openPurchaseOrder->reference])
+            );
         }
 
         if ($this->parent instanceof OrgPartner) {

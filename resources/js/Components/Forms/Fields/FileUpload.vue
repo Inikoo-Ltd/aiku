@@ -92,7 +92,7 @@ function mediaRoute(media_ulid: string ) {
                 <FontAwesomeIcon
                     :icon="fileName ? ['fas', 'file'] : ['fad', 'arrow-up']"
                     class="h-10 w-10 shrink-0 text-gray-400"
-                    aria-hidden="true"
+                    fixed-width aria-hidden="true"
                 />
 
                 <!-- Upload Text -->
@@ -116,13 +116,13 @@ function mediaRoute(media_ulid: string ) {
                     v-if="hasError"
                     icon="fas fa-exclamation-circle"
                     class="h-5 w-5 text-red-500"
-                    aria-hidden="true"
+                    fixed-width aria-hidden="true"
                 />
                 <FontAwesomeIcon
                     v-else-if="hasFile"
                     icon="fas fa-check-circle"
                     class="h-5 w-5 text-green-500"
-                    aria-hidden="true"
+                    fixed-width aria-hidden="true"
                 />
             </div>
 
@@ -143,7 +143,7 @@ function mediaRoute(media_ulid: string ) {
 
         <!-- Selected / Uploaded File -->
         <div v-if="hasFile" class="mt-2 flex w-[350px] items-start gap-1 truncate text-sm text-gray-600">
-            <FontAwesomeIcon icon="fas fa-check-circle" class="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+            <FontAwesomeIcon icon="fas fa-check-circle" class="mt-0.5 h-4 w-4 shrink-0 text-green-500" fixed-width />
             <span class="min-w-0 truncate" :title="fileName">
                 {{ isPendingUpload ? 'File selected:' : 'Uploaded:' }}
                 <span class="font-medium hover:underline cursor-pointer transition-all" v-if="fieldData.media_ulid">

@@ -20,6 +20,7 @@ use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\EmailBulkRun;
 use App\Models\Comms\Mailshot;
 use App\Models\CRM\Prospect;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Crypt;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
@@ -152,6 +153,11 @@ class UnsubscribeMailshot
         $tag = $request->get('tag');
 
         return $this->handle($dispatchedEmail, $request, $tag);
+    }
+
+    public function htmlResponse(): Response
+    {
+        return response(__('You have been unsubscribed.'));
     }
 
     public function jsonResponse(array $data): array

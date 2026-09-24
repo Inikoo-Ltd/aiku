@@ -28,9 +28,9 @@ class SendMetaChatGreeting
     use AsAction;
     use WithWhatsappCredentials;
 
-    public function handle(MetaChatSession $metaChatSession, ?string $text = null, string $onceKey = 'greeted_at'): bool
+    public function handle(MetaChatSession $metaChatSession, ?string $text = null, string $onceKey = 'greeted_at', bool $once = true): bool
     {
-        if (data_get($metaChatSession->metadata, $onceKey) || !$metaChatSession->can_send_non_template_message) {
+        if (($once && data_get($metaChatSession->metadata, $onceKey)) || !$metaChatSession->can_send_non_template_message) {
             return false;
         }
 

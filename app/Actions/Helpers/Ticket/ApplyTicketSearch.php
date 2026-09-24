@@ -77,7 +77,7 @@ class ApplyTicketSearch
 
         $tsQuery = implode(' & ', $terms);
         $vector  = Ticket::canBeAssignedBy($user) ? "(tickets.search_vector || coalesce(tickets.internal_search_vector, ''))" : 'tickets.search_vector';
-        $comments = 'SELECT string_agg(c.body, \' \') FROM ticket_comments c WHERE c.ticket_id = tickets.id'.(Ticket::canBeAssignedBy($user) ? '' : ' AND NOT c.is_internal');
+        $comments = 'SELECT string_agg(c.body, \' \') FROM ticket_comments c WHERE c.ticket_id = tickets.id AND c.type = \'comment\''.(Ticket::canBeAssignedBy($user) ? '' : ' AND NOT c.is_internal');
 
         $typo = 'word_similarity(?, tickets.subject COLLATE "C")';
 

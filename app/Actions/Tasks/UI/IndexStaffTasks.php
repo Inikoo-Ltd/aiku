@@ -15,6 +15,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use App\Services\QueryBuilder;
 use Closure;
@@ -34,9 +35,9 @@ class IndexStaffTasks extends OrgAction
         return $request->user() !== null;
     }
 
-    protected function getElementGroups(Group $group): array
+    protected function getElementGroups(Group|Organisation $parent, User $viewer): array
     {
-        $base = StaffTask::where('staff_tasks.group_id', $group->id);
+        $base = StaffTask::query()->within($parent)->visibleTo($viewer);
 
         return [
             'status' => [
@@ -51,7 +52,7 @@ class IndexStaffTasks extends OrgAction
         ];
     }
 
-    public function handle(Group $group, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation $parent, User $viewer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(fn ($search) => $search
@@ -63,11 +64,10 @@ class IndexStaffTasks extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(StaffTask::class)
-            ->where('staff_tasks.group_id', $group->id)
+        $queryBuilder = QueryBuilder::for(StaffTask::query()->within($parent)->visibleTo($viewer))
             ->with(['requester', 'assignee']);
 
-        foreach ($this->getElementGroups($group) as $key => $elementGroup) {
+        foreach ($this->getElementGroups($parent, $viewer) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -85,14 +85,14 @@ class IndexStaffTasks extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group $group, $prefix = null): Closure
+    public function tableStructure(Group|Organisation $parent, User $viewer, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($group, $prefix) {
+        return function (InertiaTable $table) use ($parent, $viewer, $prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($group) as $key => $elementGroup) {
+            foreach ($this->getElementGroups($parent, $viewer) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],
@@ -122,7 +122,7 @@ class IndexStaffTasks extends OrgAction
         return StaffTasksResource::collection($staffTasks);
     }
 
-    public function htmlResponse(LengthAwarePaginator $staffTasks): Response
+    public function htmlResponse(LengthAwarePaginator $staffTasks, ActionRequest $request): Response
     {
         return Inertia::render(
             'Tasks/StaffTasksIndex',
@@ -135,7 +135,7 @@ class IndexStaffTasks extends OrgAction
                 ],
                 'data'        => StaffTasksResource::collection($staffTasks),
             ]
-        )->table($this->tableStructure($this->group));
+        )->table($this->tableStructure($this->tasksParent(), $request->user()));
     }
 
     public function getBreadcrumbs(): array
@@ -158,20 +158,20 @@ class IndexStaffTasks extends OrgAction
     {
         $this->initialisationFromTasksScope($request);
 
-        return $this->handle($this->group);
+        return $this->handle($this->tasksParent(), $request->user());
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromTasksScope($request, $organisation);
 
-        return $this->handle($this->group);
+        return $this->handle($this->tasksParent(), $request->user());
     }
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromTasksScope($request, $organisation, $shop);
 
-        return $this->handle($this->group);
+        return $this->handle($this->tasksParent(), $request->user());
     }
 }

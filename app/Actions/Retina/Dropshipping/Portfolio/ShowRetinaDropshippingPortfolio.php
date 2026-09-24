@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Catalogue\Product\UI\GetProductShowcaseInPortfolio;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\UI\Catalogue\RetinaProductTabsEnum;
 use App\Http\Resources\CRM\RetinaPortfolioResource;
 use App\Models\Catalogue\Product;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaDropshippingPortfolio extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     private CustomerSalesChannel $customerSalesChannel;
 
     public function handle(Portfolio $portfolio): Portfolio

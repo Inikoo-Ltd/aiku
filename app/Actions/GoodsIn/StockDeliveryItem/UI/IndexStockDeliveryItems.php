@@ -16,10 +16,12 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Services\QueryBuilder;
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexStockDeliveryItems extends OrgAction
 {
@@ -102,6 +104,7 @@ class IndexStockDeliveryItems extends OrgAction
             ->defaultSort('org_stocks.code')
             ->select([
                 'stock_delivery_items.id',
+                'stock_delivery_items.organisation_id',
                 'stock_delivery_items.stock_delivery_id',
                 'stock_delivery_items.state',
                 'stock_delivery_items.cost_items',
@@ -127,7 +130,12 @@ class IndexStockDeliveryItems extends OrgAction
             ->selectSub($weight, 'weight')
             ->selectRaw('round(sp.cbm * stock_delivery_items.unit_quantity / nullif(sp.units_per_carton, 0), 2) as volume')
             ->allowedSorts([
-                AllowedSort::field('code', 'sp.code'),
+                AllowedSort::custom('code', new class () implements Sort {
+                    public function __invoke(Builder $query, bool $descending, string $property): void
+                    {
+                        $query->orderByRaw('coalesce(sp.code, org_stocks.code) '.($descending ? 'desc' : 'asc'));
+                    }
+                }),
                 AllowedSort::field('part', 'org_stocks.code'),
                 'org_stock_code',
                 'org_stock_name',
@@ -189,7 +197,7 @@ class IndexStockDeliveryItems extends OrgAction
                     ->column(key: 'description', label: __('Unit description'), canBeHidden: false)
                     ->column(key: 'delivered_quantity', label: __('Delivered Quantity'), canBeHidden: false)
                     ->column(key: 'sowings', label: __('Sowings'), canBeHidden: false)
-                    ->column(key: 'checked_unit', label: __('Checked Unit'), canBeHidden: false, align: 'right')
+                    ->column(key: 'checked_unit', label: __('Checked SKOs'), canBeHidden: false, align: 'right')
                     ->column(key: 'placement', label: __('Placement'), canBeHidden: false, align: 'right')
                     ->defaultSort('part');
             } else {

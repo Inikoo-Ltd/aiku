@@ -119,7 +119,7 @@ const deleteImages = (index: number) => {
 							<div class="flex items-center justify-center">
 								<FontAwesomeIcon
 									icon="fal fa-bars"
-									class="handle text-sm cursor-grab pr-3 mr-2 text-gray-500" />
+									class="handle text-sm cursor-grab pr-3 mr-2 text-gray-500" fixed-width />
 							</div>
 							<h3
 								class="lg:text-sm text-xs font-medium select-none text-gray-700">
@@ -145,7 +145,7 @@ const deleteImages = (index: number) => {
 			<div
 				@click="addText"
 				class="group flex justify-center items-center gap-x-2 relative px-3 py-2 w-full cursor-pointer transition-transform transform hover:scale-105">
-				<FontAwesomeIcon :icon="faPlus" class="text-gray-500 group-hover:text-blue-500" />
+				<FontAwesomeIcon :icon="faPlus" class="text-gray-500 group-hover:text-blue-500" fixed-width />
 				<h3
 					class="lg:text-sm text-xs font-medium select-none text-gray-700 group-hover:text-blue-500">
 					Add Text
@@ -174,7 +174,7 @@ const deleteImages = (index: number) => {
 							<div class="flex items-center justify-center">
 								<FontAwesomeIcon
 									icon="fal fa-bars"
-									class="handle text-sm cursor-grab pr-3 mr-2 text-gray-500" />
+									class="handle text-sm cursor-grab pr-3 mr-2 text-gray-500" fixed-width />
 							</div>
 							<h3
 								class="lg:text-sm text-xs font-medium select-none text-gray-700">
@@ -200,7 +200,7 @@ const deleteImages = (index: number) => {
 			<div
 				@click="addImage"
 				class="group flex justify-center items-center gap-x-2 relative px-3 py-2 w-full cursor-pointer transition-transform transform hover:scale-105">
-				<FontAwesomeIcon :icon="faPlus" class="text-gray-500 group-hover:text-blue-500" />
+				<FontAwesomeIcon :icon="faPlus" class="text-gray-500 group-hover:text-blue-500" fixed-width />
 				<h3
 					class="lg:text-sm text-xs font-medium select-none text-gray-700 group-hover:text-blue-500">
 					Add Image

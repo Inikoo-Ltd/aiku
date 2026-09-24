@@ -33,9 +33,10 @@ trait WithSupplierJsonColumns
         'default_product_allow_on_demand',
         'default_product_country_origin',
         'payment_terms',
-        'order_number_prefix',
         'minimum_order',
         'cooling_period',
+        'po_by_email',
+        'po_email',
     ];
 
     /**
@@ -66,9 +67,10 @@ trait WithSupplierJsonColumns
             'default_product_allow_on_demand' => ['sometimes', 'boolean'],
             'default_product_country_origin'  => ['sometimes', 'nullable', 'exists:countries,id'],
             'payment_terms'                   => ['sometimes', 'nullable', 'string', 'max:255'],
-            'order_number_prefix'             => ['sometimes', 'nullable', 'string', 'max:16'],
             'minimum_order'                   => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'cooling_period'                  => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'po_by_email'                     => ['sometimes', 'boolean'],
+            'po_email'                        => ['sometimes', 'nullable', 'email', 'max:255'],
         ];
     }
 }

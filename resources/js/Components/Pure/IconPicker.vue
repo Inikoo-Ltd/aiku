@@ -129,7 +129,7 @@ defineExpose({
     <!-- Clear Button (top-right) -->
     <button v-if="modelValue" type="button"
       class="absolute -top-5 -right-4 rounded-full text-gray-400 hover:text-red-500" @click="clearIcon">
-      <FontAwesomeIcon :icon="faTimesCircle" class="text-xs text-red-500"></FontAwesomeIcon>
+      <FontAwesomeIcon :icon="faTimesCircle" class="text-xs text-red-500" fixed-width></FontAwesomeIcon>
     </button>
 
     <Popover ref="_popover">

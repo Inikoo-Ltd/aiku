@@ -207,10 +207,10 @@ const sizeOptions = [
                 showButtons
             >
                 <template #incrementbuttonicon>
-                   <FontAwesomeIcon :icon="faPlus" />
+                   <FontAwesomeIcon :icon="faPlus" fixed-width />
                 </template>
                 <template #decrementbuttonicon>
-                   <FontAwesomeIcon :icon="faMinus" />
+                   <FontAwesomeIcon :icon="faMinus" fixed-width />
                 </template>
             </InputNumber>
         </div>
@@ -228,10 +228,10 @@ const sizeOptions = [
                 :max="100"
             >
                 <template #incrementbuttonicon>
-                   <FontAwesomeIcon :icon="faPlus" />
+                   <FontAwesomeIcon :icon="faPlus" fixed-width />
                 </template>
                 <template #decrementbuttonicon>
-                   <FontAwesomeIcon :icon="faMinus" />
+                   <FontAwesomeIcon :icon="faMinus" fixed-width />
                 </template>
             </InputNumber>
         </div>
@@ -248,10 +248,10 @@ const sizeOptions = [
                 @value-change="() => emits('update:modelValue', model)"
             >
              <template #incrementbuttonicon>
-                   <FontAwesomeIcon :icon="faPlus" />
+                   <FontAwesomeIcon :icon="faPlus" fixed-width />
                 </template>
                 <template #decrementbuttonicon>
-                   <FontAwesomeIcon :icon="faMinus" />
+                   <FontAwesomeIcon :icon="faMinus" fixed-width />
                 </template>
             </InputNumber>
         </div>

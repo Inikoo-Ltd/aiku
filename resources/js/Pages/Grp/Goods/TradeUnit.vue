@@ -114,7 +114,7 @@ const visitTradeUnitFamily = () => {
                 v-if="tradeUnitFamilySlug"
                 @click="visitTradeUnitFamily"
                 :icon="faAtomAlt"
-                class="cursor-pointer hover:text-black transition ease-in-out"
+                class="cursor-pointer hover:text-black transition ease-in-out" fixed-width
             />
             <span class="font-normal text-lg leading-none">
                 {{ props.pageHead.afterTitle?.label }}
@@ -131,7 +131,7 @@ const visitTradeUnitFamily = () => {
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" fixed-width />
                         <span>{{ item.label || '-' }}</span> <span v-if="item.post_label" class="text-gray-400">{{ item.post_label }}</span>
                     </component>
                 </div>

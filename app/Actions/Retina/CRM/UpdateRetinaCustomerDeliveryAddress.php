@@ -11,11 +11,14 @@ namespace App\Actions\Retina\CRM;
 
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaCustomerDeliveryAddress extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(Customer $customer, array $modelData): Customer
     {
         return UpdateCustomerDeliveryAddress::run($customer, $modelData);

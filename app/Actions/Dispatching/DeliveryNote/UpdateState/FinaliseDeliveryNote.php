@@ -12,17 +12,20 @@ use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Ordering\Order\UpdateState\InvoiceOrderFromDeliveryNoteFinalisation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
     use HasDeliveryNoteHydrators;
+    use WithUnprintedLeafletsGuard;
 
     /**
      * @throws \Throwable
@@ -36,6 +39,12 @@ class FinaliseDeliveryNote extends OrgAction
             ]);
         }
 
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            throw ValidationException::withMessages([
+                'leaflets' => __('Every insert must be printed before finalizing.')
+            ]);
+        }
+
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $fromOrder) {
             data_set($modelData, 'finalised_at', now());
             data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
@@ -44,6 +53,9 @@ class FinaliseDeliveryNote extends OrgAction
             $deliveryNote->refresh();
             if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT && !$fromOrder) {
                 foreach ($deliveryNote->orders as $order) {
+                    if ($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->exists()) {
+                        continue;
+                    }
                     InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
                 }
             }
@@ -60,8 +72,12 @@ class FinaliseDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote|RedirectResponse
     {
+        if ($notification = $this->unprintedLeafletsNotification($deliveryNote, __('Every insert must be printed before finalising.'))) {
+            return $notification;
+        }
+
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote);

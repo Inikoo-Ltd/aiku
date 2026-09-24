@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Ebay\Orders;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Console\Command;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class FetchEbayUserOrders extends OrgAction implements ShouldBeUnique
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     public string $jobQueue = 'ebay';

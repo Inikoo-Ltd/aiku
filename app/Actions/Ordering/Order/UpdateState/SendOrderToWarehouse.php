@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
+use App\Actions\Dispatching\DeliveryNote\ReusePicksFromCancelledDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
@@ -230,6 +231,8 @@ class SendOrderToWarehouse extends OrgAction
         });
 
         DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
+
+        ReusePicksFromCancelledDeliveryNote::make()->action($order, $deliveryNote);
 
         if ($order->customer) {
             $modelData['email']        = $order->customer->email;

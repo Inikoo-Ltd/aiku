@@ -277,6 +277,14 @@ trait WithChatAgentAuthorisation
             ->pluck('id')
             ->all();
 
+        // The unclaimed queue is deliberately not scoped to the shops this person works. A
+        // conversation reaching a queue nobody watching could answer is the whole failure it
+        // exists to catch, so it is the group's queue and anybody who works chat at all sees
+        // every conversation in it, whichever shop or organisation it arrived on.
+        if (!empty($filters['unclaimed']) && $filters['allowed_shop_ids'] !== []) {
+            unset($filters['allowed_shop_ids']);
+        }
+
         return $filters;
     }
 
@@ -316,18 +324,22 @@ trait WithChatAgentAuthorisation
     }
 
     /**
-     * The colleagues on the same shops, so the team tab shows the conversations somebody else
-     * is holding on a shop this person also works.
+     * The conversations a colleague is holding on the shops this person works. Membership is
+     * read from the conversation, never from the colleague's own positions: those change, and
+     * when they do the tab emptied while the rail still counted the chats.
      *
-     * @param  array<int, int>  $shopIds
-     * @return array<int, int>
+     * Closed conversations nobody ever picked up belong here too. They are the shop's history
+     * and were in no list at all.
      */
-    protected function agentIdsCovering(array $shopIds, int $exceptAgentId): array
+    protected function scopeHeldByColleague($query, int $exceptAgentId, string $assignmentStatus, bool $includeUnheld = false): void
     {
-        return ChatAgent::with('user')->where('id', '!=', $exceptAgentId)->get()
-            ->filter(fn (ChatAgent $agent) => $agent->user
-                && array_intersect($shopIds, $this->workableShopIdsFor($agent->user)) !== [])
-            ->pluck('id')
-            ->all();
+        $query->where(function ($outer) use ($exceptAgentId, $assignmentStatus, $includeUnheld) {
+            $outer->whereHas('assignments', fn ($a) => $a->where('chat_agent_id', '!=', $exceptAgentId)
+                ->where('status', $assignmentStatus));
+
+            if ($includeUnheld) {
+                $outer->orWhereDoesntHave('assignments', fn ($a) => $a->where('status', $assignmentStatus));
+            }
+        });
     }
 }

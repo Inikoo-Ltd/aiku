@@ -137,7 +137,7 @@ useIntervalFn(() => (clock.value = Date.now()), 1000)
                 class="primaryLink text-sm flex items-center gap-1.5 shrink-0"
             >
                 {{ trans("See all") }}
-                <FontAwesomeIcon :icon="faArrowRight" class="text-xs" />
+                <FontAwesomeIcon :icon="faArrowRight" class="text-xs" fixed-width />
             </Link>
         </div>
 

@@ -183,7 +183,6 @@ const {
   selectedProduct: selected_product,
   loadDetail: loadProductDetail,
   selectProduct,
-  applyBlockProduct,
 } = useSelectedProductDetail({
   initialProduct: props.fieldValue.product,
   fetchDetail: fetchProductDetail,
@@ -296,7 +295,7 @@ watch(
 
 watch(
   () => props.fieldValue.product,
-  product => applyBlockProduct(product),
+  product => selectProduct(product),
   { deep: true }
 )
 
@@ -324,7 +323,7 @@ onMounted(() => {
     webpageData: props.webpageData ?? injectedWebpageData,
     currencyCode: layout?.iris?.currency?.code,
     websiteName: layout?.iris?.website?.name,
-    showPrice: Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price),
+    showPrice: Boolean(layout?.iris?.is_logged_in),
   })
 
   fetchVariantProducts()

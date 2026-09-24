@@ -16,6 +16,7 @@ use App\Models\Chat\StaffMessage;
 use App\Models\Tasks\StaffTask;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,6 +25,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class StoreStaffTask
 {
     use AsAction;
+
+    private ?User $requester = null;
 
     public function handle(User $requester, array $modelData): StaffTask
     {
@@ -78,7 +81,7 @@ class StoreStaffTask
 
     public function rules(): array
     {
-        $groupId = request()->user()->group_id;
+        $groupId = ($this->requester ?? request()->user())->group_id;
 
         return [
             'subject'           => ['required', 'string', 'max:255'],
@@ -93,6 +96,13 @@ class StoreStaffTask
             'model_id'          => ['required_with:model_type', 'nullable', 'integer'],
             'source_message_id' => ['sometimes', 'nullable', 'integer', 'exists:staff_messages,id'],
         ];
+    }
+
+    public function action(User $requester, array $modelData): StaffTask
+    {
+        $this->requester = $requester;
+
+        return $this->handle($requester, Validator::make($modelData, $this->rules())->validate());
     }
 
     public function asController(ActionRequest $request): StaffTaskResource

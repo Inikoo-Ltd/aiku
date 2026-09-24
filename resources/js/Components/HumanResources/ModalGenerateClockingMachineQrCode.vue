@@ -89,7 +89,7 @@ const submit = async () => {
                 <div class="space-y-2">
                     <label for="clocking_machine_qr_code_label" class="font-medium">
                         <FontAwesomeIcon icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
+                                class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Label') }}:
                     </label>
 

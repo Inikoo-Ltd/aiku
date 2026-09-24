@@ -406,6 +406,8 @@ class UpdateCustomer extends OrgAction
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
+            'credit_limit'                                          => ['sometimes', 'numeric', 'min:0', 'max:1000000', Rule::prohibitedIf(fn () => !$this->canGrantCredit())],
+            'payment_terms_days'                                    => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365', Rule::prohibitedIf(fn () => !$this->canGrantCredit())],
             'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
             'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -452,6 +454,11 @@ class UpdateCustomer extends OrgAction
         return $rules;
     }
 
+
+    private function canGrantCredit(): bool
+    {
+        return $this->asAction && $this->shop->type === ShopTypeEnum::B2B;
+    }
 
     public function asController(Customer $customer, ActionRequest $request): Customer
     {

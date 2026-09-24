@@ -190,14 +190,14 @@ const isLoadingNavigation = ref<string | boolean>(false)
 <template>
     <div v-if="isShowHorizontal()" class="relative isolate ring-1 ring-white/20 rounded transition-all"
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
-        :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
+        :style="{ 'box-shadow': `0 0 0 1px ${layout.app.navigation_theme[1]}55` }">
         <span v-if="false" class="text-white">
             {{ previousNavigation() }}
         </span>
 
         <!-- Label: Icon shops/warehouses and slug -->
         <div v-if="!!currentNavigation()" class="relative w-full flex justify-between items-end pt-2 pl-2 pr-0.5 pb-2"
-            :style="{ color: layout.app.theme[1] + '99' }">
+            :style="{ color: layout.app.navigation_theme[1] + '99' }">
 
             <!-- Label: 'UK (Shop)' -->
             <div :href="routeLabelHorizontal()" class="relative flex gap-x-1.5 items-center pt-1 select-none cursor-default">

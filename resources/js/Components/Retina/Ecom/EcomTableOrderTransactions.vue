@@ -108,11 +108,11 @@ const debounceUpdateQuantity = debounce(
                         }) }}
                         <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
                             <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-2"
-                                aria-hidden="true" />
+                                fixed-width aria-hidden="true" />
                         </span>
                         <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
                             <FontAwesomeIcon icon="fal fa-gift" class="text-green-500 not-italic mx-2"
-                                aria-hidden="true" />
+                                fixed-width aria-hidden="true" />
                         </span>
                         <div v-if="item.upcoming_transaction_public_notes">{{ item.upcoming_transaction_public_notes }}
                         </div>
@@ -246,11 +246,11 @@ const debounceUpdateQuantity = debounce(
                             }) }}
 
                             <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
-                                <FontAwesomeIcon icon="fal fa-repeat" class="ml-2 text-sky-500" />
+                                <FontAwesomeIcon icon="fal fa-repeat" class="ml-2 text-sky-500" fixed-width />
                             </span>
 
                             <span v-if="item.is_gift" v-tooltip="ctrans('Free gift')">
-                                <FontAwesomeIcon icon="fal fa-gift" class="mx-2 text-green-500" />
+                                <FontAwesomeIcon icon="fal fa-gift" class="mx-2 text-green-500" fixed-width />
                             </span>
 
                             <div v-if="item.upcoming_transaction_public_notes" class="mt-1 text-orange-600 not-italic">

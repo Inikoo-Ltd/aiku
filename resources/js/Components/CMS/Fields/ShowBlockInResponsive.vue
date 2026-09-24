@@ -34,7 +34,7 @@ const options = [
     >
       <template #option="slotProps">
         <div class="flex items-center gap-2">
-          <FontAwesomeIcon :icon="slotProps.option.icon" class="text-base" />
+          <FontAwesomeIcon :icon="slotProps.option.icon" class="text-base" fixed-width />
           <span>{{ slotProps.option.label }}</span>
         </div>
       </template>

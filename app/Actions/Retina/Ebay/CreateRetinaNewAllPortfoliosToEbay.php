@@ -10,11 +10,13 @@ namespace App\Actions\Retina\Ebay;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateRetinaNewAllPortfoliosToEbay extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     /**

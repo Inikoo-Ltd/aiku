@@ -10,9 +10,12 @@ namespace App\Actions\CRM\Customer\UI;
 
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\CRM\Customer\CustomerWebActivityTypeEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerWebActivity;
@@ -41,6 +44,7 @@ class GetCustomerTimeline
         $this->appendPaymentEvents($customer, $cutoff, $limit, $events);
         $this->appendEmailEvents($customer, $cutoff, $limit, $events);
         $this->appendReturnEvents($customer, $cutoff, $limit, $events);
+        $this->appendUnpaidInvoiceEvents($customer, $limit, $events);
         $this->appendWebActivityEvents($customer, $cutoff, $events);
 
         return [
@@ -281,6 +285,42 @@ class GetCustomerTimeline
                         'state'         => $return->state->value,
                         'number_items'  => $return->number_items,
                         'return_reason' => $return->return_reason,
+                    ],
+                ]);
+            });
+    }
+
+    /**
+     * An invoice that is still owed is owed whatever its age, so this one ignores the twelve
+     * month window the rest of the timeline keeps: money outstanding from two years ago is
+     * precisely what whoever is on the phone needs to see.
+     */
+    private function appendUnpaidInvoiceEvents(Customer $customer, int $limit, Collection $events): void
+    {
+        $customer->invoices()
+            ->with(['currency:id,code'])
+            ->where('pay_status', InvoicePayStatusEnum::UNPAID)
+            ->latest('date')
+            ->limit($limit)
+            ->get()
+            ->each(function (Invoice $invoice) use ($events) {
+                $isRefund = $invoice->type == InvoiceTypeEnum::REFUND;
+
+                $events->push([
+                    'id'        => "invoice_{$invoice->id}",
+                    'type'      => 'invoice_open',
+                    'timestamp' => $invoice->date,
+                    'datetime'  => $invoice->date?->toIso8601String(),
+                    'title'     => $isRefund ? __('Refund outstanding') : __('Invoice unpaid'),
+                    'subtitle'  => '#'.$invoice->reference,
+                    'icon'      => ['fal', 'fa-file-invoice-dollar'],
+                    'color'     => 'red',
+                    'metadata'  => [
+                        'reference'     => $invoice->reference,
+                        'slug'          => $invoice->slug,
+                        'type'          => $invoice->type->value,
+                        'total_amount'  => $invoice->total_amount,
+                        'currency_code' => $invoice->currency?->code ?? '',
                     ],
                 ]);
             });

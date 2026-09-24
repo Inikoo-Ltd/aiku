@@ -27,8 +27,12 @@ class ArtefactLabelResource extends JsonResource
             'state_label'  => ArtefactLabelStateEnum::labels()[$label->state->value],
             'published_at' => $label->published_at,
             'pdf_url'      => $label->state === ArtefactLabelStateEnum::PUBLISHED
-                ? route('grp.models.artefact.labels.pdf', ['artefact' => $label->artefact_id, 'label' => $label->id])
+                ? ($label->artefact_id
+                    ? route('grp.models.artefact.labels.pdf', ['artefact' => $label->artefact_id, 'label' => $label->id])
+                    : route('grp.models.org_stock.labels.pdf', ['orgStock' => $label->org_stock_id, 'label' => $label->id]))
                 : null,
+            'on_artwork'          => $label->on_artwork ?? [],
+            'missing_information' => $label->missingMandatoryInformation(),
             'artwork'      => $label->artwork ? [
                 'name'      => $label->artwork->name,
                 'size'      => $label->artwork->size,

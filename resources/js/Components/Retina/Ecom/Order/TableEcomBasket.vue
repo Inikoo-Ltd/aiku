@@ -10,9 +10,9 @@ import { routeType } from "@/types/route"
 import { Table as TableTS } from "@/types/Table"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from '@/Composables/useTrans'
 import { debounce, get, set } from "lodash-es"
-import { inject, ref } from "vue"
+import { inject, reactive, ref } from "vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import Discount from "@/Components/Utils/Label/Discount.vue"
@@ -35,12 +35,12 @@ const props = defineProps<{
 const layout = inject("layout", {})
 const locale = inject("locale", retinaLayoutStructure)
 
-const outOfStockTooltip = (item: { held_quantity: number | string }) => trans(
+const outOfStockTooltip = (item: { held_quantity: number | string }) => ctrans(
     'This item went out of stock, so its quantity is set to 0 and it is not charged. If it is back in stock before you place the order, your :count is put back automatically.',
     { count: locale.number(Number(item.held_quantity)) }
 )
 
-const lowStockTooltip = (item: { quantity_ordered: number | string, available_quantity: number | string }) => trans(
+const lowStockTooltip = (item: { quantity_ordered: number | string, available_quantity: number | string }) => ctrans(
     'Only :available showing in stock. We will do our best to send all :ordered. If we cannot, we will try to contact you first to offer a suitable replacement. Anything still missing is credited to your account balance.',
     { available: locale.number(Number(item.available_quantity)), ordered: locale.number(Number(item.quantity_ordered)) }
 )
@@ -78,6 +78,8 @@ const pushRemoveFromBasket = (item: any) => {
     pushBasketQuantityChange(item, -(Number(item.quantity_ordered) || 0))
 }
 
+const refusedQuantityCount = reactive<Record<number, number>>({})
+
 const onUpdateQuantity = (item: any, value: number) => {
     const routeUpdate: routeType = item.updateRoute
     const idTransaction = item.id
@@ -91,9 +93,10 @@ const onUpdateQuantity = (item: any, value: number) => {
         },
         {
             onError: (e: any) => {
+                refusedQuantityCount[idTransaction] = (refusedQuantityCount[idTransaction] ?? 0) + 1
                 notify({
-                    title: trans("Something went wrong"),
-                    text: e.message,
+                    title: ctrans("Something went wrong"),
+                    text: e.message || e.quantity_ordered,
                     type: "error"
                 })
             },
@@ -168,15 +171,15 @@ const isOffersData = (offersData: any): boolean => {
                 <div class="text-base"><span v-if="Number(item.units) > 1" class="mr-1">{{ Number(item.units)
                         }}x</span>{{ item.asset_name }}</div>
                 <div v-if="!item.available_quantity">
-                    <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
-                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-500 italic ml-1">{{ trans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
+                    <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-500 italic ml-1">{{ ctrans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
                 </div>
                 <div v-else-if="Number(item.quantity_ordered) > Number(item.available_quantity)" v-tooltip="lowStockTooltip(item)">
-                    <Tag :label="trans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
+                    <Tag :label="ctrans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
                     <FontAwesomeIcon icon="fal fa-info-circle" class="text-amber-500 ml-1 text-xs" fixed-width aria-hidden="true" />
                 </div>
                 <div v-else class="text-gray-400 italic text-xs">
-                    {{ trans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ trans('available') }}
+                    {{ ctrans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ ctrans('available') }}
                 </div>
 
                 <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data" />
@@ -188,6 +191,7 @@ const isOffersData = (offersData: any): boolean => {
             <div class="px-2 relative text-right w-full">
                 <div class="w-fit ml-auto">
                     <NumberWithButtonSave
+                        :key="`${item.id}-${refusedQuantityCount[item.id] ?? 0}`"
                         :modelValue="item.quantity_ordered"
                         @update:modelValue="(value: number) => {
                             item.quantity_ordered != value ? debounceUpdateQuantity(item, value) : null
@@ -198,7 +202,7 @@ const isOffersData = (offersData: any): boolean => {
                         noSaveButton
                         noUndoButton
                         :min="0"
-                        :denominator="(item.quantity_ordered % 1 !== 0 || item.is_cut_view) ? Number(item.units) : undefined"
+                        :denominator="item.quantity_ordered % 1 !== 0 ? Number(item.units) : undefined"
                         :disableInput="item.quantity_ordered % 1 !== 0"
                     />
                 </div>
@@ -215,7 +219,7 @@ const isOffersData = (offersData: any): boolean => {
                     as="button" :method="item.deleteRoute.method" @start="() => isLoading = 'unselect' + item.id"
                     @finish="() => isLoading = false"
                     @success="() => { pushRemoveFromBasket(item); layout.reload_handle() }"
-                    v-tooltip="trans('Unselect this product')" :preserveScroll="true">
+                    v-tooltip="ctrans('Unselect this product')" :preserveScroll="true">
                     <Button icon="fal fa-times" type="negative" size="xs"
                         :loading="isLoading === 'unselect' + item.id" />
                 </Link>
@@ -254,15 +258,15 @@ const isOffersData = (offersData: any): boolean => {
                                 </a>
                                 <div class="text-xxs text-gray-400">{{ item.asset_code }}</div>
                                 <div v-if="!item.available_quantity">
-                                    <Tag :label="trans('Out of stock')" no-hover-color :theme="7" size="xxs" />
-                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-500 italic ml-1">{{ trans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
+                                    <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-500 italic ml-1">{{ ctrans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
                                 </div>
                                 <div v-else-if="Number(item.quantity_ordered) > Number(item.available_quantity)" v-tooltip="lowStockTooltip(item)">
-                                    <Tag :label="trans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
+                                    <Tag :label="ctrans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
                                     <FontAwesomeIcon icon="fal fa-info-circle" class="text-amber-500 ml-1 text-xs" fixed-width aria-hidden="true" />
                                 </div>
                                 <div v-else class="text-gray-400 italic text-xs">
-                                     {{ trans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ trans('available') }}
+                                     {{ ctrans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ ctrans('available') }}
                                 </div>
                             </div>
                         </div>
@@ -270,7 +274,7 @@ const isOffersData = (offersData: any): boolean => {
                             <div class="flex gap-x-2 h-fit items-center">
                                 <div>
                                     <div class="w-fit ml-auto">
-                                        <NumberWithButtonSave :modelValue="item.quantity_ordered" @update:modelValue="(value: number) => {
+                                        <NumberWithButtonSave :key="`${item.id}-${refusedQuantityCount[item.id] ?? 0}`" :modelValue="item.quantity_ordered" @update:modelValue="(value: number) => {
                                             item.quantity_ordered != value ? debounceUpdateQuantity(item, value) : null
                                         }" :routeSubmit="item.updateRoute" key-submit="quantity_ordered"
                                             isWithRefreshModel noSaveButton noUndoButton :min="1"
@@ -289,7 +293,7 @@ const isOffersData = (offersData: any): boolean => {
                                         @start="() => isLoading = 'unselect' + item.id"
                                         @finish="() => isLoading = false"
                                         @success="() => { pushRemoveFromBasket(item); layout.reload_handle() }"
-                                        v-tooltip="trans('Unselect this product')" :preserveScroll="true">
+                                        v-tooltip="ctrans('Unselect this product')" :preserveScroll="true">
                                         <Button icon="fal fa-times" type="negative" size="xs"
                                             :loading="isLoading === 'unselect' + item.id" />
                                     </Link>

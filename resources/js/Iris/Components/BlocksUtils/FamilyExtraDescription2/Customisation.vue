@@ -162,7 +162,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 								<FontAwesomeIcon
 									v-if="row.icon"
 									:icon="row.icon"
-									class="customisation-option-icon" />
+									class="customisation-option-icon" fixed-width />
 
 								<span>{{ row.option }}</span>
 							</p>
@@ -170,7 +170,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 							<FontAwesomeIcon
 								v-if="row.available"
 								icon="fas fa-check-circle"
-								class="customisation-check" />
+								class="customisation-check" fixed-width />
 
 							<span v-else class="customisation-dash">—</span>
 						</div>
@@ -211,7 +211,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 									<FontAwesomeIcon
 										v-if="row.icon"
 										:icon="row.icon"
-										class="customisation-option-icon" />
+										class="customisation-option-icon" fixed-width />
 
 									<span>{{ row.option }}</span>
 								</td>
@@ -220,7 +220,7 @@ const isMobile = computed(() => props.screenType === "mobile")
 									<FontAwesomeIcon
 										v-if="row.available"
 										icon="fas fa-check-circle"
-										class="customisation-check" />
+										class="customisation-check" fixed-width />
 
 									<span v-else class="customisation-dash">—</span>
 								</td>

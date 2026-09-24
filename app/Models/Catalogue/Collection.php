@@ -62,12 +62,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property CollectionProductsStatusEnum $products_status
  * @property array<array-key, mixed>|null $offers_data
  * @property Carbon|null $inactivated_at
- * @property string|null $name_i8n
- * @property string|null $description_i8n
- * @property string|null $description_title_i8n
- * @property string|null $description_extra_i8n
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
  * @property HealthRankEnum|null $health_rank
  * @property bool $is_in_website
+ * @property bool $not_follow_master_items
+ * @property bool $not_follow_master_content
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
@@ -123,6 +125,14 @@ class Collection extends Model implements Auditable, HasMedia
         'products_status' => CollectionProductsStatusEnum::class,
         'offers_data'     => 'array',
         'inactivated_at'  => 'datetime',
+
+        'name_i8n'              => 'array',
+        'description_i8n'       => 'array',
+        'description_title_i8n' => 'array',
+        'description_extra_i8n' => 'array',
+
+        'not_follow_master_items'   => 'boolean',
+        'not_follow_master_content' => 'boolean',
     ];
 
     protected $attributes = [
@@ -140,6 +150,8 @@ class Collection extends Model implements Auditable, HasMedia
         'state',
         'url',
         'is_in_website',
+        'not_follow_master_items',
+        'not_follow_master_content',
     ];
 
     public function toSearchableArray(): array
@@ -238,6 +250,18 @@ class Collection extends Model implements Auditable, HasMedia
     public function masterCollection(): BelongsTo
     {
         return $this->belongsTo(MasterCollection::class);
+    }
+
+    // Families and products attached to this collection mirror the master collection
+    public function followsMasterItems(): bool
+    {
+        return $this->master_collection_id && !$this->not_follow_master_items;
+    }
+
+    // Name and descriptions follow (and translate) the master collection
+    public function followsMasterContent(): bool
+    {
+        return $this->master_collection_id && !$this->not_follow_master_content;
     }
 
 }

@@ -163,19 +163,25 @@ class EditWebpage extends OrgAction
                 'label'         => __('Show Price on Webpage'),
                 'value'         => data_get($webpage->settings, 'webpage.show_price', false),
             ],
-            'index_page'      => [
+        ];
+
+        $isHiddenFromSearchEngines = (bool) $webpage->sub_type?->isHiddenFromSearchEngines();
+
+        if (!$isHiddenFromSearchEngines) {
+            $fields['index_page'] = [
                 'type'        => 'toggle',
                 'label'       => __('Index Page'),
                 'information' => __('This will be used to determine if the page should be indexed by search engines'),
                 'value'       => $webpage->index_page ?? true,
-            ],
-            'follow_link'      => [
+            ];
+
+            $fields['follow_link'] = [
                 'type'        => 'toggle',
                 'label'       => __('Follow Link'),
                 'information' => __('This will be used to determine if the page should be followed by search engines'),
-                'value'       => $webpage->follow ?? true,
-            ],
-        ];
+                'value'       => $webpage->follow_link ?? true,
+            ];
+        }
 
         if ($isBlog && $webpage->sub_type != WebpageSubTypeEnum::MAILSHOT) {
             $fields['sub_type'] = [
@@ -241,6 +247,13 @@ class EditWebpage extends OrgAction
                 'type'  => 'warning',
                 'title' => __('Important'),
                 'text'  => __('This product is set as a part of a variant. Therefore editing this webpage state is disabled'),
+                'icon'  => ['fas', 'fa-exclamation-triangle']
+            ];
+        } elseif ($isHiddenFromSearchEngines) {
+            $warning = [
+                'type'  => 'warning',
+                'title' => __('Hidden from search engines'),
+                'text'  => __('This page is always served as noindex, nofollow and is left out of the sitemap, so the indexing settings are not offered.'),
                 'icon'  => ['fas', 'fa-exclamation-triangle']
             ];
         }

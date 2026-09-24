@@ -3,12 +3,12 @@ import { computed, ref } from "vue"
 import Chart from "primevue/chart"
 import { router } from "@inertiajs/vue3"
 import { debounce } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faRocketLaunch, faTag, faInfoCircle } from "@fal"
-import PageSpeedInsights from "@/Components/DataDisplay/PageSpeedInsights.vue"
+import RealUserSpeed from "@/Components/DataDisplay/RealUserSpeed.vue"
 
 type EventType = "publish" | "price"
 
@@ -21,8 +21,6 @@ const props = defineProps<{
 		search: Array<{ clicks: number; impressions: number; keys: string[] }>
 		sales: Array<{ date: string; sales: number; orders: number }>
 		events: Array<{ date: string; datetime: string; type: EventType; label: string; user: string | null }>
-		pagespeed?: any[]
-		pagespeed_frequency?: "daily" | "weekly"
 	}
 }>()
 
@@ -30,30 +28,30 @@ const locale = useLocaleStore()
 
 const series = {
 	clicks: {
-		label: trans("Clicks"),
+		label: ctrans("Clicks"),
 		color: "#4285F4",
 		axis: "y2",
-		source: trans("Google Search Console"),
-		sourceDetail: trans("Clicks from Google Search results to this page, reported by Google Search Console. The last 2 to 3 days can still change."),
+		source: ctrans("Google Search Console"),
+		sourceDetail: ctrans("Clicks from Google Search results to this page, reported by Google Search Console. The last 2 to 3 days can still change."),
 	},
 	impressions: {
-		label: trans("Impressions"),
+		label: ctrans("Impressions"),
 		color: "#5E35B1",
 		axis: "y1",
-		source: trans("Google Search Console"),
-		sourceDetail: trans("Times this page appeared in Google Search results, reported by Google Search Console. The last 2 to 3 days can still change."),
+		source: ctrans("Google Search Console"),
+		sourceDetail: ctrans("Times this page appeared in Google Search results, reported by Google Search Console. The last 2 to 3 days can still change."),
 	},
 	sales: {
-		label: trans("Net sales"),
+		label: ctrans("Net sales"),
 		color: "#0F9D58",
 		axis: "y3",
-		source: trans("Invoices"),
-		sourceDetail: trans("Net invoiced amount of the product, category or collection shown on this page, from every sales channel, not only visits to this page."),
+		source: ctrans("Invoices"),
+		sourceDetail: ctrans("Net invoiced amount of the product, category or collection shown on this page, from every sales channel, not only visits to this page."),
 	},
 }
 const eventStyle = {
-	publish: { label: trans("Page published"), color: "#F4B400", icon: faRocketLaunch },
-	price: { label: trans("Price change"), color: "#DB4437", icon: faTag },
+	publish: { label: ctrans("Page published"), color: "#F4B400", icon: faRocketLaunch },
+	price: { label: ctrans("Price change"), color: "#DB4437", icon: faTag },
 }
 const chartEventTypes: EventType[] = ["price"]
 
@@ -198,7 +196,7 @@ const chartOptions = computed(() => ({
 			borderWidth: 1,
 			padding: 10,
 			callbacks: {
-				title: (items: any[]) => (granularity.value === "week" ? trans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: "PPP" }),
+				title: (items: any[]) => (granularity.value === "week" ? ctrans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: "PPP" }),
 				label: (item: any) =>
 					item.dataset.yAxisID === "y3"
 						? `${item.dataset.label}: ${locale.currencyFormat(props.data.currency, item.raw)}`
@@ -229,11 +227,11 @@ const formatTotal = (key: keyof typeof series) =>
 	<div class="py-6 space-y-6" >
 		<div class="flex flex-wrap items-center gap-3 text-sm">
 			<label class="flex items-center gap-2">
-				<span class="text-gray-500">{{ trans("From") }}</span>
+				<span class="text-gray-500">{{ ctrans("From") }}</span>
 				<input type="date" v-model="range.startDate" :max="range.endDate" class="rounded border-gray-300 text-sm" @change="reload" />
 			</label>
 			<label class="flex items-center gap-2">
-				<span class="text-gray-500">{{ trans("To") }}</span>
+				<span class="text-gray-500">{{ ctrans("To") }}</span>
 				<input type="date" v-model="range.endDate" :min="range.startDate" class="rounded border-gray-300 text-sm" @change="reload" />
 			</label>
 			<div class="flex rounded border border-gray-300 text-xs">
@@ -244,7 +242,7 @@ const formatTotal = (key: keyof typeof series) =>
 					class="px-3 py-1.5"
 					:class="granularity === option ? 'bg-gray-800 text-white' : 'text-gray-600'"
 					@click="granularity = option">
-					{{ option === "day" ? trans("Daily") : trans("Weekly") }}
+					{{ option === "day" ? ctrans("Daily") : ctrans("Weekly") }}
 				</button>
 			</div>
 			<div class="ml-auto flex items-center gap-4 text-xs text-gray-500" data-chart-event-legend>
@@ -270,7 +268,7 @@ const formatTotal = (key: keyof typeof series) =>
 						<FontAwesomeIcon v-tooltip="meta.sourceDetail" :icon="faInfoCircle" class="ml-0.5 opacity-70" fixed-width aria-hidden="true" />
 					</div>
 					<div class="text-lg font-semibold">{{ formatTotal(key) }}</div>
-					<div class="mt-1 text-[11px] opacity-80" data-card-source>{{ trans("Source") }}: {{ meta.source }}</div>
+					<div class="mt-1 text-[11px] opacity-80" data-card-source>{{ ctrans("Source") }}: {{ meta.source }}</div>
 					<span class="sr-only">{{ meta.sourceDetail }}</span>
 				</button>
 			</div>
@@ -280,17 +278,17 @@ const formatTotal = (key: keyof typeof series) =>
 			</div>
 		</div>
 
-		<PageSpeedInsights :pagespeed="pagespeed" :history="data.pagespeed" :history-frequency="data.pagespeed_frequency" />
+		<RealUserSpeed v-if="pagespeed !== null" :report="pagespeed" />
 
 		<div class="rounded-lg bg-white shadow">
-			<div class="border-b px-6 py-3 text-sm font-semibold">{{ trans("Changes in this period") }}</div>
-			<div v-if="!data.events?.length" class="px-6 py-6 text-sm text-gray-500">{{ trans("No changes to this page in the selected period") }}</div>
+			<div class="border-b px-6 py-3 text-sm font-semibold">{{ ctrans("Changes in this period") }}</div>
+			<div v-if="!data.events?.length" class="px-6 py-6 text-sm text-gray-500">{{ ctrans("No changes to this page in the selected period") }}</div>
 			<ul v-else class="divide-y">
 				<li v-for="event in data.events" :key="event.datetime" class="flex items-center gap-3 px-6 py-2 text-sm">
 					<FontAwesomeIcon :icon="eventStyle[event.type].icon" :style="{ color: eventStyle[event.type].color }" fixed-width />
 					<span class="w-44 shrink-0 text-gray-500">{{ useFormatTime(event.datetime, { formatTime: "PPp" }) }}</span>
 					<span class="flex-1">{{ event.label }}</span>
-					<span class="text-gray-500">{{ event.user ?? trans("System") }}</span>
+					<span class="text-gray-500">{{ event.user ?? ctrans("System") }}</span>
 				</li>
 			</ul>
 		</div>

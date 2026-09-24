@@ -77,7 +77,7 @@ class StoreModelHasWebBlock extends OrgAction
 
         UpdateWebpageContent::run($webpage->refresh());
 
-        return $modelHasWebBlock;
+        return $modelHasWebBlock->refresh();
     }
 
     public function rules(): array

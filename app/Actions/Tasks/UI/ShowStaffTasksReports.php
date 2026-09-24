@@ -41,9 +41,9 @@ class ShowStaffTasksReports extends OrgAction
         max(extract(epoch from now() - staff_tasks.created_at) / 86400) filter (where staff_tasks.status in ('todo', 'in_progress')) as longest_wait_days
     ";
 
-    public function handle(Group $group, string $interval): array
+    public function handle(Group|Organisation $parent, User $viewer, string $interval): array
     {
-        $base = StaffTask::where('staff_tasks.group_id', $group->id);
+        $base = StaffTask::query()->within($parent)->visibleTo($viewer);
 
         [$from, $to] = $this->range($interval, (clone $base)->min('created_at'));
         $days        = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
@@ -166,21 +166,21 @@ class ShowStaffTasksReports extends OrgAction
     {
         $this->initialisationFromTasksScope($request);
 
-        return $this->handle($this->group, IndexTickets::make()->createdInterval());
+        return $this->handle($this->tasksParent(), $request->user(), IndexTickets::make()->createdInterval());
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): array
     {
         $this->initialisationFromTasksScope($request, $organisation);
 
-        return $this->handle($this->group, IndexTickets::make()->createdInterval());
+        return $this->handle($this->tasksParent(), $request->user(), IndexTickets::make()->createdInterval());
     }
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
     {
         $this->initialisationFromTasksScope($request, $organisation, $shop);
 
-        return $this->handle($this->group, IndexTickets::make()->createdInterval());
+        return $this->handle($this->tasksParent(), $request->user(), IndexTickets::make()->createdInterval());
     }
 
     public function htmlResponse(array $stats): Response

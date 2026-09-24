@@ -10,7 +10,9 @@ namespace App\Console;
 
 use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPoints;
+use App\Actions\Catalogue\Shop\NotifyShopStockArrivals;
 use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
+use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Faire\GetFaireProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
@@ -23,9 +25,12 @@ use App\Actions\Comms\Outbox\AbandonedCheckout\RunAbandonedCheckoutEmailBulkRuns
 use App\Actions\Comms\Outbox\BackInStockNotification\RunBackInStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\GoldRewardReminder\RunGoldRewardReminderEmailBulkRuns;
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
+use App\Actions\Comms\Outbox\NewCustomerPush\RunNewCustomerPushEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
+use App\Actions\Comms\Outbox\BasketOnOffer\RunBasketOnOfferEmailBulkRuns;
+use App\Actions\Comms\Outbox\FavouritesOnOffer\RunFavouritesOnOfferEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChangeNotification\RunPriceChangeNotificationEmailBulkRuns;
 use App\Actions\Comms\Outbox\ProspectConversion\RunProspectConvertionEmailBulkRuns;
 use App\Actions\Comms\Outbox\PriceChange\RunPriceChangeEmailBulkRunsToSubscribers;
@@ -62,8 +67,9 @@ use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
-use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
+use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
+use App\Actions\Web\WebVital\PruneWebVitalSamples;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Traits\LoggableSchedule;
@@ -162,6 +168,24 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'SweepStrandedDeliveryNotes',
                 ),
                 name: 'SweepStrandedDeliveryNotes',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(NotifyShopStockArrivals::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'NotifyShopStockArrivals',
+                ),
+                name: 'NotifyShopStockArrivals',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(ApplyScheduledOrgStockStateChanges::makeJob())->dailyAt('00:10')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ApplyScheduledOrgStockStateChanges',
+                ),
+                name: 'ApplyScheduledOrgStockStateChanges',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -677,6 +701,24 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->job(RunBasketOnOfferEmailBulkRuns::makeJob())->dailyAt('10:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunBasketOnOfferEmailBulkRuns',
+                ),
+                name: 'RunBasketOnOfferEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunFavouritesOnOfferEmailBulkRuns::makeJob())->dailyAt('09:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunFavouritesOnOfferEmailBulkRuns',
+                ),
+                name: 'RunFavouritesOnOfferEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(RunPriceChangeEmailBulkRunsToSubscribers::makeJob())->everyTenMinutes()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'RunPriceChangeEmailBulkRunsToSubscribers',
                 ),
@@ -690,6 +732,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunBasketLowStockEmailBulkRuns',
                 ),
                 name: 'RunBasketLowStockEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunNewCustomerPushEmailBulkRuns::makeJob())->hourly()->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RunNewCustomerPushEmailBulkRuns',
+                ),
+                name: 'RunNewCustomerPushEmailBulkRuns',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -896,12 +947,21 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(FetchTopWebpagesPageSpeed::makeJob())->dailyAt('00:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchTopWebpagesPageSpeed',
+                $schedule->job(PruneWebVitalSamples::makeJob())->dailyAt('03:38')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'PruneWebVitalSamples',
                 ),
-                name: 'FetchTopWebpagesPageSpeed',
+                name: 'PruneWebVitalSamples',
                 type: 'job',
-                scheduledAt: '00:00'
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchCruxRecords::makeJob())->weeklyOn(2, '01:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'FetchCruxRecords',
+                ),
+                name: 'FetchCruxRecords',
+                type: 'job',
+                scheduledAt: 'Tuesday 01:00'
             );
 
             $this->logSchedule(
@@ -1064,6 +1124,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('chat:close-empty')->hourlyAt(47)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'CloseEmptyChatSessions',
+                ),
+                name: 'CloseEmptyChatSessions',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:classify-noise')->hourlyAt(37)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'ClassifyIdleChatSessionsNoise',
                 ),
@@ -1077,6 +1146,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'AutoCloseStaleChatPhoneCalls',
                 ),
                 name: 'AutoCloseStaleChatPhoneCalls',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('chat:alert-unclaimed')->everyFiveMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AlertUnclaimedChatSessions',
+                ),
+                name: 'AlertUnclaimedChatSessions',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

@@ -115,7 +115,7 @@ const listError = inject('listError', {})
                             @click="() => {
                                 parcelsCopy = [...toRaw(props.boxStats.parcels || [])]
                                 isModalParcels = true
-                            }" />
+                            }" fixed-width />
                     </div>
 
                     <!-- List of Parcels -->

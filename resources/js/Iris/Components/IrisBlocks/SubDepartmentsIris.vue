@@ -254,7 +254,7 @@ onBeforeUnmount(() => {
           <template #default>
             <div v-if="item?.icon || item?.web_images?.main?.gallery || item?.image"
               class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">
-              <FontAwesomeIcon v-if="item?.icon" :icon="item?.icon" class="text-xl w-5 h-5" />
+              <FontAwesomeIcon v-if="item?.icon" :icon="item?.icon" class="text-xl w-5 h-5" fixed-width />
 
               <Image
                 v-else

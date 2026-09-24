@@ -50,7 +50,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-user"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Contact Name')"
+                            v-tooltip="trans('Contact Name')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.contact_name }}</span>
                     </div>
@@ -58,7 +58,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-building"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Company Name')"
+                            v-tooltip="trans('Company Name')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.company_name }}</span>
                     </div>
@@ -66,7 +66,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-envelope"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Email')"
+                            v-tooltip="trans('Email')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.email }}</span>
                     </div>
@@ -74,7 +74,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-phone"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Phone')"
+                            v-tooltip="trans('Phone')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.phone }}</span>
                     </div>
@@ -82,7 +82,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-tags"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Interests')"
+                            v-tooltip="trans('Interests')" fixed-width
                         />
                         <div class="flex items-center gap-2 w-full">
                             <span
@@ -98,7 +98,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-id-card"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="data.customer.identity_document_number?.label"
+                            v-tooltip="data.customer.identity_document_number?.label" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.identity_document_number?.number }}</span>
                         <span class="text-xs text-gray-400 ml-2">{{ data.customer.identity_document_number?.label }}</span>
@@ -107,7 +107,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-id-card"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="data.customer.identity_document_number_alt?.label"
+                            v-tooltip="data.customer.identity_document_number_alt?.label" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.identity_document_number_alt?.number }}</span>
                         <span class="text-xs text-gray-400 ml-2">{{ data.customer.identity_document_number_alt?.label }}</span>
@@ -207,7 +207,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
             <div class="flex flex-1 justify-end">
                 <button type="button" @click="showBanner = false" class="-m-3 p-3 focus-visible:-outline-offset-4">
                     <span class="sr-only">Dismiss</span>
-                    <FontAwesomeIcon icon="fa-xmark" class="text-white" />
+                    <FontAwesomeIcon icon="fa-xmark" class="text-white" fixed-width />
                 </button>
             </div>
         </div>

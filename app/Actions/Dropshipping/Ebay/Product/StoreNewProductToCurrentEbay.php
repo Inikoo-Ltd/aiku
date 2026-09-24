@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Dropshipping\WithPortfolioErrorResponse;
 use App\Actions\OrgAction;
 use App\Events\UploadProductToSalesChannelProgressEvent;
@@ -22,6 +23,7 @@ class StoreNewProductToCurrentEbay extends OrgAction
 {
     use WithPortfolioErrorResponse;
     use AsAction;
+    use WithRetinaRouteModelOwnershipCheck;
 
     public string $jobQueue = 'ebay';
 
@@ -63,6 +65,13 @@ class StoreNewProductToCurrentEbay extends OrgAction
     /**
      * @throws \Exception
      */
+    public function inRetina(Portfolio $portfolio, ActionRequest $request): void
+    {
+        abort_unless($this->retinaCustomerOwnsRouteModels($request), 403);
+
+        $this->asController($portfolio, $request);
+    }
+
     public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
         $this->initialisation($portfolio->organisation, $request);

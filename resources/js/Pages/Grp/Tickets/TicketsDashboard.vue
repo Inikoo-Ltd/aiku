@@ -94,7 +94,7 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
 
         <TicketTabsCard v-if="workTabs.length" :tabs="workTabs" storage-key="tickets_dashboard_tab">
             <template #tickets>
-                <div class="grid divide-y divide-gray-200 lg:divide-x lg:divide-y-0" :class="collaborating?.length ? 'lg:grid-cols-3' : 'lg:grid-cols-2'">
+                <div class="grid divide-y divide-gray-200 lg:divide-x lg:divide-y-0 [&>*]:min-w-0" :class="collaborating?.length ? 'lg:grid-cols-3' : 'lg:grid-cols-2'">
                     <TicketMiniList flat :title="ctrans('Assigned to me')" :tickets="assigned ?? []" :empty="ctrans('Nothing on your plate')" />
                     <TicketMiniList v-if="collaborating?.length" flat :title="ctrans('Collaborating on')" :tickets="collaborating" :empty="ctrans('Not collaborating on anything')" show-assignee />
                     <TicketMiniList flat :title="ctrans('Waiting, due now')" :tickets="waiting_due ?? []" :empty="ctrans('Nothing due')" date-key="waiting_until" show-assignee />
@@ -105,7 +105,7 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
             </template>
         </TicketTabsCard>
 
-        <div v-if="can_manage" class="grid gap-4 lg:grid-cols-2">
+        <div v-if="can_manage" class="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
             <div class="lg:col-span-2">
                 <TicketTabsCard
                     :tabs="[
@@ -140,7 +140,7 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
             </TicketTabsCard>
         </div>
 
-        <div v-else class="grid gap-4 lg:grid-cols-5">
+        <div v-else class="grid gap-4 lg:grid-cols-5 [&>*]:min-w-0">
             <div class="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
                 <h3 class="bg-[--app-accent] text-[--app-accent-text] font-semibold px-4 py-2.5">{{ ctrans("New ticket") }}</h3>
                 <div class="p-4">

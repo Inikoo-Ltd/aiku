@@ -32,6 +32,7 @@ const props = defineProps<{
 		placeholder?: string
 	}
 	loadingSubmit?: boolean
+	extraBody?: Record<string, any>
 }>()
 
 const emits = defineEmits<{
@@ -50,6 +51,7 @@ const onClickDelete = () => {
 		selectedMethod !== "delete"
 			? {
 					[props.keyMessage || "delete_comment"]: messageDelete.value,
+					...(props.extraBody ?? {}),
 			  }
 			: undefined
 

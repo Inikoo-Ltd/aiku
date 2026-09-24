@@ -13,11 +13,11 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\WebBlock\StoreWebBlock;
-use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class DuplicateModelHasWebBlock extends OrgAction
@@ -26,24 +26,19 @@ class DuplicateModelHasWebBlock extends OrgAction
     use WithActionUpdate;
 
 
-    public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks): ModelHasWebBlocks
+    public function handle(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlocks, array $modelData = []): ModelHasWebBlocks
     {
-        $position = $webpage->modelHasWebBlocks()->max('position') + 1;
-        // $webBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->get();
+        $orderedBlocks = $webpage->modelHasWebBlocks()->orderBy('position')->orderBy('id')->get();
+        $position      = min(Arr::get($modelData, 'position') ?? $orderedBlocks->count(), $orderedBlocks->count());
 
-        // if (!$webBlocks->isEmpty()) {
-        //     $positions = [];
+        /** @var ModelHasWebBlocks $block */
+        foreach ($orderedBlocks->values() as $index => $block) {
+            $newPosition = $index < $position ? $index : $index + 1;
+            if ((int) $block->position !== $newPosition) {
+                $block->update(['position' => $newPosition]);
+            }
+        }
 
-        //     /** @var ModelHasWebBlocks $block */
-        //     foreach ($webBlocks as $block) {
-        //         if ($block->position >= $position) {
-        //             $positions[$block->webBlock->id] = ['position' => $block->position + 1];
-        //         } else {
-        //             $positions[$block->webBlock->id] = ['position' => $block->position];
-        //         }
-        //     }
-        //     ReorderWebBlocks::make()->action($webpage, ['positions' => $positions]);
-        // }
         $webBlockType = WebBlockType::find($modelHasWebBlocks->webBlock->web_block_type_id);
 
         $webBlock = StoreWebBlock::run($webBlockType, [
@@ -58,12 +53,12 @@ class DuplicateModelHasWebBlock extends OrgAction
                 'website_id'      => $webpage->website_id,
                 'webpage_id'      => $webpage->id,
                 'position'        => $position,
-                'model_id'        => $modelHasWebBlocks->model_id,
-                'model_type'      => $modelHasWebBlocks->model_type,
+                'model_id'        => $webpage->id,
+                'model_type'      => class_basename(Webpage::class),
                 'web_block_id'    => $webBlock->id,
                 'show'            => $modelHasWebBlocks->show,
                 'show_logged_in'  => $modelHasWebBlocks->show_logged_in,
-                'show_logged_out'  => $modelHasWebBlocks->show_logged_out,
+                'show_logged_out' => $modelHasWebBlocks->show_logged_out,
             ]
         );
         UpdateWebpageContent::run($webpage->refresh());
@@ -71,9 +66,27 @@ class DuplicateModelHasWebBlock extends OrgAction
         return $modelHasWebBlockCopy;
     }
 
+    public function rules(): array
+    {
+        return [
+            'position' => ['sometimes', 'nullable', 'integer', 'min:0'],
+        ];
+    }
+
     public function asController(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlock, ActionRequest $request): void
     {
+        abort_if($modelHasWebBlock->group_id !== $webpage->group_id, 404);
+
         $this->initialisationFromShop($webpage->shop, $request);
-        $this->handle($webpage, $modelHasWebBlock);
+        $this->handle($webpage, $modelHasWebBlock, $this->validatedData);
+    }
+
+    public function action(Webpage $webpage, ModelHasWebBlocks $modelHasWebBlock, array $modelData = []): ModelHasWebBlocks
+    {
+        $this->asAction = true;
+
+        $this->initialisationFromShop($webpage->shop, $modelData);
+
+        return $this->handle($webpage, $modelHasWebBlock, $this->validatedData);
     }
 }

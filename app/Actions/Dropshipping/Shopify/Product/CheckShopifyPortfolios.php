@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -24,6 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class CheckShopifyPortfolios extends OrgAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
 
     public string $jobQueue = 'shopify';

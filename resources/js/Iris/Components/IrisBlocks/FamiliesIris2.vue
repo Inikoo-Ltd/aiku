@@ -218,7 +218,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
           <button v-if="swiperInstance?.allowSlidePrev" ref="prevEl"
             class="absolute left-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
             @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
-            <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
+            <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" fixed-width />
           </button>
 
           <!-- MASK WRAPPER -->
@@ -273,7 +273,7 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
           <button v-if="swiperInstance?.allowSlideNext" ref="nextEl"
             class="absolute right-0 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full cursor-pointer text-gray-500"
             @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right" type="button">
-            <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" />
+            <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" fixed-width />
           </button>
 
         </div>

@@ -31,6 +31,7 @@ class TicketCommentResource extends JsonResource
             'author_avatar' => $this->author?->imageSources(48, 48),
             'author_key'    => $this->author_id ? $this->author_type.'-'.$this->author_id : null,
             'author_username' => $this->author_type === 'User' ? $this->author?->username : null,
+            'author_profile_url' => $this->authorProfileUrl($request),
             'author_roles'  => $request->routeIs('retina.*') ? [] : $this->authorRoles(),
             'created_at'  => $this->created_at,
             'images'      => $this->ticketImageSources(),
@@ -38,6 +39,22 @@ class TicketCommentResource extends JsonResource
             'can_edit'    => $request->user() instanceof \App\Models\SysAdmin\User && $this->isAuthoredBy($request->user()),
             'can_delete'  => $request->user() instanceof \App\Models\SysAdmin\User && $this->isAuthoredBy($request->user()),
         ];
+    }
+
+    /**
+     * Their account in system administration, for whoever may look at it. Null for everybody
+     * else, so the ticket does not offer a link that answers with a 403.
+     */
+    private function authorProfileUrl($request): ?string
+    {
+        $viewer = $request->user();
+        $author = $this->author_type === 'User' ? $this->author : null;
+
+        if (!$author instanceof User || !$viewer instanceof User || !$viewer->authTo('sysadmin.view')) {
+            return null;
+        }
+
+        return route('grp.sysadmin.users.show', ['user' => $author->slug]);
     }
 
     /**

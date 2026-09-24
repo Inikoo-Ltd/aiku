@@ -74,12 +74,12 @@ onMounted(() => {
 					icon="fas fa-exclamation-circle"
 					v-if="form.errors[fieldName]"
 					class="h-5 w-5 text-red-500"
-					aria-hidden="true" />
+					fixed-width aria-hidden="true" />
 				<FontAwesomeIcon
 					icon="fas fa-check-circle"
 					v-if="form.recentlySuccessful"
 					class="mt-1.5 h-5 w-5 text-green-500"
-					aria-hidden="true" />
+					fixed-width aria-hidden="true" />
 			</div>
 		</div>
         

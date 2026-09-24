@@ -39,7 +39,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
         >
             <!-- Search Section Retina -->
                 <span class="sr-only">{{ trans("Search") }}</span>
-                <FontAwesomeIcon aria-hidden="true" size="sm" icon="fa-regular fa-search" />
+                <FontAwesomeIcon fixed-width aria-hidden="true" size="sm" icon="fa-regular fa-search" />
                 <div class="hidden whitespace-nowrap md:flex items-center justify-end text-gray-500/80 tracking-tight space-x-1">
                     <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none text-xl rounded">⌘</span>
                     <span v-else class="ring-1 ring-gray-400 bg-gray-100 px-2 py-0.5 text-xs rounded">Ctrl</span>

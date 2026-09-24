@@ -185,12 +185,12 @@ class GetGroupNavigation
                         ],
                     ],
                     ...($user->hasGroupAccess() ? [[
-                        'label'   => __('Phone calls'),
-                        'tooltip' => __('Phone calls'),
-                        'icon'    => ['fal', 'fa-phone'],
-                        'root'    => 'grp.chat.phone_calls.',
+                        'label'   => __('AI assist'),
+                        'tooltip' => __('AI assist'),
+                        'icon'    => ['fal', 'fa-robot'],
+                        'root'    => 'grp.chat.ai.',
                         'route'   => [
-                            'name' => 'grp.chat.phone_calls.index',
+                            'name' => 'grp.chat.ai.dashboard',
                         ],
                     ]] : []),
                     [
@@ -405,11 +405,19 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('Dashboard'),
-                        'icon'  => ['fal', 'fa-chart-network'],
+                        'label' => __('PO journey'),
+                        'icon'  => ['fal', 'fa-route'],
                         'root'  => 'grp.supply-chain.dashboard',
                         'route' => [
                             'name' => 'grp.supply-chain.dashboard',
+                        ]
+                    ],
+                    [
+                        'label' => __('Overview'),
+                        'icon'  => ['fal', 'fa-chart-network'],
+                        'root'  => 'grp.supply-chain.overview',
+                        'route' => [
+                            'name' => 'grp.supply-chain.overview',
                         ]
                     ],
                     [

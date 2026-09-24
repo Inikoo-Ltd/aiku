@@ -151,7 +151,7 @@ const toggleActive = (item: any) => {
                 <input
                     v-model="form.label"
                     type="text"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                     placeholder="e.g. UK 2026-2027"
                 />
                 <div v-if="form.errors.label" class="mt-1 text-xs text-red-600">
@@ -166,7 +166,7 @@ const toggleActive = (item: any) => {
                 <input
                     v-model="form.start_date"
                     type="date"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="form.errors.start_date" class="mt-1 text-xs text-red-600">
                     {{ form.errors.start_date }}
@@ -180,7 +180,7 @@ const toggleActive = (item: any) => {
                 <input
                     v-model="form.end_date"
                     type="date"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="form.errors.end_date" class="mt-1 text-xs text-red-600">
                     {{ form.errors.end_date }}
@@ -192,7 +192,7 @@ const toggleActive = (item: any) => {
                     id="is_active"
                     v-model="form.is_active"
                     type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <label for="is_active" class="text-sm text-gray-700">
                     {{ trans('Set as active holiday year') }}
@@ -226,7 +226,7 @@ const toggleActive = (item: any) => {
                 <input
                     v-model="editForm.label"
                     type="text"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="editForm.errors.label" class="mt-1 text-xs text-red-600">
                     {{ editForm.errors.label }}
@@ -240,7 +240,7 @@ const toggleActive = (item: any) => {
                 <input
                     v-model="editForm.start_date"
                     type="date"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="editForm.errors.start_date" class="mt-1 text-xs text-red-600">
                     {{ editForm.errors.start_date }}
@@ -254,7 +254,7 @@ const toggleActive = (item: any) => {
                 <input
                     v-model="editForm.end_date"
                     type="date"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
                 />
                 <div v-if="editForm.errors.end_date" class="mt-1 text-xs text-red-600">
                     {{ editForm.errors.end_date }}
@@ -266,7 +266,7 @@ const toggleActive = (item: any) => {
                     id="edit_is_active"
                     v-model="editForm.is_active"
                     type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]"
                 />
                 <label for="edit_is_active" class="text-sm text-gray-700">
                     {{ trans('Set as active holiday year') }}

@@ -17,11 +17,8 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
-use App\Actions\Inventory\OrgStock\StoreOrgStock;
-use App\Models\Goods\Stock;
-use App\Models\Inventory\OrgStock;
+use App\Actions\Procurement\OrgSupplierProducts\ResolveOrgStockForSupplierProduct;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\ShoppingListItem;
@@ -79,7 +76,7 @@ class CherryPickShoppingListItems extends OrgAction
                 ->orderBy('local_priority')
                 ->first();
 
-            $orgStock = $pivot?->orgStock ?? $this->resolveOrCreateOrgStock($item);
+            $orgStock = $pivot?->orgStock ?? ResolveOrgStockForSupplierProduct::run($item->organisation, $item->supplierProduct);
 
             if (!$orgStock) {
                 $skipped[] = ['id' => $item->id, 'reason' => 'org stock could not be resolved'];
@@ -177,41 +174,6 @@ class CherryPickShoppingListItems extends OrgAction
         $this->initialisation($agent->organisation, $request);
 
         return $this->handle($agent, $request->input('lines', []));
-    }
-
-    private function resolveOrCreateOrgStock(ShoppingListItem $item): ?OrgStock
-    {
-        $tradeUnitIds = DB::table('model_has_trade_units')
-            ->where('model_type', 'SupplierProduct')
-            ->where('model_id', $item->supplier_product_id)
-            ->pluck('trade_unit_id');
-
-        if ($tradeUnitIds->isEmpty()) {
-            return null;
-        }
-
-        $orgStock = OrgStock::where('organisation_id', $item->organisation_id)
-            ->whereIn('id', DB::table('model_has_trade_units')
-                ->where('model_type', 'OrgStock')
-                ->whereIn('trade_unit_id', $tradeUnitIds)
-                ->pluck('model_id'))
-            ->first();
-
-        if ($orgStock) {
-            return $orgStock;
-        }
-
-        $stock = Stock::whereIn('id', DB::table('model_has_trade_units')
-            ->where('model_type', 'Stock')
-            ->whereIn('trade_unit_id', $tradeUnitIds)
-            ->pluck('model_id'))
-            ->first();
-
-        if (!$stock) {
-            return null;
-        }
-
-        return StoreOrgStock::make()->action($item->organisation, $stock);
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): RedirectResponse

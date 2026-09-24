@@ -33,6 +33,7 @@ class GetEmailTemplates extends OrgAction
         $queryBuilder->where('email_templates.is_seeded', false);
         $queryBuilder->where('email_templates.state', EmailTemplateStateEnum::ACTIVE->value);
         $queryBuilder->where('email_templates.builder', EmailTemplateBuilderEnum::BEEFREE->value);
+        $queryBuilder->commonOutbox(false);
 
         $queryBuilder->whereNotNull('email_templates.compiled_layout');
         $queryBuilder->where('email_templates.compiled_layout', '!=', '');

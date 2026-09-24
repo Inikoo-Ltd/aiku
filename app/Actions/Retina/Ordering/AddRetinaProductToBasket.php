@@ -30,10 +30,11 @@ class AddRetinaProductToBasket extends RetinaAction
     public function handle(Order $order, array $modelData): Transaction
     {
         $historicAssetId = $modelData['historic_asset_id'];
+        $historicAsset   = HistoricAsset::find($historicAssetId);
 
-        $this->ensureHistoricAssetIsPurchasableByCustomer(HistoricAsset::find($historicAssetId), $this->customer);
+        $this->ensureHistoricAssetIsPurchasableByCustomer($historicAsset, $this->customer);
 
-        $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAssetId)->first();
+        $existingTransaction = $historicAsset->model instanceof Product ? $this->findCustomerLine($order, $historicAsset->model) : null;
 
         if ($existingTransaction) {
             return UpdateRetinaTransaction::run(

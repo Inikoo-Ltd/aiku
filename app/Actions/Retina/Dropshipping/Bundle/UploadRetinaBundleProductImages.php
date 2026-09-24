@@ -12,8 +12,10 @@ namespace App\Actions\Retina\Dropshipping\Bundle;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Traits\SanitizeInputs;
 use Illuminate\Support\Arr;
@@ -21,10 +23,25 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadRetinaBundleProductImages extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels {
+        authorize as authorizeCustomerOwnedRouteModels;
+    }
     use WithActionUpdate;
     use SanitizeInputs;
 
     private CustomerSalesChannel $customerSalesChannel;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        /** @var Product $product */
+        $product = $request->route('product');
+
+        return $this->authorizeCustomerOwnedRouteModels($request)
+            && Bundle::where('customer_id', $this->customer?->id)
+                ->where('bundleable_type', $product->getMorphClass())
+                ->where('bundleable_id', $product->id)
+                ->exists();
+    }
 
     public function handle(Product $product, array $modelData): array
     {

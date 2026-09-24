@@ -155,10 +155,11 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 ]);
 
             $offerAllowancePivots = [];
+            $transactionUpdates   = [];
 
             foreach ($this->transactions as $transaction) {
                 if (property_exists($transaction, 'with_offer')) {
-                    $offerAllowancePivots[] = $this->updateTransactionDiscount(
+                    [$transactionUpdates[$transaction->id], $offerAllowancePivots[]] = $this->buildTransactionDiscount(
                         $order,
                         $transaction,
                         $transaction->discounted_percentage,
@@ -184,7 +185,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
 
             foreach ($this->transactionsQuantityBonus as $transaction) {
                 if (property_exists($transaction, 'with_offer')) {
-                    $offerAllowancePivots[] = $this->updateTransactionDiscount(
+                    [$transactionUpdates[$transaction->id], $offerAllowancePivots[]] = $this->buildTransactionDiscount(
                         $order,
                         $transaction,
                         $transaction->discounted_percentage,
@@ -207,6 +208,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                     );
                 }
             }
+
+            $this->bulkUpdateTransactionDiscounts($transactionUpdates);
 
             if ($offerAllowancePivots !== []) {
                 DB::table('transaction_has_offer_allowances')->insert($offerAllowancePivots);
@@ -256,6 +259,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     public function regenerateSubmittedTransactionDiscounts(Order $order): void
     {
         $offerAllowancePivots = [];
+        $transactionUpdates   = [];
 
         /** @var Transaction $transactionWithSubmittedDiscount */
         foreach (
@@ -277,12 +281,10 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 continue;
             }
 
-            DB::table('transaction_has_offer_allowances')->where('is_gift', false)->where('transaction_id', $transactionWithSubmittedDiscount->id)->delete();
-
             $percentageOff    = round(1 - $transactionWithSubmittedDiscount->submitted_discount_factor, 4);
             $discountedAmount = discountAmountOffGross((float)$transactionWithSubmittedDiscount->gross_amount, $transactionWithSubmittedDiscount->submitted_discount_factor);
 
-            $offerAllowancePivots[] = $this->updateTransactionDiscount(
+            [$transactionUpdates[$transactionWithSubmittedDiscount->id], $offerAllowancePivots[]] = $this->buildTransactionDiscount(
                 $order,
                 $transactionWithSubmittedDiscount,
                 $percentageOff,
@@ -291,9 +293,17 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             );
         }
 
-        if ($offerAllowancePivots !== []) {
-            DB::table('transaction_has_offer_allowances')->insert($offerAllowancePivots);
+        if ($transactionUpdates === []) {
+            return;
         }
+
+        DB::transaction(function () use ($transactionUpdates, $offerAllowancePivots) {
+            DB::table('transaction_has_offer_allowances')->where('is_gift', false)->whereIn('transaction_id', array_keys($transactionUpdates))->delete();
+
+            $this->bulkUpdateTransactionDiscounts($transactionUpdates);
+
+            DB::table('transaction_has_offer_allowances')->insert($offerAllowancePivots);
+        });
     }
 
 
@@ -368,6 +378,14 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     {
         $enabledOffers = [];
 
+        /**
+         * An intercompany order is a transfer between two of our own companies, priced from the
+         * seller's list price and discounted by the partner's own terms. The shop's promotions are
+         * retail marketing aimed at customers, so none of them apply here: a partner buying for the
+         * first time is not a new customer to acquire. Offers granted to the intercompany customer
+         * itself, and discretionary discounts the office enters by hand, still apply.
+         */
+        $isIntercompany = $order->salesChannel?->code === 'intercompany';
 
         foreach (
             $this->scopeOffersValidity(
@@ -394,7 +412,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
 
-        if ($order->offer_voucher_id) {
+        if ($order->offer_voucher_id && !$isIntercompany) {
             $voucherData = $this->scopeOffersValidity(
                 DB::table('offers')
                     ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
@@ -423,17 +441,20 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
 
-        $offersData = $this->scopeOffersValidity(
-            DB::table('offers')
-                ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
-                ->where('shop_id', $order->shop_id)
-        )->whereIn('trigger_type', [
-            'Customer',
-            'Product',
-            'ProductCategory',
-            'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
-        ])
-        ->get();
+        $offersData = collect();
+        if (!$isIntercompany) {
+            $offersData = $this->scopeOffersValidity(
+                DB::table('offers')
+                    ->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name', 'trigger_type', 'trigger_id'])
+                    ->where('shop_id', $order->shop_id)
+            )->whereIn('trigger_type', [
+                'Customer',
+                'Product',
+                'ProductCategory',
+                'ShopAiku'//todo: after migration, you can change to Shop , after all aurora type=Shop are terminated
+            ])
+            ->get();
+        }
         foreach ($offersData as $offerData) {
             if ($offerData->type == 'Amount AND Order Number') {
                 list($passAmount, $passOrderNumber, $metadata) = $this->checkAmountAndOrderNumber($order, $offerData);
@@ -1044,22 +1065,22 @@ class CalculateOrderDiscounts implements ShouldBeUnique
     }
 
     /**
-     * Updates the transaction row and returns the transaction_has_offer_allowances
-     * row to be bulk inserted by the caller.
+     * Returns the transactions row values and the transaction_has_offer_allowances row, both written
+     * in bulk by the caller: bulkUpdateTransactionDiscounts() for the first, one insert for the second.
      *
-     * @return array<string, mixed>
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
      */
-    private function updateTransactionDiscount(Order $order, object $transaction, float $discountedPercentage, float $discountedAmount, array $offersData): array
+    private function buildTransactionDiscount(Order $order, object $transaction, float $discountedPercentage, float $discountedAmount, array $offersData): array
     {
-        DB::table('transactions')->where('id', $transaction->id)
-            ->update([
-                'gross_amount'            => $transaction->gross_amount,
-                'net_amount'              => (float)$transaction->gross_amount - $discountedAmount,
-                'current_discount_factor' => 1 - $discountedPercentage,
-                'offers_data'             => $offersData,
-            ]);
+        $transactionValues = [
+            'id'                      => $transaction->id,
+            'gross_amount'            => $transaction->gross_amount,
+            'net_amount'              => (float)$transaction->gross_amount - $discountedAmount,
+            'current_discount_factor' => 1 - $discountedPercentage,
+            'offers_data'             => json_encode($offersData),
+        ];
 
-        return [
+        $offerAllowancePivot = [
             'order_id'              => $order->id,
             'transaction_id'        => $transaction->id,
             'model_type'            => $transaction->model_type,
@@ -1075,6 +1096,38 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             'updated_at'            => now(),
             'data'                  => '{}',
         ];
+
+        return [$transactionValues, $offerAllowancePivot];
+    }
+
+    /**
+     * One statement for every discounted line instead of one update per line. Rows are keyed by
+     * transaction id so a line present in both the ordered and the bonus pass keeps the last write,
+     * as the per-line updates did; Postgres would otherwise pick one of the duplicates at random.
+     *
+     * @param  array<int, array<string, mixed>>  $transactionUpdates
+     */
+    private function bulkUpdateTransactionDiscounts(array $transactionUpdates): void
+    {
+        if ($transactionUpdates === []) {
+            return;
+        }
+
+        foreach (array_chunk($transactionUpdates, 1000) as $chunk) {
+            $valueRows = [];
+            $bindings  = [];
+            foreach ($chunk as $values) {
+                $valueRows[] = '(?::bigint, ?::numeric, ?::numeric, ?::double precision, ?::json)';
+                array_push($bindings, $values['id'], $values['gross_amount'], $values['net_amount'], $values['current_discount_factor'], $values['offers_data']);
+            }
+
+            DB::update(
+                'UPDATE transactions SET gross_amount = v.gross_amount, net_amount = v.net_amount, current_discount_factor = v.current_discount_factor, offers_data = v.offers_data '
+                .'FROM (VALUES '.implode(', ', $valueRows).') AS v (id, gross_amount, net_amount, current_discount_factor, offers_data) '
+                .'WHERE transactions.id = v.id',
+                $bindings
+            );
+        }
     }
 
     public function processDiscretionaryOffers(Order $order): void

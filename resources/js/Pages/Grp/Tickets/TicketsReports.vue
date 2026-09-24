@@ -153,6 +153,13 @@ const csatChart = computed(() => ({
 
 const csatOptions = {
     responsive: true,
+    onClick: (_event: unknown, elements: { index: number }[]) => {
+        const row = props.stats.csat_by_month[elements[0]?.index]
+        if (row?.total) router.visit(listUrl({ filter: { rated_month: row.month, ...(props.stats.assignee ? { assignee: props.stats.assignee } : {}) } }))
+    },
+    onHover: (event: { native?: { target?: HTMLElement } }, elements: unknown[]) => {
+        if (event.native?.target) event.native.target.style.cursor = elements.length ? "pointer" : "default"
+    },
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: { x: { grid: { display: false } }, y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } } },

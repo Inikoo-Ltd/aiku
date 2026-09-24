@@ -596,7 +596,7 @@ test('uploading a product creates the inventory item, the offer and publishes it
     $ebayUser  = ebayChannel($this);
     $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
     $portfolio->update(['customer_price' => 12.5]);
-    $this->product->update(['available_quantity' => 7]);
+    $this->product->update(['available_quantity' => 7, 'units' => 3, 'marketing_weight' => 430, 'gross_weight' => 1371]);
 
     fakeEbay($this, ebayCatalogueRoutes() + ['/sell/inventory/v1/offer' => ebayOfferRoutes()]);
 
@@ -620,7 +620,7 @@ test('uploading a product creates the inventory item, the offer and publishes it
         ->and($inventoryItem['product']['title'])->toBe($portfolio->customer_product_name)
         ->and($inventoryItem['product']['mpn'])->toBe($this->product->code)
         ->and($inventoryItem['product']['aspects']['Type'])->toBe(['Pillar'])
-        ->and($inventoryItem['packageWeightAndSize']['weight']['unit'])->toBe('KILOGRAM');
+        ->and($inventoryItem['packageWeightAndSize']['weight'])->toBe(['unit' => 'KILOGRAM', 'value' => 1.371]);
 
     $offer = sentEbayRequest('POST', '/sell/inventory/v1/offer')->data();
     expect($offer['sku'])->toBe($portfolio->sku)

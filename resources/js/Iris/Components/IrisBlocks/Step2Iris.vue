@@ -84,7 +84,7 @@ const emits = defineEmits<{
 								{{ idx + 1 }}
 							</span>
 
-							<FontAwesomeIcon v-if="fieldValue.timeline.bullet.type === 'icon'" :icon="step.icon" />
+							<FontAwesomeIcon v-if="fieldValue.timeline.bullet.type === 'icon'" :icon="step.icon" fixed-width />
 							<span v-if="fieldValue.timeline.bullet.type === 'text'"  >
 								<!-- <Editor v-model="step.text_bullet" @update:fieldValue="() => emits('autoSave')" /> -->
 									<div  v-html="step.text_bullet"></div>

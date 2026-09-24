@@ -16,6 +16,7 @@ const props = defineProps<{
         copyButton: boolean
         maxLength?: number
         toggle?: string[]
+        uploadImageRoute?: routeType
         routeGetInternalLink : routeType
     }
 }>()
@@ -23,7 +24,7 @@ const props = defineProps<{
 
 <template>
   <div class="">
-    <Editor v-model="form[fieldName]" :toggle="fieldData.toggle" :routeGetInternalLink="fieldData.routeGetInternalLink">
+    <Editor v-model="form[fieldName]" :toggle="fieldData.toggle" :uploadImageRoute="fieldData.uploadImageRoute" :routeGetInternalLink="fieldData.routeGetInternalLink">
       <template #editor-content="{ editor }">
         <div class="editor-wrapper h-full border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-[var(--theme-color-0)]">
           <EditorContent :editor="editor" class="editor-content focus:outline-none" />

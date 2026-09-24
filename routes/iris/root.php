@@ -10,7 +10,6 @@ use App\Actions\Retina\Dropshipping\Bundle\UI\RedirectIrisToRetinaBundle;
 use App\Actions\Helpers\Media\UI\ShowIrisAudio;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
 use Illuminate\Support\Facades\Route;
-use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Website\LlmsTxt\ServeLlmsTxt;
@@ -76,7 +75,6 @@ Route::middleware(Sample::always())->prefix("json")
     ->name("json.")
     ->group(__DIR__."/json.php");
 
-Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::get('audio/{media:ulid}', ShowIrisAudio::class)->name('audio');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::middleware(Sample::always())->prefix("models")

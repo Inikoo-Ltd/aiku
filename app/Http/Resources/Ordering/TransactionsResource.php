@@ -103,14 +103,15 @@ class TransactionsResource extends JsonResource
 
         $media = null;
         if ($this->product_image_id) {
-            $media = Media::find($this->product_image_id);
+            $media = $this->resource->relationLoaded('productImage') ? $this->resource->getRelation('productImage') : Media::find($this->product_image_id);
         }
 
         $webpageUrl = null;
         $webpage = null;
         if ($this->model_type === class_basename(Product::class)) {
-            $webpage = Webpage::where('model_id', $this->product_id)
-                ->where('model_type', class_basename(Product::class))->first();
+            $webpage = $this->resource->relationLoaded('productWebpage')
+                ? $this->resource->getRelation('productWebpage')
+                : Webpage::where('model_id', $this->product_id)->where('model_type', class_basename(Product::class))->first();
             $webpageUrl = $webpage?->getUrl();
         }
 

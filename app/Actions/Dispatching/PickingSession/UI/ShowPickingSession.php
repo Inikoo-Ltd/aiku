@@ -6,6 +6,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingS
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionGrouped;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
+use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -37,6 +38,9 @@ class ShowPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
+        $pickingSession->deliveryNotes()->get()->each(
+            fn ($deliveryNote) => AssignDefaultPackagingToOrderWithoutPackaging::make()->forDeliveryNote($deliveryNote)
+        );
 
         return $pickingSession;
     }

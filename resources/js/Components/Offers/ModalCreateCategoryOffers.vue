@@ -251,7 +251,7 @@ resetForm();
 
                 <div class="space-y-2">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
 
                         {{ trans('Offer name') }}:
                     </label>
@@ -263,7 +263,7 @@ resetForm();
 
                 <div class="space-y-2" v-if="!product_category_id">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
 
                         {{ trans('Select categories') }}:
                         <InformationIcon :information="trans('You can select more than one, an offer will be created for each of them')" />
@@ -306,7 +306,7 @@ resetForm();
 
                 <div class="space-y-2">
                     <div class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Select offer type') }}:
                     </div>
 
@@ -347,7 +347,7 @@ resetForm();
                 <!-- Section: Discount -->
                 <div class="space-y-2">
                     <div class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Discount') }}:
                     </div>
 
@@ -360,7 +360,7 @@ resetForm();
                 <!-- Section: Discount target -->
                 <div class="space-y-2">
                     <div class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Apply discount to') }}:
                         <InformationIcon :information="trans('The discount can apply to this category, or to another family (e.g. spend on this category to get a discount on another family)')" />
                     </div>
@@ -398,7 +398,7 @@ resetForm();
                 <div class="space-y-3">
 
                     <div class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer Duration') }}:
                     </div>
 
@@ -436,7 +436,7 @@ resetForm();
                         <div class="space-y-2">
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
-                                    class="font-light text-xs text-red-400 align-middle" />
+                                    class="font-light text-xs text-red-400 align-middle" fixed-width />
                                 {{ trans('Start Date') }}
                                 <InformationIcon
                                     :information="trans('If start date is empty, will start immediately')" />:

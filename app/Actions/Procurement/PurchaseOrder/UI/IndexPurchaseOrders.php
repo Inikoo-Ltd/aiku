@@ -119,7 +119,8 @@ class IndexPurchaseOrders extends OrgAction
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('purchase_orders.reference', $value);
+                $query->whereAnyWordStartWith('purchase_orders.reference', $value)
+                    ->orWhereAnyWordStartWith('purchase_orders.parent_name', $value);
             });
         });
 

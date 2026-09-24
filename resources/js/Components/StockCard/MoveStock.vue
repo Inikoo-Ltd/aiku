@@ -95,7 +95,7 @@ watch(
                             <template #button="{ open, close }">
                                 <button class="h-6 my-auto align-bottom text-center" type="submit">
                                     <FontAwesomeIcon :icon="faForklift" class="h-6"
-                                        :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                                        :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
                                 </button>
                             </template>
 
@@ -121,7 +121,7 @@ watch(
                                 </div>
                             </template>
                         </Popover>
-                        <FontAwesomeIcon v-else :icon="falForklift" class="h-6 text-gray-300" aria-hidden="true" />
+                        <FontAwesomeIcon v-else :icon="falForklift" class="h-6 text-gray-300" fixed-width aria-hidden="true" />
                     </span>
                 </div>
             </div>

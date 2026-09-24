@@ -135,7 +135,7 @@ function removeStep(index: number) {
             :icon="option.icon"
             class="h-3.5 w-3.5 shrink-0"
             :class="modelValue.type === option.value ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'"
-            aria-hidden="true"
+            fixed-width aria-hidden="true"
           />
 
           <span
@@ -149,7 +149,7 @@ function removeStep(index: number) {
             v-show="modelValue.type === option.value"
             icon="fas fa-check-circle"
             class="h-3 w-3 shrink-0 text-indigo-500"
-            aria-hidden="true"
+            fixed-width aria-hidden="true"
           />
         </button>
       </div>
@@ -203,7 +203,7 @@ function removeStep(index: number) {
             v-tooltip="trans('No upper limit')"
             class="flex h-full items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 py-2 text-gray-500"
           >
-            <FontAwesomeIcon :icon="faInfinity" aria-hidden="true" />
+            <FontAwesomeIcon :icon="faInfinity" fixed-width aria-hidden="true" />
           </div>
         </div>
 
@@ -243,7 +243,7 @@ function removeStep(index: number) {
             @click="removeStep(index)"
             :title="trans('Remove Step')"
           >
-            <FontAwesomeIcon :icon="faTrash" />
+            <FontAwesomeIcon :icon="faTrash" fixed-width />
           </div>
         </div>
       </div>
