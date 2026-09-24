@@ -12,6 +12,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
+use App\Models\Comms\MailshotStats;
 use App\Models\CRM\TrafficSourceCampaign;
 use Illuminate\Support\Carbon;
 use App\Models\Helpers\Currency;
@@ -31,11 +32,13 @@ class GetShopEmailMarketingPerformance
      * sale but a registration, so each row also counts prospects who clicked and later became
      * customers.
      *
+     * Totals cover every mailshot sent in the period; only the per-mailshot rows stop at the limit.
+     *
      * Attribution shares mean a mailshot never claims the whole of a sale a paid ad also touched;
      * summed across every channel the revenue here adds up to the shop's real revenue, not a multiple
      * of it.
      *
-     * @return array{totals: array{sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float}, mailshots: array<int, array{id: int, subject: string, type: string, sent_at: string|null, sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float, prospects_registered: int}>}
+     * @return array{totals: array{sent: int, delivered: int, opened: int, clicked: int, bounced: int, spam: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float}, mailshots: array<int, array{id: int, subject: string, type: string, sent_at: string|null, sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float, prospects_registered: int}>}
      */
     public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null, int $limit = 8): array
     {
@@ -44,22 +47,38 @@ class GetShopEmailMarketingPerformance
 
         /* Filtered by when the mailshot was sent, not when its clicks earned revenue: the question
            this panel answers is whether the emails sent in a period paid for themselves. */
-        $mailshots = Mailshot::where('shop_id', $shop->id)
+        $periodMailshots = Mailshot::where('shop_id', $shop->id)
             ->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING, MailshotTypeEnum::INVITE])
             ->whereHas('stats', fn ($query) => $query->where('number_dispatched_emails', '>', 0))
             ->when($from, fn ($query) => $query->whereRaw('COALESCE(sent_at, created_at) >= ?', [$from]))
-            ->when($to, fn ($query) => $query->whereRaw('COALESCE(sent_at, created_at) <= ?', [$to]))
+            ->when($to, fn ($query) => $query->whereRaw('COALESCE(sent_at, created_at) <= ?', [$to]));
+
+        $mailshots = (clone $periodMailshots)
             ->with('stats')
             ->orderByRaw('COALESCE(sent_at, created_at) DESC, id DESC')
             ->limit($limit)
             ->get();
 
+        /* Opens and clicks count recipients, not events: someone who opened five times or clicked
+           three links counts once, the way mail platforms report open and click rates. */
+        $engagement = MailshotStats::whereIn('mailshot_id', (clone $periodMailshots)->select('id'))
+            ->selectRaw('
+                COALESCE(SUM(number_dispatched_emails), 0) as sent,
+                COALESCE(SUM(number_deliveries_success), 0) as delivered,
+                COALESCE(SUM(number_delivered_open_success), 0) as opened,
+                COALESCE(SUM(number_opened_interact_success), 0) as clicked,
+                COALESCE(SUM(number_dispatched_emails_state_hard_bounce + number_dispatched_emails_state_soft_bounce), 0) as bounced,
+                COALESCE(SUM(number_dispatched_emails_state_spam), 0) as spam,
+                COALESCE(SUM(number_dispatched_emails_state_unsubscribed), 0) as unsubscribed
+            ')
+            ->first();
+
         $campaignByMailshot = TrafficSourceCampaign::query()
             /* Both namespaces: a newsletter's campaign is mailshot-N, a marketing mailshot's is
                mmailshot-N, because `reference` is unique across the whole table. */
-            ->whereIn('reference', $mailshots->flatMap(fn (Mailshot $mailshot) => [
-                RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshot->id,
-                RecordEmailClickTouchpoint::MARKETING_CAMPAIGN_REF_PREFIX.$mailshot->id,
+            ->whereIn('reference', (clone $periodMailshots)->pluck('id')->flatMap(fn (int $mailshotId) => [
+                RecordEmailClickTouchpoint::CAMPAIGN_REF_PREFIX.$mailshotId,
+                RecordEmailClickTouchpoint::MARKETING_CAMPAIGN_REF_PREFIX.$mailshotId,
             ]))
             ->pluck('id', 'reference');
 
@@ -122,13 +141,16 @@ class GetShopEmailMarketingPerformance
 
         return [
             'totals'    => [
-                'sent'                 => array_sum(array_column($rows, 'sent')),
-                'opened'               => array_sum(array_column($rows, 'opened')),
-                'clicked'              => array_sum(array_column($rows, 'clicked')),
-                'unsubscribed'         => array_sum(array_column($rows, 'unsubscribed')),
-                'estimated_cost'       => round(array_sum(array_column($rows, 'estimated_cost')), 2),
-                'attributed_revenue'   => round(array_sum(array_column($rows, 'attributed_revenue')), 2),
-                'attributed_customers' => round(array_sum(array_column($rows, 'attributed_customers')), 2),
+                'sent'                 => (int) $engagement->sent,
+                'delivered'            => (int) $engagement->delivered,
+                'opened'               => (int) $engagement->opened,
+                'clicked'              => (int) $engagement->clicked,
+                'bounced'              => (int) $engagement->bounced,
+                'spam'                 => (int) $engagement->spam,
+                'unsubscribed'         => (int) $engagement->unsubscribed,
+                'estimated_cost'       => round($engagement->sent * $costPerEmail, 2),
+                'attributed_revenue'   => round((float) $customerTotals->sum('revenue'), 2),
+                'attributed_customers' => round((float) $customerTotals->sum('customers'), 2),
             ],
             'mailshots' => $rows,
         ];

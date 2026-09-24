@@ -10,7 +10,7 @@ import { Link } from '@inertiajs/vue3'
 import { useLocaleStore } from '@/Stores/locale'
 import { routeType } from '@/types/route'
 import { route } from 'ziggy-js'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown, faChevronRight } from '@fal'
@@ -95,8 +95,11 @@ const props = defineProps<{
         email: {
             totals: {
                 sent: number
+                delivered: number
                 opened: number
                 clicked: number
+                bounced: number
+                spam: number
                 unsubscribed: number
                 estimated_cost: number
                 attributed_revenue: number
@@ -200,13 +203,13 @@ const groupedChannels = computed(() => {
 })
 
 const columnHelp: Record<string, string> = {
-    visits: trans('Arrivals from this channel, how many of them bought, and the rate between the two. Not unique people: each browser counts once per channel per day, so the same person on two days, or on phone and laptop, counts each time - the same way the ad platforms count their clicks. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked.'),
-    spend: trans('Ad spend imported for this channel over the period. Email spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
-    awaiting: trans('Value of orders already placed but not invoiced yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
-    revenue: trans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it.'),
-    registrations: trans('Customers who signed up after arriving through this channel. A red figure beside it is subscribers lost over the same emails, not subtracted from it.'),
-    orders: trans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships.'),
-    roas: trans('Revenue divided by spend. Blank while money is still awaiting invoice.'),
+    visits: ctrans('Arrivals from this channel, how many of them bought, and the rate between the two. Not unique people: each browser counts once per channel per day, so the same person on two days, or on phone and laptop, counts each time - the same way the ad platforms count their clicks. A storefront arrival is counted when the referrer names the channel; an email click is counted when it is clicked.'),
+    spend: ctrans('Ad spend imported for this channel over the period. Email spend is estimated from the emails actually sent, at our per-message price, and marked est.'),
+    awaiting: ctrans('Value of orders already placed but not invoiced yet. It moves into Revenue as invoices are raised, and drops if an order is cancelled.'),
+    revenue: ctrans('Invoiced sales credited to this channel. Touched, not necessarily caused - a regular who was going to order anyway still counts if they arrived through it.'),
+    registrations: ctrans('Customers who signed up after arriving through this channel. A red figure beside it is subscribers lost over the same emails, not subtracted from it.'),
+    orders: ctrans('Orders placed after a touch from this channel, counted when the order is placed rather than when it ships.'),
+    roas: ctrans('Revenue divided by spend. Blank while money is still awaiting invoice.'),
 }
 
 /* A column with one fractional figure in it carries the decimals on every figure: 2 beside 34.83
@@ -219,9 +222,9 @@ const hasDecimals = (values: number[]) => values.some(value => !Number.isInteger
 /* Three blocks, each closed by default: the sister companies, the marketplaces, and everything
    that was keyed in by hand. Their lines are detail nobody needs until they ask. */
 const outOfScopeKinds = [
-    { key: 'partners', label: trans('Partners'), help: trans('Group companies buying from each other, one line per sister company, whatever sales channel the order was keyed under. Internal trade, not a customer won.') },
-    { key: 'marketplaces', label: trans('Marketplaces'), help: trans('Orders that arrived through a marketplace such as Faire or Zentrada. The marketplace found the buyer, so no channel of ours can claim them and no visit precedes them.') },
-    { key: 'non_web', label: trans('Non web'), help: trans('Orders keyed in by staff: phone, showroom, email, API and the like. No channel can claim them and no visit precedes them.') },
+    { key: 'partners', label: ctrans('Partners'), help: ctrans('Group companies buying from each other, one line per sister company, whatever sales channel the order was keyed under. Internal trade, not a customer won.') },
+    { key: 'marketplaces', label: ctrans('Marketplaces'), help: ctrans('Orders that arrived through a marketplace such as Faire or Zentrada. The marketplace found the buyer, so no channel of ours can claim them and no visit precedes them.') },
+    { key: 'non_web', label: ctrans('Non web'), help: ctrans('Orders keyed in by staff: phone, showroom, email, API and the like. No channel can claim them and no visit precedes them.') },
 ]
 
 const outOfScopeGroups = computed(() => outOfScopeKinds
@@ -244,9 +247,9 @@ const knownDirect = computed(() => ({
 }))
 
 const beforeTrackingHelp = (reliableFrom: string | null) =>
-    trans('Customers who registered before tracking started.') + ' '
-    + (reliableFrom ? trans('Reliable from') + ' ' + useFormatTime(reliableFrom) + '. ' : '')
-    + trans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
+    ctrans('Customers who registered before tracking started.') + ' '
+    + (reliableFrom ? ctrans('Reliable from') + ' ' + useFormatTime(reliableFrom) + '. ' : '')
+    + ctrans('These customers signed up before we started recording where people come from, and nothing has been recorded for them since, so we cannot tell whether an ad, a search or a mailshot once brought them. As the recorded history grows past the attribution window this figure shrinks on its own, so read it as the part of Direct that is still a measurement gap.')
 
 /* The hosts behind a channel that is really a family of sites: the assistants behind AI, the
    engines behind Organic search. Google and Bing keep their own channel and are not repeated here. */
@@ -307,9 +310,9 @@ const HOST_NAMES: [RegExp, string][] = [
 
 const hostName = (host: string) => HOST_NAMES.find(([pattern]) => pattern.test(host))?.[1] ?? host
 
-const untracedHelp = trans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
+const untracedHelp = ctrans('People who typed the address, used a bookmark, or came from somewhere we could not name. Visits are counted directly, once per day; revenue, sign-ups and orders are whatever is left of the shop total once every channel has taken its share. It is not "no marketing": somebody who saw an ad and typed the address later lands here too.')
 
-const unsubscribedHelp = trans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
+const unsubscribedHelp = ctrans('People who left our mailing lists over the same period. Shown beside the sign-ups rather than taken off them: an unsubscribe costs permission to email somebody, not the customer, and a mailshot that wins ten sign-ups while losing fifty subscribers is not a mailshot that won ten.')
 const pctOf = (part: number, whole: number) => whole > 0 ? Math.round((part / whole) * 100) + '%' : '—'
 
 /* Kept to two decimals: share-weighted orders against visits rounds to 0% below half a percent,
@@ -320,8 +323,8 @@ const netRegistrations = (registrations: number, unsubscribed: number, decimals 
     count(registrations - unsubscribed, decimals).replace('-', '−')
 
 const netRegistrationsHelp = computed(() =>
-    count(props.overview.totals.registrations) + ' ' + trans('sign-ups') + ' − '
-    + count(props.overview.totals.unsubscribed ?? 0) + ' ' + trans('unsubscribed') + ' = '
+    count(props.overview.totals.registrations) + ' ' + ctrans('sign-ups') + ' − '
+    + count(props.overview.totals.unsubscribed ?? 0) + ' ' + ctrans('unsubscribed') + ' = '
     + netRegistrations(props.overview.totals.registrations, props.overview.totals.unsubscribed ?? 0)
     + '. ' + unsubscribedHelp)
 
@@ -352,10 +355,21 @@ const pct = (part: number, whole: number) => whole > 0 ? `${((part / whole) * 10
 /* Registrations are share-weighted, so a channel can legitimately hold 12.5 of them. */
 const fmtShare = (value: number) => Number.isInteger(value) ? locale.number(value) : value.toFixed(1)
 
+const emailRates = computed(() => {
+    const totals = props.overview.email.totals
+    return [
+        { label: ctrans('Open rate'), part: totals.opened, whole: totals.delivered, help: ctrans('Recipients who opened, out of emails delivered') },
+        { label: ctrans('Click rate'), part: totals.clicked, whole: totals.delivered, help: ctrans('Recipients who clicked at least one link, out of emails delivered') },
+        { label: ctrans('Unsubscribe rate'), part: totals.unsubscribed, whole: totals.delivered, help: ctrans('Recipients who unsubscribed, out of emails delivered') },
+        { label: ctrans('Spam rate'), part: totals.spam, whole: totals.delivered, help: ctrans('Recipients who reported the email as spam, out of emails delivered') },
+        { label: ctrans('Bounce rate'), part: totals.bounced, whole: totals.sent, help: ctrans('Hard and soft bounces, out of emails sent') },
+    ]
+})
+
 const typeLabel: Record<string, string> = {
-    newsletter: trans('Newsletter'),
-    marketing: trans('Mailshot'),
-    invite: trans('Prospects'),
+    newsletter: ctrans('Newsletter'),
+    marketing: ctrans('Mailshot'),
+    invite: ctrans('Prospects'),
 }
 </script>
 
@@ -363,13 +377,13 @@ const typeLabel: Record<string, string> = {
     <div class="px-4 py-5 md:px-6 space-y-6">
 
         <p v-if="overview.from" class="text-xs text-gray-400">
-            {{ trans('measured since') }} {{ overview.from }}<span v-if="overview.to"> {{ trans('to') }} {{ overview.to }}</span>
+            {{ ctrans('measured since') }} {{ overview.from }}<span v-if="overview.to"> {{ ctrans('to') }} {{ overview.to }}</span>
         </p>
 
         <!-- KPI row: ROAS is the hero, everything else supports it -->
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-px rounded-xl overflow-hidden bg-gray-200 ring-1 ring-gray-200">
             <div class="col-span-2 lg:col-span-1 lg:row-span-2 bg-white p-5 flex flex-col justify-center items-start">
-                <div class="text-xs text-gray-500">{{ trans('Return on ad spend') }}</div>
+                <div class="text-xs text-gray-500">{{ ctrans('Return on ad spend') }}</div>
                 <template v-if="overview.totals.roas !== null">
                     <div class="mt-1 text-5xl font-semibold tracking-tight"
                         :class="roasIsGood ? 'text-[#006300]' : 'text-[#d03b3b]'">
@@ -377,17 +391,17 @@ const typeLabel: Record<string, string> = {
                     </div>
                     <div class="mt-1 text-xs text-gray-500">
                         {{ roasIsGood ? '▲' : '▼' }}
-                        {{ roasIsGood ? trans('every unit spent comes back') : trans('spend is not paying back yet') }}
+                        {{ roasIsGood ? ctrans('every unit spent comes back') : ctrans('spend is not paying back yet') }}
                     </div>
                 </template>
                 <template v-else>
                     <div class="mt-1 text-5xl font-semibold tracking-tight text-gray-300">—</div>
-                    <div class="mt-1 text-xs text-gray-400">{{ trans('no ad spend recorded') }}</div>
+                    <div class="mt-1 text-xs text-gray-400">{{ ctrans('no ad spend recorded') }}</div>
                 </template>
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('Ad spend') }}</div>
+                <div class="text-xs text-gray-500">{{ ctrans('Ad spend') }}</div>
                 <div class="mt-1 flex items-end justify-between gap-2">
                     <div class="text-2xl font-medium text-gray-800">{{ money(overview.totals.spend) }}</div>
                     <svg v-if="sparkline" viewBox="0 0 124 32" class="w-24 h-8 shrink-0" aria-hidden="true">
@@ -397,30 +411,30 @@ const typeLabel: Record<string, string> = {
                             stroke="#ffffff" stroke-width="2" />
                     </svg>
                 </div>
-                <div v-if="sparkline" class="mt-0.5 text-xs text-gray-400">{{ trans('daily, recent') }}</div>
+                <div v-if="sparkline" class="mt-0.5 text-xs text-gray-400">{{ ctrans('daily, recent') }}</div>
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('Revenue marketing touched') }}</div>
+                <div class="text-xs text-gray-500">{{ ctrans('Revenue marketing touched') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">{{ money(overview.totals.revenue) }}</div>
                 <div class="mt-0.5 text-xs text-gray-400">
-                    {{ trans('of') }} {{ money(overview.baseline?.revenue ?? 0) }} {{ trans('taken in total') }}
+                    {{ ctrans('of') }} {{ money(overview.baseline?.revenue ?? 0) }} {{ ctrans('taken in total') }}
                 </div>
                 <!-- Invoicing runs a day or two behind orders; this is what today's marketing already sold -->
                 <div v-if="overview.totals.pending > 0" class="mt-0.5 text-xs text-[#006300]">
-                    + {{ money(overview.totals.pending) }} {{ trans('placed, awaiting invoice') }}
+                    + {{ money(overview.totals.pending) }} {{ ctrans('placed, awaiting invoice') }}
                 </div>
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('Cost per customer') }}</div>
+                <div class="text-xs text-gray-500">{{ ctrans('Cost per customer') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800">
                     {{ overview.totals.cac !== null ? money(overview.totals.cac) : '—' }}
                 </div>
             </div>
 
             <div class="bg-white p-5">
-                <div class="text-xs text-gray-500">{{ trans('New customers marketing touched') }}</div>
+                <div class="text-xs text-gray-500">{{ ctrans('New customers marketing touched') }}</div>
                 <div class="mt-1 text-2xl font-medium text-gray-800 flex items-baseline gap-1.5">
                     <span>{{ fmtShare(overview.totals.registrations) }}</span>
                     <template v-if="(overview.totals.unsubscribed ?? 0) > 0">
@@ -433,12 +447,12 @@ const typeLabel: Record<string, string> = {
                             {{ netRegistrations(overview.totals.registrations, overview.totals.unsubscribed) }}
                         </span>
                     </template>
-                    <span class="text-sm text-gray-400">{{ trans('of') }} {{ overview.baseline?.registrations ?? 0 }}</span>
+                    <span class="text-sm text-gray-400">{{ ctrans('of') }} {{ overview.baseline?.registrations ?? 0 }}</span>
                 </div>
                 <!-- Sign-ups nobody in marketing can claim: the trade that arrives regardless -->
                 <div v-if="(overview.baseline?.registrations ?? 0) > 0 && overview.totals.registrations === 0"
                      class="mt-0.5 text-xs text-[#d03b3b]">
-                    {{ trans('none of this period\'s sign-ups came through marketing') }}
+                    {{ ctrans('none of this period\'s sign-ups came through marketing') }}
                 </div>
             </div>
         </div>
@@ -447,15 +461,15 @@ const typeLabel: Record<string, string> = {
         <div class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div class="flex items-center justify-between">
                 <div>
-                    <span class="text-sm font-medium text-gray-800">{{ trans('Channel performance') }}</span>
+                    <span class="text-sm font-medium text-gray-800">{{ ctrans('Channel performance') }}</span>
                     <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}, {{ overview.currency_code }}</span>
                 </div>
                 <div class="flex items-center gap-4 text-xs text-gray-500">
                     <span class="flex items-center gap-1.5">
-                        <span class="w-2.5 h-2.5 rounded-sm" :style="{ background: REVENUE_COLOR }" />{{ trans('Revenue') }}
+                        <span class="w-2.5 h-2.5 rounded-sm" :style="{ background: REVENUE_COLOR }" />{{ ctrans('Revenue') }}
                     </span>
                     <span class="flex items-center gap-1.5">
-                        <span class="w-2.5 h-2.5 rounded-sm" :style="{ background: SPEND_COLOR }" />{{ trans('Spend') }}
+                        <span class="w-2.5 h-2.5 rounded-sm" :style="{ background: SPEND_COLOR }" />{{ ctrans('Spend') }}
                     </span>
                 </div>
             </div>
@@ -469,12 +483,12 @@ const typeLabel: Record<string, string> = {
                     <div class="min-w-0">
                         <div class="text-sm text-gray-700 truncate">{{ channel.name }}</div>
                         <div v-if="channel.registrations > 0" class="text-xs text-gray-400 tabular-nums">
-                            {{ fmtShare(channel.registrations) }} {{ trans('registrations') }}
+                            {{ fmtShare(channel.registrations) }} {{ ctrans('registrations') }}
                         </div>
                         <div v-if="channel.visits > 0" class="text-xs tabular-nums"
                              :class="channel.orders > 0 ? 'text-[#006300]' : 'text-gray-400'">
-                            {{ locale.number(channel.visits) }} {{ trans('visits') }} ·
-                            {{ fmtShare(channel.orders ?? 0) }} {{ trans('bought') }}
+                            {{ locale.number(channel.visits) }} {{ ctrans('visits') }} ·
+                            {{ fmtShare(channel.orders ?? 0) }} {{ ctrans('bought') }}
                         </div>
                     </div>
 
@@ -514,13 +528,13 @@ const typeLabel: Record<string, string> = {
                     <!-- Opens downward: anchored above, the first row's tooltip fell outside the card. -->
                     <div v-if="hoveredChannel === channel.type"
                         class="absolute left-2 top-full z-20 -mt-1 rounded-md bg-gray-900 px-2.5 py-1.5 text-xs text-white shadow-lg pointer-events-none whitespace-nowrap">
-                        {{ channel.name }} · {{ fmtShare(channel.registrations) }} {{ trans('registrations') }}
-                        · {{ trans('spend') }} {{ money(channel.spend) }} · {{ trans('revenue') }} {{ money(channel.revenue) }}
+                        {{ channel.name }} · {{ fmtShare(channel.registrations) }} {{ ctrans('registrations') }}
+                        · {{ ctrans('spend') }} {{ money(channel.spend) }} · {{ ctrans('revenue') }} {{ money(channel.revenue) }}
                     </div>
                 </Link>
 
                 <p class="mt-2 px-2 text-xs text-gray-400">
-                    {{ trans('One shared scale across every channel; the widest bar is') }} {{ money(maxBarValue) }}
+                    {{ ctrans('One shared scale across every channel; the widest bar is') }} {{ money(maxBarValue) }}
                 </p>
             </div>
 
@@ -530,20 +544,20 @@ const typeLabel: Record<string, string> = {
                 <div class="flex justify-end">
                     <button type="button" @click="showChannelDetail = !showChannelDetail"
                             class="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1">
-                        {{ showChannelDetail ? trans('Collapse') : trans('Expand') }}
+                        {{ showChannelDetail ? ctrans('Collapse') : ctrans('Expand') }}
                     </button>
                 </div>
                 <table class="mt-2 w-full text-xs overflow-x-auto">
                     <thead>
                         <tr class="text-gray-400 border-b border-gray-100">
-                            <th class="text-left font-normal py-1.5 pr-2">{{ trans('Channel') }}</th>
-                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Visits') }}<sup v-tooltip="columnHelp.visits" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}<sup v-tooltip="columnHelp.spend" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Awaiting invoice') }}<sup v-tooltip="columnHelp.awaiting" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}<sup v-tooltip="columnHelp.revenue" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}<sup v-tooltip="columnHelp.registrations" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                            <th class="text-right font-normal py-1.5 px-2">{{ trans('Orders') }}<sup v-tooltip="columnHelp.orders" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
-                            <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}<sup v-tooltip="columnHelp.roas" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Channel') }}</th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Visits') }}<sup v-tooltip="columnHelp.visits" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Spend') }}<sup v-tooltip="columnHelp.spend" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Awaiting invoice') }}<sup v-tooltip="columnHelp.awaiting" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Revenue') }}<sup v-tooltip="columnHelp.revenue" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Registrations') }}<sup v-tooltip="columnHelp.registrations" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Orders') }}<sup v-tooltip="columnHelp.orders" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
+                            <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('ROAS') }}<sup v-tooltip="columnHelp.roas" class="ml-0.5 text-gray-300 cursor-help">?</sup></th>
                         </tr>
                     </thead>
                     <tbody v-for="group in groupedChannels" :key="group.key">
@@ -553,7 +567,7 @@ const typeLabel: Record<string, string> = {
                                 <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                     <span>{{ group.visits > 0 ? locale.number(group.visits) : '' }}</span>
                                     <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                        <template v-if="group.visits > 0">{{ count(group.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
+                                        <template v-if="group.visits > 0">{{ count(group.orders, decimalColumns.orders) }} {{ ctrans('bought') }}</template>
                                     </span>
                                     <span class="text-xs font-normal" :class="group.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
                                         <template v-if="group.visits > 0">{{ conversionRate(group.orders, group.visits) }}</template>
@@ -611,7 +625,7 @@ const typeLabel: Record<string, string> = {
                                         {{ channel.visits > 0 ? locale.number(channel.visits) : '—' }}
                                     </span>
                                     <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
-                                        <template v-if="channel.visits > 0">{{ count(channel.orders, decimalColumns.orders) }} {{ trans('bought') }}</template>
+                                        <template v-if="channel.visits > 0">{{ count(channel.orders, decimalColumns.orders) }} {{ ctrans('bought') }}</template>
                                     </span>
                                     <span class="text-xs" :class="channel.orders > 0 ? 'text-[#006300]' : ''">
                                         <template v-if="channel.visits > 0">{{ conversionRate(channel.orders, channel.visits) }}</template>
@@ -620,7 +634,7 @@ const typeLabel: Record<string, string> = {
                             </td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
                                 <span v-if="channel.spend_is_estimated" class="text-xs text-gray-400 mr-1"
-                                      :title="trans('Estimated from emails sent')">{{ trans('est.') }}</span>{{ money(channel.spend) }}
+                                      :title="ctrans('Estimated from emails sent')">{{ ctrans('est.') }}</span>{{ money(channel.spend) }}
                             </td>
                             <td class="text-right px-2 tabular-nums" :class="channel.pending > 0 ? 'text-gray-400' : 'text-gray-300'">
                                 {{ money(channel.pending) }}
@@ -654,10 +668,10 @@ const typeLabel: Record<string, string> = {
                              the question, and the channel total cannot answer it. Visits per assistant come from the click log, so they reach back to when the channel began;
                              touched customers and revenue are share-weighted like everywhere else. -->
                         <tr v-for="assistant in ((group.channels.length === 1 || openHosts[channel.type]) ? hostsBehind(channel) : [])" :key="assistant.host" class="border-b border-gray-50 text-gray-500">
-                            <td class="py-1.5 pr-2 text-xs" :class="group.channels.length === 1 ? 'pl-5' : 'pl-10'"><template v-if="assistant.host === '__rest__'">{{ assistant.restCount }} {{ trans('others') }}</template><template v-else>{{ assistant.host }}</template></td>
+                            <td class="py-1.5 pr-2 text-xs" :class="group.channels.length === 1 ? 'pl-5' : 'pl-10'"><template v-if="assistant.host === '__rest__'">{{ assistant.restCount }} {{ ctrans('others') }}</template><template v-else>{{ assistant.host }}</template></td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap text-xs">
                                 <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
-                                    <span :class="assistant.visits > 0 ? '' : 'text-gray-300'">{{ assistant.visits > 0 ? locale.number(assistant.visits) : '—' }}</span>                                    <span :class="assistant.visitors > 0 ? 'text-[#006300]' : 'text-gray-500'">{{ count(assistant.visitors, true) }} {{ trans('touched') }}</span>                                    <span></span>
+                                    <span :class="assistant.visits > 0 ? '' : 'text-gray-300'">{{ assistant.visits > 0 ? locale.number(assistant.visits) : '—' }}</span>                                    <span :class="assistant.visitors > 0 ? 'text-[#006300]' : 'text-gray-500'">{{ count(assistant.visitors, true) }} {{ ctrans('touched') }}</span>                                    <span></span>
                                 </span>
                             </td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
@@ -671,12 +685,12 @@ const typeLabel: Record<string, string> = {
                     </tbody>
                     <tbody>
                         <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
-                            <td class="py-1.5 pr-2">{{ trans('All channels') }}</td>
+                            <td class="py-1.5 pr-2">{{ ctrans('All channels') }}</td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
                                 <span class="inline-grid grid-cols-[3.5rem_6.5rem_2.75rem]">
                                     <span>{{ locale.number(channelTotals.visits) }}</span>
                                     <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
-                                        {{ count(channelTotals.orders, decimalColumns.orders) }} {{ trans('bought') }}
+                                        {{ count(channelTotals.orders, decimalColumns.orders) }} {{ ctrans('bought') }}
                                     </span>
                                     <span class="text-xs font-normal" :class="channelTotals.orders > 0 ? 'text-[#006300]' : 'text-gray-500'">
                                         {{ conversionRate(channelTotals.orders, channelTotals.visits) }}
@@ -725,7 +739,7 @@ const typeLabel: Record<string, string> = {
                     <tbody v-if="overview.untraced">
                         <tr class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
                             <td class="py-1.5 pr-2 text-xs leading-tight italic">
-                                {{ trans('Direct') }}
+                                {{ ctrans('Direct') }}
                                 <span v-tooltip="untracedHelp" class="ml-1 text-gray-400 cursor-help">?</span>
                             </td>
                             <td class="text-right px-2 tabular-nums whitespace-nowrap">
@@ -759,7 +773,7 @@ const typeLabel: Record<string, string> = {
                             <td class="text-right pl-2 tabular-nums text-gray-300">—</td>
                         </tr>
                         <tr v-if="overview.before_tracking && (overview.before_tracking.revenue > 0 || overview.before_tracking.orders > 0)" class="text-gray-600 border-b border-dashed border-gray-300 leading-tight">
-                            <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ trans('Before tracking began') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
+                            <td class="py-1.5 pr-2 text-xs leading-tight italic">{{ ctrans('Before tracking began') }} <span v-tooltip="beforeTrackingHelp(overview.before_tracking.reliable_from)" class="ml-1 text-gray-400 cursor-help">?</span></td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
@@ -825,7 +839,7 @@ const typeLabel: Record<string, string> = {
                     </tbody>
                     <tfoot>
                         <tr class="text-gray-900 border-t-2 border-gray-400 font-semibold">
-                            <td class="py-1.5 pr-2">{{ trans('Everything') }} <span class="font-normal text-gray-400">{{ trans('channels, direct, before tracking, partners, marketplaces and non web') }}</span></td>
+                            <td class="py-1.5 pr-2">{{ ctrans('Everything') }} <span class="font-normal text-gray-400">{{ ctrans('channels, direct, before tracking, partners, marketplaces and non web') }}</span></td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
                             <td class="text-right px-2 tabular-nums text-gray-300">—</td>
@@ -837,14 +851,14 @@ const typeLabel: Record<string, string> = {
                     </tfoot>
                 </table>
                 <p v-if="overview.untraced?.visits_since" class="mt-3 text-xs text-gray-400">
-                    † {{ trans('Direct visits have only been counted since') }} {{ useFormatTime(overview.untraced.visits_since) }}{{ trans(', later than the other channels, so they cover a shorter stretch than the direct sales beside them.') }}
+                    † {{ ctrans('Direct visits have only been counted since') }} {{ useFormatTime(overview.untraced.visits_since) }}{{ ctrans(', later than the other channels, so they cover a shorter stretch than the direct sales beside them.') }}
                 </p>
             </div>
 
             <div v-else class="mt-4 py-8 text-center">
-                <div class="text-sm text-gray-500">{{ trans('No channel activity yet') }}</div>
+                <div class="text-sm text-gray-500">{{ ctrans('No channel activity yet') }}</div>
                 <div class="mt-1 text-xs text-gray-400">
-                    {{ trans('Attribution fills this in as visitors register and ad spend is imported') }}
+                    {{ ctrans('Attribution fills this in as visitors register and ad spend is imported') }}
                 </div>
             </div>
         </div>
@@ -856,7 +870,7 @@ const typeLabel: Record<string, string> = {
         <div v-if="overview.campaigns.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5 flex-1 w-full min-w-0">
             <div class="flex items-center justify-between">
                 <div>
-                    <span class="text-sm font-medium text-gray-800">{{ trans('Campaign performance') }}</span>
+                    <span class="text-sm font-medium text-gray-800">{{ ctrans('Campaign performance') }}</span>
                     <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}</span>
                 </div>
             </div>
@@ -864,12 +878,12 @@ const typeLabel: Record<string, string> = {
             <table class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Campaign') }}</th>
-                        <th class="text-left font-normal py-1.5 px-2">{{ trans('Channel') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Spend') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Revenue') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('ROAS') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Campaign') }}</th>
+                        <th class="text-left font-normal py-1.5 px-2">{{ ctrans('Channel') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Spend') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Revenue') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Registrations') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('ROAS') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -893,21 +907,21 @@ const typeLabel: Record<string, string> = {
         <div v-if="overview.referrers?.length" class="rounded-xl ring-1 ring-gray-200 bg-white p-5 flex-1 w-full min-w-0">
             <div class="flex items-center justify-between">
                 <div>
-                    <span class="text-sm font-medium text-gray-800">{{ trans('Who sends us people') }}</span>
+                    <span class="text-sm font-medium text-gray-800">{{ ctrans('Who sends us people') }}</span>
                     <span class="ml-2 text-xs text-gray-400">{{ overview.period_label.toLowerCase() }}</span>
                 </div>
             </div>
             <p class="mt-1 text-xs text-gray-400">
-                {{ trans('Sites linking to us and search engines finding us. A search engine sending people is the case for advertising on it.') }}
+                {{ ctrans('Sites linking to us and search engines finding us. A search engine sending people is the case for advertising on it.') }}
             </p>
 
             <table class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Site') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Visitors') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Registrations') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Revenue') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Site') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Visitors') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Registrations') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('Revenue') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -915,8 +929,8 @@ const typeLabel: Record<string, string> = {
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2 text-gray-700 truncate max-w-[18rem]">
                             {{ referrer.host }}
-                            <span v-if="referrer.kind === 'search'" class="text-gray-400">{{ trans('search') }}</span>
-                            <span v-else-if="referrer.kind === 'ai'" class="text-gray-400">{{ trans('AI') }}</span>
+                            <span v-if="referrer.kind === 'search'" class="text-gray-400">{{ ctrans('search') }}</span>
+                            <span v-else-if="referrer.kind === 'ai'" class="text-gray-400">{{ ctrans('AI') }}</span>
                         </td>
                         <td class="text-right px-2 tabular-nums">{{ count(referrer.visitors, decimalColumns.referrerVisitors) }}</td>
                         <td class="text-right px-2 tabular-nums">{{ count(referrer.registrations, decimalColumns.referrerRegistrations) }}</td>
@@ -932,36 +946,36 @@ const typeLabel: Record<string, string> = {
         <div v-if="overview.email" class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div class="flex items-center justify-between">
                 <div>
-                    <span class="text-sm font-medium text-gray-800">{{ trans('Email marketing') }}</span>
-                    <span class="ml-2 text-xs text-gray-400">{{ trans('sent') }} {{ overview.period_label.toLowerCase() }} · {{ trans('cost estimated from SES') }}</span>
+                    <span class="text-sm font-medium text-gray-800">{{ ctrans('Email marketing') }}</span>
+                    <span class="ml-2 text-xs text-gray-400">{{ ctrans('sent') }} {{ overview.period_label.toLowerCase() }} · {{ ctrans('cost estimated from SES') }}</span>
                 </div>
                 <Link :href="route(overview.mailshots_route.name, overview.mailshots_route.parameters)"
-                    class="text-xs text-gray-500 hover:text-gray-800">{{ trans('All mailshots') }} →</Link>
+                    class="text-xs text-gray-500 hover:text-gray-800">{{ ctrans('All mailshots') }} →</Link>
             </div>
 
             <div class="mt-4 flex flex-wrap gap-x-8 gap-y-2">
                 <div>
-                    <span class="text-xs text-gray-500">{{ trans('Sent') }}</span>
+                    <span class="text-xs text-gray-500">{{ ctrans('Sent') }}</span>
                     <div class="text-sm text-gray-800 tabular-nums">{{ locale.number(overview.email.totals.sent) }}</div>
                 </div>
-                <div>
-                    <span class="text-xs text-gray-500">{{ trans('Opened') }}</span>
-                    <div class="text-sm text-gray-800 tabular-nums">{{ pct(overview.email.totals.opened, overview.email.totals.sent) }}</div>
+                <div :title="ctrans('Recipients who opened at least once')">
+                    <span class="text-xs text-gray-500">{{ ctrans('Opened') }}</span>
+                    <div class="text-sm text-gray-800 tabular-nums">{{ locale.number(overview.email.totals.opened) }}</div>
+                </div>
+                <div :title="ctrans('Recipients who clicked at least one link')">
+                    <span class="text-xs text-gray-500">{{ ctrans('Clicked') }}</span>
+                    <div class="text-sm text-gray-800 tabular-nums">{{ locale.number(overview.email.totals.clicked) }}</div>
                 </div>
                 <div>
-                    <span class="text-xs text-gray-500">{{ trans('Clicked') }}</span>
-                    <div class="text-sm text-gray-800 tabular-nums">{{ pct(overview.email.totals.clicked, overview.email.totals.sent) }}</div>
-                </div>
-                <div>
-                    <span class="text-xs text-gray-500">{{ trans('Unsubscribed') }}</span>
+                    <span class="text-xs text-gray-500">{{ ctrans('Unsubscribed') }}</span>
                     <div class="text-sm text-gray-800 tabular-nums">{{ locale.number(overview.email.totals.unsubscribed) }}</div>
                 </div>
                 <div>
-                    <span class="text-xs text-gray-500">{{ trans('Est. cost') }}</span>
+                    <span class="text-xs text-gray-500">{{ ctrans('Est. cost') }}</span>
                     <div class="text-sm text-gray-800 tabular-nums">{{ money(overview.email.totals.estimated_cost) }}</div>
                 </div>
                 <div>
-                    <span class="text-xs text-gray-500">{{ trans('Revenue marketing touched') }}</span>
+                    <span class="text-xs text-gray-500">{{ ctrans('Revenue marketing touched') }}</span>
                     <div class="text-sm tabular-nums"
                         :class="overview.email.totals.attributed_revenue >= overview.email.totals.estimated_cost ? 'text-[#006300]' : 'text-[#d03b3b]'">
                         {{ money(overview.email.totals.attributed_revenue) }}
@@ -969,16 +983,23 @@ const typeLabel: Record<string, string> = {
                 </div>
             </div>
 
+            <div class="mt-3 flex flex-wrap gap-x-8 gap-y-2 border-t border-gray-100 pt-3">
+                <div v-for="rate in emailRates" :key="rate.label" :title="rate.help">
+                    <span class="text-xs text-gray-500">{{ rate.label }}</span>
+                    <div class="text-sm text-gray-800 tabular-nums">{{ pct(rate.part, rate.whole) }}</div>
+                </div>
+            </div>
+
             <table v-if="overview.email.mailshots.length" class="mt-4 w-full text-xs">
                 <thead>
                     <tr class="text-gray-400 border-b border-gray-100">
-                        <th class="text-left font-normal py-1.5 pr-2">{{ trans('Mailshot') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Sent') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Opened') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Clicked') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Unsub') }}</th>
-                        <th class="text-right font-normal py-1.5 px-2">{{ trans('Est. cost') }}</th>
-                        <th class="text-right font-normal py-1.5 pl-2">{{ trans('Result') }}</th>
+                        <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Mailshot') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Sent') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Opened') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Clicked') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Unsub') }}</th>
+                        <th class="text-right font-normal py-1.5 px-2">{{ ctrans('Est. cost') }}</th>
+                        <th class="text-right font-normal py-1.5 pl-2">{{ ctrans('Result') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -998,7 +1019,7 @@ const typeLabel: Record<string, string> = {
                         <td class="text-right px-2 tabular-nums">{{ money(mailshot.estimated_cost) }}</td>
                         <td class="text-right pl-2 tabular-nums whitespace-nowrap">
                             <template v-if="mailshot.type === 'invite'">
-                                {{ mailshot.prospects_registered }} {{ trans('registered') }}
+                                {{ mailshot.prospects_registered }} {{ ctrans('registered') }}
                             </template>
                             <template v-else-if="mailshot.attributed_revenue > 0">
                                 {{ money(mailshot.attributed_revenue) }}
@@ -1012,7 +1033,7 @@ const typeLabel: Record<string, string> = {
             </table>
 
             <div v-else class="mt-4 py-6 text-center text-xs text-gray-400">
-                {{ trans('No mailshots sent yet') }}
+                {{ ctrans('No mailshots sent yet') }}
             </div>
         </div>
     </div>
