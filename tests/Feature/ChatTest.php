@@ -4430,7 +4430,7 @@ test('a shop administrator manages its chats without being an agent', function (
         ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
 });
 
-test('a customer service supervisor supervises chat without being an agent', function () {
+test('a customer service supervisor works chat as an agent and supervises it', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),
         'shop_id'          => $this->shop->id,
@@ -4446,19 +4446,12 @@ test('a customer service supervisor supervises chat without being an agent', fun
     $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_SUPERVISOR->value, $this->shop));
 
     expect($supervisor->authTo(['chat-m.'.$this->shop->id]))->toBeTrue()
-        ->and($supervisor->authTo(['chat.'.$this->shop->id]))->toBeFalse();
+        ->and($supervisor->authTo(['chat.'.$this->shop->id]))->toBeTrue()
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($supervisor)['agent_shops'])->toContain($this->shop->id);
 
     $this->actingAs($supervisor);
 
-    // May take over and write, but is never one of the shop's agents.
     expect(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
-
-    // Adding the worker position is what makes somebody an agent, deliberately.
-    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
-    \App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($supervisor);
-    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-
-    expect($supervisor->fresh()->authTo(['chat.'.$this->shop->id]))->toBeTrue();
 });
 
 test('an organisation administrator manages chat on every shop, including one opened later', function () {
@@ -4520,12 +4513,13 @@ test('a fulfilment shop staffs chat from its own positions', function () {
     expect($clerk->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeTrue()
         ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
 
-    // Supervisor manages without being routed.
+    // Supervisor answers chats like the clerk and manages them.
     $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_SUPERVISOR->value, $fulfilment));
     $this->actingAs($supervisor);
     expect($supervisor->authTo(['fulfilment-chat-m.'.$fulfilment->id]))->toBeTrue()
-        ->and($supervisor->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeFalse()
+        ->and($supervisor->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeTrue()
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($supervisor)['agent_shops'])->toContain($fulfilmentShop->id)
         ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
 
     // Warehouse staff stay out of it.
