@@ -58,9 +58,7 @@ const props = defineProps<{
   seo?: any
 }>()
 
-// A page kept out of the search engines has no page speed report to fill the column beside the
-// preview, so its detail is shown there instead of under the fold.
-const detailBesidePreview = computed(() => props.data?.is_hidden_from_search_engines ?? false)
+const detailBesidePreview = computed(() => (props.data?.is_hidden_from_search_engines ?? false) || props.data?.state !== 'live')
 
 const filterBlock = ref<boolean>(true)
 const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
@@ -189,7 +187,7 @@ const visitRedirect = () => {
           <RealUserSpeed embedded :report="pagespeed" />
         </div>
 
-        <WebpageEngagement v-if="detailBesidePreview" :engagement="engagement" />
+        <WebpageEngagement v-if="data?.is_hidden_from_search_engines" :engagement="engagement" />
 
         <WebpageSeo v-if="detailBesidePreview" :seo="seo" stacked />
       </div>

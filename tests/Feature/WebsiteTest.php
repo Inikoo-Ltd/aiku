@@ -29,6 +29,7 @@ use App\Actions\Web\ExternalLink\AttachExternalLinkToWebBlock;
 use App\Actions\Web\ExternalLink\CheckExternalLinkStatus;
 use App\Actions\Web\ExternalLink\StoreExternalLink;
 use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
+use App\Actions\Web\ModelHasWebBlocks\DuplicateModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
@@ -344,6 +345,41 @@ test('create model has web block', function (Webpage $webpage) {
     return $modelHasWebBlock;
 })->depends('create webpage');
 
+
+test('duplicate model has web block lands at the requested position', function (Website $website) {
+    $webpage      = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $webBlockType = $webpage->group->webBlockTypes()->where('code', 'text')->first();
+
+    $firstBlock  = StoreModelHasWebBlock::make()->action($webpage, ['web_block_type_id' => $webBlockType->id]);
+    $secondBlock = StoreModelHasWebBlock::make()->action($webpage, ['web_block_type_id' => $webBlockType->id]);
+
+    $copy = DuplicateModelHasWebBlock::make()->action($webpage, $firstBlock, ['position' => 1]);
+
+    $orderedIds = $webpage->modelHasWebBlocks()->orderBy('position')->pluck('id')->all();
+
+    expect($orderedIds)->toBe([$firstBlock->id, $copy->id, $secondBlock->id])
+        ->and($copy->webBlock->layout)->toEqual($firstBlock->webBlock->layout);
+
+    $appendedCopy = DuplicateModelHasWebBlock::make()->action($webpage, $secondBlock);
+
+    expect($webpage->modelHasWebBlocks()->orderBy('position')->pluck('id')->last())->toBe($appendedCopy->id);
+})->depends('create b2b website');
+
+test('paste model has web block into another webpage belongs to that webpage', function (Website $website) {
+    $sourceWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $targetWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $webBlockType  = $sourceWebpage->group->webBlockTypes()->where('code', 'text')->first();
+
+    $sourceBlock = StoreModelHasWebBlock::make()->action($sourceWebpage, ['web_block_type_id' => $webBlockType->id]);
+
+    $pastedBlock = DuplicateModelHasWebBlock::make()->action($targetWebpage, $sourceBlock, ['position' => 0]);
+
+    expect($pastedBlock->webpage_id)->toBe($targetWebpage->id)
+        ->and($pastedBlock->model_id)->toBe($targetWebpage->id)
+        ->and($pastedBlock->model_type)->toBe('Webpage')
+        ->and($sourceWebpage->modelHasWebBlocks()->count())->toBe(1)
+        ->and($targetWebpage->modelHasWebBlocks()->count())->toBe(1);
+})->depends('create b2b website');
 
 test('model external link', function () {
     $externalLink = ExternalLink::class;
@@ -989,6 +1025,9 @@ test('UI delete banner in shop', function (Website $website) {
 test('UI show webpage in shop website', function (Website $website, Webpage $webpage) {
     $this->withoutExceptionHandling();
 
+    $originalState = $webpage->state;
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+
     $response = get(
         route('grp.org.shops.show.web.webpages.show', [
             $this->organisation->slug,
@@ -1011,6 +1050,30 @@ test('UI show webpage in shop website', function (Website $website, Webpage $web
     });
 
     expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('pagespeed');
+
+    $webpage->update(['state' => $originalState]);
+})->depends('create b2b website', 'create webpage');
+
+test('a webpage that is not live offers no page speed report', function (Website $website, Webpage $webpage) {
+    $this->withoutExceptionHandling();
+
+    $originalState = $webpage->state;
+    $webpage->update(['state' => WebpageStateEnum::IN_PROCESS]);
+
+    $response = get(
+        route('grp.org.shops.show.web.webpages.show', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $website->slug,
+            $webpage->slug
+        ])
+    );
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('pagespeed', null)->etc());
+
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->not->toHaveKey('pagespeed');
+
+    $webpage->update(['state' => $originalState]);
 })->depends('create b2b website', 'create webpage');
 
 test('the seo block of a webpage reads back the head the public site renders', function (Webpage $webpage) {

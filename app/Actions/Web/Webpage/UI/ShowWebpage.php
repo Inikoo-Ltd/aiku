@@ -313,13 +313,14 @@ class ShowWebpage extends OrgAction
 
         /**
          * A page kept out of the index is never measured: nobody tunes an advert page for search
-         * results, so its real user speed is not offered. What it is judged on instead is how the
-         * visitors it is bought for behave.
+         * results, so its report is not offered and no PageSpeed run is spent on it. What it is
+         * judged on instead is how the visitors it is bought for behave. A page that is not live
+         * has nothing published to measure, so it gets no report either.
          */
         $pagespeed = match (true) {
-            $isHiddenFromSearchEngines => null,
-            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => $this->realUserSpeed($webpage), 'pagespeed'),
-            default => Inertia::optional(fn () => $this->realUserSpeed($webpage)),
+            $isHiddenFromSearchEngines, $webpage->state != WebpageStateEnum::LIVE => null,
+            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed'),
+            default => Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
         };
 
         return Inertia::render(
