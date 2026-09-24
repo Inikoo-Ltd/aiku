@@ -514,6 +514,9 @@ const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
 
 const showEmailBody = computed(() => shouldShowEmailBody(props.message))
 
+const emailSummary = computed<string | null>(() => (props.message.metadata as any)?.ai_summary ?? null)
+const showFullEmail = ref(false)
+
 // Customers put the order reference in the subject line, so it is the first thing read.
 const emailSubject = computed(() => (props.message.metadata?.email_subject || "").trim())
 
@@ -1110,6 +1113,18 @@ watch(selectedLanguage, async (val) => {
                 <span>{{ displayText || ctrans("Unsupported message") }}</span>
             </div>
 
+            <div v-else-if="emailSummary && !showFullEmail" class="text-sm">
+                <div v-if="emailSubject"
+                    class="mb-2 pb-1.5 border-b border-gray-200 text-[13px] font-semibold break-words">
+                    {{ emailSubject }}
+                </div>
+                <div class="mb-1 text-[10px] font-medium uppercase tracking-wide text-indigo-500">{{ ctrans("Summary") }}</div>
+                <p class="whitespace-pre-wrap break-words">{{ emailSummary }}</p>
+                <button type="button" class="mt-1.5 text-xs font-medium text-indigo-600 hover:underline" @click="showFullEmail = true">
+                    {{ ctrans("Show full email") }}
+                </button>
+            </div>
+
             <!-- A received email keeps its layout; everything else is text. -->
             <template v-else-if="showEmailBody">
                 <div v-if="emailSubject"
@@ -1125,6 +1140,10 @@ watch(selectedLanguage, async (val) => {
             <p v-else-if="!location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
                 {{ displayText }}
             </p>
+
+            <button v-if="emailSummary && showFullEmail" type="button" class="mt-1 w-fit text-xs font-medium text-indigo-600 hover:underline" @click="showFullEmail = false">
+                {{ ctrans("Show summary") }}
+            </button>
 
             <div v-if="
                 message?.is_offline_message &&

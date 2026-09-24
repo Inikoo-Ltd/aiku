@@ -13,6 +13,8 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
+use App\Actions\Chat\ChatSession\SummarizeLongEmail;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -228,6 +230,11 @@ class ProcessInboundEmail
         }
 
         SendOutOfHoursReply::dispatch($session, $message);
+        FlagUrgentChatRequest::dispatch($session);
+
+        if (! $isAutoReply) {
+            SummarizeLongEmail::dispatch($message);
+        }
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
         $client->fileAway($gmailMessageId, $label, Arr::get($raw, 'labelIds', []));

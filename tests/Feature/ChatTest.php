@@ -5711,6 +5711,57 @@ test('the waiting queue is worked oldest first, even ahead of a newer one told w
     expect(array_search($oldest->id, $waiting, true))->toBeLessThan(array_search($newest->id, $waiting, true))
         ->and(array_search($newest->id, $bin, true))->toBeLessThan(array_search($oldest->id, $bin, true));
 });
+test('a request to cancel or change the delivery address goes first in the queue until an agent answers', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $older  = noiseTestEmailSession($this->shop, 'first@example.com', 'Waited longest', 'Where is my order');
+    $urgent = noiseTestEmailSession($this->shop, 'second@example.com', 'Order 1234', 'Please cancel order 1234');
+
+    $older->messages()->update(['created_at' => now()->subDays(2)]);
+    $older->update(['last_visitor_message_at' => now()->subDays(2)]);
+
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('{"request": "cancel_order"}');
+
+    expect(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($urgent))->toBe('cancel_order');
+
+    $queue = fn () => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'statuses' => ['waiting']])->items())->pluck('id')->all();
+
+    $waiting = $queue();
+    expect(array_search($urgent->id, $waiting, true))->toBeLessThan(array_search($older->id, $waiting, true))
+        ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($urgent->refresh()))->toBe('cancel_order');
+
+    $urgent->update(['last_agent_message_at' => now()->addSecond()]);
+
+    $waiting = $queue();
+    expect(array_search($older->id, $waiting, true))->toBeLessThan(array_search($urgent->id, $waiting, true))
+        ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($urgent->refresh()))->toBeNull();
+});
+
+test('when the model cannot be asked, words in the customer\'s language decide what is urgent', function () {
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn(null);
+    $flag = \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::make();
+
+    expect($flag->classify('Bitte stornieren Sie meine Bestellung'))->toBe('cancel_order')
+        ->and($flag->classify('Prosím zrušte objednávku'))->toBe('cancel_order')
+        ->and($flag->classify('Can you change the delivery address to 5 High St?'))->toBe('change_address')
+        ->and($flag->classify('Necesito cambiar la dirección de entrega'))->toBe('change_address')
+        ->and($flag->classify('Where is my order?'))->toBeNull();
+});
+
+test('a long email gets a short summary beside it and a short one is left alone', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $long  = noiseTestEmailSession($this->shop, 'long@example.com', 'Order 1234', 'Please send order 1234 to 5 High St. '.str_repeat('Kind regards and our company disclaimer. ', 30))->messages()->first();
+    $short = noiseTestEmailSession($this->shop, 'short@example.com', 'Order 99', 'Where is order 99?')->messages()->first();
+
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('{"summary": "Wants order 1234 sent to 5 High St."}');
+
+    expect(\App\Actions\Chat\ChatSession\SummarizeLongEmail::run($long))->toBe('Wants order 1234 sent to 5 High St.')
+        ->and(\App\Actions\Chat\ChatSession\SummarizeLongEmail::run($short))->toBeNull()
+        ->and(data_get($long->refresh()->metadata, 'ai_summary'))->toBe('Wants order 1234 sent to 5 High St.')
+        ->and($long->message_text)->toStartWith('Please send order 1234');
+});
+
 
 test('an email is found by an order or consignment number in its subject or body', function () {
     \Illuminate\Support\Facades\Http::fake();

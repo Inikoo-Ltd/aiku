@@ -84,6 +84,7 @@ class ChatSessionListResource extends JsonResource
             'noise' => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
             'claim' => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'promise' => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
+            'urgent'  => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,

@@ -31,6 +31,10 @@ class ProcessChatMessageSideEffects
             SendOutOfHoursReply::dispatch($chatSession);
         }
 
+        if ($chatSession->channel !== ChatChannelEnum::EMAIL && in_array($senderType, [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value], true)) {
+            FlagUrgentChatRequest::dispatch($chatSession);
+        }
+
         if (config('chat.ai_drafts') && in_array($senderType, [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value], true)) {
             DraftChatReply::dispatch($chatSession);
         }

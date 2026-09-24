@@ -172,6 +172,10 @@ class GetChatSessions
             ])
             ->withLastMessageTime();
 
+        if (self::oldestFirst($filters)) {
+            $query->orderByRaw(FlagUrgentChatRequest::waitingSql('chat_sessions'));
+        }
+
         $query->orderBy('last_message_at', self::oldestFirst($filters) ? 'asc' : 'desc');
 
 
