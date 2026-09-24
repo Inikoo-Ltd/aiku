@@ -11,6 +11,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransact
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\Models\GoodsIn\StockDeliveryItem;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class SetStockDeliveryItemCheckedQuantity extends OrgAction
@@ -23,14 +24,17 @@ class SetStockDeliveryItemCheckedQuantity extends OrgAction
     public function rules(): array
     {
         return [
-            'unit_quantity_checked' => ['required', 'numeric', 'gte:0'],
+            'unit_quantity_checked' => ['required_without:sko_quantity_checked', 'numeric', 'gte:0'],
+            'sko_quantity_checked'  => ['required_without:unit_quantity_checked', 'numeric', 'gte:0'],
         ];
     }
 
     public function handle(StockDeliveryItem $stockDeliveryItem, array $modelData): StockDeliveryItem
     {
         $placed  = (float) $stockDeliveryItem->unit_quantity_placed;
-        $checked = max($placed, (float) $modelData['unit_quantity_checked']);
+        $checked = max($placed, (float) (isset($modelData['sko_quantity_checked'])
+            ? round($modelData['sko_quantity_checked'] * $stockDeliveryItem->unitsPerSko(), 4)
+            : $modelData['unit_quantity_checked']));
 
         $stockDeliveryItem = $this->update($stockDeliveryItem, [
             'unit_quantity_checked' => $checked,
@@ -63,6 +67,11 @@ class SetStockDeliveryItemCheckedQuantity extends OrgAction
         $this->initialisation($stockDeliveryItem->organisation, $modelData);
 
         return $this->handle($stockDeliveryItem, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     public function jsonResponse(StockDeliveryItem $stockDeliveryItem): StockDeliveryItemResource

@@ -33,7 +33,7 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
-use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
+use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
@@ -41,8 +41,8 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterChooseMethod;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
-use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
-use App\Actions\Web\Website\GetWebsitePageSpeedHistory;
+use App\Actions\Web\Website\FetchCruxHistory;
+use App\Actions\Web\Website\GetCruxReport;
 use App\Actions\Web\Webpage\UpdateWebpage;
 use Illuminate\Support\Arr;
 use App\Actions\Web\Webpage\LockWebpage;
@@ -64,7 +64,8 @@ use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Webpage\DeleteWebpage;
-use App\Actions\Web\Webpage\GetWebpagePageSpeed;
+use App\Models\Web\CruxRecord;
+use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
 use App\Actions\Web\Webpage\GetWebpageSeo;
 use App\Actions\Web\Website\PruneWebsitePageViews;
@@ -1815,156 +1816,196 @@ test('process webpage time series records', function (Webpage $webpage) {
     expect($webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->exists())->toBeTrue();
 })->depends('create webpage');
 
-test('pagespeed runs are kept in the webpage time series, averaged per week and plotted in the webpage performance', function (Webpage $webpage) {
-    $pageSpeedResult = fn (string $strategy, string $fetchedAt, int $performance) => [
-        'url'            => 'https://www.example.com/landing',
-        'strategy'       => $strategy,
-        'fetched_at'     => $fetchedAt,
-        'scores'         => [
-            ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
-            ['key' => 'accessibility', 'label' => 'Accessibility', 'score' => 97, 'rating' => 'fast'],
-            ['key' => 'best-practices', 'label' => 'Best practices', 'score' => 96, 'rating' => 'fast'],
-            ['key' => 'seo', 'label' => 'SEO', 'score' => 85, 'rating' => 'average'],
-        ],
-        'lab'            => [],
-        'field'          => [],
-        'overall_rating' => 'AVERAGE',
-    ];
-
-    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('desktop', '2026-06-01T08:00:00.000Z', 80));
-    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('desktop', '2026-06-02T08:00:00.000Z', 90));
-    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('mobile', '2026-06-02T08:10:00.000Z', 40));
-
-    ProcessWebpageTimeSeriesRecords::run($webpage->id, TimeSeriesFrequencyEnum::DAILY, '2026-06-01', '2026-06-07');
-
-    $dailyRecord = $webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->first()
-        ->records()->where('period', '2026-06-02')->first();
-
-    expect($dailyRecord->pagespeed_desktop_performance)->toBe(90)
-        ->and($dailyRecord->pagespeed_mobile_performance)->toBe(40)
-        ->and($dailyRecord->pagespeed_desktop_accessibility)->toBe(97)
-        ->and($dailyRecord->pagespeed_desktop_best_practices)->toBe(96)
-        ->and($dailyRecord->pagespeed_desktop_seo)->toBe(85);
-
-    $weeklyRecord = $webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::WEEKLY->value)->first()
-        ->records()->where('period', '2026 W23')->first();
-
-    expect($weeklyRecord->pagespeed_desktop_performance)->toBe(85)
-        ->and($weeklyRecord->pagespeed_mobile_performance)->toBe(40)
-        ->and($weeklyRecord->pagespeed_desktop_accessibility)->toBe(97);
-
-    $dailyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-06-01', 'endDate' => '2026-06-07']);
-
-    expect($dailyPerformance['pagespeed_frequency'])->toBe('daily')
-        ->and($dailyPerformance['pagespeed'])->toHaveCount(2)
-        ->and($dailyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
-        ->and($dailyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(80)
-        ->and($dailyPerformance['pagespeed'][0]['mobile']['performance'])->toBeNull()
-        ->and($dailyPerformance['pagespeed'][1]['mobile']['performance'])->toBe(40)
-        ->and($dailyPerformance['pagespeed'][1]['desktop'])->toBe([
-            'performance'    => 90,
-            'accessibility'  => 97,
-            'best_practices' => 96,
-            'seo'            => 85,
-        ]);
-
-    $weeklyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-03-01', 'endDate' => '2026-06-30']);
-
-    expect($weeklyPerformance['pagespeed_frequency'])->toBe('weekly')
-        ->and($weeklyPerformance['pagespeed'])->toHaveCount(1)
-        ->and($weeklyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
-        ->and($weeklyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(85);
-})->depends('create webpage');
-
-test('webpage performance adds a cached pagespeed result that is not in the history yet', function (Webpage $webpage) {
-    $result = [
-        'url'            => 'https://www.example.com/landing',
-        'strategy'       => 'mobile',
-        'fetched_at'     => '2026-07-14T09:30:00.000Z',
-        'scores'         => [
-            ['key' => 'performance', 'label' => 'Performance', 'score' => 52, 'rating' => 'average'],
-            ['key' => 'accessibility', 'label' => 'Accessibility', 'score' => 90, 'rating' => 'fast'],
-            ['key' => 'best-practices', 'label' => 'Best practices', 'score' => 78, 'rating' => 'average'],
-            ['key' => 'seo', 'label' => 'SEO', 'score' => 92, 'rating' => 'fast'],
-        ],
-        'lab'            => [],
-        'field'          => [],
-        'overall_rating' => null,
-    ];
-
-    cache()->put(GetWebpagePageSpeed::resultKey($webpage, 'mobile'), $result, now()->addHour());
-
-    expect(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeFalse();
-
-    $performance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-07-13', 'endDate' => '2026-07-19']);
-
-    expect($performance['pagespeed'])->toHaveCount(1)
-        ->and($performance['pagespeed'][0]['date'])->toBe('2026-07-14')
-        ->and($performance['pagespeed'][0]['mobile'])->toBe([
-            'performance'    => 52,
-            'accessibility'  => 90,
-            'best_practices' => 78,
-            'seo'            => 92,
-        ])
-        ->and($performance['pagespeed'][0]['desktop']['performance'])->toBeNull()
-        ->and(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeTrue();
-})->depends('create webpage');
-
-test('the daily pagespeed crawl queues every department and the best performing capped webpages', function (Website $website) {
-    config()->set('app.analytics.google.pagespeed_api_key', 'test-key');
-
-    $storePageSpeedWebpage = function (WebpageTypeEnum $type, WebpageSubTypeEnum $subType, ?int $performance) use ($website) {
-        $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
-
-        $webpage->update([
-            'type'          => $type,
-            'sub_type'      => $subType,
-            'state'         => WebpageStateEnum::LIVE,
-            'canonical_url' => 'https://www.example.com/'.$webpage->slug,
-        ]);
-
-        if ($performance !== null) {
-            StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, [
-                'strategy'   => 'mobile',
-                'fetched_at' => '2026-08-01T08:00:00.000Z',
-                'scores'     => [
-                    ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
+function cruxHistoryRecord(int $lcp): array
+{
+    return [
+        'metrics'           => [
+            'largest_contentful_paint'        => [
+                'histogramTimeseries'   => [
+                    ['start' => 0, 'end' => 2500, 'densities' => [0.8, 0.9]],
+                    ['start' => 2500, 'end' => 4000, 'densities' => [0.15, 0.07]],
+                    ['start' => 4000, 'densities' => [0.05, 0.03]],
                 ],
-            ]);
-        }
+                'percentilesTimeseries' => ['p75s' => [$lcp + 300, $lcp]],
+            ],
+            'interaction_to_next_paint'       => [
+                'percentilesTimeseries' => ['p75s' => ['NaN', 103]],
+            ],
+            'cumulative_layout_shift'         => [
+                'histogramTimeseries'   => [
+                    ['start' => '0.00', 'end' => '0.10', 'densities' => ['NaN', 0.7]],
+                    ['start' => '0.10', 'end' => '0.25', 'densities' => ['NaN', 0.2]],
+                    ['start' => '0.25', 'densities' => ['NaN', 0.1]],
+                ],
+                'percentilesTimeseries' => ['p75s' => [null, '0.21']],
+            ],
+            'experimental_time_to_first_byte' => [
+                'percentilesTimeseries' => ['p75s' => [300, 280]],
+            ],
+        ],
+        'collectionPeriods' => [
+            ['firstDate' => ['year' => 2026, 'month' => 8, 'day' => 16], 'lastDate' => ['year' => 2026, 'month' => 9, 'day' => 12]],
+            ['firstDate' => ['year' => 2026, 'month' => 8, 'day' => 23], 'lastDate' => ['year' => 2026, 'month' => 9, 'day' => 19]],
+        ],
+    ];
+}
 
-        return $webpage->refresh();
-    };
+test('real user speed from the chrome ux report is stored per page, and a page without data shows the whole website', function (Website $website) {
+    config()->set('app.analytics.google.crux_api_key', 'test-key');
 
-    $fastFamily    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 95);
-    $slowFamily    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 20);
-    $department    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::DEPARTMENT, null);
-    $productPage   = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::PRODUCT, 99);
-    $closedFamily  = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 99);
-    $closedFamily->update(['state' => WebpageStateEnum::CLOSED]);
-    $adsTestingPage = $storePageSpeedWebpage(WebpageTypeEnum::CONTENT, WebpageSubTypeEnum::ADS_TESTING, null);
+    $storefront          = $website->storefront;
+    $storefrontCanonical = $storefront->canonical_url;
+    $storefront->update(['canonical_url' => 'https://www.crux-example.com']);
 
-    Queue::fake();
+    $visitedWebpage   = StoreWebpage::make()->action($storefront, Webpage::factory()->definition());
+    $unvisitedWebpage = StoreWebpage::make()->action($storefront, Webpage::factory()->definition());
+    $visitedWebpage->update(['canonical_url' => 'https://www.crux-example.com/visited']);
+    $unvisitedWebpage->update(['canonical_url' => 'https://www.crux-example.com/unvisited']);
 
-    $summary = FetchTopWebpagesPageSpeed::run(1);
+    foreach ([null, $visitedWebpage, $unvisitedWebpage] as $checked) {
+        cache()->forget(FetchCruxHistory::checkedKey($website, $checked));
+    }
 
-    $queuedWebpageIds = collect();
+    Http::fake(function (\Illuminate\Http\Client\Request $request) {
+        $query = $request->data();
 
-    Queue::assertPushed(JobDecorator::class, function (JobDecorator $job) use ($queuedWebpageIds) {
-        if ($job->decorates(GetWebpagePageSpeed::class)) {
-            $queuedWebpageIds->push($job->getParameters()[0]->id);
-        }
-
-        return true;
+        return match ($query['url'] ?? $query['origin']) {
+            'https://www.crux-example.com/visited' => ($query['formFactor'] ?? null) === 'PHONE'
+                ? Http::response(['error' => ['code' => 404]], 404)
+                : Http::response(['record' => cruxHistoryRecord(1200)]),
+            'https://www.crux-example.com' => Http::response(['record' => cruxHistoryRecord(2000)]),
+            default => Http::response(['error' => ['code' => 404, 'message' => 'chrome ux report data not found']], 404),
+        };
     });
 
-    expect($summary['queued_runs'])->toBe($queuedWebpageIds->count())
-        ->and($queuedWebpageIds->countBy()->get($fastFamily->id))->toBe(count(GetWebpagePageSpeed::STRATEGIES))
-        ->and($queuedWebpageIds)->toContain($department->id)
-        ->and($queuedWebpageIds)->not->toContain($slowFamily->id)
-        ->and($queuedWebpageIds)->not->toContain($productPage->id)
-        ->and($queuedWebpageIds)->not->toContain($closedFamily->id)
-        ->and($queuedWebpageIds)->not->toContain($adsTestingPage->id);
+    $pageReport = GetCruxReport::run($website, $visitedWebpage);
+
+    $latest = CruxRecord::where('webpage_id', $visitedWebpage->id)->where('form_factor', 'desktop')->where('period_end', '2026-09-19')->first();
+    $first  = CruxRecord::where('webpage_id', $visitedWebpage->id)->where('form_factor', 'desktop')->where('period_end', '2026-09-12')->first();
+
+    expect($pageReport['scope'])->toBe('page')
+        ->and(array_keys($pageReport['history']))->toEqualCanonicalizing(['all', 'desktop'])
+        ->and($latest->lcp_p75)->toBe(1200)
+        ->and($latest->inp_p75)->toBe(103)
+        ->and($latest->cls_p75)->toBe(0.21)
+        ->and($latest->ttfb_p75)->toBe(280)
+        ->and($latest->fcp_p75)->toBeNull()
+        ->and($latest->histograms)->toEqual(['lcp' => [0.9, 0.07, 0.03], 'cls' => [0.7, 0.2, 0.1]])
+        ->and($first->inp_p75)->toBeNull()
+        ->and($first->histograms)->toBe(['lcp' => [0.8, 0.15, 0.05]]);
+
+    $unvisitedReport = GetCruxReport::run($website, $unvisitedWebpage);
+
+    expect($unvisitedReport['scope'])->toBe('website')
+        ->and($unvisitedReport['url'])->toBe('https://www.crux-example.com')
+        ->and(end($unvisitedReport['history']['phone'])['lcp'])->toBe(2000)
+        ->and(CruxRecord::where('webpage_id', $unvisitedWebpage->id)->exists())->toBeFalse();
+
+    $callsBefore = count(Http::recorded());
+    GetCruxReport::run($website, $visitedWebpage);
+    GetCruxReport::run($website);
+
+    expect(count(Http::recorded()))->toBe($callsBefore)
+        ->and(GetCruxReport::run($website)['scope'])->toBe('website');
+
+    cache()->forget(FetchCruxHistory::checkedKey($website, null));
+    FetchCruxHistory::run($website);
+
+    expect(CruxRecord::where('website_id', $website->id)->whereNull('webpage_id')->count())->toBe(6);
+
+    $storefront->update(['canonical_url' => $storefrontCanonical]);
+})->depends('launch website');
+
+test('the weekly chrome ux report fetch queues every live website and the pages with enough views', function (Website $website) {
+    Queue::fake();
+
+    $busyWebpage  = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $quietWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $busyWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    $quietWebpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    $visitorId = DB::table('website_visitors')->insertGetId([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $website->id,
+        'session_id'      => 'sess-'.Str::random(10),
+        'visitor_hash'    => Str::random(16),
+        'device_type'     => 'desktop',
+        'os'              => 'linux',
+        'browser'         => 'firefox',
+        'user_agent'      => 'test-agent',
+        'ip_hash'         => Str::random(16),
+        'first_seen_at'   => now(),
+        'last_seen_at'    => now(),
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $pageViews = fn (Webpage $webpage, int $views) => DB::table('website_page_views')->insert(array_fill(0, $views, [
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $visitorId,
+        'webpage_id'         => $webpage->id,
+        'page_url'           => 'https://test/'.$webpage->url,
+        'page_path'          => '/'.$webpage->url,
+        'view_date'          => now()->toDateString(),
+        'duration_seconds'   => 0,
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]));
+
+    $pageViews($busyWebpage, FetchCruxRecords::MIN_PAGE_VIEWS);
+    $pageViews($quietWebpage, FetchCruxRecords::MIN_PAGE_VIEWS - 1);
+
+    FetchCruxRecords::run();
+
+    $queued = collect(Queue::pushed(JobDecorator::class))
+        ->filter(fn (JobDecorator $job) => $job->decorates(FetchCruxHistory::class))
+        ->map(fn (JobDecorator $job) => [$job->getParameters()[0]->id, ($job->getParameters()[1] ?? null)?->id]);
+
+    expect($queued)->toContain([$website->id, null])
+        ->and($queued)->toContain([$website->id, $busyWebpage->id])
+        ->and($queued)->not->toContain([$website->id, $quietWebpage->id]);
+})->depends('launch website');
+
+test('our visitors web vitals are reported as the daily 75th percentile, a page with too few loads shows the whole website', function (Website $website) {
+    $measuredWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $quietWebpage    = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    cache()->forget("web-vitals-report:$website->id");
+
+    $sample = fn (?Webpage $webpage, string $device, int $lcp, int $daysAgo = 0) => [
+        'website_id' => $website->id,
+        'webpage_id' => $webpage?->id,
+        'device'     => $device,
+        'lcp'        => $lcp,
+        'cls'        => 0.05,
+        'created_at' => now()->subDays($daysAgo),
+    ];
+
+    DB::table('web_vital_samples')->insert([
+        ...array_map(fn (int $lcp) => $sample($measuredWebpage, 'desktop', $lcp), [1000, 2000, 3000, 4000, 5000]),
+        ...array_map(fn (int $lcp) => $sample($measuredWebpage, 'phone', $lcp), [6000, 7000]),
+        ...array_map(fn (int $lcp) => $sample($quietWebpage, 'desktop', $lcp), [900, 900, 900, 900]),
+        $sample($measuredWebpage, 'desktop', 1000, GetWebVitalsReport::DAYS + 2),
+    ]);
+
+    $pageReport = GetWebVitalsReport::run($website, $measuredWebpage);
+    $today      = now()->utc()->toDateString();
+
+    expect($pageReport['scope'])->toBe('page')
+        ->and($pageReport['history']['desktop'])->toHaveCount(1)
+        ->and($pageReport['history']['desktop'][0])->toMatchArray(['period_end' => $today, 'samples' => 5, 'lcp' => 4000, 'cls' => 0.05, 'inp' => null])
+        ->and($pageReport['history'])->not->toHaveKey('phone')
+        ->and($pageReport['history']['all'][0]['samples'])->toBe(7);
+
+    $quietReport = GetWebVitalsReport::run($website, $quietWebpage);
+
+    expect($quietReport['scope'])->toBe('website')
+        ->and($quietReport['history']['desktop'][0]['samples'])->toBe(9)
+        ->and($quietReport['history']['all'][0]['samples'])->toBe(11);
 })->depends('launch website');
 
 test('UI show ads testing webpage does not offer page speed', function (Website $website) {
@@ -2087,42 +2128,6 @@ test('ads testing webpage metrics are read from the page views already recorded'
         ->and($yesterday['page_views'])->toBe(0)
         ->and($yesterday['conversion_rate'])->toBeNull()
         ->and($yesterday['avg_time_on_page'])->toBeNull();
-})->depends('launch website');
-
-test('the website page speed history averages every measured webpage of the website per day', function (Website $website) {
-    $storeScore = fn (Webpage $webpage, string $strategy, string $fetchedAt, int $performance) => StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, [
-        'strategy'   => $strategy,
-        'fetched_at' => $fetchedAt,
-        'scores'     => [
-            ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
-            ['key' => 'seo', 'label' => 'SEO', 'score' => 90, 'rating' => 'fast'],
-        ],
-    ]);
-
-    $fastWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
-    $slowWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
-
-    $yesterday = now()->subDay()->startOfDay();
-    $today     = now()->startOfDay();
-
-    $storeScore($fastWebpage, 'desktop', $yesterday->copy()->addHours(3)->toIso8601String(), 80);
-    $storeScore($slowWebpage, 'desktop', $yesterday->copy()->addHours(4)->toIso8601String(), 60);
-    $storeScore($fastWebpage, 'mobile', $yesterday->copy()->addHours(5)->toIso8601String(), 40);
-    $storeScore($fastWebpage, 'desktop', $today->copy()->addHours(3)->toIso8601String(), 90);
-
-    $pageSpeed = GetWebsitePageSpeedHistory::run($website);
-    $points    = collect($pageSpeed['history'])->keyBy('date');
-
-    expect($pageSpeed['frequency'])->toBe('daily')
-        ->and($pageSpeed['last_measured_on'])->toBe($today->toDateString())
-        ->and($pageSpeed['measured_webpages'])->toBeGreaterThanOrEqual(2)
-        ->and($points[$yesterday->toDateString()]['webpages'])->toBe(['desktop' => 2, 'mobile' => 1])
-        ->and($points[$yesterday->toDateString()]['desktop']['performance'])->toBe(70)
-        ->and($points[$yesterday->toDateString()]['desktop']['seo'])->toBe(90)
-        ->and($points[$yesterday->toDateString()]['mobile']['performance'])->toBe(40)
-        ->and($points[$yesterday->toDateString()]['mobile']['accessibility'])->toBeNull()
-        ->and($points[$today->toDateString()]['desktop']['performance'])->toBe(90)
-        ->and($points[$today->toDateString()]['webpages'])->toBe(['desktop' => 1, 'mobile' => 0]);
 })->depends('launch website');
 
 test('publish announcement', function (Website $website) {

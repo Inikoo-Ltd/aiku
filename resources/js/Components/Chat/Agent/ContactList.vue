@@ -2,7 +2,7 @@
 import { ref, inject, computed, watch, onMounted, onUnmounted, nextTick, watchEffect } from "vue"
 import { router } from "@inertiajs/vue3"
 import { watchDebounced } from "@vueuse/core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { capitalize } from "@/Composables/capitalize"
 import { Contact, SessionAPI, ChatMessage, ChatInboxGroup } from "@/types/Chat/chat"
@@ -16,12 +16,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import SettingChat from "../SettingChat.vue"
 import Dialog from 'primevue/dialog';
-import { playNotificationSoundFile, buildStorageUrl, fetchUnreadCount } from "@/Composables/useNotificationSound"
 
 
 const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
-const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 
 const contacts = ref<Contact[]>([])
 const selectedSession = ref<SessionAPI | null>(null)
@@ -146,44 +144,11 @@ const waitEchoReady = (callback: Function) => {
     }, 300)
 }
 
-const notifiedMessages = new Set<string>()
-const myAgentId = layout.user?.id
 const myAgentShop = layout.user?.agent_shops ?? []
-const processedUnreadIds = new Set<number>()
 
 const joinedChatListChannels: string[] = []
 
-const handleChatListEvent = async (e: any) => {
-    const msg = e.message
-    if (!msg) return
-    if (msg.sender_type === "agent") return
-    if (msg.is_spam) return
-    if (msg.shop_id && Array.isArray(myAgentShop) && !myAgentShop.includes(msg.shop_id)) {
-        return
-    }
-    if (msg.assigned_user_id && myAgentId && msg.assigned_user_id !== myAgentId) return
-
-    const senderDisplay =
-        msg.sender_name?.trim() ||
-        (msg.sender_type === "guest" ? "Guest" : "User")
-
-    const duplicate = `${msg.sender_name}-${msg.text}`
-
-    if (notifiedMessages.has(duplicate)) return
-
-    playNotificationSoundFile(soundUrl)
-    await fetchUnreadCount(baseUrl, activeTab.value, myAgentId)
-
-    if (Notification.permission === "granted") {
-        new Notification(senderDisplay, {
-            body: msg.text ?? "New message",
-            tag: duplicate
-        })
-
-        // notifiedMessages.add(duplicate)
-    }
-    reloadContacts()
-}
+const handleChatListEvent = () => reloadContacts()
 
 onMounted(async () => {
     waitEchoReady(() => {
@@ -228,7 +193,7 @@ const formatTime = (timestamp: string) => {
     if (date >= startOfToday) {
         return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     } else if (date >= startOfYesterday) {
-        return trans("Yesterday")
+        return ctrans("Yesterday")
     } else if (date >= threeDaysAgo) {
         return date.toLocaleDateString([], { weekday: "short" })
     } else {
@@ -273,7 +238,7 @@ const groupedContacts = computed<ChatInboxGroup[]>(() => {
         if (!groups.has(key)) {
             groups.set(key, {
                 key,
-                shopName: c.shop?.name ?? trans("Other"),
+                shopName: c.shop?.name ?? ctrans("Other"),
                 organisationName: c.organisation?.name ?? "",
                 unread: 0,
                 contacts: [],
@@ -384,7 +349,7 @@ const assignToSelf = async (ulid: string) => {
     } catch (error: any) {
         return {
             success: false,
-            error: error?.response?.data?.message ?? trans("Failed to assign chat"),
+            error: error?.response?.data?.message ?? ctrans("Failed to assign chat"),
         }
     } finally {
         isAssigning.value[ulid] = false
@@ -453,7 +418,7 @@ onMounted(async () => {
             </span>
 
             <button class="p-1.5 rounded hover:bg-gray-100 text-gray-500" @click="openGlobalChatSettings"
-                title="Chat settings" :aria-label="trans('Chat settings')">
+                title="Chat settings" :aria-label="ctrans('Chat settings')">
                 <FontAwesomeIcon :icon="faCog" class="text-sm" fixed-width />
             </button>
         </div>
@@ -474,7 +439,7 @@ onMounted(async () => {
                 :aria-selected="viewMode === 'my'"
                 @click="viewMode = 'my'"
                 @keydown.enter="viewMode = 'my'">
-                {{ trans("My Chats") }}
+                {{ ctrans("My Chats") }}
             </div>
             <div
                 class="tabItem flex-1 text-center"
@@ -484,27 +449,27 @@ onMounted(async () => {
                 :aria-selected="viewMode === 'team'"
                 @click="viewMode = 'team'"
                 @keydown.enter="viewMode = 'team'">
-                {{ trans("Colleagues' Chats") }}
+                {{ ctrans("Colleagues' Chats") }}
             </div>
         </div>
 
         <!-- Status tabs -->
         <div class="flex items-center border-b text-xs" role="tablist">
             <div v-if="viewMode === 'my'" class="tabItem" :class="tabClass('waiting')" role="tab" tabindex="0" :aria-selected="activeTab === 'waiting'" @click="activeTab = 'waiting'" @keydown.enter="activeTab = 'waiting'">
-                {{ trans("Waiting") }}
+                {{ ctrans("Waiting") }}
             </div>
             <div class="tabItem" :class="tabClass('active')" role="tab" tabindex="0" :aria-selected="activeTab === 'active'" @click="activeTab = 'active'" @keydown.enter="activeTab = 'active'">
-                {{ trans("Active") }}
+                {{ ctrans("Active") }}
             </div>
             <div class="tabItem" :class="tabClass('closed')" role="tab" tabindex="0" :aria-selected="activeTab === 'closed'" @click="activeTab = 'closed'" @keydown.enter="activeTab = 'closed'">
-                {{ trans("Closed") }}
+                {{ ctrans("Closed") }}
             </div>
             <div class="ml-auto pr-2">
                 <button
                     @click="toggleSearch"
                     class="p-1.5 rounded hover:bg-gray-100 transition-colors"
                     :class="showSearch ? 'text-indigo-500' : 'text-gray-400'"
-                    :aria-label="trans('Toggle search')">
+                    :aria-label="ctrans('Toggle search')">
                     <FontAwesomeIcon :icon="faSearch" class="text-xs" fixed-width />
                 </button>
             </div>
@@ -519,14 +484,14 @@ onMounted(async () => {
                         v-model="searchQuery"
                         type="text"
                         autofocus
-                        :placeholder="trans('Search by name...')"
+                        :placeholder="ctrans('Search by name...')"
                         class="w-full pl-7 pr-7 py-1.5 text-xs border border-gray-200 rounded bg-white focus:outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200"
                     />
                     <button
                         v-if="searchQuery"
                         @click="searchQuery = ''"
                         class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        :aria-label="trans('Clear search')">
+                        :aria-label="ctrans('Clear search')">
                         <FontAwesomeIcon :icon="faTimes" class="text-xs" fixed-width />
                     </button>
                 </div>
@@ -543,11 +508,11 @@ onMounted(async () => {
                     </div>
 
                     <div class="text-sm font-medium text-gray-700">
-                        {{ trans("No conversations") }}
+                        {{ ctrans("No conversations") }}
                     </div>
 
                     <div class="text-xs text-gray-500">
-                        {{ trans("There are no chats at the moment") }}
+                        {{ ctrans("There are no chats at the moment") }}
                     </div>
                 </div>
 
@@ -650,7 +615,7 @@ onMounted(async () => {
                                         :class="c.webUser?.id
                                             ? 'border-green-400 text-green-500'
                                             : 'border-blue-300 text-blue-400'"
-                                        v-tooltip="c.webUser?.id ? trans('Customer') : trans('Guest')">
+                                        v-tooltip="c.webUser?.id ? ctrans('Customer') : ctrans('Guest')">
                                         {{ c.webUser?.id ? 'C' : 'G' }}
                                     </span>
                                 </div>

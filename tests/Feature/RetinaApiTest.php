@@ -357,11 +357,17 @@ test('retina api dropshipping order transactions flow', function () {
         'data' => [['id', 'quantity_ordered']],
     ]);
 
+    DB::table('products')->where('id', $this->product->id)->update(['available_quantity' => 10]);
     $response = patchJson(route('retina.api.dropshipping.transaction.update', $transactionId), [
         'quantity_ordered' => 3,
     ]);
     $response->assertOk();
     expect($response->json('data.quantity_ordered'))->toBe(3);
+
+    DB::table('products')->where('id', $this->product->id)->update(['available_quantity' => 0]);
+    patchJson(route('retina.api.dropshipping.transaction.update', $transactionId), [
+        'quantity_ordered' => 4,
+    ])->assertUnprocessable();
 
     $response = deleteJson(route('retina.api.dropshipping.transaction.delete', $transactionId));
     $response->assertOk();

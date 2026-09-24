@@ -241,6 +241,7 @@ class ShowTicket extends OrgAction
             'routes'                 => [
                 'update'   => ['name' => 'grp.models.ticket.update', 'parameters' => ['ticket' => $ticket->id]],
                 'collaborators' => ['name' => 'grp.models.ticket.collaborators.update', 'parameters' => ['ticket' => $ticket->id]],
+                'deploy_comment' => ['name' => 'grp.models.ticket.deploy_comment.update', 'parameters' => ['ticket' => $ticket->id]],
                 'comment'  => ['name' => 'grp.models.ticket.comment.store', 'parameters' => ['ticket' => $ticket->id]],
                 'rate'     => ['name' => 'grp.models.ticket.rate', 'parameters' => ['ticket' => $ticket->id]],
                 'delete'   => ['name' => 'grp.models.ticket.delete', 'parameters' => ['ticket' => $ticket->id]],

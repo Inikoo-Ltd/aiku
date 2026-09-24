@@ -37,7 +37,7 @@ class WebBlockDepartmentResource extends JsonResource
             'showcase_video_thumbnail'  => GetVideoThumbnail::run($department->desc_video_url),
             'offers_data'               => $department->offers_data,
             'web_images'                => ['main' => Arr::get($department->web_images, 'main')],
-            'url'                       => $department->webpage->url,
+            'url'                       => $department->webpage?->url,
         ];
     }
 }

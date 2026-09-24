@@ -49,6 +49,9 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
     {
         return [
             'message' => $this->message ? [
+                'id'                => $this->message->id,
+                'channel'           => $this->chatSession?->channel?->value,
+                'subject'           => $this->chatSession?->metadata['email_subject'] ?? null,
                 'sender_type'       => $this->message->sender_type->value,
                 'sender_name'       => $this->resolveSenderName(),
                 'text'              => $this->resolveMessageText(),
@@ -62,6 +65,7 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
                 'status'              => $this->chatSession->status?->value,
                 'assigned_user_id'    => $this->resolveAssignedAgentId(),
                 'assigned_agent_name' => $this->resolveAssignedAgentName(),
+                'url'                 => $this->conversationUrl(),
             ] : null,
         ];
     }
@@ -99,6 +103,13 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
         return $this->activeAssignment()?->chatAgent?->user?->contact_name;
     }
 
+    private function conversationUrl(): ?string
+    {
+        $organisationSlug = $this->chatSession?->shop?->organisation?->slug;
+
+        return $organisationSlug ? route('grp.org.chat.inbox.conversation', [$organisationSlug, $this->chatSession->ulid]) : null;
+    }
+
     private function resolveMessageText(): string
     {
         if ($this->message->message_type->value === 'text') {
@@ -107,6 +118,6 @@ class BroadcastChatListEvent implements ShouldBroadcastNow
             $text = "New " . $this->message->message_type->value . " message";
         }
 
-        return Str::limit($text, 50, '…');
+        return Str::limit($text, 120, '…');
     }
 }

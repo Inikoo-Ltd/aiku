@@ -30,19 +30,17 @@ trait WithStoreProcurementOrderItem
             $supplierProduct = $historicSupplierProduct->supplierProduct;
             data_set($modelData, 'supplier_product_id', $supplierProduct->id);
             data_set($modelData, 'historic_supplier_product_id', $historicSupplierProduct->id);
-            $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->where('organisation_id', $procurementOrder->organisation_id)->first();
-            data_set($modelData, 'org_supplier_product_id', $orgSupplierProduct->id);
+            data_set($modelData, 'org_supplier_product_id', overwrite: false, value: $supplierProduct->orgSupplierProducts()->where('organisation_id', $procurementOrder->organisation_id)->value('id'));
 
+
+            $quantity = $procurementOrder instanceof PurchaseOrder ? $modelData['quantity_ordered'] : $modelData['unit_quantity'];
 
             if (!Arr::has($modelData, 'net_amount')) {
-                $unitCost = $orgSupplierProduct->supplierProduct->cost;
-                $quantity = $procurementOrder instanceof PurchaseOrder ? $modelData['quantity_ordered'] : $modelData['unit_quantity'];
+                data_set($modelData, 'net_amount', $supplierProduct->cost * $quantity);
+            }
 
-                data_set(
-                    $modelData,
-                    'net_amount',
-                    $unitCost * $quantity
-                );
+            if ($procurementOrder instanceof PurchaseOrder) {
+                data_set($modelData, 'unit_cost', $quantity > 0 ? round($modelData['net_amount'] / $quantity, 6) : $supplierProduct->cost, overwrite: false);
             }
 
             if ($procurementOrder instanceof PurchaseOrder && $supplierProduct->currency_id !== $procurementOrder->currency_id) {

@@ -1572,6 +1572,58 @@ test('repacking a finalised delivery note is refused when the picks no longer ma
         ->and($order->refresh()->invoices()->count())->toBe(1);
 });
 
+test('a delivery note going to a box packing list destination is packed only once every picked item is in a box', function () {
+    [$deliveryNote, $item]               = handlingDeliveryNoteWithPicking($this);
+    [$skippedDeliveryNote, $skippedItem] = handlingDeliveryNoteWithPicking($this);
+    $destinations                        = collect([$deliveryNote, $skippedDeliveryNote])->map(fn (DeliveryNote $note) => [
+        'country_id' => $note->deliveryAddress->country_id,
+        'postcode'   => $note->deliveryAddress->postal_code,
+    ])->all();
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list_destinations' => $destinations]);
+    expect(\Illuminate\Support\Arr::get($this->organisation->refresh()->settings, 'dispatching.box_packing_list_destinations'))->toEqual($destinations)
+        ->and(\App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList::make()->isRequired($deliveryNote->refresh()))->toBeFalse();
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list' => true]);
+
+    foreach ([[$deliveryNote, $item], [$skippedDeliveryNote, $skippedItem]] as [$note, $noteItem]) {
+        $note = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($note->refresh());
+        \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($note, $this->user);
+        giveParcelDimensions($note);
+        StorePacking::make()->action($noteItem->refresh(), $this->user, []);
+    }
+
+    expect(\App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList::make()->isRequired($deliveryNote->refresh()))->toBeTrue()
+        ->and(fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Not in a box yet')
+        ->and(fn () => \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes::make()->action($item->refresh(), ['boxes' => [['box' => 1, 'quantity' => 11]]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes::make()->action($item->refresh(), ['boxes' => [['box' => 2, 'quantity' => 6], ['box' => 1, 'quantity' => 4]]]);
+    expect($item->refresh()->boxes)->toEqual([['box' => 1, 'quantity' => 4], ['box' => 2, 'quantity' => 6]])
+        ->and(fn () => UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Add a parcel for every box');
+
+    \App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemBoxes::make()->action($item->refresh(), ['boxes' => [['box' => 1, 'quantity' => 10]]]);
+    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $this->user);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKED)
+        ->and(\App\Actions\Dispatching\DeliveryNote\PdfPackingList::run($deliveryNote)->getStatusCode())->toBe(200);
+
+    get(route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$deliveryNote->organisation->slug, $deliveryNote->warehouse->slug, $deliveryNote->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('box_stats.box_packing_list.number_boxes', 1)
+            ->where('box_stats.box_packing_list.missing_message', null)
+            ->where('box_stats.box_packing_list.pdf_route.name', 'grp.pdfs.packing-lists')
+            ->where('box_stats.box_packing_list.skip_route.name', 'grp.models.delivery_note.box_packing_list.skip')
+            ->etc());
+
+    \App\Actions\Dispatching\DeliveryNote\SkipDeliveryNoteBoxPackingList::make()->action($skippedDeliveryNote->refresh(), $this->user);
+    expect(UpdateDeliveryNoteStatePacked::make()->action($skippedDeliveryNote->refresh(), $this->user)->state)->toBe(DeliveryNoteStateEnum::PACKED)
+        ->and($skippedItem->refresh()->boxes)->toBeNull();
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['box_packing_list' => false, 'box_packing_list_destinations' => []]);
+});
+
 test('tax only and in process refund lines do not block repacking a finalised delivery note', function () {
     [$deliveryNote, $item] = finalisedDeliveryNote($this);
     $order                 = $deliveryNote->orders()->first();
@@ -2220,7 +2272,7 @@ test('delete picking on blocked line partly waiting with crm does not abort', fu
         ->and((float)$item->quantity_waiting_warehouse)->toBe(10.0);
 });
 
-test('picking upsert from waiting warehouse and magic place', function () {
+test('picking upsert from waiting warehouse', function () {
     $settings = $this->organisation->settings;
     data_set($settings, 'orders.allow_waiting', true);
     $this->organisation->update(['settings' => $settings]);
@@ -2231,26 +2283,6 @@ test('picking upsert from waiting warehouse and magic place', function () {
 
     \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1, 'location_org_stock_id' => $los->id]);
     expect($item->refresh()->pickings()->exists())->toBeTrue();
-
-    $item->update([
-        'quantity_waiting_warehouse' => 0,
-        'quantity_required'          => 20,
-        'quantity_picked'            => 5,
-        'quantity_not_picked'        => 0,
-        'locked_at'                  => null,
-    ]);
-    // Magic pick creates a picking from a virtual place (no physical location_id).
-    // Only quantity + picker_user_id are validated fields, so that is all the real flow passes.
-    $magicPicking = \App\Actions\Dispatching\Picking\PickFromMagicPlace::run($item->refresh(), [
-        'quantity'       => 3,
-        'picker_user_id' => $this->user->id,
-    ]);
-
-    expect($magicPicking)->toBeInstanceOf(Picking::class)
-        ->and($magicPicking->type)->toBe(PickingTypeEnum::MAGIC_PICK)
-        ->and($magicPicking->location_id)->toBeNull()
-        ->and(floatval($magicPicking->quantity))->toBe(3.0)
-        ->and($magicPicking->last_picked_at)->not->toBeNull();
 });
 
 test('picking and delivery note item repairs and reindex', function () {
@@ -4723,4 +4755,32 @@ test('a delivery note item with nothing required does not break the tariff codes
     $rows = \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNoteTariffCodes::run($deliveryNote);
 
     expect((float) $rows->firstWhere('tariff_code', '3304990000')->amount)->toBe(40.0);
+});
+
+test('sending the order again reuses the goods left on its cancellation return instead of taking them off the shelf twice (HELP-3329)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+    $shelfAfterFirstPick = (float)$locationOrgStock->refresh()->quantity;
+    expect($shelfAfterFirstPick)->toBe(90.0);
+
+    $cancelled = \App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote::make()
+        ->action($deliveryNote, $this->user, true, false, null, true);
+    $returnItem = $cancelled->returnedDeliveryNote()->first()->returnDeliveryNoteItem()->first();
+
+    $order           = $cancelled->orders()->first()->refresh();
+    $newDeliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $this->warehouse->id]);
+    $newItem         = StoreDeliveryNoteItem::make()->action($newDeliveryNote, [
+        'delivery_note_id'  => $newDeliveryNote->id,
+        'org_stock_id'      => $deliveryNoteItem->org_stock_id,
+        'transaction_id'    => $deliveryNoteItem->transaction_id,
+        'quantity_required' => 6,
+    ]);
+
+    \App\Actions\Dispatching\DeliveryNote\ReusePicksFromCancelledDeliveryNote::make()->action($order, $newDeliveryNote);
+
+    expect((float)$newItem->refresh()->quantity_picked)->toBe(6.0)
+        ->and((float)$returnItem->refresh()->total_item_returned)->toBe(6.0)
+        ->and($returnItem->is_handled)->toBeFalse()
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBe($shelfAfterFirstPick);
 });

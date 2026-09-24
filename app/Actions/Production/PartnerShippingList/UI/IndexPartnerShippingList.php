@@ -14,7 +14,6 @@ use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
@@ -132,18 +131,9 @@ class IndexPartnerShippingList extends OrgAction
                             ->where('partner_shopping_list_items.organisation_id', $seller->id);
                     });
             })
-            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN)
-            ->whereNull('partner_shopping_list_items.pre_picked_at')
-            ->where(function ($query) {
-                $query->whereNotNull('partner_shopping_list_items.job_order_id')
-                    ->orWhereNull('partner_shopping_list_items.partner_organisation_id')
-                    ->orWhereRaw('coalesce(org_stocks.quantity_available, 0) <= 0');
-            })
-            ->where(function ($query) {
-                $query->whereNotNull('partner_shopping_list_items.job_order_id')
-                    ->orWhereNull('org_stocks.state')
-                    ->orWhereNotIn('org_stocks.state', [OrgStockStateEnum::DISCONTINUING->value, OrgStockStateEnum::DISCONTINUED->value]);
-            });
+            ->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::OPEN);
+
+        PartnerShoppingListItem::whereRoutedToProduction($queryBuilder->getEloquentBuilder());
 
         if ($this->groupBy) {
             $queryBuilder->whereNotNull('artefacts.id');

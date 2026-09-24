@@ -12,7 +12,9 @@ namespace App\Actions\Api\Retina\Dropshipping\Transaction;
 use App\Actions\Api\Retina\Dropshipping\Resource\TransactionApiResource;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaApiAction;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -25,6 +27,7 @@ class StoreApiOrderTransaction extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
+    use WithCustomerPurchasableProduct;
 
     public function handle(Order $order, Portfolio $portfolio, array $modelData): Transaction|JsonResponse
     {
@@ -51,6 +54,8 @@ class StoreApiOrderTransaction extends RetinaApiAction
                 'message' => "Unable to create transaction for under this order. Another transaction with same the same product already exists.",
             ], 409);
         }
+
+        $this->ensureProductIsPurchasableByCustomer($portfolio->item instanceof Product ? $portfolio->item : null, $order->customer);
 
         return StoreTransaction::make()->action($order, $portfolio->item->historicAsset, $modelData);
 

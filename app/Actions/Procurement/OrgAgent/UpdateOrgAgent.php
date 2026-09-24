@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\OrgAgent;
 
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\WithPurchaseOrderSerialReference;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Procurement\OrgAgent;
@@ -19,12 +20,14 @@ class UpdateOrgAgent extends OrgAction
 {
     use WithProcurementEditAuthorisation;
     use WithActionUpdate;
+    use WithPurchaseOrderSerialReference;
 
 
     public function handle(OrgAgent $orgAgent, $modelData = []): OrgAgent
     {
 
-        $orgAgent = $this->update($orgAgent, $modelData);
+        $modelData = $this->updatePurchaseOrderSerialReference($orgAgent, $modelData);
+        $orgAgent  = $this->update($orgAgent, $modelData);
 
         OrganisationHydrateOrgAgents::dispatch($orgAgent->organisation);
 
@@ -33,10 +36,10 @@ class UpdateOrgAgent extends OrgAction
 
     public function rules(ActionRequest $request): array
     {
-        return [
+        return array_merge([
             'source_id'   => 'sometimes|nullable|string|max:64',
             'status'      => ['sometimes', 'required', 'boolean'],
-        ];
+        ], $this->purchaseOrderSerialReferenceRules());
     }
 
     public function asController(OrgAgent $orgAgent, ActionRequest $request): OrgAgent

@@ -847,6 +847,15 @@ test("UI index org stocks all", function () {
     });
 });
 
+test("export org stocks lists only this organisation's skos", function () {
+    $export = new \App\Exports\Inventory\OrgStocksExport($this->organisation);
+    $rows   = $export->query()->get();
+
+    expect($rows)->not->toBeEmpty()
+        ->and($rows->pluck('organisation_id')->unique()->all())->toBe([$this->organisation->id])
+        ->and(count($export->map($rows->first())))->toBe(count($export->headings()));
+});
+
 test("UI index org stocks discontinued", function () {
     $warehouse = Warehouse::first();
     $this->withoutExceptionHandling();
@@ -1912,6 +1921,26 @@ test('UI Show org stock stock_history tab', function () {
         $this->organisation->slug, $warehouse->slug, $orgStock->slug,
     ]))->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Inventory/OrgStock');
+    });
+})->depends('create warehouse', 'create org stock');
+
+test('UI Show org stock labels and compliance tabs', function () {
+    $warehouse = Warehouse::first();
+    $orgStock  = OrgStock::first();
+    $this->withoutExceptionHandling();
+    $route = fn (string $tab) => route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.labels', [
+        $this->organisation->slug, $warehouse->slug, $orgStock->slug, 'tab' => $tab,
+    ]);
+
+    get($route('labels'))->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Inventory/OrgStockLabels')
+            ->where('labels.store_route.name', 'grp.models.org_stock.labels.store')
+            ->has('labels.information_options', 14)
+            ->has('labels.labels');
+    });
+    get($route('compliance'))->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Inventory/OrgStockLabels')
+            ->where('compliance.routes.store.name', 'grp.models.org_stock.compliance-item.store');
     });
 })->depends('create warehouse', 'create org stock');
 
@@ -3656,6 +3685,36 @@ describe('discontinue confirm', function () {
 
         expect(StorePurchaseOrderTransaction::make()->action($purchaseOrder, null, $orgStock->refresh(), PurchaseOrderTransaction::factory()->definition()))
             ->toBeInstanceOf(PurchaseOrderTransaction::class);
+    });
+
+    test('discontinuing a sko removes its open warehouse restock requests and nothing else', function () {
+        $orgStock = $this->orgStocks[1];
+        $line     = fn (array $attributes) => \App\Models\Procurement\PartnerShoppingListItem::create(array_merge([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'stock_id'        => $orgStock->stock_id,
+            'org_stock_id'    => $orgStock->id,
+            'quantity'        => 1,
+        ], $attributes));
+
+        $restock        = $line([]);
+        $otherRestock   = $line(['organisation_id' => $this->otherOrganisation->id, 'org_stock_id' => $this->otherOrgStocks[1]->id]);
+        $partnerRequest = $line(['organisation_id' => $this->otherOrganisation->id, 'partner_organisation_id' => $this->organisation->id]);
+
+        expect(GetOrgStockDiscontinuePreview::make()->action($this->organisation, [$orgStock->id])[0]['restock_requests'])->toBe(1);
+
+        DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$orgStock->id],
+            'state'               => OrgStockStateEnum::DISCONTINUING->value,
+            'organisation_states' => ['other' => OrgStockStateEnum::ACTIVE->value],
+            'reason'              => 'Running down',
+        ]);
+
+        expect($restock->refresh()->trashed())->toBeTrue()
+            ->and($otherRestock->refresh()->trashed())->toBeFalse()
+            ->and($partnerRequest->refresh()->trashed())->toBeFalse();
+
+        DiscontinueOrgStocks::make()->action($this->organisation, ['org_stock_ids' => [$orgStock->id], 'state' => OrgStockStateEnum::ACTIVE->value]);
     });
 
     test('confirm refuses a sko that moved since the preview', function () {

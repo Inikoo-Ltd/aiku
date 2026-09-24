@@ -50,6 +50,9 @@ const props = defineProps<{
         expiry_date: string
         barcode: string
         labels: SavedLabel[]
+        information?: Record<string, string>
+        information_options?: { value: string, label: string, is_placeable: boolean }[]
+        abilities?: { edit: boolean, publish: boolean, set_mandatory: boolean }
     }
 }>()
 
@@ -57,7 +60,7 @@ const emits = defineEmits<{ (e: "onClose"): void; (e: "onSaved"): void }>()
 
 const ITEM_SOURCES = ["batch_code", "expiry_date", "barcode"] as const
 
-type ItemSource = typeof ITEM_SOURCES[number]
+type ItemSource = string
 
 type BarcodeType = "ean13" | "code128"
 
@@ -170,7 +173,7 @@ const gridBeforeSheetArtwork = {
 
 let nextItemId = 1
 
-const SOURCE_DEFAULT_Y: Record<ItemSource, number> = {
+const SOURCE_DEFAULT_Y: Record<string, number> = {
     batch_code: 0.08,
     expiry_date: 0.28,
     barcode: 0.48,
@@ -183,14 +186,14 @@ const SOURCE_DEFAULT_Y: Record<ItemSource, number> = {
 const detectBarcodeType = (text: string): BarcodeType => (/^\d{13}$/.test(text.trim()) ? "ean13" : "code128")
 
 const createItem = (source: ItemSource, overrides: Partial<LabelItem> = {}): LabelItem => {
-    const text = props.labelSheet[source] ?? ""
+    const text = props.labelSheet.information?.[source] ?? (props.labelSheet as Record<string, any>)[source] ?? ""
 
     return {
         id: nextItemId++,
         source,
         text,
         x: 0.06,
-        y: SOURCE_DEFAULT_Y[source],
+        y: SOURCE_DEFAULT_Y[source] ?? 0.5,
         fontSize: 8,
         color: "#111827",
         backgroundColor: null,
@@ -209,10 +212,26 @@ const selectedItemId = ref<number | null>(items.value[0]?.id ?? null)
 
 const selectedItem = computed(() => items.value.find(item => item.id === selectedItemId.value) ?? null)
 
-const sourceLabels: Record<ItemSource, string> = {
+const sourceLabels = computed<Record<string, string>>(() => ({
     batch_code: ctrans("Batch code"),
     expiry_date: ctrans("Expiry date"),
     barcode: ctrans("Barcode"),
+    ...Object.fromEntries((props.labelSheet.information_options ?? []).map(option => [option.value, option.label])),
+}))
+
+const productInformationOptions = computed(() =>
+    (props.labelSheet.information_options ?? []).filter(option =>
+        option.is_placeable && !(ITEM_SOURCES as readonly string[]).includes(option.value)
+    )
+)
+
+const productInformationToAdd = ref("")
+
+const addProductInformation = () => {
+    if (!productInformationToAdd.value) return
+
+    addItem(productInformationToAdd.value)
+    productInformationToAdd.value = ""
 }
 
 const addItem = (source: ItemSource) => {
@@ -1074,7 +1093,7 @@ const loadLabel = async (label: SavedLabel) => {
         canvasRotation.value = (Number(layout.canvas_rotation ?? 0) as Rotation)
 
         items.value = (layout.fields ?? []).map((field: Record<string, any>) =>
-            createItem((ITEM_SOURCES as readonly string[]).includes(field.source) ? field.source as ItemSource : "batch_code", {
+            createItem(field.source && field.source in sourceLabels.value ? field.source as ItemSource : "batch_code", {
                 text: String(field.text ?? ""),
                 x: Number(field.x ?? 0),
                 y: Number(field.y ?? 0),
@@ -1256,7 +1275,7 @@ const describeFailure = async (error: any): Promise<string> => {
                     :loading="isSaving"
                     :disabled="!isGridValid"
                     @click="saveLabel(true)" />
-                <div class="relative">
+                <div v-if="labelSheet.abilities?.publish !== false" class="relative">
                     <Button
                         :type="currentLabel?.state === 'published' ? 'tertiary' : 'green'"
                         :key="currentLabel?.state"
@@ -1270,7 +1289,7 @@ const describeFailure = async (error: any): Promise<string> => {
                     <PingIcon v-if="currentLabel?.state !== 'published'" class="text-[7px] text-red-500 !absolute -top-0.5 -right-0.5" aria-hidden="true" />
                 </div>
                 <Button
-                    v-if="currentLabel?.state === 'published'"
+                    v-if="currentLabel?.state === 'published' && labelSheet.abilities?.publish !== false"
                     type="negative"
                     size="xs"
                     icon="fal fa-eye-slash"
@@ -1452,6 +1471,21 @@ const describeFailure = async (error: any): Promise<string> => {
                                 ? ctrans('The barcode kept on the stock (SKU), :barcode', { barcode: labelSheet.barcode })
                                 : ctrans('The stock (SKU) has no barcode yet, type it in after adding it')"
                             @click="addItem('barcode')" />
+                        <select
+                            v-if="productInformationOptions.length"
+                            v-model="productInformationToAdd"
+                            class="rounded border border-gray-300 py-0.5 pl-2 pr-7 text-xs"
+                            :aria-label="ctrans('Add product information')"
+                            @change="addProductInformation">
+                            <option value="">{{ ctrans("+ Product information") }}</option>
+                            <option
+                                v-for="option in productInformationOptions"
+                                :key="option.value"
+                                :value="option.value"
+                                :disabled="!labelSheet.information?.[option.value]">
+                                {{ option.label }}{{ labelSheet.information?.[option.value] ? "" : " (" + ctrans("not on the product record") + ")" }}
+                            </option>
+                        </select>
                     </div>
 
                     <div v-if="!items.length" class="rounded border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500" role="status">

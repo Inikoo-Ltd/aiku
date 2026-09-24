@@ -10,9 +10,11 @@ namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Models\Helpers\Media;
-use App\Models\Production\Artefact;
+use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 trait WithArtefactLabelLayout
 {
@@ -53,7 +55,7 @@ trait WithArtefactLabelLayout
             'canvas_rotation'    => ['sometimes', 'integer', 'in:0,90,180,270'],
             'is_sheet_artwork'   => ['sometimes', 'boolean'],
             'fields'             => ['sometimes', 'array', 'max:100'],
-            'fields.*.text'      => ['required', 'string', 'max:255'],
+            'fields.*.text'      => ['required', 'string', 'max:2000'],
             'fields.*.x'         => ['required', 'numeric', 'min:0', 'max:1'],
             'fields.*.y'         => ['required', 'numeric', 'min:0', 'max:1'],
             'fields.*.font_size' => ['required', 'numeric', 'min:3', 'max:72'],
@@ -62,7 +64,7 @@ trait WithArtefactLabelLayout
             'fields.*.bold'      => ['sometimes', 'boolean'],
             'fields.*.rotation'  => ['sometimes', 'integer', 'in:0,90,180,270'],
             'fields.*.length'    => ['sometimes', 'numeric', 'min:0.1', 'max:1000'],
-            'fields.*.source'    => ['sometimes', 'string', 'in:batch_code,expiry_date,barcode'],
+            'fields.*.source'    => ['sometimes', 'string', Rule::in(ArtefactLabelInformationEnum::placeableValues())],
             'fields.*.barcode_type'       => ['sometimes', 'string', 'in:ean13,code128'],
             'fields.*.barcode_width'      => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
             'fields.*.barcode_height'     => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
@@ -124,9 +126,9 @@ trait WithArtefactLabelLayout
      * The artwork is kept as an attachment of the artefact so a label opened months later still
      * prints the sheet it was designed against, and so the artefact keeps its own photos apart.
      */
-    protected function saveArtwork(Artefact $artefact, UploadedFile $file): Media
+    protected function saveArtwork(OrgStock $orgStock, UploadedFile $file): Media
     {
-        return SaveModelAttachment::make()->action($artefact, [
+        return SaveModelAttachment::make()->action($orgStock, [
             'path'         => $file->getPathName(),
             'originalName' => $file->getClientOriginalName(),
             'extension'    => $file->guessClientExtension(),

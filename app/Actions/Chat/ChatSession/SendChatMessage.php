@@ -101,11 +101,16 @@ class SendChatMessage
             $chatMessage
         );
 
-        TranslateChatMessage::dispatch(messageId: $chatMessage->id);
+        $isEmailReply = $chatSession->channel === ChatChannelEnum::EMAIL && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value;
+
+        if (!$isEmailReply) {
+            TranslateChatMessage::dispatch(messageId: $chatMessage->id);
+        }
+
         BroadcastRealtimeChat::dispatch($chatMessage);
         BroadcastChatListEvent::dispatch($chatMessage);
 
-        if ($chatSession->channel === ChatChannelEnum::EMAIL && $modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value) {
+        if ($isEmailReply) {
             $copies = SendChatMessageByGmail::copyRecipients($chatSession, $modelData['email_cc_excluded'] ?? []);
 
             if ($copies) {

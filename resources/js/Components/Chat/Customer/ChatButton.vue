@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, onMounted, onBeforeUnmount, watch, computed } from "vue"
-import MessageArea from "@/Components/Chat/Customer/MessageArea.vue"
-import MessageHistory from "@/Components/Chat/MessageHistory.vue"
+import { ref, inject, onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMessage, faXmark, faEllipsisVertical, faTimesCircle, faChevronLeft } from "@fortawesome/free-solid-svg-icons"
 import {
@@ -27,13 +25,16 @@ import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNot
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
-import HistoryChatList from "@/Components/Chat/HistoryChatList.vue"
-import OfflineChatForm from "../OfflineChatForm.vue"
 import { router, usePage } from "@inertiajs/vue3"
 import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck } from "@fal"
 import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
 import Image from "@common/Components/Image.vue"
+
+const MessageArea = defineAsyncComponent(() => import("@/Components/Chat/Customer/MessageArea.vue"))
+const MessageHistory = defineAsyncComponent(() => import("@/Components/Chat/MessageHistory.vue"))
+const HistoryChatList = defineAsyncComponent(() => import("@/Components/Chat/HistoryChatList.vue"))
+const OfflineChatForm = defineAsyncComponent(() => import("../OfflineChatForm.vue"))
 
 library.add(
     faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok,

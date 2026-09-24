@@ -26,15 +26,9 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
      */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
-        $this->ensureProductIsPurchasableByCustomer($product, $customer);
-
         $order = $this->getOrderInBasket($customer);
 
-        if (!$order) {
-            $order = StoreEcomOrder::make()->action($customer);
-        }
-
-        $transaction = $order->transactions->where('model_type', 'Product')->where('model_id', $product->id)->where('is_gift', false)->first();
+        $transaction = $order ? $this->findCustomerLine($order, $product) : null;
         if ($transaction) {
             return RetinaEcomUpdateTransaction::make()->action(
                 $transaction,
@@ -43,6 +37,12 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
                     'quantity_ordered' => data_get($modelData, 'quantity')
                 ]
             );
+        }
+
+        $this->ensureProductIsPurchasableByCustomer($product, $customer);
+
+        if (!$order) {
+            $order = StoreEcomOrder::make()->action($customer);
         }
 
         $historicAsset = $product->currentHistoricProduct;
@@ -59,7 +59,7 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
     public function rules(): array
     {
         return [
-            'quantity' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['required', 'integer', 'min:0'],
         ];
     }
 

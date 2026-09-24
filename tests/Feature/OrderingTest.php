@@ -85,6 +85,9 @@ use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionChargeAmount;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
+use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
+use App\Actions\Retina\Ordering\StoreRetinaTransaction;
+use App\Actions\Retina\Ordering\UpdateRetinaTransaction;
 use App\Actions\Maintenance\Ordering\RemoveDiscontinuedProductsFromBaskets;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
@@ -4170,6 +4173,7 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
         Product::factory()->definition(),
         ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
     ));
+    $lowStock->update(['status' => ProductStatusEnum::FOR_SALE]);
     $lowStockData                     = Transaction::factory()->definition();
     $lowStockData['quantity_ordered'] = 3;
     $lowStockData['order_id']         = $basket->id;
@@ -4220,6 +4224,11 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
 
     DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 0]);
     SyncBasketLinesWithProductStock::run($lowStock->fresh());
+    expect(fn () => RetinaEcomUpdateTransaction::make()->action($lowStockLine->fresh(), $this->customer, ['quantity_ordered' => 3]))
+        ->toThrow(ValidationException::class)
+        ->and((float) Arr::get($lowStockLine->fresh()->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY))->toBe(7.0);
+
+    DB::table('products')->where('id', $lowStock->id)->update(['available_quantity' => 2]);
     $lowStockLine = RetinaEcomUpdateTransaction::make()->action($lowStockLine->fresh(), $this->customer, ['quantity_ordered' => 3]);
 
     expect((float) $lowStockLine->quantity_ordered)->toBe(3.0)
@@ -4243,6 +4252,91 @@ test('a basket line may exceed stock, is zeroed while out of stock and restored 
     expect($submitted->state)->toBe(OrderStateEnum::SUBMITTED)
         ->and($goneLine->fresh()->trashed())->toBeTrue()
         ->and($submitted->transactions()->where('model_type', 'Product')->count())->toBe(1);
+});
+
+test('a customer cannot raise a basket line of an out of stock product, nor change an order after it is submitted', function () {
+    $website = createWebsite($this->shop);
+    $website->update(['status' => true]);
+    $webUser = createWebUser($this->customer);
+    $basket  = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+    [, $bulk] = createProduct($this->shop);
+    $product  = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    $product->update(['status' => ProductStatusEnum::FOR_SALE]);
+    $lineData                     = Transaction::factory()->definition();
+    $lineData['quantity_ordered'] = 3;
+    $lineData['order_id']         = $basket->id;
+    $line                         = StoreTransaction::make()->action($basket, $product->currentHistoricProduct, $lineData);
+    $url                          = 'http://'.$website->domain.'/app/models/transaction/'.$line->id;
+
+    DB::table('products')->where('id', $product->id)->update(['available_quantity' => 2, 'is_on_demand' => false]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 5])->assertSessionHasNoErrors();
+    expect((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    DB::table('products')->where('id', $product->id)->update(['available_quantity' => 0]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 6])->assertSessionHasErrors('message');
+    $this->actingAs($webUser, 'retina')->patch($url, ['units_ordered' => 60])->assertSessionHasNoErrors();
+    expect((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    $otherShop = $this->shop->replicate(['ulid'])->fill(['code' => 'oth'.$line->id, 'slug' => 'oth-'.$line->id]);
+    $otherShop->saveQuietly();
+    $otherShopProduct = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    DB::table('products')->where('id', $otherShopProduct->id)->update(['shop_id' => $otherShop->id, 'status' => ProductStatusEnum::FOR_SALE->value, 'available_quantity' => 10]);
+    expect($otherShopProduct->fresh()->shop_id)->not->toBeNull()->not->toBe($this->shop->id)
+        ->and(fn () => StoreRetinaTransaction::run($basket, ['historic_asset_id' => $otherShopProduct->current_historic_asset_id, 'quantity' => 1]))
+        ->toThrow(ValidationException::class);
+
+    $csv = tempnam(sys_get_temp_dir(), 'order-transactions').'.csv';
+    file_put_contents($csv, "code,quantity\n".$product->code.",9\n");
+    $upload = ImportTransactionInOrder::make()->action($basket, ['file' => new \Illuminate\Http\UploadedFile($csv, 'transactions.csv', 'text/csv', null, true)], byCustomer: true);
+    expect($upload->number_fails)->toBe(1)
+        ->and((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    $upload = ImportTransactionInOrder::make()->action($basket, ['file' => new \Illuminate\Http\UploadedFile($csv, 'transactions.csv', 'text/csv', null, true)]);
+    expect($upload->number_success)->toBe(1)
+        ->and((float) $line->fresh()->quantity_ordered)->toBe(9.0);
+    UpdateTransaction::make()->action($line->fresh(), ['quantity_ordered' => 5]);
+
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 4.5])->assertSessionHasErrors('quantity_ordered');
+    DB::table('transactions')->where('id', $line->id)->update(['is_gift' => true]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 4])->assertSessionHasErrors('message');
+    DB::table('transactions')->where('id', $line->id)->update(['is_gift' => false]);
+    expect((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    $this->actingAs($webUser, 'retina')
+        ->postJson('http://'.$website->domain.'/models/'.$line->id.'/update-transaction', ['quantity_ordered' => 6])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('message');
+    expect(fn () => UpdateRetinaTransaction::run($line->fresh(), ['quantity_ordered' => 6]))->toThrow(ValidationException::class)
+        ->and((float) $line->fresh()->quantity_ordered)->toBe(5.0);
+
+    $this->customer->update(['current_order_in_basket_id' => $basket->id]);
+    $product->update(['status' => ProductStatusEnum::OUT_OF_STOCK]);
+    StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $product->fresh(), ['quantity' => 4]);
+    expect((float) $line->fresh()->quantity_ordered)->toBe(4.0);
+
+    DB::table('products')->where('id', $product->id)->update(['is_on_demand' => true]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 6])->assertSessionHasNoErrors();
+    expect((float) $line->fresh()->quantity_ordered)->toBe(6.0);
+
+    $basket->update(['state' => OrderStateEnum::SUBMITTED]);
+    $this->actingAs($webUser, 'retina')->patch($url, ['quantity_ordered' => 1])->assertSessionHasErrors('message');
+    expect((float) $line->fresh()->quantity_ordered)->toBe(6.0)
+        ->and(fn () => StoreRetinaTransaction::run($basket->fresh(), ['historic_asset_id' => $product->current_historic_asset_id, 'quantity' => 1]))
+        ->toThrow(ValidationException::class)
+        ->and(fn () => ImportRetinaOrderTransaction::run($basket->fresh(), []))
+        ->toThrow(ValidationException::class);
+
+    $this->actingAs($webUser, 'retina')
+        ->post('http://'.$website->domain.'/app/models/order/'.$basket->id.'/transaction/add', ['historic_asset_id' => $product->current_historic_asset_id])
+        ->assertSessionHasErrors('message');
+    expect((float) $line->fresh()->quantity_ordered)->toBe(6.0);
 });
 
 test('a product that is not for sale cannot be added to a basket', function () {
@@ -4289,7 +4383,7 @@ test('an exclusive product can be added only by its own customer, and only while
         ->toThrow(ValidationException::class);
 
     DB::table('products')->where('id', $exclusive->id)->update(['available_quantity' => 0]);
-    expect(fn () => StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 2]))
+    expect(fn () => StoreEcomBasketTransaction::make()->handle($owner->fresh(), $exclusive->fresh(), ['quantity' => 3]))
         ->toThrow(ValidationException::class);
 
     DB::table('products')->where('id', $exclusive->id)->update(['is_on_demand' => true]);

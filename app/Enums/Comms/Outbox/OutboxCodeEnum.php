@@ -335,7 +335,7 @@ enum OutboxCodeEnum: string
     public function shopTypes(): array
     {
         return match ($this) {
-            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => ['fulfilment'],
             OutboxCodeEnum::INVOICE_DELETED,
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,

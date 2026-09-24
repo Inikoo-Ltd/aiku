@@ -46,6 +46,24 @@ return [
 
     ],
 
+    // A message that arrives while the shop is closed is answered once per wait, with when the
+    // shop opens again. Email only to a person, never to mail that was generated or sent to a list.
+    'out_of_hours_reply' => (bool) env('CHAT_OUT_OF_HOURS_REPLY', true),
+
+    // Replies the AI writes from order and stock facts for staff to send, change or discard.
+    // Never sent by themselves.
+    'ai_drafts' => (bool) env('CHAT_AI_DRAFTS', true),
+
+    // A draft goes to the customer without a person only out of hours, and only on a topic of a
+    // shop where staff sent nearly all recent drafts exactly as written and none sent this way
+    // was flagged as wrong. Off until switched on, and even then only where it is earned.
+    'ai_auto_send' => [
+        'enabled'        => (bool) env('CHAT_AI_AUTO_SEND', false),
+        'window_days'    => 30,
+        'min_decided'    => 50,
+        'min_used_share' => 0.9,
+    ],
+
     'noise' => [
 
         'auto_put_aside' => (bool) env('CHAT_NOISE_AUTO_PUT_ASIDE', false),

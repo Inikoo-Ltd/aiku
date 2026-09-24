@@ -51,7 +51,7 @@ class StoreAppDeployment
         }
 
         try {
-            CloseTicketsAfterDeployment::run();
+            CloseTicketsAfterDeployment::run($commit);
         } catch (Throwable $e) {
             Sentry::captureException($e);
         }

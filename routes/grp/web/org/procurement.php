@@ -6,6 +6,8 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Procurement\AgentLabel\DownloadAgentArtefactLabelPdf;
+use App\Actions\Procurement\AgentLabel\UI\IndexAgentLabels;
 use App\Actions\GoodsIn\StockDelivery\ExportStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\CreateStockDelivery;
@@ -64,13 +66,18 @@ use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use App\Actions\Procurement\ShoppingListItem\UpdateShoppingListItem;
 use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\CreatePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\UI\IndexOrganisationStockCoverItems;
+use App\Actions\Procurement\ExportOrganisationStockCoverItems;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProcurementDashboard::class)->name('dashboard');
+Route::get('/stock-cover', IndexOrganisationStockCoverItems::class)->name('stock_cover.index');
+Route::get('/stock-cover/export', ExportOrganisationStockCoverItems::class)->name('stock_cover.export');
 
 Route::prefix('agents')->as('org_agents.')->group(function () {
     Route::get('', IndexOrgAgents::class)->name('index');
@@ -100,6 +107,11 @@ Route::prefix('agents')->as('org_agents.')->group(function () {
 });
 
 Route::get('agent-suppliers', IndexOrgAgentSuppliers::class)->name('org_agent_suppliers.index');
+
+Route::prefix('agent-labels')->as('agent_labels.')->group(function () {
+    Route::get('', IndexAgentLabels::class)->name('index');
+    Route::get('{orgStock:id}/{label:id}/pdf', DownloadAgentArtefactLabelPdf::class)->name('pdf')->withoutScopedBindings();
+});
 
 Route::prefix('suppliers')->as('org_suppliers.')->group(function () {
     Route::get('', IndexOrgSuppliers::class)->name('index');
@@ -190,6 +202,7 @@ Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {
     Route::get('export', ExportPurchaseOrders::class)->name('export');
     Route::get('{purchaseOrder}', ShowPurchaseOrder::class)->name('show');
     Route::get('{purchaseOrder}/edit', EditPurchaseOrder::class)->name('edit');
+    Route::get('{purchaseOrder}/pdf', PdfPurchaseOrder::class)->name('pdf');
 });
 Route::prefix('stock-deliveries')->as('stock_deliveries.')->group(function () {
     Route::get('', IndexStockDeliveries::class)->name('index');

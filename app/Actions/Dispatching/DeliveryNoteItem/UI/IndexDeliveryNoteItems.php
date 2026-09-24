@@ -8,8 +8,10 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
+use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
@@ -130,6 +132,11 @@ class IndexDeliveryNoteItems extends OrgAction
                 $table->column(key: 'picking_locations', label: __('Pickings'), canBeHidden: false);
             } elseif ($this->hasPickingsWithBatchCodes($parent)) {
                 $table->column(key: 'batch_codes', label: __('Batch Codes'), canBeHidden: false);
+            }
+
+            if (in_array($parent->state, [DeliveryNoteStateEnum::PACKING, DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::DISPATCHED])
+                && DeliveryNoteBoxPackingList::make()->isRequired($parent)) {
+                $table->column(key: 'boxes', label: __('Box'), canBeHidden: false);
             }
 
             if ($allowAction && $isEditable) {

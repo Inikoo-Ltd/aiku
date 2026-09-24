@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt, faTruck, faExchange } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt, faTruck, faExchange, faFilePdf } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link, router } from "@inertiajs/vue3"
@@ -13,6 +13,7 @@ import { computed, inject, ref, toRaw } from "vue"
 import { routeType } from "@/types/route"
 import { set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -27,7 +28,7 @@ import { faExchangeAlt, faLock , faLockOpen} from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 
-library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
+library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt, faFilePdf)
 
 const props = withDefaults(defineProps<{
     boxStats: {
@@ -84,6 +85,12 @@ const props = withDefaults(defineProps<{
             weight: number
             dimensions: [number, number, number]
         }[]
+        box_packing_list?: {
+            number_boxes: number
+            missing_message: string | null
+            pdf_route: routeType
+            skip_route: routeType | null
+        } | null
         shipments: {
             id: number
             name: string
@@ -191,8 +198,8 @@ const onUpdatePicker = () => {
 
     if (!pickerId) {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Picker is not selected"),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Picker is not selected"),
             type: "error"
         });
         return;
@@ -218,8 +225,8 @@ const onUpdatePicker = () => {
     router.patch(route(routeName, routeParams), payload, {
         onError: (error) => {
             notify({
-                title: trans("Something went wrong"),
-                text: error?.message ?? trans("Unknown error"),
+                title: ctrans("Something went wrong"),
+                text: error?.message ?? ctrans("Unknown error"),
                 type: "error"
             });
         },
@@ -251,7 +258,7 @@ const assignSelfTemporarily = () => {
         {
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error"
                 });
@@ -266,6 +273,28 @@ const assignSelfTemporarily = () => {
     );
 }
 
+
+// Section: Packing list by box
+const isSkippingBoxPackingList = ref(false)
+const onSkipBoxPackingList = async () => {
+    const skipRoute = props.boxStats?.box_packing_list?.skip_route
+    if (!skipRoute || !window.confirm(ctrans('Let this delivery note be packed without a packing list by box?'))) {
+        return
+    }
+
+    isSkippingBoxPackingList.value = true
+    try {
+        await axios.patch(route(skipRoute.name, skipRoute.parameters))
+        router.reload({ onFinish: () => isSkippingBoxPackingList.value = false })
+    } catch (error: any) {
+        isSkippingBoxPackingList.value = false
+        notify({
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message ?? '',
+            type: 'error',
+        })
+    }
+}
 
 // Section: Parcels
 const isLoadingSubmitParcels = ref(false)
@@ -306,8 +335,8 @@ const onSubmitParcels = () => {
             },
             onError: (errors) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: trans("Failed to add Shipment. Please try again or contact administrator."),
+                    title: ctrans("Something went wrong."),
+                    text: ctrans("Failed to add Shipment. Please try again or contact administrator."),
                     type: "error",
                 })
             },
@@ -334,15 +363,15 @@ const updateCollection = async (e: Event) => {
             preserveScroll: true,
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Collection status updated successfully"),
+                    title: ctrans("Success"),
+                    text: ctrans("Collection status updated successfully"),
                     type: "success",
                 })
             },
             onError: () => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: trans("Failed to update collection status"),
+                    title: ctrans("Something went wrong."),
+                    text: ctrans("Failed to update collection status"),
                     type: "error",
                 })
             }
@@ -350,8 +379,8 @@ const updateCollection = async (e: Event) => {
     } catch (error) {
         console.error(error)
         notify({
-            title: trans("Something went wrong."),
-            text: trans("Failed to update to collection"),
+            title: ctrans("Something went wrong."),
+            text: ctrans("Failed to update to collection"),
             type: "error",
         })
     }
@@ -417,7 +446,7 @@ function returnNoteRoute(returnDeliveryNote) {
         <BoxStatPallet v-once class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
-                    {{ trans("Order") }}
+                    {{ ctrans("Order") }}
                 </div>
 
                 <div class="space-y-0.5 pl-1">
@@ -430,7 +459,7 @@ function returnNoteRoute(returnDeliveryNote) {
                             <FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
                                 class="text-gray-500" />
                         </dt>
-                        <dd class="text-gray-500 " v-tooltip="trans('Order')">
+                        <dd class="text-gray-500 " v-tooltip="ctrans('Order')">
                             {{ boxStats?.order?.reference }}
                         </dd>
                         </Link>
@@ -445,7 +474,7 @@ function returnNoteRoute(returnDeliveryNote) {
                             <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
-                        <dd class="text-gray-500" v-tooltip="trans('Customer')">
+                        <dd class="text-gray-500" v-tooltip="ctrans('Customer')">
                              {{ boxStats?.customer.name }} ({{ boxStats?.customer.reference }})
                         </dd>
                         </Link>
@@ -453,7 +482,7 @@ function returnNoteRoute(returnDeliveryNote) {
                     </div>
                     <!-- Field: Contact name -->
                     <div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                        <dt v-tooltip="trans('Contact name')" class="flex-none">
+                        <dt v-tooltip="ctrans('Contact name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <dd class="text-gray-500">{{ boxStats?.customer.contact_name }}</dd>
@@ -519,7 +548,7 @@ function returnNoteRoute(returnDeliveryNote) {
 
                 <template v-if="!boxStats?.is_collection">
                     <div class="font-semibold xmb-2 text-base">
-                        {{ trans("Shipping") }}
+                        {{ ctrans("Shipping") }}
                     </div>
 
                     <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
@@ -531,14 +560,14 @@ function returnNoteRoute(returnDeliveryNote) {
                             <div v-if="boxStats.customer_client" class="mb-3">
                                 <div class="xtext-xs text-gray-600 leading-snug">
                                     <div>
-                                        <strong>{{ trans("Name") }}:</strong>
+                                        <strong>{{ ctrans("Name") }}:</strong>
                                         {{ boxStats.shipping_fields?.contact_name || boxStats.customer_client?.company_name }}
                                     </div>
                                     <div v-if="boxStats.customer_client.email">
-                                        <strong>{{ trans("Email") }}:</strong> {{ boxStats.shipping_fields?.email }}
+                                        <strong>{{ ctrans("Email") }}:</strong> {{ boxStats.shipping_fields?.email }}
                                     </div>
                                     <div v-if="boxStats.customer_client.phone">
-                                        <strong>{{ trans("Phone") }}:</strong> {{ boxStats.shipping_fields?.phone }}
+                                        <strong>{{ ctrans("Phone") }}:</strong> {{ boxStats.shipping_fields?.phone }}
                                     </div>
                                 </div>
                             </div>
@@ -549,24 +578,24 @@ function returnNoteRoute(returnDeliveryNote) {
                     </div>
 
                     <div v-else class="text-gray-500 italic pl-2">
-                        {{ trans("No shipping information available.") }}
+                        {{ ctrans("No shipping information available.") }}
                     </div>
 
 
                 </template>
-                <div v-else class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
+                <div v-else class="font-semibold xmb-2 text-base"> {{ ctrans("For collection") }}</div>
 
                 <div v-if="deliveryNote?.is_cash_on_delivery" class="m-2 inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold bg-gray-200 border border-gray-300 rounded-md">
                     <FontAwesomeIcon :icon="faMoneyBill1Wave" class="text-[12px] text-emerald-600" fixed-width />
-                    {{ trans('Cash on Delivery') }}
+                    {{ ctrans('Cash on Delivery') }}
                 </div>
 
                 
                 <div v-if="boxStats?.return_dn?.data?.length > 0" class="font-semibold mt-2 text-base">
-                    {{ trans("Returns") }}
+                    {{ ctrans("Returns") }}
                 </div>
                 <div v-if="boxStats?.return_dn?.data?.length > 0" class="flex flex-col pl-2">
-                    <span v-for="returnData in boxStats?.return_dn.data" v-tooltip="trans('Return Delivery Note')" class="w-max">
+                    <span v-for="returnData in boxStats?.return_dn.data" v-tooltip="ctrans('Return Delivery Note')" class="w-max">
                         <FontAwesomeIcon :icon="faExchange" class="pr-1" fixed-width/>
                         <Link class="primaryLink" :href="returnNoteRoute(returnData)">
                             {{ returnData.reference }}
@@ -581,7 +610,7 @@ function returnNoteRoute(returnDeliveryNote) {
         <BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-t md:border-t-0 border-r border-gray-200" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
-                    {{ trans("Delivery Note") }}
+                    {{ ctrans("Delivery Note") }}
                     <Link class="primaryLink font-normal ml-1 text-gray-500 text-sm" v-if="boxStats.parentDeliveryNote?.slug" :href="route('grp.majordomo.redirect_delivery_notes', [boxStats.parentDeliveryNote.id])">
                         <FontAwesomeIcon :icon="faTruck" fixed-width/>
                         {{ boxStats.parentDeliveryNote?.reference }}
@@ -594,7 +623,7 @@ function returnNoteRoute(returnDeliveryNote) {
                         <div v-if="boxStats?.picker?.contact_name">
                             <dl class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                                 <dt class="flex-none">
-                                    {{ trans("Picker") }}:
+                                    {{ ctrans("Picker") }}:
                                 </dt>
                                 <dd class="text-gray-500">
                                     {{ boxStats?.picker?.contact_name }}
@@ -616,17 +645,17 @@ function returnNoteRoute(returnDeliveryNote) {
                                     fixed-width aria-hidden="true"
                                 />
                             </div>
-                            <Button @click="isModalToQueue = true" :label="trans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
+                            <Button @click="isModalToQueue = true" :label="ctrans('Change Picker')"  :icon="faExchangeAlt" type="tertiary" size="xs" />
                         </template>
                     </div>
 
                     <!-- Section: Packer name -->
                     <div class="flex gap-x-4 items-center">
                         <div v-if="boxStats?.packer?.contact_name">
-                            <dl v-tooltip="trans('Packer name')"
+                            <dl v-tooltip="ctrans('Packer name')"
                                 class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                                 <dt class="flex-none">
-                                    {{ trans("Packer") }}:
+                                    {{ ctrans("Packer") }}:
                                 </dt>
                                 <dd class="text-gray-500">
                                     {{ boxStats?.packer?.contact_name }}
@@ -648,7 +677,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                     fixed-width aria-hidden="true"
                                 />
                             </div>
-                            <Button @click="isModalToQueue = true" :label="trans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
+                            <Button @click="isModalToQueue = true" :label="ctrans('Change Packer')" :icon="faExchangeAlt" type="tertiary" size="xs" />
                         </template>
                     </div>
 
@@ -665,7 +694,7 @@ function returnNoteRoute(returnDeliveryNote) {
                     <div v-if="[ 'picked'].includes(deliveryNote.state) || boxStats?.picked_bays?.length" class="!mt-1.5 flex gap-x-2 items-center">
                         <dl class=" border-l-4 border-pink-300 bg-pink-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
                             <dt class="flex-none">
-                                {{ trans("Picked bays") }}:
+                                {{ ctrans("Picked bays") }}:
                             </dt>
                             <dd v-if="boxStats?.picked_bays?.length" class="font-bold xtext-gray-500">
                                 <span
@@ -696,7 +725,7 @@ function returnNoteRoute(returnDeliveryNote) {
                     <!-- Total Items -->
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none">
-                            <FontAwesomeIcon v-tooltip="trans('Total items')" icon="fal fa-cube" fixed-width
+                            <FontAwesomeIcon v-tooltip="ctrans('Total items')" icon="fal fa-cube" fixed-width
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
@@ -708,18 +737,18 @@ function returnNoteRoute(returnDeliveryNote) {
                     <dl v-if="boxStats.products?.estimated_picking_minutes || boxStats.products?.estimated_packing_minutes"
                         class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none">
-                            <FontAwesomeIcon v-tooltip="trans('Typical time for an order this size in this warehouse, from its own recent history')"
+                            <FontAwesomeIcon v-tooltip="ctrans('Typical time for an order this size in this warehouse, from its own recent history')"
                                 icon="fal fa-stopwatch" fixed-width aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
-                            <span v-if="boxStats.products?.estimated_picking_minutes">~{{ boxStats.products.estimated_picking_minutes }} min {{ trans('picking') }}</span><span v-if="boxStats.products?.estimated_picking_minutes && boxStats.products?.estimated_packing_minutes">, </span><span v-if="boxStats.products?.estimated_packing_minutes">~{{ boxStats.products.estimated_packing_minutes }} min {{ trans('packing') }}</span>
+                            <span v-if="boxStats.products?.estimated_picking_minutes">~{{ boxStats.products.estimated_picking_minutes }} min {{ ctrans('picking') }}</span><span v-if="boxStats.products?.estimated_picking_minutes && boxStats.products?.estimated_packing_minutes">, </span><span v-if="boxStats.products?.estimated_packing_minutes">~{{ boxStats.products.estimated_packing_minutes }} min {{ ctrans('packing') }}</span>
                         </dd>
                     </dl>
 
                     <!-- Weight -->
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none">
-                            <FontAwesomeIcon v-tooltip="trans('Estimated weight of all items')" icon="fal fa-weight"
+                            <FontAwesomeIcon v-tooltip="ctrans('Estimated weight of all items')" icon="fal fa-weight"
                                 fixed-width aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
@@ -730,11 +759,11 @@ function returnNoteRoute(returnDeliveryNote) {
                     <!-- Section: Parcels -->
                     <div v-if="['packing', 'packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
                         class="flex gap-x-1 pb-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
-                        <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
+                        <FontAwesomeIcon v-tooltip="ctrans('Parcels')" icon='fas fa-cubes' class='text-base mt-1 text-gray-400'
                             fixed-width aria-hidden='true' />
                         <div class=" group w-full pl-px">
                             <div class="leading-4 xtext-base flex justify-between w-full py-1">
-                                <div class="text-gray-500">{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+                                <div class="text-gray-500">{{ ctrans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
                                 <template v-if="isEditable">
                                     <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
@@ -742,14 +771,14 @@ function returnNoteRoute(returnDeliveryNote) {
                                         <div v-if="boxStats?.parcels?.length"
                                             @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
                                             class="cursor-pointer text-gray-400 hover:text-gray-600">
-                                            {{ trans("Edit") }}
+                                            {{ ctrans("Edit") }}
                                             <FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400"
                                                 fixed-width aria-hidden="true" />
                                         </div>
                                         <div v-else-if="!isLoadingSubmitParcels"
                                             @click="async () => boxStats?.shop_type === 'dropshipping' ? (parcelsCopy = [newParcel()], onSubmitParcels()) : (parcelsCopy = [newParcel()], isModalParcels = true)"
                                             class="cursor-pointer text-gray-400 hover:text-gray-600">
-                                            {{ trans("Add") }}
+                                            {{ ctrans("Add") }}
                                             <FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
                                                 aria-hidden="true" />
                                         </div>
@@ -757,8 +786,8 @@ function returnNoteRoute(returnDeliveryNote) {
                                             <LoadingIcon />
                                         </div>
                                     </template>
-                                    <div v-else-if="deliveryNote?.state === 'packed'" class="text-xs text-gray-400 italic" v-tooltip="trans('Remove shipment to edit parcels')">
-                                        {{ trans("Not editable") }}
+                                    <div v-else-if="deliveryNote?.state === 'packed'" class="text-xs text-gray-400 italic" v-tooltip="ctrans('Remove shipment to edit parcels')">
+                                        {{ ctrans("Not editable") }}
                                     </div>
                                 </template>
                             </div>
@@ -771,7 +800,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                     </span>
 
                                     <span v-if="isParcelMissingDimensions(parcel)" class="text-red-500">
-                                        ({{ trans("dimensions missing") }})
+                                        ({{ ctrans("dimensions missing") }})
                                     </span>
                                     <span v-else class="text-gray-500 truncate">
                                         ({{ parcel.dimensions?.[0] }}x{{
@@ -782,7 +811,32 @@ function returnNoteRoute(returnDeliveryNote) {
                                 </li>
                             </ul>
                             <div v-else-if="isParcelsMissingForPacking" class="text-xs text-red-500">
-                                {{ trans("Add parcels with their dimensions before setting as packed") }}
+                                {{ ctrans("Add parcels with their dimensions before setting as packed") }}
+                            </div>
+
+                            <div v-if="boxStats?.box_packing_list" class="mt-1 text-xs">
+                                <a
+                                    :href="route(boxStats.box_packing_list.pdf_route.name, boxStats.box_packing_list.pdf_route.parameters)"
+                                    target="_blank"
+                                    class="primaryLink"
+                                >
+                                    <FontAwesomeIcon icon="fal fa-file-pdf" fixed-width aria-hidden="true" />
+                                    {{ ctrans("Packing list by box") }}
+                                </a>
+                                <template v-if="boxStats.box_packing_list.missing_message && ['packing', 'packed'].includes(deliveryNote?.state)">
+                                    <div class="mt-0.5 text-red-500">
+                                        {{ boxStats.box_packing_list.missing_message }}
+                                    </div>
+                                    <Button
+                                        v-if="boxStats.box_packing_list.skip_route"
+                                        :label="ctrans('Pack without packing list')"
+                                        type="tertiary"
+                                        size="xs"
+                                        class="mt-1"
+                                        :loading="isSkippingBoxPackingList"
+                                        @click="onSkipBoxPackingList"
+                                    />
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -791,7 +845,7 @@ function returnNoteRoute(returnDeliveryNote) {
                     <dl v-if="['packed', 'finalised', 'dispatched'].includes(deliveryNote?.state) && !boxStats?.is_collection && boxStats.shipments"
                         class="flex items-xcenter w-full pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none mt-1">
-                            <FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width
+                            <FontAwesomeIcon v-tooltip="ctrans('Shipment')" icon="fal fa-shipping-fast" fixed-width
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500 w-full">
@@ -819,7 +873,7 @@ function returnNoteRoute(returnDeliveryNote) {
                     <dt class="flex-none">
                         <FontAwesomeIcon icon='fal fa-truck' fixed-width aria-hidden='true' class="text-gray-500" />
                     </dt>
-                    <dd class="text-gray-500 " v-tooltip="trans('Delivery Note')">
+                    <dd class="text-gray-500 " v-tooltip="ctrans('Delivery Note')">
                         {{ boxStats?.delivery_note?.reference }}
                     </dd>
                     </Link>
@@ -835,11 +889,11 @@ function returnNoteRoute(returnDeliveryNote) {
         <!-- Modal: Parcels -->
         <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-2xl">
             <div class="text-center font-bold mb-4">
-                {{ trans('Add shipment') }}
+                {{ ctrans('Add shipment') }}
             </div>
 
             <div>
-                <Fieldset :legend="`${trans('Parcels')} (${parcelsCopy?.length})`">
+                <Fieldset :legend="`${ctrans('Parcels')} (${parcelsCopy?.length})`">
                     <!-- Header Row -->
                     <div class="grid grid-cols-12 items-center gap-x-6 mb-2">
                         <div class="flex justify-center">
@@ -951,7 +1005,7 @@ function returnNoteRoute(returnDeliveryNote) {
                             </div>
                         </TransitionGroup>
                         <div v-else class="text-center text-gray-400">
-                            {{ trans('No parcels') }}
+                            {{ ctrans('No parcels') }}
                         </div>
                     </div>
 
@@ -961,13 +1015,13 @@ function returnNoteRoute(returnDeliveryNote) {
                         <div @click="() => parcelsCopy.push(newParcel())"
                             class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                             <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-                            {{ trans("Add another parcel") }}
+                            {{ ctrans("Add another parcel") }}
                         </div>
                     </div>
                 </Fieldset>
 
                 <div v-if="hasMissingDimensions" class="mt-3 text-xs text-red-500">
-                    {{ trans("Enter length, width and height of every parcel, they are needed to set as packed") }}
+                    {{ ctrans("Enter length, width and height of every parcel, they are needed to set as packed") }}
                 </div>
                 <div class="flex justify-end mt-3">
                     <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="
@@ -984,20 +1038,20 @@ function returnNoteRoute(returnDeliveryNote) {
     <Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
 		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
 			<div class="mx-auto font-semibold text-lg">
-				{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
+				{{ ['packing', 'packed'].includes(deliveryNote?.state) ? ctrans("Select packer") : ctrans("Select picker") }} 
 			</div>
 			<div class="mt-4 flex items-center w-full gap-x-1.5">
 				<dd class="flex-1">
 					<!-- Label for Picker -->
 					<div class="flex justify-between text-sm font-medium py-2">
-						{{ ['packing', 'packed'].includes(deliveryNote?.state) ? trans("Select packer") : trans("Select picker") }} 
-                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="trans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
+						{{ ['packing', 'packed'].includes(deliveryNote?.state) ? ctrans("Select packer") : ctrans("Select picker") }} 
+                        <Button  v-if="boxStats?.picker?.id != layout?.user?.id" :loading="isLoadingToQueue" :label="ctrans('I will do the picking myself')" type="tertiary" size="xs" @click="()=>{selectedPicker = { id: layout.user.id}, onUpdatePicker()}"></Button>
 					</div>
 					<PureMultiselectInfiniteScroll
 						v-model="selectedPicker"
 						required
 						:fetchRoute="routes.pickers_list"
-						:placeholder="trans('Select picker')"
+						:placeholder="ctrans('Select picker')"
 						labelProp="contact_name"
 						valueProp="id"
 						object
@@ -1046,14 +1100,14 @@ function returnNoteRoute(returnDeliveryNote) {
 					@click="onUpdatePicker()"
 					:label="
 						delivery_note_state === 'queued'
-							? trans('Change picker')
-							: trans('Set Picker')
+							? ctrans('Change picker')
+							: ctrans('Set Picker')
 					"
 					:iconRight="['fas', 'fa-arrow-right']"
 					full
 					:loading="isLoadingToQueue"
 					:disabled="!selectedPicker"
-					v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+					v-tooltip="selectedPicker ? '' : ctrans('Select picker before set to queue')">
 				</Button>
 			</div>
 		</div>

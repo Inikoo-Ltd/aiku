@@ -11,9 +11,11 @@ namespace App\Actions\Production\Restock\UI;
 use App\Actions\OrgAction;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
+use App\Actions\Production\PartnerShippingList\UI\GetProductionQueueCounts;
 use App\Actions\Production\Restock\GetProductionStockCoverBuckets;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
@@ -102,7 +104,7 @@ class ShowToRestock extends OrgAction
     /** @return array<string, array<int, array<string, mixed>>> */
     public function movingLanes(Organisation $seller, Production $production): array
     {
-        $lines = DB::table('partner_shopping_list_items as i')
+        $lines = PartnerShoppingListItem::whereRoutedToProduction(DB::table('partner_shopping_list_items as i'), 'i', 'os')
             ->join('stocks as st', 'st.id', 'i.stock_id')
             ->join('org_stocks as os', function ($join) use ($seller) {
                 $join->on('os.stock_id', 'st.id')->where('os.organisation_id', $seller->id);
@@ -216,6 +218,7 @@ class ShowToRestock extends OrgAction
                 'producing' => $moving['producing'],
                 'restocked' => $this->restockedLane($this->production),
             ],
+            'sentFromStock'   => GetProductionQueueCounts::make()->handle($this->organisation, $this->production)['pre_pick'],
         ];
     }
 
@@ -237,6 +240,10 @@ class ShowToRestock extends OrgAction
                 ...$payload,
                 'toProduceRoute' => [
                     'name'       => 'grp.org.productions.show.to_produce.index',
+                    'parameters' => $request->route()->originalParameters(),
+                ],
+                'prePickRoute' => [
+                    'name'       => 'grp.org.productions.show.pre_pick.index',
                     'parameters' => $request->route()->originalParameters(),
                 ],
             ]

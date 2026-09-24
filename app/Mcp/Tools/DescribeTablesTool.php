@@ -55,7 +55,7 @@ class DescribeTablesTool extends Tool
 
             return Response::json([
                 'matching_tables' => $matches,
-                'hint'            => 'Call again with tables: [...] to see columns and foreign keys.',
+                'hint'            => trim('Call again with tables: [...] to see columns and foreign keys. '.$this->orgStockWriteToolsHint($request, $search)),
             ]);
         }
 
@@ -96,10 +96,11 @@ class DescribeTablesTool extends Tool
             $schema[$foreignKey->table_name]['foreign_keys'][] = $foreignKey->column_name.' → '.$foreignKey->references_table;
         }
 
-        return Response::json([
+        return Response::json(array_filter([
             'tables'    => $schema,
             'not_found' => array_values(array_diff($tables, array_keys($schema))),
-        ]);
+            'hint'      => $this->orgStockWriteToolsHint($request, implode(' ', $tables)),
+        ], fn ($value) => $value !== null));
     }
 
     /**

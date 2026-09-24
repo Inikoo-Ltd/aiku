@@ -28,6 +28,7 @@ interface Preview {
     number_products: number
     purchase_orders: CountWithReferences
     stock_deliveries: CountWithReferences
+    restock_requests: number
     portfolios: { count: number; customers: number; by_platform: Record<string, number> }
     external_shops: { code: string; status: string; shop_code: string; shop_name: string }[]
     webpages: { count: number; urls: string[] }
@@ -160,6 +161,7 @@ const platformSummary = (byPlatform: Record<string, number>) =>
                             <th class="py-2 pr-3 text-right">{{ ctrans("Cover") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Purchase orders") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Deliveries") }}</th>
+                            <th class="py-2 pr-3" :title="ctrans('Open warehouse restock requests, removed when the SKO is discontinued')">{{ ctrans("Restock requests") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Portfolios") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Marketplaces") }}</th>
                             <th class="py-2 pr-3">{{ ctrans("Web pages") }}</th>
@@ -188,6 +190,10 @@ const platformSummary = (byPlatform: Record<string, number>) =>
                             <td class="py-2 pr-3" :class="preview.stock_deliveries.count ? 'text-amber-700' : 'text-gray-400'">
                                 {{ preview.stock_deliveries.count }}
                                 <div v-if="preview.stock_deliveries.count" class="text-xs text-gray-500">{{ references(preview.stock_deliveries) }}</div>
+                            </td>
+                            <td class="py-2 pr-3" :class="preview.restock_requests ? 'text-amber-700' : 'text-gray-400'">
+                                {{ preview.restock_requests }}
+                                <div v-if="preview.restock_requests" class="text-xs text-gray-500">{{ ctrans("will be removed") }}</div>
                             </td>
                             <td class="py-2 pr-3" :class="preview.portfolios.count ? 'text-amber-700' : 'text-gray-400'">
                                 {{ preview.portfolios.count }}

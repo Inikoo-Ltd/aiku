@@ -12,12 +12,15 @@ use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Actions\Chat\ChatSession\GetChatMediaContents;
+use App\Actions\Chat\ChatSession\TranslateChatMessage;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry\Laravel\Facade as Sentry;
+use Throwable;
 
 class SendChatMessageByGmail
 {
@@ -38,6 +41,8 @@ class SendChatMessageByGmail
         if (! $client) {
             return;
         }
+
+        $this->translateAgentReply($chatMessage);
 
         $messageId = $this->newHeaderMessageId($session);
         $raw       = $this->buildRawMessage($session, $chatMessage, $messageId);
@@ -64,6 +69,21 @@ class SendChatMessageByGmail
                 'gmail_message_id' => Arr::get($result, 'id'),
             ]),
         ]);
+    }
+
+    private function translateAgentReply(ChatMessage $chatMessage): void
+    {
+        if ($chatMessage->sender_type !== ChatSenderTypeEnum::AGENT) {
+            return;
+        }
+
+        try {
+            TranslateChatMessage::run($chatMessage->id);
+        } catch (Throwable $e) {
+            Sentry::captureException($e);
+        }
+
+        $chatMessage->refresh();
     }
 
     public static function references(array $metadata, ?string ...$append): array
@@ -145,6 +165,12 @@ class SendChatMessageByGmail
         if ($replyToHeader) {
             $headers[] = "In-Reply-To: {$replyToHeader}";
             $headers[] = 'References: '.implode(' ', self::references($metadata));
+        }
+
+        // RFC 3834: says it was sent by itself, so the other side's auto-responder does not answer it.
+        if (Arr::get($chatMessage->metadata ?? [], 'auto_submitted')) {
+            $headers[] = 'Auto-Submitted: auto-replied';
+            $headers[] = 'X-Auto-Response-Suppress: All';
         }
 
         $headers[] = 'MIME-Version: 1.0';

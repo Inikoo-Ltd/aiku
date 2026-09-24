@@ -238,7 +238,8 @@ test(
         $shop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
         expect($shop->group->commsStats->number_outboxes)->toBe($shop->group->outboxes()->count())
             ->and($shop->organisation->commsStats->number_outboxes)->toBe($shop->organisation->outboxes()->count())
-            ->and($shop->commsStats->number_outboxes)->toBe($shop->outboxes()->count());
+            ->and($shop->commsStats->number_outboxes)->toBe($shop->outboxes()->count())
+            ->and($shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER)->exists())->toBeFalse();
 
         return $shop;
     }
@@ -296,7 +297,8 @@ test(
         $fulfilment = createFulfilment($this->organisation);
         expect($fulfilment->group->commsStats->number_outboxes)->toBe($fulfilment->group->outboxes()->count())
             ->and($fulfilment->organisation->commsStats->number_outboxes)->toBe($fulfilment->organisation->outboxes()->count())
-            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe($fulfilment->shop->outboxes()->count());
+            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe($fulfilment->shop->outboxes()->count())
+            ->and($fulfilment->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER)->exists())->toBeTrue();
 
         return $fulfilment;
     }
@@ -3356,6 +3358,30 @@ test('update sender email', function (\App\Models\Comms\SenderEmail $senderEmail
     expect($senderEmail->usage_count)->toBe(5);
 })->depends('store sender email');
 
+test('a spam complaint flags the email and takes the customer off newsletters and marketing', function () {
+    $outbox          = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot        = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $mailshot,
+        $this->customer,
+        ['email_address' => 'complainer@example.com']
+    );
+    $dispatchedEmail->update(['ses_id' => $sesId = 'ses-complaint-'.uniqid()]);
+    $this->customer->comms->update(['is_subscribed_to_newsletter' => true, 'is_subscribed_to_marketing' => true]);
+
+    $sesNotification = \App\Models\Comms\SesNotification::create([
+        'message_id' => $sesId,
+        'data'       => ['eventType' => 'Complaint', 'complaint' => ['timestamp' => now()->toIso8601String(), 'complaintFeedbackType' => 'abuse']],
+    ]);
+
+    ProcessSesNotification::run($sesNotification);
+
+    $comms = $this->customer->comms->refresh();
+    expect($dispatchedEmail->refresh()->mask_as_spam)->toBeTrue()
+        ->and($comms->is_subscribed_to_newsletter)->toBeFalse()
+        ->and($comms->is_subscribed_to_marketing)->toBeFalse();
+});
+
 test('process ses notification deletes itself when no matching dispatched email', function () {
     $sesNotification = \App\Models\Comms\SesNotification::create([
         'message_id' => 'no-matching-dispatched-email',
@@ -3424,6 +3450,25 @@ test('unsubscribe mailshot updates customer comms', function () {
 
     expect($result['id'])->toBe($dispatchedEmail->id);
     expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::UNSUBSCRIBED);
+});
+
+test('mail clients unsubscribe with one click on the list unsubscribe link', function () {
+    $outbox          = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot        = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $mailshot,
+        $this->customer,
+        ['email_address' => 'one-click-target@example.com']
+    );
+    $this->customer->comms->update(['is_subscribed_to_newsletter' => true]);
+
+    $this->post(
+        route('grp.one_click_unsubscribe', [\Illuminate\Support\Facades\Crypt::encryptString($dispatchedEmail->id), 'tag' => 'customer']),
+        ['List-Unsubscribe' => 'One-Click']
+    )->assertOk();
+
+    expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::UNSUBSCRIBED)
+        ->and($this->customer->comms->refresh()->is_subscribed_to_newsletter)->toBeFalse();
 });
 
 describe('email retention', function () {

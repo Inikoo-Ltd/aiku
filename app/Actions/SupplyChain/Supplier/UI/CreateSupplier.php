@@ -283,14 +283,6 @@ class CreateSupplier extends OrgAction
                         'information' => __('Minimum days between two orders to this supplier'),
                         'value'       => '',
                     ],
-                    'order_number_prefix' => [
-                        'type'        => 'input',
-                        'label'       => __('Order Number Prefix'),
-                        'information' => __('Only the prefix, the system appends a random number to keep each order number unique'),
-                        'value'       => '',
-                        'uppercase'   => true,
-                        'required'    => true,
-                    ],
                 ],
             ],
         ]));

@@ -142,6 +142,12 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_packed'                          => $packedQuantity,
             'quantity_packed_fractional'               => riseDivisor(divideWithRemainder(findSmallestFactors($packedQuantity ?? 0)), $packedIn),
             'quantity_not_picked'                      => $this->quantity_not_picked,
+            'boxes'                                    => $this->boxes ?? [],
+            'boxes_update_route'                       => [
+                'name'       => 'grp.models.delivery_note_item.boxes.update',
+                'parameters' => ['deliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ],
             'org_stock_code'                           => $this->org_stock_code,
             'org_stock_name'                           => $this->org_stock_name,
             'ordered_asset'                            => $this->getOrderedAssetForFractionalQuantity(),

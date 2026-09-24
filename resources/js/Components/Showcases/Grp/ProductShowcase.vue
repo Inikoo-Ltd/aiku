@@ -58,8 +58,11 @@ const props = defineProps<{
 			percentage: number | null
 		}[] | null
 		org_stocks: {
-
-		}
+			id: number
+			code: string
+			quantity: string | null
+			quantity_available: string | null
+		}[]
 		stock_locations?: {
 			location_code: string
 			warehouse_code: string
@@ -121,6 +124,12 @@ const props = defineProps<{
 //     .flatMap(unit => unit?.brand ?? [])
 // })
 
+
+const showLocations = ref(false)
+
+const partsOutOfStock = computed(() =>
+	(props.data.org_stocks ?? []).filter((part) => Number(part.quantity_available ?? 0) < Number(part.quantity ?? 1))
+)
 
 const editIsForSale = () => {
 	let url = route('grp.org.shops.show.catalogue.products.all_products.edit', {
@@ -287,10 +296,23 @@ const getTooltips = () => {
 				</span>
 			</div>
 
+			<div v-if="!(data?.product?.data?.stock > 0) && partsOutOfStock.length" class="mb-4 mx-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+				<div class="text-xs font-semibold uppercase tracking-wide text-red-700 mb-1">{{ ctrans("Not enough stock of") }}</div>
+				<table class="w-full text-sm">
+					<tr v-for="part in partsOutOfStock" :key="part.id" class="border-b border-red-100 last:border-0">
+						<td class="py-1 font-medium text-red-600">{{ part.code }}</td>
+						<td class="py-1 text-right tabular-nums text-red-600">{{ locale.number(Number(part.quantity_available ?? 0)) }}</td>
+					</tr>
+				</table>
+			</div>
+
 			<!-- Section: Where the stock sits -->
 			<div v-if="data.stock_locations?.length" class="mb-4 px-2">
-				<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{{ ctrans("Locations") }}</div>
-				<table class="w-full text-sm">
+				<button type="button" @click="showLocations = !showLocations" class="flex w-full items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1 hover:text-gray-700">
+					<FontAwesomeIcon :icon="showLocations ? faChevronUp : faChevronDown" fixed-width />
+					{{ ctrans("Locations") }} ({{ data.stock_locations.length }})
+				</button>
+				<table v-if="showLocations" class="w-full text-sm">
 					<tr v-for="location in data.stock_locations" :key="location.location_code + location.org_stock_code" class="border-b border-gray-100 last:border-0">
 						<td class="py-1 font-medium">{{ location.location_code }}</td>
 						<td class="py-1 text-gray-500">{{ location.org_stock_code }}</td>

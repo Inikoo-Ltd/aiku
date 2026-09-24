@@ -860,6 +860,22 @@ test('portfolio relative price rule computes price from rrp', function () {
     expect((float) $portfolio->customer_price)->toBe(12.5);
 });
 
+test('product without rrp is priced from its price instead of zero', function () {
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_no_rrp']);
+    $this->product->update(['rrp' => null, 'price' => 40]);
+    $portfolio = StorePortfolio::make()->action($customerSalesChannel, $this->product, []);
+
+    expect((float) $portfolio->customer_price)->toBe(40.0);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'pricing_type'  => 'percent',
+        'pricing_value' => 100
+    ], true);
+
+    expect((float) $portfolio->refresh()->customer_price)->toBe(80.0);
+});
+
 test('portfolio not follow rule freezes price and opts out', function () {
     $platform = $this->group->platforms()->where('type', PlatformTypeEnum::EBAY)->first();
     $customerSalesChannel = StoreCustomerSalesChannel::make()->action($this->customer, $platform, ['reference' => 'test_ebay_not_follow']);
@@ -1198,4 +1214,38 @@ test('a customer client arriving from a channel is accepted with only a country'
     $definition['address'] = array_merge($definition['address'], ['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
 
     expect(StoreCustomerClient::make()->action($customerSalesChannel, $definition))->toBeInstanceOf(CustomerClient::class);
+});
+
+test('manual channel pricing policy shows an example price and says it only prices products added from now on', function () {
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $manualPlatform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
+    $channel        = StoreCustomerSalesChannel::make()->action($customer, $manualPlatform, ['reference' => 'test_manual_pricing_policy']);
+    $channel->update(['settings' => ['pricing' => ['type' => 'percent', 'value' => 200]]]);
+
+    $request = \Lorisleiva\Actions\ActionRequest::create('/');
+    $route   = (new \Illuminate\Routing\Route('GET', '/', []))->name('retina.dropshipping.customer_sales_channels.edit')->bind($request);
+    $request->setRouteResolver(fn () => $route);
+
+    $response = \App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel::make()->handle($channel->refresh(), $request);
+    $props    = (new ReflectionProperty($response, 'props'))->getValue($response);
+    $fields   = collect($props['formData']['blueprint'])->firstWhere(fn ($section) => isset($section['fields']['pricing_type']))['fields'];
+
+    expect($fields['pricing_type']['type'])->toBe('pricing_policy')
+        ->and($fields['pricing_type']['value'])->toBe('percent')
+        ->and($fields['pricing_type']['applies_to_new_products_only'])->toBeTrue()
+        ->and($fields['pricing_type']['hasOther'][0])->toBe(['name' => 'pricing_value', 'value' => 200])
+        ->and($fields)->not->toHaveKey('pricing_value');
+});
+
+test('a channel pricing rule that would take a price to zero or below leaves new products at their RRP', function () {
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $manualPlatform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->first();
+    $channel        = StoreCustomerSalesChannel::make()->action($customer, $manualPlatform, ['reference' => 'test_manual_negative_pricing']);
+    $channel->update(['settings' => ['pricing' => ['type' => 'fixed', 'value' => -50]]]);
+
+    $this->product->update(['rrp' => 10]);
+
+    $portfolio = StorePortfolio::make()->action($channel->refresh(), $this->product, []);
+
+    expect((float) $portfolio->customer_price)->toBe(10.0);
 });

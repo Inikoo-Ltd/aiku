@@ -947,3 +947,35 @@ test('products export ends with the weight unit columns', function () {
     expect(array_slice($export->headings(), -2))->toBe(['Unit weight (marketing) unit', 'Gross weight unit'])
         ->and(array_slice($row, -2))->toBe(['g', null]);
 });
+
+test('UI show product sends the available stock of each part', function () {
+    $this->withoutExceptionHandling();
+    $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->first();
+    $orgStock->update(['quantity_available' => 7]);
+    $this->product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->product->slug
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('showcase.org_stocks.0.id', $orgStock->id)
+            ->where('showcase.org_stocks.0.quantity_available', '7')
+            ->where('showcase.org_stocks.0.quantity', fn ($quantity) => (float) $quantity === 1.0)
+            ->etc()
+    );
+});
+
+test('customer portfolio showcase does not send the stock of each part', function () {
+    $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->first();
+    $orgStock->update(['quantity_available' => 7]);
+    $this->product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+    request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'portfolio', []))->name('retina.portfolio'));
+
+    $showcase = \App\Actions\Catalogue\Product\UI\GetProductShowcaseInPortfolio::run($this->product);
+
+    expect($showcase['org_stocks'][0]['id'])->toBe($orgStock->id)
+        ->and($showcase['org_stocks'][0])->not->toHaveKeys(['quantity', 'quantity_available'])
+        ->and($showcase['parts'][0])->not->toHaveKeys(['quantity', 'quantity_available']);
+});
