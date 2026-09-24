@@ -15,14 +15,11 @@ use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
-use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Actions\Tasks\StoreStaffTask;
 use App\Models\Inventory\OrgStock;
-use App\Models\Inventory\Warehouse;
-use App\Models\SysAdmin\Role;
-use App\Notifications\OrgStockPackingChangedNotification;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncOrgStockTradeUnits
@@ -81,9 +78,7 @@ class SyncOrgStockTradeUnits
      * packing that converts arithmetically, the counts are rescaled as zero-valued UOM audit
      * movements (the shelf and its value do not move, only the counting unit), keeping them as
      * trustworthy as they were. Otherwise the numbers stay and stocked locations lose their
-     * audited status until someone counts the shelf again. Warehouse admins are notified either
-     * way, from here, so every writer of the pivot (packing editor, group stock editor cascade,
-     * repairs) tells the warehouse.
+     * audited status until someone counts the shelf again.
      */
     public function handle(OrgStock $orgStock, array $tradeUnitsData, ?string $stockStrategy = null, ?int $userId = null): OrgStock
     {
@@ -125,8 +120,9 @@ class SyncOrgStockTradeUnits
             }
         });
 
-        if ($reMeansStockedLocations) {
-            $this->notifyWarehouses($orgStock, (bool) $conversionRatio);
+        $requester = $userId ? User::find($userId) : null;
+        if ($reMeansStockedLocations && !$conversionRatio && $requester) {
+            $this->askWarehousesToRecount($orgStock, $stockedLocations, $requester);
         }
 
         $orgStock->unsetRelation('tradeUnits');
@@ -140,35 +136,26 @@ class SyncOrgStockTradeUnits
         return $orgStock;
     }
 
-    private function notifyWarehouses(OrgStock $orgStock, bool $countsConverted): void
+    /**
+     * Kept counts stay in the old packing until someone counts the shelf, so each warehouse
+     * holding the SKO gets a task in its queue, raised by whoever changed the packing.
+     * Converted counts stay trusted and need nothing; changes with no person behind them
+     * (fetches, repairs) only flag the locations, one task each would flood the queue.
+     */
+    private function askWarehousesToRecount(OrgStock $orgStock, Collection $stockedLocations, User $requester): void
     {
-        $body = $countsConverted
-            ? __('The packing of :code changed and its location counts were converted to the new pack size. Please verify on the shelf when convenient.', ['code' => $orgStock->code])
-            : __('The packing of :code changed but its location counts were kept: every location holding it needs a physical recount.', ['code' => $orgStock->code]);
-
-        $previousTeamId = getPermissionsTeamId();
-        setPermissionsTeamId($orgStock->group_id);
-
-        try {
-            $warehouses = Warehouse::whereIn(
-                'id',
-                $orgStock->locationOrgStocks()->where('quantity', '!=', 0)->pluck('warehouse_id')->unique()
-            )->get();
-
-            foreach ($warehouses as $warehouse) {
-                $users = Role::where('name', RolesEnum::getRoleName(RolesEnum::WAREHOUSE_ADMIN->value, $warehouse))
-                    ->first()?->users;
-                if ($users && $users->isNotEmpty()) {
-                    Notification::send($users, new OrgStockPackingChangedNotification($orgStock, $warehouse, $body));
-                } else {
-                    Log::warning('Packing change on stocked org stock could not notify warehouse admins', [
-                        'org_stock' => $orgStock->slug,
-                        'warehouse' => $warehouse->slug,
-                    ]);
-                }
-            }
-        } finally {
-            setPermissionsTeamId($previousTeamId);
+        foreach ($stockedLocations->groupBy('warehouse_id') as $warehouseLocations) {
+            StoreStaffTask::make()->action($requester, [
+                'subject'     => __('Recount :code in :warehouse, its packing changed', [
+                    'code'      => $orgStock->code,
+                    'warehouse' => $warehouseLocations->first()->location->warehouse->name,
+                ]),
+                'description' => __('The packing of :code changed, so the stock of these locations is still counted in the old packing. Please count them again:', ['code' => $orgStock->code])
+                    ."\n".$warehouseLocations->map(fn ($locationOrgStock) => $locationOrgStock->location->code.': '.(float) $locationOrgStock->quantity)->implode("\n"),
+                'department'  => 'warehouse',
+                'model_type'  => 'OrgStock',
+                'model_id'    => $orgStock->id,
+            ]);
         }
     }
 }

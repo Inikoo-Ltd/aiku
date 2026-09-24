@@ -351,7 +351,7 @@ const removeRow = (index: number) => rows.value.splice(index, 1)
                 </label>
 
                 <p class="text-xs text-gray-500">
-                    {{ ctrans("The warehouse admins are notified either way") }}
+                    {{ ctrans("Kept counts send a task to each warehouse to count them again") }}
                 </p>
 
                 <p v-if="recountError && !form.stock_strategy" class="text-xs font-medium text-red-600">{{ recountError }}</p>

@@ -3012,7 +3012,19 @@ describe('packing change guard', function () {
             ->and($locationOrgStock->audited_at)->not->toBeNull()
             ->and(OrgStockMovement::where('org_stock_id', $orgStock->id)->where('reason', 'uom')->exists())->toBeTrue()
             ->and($level['quantity'])->toBe(2.0)
-            ->and($level['packing'])->toBe([$tradeUnit->id => 10.0]);
+            ->and($level['packing'])->toBe([$tradeUnit->id => 10.0])
+            ->and(\App\Models\Tasks\StaffTask::where('model_type', 'OrgStock')->where('model_id', $orgStock->id)->exists())->toBeFalse();
+
+        \App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits::run($orgStock, [$tradeUnit->id => ['quantity' => 5]], 'keep', $this->user->id);
+
+        $recountTask = \App\Models\Tasks\StaffTask::where('model_type', 'OrgStock')->where('model_id', $orgStock->id)->sole();
+
+        expect((float) $locationOrgStock->refresh()->quantity)->toBe(2.0)
+            ->and($locationOrgStock->audited_at)->toBeNull()
+            ->and($recountTask->department)->toBe('warehouse')
+            ->and($recountTask->requester_id)->toBe($this->user->id)
+            ->and($recountTask->subject)->toContain($warehouse->name)
+            ->and($recountTask->description)->toContain($location->code.': 2');
     });
 });
 
