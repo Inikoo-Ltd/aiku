@@ -77,7 +77,8 @@ class SendOutOfHoursReply implements ShouldBeUnique
             return false;
         }
 
-        $claimLines = $claimAsked ? null : $this->claimDetailsToAskFor($chatSession);
+        $details    = GetChatClaimDetails::run($chatSession, $this->lastAgentMessageAt($chatSession));
+        $claimLines = $claimAsked ? null : $this->claimDetailsToAskFor($chatSession, $details);
 
         if ($replied && $claimLines === null) {
             return false;
@@ -90,7 +91,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
         }
 
         $kind = $claimLines === null ? ChatAutomationKindEnum::OUT_OF_HOURS : ChatAutomationKindEnum::CLAIM_DETAILS;
-        $text = $this->text($chatSession, !$replied, $claimLines);
+        $text = $this->text($chatSession, !$replied, $claimLines, $this->hasSaidWhatTheyNeed($chatSession, $details['text']));
 
         $chatSession->update([
             'metadata' => array_merge($chatSession->metadata ?? [], array_filter([
@@ -126,12 +127,11 @@ class SendOutOfHoursReply implements ShouldBeUnique
      * ponytail: every out of hours message re-reads the wait until a claim is found; store how far
      * it read if the model calls ever show up on the bill.
      *
+     * @param  array{order_reference: ?string, photos: int, text: string}  $details
      * @return array<int, string>|null
      */
-    private function claimDetailsToAskFor(ChatSession|MetaChatSession $chatSession): ?array
+    private function claimDetailsToAskFor(ChatSession|MetaChatSession $chatSession, array $details): ?array
     {
-        $details = GetChatClaimDetails::run($chatSession, $this->lastAgentMessageAt($chatSession));
-
         if (mb_strlen($details['text']) < 15 || !$this->isClaim($chatSession, $details['text'])) {
             return null;
         }
@@ -156,7 +156,9 @@ class SendOutOfHoursReply implements ShouldBeUnique
 
         "claim" is true only when the customer {$definitions['missing_or_damaged']}, or
         {$definitions['return_refund']}. A question before ordering, where an order is, or a
-        general complaint about service is not a claim.
+        general complaint about service is not a claim. Nor is asking how returns or refunds
+        work in general, or following up on a claim we already agreed to, such as asking how or
+        when a credit or refund will be paid.
 
         Message:
         $excerpt
@@ -213,6 +215,15 @@ class SendOutOfHoursReply implements ShouldBeUnique
         return true;
     }
 
+    /**
+     * More than a hello: asking them to tell us how we can help, when they already have or are
+     * in the middle of a conversation with an agent, reads as if nobody read what they wrote.
+     */
+    private function hasSaidWhatTheyNeed(ChatSession|MetaChatSession $chatSession, string $text): bool
+    {
+        return $chatSession->last_agent_message_at !== null || mb_strlen($text) >= 15;
+    }
+
     private function lastAgentMessageAt(ChatSession|MetaChatSession $chatSession): ?Carbon
     {
         return $chatSession->last_agent_message_at ? Carbon::parse($chatSession->last_agent_message_at) : null;
@@ -232,7 +243,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
     /**
      * @param  array<int, string>|null  $claimLines
      */
-    private function text(ChatSession|MetaChatSession $chatSession, bool $closedLine, ?array $claimLines): string
+    private function text(ChatSession|MetaChatSession $chatSession, bool $closedLine, ?array $claimLines, bool $saidWhatTheyNeed): string
     {
         $shop   = $chatSession->shop;
         $locale = $shop->language?->code;
@@ -247,7 +258,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
         if ($closedLine) {
             $parts[] = match (true) {
                 !$when            => __('Thank you for your message. We are closed at the moment and will reply as soon as we are back.', [], $locale),
-                $claimLines !== null => __('Thank you for your message. We are closed at the moment and will reply from :time on :day.', $when, $locale),
+                $claimLines !== null || $saidWhatTheyNeed => __('Thank you for your message. We are closed at the moment and will reply from :time on :day.', $when, $locale),
                 default           => __('Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.', $when, $locale),
             };
         }

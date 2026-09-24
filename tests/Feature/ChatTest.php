@@ -5747,7 +5747,8 @@ test('an email out of hours is answered only when a person wrote it, once a day 
     $sent = $person->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
 
     expect($sent->metadata['auto_submitted'])->toBeTrue()
-        ->and($sent->message_text)->toContain('Monday 28 September');
+        ->and($sent->message_text)->toContain('Monday 28 September')
+        ->and($sent->message_text)->not->toContain('Please tell us how we can help');
 
     \Illuminate\Support\Facades\Http::assertSent(function ($request) {
         $raw = base64_decode(strtr((string) ($request->data()['raw'] ?? ''), '-_', '+/'));
@@ -5840,8 +5841,9 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
     $session = noiseTestWhatsappSession($this->shop->fresh(), '+447500000004', 'Hello');
     $reply   = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
 
-    // A bare hello is not read by the model: it just gets the closed-now reply.
-    expect($reply->handle($session))->toBeTrue();
+    // A bare hello is not read by the model: it just gets the closed-now reply, asking what they need.
+    expect($reply->handle($session))->toBeTrue()
+        ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole()->message_text)->toContain('Please tell us how we can help');
     \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => str_contains($request->url(), 'openai'));
 
     $session->messages()->create([
