@@ -128,7 +128,7 @@ class ChatSessionListResource extends JsonResource
                 'id' => $shop->id,
                 'name' => $shop->name,
                 'slug' => $shop->slug,
-                'domain' => $shop->website->domain,
+                'domain' => $shop->website?->domain,
             ] : null,
 
             'organisation' => $shop ? [
