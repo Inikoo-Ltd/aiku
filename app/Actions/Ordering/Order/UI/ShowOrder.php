@@ -259,6 +259,28 @@ class ShowOrder extends OrgAction
             default => GetEcomOrderActions::run($order, $canEdit),
         };
 
+        if (!$canEdit
+            && !$lockedInAurora
+            && $order->state == OrderStateEnum::SUBMITTED
+            && $order->pay_status != OrderPayStatusEnum::PAID
+            && $order->transactions()->exists()
+            && $request->user()->authTo("org-supervisor.{$order->organisation_id}.accounting")) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'key'     => 'send-unpaid-to-warehouse',
+                'label'   => __('Send to warehouse (unpaid)'),
+                'tooltip' => __('Release this order to the warehouse before it is fully paid, e.g. for a customer on payment terms'),
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.order.state.in-warehouse-unpaid',
+                    'parameters' => [
+                        'order' => $order->id,
+                    ],
+                ],
+            ];
+        }
+
         $allowOrderModification = $canEdit
             && $order->shop->type != ShopTypeEnum::EXTERNAL
             && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
