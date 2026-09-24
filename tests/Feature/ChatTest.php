@@ -5688,7 +5688,7 @@ test('a colleague emailing a shop mailbox stays in the queue without asking the 
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($colleague))->toBeNull();
 });
 
-test('the waiting queue is worked oldest first and the bins are still newest first', function () {
+test('the waiting queue is worked oldest first, even ahead of a newer one told we were closed, and the bins are still newest first', function () {
     \Illuminate\Support\Facades\Http::fake();
 
     $oldest = noiseTestEmailSession($this->shop, 'first@example.com', 'Waited longest', 'Where is my order');
@@ -5696,6 +5696,7 @@ test('the waiting queue is worked oldest first and the bins are still newest fir
 
     $oldest->messages()->update(['created_at' => now()->subDays(4)]);
     $newest->messages()->update(['created_at' => now()->subMinutes(2)]);
+    $newest->update(['metadata' => ['out_of_hours_replied_at' => now()->subMinute()->toISOString()]]);
 
     $queue = fn (array $filters) => collect(GetChatSessions::make()->handle(array_merge(['shop_id' => $this->shop->id], $filters))->items())
         ->pluck('id')->all();
