@@ -45,6 +45,7 @@ use App\Actions\Catalogue\Product\KeepRetiredProductAsSeparate;
 use App\Actions\Catalogue\Product\RetireProductIntoReplacement;
 use App\Actions\Catalogue\Product\SetProductOffline;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\SyncProductExclusiveCustomers;
 use App\Actions\Catalogue\Product\SyncProductTradeUnitsToMasterAsset;
 use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
@@ -938,6 +939,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::patch('/{product:id}/retire-into-replacement', RetireProductIntoReplacement::class)->name('retire_into_replacement');
     Route::patch('/{product:id}/keep-as-separate', KeepRetiredProductAsSeparate::class)->name('keep_as_separate');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
+    Route::patch('/{product:id}/exclusive-customers', SyncProductExclusiveCustomers::class)->name('exclusive_customers.update');
     Route::patch('/{shop:id}/bulk-update', UpdateBulkProduct::class)->name('bulk_update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');

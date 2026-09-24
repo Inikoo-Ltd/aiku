@@ -16,6 +16,7 @@ use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreProductWebpage extends OrgAction
@@ -25,6 +26,12 @@ class StoreProductWebpage extends OrgAction
      */
     public function handle(Product $product): Webpage
     {
+        if ($product->isExclusive()) {
+            throw ValidationException::withMessages([
+                'webpage' => __('A private product is sold only to its customers and cannot have a webpage.'),
+            ]);
+        }
+
         $webpageCode = $this->getWebpageCode($product);
 
         $webpageData = [

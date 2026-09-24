@@ -17,7 +17,6 @@ use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
@@ -304,12 +303,8 @@ class UpdateProduct extends OrgAction
             UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
         }
 
-        if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale', 'exclusive_for_customer_id'])) {
+        if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale'])) {
             $this->productHydrators($product, hydrateForSale: !Arr::has($modelData, 'is_for_sale'));
-        }
-
-        if (Arr::has($changed, 'exclusive_for_customer_id')) {
-            CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
         $isInStock = $product->available_quantity > 0;
@@ -487,13 +482,6 @@ class UpdateProduct extends OrgAction
 
             'has_independent_units'     => ['sometimes', 'boolean'],
             'unit'                      => ['sometimes', 'string'],
-            'exclusive_for_customer_id' => [
-                'sometimes',
-                'nullable',
-                'integer',
-                Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)
-            ],
-
             'name_i8n'              => ['sometimes', 'array'],
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n'       => ['sometimes', 'array'],
@@ -560,7 +548,6 @@ class UpdateProduct extends OrgAction
             $rules['code']                      = ['sometimes', 'string'];
             $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
-            $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
             $rules['description']               = ['sometimes', 'nullable', 'max:15000'];
             $rules['price']                     = ['sometimes', 'nullable', 'numeric'];

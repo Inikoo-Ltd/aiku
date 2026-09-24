@@ -76,6 +76,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 uses()->group('base');
 
@@ -920,6 +921,87 @@ test('a private product off the website can still be put on its own customer ord
     expect($sellableTo($owner->id))->toBeTrue()
         ->and($sellableTo($other->id))->toBeFalse()
         ->and($sellableTo(null))->toBeFalse();
+});
+
+test('a product made for one customer is recorded as theirs', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $owner = $newCustomer();
+    $other = $newCustomer();
+
+    [, $seedProduct] = createProduct($shop);
+    $product = StoreProduct::make()->action($seedProduct->family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units'               => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]],
+            'price'                     => 1,
+            'exclusive_for_customer_id' => $owner->id,
+        ]
+    ));
+
+    expect($product->exclusiveCustomers()->pluck('customers.id')->all())->toBe([$owner->id])
+        ->and(Product::whereKey($product->id)->visibleToCustomer($other->id)->exists())->toBeFalse()
+        ->and($owner->refresh()->number_exclusive_products)->toBe(1);
+});
+
+test('staff choose who a product is sold to from its edit page', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $owner      = $newCustomer();
+    $wrongOwner = $newCustomer();
+
+    [, $seedProduct] = createProduct($shop);
+    $product = StoreProduct::make()->action($seedProduct->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 1]
+    ));
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => [$wrongOwner->id]]);
+
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($owner, \App\Models\Ordering\Order::factory()->definition());
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
+
+    $soldOnlyTo = fn () => collect(EditProduct::make()->getBlueprint($product->refresh()))->pluck('fields')->collapse();
+
+    expect($soldOnlyTo()->get('customer_ids')['value'])->toBe([$wrongOwner->id])
+        ->and($soldOnlyTo()->get('customer_ids')['information_warning'][0]['description'])->toContain($owner->reference)
+        ->and($soldOnlyTo()->has('is_for_sale'))->toBeFalse();
+
+    UpdateProduct::make()->action($product, ['exclusive_for_customer_id' => $owner->id]);
+    expect($product->refresh()->exclusive_for_customer_id)->toBe($wrongOwner->id);
+
+    patch(route('grp.models.product.exclusive_customers.update', $product->id), ['customer_ids' => [$owner->id]])
+        ->assertSessionHasNoErrors();
+    $product->refresh();
+
+    expect($product->exclusiveCustomers()->pluck('customers.id')->all())->toBe([$owner->id])
+        ->and($product->exclusive_for_customer_id)->toBe($owner->id)
+        ->and($product->is_for_sale)->toBeFalse()
+        ->and($owner->refresh()->number_exclusive_products)->toBe(1)
+        ->and($wrongOwner->refresh()->number_exclusive_products)->toBe(0)
+        ->and($soldOnlyTo()->get('customer_ids')['information_warning'])->toBe([]);
+
+    expect(fn () => StoreProductWebpage::make()->action($product))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [$shop->organisation->slug, $shop->slug, $product->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('exclusive_customers.0.reference', $owner->reference)
+                ->where('pageHead.actions', fn ($actions) => collect($actions)->doesntContain('label', __('Create Webpage')))
+        );
+
+    patch(route('grp.models.product.exclusive_customers.update', $product->id), ['customer_ids' => []])
+        ->assertSessionHasNoErrors();
+
+    expect($product->refresh()->exclusive_for_customer_id)->toBeNull()
+        ->and($product->isExclusive())->toBeFalse();
 });
 
 test('repair records unrecorded exclusives among products hidden from the site', function () {
