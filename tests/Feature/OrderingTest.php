@@ -3821,7 +3821,7 @@ test('a held order goes to the warehouse once its address is put on it', functio
     $order->refresh();
     $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
-    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    payHeldOrder($order);
 
     expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull()
         ->and($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
@@ -3914,9 +3914,26 @@ function orderForAFreshCustomerWithNoBillingAddress(\App\Models\Catalogue\Shop $
     }
 
     $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
-    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    payHeldOrder($order);
 
     return $order->refresh();
+}
+
+/** Paid for real, because every totals recalculation reads pay_status from the payments; twice the total so a new address changing the tax keeps it paid */
+function payHeldOrder(Order $order): void
+{
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $order->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'HLD'.fake()->unique()->numberBetween(10000, 99999), 'name' => 'Held order cash']
+    );
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => round($order->refresh()->total_amount * 2, 2),
+        'reference' => 'HELD-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
 }
 
 test('a customer who pays with no address is never refused, the order is held instead', function () {

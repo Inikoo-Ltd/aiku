@@ -6663,7 +6663,7 @@ test('an agent links a customer by hand to one conversation, and the next email 
     $first = $guest();
     $base  = '/app/api/chats/sessions/'.$first->ulid;
 
-    expect($this->getJson($base.'/customer-candidates?q=jane')->assertOk()->json('0.id'))->toBe($this->customer->id);
+    expect($this->getJson($base.'/customer-candidates?q=janesgifts')->assertOk()->json('0.id'))->toBe($this->customer->id);
     $this->putJson($base.'/customer', ['customer_id' => 999999999])->assertStatus(422);
     $this->putJson($base.'/customer', ['customer_id' => $this->customer->id])->assertOk();
 
