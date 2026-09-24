@@ -9,10 +9,10 @@ import { faShieldAlt, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faTrian
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faBars } from '@fal'
 import Image from "@common/Components/Image.vue";
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { notify } from '@kyvg/vue3-notification'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { isObject } from 'lodash-es'
@@ -28,6 +28,13 @@ const props = defineProps<{
 }>();
 
 const layout = inject('layout', retinaLayoutStructure)
+
+const logoStyles = computed(() => getStyles(props.modelValue?.logo?.properties, props.screenType, false) ?? {})
+const logoBoxStyles = computed(() => ({
+    width: logoStyles.value.width || '96px',
+    height: logoStyles.value.height || '96px',
+    maxWidth: '100%',
+}))
 
 const isLoadingSubmit = ref(false)
 const currentState = ref("")
@@ -65,10 +72,10 @@ const onSubmitSubscribe = async () => {
         } catch (error) {
             // console.log('www', error)
             currentState.value = 'error'
-            errorMessage.value = error.response?.data?.message || trans('An error occurred while subscribing.')
+            errorMessage.value = error.response?.data?.message || ctrans('An error occurred while subscribing.')
             notify({
-                title: trans("Something went wrong"),
-                text: error.response?.data?.message || trans('An error occurred while subscribing.'),
+                title: ctrans("Something went wrong"),
+                text: error.response?.data?.message || ctrans('An error occurred while subscribing.'),
                 type: "error",
             })
         }
@@ -116,19 +123,18 @@ const getValueColumn4Transleted = (value: string) => {
                     :style="getStyles(unset(modelValue?.logo?.properties, 'dimension.height'))"
                 />
             </div> -->
-            <div>
-                <component v-if="modelValue?.logo?.source" :is="'span'" rel="noopener noreferrer"
-                    class="mx-auto md:mx-0 block w-fit h-auto pt-3">
-                    <Image 
-                        :style="getStyles(modelValue.logo.properties, screenType)" 
+            <div v-if="modelValue?.logo?.source" class="shrink-0 mx-auto md:mx-0" :style="logoBoxStyles">                
+                <span class="block w-full h-full pt-3">
+                    <Image
+                        :style="{ ...logoStyles, width: '100%', height: '100%', objectFit: 'contain' }"
                         :alt="modelValue?.logo?.alt" 
                         :imageCover="true" 
                         :src="modelValue?.logo?.source"
-                        :height="getStyles(modelValue.logo.properties, screenType,false).height"
-                        :width="getStyles(modelValue.logo.properties, screenType,false).width"
+                        :height="logoStyles.height || undefined"
+                        :width="logoStyles.width || undefined"
                     >
                     </Image>
-                </component>
+                </span>
             </div>
 
             <div v-if="modelValue?.email"
@@ -349,11 +355,12 @@ const getValueColumn4Transleted = (value: string) => {
                     </div>
 
                     <div class="flex flex-col items-center gap-y-6 mt-4">
-                        <div v-for="(payment,index) of modelValue.paymentData.data" :key="payment.key">
+                        <div v-for="(payment,index) of modelValue.paymentData.data" :key="payment.key"
+                            class="w-full h-6 md:h-8 flex items-center justify-center">
                             <img
                                 :src="payment?.image"
                                 :alt="payment?.alt || 'payment' + index"
-                                class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain"
+                                class="h-full w-auto max-w-full object-contain"
                                 loading="lazy"
                             />
                         </div>
@@ -386,7 +393,7 @@ const getValueColumn4Transleted = (value: string) => {
                         <input v-model="inputEmail" @input="currentState = ''" type="email" name="email-address"
                             id="email-address" autocomplete="email" required
                             class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
-                            :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
+                            :placeholder="modelValue?.subscribe?.placeholder ?? ctrans('Enter your email')"
                             :class="[
                                 currentState === 'error' ? 'errorShake' : '',
                             ]" />
@@ -399,7 +406,7 @@ const getValueColumn4Transleted = (value: string) => {
 
                             <Button
                                 @click.prevent="onSubmitSubscribe"
-                                :label="trans('Subscribe')"
+                                :label="ctrans('Subscribe')"
                                 :loading="isLoadingSubmit"
                                 full
                             />
@@ -414,7 +421,7 @@ const getValueColumn4Transleted = (value: string) => {
 
                 <div v-else class="ml-auto mt-6 text-center text-green-500 flex flex-col items-center gap-y-2">
                     <FontAwesomeIcon icon="fas fa-check-circle" class="text-4xl" fixed-width aria-hidden="true" />
-                    {{ trans("You have successfully subscribed") }}!
+                    {{ ctrans("You have successfully subscribed") }}!
                 </div>
             </Transition>
         </div>

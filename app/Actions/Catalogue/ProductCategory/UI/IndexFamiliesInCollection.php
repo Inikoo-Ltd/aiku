@@ -120,8 +120,10 @@ class IndexFamiliesInCollection extends OrgAction
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
 
-
-
+            // Only a collection that does not follow its master items is edited in the shop
+            if ($action && $collection->master_collection_id && $collection->not_follow_master_items) {
+                $table->column(key: 'actions', label: __('Action'), canBeHidden: false);
+            }
         };
     }
 

@@ -30,7 +30,7 @@ class DetachMasterModelFromMasterCollection extends OrgAction
             $masterCollection->masterProducts()->detach($model->id);
             MasterCollectionHydrateMasterProducts::dispatch($masterCollection);
             if ($detachChildren) {
-                foreach ($masterCollection->childrenCollections as $collection) {
+                foreach ($masterCollection->childrenCollections()->where('not_follow_master_items', false)->get() as $collection) {
                     $shopModel = $model->products()->where('shop_id', $collection->shop_id)->first();
                     if ($shopModel) {
                         DetachModelFromCollection::run($collection, $shopModel);
@@ -54,7 +54,7 @@ class DetachMasterModelFromMasterCollection extends OrgAction
             $masterCollection->masterFamilies()->detach($model->id);
 
             if ($detachChildren) {
-                foreach ($masterCollection->childrenCollections as $collection) {
+                foreach ($masterCollection->childrenCollections()->where('not_follow_master_items', false)->get() as $collection) {
                     $shopModel = $model->productCategories()->where('shop_id', $collection->shop_id)->first();
                     if ($shopModel) {
                         DetachModelFromCollection::run($collection, $shopModel);

@@ -213,11 +213,11 @@ const saveBarcode = (value: string | null) => {
 
         <div class="max-w-xl mt-1 grid grid-cols-1 gap-x-6 gap-y-8 xl:gap-x-8 h-fit ">
             <div class="flex flex-wrap items-start gap-4">
-                <div class="relative  border rounded-lg p-4 shadow-sm bg-gray-50 group">
+                <div class="relative border rounded-lg p-4 shadow-sm bg-gray-50 group w-full">
                     <div class="text-sm font-medium text-center mb-2">{{ trans("Reference") }}</div>
                     <div class="relative">
                         <div v-if="props.data.stored_item.slug" class="relative hover:bg-black/30 rounded-lg p-2">
-                            <svg id="palletBarcode" class="mx-auto group-hover:fill-black"></svg>
+                            <svg id="palletBarcode" class="w-full group-hover:fill-black"></svg>
                         </div>
                         <div v-else
                             class="text-sm italic text-gray-400 flex flex-col justify-center items-center space-y-2">
