@@ -49,6 +49,8 @@ class EvaluateStockDeliveryCosting
             $stockDelivery->items()
                 ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
                 ->update(['is_costed' => true]);
+
+            RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
         }
 
         StockDeliveriesHydrateCosts::run($stockDelivery);

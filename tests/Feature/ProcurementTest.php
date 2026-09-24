@@ -27,6 +27,7 @@ use App\Models\SysAdmin\User;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
@@ -166,6 +167,8 @@ use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use Illuminate\Support\Facades\Cache;
 use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockMovement;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\Inventory\OrgStockStats;
 use App\Models\Inventory\Warehouse;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -5527,4 +5530,52 @@ test('stock delivery pdf is forbidden without procurement permission', function 
 
     $this->get(route('grp.org.procurement.stock_deliveries.pdf', [$this->organisation->slug, $this->stockDelivery->slug]))
         ->assertForbidden();
+});
+
+test('stock put away from a delivery is valued at the line price, then at the landed cost once the delivery is costed', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-VALUED', [72]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = UpdateStockDeliveryItem::make()->action($stockDelivery->items()->first(), ['net_amount' => 360], strict: false);
+    $packedIn          = $stockDeliveryItem->orgStock->packed_in;
+    $stockDeliveryItem->orgStock->update(['packed_in' => 6]);
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem->fresh(), ['sko_quantity_checked' => 12]);
+
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_org_stock_id' => $locationOrgStock->id]);
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => $locationOrgStock->id]);
+
+    $movementIds  = $stockDeliveryItem->sowings()->orderBy('id')->pluck('org_stock_movement_id');
+    $movements    = OrgStockMovement::whereIn('id', $movementIds)->orderBy('id')->get();
+    $deliveryCost = $stockDeliveryItem->org_net_amount / 12;
+
+    expect($deliveryCost)->toBeGreaterThan(0)
+        ->and($movements)->toHaveCount(2)
+        ->and((float) $movements[0]->cost_per_sku)->toEqualWithDelta($deliveryCost, 0.000001)
+        ->and((float) $movements[0]->org_amount)->toEqualWithDelta(4 * $deliveryCost, 0.001)
+        ->and((float) $movements[1]->org_amount)->toEqualWithDelta(8 * $deliveryCost, 0.001)
+        ->and($movements[1]->cost_status)->toBe(OrgStockMovementCostStatusEnum::DELIVERY);
+
+    $runningValueAtDeliveryCost = (float) $movements[1]->running_lpp_value;
+    expect($runningValueAtDeliveryCost)->toBeGreaterThan(0);
+
+    $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'amount' => $stockDeliveryItem->net_amount, 'received_at' => now()]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::SHIPPING->value, 'amount' => 120, 'received_at' => now()]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_na' => true]);
+
+    $stockDeliveryItem = $stockDeliveryItem->fresh();
+    $landedCost        = $stockDeliveryItem->cost_total * ($stockDeliveryItem->org_exchange ?? 1) / 12;
+    $movements         = OrgStockMovement::whereIn('id', $movementIds)->orderBy('id')->get();
+
+    expect($stockDelivery->fresh()->is_costed)->toBeTrue()
+        ->and((float) $stockDeliveryItem->cost_total)->toEqualWithDelta($stockDeliveryItem->net_amount + 120, 0.01)
+        ->and((float) $movements[0]->cost_per_sku)->toEqualWithDelta($landedCost, 0.000001)
+        ->and((float) $movements[0]->org_amount)->toEqualWithDelta(4 * $landedCost, 0.001)
+        ->and((float) $movements[1]->org_amount)->toEqualWithDelta(8 * $landedCost, 0.001)
+        ->and($movements[1]->cost_status)->toBe(OrgStockMovementCostStatusEnum::COSTED)
+        ->and((float) $movements[1]->running_lpp_value)->toEqualWithDelta($runningValueAtDeliveryCost / $deliveryCost * $landedCost, 0.02);
+
+    $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
 });
