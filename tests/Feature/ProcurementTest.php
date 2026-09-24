@@ -23,6 +23,7 @@ use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UpdateAgentSupplierPurcha
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\SysAdmin\User;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
@@ -179,7 +180,6 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Vite;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -468,6 +468,24 @@ test('agent login can propose a ready date but not set management-only clean han
         ->and($agentSupplierPurchaseOrder->approved_ready_at)->toBeNull();
 
     actingAs($this->adminGuest->getUser());
+})->depends('create agent supplier purchase order');
+
+test('PO journey board marks stages on an agent supplier purchase order and keeps handover for management', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
+    $route = route('grp.models.agent_supplier_purchase_order.journey_stage', $agentSupplierPurchaseOrder->id);
+
+    $this->patch($route, ['stage' => 'production', 'date' => '2026-09-20'])->assertRedirect();
+    $this->patch($route, ['stage' => 'clean_handover', 'date' => '2026-09-21'])->assertRedirect();
+
+    $agentSupplierPurchaseOrder->refresh();
+    expect($agentSupplierPurchaseOrder->produced_at->toDateString())->toBe('2026-09-20')
+        ->and($agentSupplierPurchaseOrder->handed_over_at->toDateString())->toBe('2026-09-21');
+
+    actingAs(User::where('username', 'agent-clerk')->firstOrFail());
+    $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertForbidden();
+    actingAs($this->adminGuest->getUser());
+
+    $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertRedirect();
+    expect($agentSupplierPurchaseOrder->refresh()->handed_over_at)->toBeNull();
 })->depends('create agent supplier purchase order');
 
 test('update agent supplier purchase order', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
@@ -1075,20 +1093,6 @@ test('change state to submitted purchase order', function ($purchaseOrder) {
 
     return $purchaseOrder;
 })->depends('add item to purchase order');
-
-test('stale orders age a re-submitted purchase order from its creation date', function (PurchaseOrder $purchaseOrder) {
-    $purchaseOrder->update(['created_at' => now()->subDays(400), 'submitted_at' => now()->subDays(3), 'date' => now()->subDays(3)]);
-
-    $response = $this->get(route('grp.supply-chain.dashboard', ['stale_days' => 360]), [
-        'X-Inertia'                   => 'true',
-        'X-Inertia-Version'           => Vite::manifestHash('grp'),
-        'X-Inertia-Partial-Component' => 'SupplyChain/SupplyChainDashboard',
-        'X-Inertia-Partial-Data'      => 'staleOrders',
-    ]);
-
-    $references = collect($response->json('props.staleOrders.purchase_orders'))->pluck('reference');
-    expect($references)->toContain($purchaseOrder->reference);
-})->depends('change state to submitted purchase order');
 
 test('change state to creating purchase order', function ($purchaseOrder) {
     $purchaseOrder->refresh();

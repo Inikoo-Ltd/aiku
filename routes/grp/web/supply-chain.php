@@ -32,9 +32,10 @@ use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
 use App\Actions\Procurement\ShoppingListItem\UI\ShowShoppingListBoard;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', ShowSupplyChainDashboard::class)->name('dashboard');
+Route::get('/', ShowSupplyChainPurchaseOrderJourney::class)->name('dashboard');
+Route::get('overview', ShowSupplyChainDashboard::class)->name('overview');
 Route::get('control', ShowSupplyChainControl::class)->name('control.dashboard');
-Route::get('po-journey', ShowSupplyChainPurchaseOrderJourney::class)->name('po_journey.dashboard');
+Route::redirect('po-journey', '/supply-chain')->name('po_journey.redirect');
 Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])->name('shopping_list.board');
 Route::get('agent-suppliers', IndexAgentSuppliers::class)->name('agent_suppliers.index');
 

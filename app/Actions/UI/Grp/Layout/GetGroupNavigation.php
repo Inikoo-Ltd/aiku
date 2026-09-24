@@ -405,11 +405,19 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('Dashboard'),
-                        'icon'  => ['fal', 'fa-chart-network'],
+                        'label' => __('PO journey'),
+                        'icon'  => ['fal', 'fa-route'],
                         'root'  => 'grp.supply-chain.dashboard',
                         'route' => [
                             'name' => 'grp.supply-chain.dashboard',
+                        ]
+                    ],
+                    [
+                        'label' => __('Overview'),
+                        'icon'  => ['fal', 'fa-chart-network'],
+                        'root'  => 'grp.supply-chain.overview',
+                        'route' => [
+                            'name' => 'grp.supply-chain.overview',
                         ]
                     ],
                     [

@@ -14,6 +14,7 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
@@ -118,6 +119,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_stock_deliveries_state_booked_in
  * @property int|null $estimated_delivery_days
  * @property \Illuminate\Support\Carbon|null $estimated_received_at
+ * @property int|null $buyer_id
+ * @property \Illuminate\Support\Carbon|null $sample_approved_at
+ * @property \Illuminate\Support\Carbon|null $produced_at
+ * @property \Illuminate\Support\Carbon|null $qc_passed_at
+ * @property \Illuminate\Support\Carbon|null $handed_over_at
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
@@ -169,6 +175,10 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
         'estimated_received_at' => 'datetime',
+        'sample_approved_at'    => 'datetime',
+        'produced_at'           => 'datetime',
+        'qc_passed_at'          => 'datetime',
+        'handed_over_at'        => 'datetime',
     ];
 
 
@@ -208,6 +218,12 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'cost_items',
         'cost_shipping',
         'cost_duties',
+        'buyer_id',
+        'sample_approved_at',
+        'deposit_paid_at',
+        'produced_at',
+        'qc_passed_at',
+        'handed_over_at',
     ];
 
     public function searchIndexShouldBeUpdated(): bool
@@ -253,5 +269,10 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     public function stockDeliveries(): BelongsToMany
     {
         return $this->belongsToMany(StockDelivery::class);
+    }
+
+    public function buyer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'buyer_id');
     }
 }

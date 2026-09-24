@@ -8,19 +8,15 @@
 
 namespace App\Actions\SupplyChain\UI;
 
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
-use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use Illuminate\Support\Facades\DB;
-use App\Models\Helpers\Currency;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,15 +28,9 @@ class ShowSupplyChainDashboard extends OrgAction
     use AsAction;
     use WithInertia;
 
-    private int $staleDays = 60;
-    private ?array $staleFilters = null;
-
     public function asController(ActionRequest $request): void
     {
         $this->initialisationFromGroup(app('group'), $request);
-        $default            = (int) ($request->user()->settings['stale_orders_days'] ?? 60);
-        $this->staleDays    = max(1, (int) $request->query('stale_days', $default ?: 60));
-        $this->staleFilters = $request->user()->settings['stale_orders_filters'] ?? null;
     }
 
     private function getDashboardCards(): array
@@ -108,177 +98,6 @@ class ShowSupplyChainDashboard extends OrgAction
                 'emerald',
                 'grp.supply-chain.shopping_list.board'
             ),
-            $this->dashboardCard(
-                __('PO Journey'),
-                __('Track purchase orders end to end'),
-                'fal fa-route',
-                null,
-                'indigo',
-                'grp.supply-chain.po_journey.dashboard'
-            ),
-        ];
-    }
-
-    /** @var array<string, float|null> */
-    private array $fallbackExchangeRates = [];
-
-    private function grpAmount(?string $amount, ?string $exchange, ?string $currencyCode): ?float
-    {
-        if ($amount === null) {
-            return null;
-        }
-        if ($exchange !== null) {
-            return round((float) $amount * (float) $exchange, 2);
-        }
-        if (!$currencyCode) {
-            return null;
-        }
-        if (!array_key_exists($currencyCode, $this->fallbackExchangeRates)) {
-            $currency = Currency::where('code', $currencyCode)->first();
-            $this->fallbackExchangeRates[$currencyCode] = $currency
-                ? GetCurrencyExchange::run($currency, $this->group->currency)
-                : null;
-        }
-        $rate = $this->fallbackExchangeRates[$currencyCode];
-
-        return $rate !== null ? round((float) $amount * $rate, 2) : null;
-    }
-
-    // ponytail: Aurora resets the submitted date on every re-submit, so age from the creation date too
-    private function getStaleOrders(): array
-    {
-        $staleDate = now()->subDays($this->staleDays);
-
-        $aspos = DB::table('agent_supplier_purchase_orders as aspo')
-            ->join('suppliers', 'suppliers.id', '=', 'aspo.supplier_id')
-            ->leftJoin('agents', 'agents.id', '=', 'suppliers.agent_id')
-            ->leftJoin('currencies', 'currencies.id', '=', 'aspo.currency_id')
-            ->where('aspo.group_id', $this->group->id)
-            ->whereNull('aspo.deleted_at')
-            ->whereIn('aspo.state', [
-                AgentSupplierPurchaseOrderStateEnum::SUBMITTED->value,
-                AgentSupplierPurchaseOrderStateEnum::CONFIRMED->value,
-            ])
-            ->where(function ($query) use ($staleDate) {
-                $query->where('aspo.deposit_paid_at', '<=', $staleDate)
-                    ->orWhere(function ($subQuery) use ($staleDate) {
-                        $subQuery->whereNull('aspo.deposit_paid_at')
-                            ->where(DB::raw('least(aspo.created_at, coalesce(aspo.submitted_at, aspo.date))'), '<=', $staleDate);
-                    });
-            })
-            ->where('aspo.number_stock_deliveries_state_received', 0)
-            ->where('aspo.number_stock_deliveries_state_checked', 0)
-            ->where('aspo.number_stock_deliveries_state_placed', 0)
-            ->select([
-                'aspo.id',
-                'aspo.reference',
-                'aspo.slug',
-                'aspo.state',
-                'aspo.cost_total',
-                'aspo.grp_exchange',
-                'aspo.deposit_amount',
-                'aspo.deposit_paid_at',
-                'aspo.number_stock_deliveries',
-                DB::raw('least(aspo.created_at, coalesce(aspo.submitted_at, aspo.date)) as ordered_at'),
-                'currencies.code as currency_code',
-                'suppliers.name as supplier_name',
-                'suppliers.code as supplier_code',
-                'suppliers.slug as supplier_slug',
-                'agents.name as agent_name',
-                'agents.code as agent_code',
-            ])
-            ->orderByRaw('aspo.deposit_paid_at asc nulls last, ordered_at asc')
-            ->get()
-            ->map(fn ($row) => [
-                'type'             => 'aspo',
-                'reference'        => $row->reference,
-                'agent_name'       => $row->agent_name,
-                'agent_code'       => $row->agent_code,
-                'supplier_name'    => $row->supplier_name,
-                'supplier_code'    => $row->supplier_code,
-                'state'            => $row->state,
-                'ordered_at'       => $row->ordered_at,
-                'deposit_amount'   => $row->deposit_amount ? (float) $row->deposit_amount : null,
-                'deposit_amount_grp' => $this->grpAmount($row->deposit_amount, $row->grp_exchange, $row->currency_code),
-                'deposit_paid_at'  => $row->deposit_paid_at,
-                'amount'           => $row->cost_total ? (float) $row->cost_total : null,
-                'amount_grp'       => $this->grpAmount($row->cost_total, $row->grp_exchange, $row->currency_code),
-                'currency'         => $row->currency_code,
-                'has_deliveries'   => $row->number_stock_deliveries > 0,
-                'route'            => [
-                    'name'       => 'grp.supply-chain.agent_supplier_purchase_orders.show',
-                    'parameters' => ['agentSupplierPurchaseOrder' => $row->slug],
-                ],
-            ]);
-
-        $purchaseOrders = DB::table('purchase_orders as po')
-            ->join('organisations', 'organisations.id', '=', 'po.organisation_id')
-            ->leftJoin('currencies', 'currencies.id', '=', 'po.currency_id')
-            ->where('po.group_id', $this->group->id)
-            ->whereNull('po.deleted_at')
-            ->whereIn('po.state', [
-                PurchaseOrderStateEnum::SUBMITTED->value,
-                PurchaseOrderStateEnum::CONFIRMED->value,
-            ])
-            ->where(DB::raw('least(po.created_at, coalesce(po.submitted_at, po.date))'), '<=', $staleDate)
-            ->where('po.number_stock_deliveries_state_received', 0)
-            ->where('po.number_stock_deliveries_state_checked', 0)
-            ->where('po.number_stock_deliveries_state_placed', 0)
-            ->select([
-                'po.id',
-                'po.reference',
-                'po.slug',
-                'po.state',
-                'po.cost_total',
-                'po.grp_exchange',
-                'po.parent_name',
-                'po.parent_code',
-                'po.number_stock_deliveries',
-                DB::raw('least(po.created_at, coalesce(po.submitted_at, po.date)) as ordered_at'),
-                'currencies.code as currency_code',
-                'organisations.slug as organisation_slug',
-                'organisations.code as organisation_code',
-            ])
-            ->orderBy('ordered_at')
-            ->get()
-            ->map(fn ($row) => [
-                'type'             => 'po',
-                'reference'        => $row->reference,
-                'agent_name'       => null,
-                'agent_code'       => null,
-                'supplier_name'    => $row->parent_name,
-                'supplier_code'    => $row->parent_code,
-                'organisation'     => $row->organisation_code,
-                'state'            => $row->state,
-                'ordered_at'       => $row->ordered_at,
-                'deposit_amount'   => null,
-                'deposit_amount_grp' => null,
-                'deposit_paid_at'  => null,
-                'amount'           => $row->cost_total ? (float) $row->cost_total : null,
-                'amount_grp'       => $this->grpAmount($row->cost_total, $row->grp_exchange, $row->currency_code),
-                'currency'         => $row->currency_code,
-                'has_deliveries'   => $row->number_stock_deliveries > 0,
-                'route'            => [
-                    'name'       => 'grp.org.procurement.purchase_orders.show',
-                    'parameters' => [
-                        'organisation'  => $row->organisation_slug,
-                        'purchaseOrder' => $row->slug,
-                    ],
-                ],
-            ]);
-
-        return [
-            'threshold_days' => $this->staleDays,
-            'grp_currency'   => $this->group->currency->code,
-            'filters'        => $this->staleFilters,
-            'agents'         => Agent::where('group_id', $this->group->id)
-                ->where('status', true)
-                ->orderBy('code')
-                ->get(['code', 'name'])
-                ->map(fn (Agent $agent) => ['code' => $agent->code, 'name' => $agent->name])
-                ->all(),
-            'aspos'          => $aspos->values()->all(),
-            'purchase_orders' => $purchaseOrders->values()->all(),
         ];
     }
 
@@ -432,18 +251,25 @@ class ShowSupplyChainDashboard extends OrgAction
         return Inertia::render(
             'SupplyChain/SupplyChainDashboard',
             [
-                'breadcrumbs'    => $this->getBreadcrumbs(),
-                'title'          => __('Supply chain'),
+                'breadcrumbs'    => array_merge($this->getBreadcrumbs(), [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => ['name' => 'grp.supply-chain.overview'],
+                            'label' => __('Overview'),
+                        ],
+                    ],
+                ]),
+                'title'          => __('Supply chain overview'),
                 'pageHead'       => [
                     'icon'  => [
-                        'icon'  => ['fal', 'fa-box-usd'],
-                        'title' => __('Supply chain'),
+                        'icon'  => ['fal', 'fa-chart-network'],
+                        'title' => __('Supply chain overview'),
                     ],
-                    'title' => __('Supply chain'),
+                    'title' => __('Overview'),
                 ],
                 'dashboardCards' => $this->getDashboardCards(),
                 'shoppingLists'  => Inertia::defer(fn () => $this->getShoppingLists()),
-                'staleOrders'    => Inertia::defer(fn () => $this->getStaleOrders()),
                 'search_demand'  => Inertia::defer(fn () => GetSearchDemandOpportunities::run($this->group)),
             ]
         );

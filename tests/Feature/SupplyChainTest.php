@@ -16,6 +16,8 @@ use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\SupplyChain\Agent\DeleteAgent;
 use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Agent\UpdateAgent;
+use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Models\Procurement\PurchaseOrder;
 use App\Actions\SupplyChain\Supplier\DeleteSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
@@ -146,6 +148,7 @@ test('update agent', function (Agent $agent) {
         'delivery_time' => 45,
         'payment_terms' => '50% upfront',
         'image'         => \Illuminate\Http\UploadedFile::fake()->image('agent.jpg', 200, 200),
+        'journey_days_production' => 40,
     ];
     $updatedAgent = UpdateAgent::make()->action(
         agent: $agent,
@@ -157,6 +160,7 @@ test('update agent', function (Agent $agent) {
         ->and(Arr::get($updatedAgent->data, 'delivery_type'))->toBe('parcel')
         ->and(Arr::get($updatedAgent->data, 'delivery_time'))->toBe(45)
         ->and(Arr::get($updatedAgent->settings, 'payment_terms'))->toBe('50% upfront')
+        ->and(Arr::get($updatedAgent->settings, 'journey_stage_days.production'))->toBe(40)
         ->and($updatedAgent->image_id)->not->toBeNull();
 
     return $updatedAgent;
@@ -631,16 +635,16 @@ test('UI Index supplier products in agents', function () {
     });
 });
 
-test('UI supply chain dashboard', function () {
+test('UI supply chain overview', function () {
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.dashboard'));
+    $response = $this->get(route('grp.supply-chain.overview'));
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('SupplyChain/SupplyChainDashboard')
             ->has('title')
             ->has('pageHead')
-            ->has('dashboardCards', 7)
+            ->has('dashboardCards', 6)
             ->where('dashboardCards.0.route.name', 'grp.supply-chain.agents.index')
             ->where('dashboardCards.1.route.name', 'grp.supply-chain.suppliers.index')
             ->where('dashboardCards.1.metrics.0.route.name', 'grp.supply-chain.agent_suppliers.index')
@@ -650,18 +654,20 @@ test('UI supply chain dashboard', function () {
             ->where('dashboardCards.3.route.name', 'grp.supply-chain.agent_supplier_purchase_orders.index')
             ->where('dashboardCards.4.route.name', 'grp.supply-chain.control.dashboard')
             ->where('dashboardCards.5.route.name', 'grp.supply-chain.shopping_list.board')
-            ->where('dashboardCards.6.route.name', 'grp.supply-chain.po_journey.dashboard')
+            ->missing('staleOrders')
             ->missing('search_demand')
-            ->has('breadcrumbs', 2);
+            ->has('breadcrumbs', 3);
     });
 });
 
 test('supply chain navigation separates agent suppliers from free suppliers', function () {
     $navigation = GetGroupNavigation::run($this->adminGuest->getUser());
 
-    expect(data_get($navigation, 'supply-chain.topMenu.subSections.2.route'))->toBe([
+    expect(data_get($navigation, 'supply-chain.topMenu.subSections.0.route.name'))->toBe('grp.supply-chain.dashboard')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.1.route.name'))->toBe('grp.supply-chain.overview')
+        ->and(data_get($navigation, 'supply-chain.topMenu.subSections.3.route'))->toBe([
         'name' => 'grp.supply-chain.agent_suppliers.index',
-    ])->and(data_get($navigation, 'supply-chain.topMenu.subSections.3.route'))->toBe([
+    ])->and(data_get($navigation, 'supply-chain.topMenu.subSections.4.route'))->toBe([
         'name'       => 'grp.supply-chain.suppliers.index',
         'parameters' => [
             '_query' => [
@@ -688,19 +694,36 @@ test('UI supply chain control', function () {
     });
 });
 
-test('UI supply chain PO journey', function () {
+test('UI supply chain PO journey', function (Supplier $supplier) {
     $this->withoutExceptionHandling();
-    $response = $this->get(route('grp.supply-chain.po_journey.dashboard'));
+    $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
 
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
+    expect($purchaseOrder->buyer_id)->toBe($this->adminGuest->getUser()->id);
+
+    $this->get(route('grp.supply-chain.dashboard', ['journey' => 'supplier']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('SupplyChain/SupplyChainPurchaseOrderJourney')
-            ->has('title')
-            ->has('pageHead')
-            ->has('ribbons')
-            ->has('summary');
-    });
-});
+            ->has('filters.buyer')
+            ->has('blockages')
+            ->has('quickStats')
+            ->where('active.journey', 'supplier')
+            ->where('ribbons', fn ($ribbons) => collect($ribbons)->contains(
+                fn ($ribbon) => $ribbon['reference'] === $purchaseOrder->reference && $ribbon['current_stage'] === 'po_created'
+            )));
+
+    $this->patch(route('grp.models.purchase-order.journey_stage', ['purchaseOrder' => $purchaseOrder->id]), [
+        'stage' => 'production',
+        'date'  => now()->toDateString(),
+    ])->assertRedirect();
+
+    expect($purchaseOrder->fresh()->produced_at)->not->toBeNull();
+
+    $this->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('ribbons.0.reference', $purchaseOrder->reference)
+            ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'production')['state'] === 'done'));
+})->depends('create independent supplier');
 
 test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
@@ -999,7 +1022,7 @@ test('UI get section route group supply chain index', function () {
 test('housekeep purchase orders flags legacy open orders and undo removes the flag', function () {
     $flagged = \App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0);
     expect($flagged)->toBeGreaterThanOrEqual(0);
-    $response = $this->get(route('grp.supply-chain.po_journey.dashboard'));
+    $response = $this->get(route('grp.supply-chain.dashboard'));
     $response->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplyChainPurchaseOrderJourney'));
     expect(\App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0, true))->toBe($flagged);
 });

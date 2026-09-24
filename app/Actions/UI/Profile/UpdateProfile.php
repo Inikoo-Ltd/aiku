@@ -79,14 +79,6 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['app_theme'] = $appTheme;
         }
 
-        if (Arr::exists($modelData, 'stale_orders_days')) {
-            $modelData['settings']['stale_orders_days'] = max(1, (int) Arr::pull($modelData, 'stale_orders_days'));
-        }
-
-        if (Arr::exists($modelData, 'stale_orders_filters')) {
-            $modelData['settings']['stale_orders_filters'] = Arr::pull($modelData, 'stale_orders_filters');
-        }
-
         if (Arr::exists($modelData, 'tickets_list_mine')) {
             $modelData['settings']['tickets_list_mine'] = (string) Arr::pull($modelData, 'tickets_list_mine');
         }
@@ -210,12 +202,6 @@ class UpdateProfile extends OrgAction
             'timezone'          => ['sometimes', 'nullable', 'exists:timezones,name'],
             'enable_2fa'        => ['sometimes', 'array'],
             'settings'          => ['sometimes'],
-            'stale_orders_days' => ['sometimes', 'integer', 'min:1'],
-            'stale_orders_filters'                => ['sometimes', 'array'],
-            'stale_orders_filters.show_aspos'     => ['sometimes', 'boolean'],
-            'stale_orders_filters.show_pos'       => ['sometimes', 'boolean'],
-            'stale_orders_filters.agents'         => ['sometimes', 'array'],
-            'stale_orders_filters.agents.*'       => ['string'],
             'ticket_comments_newest_first'        => ['sometimes', 'boolean'],
             'ticket_history_newest_first'         => ['sometimes', 'boolean'],
             'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],

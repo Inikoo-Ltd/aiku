@@ -32,6 +32,7 @@ use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Models\Helpers\Currency;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Redirect;
@@ -68,6 +69,9 @@ class StorePurchaseOrder extends OrgAction
         }
         if (!Arr::get($modelData, 'currency_id')) {
             data_set($modelData, 'currency_id', $parent->organisation->currency_id);
+        }
+        if (!array_key_exists('buyer_id', $modelData) && auth()->user() instanceof User) {
+            data_set($modelData, 'buyer_id', auth()->id());
         }
 
         $currency = Currency::find($modelData['currency_id']);
@@ -123,6 +127,7 @@ class StorePurchaseOrder extends OrgAction
             'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
             'date'           => ['sometimes', 'required'],
             'currency_id'    => ['sometimes', 'required'],
+            'buyer_id'       => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
         ];
 
         if ($this->strict) {
