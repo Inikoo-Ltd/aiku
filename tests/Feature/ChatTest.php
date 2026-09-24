@@ -3775,6 +3775,14 @@ test('staff see the tasks they raised, own, help on or were sent to their depart
     $board = collect(\App\Actions\Tasks\UI\ShowStaffTasksBoard::make()->handle($this->organisation->group, $viewer, 'all'))->flatMap(fn (array $column) => array_column($column['tasks'], 'reference'));
     expect($board)->toContain($tasks->first()->reference)
         ->not->toContain($tasks->last()->reference);
+
+    actingAs($viewer);
+    \Pest\Laravel\patchJson(route('grp.tasks.update', $tasks->last()->reference), ['priority' => 'urgent'])->assertForbidden();
+    \Pest\Laravel\patchJson(route('grp.tasks.collaborators.update', $tasks->last()->reference), ['collaborator_ids' => [$viewer->id]])->assertForbidden();
+    \Pest\Laravel\patchJson(route('grp.tasks.update', $tasks[3]->reference), ['status' => 'in_progress'])->assertOk()->assertJsonPath('data.assignee.id', $viewer->id);
+
+    actingAs($supervisor);
+    \Pest\Laravel\patchJson(route('grp.tasks.update', $tasks->last()->reference), ['priority' => 'urgent'])->assertOk();
 });
 
 test('inbound guest gmail attachments wait in gmail until an agent replies, then are all saved on the email chat message', function () {

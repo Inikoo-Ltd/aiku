@@ -151,6 +151,11 @@ class StaffTask extends Model implements Auditable
             ->orWhereIn('staff_tasks.department', self::departmentsOf($viewer)));
     }
 
+    public function isVisibleTo(User $viewer): bool
+    {
+        return $this->group_id === $viewer->group_id && self::query()->whereKey($this->id)->visibleTo($viewer)->exists();
+    }
+
     public static function departmentLabel(string $department): string
     {
         return Str::headline(str_replace('-', ' ', $department));
