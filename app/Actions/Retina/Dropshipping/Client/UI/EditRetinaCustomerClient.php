@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Client\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -20,6 +21,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditRetinaCustomerClient extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(CustomerClient $customerClient, ActionRequest $request): Response
     {
         $request->route()->getName();

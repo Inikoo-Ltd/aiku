@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Fulfilment\Dropshipping\Portfolio;
 
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\StoredItem;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SyncAllRetinaStoredItemsToPortfolios extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel
     {
 

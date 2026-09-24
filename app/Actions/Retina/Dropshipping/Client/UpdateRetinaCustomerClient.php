@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Client;
 
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerClient;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaCustomerClient extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use SanitizeInputs;
 
     public function handle(CustomerClient $customerClient, array $modelData): CustomerClient

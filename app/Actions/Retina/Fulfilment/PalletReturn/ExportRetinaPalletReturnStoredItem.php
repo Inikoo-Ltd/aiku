@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Fulfilment\PalletReturn;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithExportData;
 use App\Exports\StoredItem\PalletReturnPalletStoredItemExport;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -17,6 +18,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ExportRetinaPalletReturnStoredItem extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithExportData;
 
     /**
@@ -34,8 +36,7 @@ class ExportRetinaPalletReturnStoredItem extends RetinaAction
      */
     public function asController(FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
+        $this->initialisation($request);
 
         return $this->handle($fulfilmentCustomer, $request->all());
     }

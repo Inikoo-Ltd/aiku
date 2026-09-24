@@ -13,6 +13,7 @@ namespace App\Actions\Retina\Dropshipping\ApiToken\UI;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\SysAdmin\ApiTokenRetinaTabsEnum;
 use App\Http\Resources\Api\ApiTokensRetinaResource;
@@ -32,6 +33,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class ShowRetinaApiDropshippingDashboard extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     private CustomerSalesChannel $customerSalesChannel;
 

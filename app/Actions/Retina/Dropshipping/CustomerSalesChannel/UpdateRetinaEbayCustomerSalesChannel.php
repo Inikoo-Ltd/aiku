@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateEbayCustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
@@ -22,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaEbayCustomerSalesChannel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
     use SanitizeInputs;
 

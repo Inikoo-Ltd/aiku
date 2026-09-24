@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Fulfilment\StoredItem;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydrateStoredItems;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydrateStoredItems;
 use App\Actions\Fulfilment\Pallet\Hydrators\PalletHydrateStoredItems;
@@ -31,6 +32,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateRetinaStoredItem extends RetinaAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use AsAction;
     use WithActionUpdate;
 
@@ -64,8 +66,7 @@ class UpdateRetinaStoredItem extends RetinaAction
         }
 
         if ($request->user() instanceof WebUser) {
-            // TODO: Raul please do the permission for the web user
-            return true;
+            return $this->retinaCustomerOwnsRouteModels($request);
         }
 
         return false;

@@ -1117,6 +1117,104 @@ test('web user cannot update another customer', function () {
     expect($otherCustomer->refresh()->contact_name)->toBe($originalContactName);
 });
 
+test('retina lists the pallets of the customer own pallet return and refuses the pallet return of another customer', function () {
+    actingAs($this->webUser, 'retina');
+    $otherCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $this->fulfilment->shop,
+        \App\Models\CRM\Customer::factory()->definition()
+    );
+    $otherPalletReturn = StorePalletReturn::make()->action($otherCustomer->fulfilmentCustomer, [
+        'warehouse_id' => $this->warehouse->id,
+        'state'        => PalletReturnStateEnum::IN_PROCESS,
+    ]);
+
+    $this->getJson(route('retina.json.pallet-return.pallets.index', $otherPalletReturn->slug))->assertForbidden();
+    $this->getJson(route('retina.json.pallet-return.pallets.index', $this->palletReturn->slug))->assertOk();
+});
+
+test('retina fulfilment writes refuse the pallet return, pallet delivery and stored item of another customer and let the owner through', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    actingAs($this->webUser, 'retina');
+
+    $otherFulfilmentCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $this->fulfilment->shop,
+        \App\Models\CRM\Customer::factory()->definition()
+    )->fulfilmentCustomer;
+
+    $other = [
+        'palletReturn'   => StorePalletReturn::make()->action($otherFulfilmentCustomer, ['warehouse_id' => $this->warehouse->id, 'state' => PalletReturnStateEnum::IN_PROCESS]),
+        'palletDelivery' => StorePalletDelivery::make()->action($otherFulfilmentCustomer, ['warehouse_id' => $this->warehouse->id, 'state' => PalletDeliveryStateEnum::IN_PROCESS]),
+        'storedItem'     => StoreStoredItem::make()->action($otherFulfilmentCustomer, ['reference' => 'other-stored-item']),
+    ];
+    $own = [
+        'palletReturn'   => $this->palletReturn,
+        'palletDelivery' => $this->palletDelivery,
+        'storedItem'     => $this->storedItem,
+    ];
+
+    $writes = [
+        ['post', 'retina.models.pallet-return.attachment.attach', 'palletReturn'],
+        ['post', 'retina.models.pallet-return.transaction.store', 'palletReturn'],
+        ['post', 'retina.models.pallet-return.pallet-return-item.upload', 'palletReturn'],
+        ['patch', 'retina.models.pallet-return.address.switch', 'palletReturn'],
+        ['post', 'retina.fulfilment.dropshipping.customer_sales_channels.shipment.store_tiktok', 'palletReturn'],
+        ['post', 'retina.models.pallet-delivery.attachment.attach', 'palletDelivery'],
+        ['post', 'retina.models.pallet-delivery.transaction.store', 'palletDelivery'],
+        ['patch', 'retina.models.stored-items.update', 'storedItem'],
+    ];
+
+    foreach ($writes as [$verb, $routeName, $parameter]) {
+        $route = app('router')->getRoutes()->getByName($routeName);
+        $key   = fn (array $models) => $models[$parameter]->getAttribute($route->bindingFieldFor($parameter) ?? $models[$parameter]->getRouteKeyName());
+
+        expect($this->json($verb, route($routeName, $key($other)))->status())->toBe(403, $routeName.' with the record of another customer')
+            ->and($this->json($verb, route($routeName, $key($own)))->status())->not->toBe(403, $routeName.' with the customer own record');
+    }
+});
+
+test('retina fulfilment read routes refuse the pallets, spaces, stored items and exports of another customer and let the owner through', function () {
+    actingAs($this->webUser, 'retina');
+
+    $otherFulfilmentCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $this->fulfilment->shop,
+        \App\Models\CRM\Customer::factory()->definition()
+    )->fulfilmentCustomer;
+    $otherPalletDelivery = StorePalletDelivery::make()->action($otherFulfilmentCustomer, ['warehouse_id' => $this->warehouse->id, 'state' => PalletDeliveryStateEnum::IN_PROCESS]);
+
+    $other = [
+        'fulfilmentCustomer' => $otherFulfilmentCustomer,
+        'palletDelivery'     => $otherPalletDelivery,
+        'pallet'             => StoreRetinaPalletFromDelivery::make()->action($otherPalletDelivery, ['type' => PalletTypeEnum::PALLET, 'customer_reference' => 'other-ref', 'notes' => 'other notes']),
+        'storedItem'         => StoreStoredItem::make()->action($otherFulfilmentCustomer, ['reference' => 'other-read-item']),
+    ];
+    $own = [
+        'fulfilmentCustomer' => $this->customer->fulfilmentCustomer,
+        'palletDelivery'     => $this->palletDelivery,
+        'pallet'             => $this->pallet,
+        'storedItem'         => $this->storedItem,
+    ];
+
+    foreach ([$own['pallet'], $other['pallet']] as $pallet) {
+        $pallet->slug ?: $pallet->update(['slug' => 'read-pallet-'.$pallet->id]);
+    }
+
+    foreach ([
+        'retina.fulfilment.itemised_storage.stored-items.pdf.export'                  => 'fulfilmentCustomer',
+        'retina.fulfilment.storage.pallet_returns.pallets.uploads.templates'          => 'fulfilmentCustomer',
+        'retina.fulfilment.storage.pallet_returns.stored-items.uploads.templates'     => 'fulfilmentCustomer',
+        'retina.fulfilment.itemised_storage.stored_items.show'                        => 'storedItem',
+        'retina.fulfilment.storage.pallets.show'                                      => 'pallet',
+        'retina.fulfilment.storage.pallets.edit'                                      => 'pallet',
+        'retina.models.pallet-delivery.pdf'                                           => 'palletDelivery',
+    ] as $routeName => $parameter) {
+        $route = app('router')->getRoutes()->getByName($routeName);
+        $key   = fn (array $models) => $models[$parameter]->getAttribute($route->bindingFieldFor($parameter) ?? $models[$parameter]->getRouteKeyName());
+
+        expect($this->get(route($routeName, $key($other)))->getStatusCode())->toBe(403, $routeName.' with the record of another customer')
+            ->and($this->get(route($routeName, $key($own)))->getStatusCode())->not->toBe(403, $routeName.' with the customer own record');
+    }
+});
+
 test('logging in flags the browser so the storefront can paint logged in before the first hit lands', function () {
     $this->webUser->update(['password' => \Illuminate\Support\Facades\Hash::make('test')]);
 

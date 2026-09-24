@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Models\Ordering\Order;
 use Exception;
@@ -23,6 +24,13 @@ use Sentry;
 
 class UpdateCustomerOrderTaxCategory extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
+
     public function handle(Order $order): Order
     {
         $taxCategory = null;
@@ -52,16 +60,6 @@ class UpdateCustomerOrderTaxCategory extends RetinaAction
         }
 
         return $order;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $customerSalesChannel = $request->route('customerSalesChannel');
-        if ($customerSalesChannel->customer_id == $this->customer->id) {
-            return true;
-        }
-
-        return false;
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order

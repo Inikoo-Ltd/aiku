@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Redirect;
 
 class DeleteRetinaBasket extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(Order $order): RedirectResponse
     {
         $customerSalesChannel = $order->customerSalesChannel;
