@@ -15,8 +15,10 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithChatMessageSearch;
 use App\Actions\Chat\WithUnclaimedChatSessions;
 use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +31,7 @@ class GetChatSessions
     use AsAction;
     use WithChatAgentAuthorisation;
     use WithUnclaimedChatSessions;
+    use WithChatMessageSearch;
     /**
      * How far back the closed list reaches, the same words the tickets board uses for its own
      * columns. Today is the default: the queue's closed capsule means what was finished today,
@@ -334,15 +337,18 @@ class GetChatSessions
         }
 
         if (!empty($filters['search'])) {
-            $term = mb_strtolower($filters['search']);
-            $query->where(function ($q) use ($term) {
+            $term             = mb_strtolower($filters['search']);
+            $matchingMessages = $this->messagesMatching(ChatMessage::class, $filters['search'], $filters['allowed_shop_ids'] ?? []);
+
+            $query->where(function ($q) use ($term, $matchingMessages) {
                 $q->whereRaw('LOWER(chat_sessions.guest_identifier COLLATE "C") LIKE ?', ["%{$term}%"])
                     ->orWhereHas('webUser', function ($q2) use ($term) {
                         $q2->whereRaw('LOWER(username COLLATE "C") LIKE ?', ["%{$term}%"])
                             ->orWhereHas('customer', function ($q3) use ($term) {
                                 $q3->whereRaw('LOWER(contact_name COLLATE "C") LIKE ?', ["%{$term}%"]);
                             });
-                    });
+                    })
+                    ->orWhereHas('messages', fn ($messages) => $messages->whereIn('chat_messages.id', $matchingMessages));
             });
         }
 

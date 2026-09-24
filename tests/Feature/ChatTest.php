@@ -5649,6 +5649,106 @@ test('the waiting queue is worked oldest first and the bins are still newest fir
         ->and(array_search($newest->id, $bin, true))->toBeLessThan(array_search($oldest->id, $bin, true));
 });
 
+test('an email is found by an order or consignment number in its subject or body', function () {
+    \Illuminate\Support\Facades\Http::fake();
+    config(['scout.driver' => 'collection']);
+
+    $bySubject = noiseTestEmailSession($this->shop, 'lotion@example.com', 'GB589232', 'Please see photo', ['email_subject' => 'GB589232']);
+    $byBody    = noiseTestEmailSession($this->shop, 'parcel@example.com', 'Delivery', 'Consignment 1Z999AA10123456784 never arrived');
+    $unrelated = noiseTestEmailSession($this->shop, 'other@example.com', 'Hello', 'Where is my order');
+
+    $found = fn (string $search) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'search' => $search])->items())
+        ->pluck('id')->all();
+
+    expect($found('GB589232'))->toBe([$bySubject->id])
+        ->and($found('1z999aa10123456784'))->toBe([$byBody->id])
+        ->and($found('where is my'))->toBe([$unrelated->id]);
+});
+
+test('a whatsapp conversation is found by an order number in its messages', function () {
+    config(['scout.driver' => 'collection']);
+
+    $byOrder   = noiseTestWhatsappSession($this->shop, '+447500000010', 'Where is my order GB589232 please');
+    $byKeyword = noiseTestWhatsappSession($this->shop, '+447500000011', 'Consignment 1Z999AA10123456784 never arrived');
+    $unrelated = noiseTestWhatsappSession($this->shop, '+447500000012', 'Hello');
+
+    $found = fn (string $search) => collect(GetMetaChatSessions::make()->handle(['shop_id' => $this->shop->id, 'search' => $search])->items())
+        ->pluck('id')->all();
+
+    expect($found('GB589232'))->toBe([$byOrder->id])
+        ->and($found('589232'))->toBe([$byOrder->id])
+        ->and($found('1z999aa10123456784'))->toBe([$byKeyword->id])
+        ->and($found('hello'))->toBe([$unrelated->id]);
+});
+
+test('the chat search scope returns whatsapp messages', function () {
+    // ponytail: neither test Scout driver reproduces Typesense's hits/document shape, so
+    // rawDocuments() is stubbed and the real handle() mapping runs against a genuine message.
+    $session = noiseTestWhatsappSession($this->shop, '+447500000013', 'Where is order GB588634 please');
+    $message = $session->messages()->first();
+
+    $action = \Mockery::mock(\App\Actions\Search\SearchChat::class)->makePartial();
+    $action->shouldAllowMockingProtectedMethods();
+    $action->shouldReceive('rawDocuments')->twice()->andReturn([], [$message->toSearchableArray()]);
+
+    $results = $action->handle('588634', ['shop_ids' => [$this->shop->id]]);
+
+    expect($results['results']['chat_messages'])->toBe([])
+        ->and(collect($results['results']['whatsapp_messages'])->pluck('id'))->toContain($message->id);
+});
+
+test('the chat search scope returns nothing and never queries the engine without shop_ids', function () {
+    $action = \Mockery::mock(\App\Actions\Search\SearchChat::class)->makePartial();
+    $action->shouldAllowMockingProtectedMethods();
+    $action->shouldReceive('rawDocuments')->never();
+
+    $withoutOption = $action->handle('588634');
+    $withEmpty     = $action->handle('588634', ['shop_ids' => []]);
+
+    expect($withoutOption['results'])->toBe(['chat_messages' => [], 'whatsapp_messages' => []])
+        ->and($withEmpty['results'])->toBe(['chat_messages' => [], 'whatsapp_messages' => []]);
+});
+
+test('a whatsapp message redirects to its conversation in the customer inbox', function () {
+    $session = noiseTestWhatsappSession($this->shop, '+447500000014', 'Where is order GB588634 please');
+    $message = $session->messages()->first();
+
+    $response = $this->actingAs($this->user)->get(
+        route('grp.majordomo.redirect_whatsapp_message', $message->id)
+    );
+
+    $response->assertRedirect(
+        route('grp.org.chat.inbox', [$this->organisation->slug, 'channel' => 'whatsapp', 'session' => $session->ulid])
+    );
+});
+
+test('ctrl k chat search excludes shops the user has no chat permission on', function () {
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+    \App\Actions\Search\SearchChat::shouldRun()
+        ->withArgs(fn (string $query, array $options) => !in_array($this->shop->id, $options['shop_ids'] ?? [], true))
+        ->once()
+        ->andReturn(['scope' => 'chat', 'results' => ['chat_messages' => [], 'whatsapp_messages' => []]]);
+
+    actingAs($outsider);
+
+    get(route('grp.search.index', ['q' => '588634', 'route_src' => 'grp.chat.reports']))->assertOk();
+});
+
+test('ctrl k chat search includes shops the user may view chat on', function () {
+    $viewer = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $viewer->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    \App\Actions\Search\SearchChat::shouldRun()
+        ->withArgs(fn (string $query, array $options) => in_array($this->shop->id, $options['shop_ids'] ?? [], true))
+        ->once()
+        ->andReturn(['scope' => 'chat', 'results' => ['chat_messages' => [], 'whatsapp_messages' => []]]);
+
+    actingAs($viewer);
+
+    get(route('grp.search.index', ['q' => '588634', 'route_src' => 'grp.chat.reports']))->assertOk();
+});
+
 test('an out of office is put aside in any language and whoever owns the mailbox', function () {
     \Illuminate\Support\Facades\Http::fake();
 

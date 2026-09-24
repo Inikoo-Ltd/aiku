@@ -2,15 +2,15 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 15 Jul 2026 11:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Thu, 24 Sep 2026 18:00:00 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Chat\ChatMessage\Search;
+namespace App\Actions\Chat\MetaChatMessage\Search;
 
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetChatMessageSearchSchema
+class GetMetaChatMessageSearchSchema
 {
     use AsObject;
 
@@ -44,12 +44,6 @@ class GetChatMessageSearchSchema
                         'infix' => true,
                     ],
                     [
-                        'name'     => 'subject',
-                        'type'     => 'string',
-                        'optional' => true,
-                        'infix'    => true,
-                    ],
-                    [
                         'name' => 'sender_type',
                         'type' => 'string',
                     ],
@@ -66,7 +60,7 @@ class GetChatMessageSearchSchema
                 'default_sorting_field' => 'created_at',
             ],
             'search-parameters' => [
-                'query_by' => 'subject,message',
+                'query_by' => 'message',
             ],
         ];
     }

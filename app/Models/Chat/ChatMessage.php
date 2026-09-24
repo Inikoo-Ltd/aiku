@@ -246,9 +246,15 @@ class ChatMessage extends Model implements HasMedia
             'organisation_id' => $shop?->organisation_id,
             'shop_id'         => $shop?->id,
             'message'         => (string)$this->message_text,
+            'subject'         => (string)($this->metadata['email_subject'] ?? ''),
             'sender_type'     => $this->sender_type->value,
             'created_at'      => $this->created_at?->timestamp ?? 0,
         ];
+    }
+
+    public function typesenseSearchParameters(): array
+    {
+        return ['infix' => 'fallback,fallback'];
     }
 
 }
