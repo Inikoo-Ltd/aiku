@@ -1990,7 +1990,7 @@ test('CheckMasterAssetTradeUnitOrgStockExistence returns true when no trade unit
     expect($isValid)->toBeTrue();
 });
 
-test('UpdateBulkMasterProduct updates rrp and price for multiple master products', function () {
+test('UpdateBulkMasterProduct updates rrp, price and unit label for multiple master products', function () {
     $masterShop      = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
         'code' => 'UBP-DEPT-'.uniqid(),
@@ -2021,15 +2021,49 @@ test('UpdateBulkMasterProduct updates rrp and price for multiple master products
 
     UpdateBulkMasterProduct::make()->handle([
         'products' => [
-            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12],
-            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22],
+            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12, 'unit' => 'ball'],
+            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22, 'unit' => 'ball'],
         ],
     ]);
 
     expect((int)$masterAssetOne->refresh()->price)->toBe(12)
         ->and((int)$masterAssetOne->rrp)->toBe(15)
         ->and((int)$masterAssetTwo->refresh()->price)->toBe(22)
-        ->and((int)$masterAssetTwo->rrp)->toBe(25);
+        ->and((int)$masterAssetTwo->rrp)->toBe(25)
+        ->and($masterAssetOne->unit)->toBe('ball')
+        ->and($masterAssetTwo->unit)->toBe('ball');
+});
+
+test('bulk trade unit quantity sets units through the master update and reports no open orders', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'BTQ-DEPT-'.uniqid(),
+        'name' => 'Bulk Quantity Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'BTQ-FAM-'.uniqid(),
+        'name' => 'Bulk Quantity Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BTQ-AST-'.uniqid(),
+        'name'    => 'Bulk Quantity Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'unit'    => 'piece',
+        'stocks'  => [],
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    UpdateMasterAsset::make()->action($masterAsset, ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 10]]]);
+
+    expect((float) $masterAsset->refresh()->units)->toBe(10.0)
+        ->and((float) $masterAsset->price)->toBe(10.0)
+        ->and($masterAsset->unit)->toBe('piece');
+
+    getJson(route('grp.json.master_assets.open_orders_affected_by_units_change', ['ids' => [$masterAsset->id]]))
+        ->assertSuccessful()
+        ->assertExactJson([(string) $masterAsset->id => 0]);
 });
 
 test('UpdateMultipleMasterProductsFamily moves master assets to a new family', function () {
@@ -2837,8 +2871,6 @@ test('master product creation data refuses a trade unit quantity of zero instead
     ])->assertSessionHasErrors('trade_units.0.quantity');
 });
 
-test('minor currency recalculation includes variant master assets', function () {
-    $masterShop = createFreshMasterShop();
 test('master product creation suggests price and RRP from the master shop ratios, editable per master shop', function (ShopTypeEnum $type, float $defaultCostPriceRatio, float $defaultRrpPriceRatio) {
     $masterShop = createFreshMasterShop();
     $masterShop->update(['type' => $type]);
@@ -2909,6 +2941,8 @@ test('master product creation prices a new product at cost times the price ratio
         ->and(data_get($data, 'master_rrps.GBP.value'))->toEqual(round($cost * 3 * 2, 2));
 });
 
+test('minor currency recalculation includes variant master assets', function () {
+    $masterShop = createFreshMasterShop();
     $masterShop->update(['price_exchanges' => [
         'EUR' => ['is_major' => true],
         'SEK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 11],

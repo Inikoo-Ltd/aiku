@@ -195,7 +195,7 @@ class UpdateMasterAsset extends OrgAction
                     data_set($modelData, 'units', $unitsFromTradeUnits['units']);
                 }
                 /** A label typed in this same save wins over the one the composition suggests. */
-                if (!Arr::has($modelData, 'unit')) {
+                if (!Arr::has($modelData, 'unit') && $unitsFromTradeUnits['unit']) {
                     data_set($modelData, 'unit', $unitsFromTradeUnits['unit']);
                 }
 
