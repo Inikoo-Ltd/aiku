@@ -78,7 +78,7 @@ class DraftChatReply implements ShouldBeUnique
 
         $answer = $this->askModel($text, $facts);
 
-        if (!$answer) {
+        if (!$answer || !self::isGrounded($answer['topic'], $answer['reply'], $facts)) {
             return null;
         }
 
@@ -106,6 +106,25 @@ class DraftChatReply implements ShouldBeUnique
         SendChatAiAnswer::run($draft);
 
         return $draft->refresh();
+    }
+
+    /**
+     * The model is told to use only the facts; this checks that it did, the same way in every
+     * language. A stock answer must be about a product aiku looked up and name its code; an
+     * order answer must name the order aiku looked up. Otherwise the model answered from what
+     * the customer said, and a draft that repeats the customer back as fact is worse than none.
+     *
+     * @param  array<string, mixed>  $facts
+     */
+    public static function isGrounded(ChatTopicEnum $topic, string $reply, array $facts): bool
+    {
+        $names = fn (?string $value) => $value !== null && $value !== '' && mb_stripos($reply, $value) !== false;
+
+        return match ($topic) {
+            ChatTopicEnum::STOCK_AVAILABILITY => collect($facts['product_facts'] ?? [])->contains(fn (array $product) => $names($product['code'] ?? null)),
+            ChatTopicEnum::ORDER_STATUS       => $names($facts['order_facts']['order']['reference'] ?? null),
+            default                           => false,
+        };
     }
 
     public static function pendingDraft(ChatSession|MetaChatSession $chatSession): ?ChatAiDraft
@@ -151,9 +170,11 @@ class DraftChatReply implements ShouldBeUnique
         - Write in the language the customer wrote in, friendly and short: at most 80 words.
           Greet them by name when a name is given. No signature, no promises, no apology for delays.
         - Say "more is on order" only when the facts say so, never when it will arrive.
-        - Asked when a product comes back, the facts answer it: say it is out of stock and that
-          there is no date yet. That is "answerable": true. Add that more is on order only when
-          the product's facts have "more_on_order".
+        - Asked when a product comes back, and that product is in the facts, say it is out of
+          stock and that there is no date yet: that is "answerable": true. Add that more is on
+          order only when that product's facts have "more_on_order". A product that is not in the
+          facts cannot be answered, whatever the customer says about it.
+        - Name the product code or the order number you are answering about, exactly as in the facts.
 
         Customer wrote:
         $excerpt

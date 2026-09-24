@@ -6004,13 +6004,24 @@ test('a question about an order gets a draft written from that customer\'s order
     $ask($session, 'Can I change the delivery address of my next order?');
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
 
-    // A model that copies the example answer in its instructions word for word still gives a
-    // draft: the example once held both topics in one string and every real draft was dropped.
+    // A model that copies the example answer in its instructions word for word gives no draft:
+    // the placeholder names no order or product aiku looked up, and staff never see "the reply".
+    // Real answers above still make drafts, which is what broke when the example held both topics.
     $modelAnswer = null;
     $session->update(['last_agent_message_at' => now()]);
     $this->travel(1)->minutes();
     $ask($session, 'Where is my order now?');
-    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->not->toBeNull();
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
+
+    // A draft is kept only when it names what aiku looked up: the first real one answered a
+    // stock question about products aiku had no facts on, repeating the customer back as fact.
+    $grounded = fn (string $topic, string $reply, array $facts) => \App\Actions\Chat\ChatSession\DraftChatReply::isGrounded(\App\Enums\CRM\Livechat\ChatTopicEnum::from($topic), $reply, $facts);
+    $orderFacts = ['order_facts' => ['order' => ['reference' => $reference]]];
+    expect($grounded('stock_availability', 'The ritual candles are out of stock, more is on order.', $orderFacts))->toBeFalse()
+        ->and($grounded('stock_availability', 'MMC-01 is out of stock.', ['product_facts' => [['code' => 'MMC-02']]]))->toBeFalse()
+        ->and($grounded('stock_availability', 'mmc-02 is out of stock, more is on order.', ['product_facts' => [['code' => 'MMC-02']]]))->toBeTrue()
+        ->and($grounded('order_status', 'Your order is on its way.', $orderFacts))->toBeFalse()
+        ->and($grounded('order_status', "Your order $reference is on its way.", $orderFacts))->toBeTrue();
 
     $stats = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['draftStats'];
     expect($stats['used'])->toBeGreaterThanOrEqual(1)->and($stats['superseded'])->toBeGreaterThanOrEqual(1);
@@ -6137,8 +6148,9 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
     $schedule = outOfHoursTestSchedule($this->shop);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
 
-    $customer = createOwnCustomer($this->shop, 'ai-email-once');
-    $webUser  = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+    $customer  = createOwnCustomer($this->shop, 'ai-email-once');
+    $webUser   = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+    $reference = 'AEO'.random_int(100000, 999999);
 
     \Illuminate\Support\Facades\DB::table('orders')->insert([
         'group_id'        => $this->shop->group_id,
@@ -6148,7 +6160,7 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
         'currency_id'     => $this->shop->currency_id,
         'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
         'slug'            => 'ord-'.uniqid(),
-        'reference'       => 'AEO'.random_int(100000, 999999),
+        'reference'       => $reference,
         'state'           => 'packed',
         'net_amount'      => 100,
         'org_net_amount'  => 100,
@@ -6164,7 +6176,7 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
 
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode([
-            'answerable' => true, 'topic' => 'order_status', 'reply' => 'Your order is packed and waiting for the courier.',
+            'answerable' => true, 'topic' => 'order_status', 'reply' => "Your order $reference is packed and waiting for the courier.",
         ])]]]]),
         'oauth2.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
         '*'                       => \Illuminate\Support\Facades\Http::response(['id' => 'sent-1', 'threadId' => 'th-once']),
