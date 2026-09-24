@@ -12,12 +12,11 @@ import InformationSideProduct from "@/Components/CMS/Webpage/Product1/Informatio
 
 import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 import { ctrans } from "@/Composables/useTrans"
-import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
+import ButtonOutOfStock from "@/Components/Iris/Products/ButtonOutOfStock.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { getStyles } from "@/Composables/styles"
@@ -317,7 +316,7 @@ onMounted(async () => {
                                 <span>
                                     {{ product?.stock >= 250
                                         ? ctrans("Unlimited quantity available")
-                                        : (product.stock > 0 ? ctrans("In stock") : useOutOfStockLabel(product))
+                                        : (product.stock > 0 ? ctrans("In stock") : ctrans("Out of stock"))
                                     }}
                                 </span>
                             </div>
@@ -438,7 +437,7 @@ onMounted(async () => {
                             :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
-                            <Button :label="product.status_label ?? ctrans('Out of stock')" type="tertiary" disabled full />
+                            <ButtonOutOfStock :product="product" :label="product.status_label" />
                         </div>
                     </div>
 
@@ -582,7 +581,7 @@ onMounted(async () => {
                             ? ctrans("Unlimited quantity available")
                             : product.stock > 0
                                 ? `${ctrans("In stock")} (${product.stock} ${ctrans("available")})`
-                                : useOutOfStockLabel(product)
+                                : ctrans("Out of stock")
                     }}
                 </span>
             </div>
@@ -744,13 +743,10 @@ onMounted(async () => {
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
             />
 
-            <Button
+            <ButtonOutOfStock
                 v-else-if="layout?.iris?.is_logged_in"
-                :label="product.status_label ?? ctrans('Out of stock')"
-                type="tertiary"
-                disabled
-                full
-            />
+                :product="product"
+                :label="product.status_label" />
 
             <LinkIris
                 v-else

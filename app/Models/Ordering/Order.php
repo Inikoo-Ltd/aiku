@@ -23,6 +23,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
 use App\Models\Billables\ShippingZone;
+use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
@@ -240,6 +241,7 @@ class Order extends Model implements HasMedia, Auditable
         'shipping_data'                 => 'array',
         'categories_data'               => 'array',
         'discretionary_offers_data'     => 'array',
+        'insert_types'                  => 'array',
         'date'                          => 'datetime',
         'updated_by_customer_at'        => 'datetime',
         'submitted_at'                  => 'datetime',
@@ -263,6 +265,8 @@ class Order extends Model implements HasMedia, Auditable
         'shipping_amount'               => 'decimal:2',
         'is_shipper_locked'             => 'boolean',
         'insurance_amount'              => 'decimal:2',
+        'packaging_amount'              => 'decimal:2',
+        'leaflet_amount'                => 'decimal:2',
         'net_amount'                    => 'decimal:2',
         'grp_net_amount'                => 'decimal:2',
         'org_net_amount'                => 'decimal:2',
@@ -576,6 +580,11 @@ class Order extends Model implements HasMedia, Auditable
     public function shippingZone(): BelongsTo
     {
         return $this->belongsTo(ShippingZone::class);
+    }
+
+    public function packaging(): BelongsTo
+    {
+        return $this->belongsTo(Packaging::class);
     }
 
     public function shipper(): BelongsTo

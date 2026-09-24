@@ -308,7 +308,9 @@ trait WithLineTaxCategories
      */
     public function getOrderTaxBreakdown(Order $order): array
     {
-        $modelTypes = ['Product', 'Service', 'Charge', 'Adjustment'];
+        // Packaging and add-ons are billed on the order, so they carry tax and belong in
+        // the net the same way charges do.
+        $modelTypes = ['Product', 'Service', 'Charge', 'Adjustment', 'Packaging', 'Leaflet'];
         if (!$order->collection_address_id) {
             $modelTypes[] = 'ShippingZone';
         }

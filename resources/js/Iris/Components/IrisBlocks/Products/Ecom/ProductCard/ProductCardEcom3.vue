@@ -23,6 +23,7 @@ import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.v
 import { routeType } from '@/types/route'
 /* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
+import RibbonExpectedBackInStock from '@/Components/Iris/Products/RibbonExpectedBackInStock.vue'
 
 const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
@@ -193,7 +194,7 @@ defineExpose({
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate">
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
+            <BestsellerBadge v-if="product?.top_seller && (product.stock > 0 || product.is_coming_soon)" :topSeller="product?.top_seller" :data="bestSeller"
                 :screenType="screenType" />
             
 
@@ -275,6 +276,8 @@ defineExpose({
                 </div>
 
                 <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
+
+                <RibbonExpectedBackInStock v-if="layout?.iris?.is_logged_in" :product="product" />
 
                 <!-- Section: Golden product, Favourite -->
                 <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"

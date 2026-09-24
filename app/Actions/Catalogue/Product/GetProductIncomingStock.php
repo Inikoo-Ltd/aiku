@@ -43,7 +43,7 @@ class GetProductIncomingStock
     private const int DEFAULT_LEAD_TIME_DAYS = 14;
 
     /**
-     * @return array<int, array{type: string, reference: string, slug: string, org_stock_code: string, org_stock_name: string, state: string, state_label: string, quantity: float, eta: string|null, organisation_slug: string}>
+     * @return array<int, array{type: string, reference: string, slug: string, org_stock_id: int, org_stock_code: string, org_stock_name: string, state: string, state_label: string, quantity: float, eta: string|null, organisation_slug: string}>
      */
     public function handle(Product $product): array
     {
@@ -78,6 +78,45 @@ class GetProductIncomingStock
     }
 
     /**
+     * The earliest date each product should be back on the shelf, worked out for a whole
+     * page of products at once. Products with nothing on its way are left out.
+     *
+     * @param  array<int, int> $productIds
+     * @return array<int, string>
+     */
+    public function earliestEtaByProduct(array $productIds): array
+    {
+        if (!$productIds) {
+            return [];
+        }
+
+        $orgStockIdsByProduct = DB::table('product_has_org_stocks')
+            ->whereIn('product_id', $productIds)
+            ->get(['product_id', 'org_stock_id'])
+            ->groupBy('product_id')
+            ->map(fn ($rows) => $rows->pluck('org_stock_id')->all());
+
+        $orgStockIds = $orgStockIdsByProduct->flatten()->unique()->values()->all();
+
+        if (!$orgStockIds) {
+            return [];
+        }
+
+        $earliestEtaByOrgStock = collect(array_merge(
+            $this->stockDeliveryLines($orgStockIds),
+            $this->purchaseOrderLines($orgStockIds)
+        ))
+            ->filter(fn ($line) => $line['eta'])
+            ->groupBy('org_stock_id')
+            ->map(fn ($lines) => $lines->min('eta'));
+
+        return $orgStockIdsByProduct
+            ->map(fn ($productOrgStockIds) => $earliestEtaByOrgStock->only($productOrgStockIds)->min())
+            ->filter()
+            ->all();
+    }
+
+    /**
      * @param  array<int, int> $orgStockIds
      * @return array<int, array<string, mixed>>
      */
@@ -96,6 +135,7 @@ class GetProductIncomingStock
                 'stock_deliveries.slug',
                 'stock_deliveries.state',
                 'stock_deliveries.dispatched_at',
+                'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'organisations.slug as organisation_slug',
@@ -107,6 +147,7 @@ class GetProductIncomingStock
                 'type'              => 'stock_delivery',
                 'reference'         => $row->reference,
                 'slug'              => $row->slug,
+                'org_stock_id'      => $row->org_stock_id,
                 'org_stock_code'    => $row->org_stock_code,
                 'org_stock_name'    => $row->org_stock_name,
                 'state'             => $row->state,
@@ -162,6 +203,7 @@ class GetProductIncomingStock
                 'purchase_orders.delivery_state',
                 'purchase_orders.submitted_at',
                 'purchase_orders.estimated_received_at',
+                'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'org_stocks.measured_lead_time_days',
@@ -174,6 +216,7 @@ class GetProductIncomingStock
                 'type'              => 'purchase_order',
                 'reference'         => $row->reference,
                 'slug'              => $row->slug,
+                'org_stock_id'      => $row->org_stock_id,
                 'org_stock_code'    => $row->org_stock_code,
                 'org_stock_name'    => $row->org_stock_name,
                 'state'             => $row->delivery_state,

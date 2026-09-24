@@ -252,6 +252,11 @@ class StoreOrder extends OrgAction
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $order->state);
 
+
+        if ($this->strict) {
+            $order = ApplyDefaultOrderPackaging::run($order)->refresh();
+        }
+
         if ($order->customer_client_id) {
             CustomerClientHydrateOrders::dispatch($order->customerClient)->delay($this->hydratorsDelay);
         }
