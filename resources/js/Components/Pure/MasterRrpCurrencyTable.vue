@@ -20,8 +20,10 @@ withDefaults(defineProps<{
     unitsPerOuter?: number
     costs?: Record<string, number | null>
     editOn?: 'outer' | 'unit'
+    autoMultiplier?: number
 }>(), {
     editOn: 'unit',
+    autoMultiplier: 2.4,
 });
 
 defineEmits<{
@@ -41,7 +43,7 @@ defineEmits<{
         margin-label="Margin"
         :always-independent-currency-codes="[]"
         auto-from-cost
-        :auto-multiplier="2.4"
+        :auto-multiplier="autoMultiplier"
         @update:model-value="$emit('update:modelValue', $event)"
     />
 </template>

@@ -2839,6 +2839,76 @@ test('master product creation data refuses a trade unit quantity of zero instead
 
 test('minor currency recalculation includes variant master assets', function () {
     $masterShop = createFreshMasterShop();
+test('master product creation suggests price and RRP from the master shop ratios, editable per master shop', function (ShopTypeEnum $type, float $defaultCostPriceRatio, float $defaultRrpPriceRatio) {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['type' => $type]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RRPDEP-'.uniqid(),
+        'name' => 'RRP ratio dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RRPFAM-'.uniqid(),
+        'name' => 'RRP ratio family',
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    $creationData = fn () => \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily->refresh(),
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    expect(data_get($creationData(), 'rrp_price_ratio'))->toBe($defaultRrpPriceRatio)
+        ->and($masterShop->costPriceRatio())->toBe($defaultCostPriceRatio);
+
+    $masterShop = UpdateMasterShop::make()->action($masterShop, ['cost_price_ratio' => 2.8, 'rrp_price_ratio' => 1.9]);
+
+    expect($masterShop->costPriceRatio())->toBe(2.8)
+        ->and(data_get($creationData(), 'rrp_price_ratio'))->toBe(1.9);
+})->with([
+    'wholesale'    => [ShopTypeEnum::B2B, 2.0, 2.4],
+    'dropshipping' => [ShopTypeEnum::DROPSHIPPING, 3.5, 2.0],
+]);
+
+test('master product creation prices a new product at cost times the price ratio and its RRP at price times the RRP ratio', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => ['GBP' => ['is_major' => true]]]);
+    $masterShop = UpdateMasterShop::make()->action($masterShop, ['cost_price_ratio' => 3, 'rrp_price_ratio' => 2]);
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => Currency::where('code', 'GBP')->firstOrFail()->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CPRDEP-'.uniqid(),
+        'name' => 'Cost price ratio dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CPRFAM-'.uniqid(),
+        'name' => 'Cost price ratio family',
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $stock     = \App\Actions\Goods\Stock\StoreStock::make()->action(group(), \App\Models\Goods\Stock::factory()->definition());
+    $stock     = \App\Actions\Goods\Stock\UpdateStock::make()->action($stock, ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]);
+    $orgStock  = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['lpp_per_sku' => 10, 'packed_in' => 1]);
+    $tradeUnit->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+
+    $data = \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily,
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    $cost = data_get($data, 'avg_org_cost');
+
+    expect($cost)->toBeGreaterThan(0)
+        ->and(data_get($data, 'master_prices.GBP.value'))->toEqual(round($cost * 3, 2))
+        ->and(data_get($data, 'master_rrps.GBP.value'))->toEqual(round($cost * 3 * 2, 2));
+});
+
     $masterShop->update(['price_exchanges' => [
         'EUR' => ['is_major' => true],
         'SEK' => ['is_major' => false, 'major' => 'EUR', 'exchange' => 11],

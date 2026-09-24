@@ -9,7 +9,7 @@ import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { routeType } from "@/types/route";
 import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
@@ -92,6 +92,7 @@ const listSelectorRef = ref<InstanceType<typeof ListSelector> | null>(null)
 const currencies_data = ref({})
 const org_data = ref(null)
 const avg_org_cost = ref(0)
+const rrp_price_ratio = ref(2.4)
 
 // Inertia form
 const form = useForm({
@@ -199,6 +200,7 @@ const getTableData = (data) => {
             currencies_data.value = response.data.currencies
             form.master_prices = response.data.master_prices
             form.master_rrps = response.data.master_rrps
+            rrp_price_ratio.value = response.data.rrp_price_ratio
             org_data.value = response.data.org_data
             avg_org_cost.value = response.data.avg_org_cost
             
@@ -321,7 +323,7 @@ const submitForm = async (redirect = true) => {
             form.reset()
             key.value = ulid()
             previewUrl.value = null
-            notify({ title: trans("success"), text: "success to create product", type: "success" })
+            notify({ title: ctrans("success"), text: "success to create product", type: "success" })
         }
     } catch (error: any) {
         console.log("Error response:", error.response)
@@ -332,14 +334,14 @@ const submitForm = async (redirect = true) => {
             }
             errorSummary.value = Object.entries(form.errors as Record<string, string[]>).map(([field, messages]) => {
                 if (field === 'code' && messages.some(m => m.includes('already been taken'))) {
-                    return trans("Code") + ` "${form.code}" ` + trans("is already used by another master product in this master shop")
+                    return ctrans("Code") + ` "${form.code}" ` + ctrans("is already used by another master product in this master shop")
                 }
                 return messages.join(", ")
             })
         } else {
             notify({
-                title: trans("Something went wrong"),
-                text: error.message || trans("Please try again"),
+                title: ctrans("Something went wrong"),
+                text: error.message || ctrans("Please try again"),
                 type: 'error'
             })
         }
@@ -351,7 +353,7 @@ const submitForm = async (redirect = true) => {
 
 const selectorTab = [
     {
-        label: trans("To do"),
+        label: ctrans("To do"),
         search:true,
         routeFetch: {
             name: "grp.json.master-product-category.recommended-trade-units",
@@ -359,7 +361,7 @@ const selectorTab = [
         },
     },
     {
-        label: trans("Done"),
+        label: ctrans("Done"),
         search:true,
         routeFetch: {
             name: "grp.json.master-product-category.taken-trade-units",
@@ -367,7 +369,7 @@ const selectorTab = [
         },
     },
     {
-        label: trans("All"),
+        label: ctrans("All"),
         search: true,
         routeFetch: {
             name: "grp.json.master_product_category.all_trade_units",
@@ -420,7 +422,7 @@ const successEditTradeUnit = (data) => {
         <!-- Header -->
         <template #header>
             <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 flex-1">
-                {{ trans("Create Master Product") }}
+                {{ ctrans("Create Master Product") }}
             </h2>
             <button @click="toggleFull" class="text-gray-500 hover:text-gray-700 mx-3">
                 <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" fixed-width />
@@ -452,7 +454,7 @@ const successEditTradeUnit = (data) => {
                             <!-- Product Image -->
                             <div class="w-12 h-12 rounded-lg border border-gray-200 shadow-sm flex items-center justify-center ">
                                 <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image" object-cover />
-                                <FontAwesomeIcon v-else v-tooltip="trans('No image')" icon="fal fa-image" class="opacity-70" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else v-tooltip="ctrans('No image')" icon="fal fa-image" class="opacity-70" fixed-width aria-hidden="true" />
                             </div>
 
                             <!-- Product Details -->
@@ -470,7 +472,7 @@ const successEditTradeUnit = (data) => {
                                 </div>
 
                                 <!-- Quantity -->
-                                <div v-tooltip="trans('Packed in :qty', { qty: data.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
+                                <div v-tooltip="ctrans('Packed in :qty', { qty: data.packed_in })" class="w-fit text-xs border border-teal-100 rounded px-2 py-0.5 bg-teal-600 text-white">
                                     <FontAwesomeIcon icon="fas fa-box-up" class="mr-1" fixed-width aria-hidden="true" />
                                     {{ data.packed_in }} [{{ data.type }}]
                                 </div>
@@ -505,7 +507,7 @@ const successEditTradeUnit = (data) => {
                 </small>
                 <small class="text-gray-500 text-xs mt-1 flex items-center gap-1">
                     <FontAwesomeIcon :icon="faInfoCircle" class="text-sm" fixed-width />
-                    {{ trans('When multiple trade units are selected, it will automatically be set as the outer unit (value: 1).') }}
+                    {{ ctrans('When multiple trade units are selected, it will automatically be set as the outer unit (value: 1).') }}
                 </small>
 
             </div>
@@ -515,7 +517,7 @@ const successEditTradeUnit = (data) => {
                 <button
                     class="w-full flex items-center justify-between border-b pb-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
                     @click="detailsVisible = !detailsVisible">
-                    <span>{{ trans("Product Details") }}</span>
+                    <span>{{ ctrans("Product Details") }}</span>
                     <FontAwesomeIcon :icon="detailsVisible ? faChevronUp : faChevronDown" class="text-xs" fixed-width />
                 </button>
 
@@ -556,7 +558,7 @@ const successEditTradeUnit = (data) => {
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
                         <div :class="'col-span-1'">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
                             <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -565,7 +567,7 @@ const successEditTradeUnit = (data) => {
                             </small>
                         </div>
                          <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Name')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Name')}}</label>
                             <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
                                 class="w-full" />
                             <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -577,11 +579,11 @@ const successEditTradeUnit = (data) => {
                             <div>
                                 
                                 <label class="block text-xs font-medium text-gray-600 mb-1">
-                                    {{trans('Is Follower')}} 
+                                    {{ctrans('Is Follower')}} 
                                     <FontAwesomeIcon
                                         :icon="faInfoCircle"
                                         class="text-xs text-gray-400 ml-1"
-                                        v-tooltip="trans(
+                                        v-tooltip="ctrans(
                                             'Is Follower indicates that this product is a follower item and will not generate its own webpage.'
                                         )" fixed-width
                                     />
@@ -594,11 +596,11 @@ const successEditTradeUnit = (data) => {
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 mb-1">
-                                    {{trans('Is For Sale')}} 
+                                    {{ctrans('Is For Sale')}} 
                                     <FontAwesomeIcon
                                         :icon="faInfoCircle"
                                         class="text-xs text-gray-400 ml-1"
-                                        v-tooltip="trans(
+                                        v-tooltip="ctrans(
                                             'Is Follower indicates that this product is a follower item and will not generate its own webpage.'
                                         )" fixed-width
                                     />
@@ -611,7 +613,7 @@ const successEditTradeUnit = (data) => {
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit label')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Unit label')}}</label>
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
                                 class="w-full" />
                             <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -621,7 +623,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                        <!--  <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Units')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Units')}}</label>
                             <PureInputNumber v-model="form.units" @update:model-value="form.errors.units = null"
                                 class="w-full" />
                             <small v-if="form.errors.units" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -631,7 +633,7 @@ const successEditTradeUnit = (data) => {
                         </div> -->
 
                         <div v-if="form.trade_units.length > 1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Marketing Weight')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Marketing Weight')}}</label>
                             <PureInputNumber v-model="form.marketing_weight"
                                 @update:model-value="form.errors.marketing_weight = null" class="w-full"
                                 :suffix="'g'" />
@@ -643,7 +645,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div v-if="form.trade_units.length > 1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Net Weight')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Net Weight')}}</label>
                             <PureInputNumber v-model="form.net_weight"
                                 @update:model-value="form.errors.net_weight = null" class="w-full" :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
@@ -654,7 +656,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div v-if="form.trade_units.length > 1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Gross Weight')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Gross Weight')}}</label>
                             <PureInputNumber v-model="form.gross_weight"
                                 @update:model-value="form.errors.gross_weight = null" class="w-full" :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
@@ -666,7 +668,7 @@ const successEditTradeUnit = (data) => {
 
 
                         <div v-if="form.trade_units.length > 1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Dimension')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Dimension')}}</label>
                             <PureInputDimension :rows="4" v-model="form.marketing_dimensions"
                                 @update:model-value="form.errors.marketing_dimensions = null" class="w-full" />
                             <small v-if="form.errors.marketing_dimensions"
@@ -679,7 +681,7 @@ const successEditTradeUnit = (data) => {
                        
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Description')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Description')}}</label>
                             <SideEditorInputHTML :rows="4" v-model="form.description"
                                 @update:model-value="form.errors.description = null" class="w-full" />
                             <small v-if="form.errors.description"
@@ -690,7 +692,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Description extra')}}</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Description extra')}}</label>
                             <SideEditorInputHTML :rows="4" v-model="form.description_extra"
                                 @update:model-value="form.errors.description_extra = null" class="w-full" />
                             <small v-if="form.errors.description_extra"
@@ -700,7 +702,7 @@ const successEditTradeUnit = (data) => {
                             </small>
                         </div>
                         <div>
-                          <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Price')}}</label> -->
+                          <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('Price')}}</label> -->
                             <MasterPriceCurrencyTable
                                 v-model="form.master_prices"
                                 :currencies="currencies_data"
@@ -716,13 +718,14 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                          <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('RRP')}}</label> -->
+                          <!--   <label class="block text-xs font-medium text-gray-600 mb-1">{{ctrans('RRP')}}</label> -->
                             <MasterRrpCurrencyTable
                                 v-model="form.master_rrps"
                                 :currencies="currencies_data"
                                 :editOn="is_dropship ? 'outer' : 'unit'"
                                 :unitsPerOuter="unitsPerOuter"
                                 :costs="priceByCurrency"
+                                :autoMultiplier="rrp_price_ratio"
                             />
                             <small v-if="form.errors.master_rrps"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -740,12 +743,12 @@ const successEditTradeUnit = (data) => {
                 <button
                     class="w-full flex items-center justify-between border-b pb-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
                     @click="tableVisible = !tableVisible">
-                    <span>{{ trans("Shop Product") }}</span>
+                    <span>{{ ctrans("Shop Product") }}</span>
                     <FontAwesomeIcon :icon="tableVisible ? faChevronUp : faChevronDown" class="text-xs" fixed-width />
                 </button>
 
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form" />
+                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form" :rrpPriceRatio="rrp_price_ratio" />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>
@@ -758,7 +761,7 @@ const successEditTradeUnit = (data) => {
             <div v-if="errorSummary.length" class="border border-red-300 bg-red-50 text-red-700 rounded-md px-4 py-3 mb-3 text-sm">
                 <div class="flex justify-between items-start gap-3">
                     <div>
-                        <div class="font-medium mb-1">{{ trans("The product could not be saved") }}</div>
+                        <div class="font-medium mb-1">{{ ctrans("The product could not be saved") }}</div>
                         <ul class="list-disc pl-5 space-y-0.5">
                             <li v-for="(message, index) in errorSummary" :key="index">{{ message }}</li>
                         </ul>
