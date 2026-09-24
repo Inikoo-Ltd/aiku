@@ -32,6 +32,7 @@ use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
+use App\Actions\Catalogue\Product\SyncProductExclusiveCustomers;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
@@ -398,6 +399,14 @@ test('order products picker offers not for sale products to partners only', func
     expect($order->isPartnerOrder())->toBeTrue()
         ->and($offered())->toContain($this->product->id);
 
+    $outsideCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => [$outsideCustomer->id]]);
+    expect($offered())->not->toContain($this->product->id);
+
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => [$order->customer_id]]);
+    expect($offered())->toContain($this->product->id);
+
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => []]);
     $orgPartner->delete();
     $this->product->update(['is_for_sale' => true]);
 
