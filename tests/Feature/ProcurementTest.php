@@ -1138,7 +1138,7 @@ test('aurora agent supplier purchase orders keep the dates they were submitted t
         audit: false
     );
 
-    expect($agentSupplierPurchaseOrder->state)->toBe(AgentSupplierPurchaseOrderStateEnum::IN_PROCESS)
+    expect($agentSupplierPurchaseOrder->state)->toBe(AgentSupplierPurchaseOrderStateEnum::SUBMITTED)
         ->and($agentSupplierPurchaseOrder->submitted_at->toDateTimeString())->toBe('2025-10-10 08:44:37')
         ->and($agentSupplierPurchaseOrder->date->toDateTimeString())->toBe('2025-10-10 08:44:37');
 
