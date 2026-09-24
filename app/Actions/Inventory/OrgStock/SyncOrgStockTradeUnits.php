@@ -11,12 +11,16 @@ namespace App\Actions\Inventory\OrgStock;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Goods\TradeUnit\SetTradeUnitStatus;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
+use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Role;
 use App\Notifications\OrgStockPackingChangedNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -44,28 +48,88 @@ class SyncOrgStockTradeUnits
     }
 
     /**
-     * A pivot change re-means every stored location count, so stocked locations lose their
-     * audited status until someone counts the shelf again — except when the caller converts
-     * the counts arithmetically ($stockStrategy 'convert'), which keeps them as trustworthy
-     * as they were. Warehouse admins are notified either way, from here, so every writer
-     * of the pivot (packing editor, group stock editor cascade, repairs) tells the warehouse.
+     * Physical pieces on the shelf don't move when the packing is redeclared, so the count
+     * converts by old/new pack size. Only defined where both sides are a real packing under
+     * the same rule the packed_in hydrators use: a single trade unit with a clean integer
+     * quantity between 1 and 50000 — anything else is "packing unknown" and must be counted.
      */
-    public function handle(OrgStock $orgStock, array $tradeUnitsData, ?string $stockStrategy = null): OrgStock
+    public static function conversionRatio(OrgStock $orgStock, array $tradeUnitsData): ?float
     {
-        $reMeansStockedLocations = self::pivotChanges($orgStock, $tradeUnitsData)
-            && $orgStock->locationOrgStocks()->where('quantity', '!=', 0)->exists();
+        $currentPivot = $orgStock->tradeUnits()->pluck('model_has_trade_units.quantity', 'trade_units.id');
+        $newPivot     = collect($tradeUnitsData)->map(fn ($pivotData) => (float) $pivotData['quantity']);
 
-        $orgStock->tradeUnits()->sync($tradeUnitsData);
+        if ($currentPivot->count() !== 1 || $newPivot->count() !== 1
+            || (int) $currentPivot->keys()->first() !== (int) $newPivot->keys()->first()
+        ) {
+            return null;
+        }
 
-        if ($reMeansStockedLocations) {
-            if ($stockStrategy !== 'convert') {
+        $oldPackSize = (float) $currentPivot->first();
+        $newPackSize = (float) $newPivot->first();
+
+        foreach ([$oldPackSize, $newPackSize] as $packSize) {
+            if (floor($packSize) != $packSize || $packSize <= 0 || $packSize > 50000) {
+                return null;
+            }
+        }
+
+        return $oldPackSize !== $newPackSize ? $oldPackSize / $newPackSize : null;
+    }
+
+    /**
+     * A pivot change re-means every stored location count. With $stockStrategy 'convert' and a
+     * packing that converts arithmetically, the counts are rescaled as zero-valued UOM audit
+     * movements (the shelf and its value do not move, only the counting unit), keeping them as
+     * trustworthy as they were. Otherwise the numbers stay and stocked locations lose their
+     * audited status until someone counts the shelf again. Warehouse admins are notified either
+     * way, from here, so every writer of the pivot (packing editor, group stock editor cascade,
+     * repairs) tells the warehouse.
+     */
+    public function handle(OrgStock $orgStock, array $tradeUnitsData, ?string $stockStrategy = null, ?int $userId = null): OrgStock
+    {
+        $stockedLocations = $orgStock->locationOrgStocks()->where('quantity', '!=', 0)->with('location')->get();
+
+        $reMeansStockedLocations = $stockedLocations->isNotEmpty() && self::pivotChanges($orgStock, $tradeUnitsData);
+
+        $conversionRatio = $reMeansStockedLocations && $stockStrategy === 'convert'
+            ? self::conversionRatio($orgStock, $tradeUnitsData)
+            : null;
+
+        DB::transaction(function () use ($orgStock, $tradeUnitsData, $reMeansStockedLocations, $stockedLocations, $conversionRatio, $userId) {
+            $orgStock->tradeUnits()->sync($tradeUnitsData);
+
+            if (!$reMeansStockedLocations) {
+                return;
+            }
+
+            if (!$conversionRatio) {
                 $orgStock->locationOrgStocks()
                     ->where('quantity', '!=', 0)
                     ->update(['audited_at' => null, 'is_low_stock_checked' => false]);
+
+                return;
             }
-            $this->notifyWarehouses($orgStock, $stockStrategy);
+
+            foreach ($stockedLocations as $locationOrgStock) {
+                $convertedQuantity = round($locationOrgStock->quantity * $conversionRatio, 3);
+                StoreOrgStockMovement::make()->action($orgStock, $locationOrgStock->location, [
+                    'quantity'         => $convertedQuantity - $locationOrgStock->quantity,
+                    'audited_quantity' => $convertedQuantity,
+                    'type'             => OrgStockMovementTypeEnum::AUDIT,
+                    'reason'           => OrgStockMovementReasonEnum::UOM,
+                    'note'             => __('Count converted after packing change'),
+                    'org_amount'       => 0,
+                    'user_id'          => $userId,
+                    'date'             => now()->format('Y-m-d H:i:s.u'),
+                ]);
+            }
+        });
+
+        if ($reMeansStockedLocations) {
+            $this->notifyWarehouses($orgStock, (bool) $conversionRatio);
         }
 
+        $orgStock->unsetRelation('tradeUnits');
         foreach ($orgStock->tradeUnits as $tradeUnit) {
             SetTradeUnitStatus::dispatch($tradeUnit);
             TradeUnitsHydrateOrgStocks::dispatch($tradeUnit);
@@ -76,9 +140,9 @@ class SyncOrgStockTradeUnits
         return $orgStock;
     }
 
-    private function notifyWarehouses(OrgStock $orgStock, ?string $stockStrategy): void
+    private function notifyWarehouses(OrgStock $orgStock, bool $countsConverted): void
     {
-        $body = $stockStrategy === 'convert'
+        $body = $countsConverted
             ? __('The packing of :code changed and its location counts were converted to the new pack size. Please verify on the shelf when convenient.', ['code' => $orgStock->code])
             : __('The packing of :code changed but its location counts were kept: every location holding it needs a physical recount.', ['code' => $orgStock->code]);
 
