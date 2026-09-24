@@ -34,6 +34,7 @@ use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
@@ -3159,6 +3160,34 @@ describe('stock delivery costing checklist', function () {
             ->and($stockDelivery->costs()->where('type', 'shipping')->first()->received_at)->not->toBeNull()
             ->and($stockDelivery->costs()->where('type', 'duty')->first()->is_na)->toBeTrue();
     });
+
+    test('partner delivery costs itself from its line values when booked in', function () {
+        $orgStock      = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->first();
+        $stockDelivery = StoreStockDelivery::make()->action($this->orgPartner, [
+            'reference' => 'PARTNER-COSTING-'.StockDelivery::count(),
+            'date'      => date('Y-m-d'),
+            'state'     => StockDeliveryStateEnum::CHECKED,
+        ], strict: false);
+        $item = StoreStockDeliveryItem::make()->action($stockDelivery, null, $orgStock, [
+            'unit_quantity'        => 72,
+            'unit_quantity_placed' => 72,
+            'state'                => StockDeliveryItemStateEnum::PLACED,
+        ], strict: false);
+
+        $item = UpdateStockDeliveryItem::make()->action($item, ['net_amount' => 134.64], strict: false);
+
+        expect((float) $item->net_amount)->toBe(134.64)
+            ->and((float) $item->org_net_amount)->toEqualWithDelta(134.64 * ($item->org_exchange ?? 1), 0.01);
+
+        UpdateStockDeliveryStateFromGoodsIn::run($stockDelivery->refresh());
+
+        $stockDelivery->refresh();
+        expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::PLACED)
+            ->and($stockDelivery->is_costed)->toBeTrue()
+            ->and((float) $stockDelivery->cost_items)->toBe(134.64)
+            ->and((float) $item->refresh()->cost_items)->toBe(134.64)
+            ->and($item->is_costed)->toBeTrue();
+    });
 });
 
 describe('supplier deposits', function () {
@@ -3609,7 +3638,8 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::CONFIRMED)
             ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
             ->and($stockDelivery->items()->count())->toBe(1)
-            ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
+            ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id)
+            ->and((float) $stockDelivery->items()->first()->net_amount)->toBe((float) $order->deliveryNotes()->first()->deliveryNoteItems()->first()->transaction->net_amount);
     });
 
     test('send partner order to warehouse rejects non-creating order', function () {

@@ -53,7 +53,11 @@ class StartStockDeliveryCosting extends OrgAction
 
         UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
 
-        StockDeliveriesHydrateCosts::run($stockDelivery);
+        if ($stockDelivery->parent_type === 'OrgPartner') {
+            EvaluateStockDeliveryCosting::run($stockDelivery);
+        } else {
+            StockDeliveriesHydrateCosts::run($stockDelivery);
+        }
 
         $this->runStockDeliveryHydrators($stockDelivery);
 
