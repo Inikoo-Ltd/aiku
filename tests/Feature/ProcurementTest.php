@@ -2603,6 +2603,30 @@ test('stock delivery item places all the remaining checked quantity in one locat
         ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
 });
 
+test('placed stock delivery item can have more checked and booked in while the delivery is booking in', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'BOOK-MORE', [10, 5]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->orderBy('id')->skip(1)->first(), ['unit_quantity_checked' => 5]);
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->orderBy('id')->first(), ['unit_quantity_checked' => 10]);
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => $locationOrgStock->id]);
+
+    expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKING_IN);
+
+    $resource = StockDeliveryItemResource::make($stockDeliveryItem)->toArray(request());
+    expect($resource['checkedRoute'])->not->toBeNull()
+        ->and(collect($resource['locations'])->pluck('location_code'))->toContain($locationOrgStock->location->code);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 12]);
+    expect($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::CHECKED);
+
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => $locationOrgStock->id]);
+    expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(12.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED);
+});
+
 test('stock delivery item is booked in to a location the org stock did not have and gets associated to it', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-NEW-LOCATION', [10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);

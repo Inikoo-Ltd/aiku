@@ -91,7 +91,7 @@ class StockDeliveryItemResource extends JsonResource
             StockDeliveryItemStateEnum::RECEIVED,
             StockDeliveryItemStateEnum::CHECKED,
             StockDeliveryItemStateEnum::NOT_RECEIVED,
-        ], true);
+        ], true) || ($isEditable && $item->state === StockDeliveryItemStateEnum::PLACED);
 
         return [
             'id'                    => $item->id,
