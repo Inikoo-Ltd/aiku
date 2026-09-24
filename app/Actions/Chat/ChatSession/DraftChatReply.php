@@ -220,8 +220,10 @@ class DraftChatReply implements ShouldBeUnique
           whether it is paid.
         - "stock_availability" if what they ask now is about products: whether in stock, how
           many we have, whether more is coming, or an in-stock alternative to one that is out.
-        - "other" for anything else, or when they also ask for something else: a price or
-          discount, a swap or change to an order, sourcing more than we can have, a website or
+        - "other" when the writer is not our customer (a courier, carrier, warehouse, supplier
+          or marketplace), when they report missing, damaged or wrong items (the claim checklist
+          handles those), or for anything else, or when they also ask for something else: a
+          price, quote or discount, a swap or change to an order, sourcing more than we can have, a website or
           search problem, a complaint, a decision they tell us, thanks, a bare link, an
           automatic notification, or a product we do not sell.
 
