@@ -3065,3 +3065,32 @@ test('a staff avatar is not offered in the group image gallery', function () {
                 ->all()
         )->not->toContain($employee->image_id);
 });
+
+test('job positions on an employee record that has left give its user no roles', function () {
+    setPermissionsTeamId($this->group->id);
+
+    $jobPosition = StoreJobPosition::make()->action($this->organisation, [
+        'code'  => 'LFT'.rand(1000, 9999),
+        'name'  => 'Left record position',
+        'scope' => \App\Enums\HumanResources\JobPosition\JobPositionScopeEnum::ORGANISATION,
+    ]);
+    $role = \App\Models\SysAdmin\Role::where('name', RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_CLERK->value, $this->organisation))->first();
+    $jobPosition->roles()->attach($role->id);
+
+    $user = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+
+    $leftRecord = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+    ]);
+    SyncEmployeeJobPositions::make()->handle($leftRecord, [$jobPosition->id => []]);
+    $user->employees()->attach($leftRecord->id, ['status' => true, 'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    expect($user->fresh()->roles()->where('roles.id', $role->id)->exists())->toBeFalse();
+
+    $leftRecord->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    expect($user->fresh()->roles()->where('roles.id', $role->id)->exists())->toBeTrue();
+});

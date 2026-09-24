@@ -11,6 +11,7 @@ namespace App\Actions\SysAdmin\User;
 use App\Actions\Chat\Agent\RevokeChatAgentAccess;
 use App\Actions\SysAdmin\CleanUserCaches;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\HumanResources\JobPosition;
@@ -32,7 +33,7 @@ class SyncRolesFromJobPositions
         $roles = [];
 
         if ($user->status) {
-            foreach ($user->employees()->wherePivot('status', true)->get() as $employee) {
+            foreach ($user->employees()->wherePivot('status', true)->where('employees.state', '!=', EmployeeStateEnum::LEFT)->get() as $employee) {
                 foreach ($employee->jobPositions as $jobPosition) {
                     $roles = $this->getRoles($roles, $jobPosition);
                 }
