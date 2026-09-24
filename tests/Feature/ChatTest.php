@@ -8,7 +8,6 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Chat\Agent\AssignChatAgentToScope;
 use Illuminate\Support\Arr;
 use App\Actions\Chat\Agent\DeleteAgent;
 use App\Actions\Chat\Agent\StoreAgent;
@@ -126,6 +125,18 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
+
+/**
+ * Grants chat access the real way: the customer service clerk position on the shop, the
+ * only thing anybody has to set up now that the legacy shop_has_chat_agents table is retired.
+ */
+function makeChatWorker(User $user, \App\Models\Catalogue\Shop $shop): void
+{
+    setPermissionsTeamId($user->group_id);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $shop));
+    \App\Actions\SysAdmin\CleanUserCaches::make()->clearPermissionsCache($user);
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+}
 
 beforeAll(function () {
     loadDB();
@@ -487,6 +498,8 @@ test('authenticated agent can assign chat session to self', function () {
 
     actingAs($user);
 
+    makeChatWorker($user, $this->shop);
+
     $agent = ChatAgent::firstOrCreate(
         ['user_id' => $user->id],
         [
@@ -495,12 +508,6 @@ test('authenticated agent can assign chat session to self', function () {
             'current_chat_count'   => 0,
         ]
     );
-
-    ShopHasChatAgent::firstOrCreate([
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'chat_agent_id'   => $agent->id,
-    ]);
 
     $chatSession = ChatSession::create([
         'ulid'             => Str::ulid(),
@@ -538,6 +545,7 @@ test('can send message from agent after assignment', function () {
     $user = $this->user;
 
     actingAs($user);
+    makeChatWorker($user, $this->shop);
 
     $agent = ChatAgent::where('user_id', $user->id)
         ->whereNull('deleted_at')
@@ -551,12 +559,6 @@ test('can send message from agent after assignment', function () {
             'current_chat_count'   => 0,
         ]);
     }
-
-    ShopHasChatAgent::firstOrCreate([
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'chat_agent_id'   => $agent->id,
-    ]);
 
     $chatSession = ChatSession::whereHas('assignments', function ($query) use ($agent) {
         $query->where('chat_agent_id', $agent->id)
@@ -691,7 +693,6 @@ test('can store a new agent', function () {
         'user_id'              => $user->id,
         'language_id'          => 68,
         'max_concurrent_chats' => 5,
-        'shop_id'              => [$this->shop->id],
     ];
 
     $agent = StoreAgent::make()->handle($modelData);
@@ -703,11 +704,9 @@ test('can store a new agent', function () {
         ->and($agent->is_online)->toBeFalse()
         ->and($agent->current_chat_count)->toBe(0);
 
-    $this->assertDatabaseHas('shop_has_chat_agents', [
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => $this->shop->id,
-        'chat_agent_id'   => $agent->id,
-    ]);
+    // Creating an agent profile writes nothing to the retired assignment table: access
+    // comes from the customer service position, set up separately.
+    expect(\App\Models\Chat\ShopHasChatAgent::where('chat_agent_id', $agent->id)->exists())->toBeFalse();
 });
 
 test('cannot store an agent for a user that is already active', function () {
@@ -753,7 +752,6 @@ test('StoreAgent validation rules are correct', function () {
 
     expect($rules)->toHaveKeys([
         'organisation_id',
-        'shop_id',
         'user_id',
         'language_id',
         'max_concurrent_chats',
@@ -775,16 +773,12 @@ test('can update an agent', function () {
 
     $updatedAgent = UpdateAgent::make()->handle($this->organisation, $agent, [
         'max_concurrent_chats' => 20,
-        'shop_id'              => [$this->shop->id],
     ]);
 
     expect($updatedAgent->max_concurrent_chats)->toBe(20);
 
-    $this->assertDatabaseHas('shop_has_chat_agents', [
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => $this->shop->id,
-        'chat_agent_id'   => $agent->id,
-    ]);
+    // Updating an agent profile writes nothing to the retired assignment table either.
+    expect(\App\Models\Chat\ShopHasChatAgent::where('chat_agent_id', $agent->id)->exists())->toBeFalse();
 });
 
 test('cannot update agent to a user_id already used by another active agent', function () {
@@ -910,86 +904,6 @@ test('cannot delete an agent that is still online', function () {
 
     $this->assertDatabaseHas('chat_agents', ['id' => $agent->id, 'deleted_at' => null]);
 });
-
-test('can assign chat agent to scope for multiple shops', function () {
-    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
-    $agent = ChatAgent::create([
-        'user_id'              => $user->id,
-        'max_concurrent_chats' => 5,
-        'language_id'          => 68,
-        'is_online'            => false,
-        'is_available'         => false,
-        'current_chat_count'   => 0,
-    ]);
-
-    AssignChatAgentToScope::make()->handle([
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => [$this->shop->id],
-    ], $agent);
-
-    $this->assertDatabaseHas('shop_has_chat_agents', [
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => $this->shop->id,
-        'chat_agent_id'   => $agent->id,
-    ]);
-});
-
-test('cannot assign chat agent to a scope it is already assigned to', function () {
-    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
-    $agent = ChatAgent::create([
-        'user_id'              => $user->id,
-        'max_concurrent_chats' => 5,
-        'language_id'          => 68,
-        'is_online'            => false,
-        'is_available'         => false,
-        'current_chat_count'   => 0,
-    ]);
-
-    $data = [
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => [$this->shop->id],
-    ];
-
-    AssignChatAgentToScope::make()->handle($data, $agent);
-
-    expect(fn () => AssignChatAgentToScope::make()->handle($data, $agent))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
-});
-
-test('updating chat agent scope removes stale shop assignments and adds new ones', function () {
-    $user      = User::factory()->create(['group_id' => $this->organisation->group_id]);
-    $otherShop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
-    $agent     = ChatAgent::create([
-        'user_id'              => $user->id,
-        'max_concurrent_chats' => 5,
-        'language_id'          => 68,
-        'is_online'            => false,
-        'is_available'         => false,
-        'current_chat_count'   => 0,
-    ]);
-
-    AssignChatAgentToScope::make()->handle([
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => [$this->shop->id],
-    ], $agent);
-
-    AssignChatAgentToScope::make()->update([
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => [$otherShop->id],
-    ], $agent);
-
-    $this->assertSoftDeleted('shop_has_chat_agents', [
-        'chat_agent_id' => $agent->id,
-        'shop_id'       => $this->shop->id,
-    ]);
-
-    $this->assertDatabaseHas('shop_has_chat_agents', [
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => $otherShop->id,
-        'chat_agent_id'   => $agent->id,
-    ]);
-});
-
 
 // CHAT SESSION ACTIONS TESTS
 
@@ -1380,10 +1294,7 @@ test('GetAgentUnreadMessagesSummary counts unassigned unread visitor messages', 
         'current_chat_count'   => 0,
     ]);
 
-    AssignChatAgentToScope::make()->handle([
-        'organisation_id' => $this->organisation->id,
-        'shop_id'         => [$this->shop->id],
-    ], $chatAgent);
+    makeChatWorker($user, $this->shop);
 
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),
@@ -3261,20 +3172,14 @@ test('new meta chat session response carries the assigned agent', function () {
 test('my chats excludes a whatsapp thread now held by another agent', function () {
     $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
 
+    $otherUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+
     $mine  = ChatAgent::where('user_id', $this->user->id)->first()
         ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
-    $other = StoreChatAgent::make()->handle(['user_id' => User::factory()->create(['group_id' => $this->organisation->group_id])->id]);
+    $other = StoreChatAgent::make()->handle(['user_id' => $otherUser->id]);
 
-    foreach ([$mine, $other] as $agent) {
-        if ($agent->isAssignedToShop($this->shop->id, $this->organisation->id)) {
-            continue;
-        }
-
-        AssignChatAgentToScope::make()->handle([
-            'organisation_id' => $this->organisation->id,
-            'shop_id'         => [$this->shop->id],
-        ], $agent);
-    }
+    makeChatWorker($this->user, $this->shop);
+    makeChatWorker($otherUser, $this->shop);
 
     $metaChatSession = MetaChatSession::create([
         'ulid'            => (string)Str::ulid(),
@@ -4132,7 +4037,7 @@ test('automated mail from senders that match no customer is labelled filtered an
     expect(ChatSession::count())->toBe($sessionsBefore);
 });
 
-test('a chat agent can only act on sessions of the shops it is assigned to', function () {
+test('a legacy shop_has_chat_agents row alone grants nothing; the position does', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),
         'shop_id'          => $this->shop->id,
@@ -4142,7 +4047,7 @@ test('a chat agent can only act on sessions of the shops it is assigned to', fun
         'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
     ]);
 
-    $strangerUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $strangerUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $stranger     = ChatAgent::create([
         'user_id'              => $strangerUser->id,
         'max_concurrent_chats' => 5,
@@ -4150,11 +4055,9 @@ test('a chat agent can only act on sessions of the shops it is assigned to', fun
         'is_online'            => true,
         'is_available'         => true,
         'current_chat_count'   => 0,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
     ]);
-
-    $this->actingAs($strangerUser);
-    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
-        ->and($stranger->isAssignedToShop($this->shop->id, $this->shop->organisation_id))->toBeFalse();
 
     ShopHasChatAgent::create([
         'organisation_id' => $this->shop->organisation_id,
@@ -4162,10 +4065,19 @@ test('a chat agent can only act on sessions of the shops it is assigned to', fun
         'chat_agent_id'   => $stranger->id,
     ]);
 
-    expect(CloseChatSession::make()->getCurrentAgent($session)->id)->toBe($stranger->id);
+    $this->actingAs($strangerUser);
+    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull()
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($strangerUser)['is_agent'])->toBeFalse()
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($strangerUser)['agent_shops'])->toBeEmpty()
+        ->and(ChatAgent::findAvailableAgent(shopId: $this->shop->id)?->id)->not->toBe($stranger->id);
+
+    makeChatWorker($strangerUser, $this->shop);
+
+    expect(CloseChatSession::make()->getCurrentAgent($session)->id)->toBe($stranger->id)
+        ->and(ChatAgent::findAvailableAgent(shopId: $this->shop->id)?->id)->toBe($stranger->id);
 });
 
-test('an org wide chat agent can act on any shop of that organisation', function () {
+test('an org wide legacy shop_has_chat_agents row no longer carries chat across every shop', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),
         'shop_id'          => $this->shop->id,
@@ -4193,7 +4105,7 @@ test('an org wide chat agent can act on any shop of that organisation', function
 
     $this->actingAs($user);
 
-    expect(CloseChatSession::make()->getCurrentAgent($session)->id)->toBe($agent->id);
+    expect(CloseChatSession::make()->getCurrentAgent($session))->toBeNull();
 });
 
 test('customer service permission makes an agent, creating the profile on first use', function () {
@@ -4266,12 +4178,6 @@ test('a departed staff member is never a chat agent', function () {
         'current_chat_count'   => 0,
         'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
         'last_heartbeat_at'    => now(),
-    ]);
-
-    ShopHasChatAgent::create([
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'chat_agent_id'   => $agent->id,
     ]);
 
     $this->actingAs($leaver);
@@ -4545,6 +4451,28 @@ test('an external shop has no chat permissions at all', function () {
     $worker->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $externalShop));
 
     expect($worker->authTo(['chat.'.$externalShop->id]))->toBeFalse();
+});
+
+test('the meta chat session channel follows the same rule as the rest of chat', function () {
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp'])->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628111222333',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    makeChatWorker($clerk, $this->shop);
+
+    $stranger = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+    $channel = new \App\Broadcasting\MetaChatSessionChannel();
+
+    expect($channel->join($clerk, $metaChatSession->ulid))->toBeTrue()
+        ->and($channel->join($stranger, $metaChatSession->ulid))->toBeFalse();
 });
 
 test('regaining the position brings a suspended agent profile back', function () {
@@ -8398,6 +8326,8 @@ test('an agent can hand a conversation to another named agent', function () {
 
     actingAs($user);
 
+    makeChatWorker($user, $this->shop);
+
     $agent = ChatAgent::firstOrCreate(
         ['user_id' => $user->id],
         [
@@ -8406,12 +8336,6 @@ test('an agent can hand a conversation to another named agent', function () {
             'current_chat_count'   => 0,
         ]
     );
-
-    ShopHasChatAgent::firstOrCreate([
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'chat_agent_id'   => $agent->id,
-    ]);
 
     $colleagueUser = User::factory()->create(['group_id' => $this->organisation->group_id]);
     $colleague     = ChatAgent::create([
@@ -8423,12 +8347,6 @@ test('an agent can hand a conversation to another named agent', function () {
         'last_heartbeat_at'    => now(),
         'max_concurrent_chats' => 100,
         'current_chat_count'   => 0,
-    ]);
-
-    ShopHasChatAgent::firstOrCreate([
-        'organisation_id' => $this->shop->organisation_id,
-        'shop_id'         => $this->shop->id,
-        'chat_agent_id'   => $colleague->id,
     ]);
 
     $chatSession = ChatSession::create([
