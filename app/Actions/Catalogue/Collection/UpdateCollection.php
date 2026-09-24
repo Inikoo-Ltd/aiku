@@ -17,6 +17,7 @@ use App\Http\Resources\Catalogue\CollectionResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateCollections;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateRebelCollections;
 use App\Models\Masters\MasterCollection;
 use App\Models\Inventory\Location;
 use App\Rules\AlphaDashDot;
@@ -83,8 +84,21 @@ class UpdateCollection extends OrgAction
                 $masterCollection = MasterCollection::find($masterCollectionID);
                 if ($masterCollection) {
                     MasterCollectionHydrateCollections::dispatch($masterCollection);
+                    MasterCollectionHydrateRebelCollections::dispatch($masterCollection);
                 }
             }
+        }
+
+        if (Arr::hasAny($changes, ['not_follow_master_items', 'not_follow_master_content']) && $collection->masterCollection && !Arr::has($changes, 'master_collection_id')) {
+            MasterCollectionHydrateRebelCollections::dispatch($collection->masterCollection);
+        }
+
+        if (Arr::has($changes, 'not_follow_master_items') && $collection->followsMasterItems()) {
+            SyncCollectionItemsFromMaster::run($collection);
+        }
+
+        if (Arr::has($changes, 'not_follow_master_content') && $collection->followsMasterContent()) {
+            $collection = SyncCollectionContentFromMaster::run($collection);
         }
 
         if (Arr::hasAny($changes, ['code', 'name'])) {
@@ -135,6 +149,8 @@ class UpdateCollection extends OrgAction
             'images'               => ['sometimes', 'array'],
             'image_id'             => ['sometimes', 'nullable', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'master_collection_id' => ['sometimes', 'integer', 'nullable'],
+            'not_follow_master_items'   => ['sometimes', 'boolean'],
+            'not_follow_master_content' => ['sometimes', 'boolean'],
 
         ];
         if (!$this->strict) {

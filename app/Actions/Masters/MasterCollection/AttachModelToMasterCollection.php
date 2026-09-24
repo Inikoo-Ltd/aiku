@@ -27,7 +27,7 @@ class AttachModelToMasterCollection extends OrgAction
             if (!$alreadyAttached) {
                 $masterCollection->masterProducts()->attach($model->id);
                 if ($attachChildren) {
-                    foreach ($masterCollection->childrenCollections as $collection) {
+                    foreach ($masterCollection->childrenCollections()->where('not_follow_master_items', false)->get() as $collection) {
                         $shopModel = $model->products()->where('shop_id', $collection->shop_id)->first();
                         if ($shopModel) {
                             AttachModelToCollection::run($collection, $shopModel);
@@ -58,7 +58,7 @@ class AttachModelToMasterCollection extends OrgAction
             if (!$alreadyAttached) {
                 $masterCollection->masterFamilies()->attach($model->id);
                 if ($attachChildren) {
-                    foreach ($masterCollection->childrenCollections as $collection) {
+                    foreach ($masterCollection->childrenCollections()->where('not_follow_master_items', false)->get() as $collection) {
                         $shopModel = $model->productCategories()->where('shop_id', $collection->shop_id)->first();
                         if ($shopModel) {
                             AttachModelToCollection::run($collection, $shopModel);

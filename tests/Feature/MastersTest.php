@@ -3494,3 +3494,219 @@ test('master products can be looked up by the codes pasted into the ordering tab
 
     expect($shopCodes->all())->toContain($first->code, $outsider->code);
 });
+
+function createShopCollectionUnderMaster(Shop $shop): array
+{
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'NFM-DEPT-'.uniqid(), 'name' => 'Not Follow Master Department']);
+    $masterFamilyA    = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'NFM-FA-'.uniqid(), 'name' => 'Not Follow Master Family A']);
+    $masterFamilyB    = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'NFM-FB-'.uniqid(), 'name' => 'Not Follow Master Family B']);
+    $masterAsset      = StoreMasterAsset::make()->action($masterFamilyA, [
+        'code'    => 'NFM-MA-'.uniqid(),
+        'name'    => 'Not Follow Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($shop);
+    $department  = $shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $familyA     = StoreProductCategory::make()->action($department, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::FAMILY->value]));
+    $familyB     = StoreProductCategory::make()->action($department, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::FAMILY->value]));
+    $familyA->updateQuietly(['master_product_category_id' => $masterFamilyA->id]);
+    $familyB->updateQuietly(['master_product_category_id' => $masterFamilyB->id]);
+    $product->updateQuietly(['master_product_id' => $masterAsset->id]);
+
+    $masterCollection = StoreMasterCollection::make()->action($masterDepartment, ['code' => 'NFM-MC-'.uniqid(), 'name' => 'Master name'], createChildren: false);
+    $collection       = StoreCollection::make()->action($shop, [
+        'code'                 => 'NFM-C-'.uniqid(),
+        'name'                 => 'Shop name',
+        'master_collection_id' => $masterCollection->id,
+    ]);
+
+    return [$masterCollection, $collection->refresh(), $masterFamilyA, $masterFamilyB, $masterAsset, $familyA, $familyB, $product];
+}
+
+test('collection items follow master unless not_follow_master_items, and mirror it again when switched off', function () {
+    [$masterCollection, $collection, $masterFamilyA, $masterFamilyB, $masterAsset, $familyA, $familyB, $product] = createShopCollectionUnderMaster($this->shop);
+
+    expect($collection->not_follow_master_items)->toBeFalse()
+        ->and($collection->not_follow_master_content)->toBeFalse();
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyB);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterAsset);
+    DetachMasterModelFromMasterCollection::make()->action($masterCollection, $masterFamilyA);
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id])
+        ->and($collection->products()->count())->toBe(0);
+
+    // The shop edits it on its own: the product comes in through its family
+    \App\Actions\Catalogue\Collection\AttachModelsToCollection::make()->action($collection, ['families' => [$product->family_id]]);
+    expect($collection->families()->pluck('product_categories.id')->sort()->values()->all())->toBe(collect([$familyA->id, $product->family_id])->sort()->values()->all())
+        ->and($collection->products()->wherePivot('type', 'indirect')->pluck('products.id')->all())->toContain($product->id);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyB->id])
+        ->and($collection->products()->wherePivot('type', 'direct')->pluck('products.id')->all())->toBe([$product->id])
+        ->and($collection->products()->wherePivot('type', 'indirect')->count())->toBe(0);
+
+    // Following again, so master changes reach it
+    DetachMasterModelFromMasterCollection::make()->action($masterCollection, $masterFamilyB);
+    expect($collection->families()->count())->toBe(0);
+});
+
+test('shop cannot attach or detach items of a collection that follows master items', function () {
+    [, $collection, , , , $familyA] = createShopCollectionUnderMaster($this->shop);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), ['families' => [$familyA->id]])
+        ->assertSessionHasErrors('collection');
+    expect($collection->families()->count())->toBe(0);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), ['families' => [$familyA->id]])
+        ->assertSessionHasNoErrors();
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+
+    \Pest\Laravel\delete(route('grp.models.collection.detach-models', ['collection' => $collection->id]), ['family' => $familyA->id])
+        ->assertSessionHasErrors('collection');
+});
+
+test('collection content follows master unless not_follow_master_content, and is taken from master again when switched off', function () {
+    [$masterCollection, $collection] = createShopCollectionUnderMaster($this->shop);
+    $shop   = $collection->shop;
+    $locale = $shop->language->code;
+    UpdateShop::make()->action($shop, ['collection_follow_master' => true]);
+
+    UpdateMasterCollection::make()->action($masterCollection, ['name' => 'Master name 2']);
+    expect($collection->refresh()->name)->toBe('Master name 2');
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => true]);
+
+    UpdateMasterCollection::make()->action($masterCollection, ['name' => 'Master name 3']);
+    \App\Actions\Masters\MasterCollection\UpdateMasterCollectionTranslationsFromUpdate::make()->action($masterCollection, [
+        'translations' => ['name' => [$locale => 'Master name translated']]
+    ]);
+    expect($collection->refresh()->name)->toBe('Master name 2');
+
+    // Local texts stay local
+    UpdateCollection::make()->action($collection, ['description' => 'Local description']);
+    expect($masterCollection->refresh()->getTranslations('description_i8n'))->not->toHaveKey($locale)
+        ->and($collection->refresh()->description)->toBe('Local description');
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => false]);
+
+    $collection->refresh();
+    expect($collection->name)->toBe('Master name translated')
+        ->and($collection->name_i8n)->toBe([$locale => 'Master name translated']);
+});
+
+test('updating a collection the old way leaves its follow master flags and items alone', function () {
+    [$masterCollection, $collection, $masterFamilyA, , , $familyA] = createShopCollectionUnderMaster($this->shop);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+
+    UpdateCollection::make()->action($collection, ['name' => 'Renamed in shop']);
+
+    $collection->refresh();
+    expect($collection->name)->toBe('Renamed in shop')
+        ->and($collection->not_follow_master_items)->toBeFalse()
+        ->and($collection->not_follow_master_content)->toBeFalse()
+        ->and($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+});
+
+test('UI collection under master shows the follow master toggles and opens item editing only when not following', function () {
+    [, $collection] = createShopCollectionUnderMaster($this->shop);
+    $parameters = [$this->organisation->slug, $this->shop->slug, $collection->slug];
+
+    get(route('grp.org.shops.show.catalogue.collections.edit', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint.1.fields.not_follow_master_items.value', false)
+            ->where('formData.blueprint.1.fields.not_follow_master_content.value', false));
+
+    get(route('grp.org.shops.show.catalogue.collections.show', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Catalogue/Collection')->where('can_edit_items', false));
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true, 'not_follow_master_content' => true]);
+
+    get(route('grp.org.shops.show.catalogue.collections.edit', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.1.fields.not_follow_master_items.value', true)
+            ->where('formData.blueprint.1.fields.not_follow_master_content.value', true));
+
+    get(route('grp.org.shops.show.catalogue.collections.show', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_items', true)->where('not_follow_master_items', true));
+
+    request()->merge(['filter' => ['global' => $collection->code]]);
+    $listed = collect(\App\Http\Resources\Catalogue\CollectionsResource::collection(
+        \App\Actions\Catalogue\Collection\UI\IndexCollections::run($this->shop)
+    )->resolve())->firstWhere('id', $collection->id);
+    $listedInMaster = collect(\App\Http\Resources\Catalogue\CollectionsResource::collection(
+        \App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection::run($collection->masterCollection)
+    )->resolve())->firstWhere('id', $collection->id);
+    expect($listed['not_follow_master_items'])->toBeTrue()
+        ->and($listedInMaster['not_follow_master_items'])->toBeTrue();
+});
+
+test('shop editing items of a collection that does not follow master items leaves the master untouched', function () {
+    [$masterCollection, $collection, $masterFamilyA, , $masterAsset, $familyA, $familyB, $product] = createShopCollectionUnderMaster($this->shop);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterAsset);
+
+    $masterItems = fn () => DB::table('master_collection_has_models')
+        ->where('master_collection_id', $masterCollection->id)
+        ->orderBy('model_type')->orderBy('model_id')
+        ->get(['model_type', 'model_id', 'type', 'created_at', 'updated_at'])
+        ->toArray();
+    $masterBefore = $masterItems();
+    $masterRowBefore = (array) DB::table('master_collections')->where('id', $masterCollection->id)->first();
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), [
+        'families' => [$familyB->id],
+        'products' => [$product->id],
+    ])->assertSessionHasNoErrors();
+    \Pest\Laravel\delete(route('grp.models.collection.detach-models', ['collection' => $collection->id]), ['family' => $familyA->id])
+        ->assertSessionHasNoErrors();
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyB->id])
+        ->and($masterItems())->toEqual($masterBefore)
+        ->and((array) DB::table('master_collections')->where('id', $masterCollection->id)->first())->toEqual($masterRowBefore);
+});
+
+test('master collection counts its shop collections that do not follow master items or content', function () {
+    [$masterCollection, $collection] = createShopCollectionUnderMaster($this->shop);
+    $stats = fn () => $masterCollection->stats()->first(['total_collections_rebel_items', 'total_collections_rebel_content'])->toArray();
+
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 0]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 1, 'total_collections_rebel_content' => 0]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => true]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 1, 'total_collections_rebel_content' => 1]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 1]);
+
+    // Moving to another master takes the count along
+    [$otherMasterCollection] = createShopCollectionUnderMaster($this->shop);
+    UpdateCollection::make()->action($collection, ['master_collection_id' => $otherMasterCollection->id]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 0])
+        ->and($otherMasterCollection->stats()->first()->total_collections_rebel_content)->toBe(1);
+
+    \App\Actions\Catalogue\Collection\DeleteCollection::make()->handle($collection->refresh());
+    expect($otherMasterCollection->stats()->first()->total_collections_rebel_content)->toBe(0);
+
+    $this->artisan('hydrate:master_collections')->assertSuccessful();
+});

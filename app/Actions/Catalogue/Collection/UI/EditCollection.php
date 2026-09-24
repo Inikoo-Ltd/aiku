@@ -267,7 +267,7 @@ class EditCollection extends OrgAction
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' => [
+                    'blueprint' => array_values(array_filter([
                         [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
@@ -279,6 +279,30 @@ class EditCollection extends OrgAction
                                 ],
                             ], $nameFields)
                         ],
+                        $collection->masterCollection ? [
+                            'label'  => __('Master'),
+                            'icon'   => 'fab fa-octopus-deploy',
+                            'fields' => [
+                                'not_follow_master_items'   => [
+                                    'type'            => 'toggle',
+                                    'label'           => __('Do not follow master items'),
+                                    'value'           => $collection->not_follow_master_items,
+                                    'information'     => __('Enabling this would allow the families and products of this collection to be edited in this shop and it will stop following master. Disabling it would replace them with the ones of the master collection'),
+                                    'warningText'     => __('Modifying this setting would cause the collection to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
+                                    'noSaveButton'    => true,
+                                    'submitOnConfirm' => true,
+                                ],
+                                'not_follow_master_content' => [
+                                    'type'            => 'toggle',
+                                    'label'           => __('Do not follow master content'),
+                                    'value'           => $collection->not_follow_master_content,
+                                    'information'     => __('Enabling this would stop the name and descriptions of this collection from following master, and changes made here are no longer sent to master as translations. Disabling it would take them from master again'),
+                                    'warningText'     => __('Modifying this setting would cause the collection to either diverge/follow master').'. '.__('Are you sure you want to do this?'),
+                                    'noSaveButton'    => true,
+                                    'submitOnConfirm' => true,
+                                ],
+                            ]
+                        ] : null,
                         // [
                         //     'label'  => __('Image'),
                         //     'icon'   => 'fa-light fa-image',
@@ -293,7 +317,7 @@ class EditCollection extends OrgAction
                         //         ],
                         //     ]
                         // ]
-                    ],
+                    ])),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.collection.update',

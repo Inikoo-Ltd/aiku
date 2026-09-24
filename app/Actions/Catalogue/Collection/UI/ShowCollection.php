@@ -300,6 +300,8 @@ class ShowCollection extends OrgAction
                     'navigation' => CollectionTabsEnum::navigation($collection)
                 ],
                 'url_master'    => $urlMaster,
+                'can_edit_items' => $this->canEdit && $collection->master_collection_id && $collection->not_follow_master_items,
+                'not_follow_master_items' => $collection->master_collection_id && $collection->not_follow_master_items,
 
                 CollectionTabsEnum::SHOWCASE->value => $this->tab == CollectionTabsEnum::SHOWCASE->value ?
                     fn () => GetCollectionShowcase::run($collection)
