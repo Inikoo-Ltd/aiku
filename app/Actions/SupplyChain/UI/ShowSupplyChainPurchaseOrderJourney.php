@@ -182,7 +182,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 asp.cost_total, asp.cost_items,
                 coalesce(asp.grp_exchange, case when asp.currency_id = po.currency_id then po.grp_exchange end) as grp_exchange,
                 asp.created_at,
-                case when asp.source_id is null then asp.submitted_at else asp.created_at end as submitted_at,
+                asp.submitted_at,
                 null as settled_at,
                 asp.deposit_amount, asp.deposit_paid_at, asp.sample_approved_at, asp.produced_at, asp.qc_passed_at,
                 asp.handed_over_at, coalesce(asp.estimated_received_at, po.estimated_received_at) as estimated_received_at,

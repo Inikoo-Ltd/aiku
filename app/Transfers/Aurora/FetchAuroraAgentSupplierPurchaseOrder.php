@@ -65,6 +65,7 @@ class FetchAuroraAgentSupplierPurchaseOrder extends FetchAurora
             'state'           => $state,
             'delivery_state'  => $deliveryState,
             'date'            => $date,
+            'submitted_at'    => $createdAt,
             'confirmed_at'    => $confirmedAt,
             'cancelled_at'    => $cancelledAt,
             'estimated_received_at' => $estimatedReceivedAt,

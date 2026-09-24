@@ -177,6 +177,8 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Transfers\Aurora\FetchAuroraAgentSupplierPurchaseOrder;
+use App\Transfers\AuroraOrganisationService;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -1083,6 +1085,76 @@ test('submit agent purchase order consolidates into agent supplier purchase orde
     CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction->refresh());
     expect((float)$agentSupplierPurchaseOrder->refresh()->cost_total)->toBe(0.0);
 })->depends('create purchase order by agent', 'attach supplier product to organisation');
+
+test('aurora agent supplier purchase orders keep the dates they were submitted to the agent', function (OrgSupplierProduct $orgSupplierProduct) {
+    UpdateSupplierProduct::make()->action($orgSupplierProduct->supplierProduct, ['delivery_time' => 21], strict: false);
+
+    $supplier      = $orgSupplierProduct->supplierProduct->supplier;
+    $purchaseOrder = StorePurchaseOrder::make()->action($this->orgAgent, PurchaseOrder::factory()->definition());
+    $purchaseOrder->updateQuietly([
+        'source_id' => $this->organisation->id.':'.uniqid(),
+        'state'     => PurchaseOrderStateEnum::SUBMITTED,
+    ]);
+
+    $organisationSource               = new AuroraOrganisationService();
+    $organisationSource->organisation = $this->organisation;
+
+    $parser = new class ($organisationSource, $supplier, $purchaseOrder) extends FetchAuroraAgentSupplierPurchaseOrder {
+        public function __construct(AuroraOrganisationService $organisationSource, private readonly Supplier $supplier, private readonly PurchaseOrder $purchaseOrder)
+        {
+            parent::__construct($organisationSource);
+        }
+
+        public function parseSupplier($sourceID): ?Supplier
+        {
+            return $this->supplier;
+        }
+
+        protected function fetchData($id): object|null
+        {
+            return (object)[
+                'Agent Supplier Purchase Order Key'                      => $id,
+                'Agent Supplier Purchase Order Supplier Key'             => 1,
+                'Agent Supplier Purchase Order Purchase Order Key'       => explode(':', $this->purchaseOrder->source_id)[1],
+                'Agent Supplier Purchase Order Public ID'                => $this->purchaseOrder->reference.'.'.$this->supplier->code,
+                'Agent Supplier Purchase Order State'                    => 'InProcess',
+                'Agent Supplier Purchase Order Creation Date'            => '2025-10-10 08:44:37',
+                'Agent Supplier Purchase Order Confirm Date'             => null,
+                'Agent Supplier Purchase Order Cancelled Date'           => null,
+                'Agent Supplier Purchase Order Estimated Receiving Date' => null,
+                'Agent Supplier Purchase Order Amount'                   => 0,
+                'Agent Supplier Purchase Order Currency Code'            => $this->purchaseOrder->currency->code,
+            ];
+        }
+    };
+
+    $parsed = $parser->fetch(5689);
+
+    $agentSupplierPurchaseOrder = StoreAgentSupplierPurchaseOrder::make()->action(
+        purchaseOrder: $purchaseOrder,
+        supplier: $supplier,
+        modelData: $parsed['agent_supplier_purchase_order'],
+        strict: false,
+        audit: false
+    );
+
+    expect($agentSupplierPurchaseOrder->state)->toBe(AgentSupplierPurchaseOrderStateEnum::IN_PROCESS)
+        ->and($agentSupplierPurchaseOrder->submitted_at->toDateTimeString())->toBe('2025-10-10 08:44:37')
+        ->and($agentSupplierPurchaseOrder->date->toDateTimeString())->toBe('2025-10-10 08:44:37');
+
+    StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $this->orgStocks[0],
+        PurchaseOrderTransaction::factory()->definition()
+    );
+
+    $agentSupplierPurchaseOrder->refresh();
+    expect($agentSupplierPurchaseOrder->state)->toBe(AgentSupplierPurchaseOrderStateEnum::SUBMITTED)
+        ->and($agentSupplierPurchaseOrder->submitted_at->toDateTimeString())->toBe('2025-10-10 08:44:37')
+        ->and($agentSupplierPurchaseOrder->date->toDateTimeString())->toBe('2025-10-10 08:44:37')
+        ->and($agentSupplierPurchaseOrder->estimated_received_at->toDateString())->toBe('2025-10-31');
+})->depends('attach supplier product to organisation');
 
 test('change state to submitted purchase order', function ($purchaseOrder) {
     $purchaseOrder->refresh();
