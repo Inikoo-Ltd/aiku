@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whenIrisLoggedIn } from "@/Composables/irisAuthFlag"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -220,9 +221,7 @@ const fetchProductExistInChannel = async () => {
 }
 
 onMounted(() => {
-    if(layout?.iris?.is_logged_in) {
-        fetchProductExistInChannel()
-    }
+    whenIrisLoggedIn(layout, fetchProductExistInChannel)
 })
 
 </script>

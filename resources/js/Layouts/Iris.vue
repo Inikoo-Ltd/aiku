@@ -6,7 +6,7 @@ import "@/../css/iris_styling.css"
 import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
-import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount, watch, computed, defineAsyncComponent } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, watch, computed, defineAsyncComponent } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -21,6 +21,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { irisStyleVariables } from '@/Composables/Workshop'
 import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
+import { whenIrisLoggedIn } from '@/Composables/irisAuthFlag'
 import { recordWebVitals } from '@/Composables/recordWebVitals'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
@@ -200,6 +201,7 @@ const containerPaddingCss = (() => {
 layout.app.webpage_layout = theme
 
 onMounted(() => {
+    initialiseIrisVarnish(useIrisLayoutStore)
     recordWebVitals((usePage().props?.webpage_id as number | undefined) ?? null)
     checkScreenType()
     setColorStyleRoot(theme?.color)
@@ -209,9 +211,7 @@ onMounted(() => {
 
     irisStyleVariables(theme?.color)
 
-    if(layout?.iris?.is_logged_in){
-        fetchHasInBasket()
-    }
+    whenIrisLoggedIn(layout, fetchHasInBasket)
 
     ;(window as any).aikuIris = {
         // For Search result (app-iris.blade )
@@ -250,10 +250,6 @@ const fetchHasInBasket = async () => {
 
     }
 };
-
-onBeforeMount(() => {
-    initialiseIrisVarnish(useIrisLayoutStore)
-})
 
 // Watch: open Side Basket if cart has any changes
 watch(() => layout.iris_variables?.cart_amount, (newVal) => {
