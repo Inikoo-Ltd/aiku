@@ -179,6 +179,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -1080,7 +1081,7 @@ test('stale orders age a re-submitted purchase order from its creation date', fu
 
     $response = $this->get(route('grp.supply-chain.dashboard', ['stale_days' => 360]), [
         'X-Inertia'                   => 'true',
-        'X-Inertia-Version'           => Inertia::getVersion(),
+        'X-Inertia-Version'           => Vite::manifestHash('grp'),
         'X-Inertia-Partial-Component' => 'SupplyChain/SupplyChainDashboard',
         'X-Inertia-Partial-Data'      => 'staleOrders',
     ]);

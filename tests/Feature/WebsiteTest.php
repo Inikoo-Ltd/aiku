@@ -2106,6 +2106,7 @@ test('UI show ads testing webpage does not offer page speed', function (Website 
         ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
     ));
     $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $contentWebpage->update(['state' => WebpageStateEnum::LIVE]);
 
     $showPage = fn (Webpage $webpage) => get(route('grp.org.shops.show.web.webpages.show', [
         $this->organisation->slug,

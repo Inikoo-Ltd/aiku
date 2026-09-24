@@ -25,6 +25,7 @@ use App\Actions\Inventory\Warehouse\StoreWarehouse;
 use App\Models\Helpers\Country;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Arr;
+use ReflectionClass;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -305,7 +306,7 @@ test('the json endpoint hands the modal its options and the pdf route', function
 
     $this->withoutExceptionHandling();
 
-    $payload = FetchOrgStockLabelOptions::make()->action($warehouse, $orgStock);
+    $payload = FetchOrgStockLabelOptions::run($warehouse, $orgStock);
 
     expect($payload['label_route']['name'])->toBe('grp.org.warehouses.show.inventory.org_stocks.label')
         ->and($payload['label_route']['parameters']['orgStock'])->toBe($orgStock->slug)

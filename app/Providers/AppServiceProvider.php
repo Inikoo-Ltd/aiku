@@ -130,13 +130,10 @@ class AppServiceProvider extends ServiceProvider
 
             if (str_contains($testCasePath, 'Tests\Feature\\')) {
                 config(['database.connections.aiku.database' => $databaseName]);
-                DB::connection('aiku');
+                config(['database.connections.aiku_no_sticky.database' => $databaseName]);
+                DB::purge('aiku_no_sticky');
                 DB::purge('aiku');
                 DB::reconnect('aiku');
-                config(['database.connections.aiku_no_sticky.database' => $databaseName]);
-                DB::connection('aiku_no_sticky');
-                DB::purge('aiku_no_sticky');
-                DB::reconnect('aiku_no_sticky');
             }
         });
 
