@@ -214,6 +214,12 @@ interface CustomerProfile {
         marketing_emails_last_30_days: { sent_at: string, outbox: string }[]
         unsubscribe: { name: string, parameters: Record<string, any> } | null
     }
+    erasure?: {
+        orders: number
+        invoices: number
+        confirmation: string
+        route: { name: string, parameters: Record<string, any> } | null
+    }
 }
 
 const emptyCustomerProfile = (): CustomerProfile => ({ tags: [], stats: null, email: null, profile_url: null })
@@ -359,6 +365,35 @@ const lastUnsubscribedAt = computed(() => {
 
     return dates.sort().pop() ?? null
 })
+
+const erasureOpen = ref(false)
+const erasureReason = ref("")
+const erasureConfirmation = ref("")
+const isErasing = ref(false)
+
+const openErasure = () => {
+    erasureOpen.value = !erasureOpen.value
+    erasureReason.value ||= ctrans("Asked to have their data deleted, in chat conversation :ulid", { ulid: props.session?.ulid ?? "" })
+}
+
+const eraseCustomer = async () => {
+    const erasure = customerProfile.value.erasure
+    if (!erasure?.route || isErasing.value || erasureConfirmation.value !== erasure.confirmation) return
+    isErasing.value = true
+    try {
+        await axios.post(route(erasure.route.name, erasure.route.parameters), {
+            reason: erasureReason.value,
+            reference: erasureConfirmation.value,
+        })
+        notify({ title: ctrans("Personal data erased"), text: ctrans("Their name, contact details, addresses and conversations are gone; orders and invoices stay, without them"), type: "success" })
+        erasureOpen.value = false
+        customerProfile.value = emptyCustomerProfile()
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("Their data could not be erased"), type: "error" })
+    } finally {
+        isErasing.value = false
+    }
+}
 
 const isUnsubscribing = ref(false)
 
@@ -887,6 +922,36 @@ const copyChatId = async () => {
                         :disabled="isUnsubscribing" @click="unsubscribeFromMarketing">
                         {{ isUnsubscribing ? ctrans("Unsubscribing…") : ctrans("Unsubscribe from everything") }}
                     </button>
+                </div>
+
+                <div v-if="!session.is_guest && customerProfile.erasure" class="px-4 py-3 space-y-2 text-xs">
+                    <button type="button" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider hover:text-red-600" @click="openErasure">
+                        {{ ctrans("Erase their data (GDPR)") }}
+                    </button>
+                    <template v-if="erasureOpen">
+                        <p v-if="customerProfile.erasure.orders || customerProfile.erasure.invoices" class="rounded bg-amber-50 p-2 text-amber-800">
+                            {{ ctrans(":orders orders and :invoices invoices. They stay, as the law requires, but no longer say who the customer was.", { orders: String(customerProfile.erasure.orders), invoices: String(customerProfile.erasure.invoices) }) }}
+                        </p>
+                        <p class="text-gray-600">{{ ctrans("Erases their name, contact details, addresses, web logins and conversations, and unsubscribes them from everything. It cannot be undone.") }}</p>
+                        <p v-if="!customerProfile.erasure.route" class="text-gray-500">
+                            {{ customerProfile.erasure.orders || customerProfile.erasure.invoices
+                                ? ctrans("A customer with orders can only be erased by a CRM supervisor: ask one to open this conversation.")
+                                : ctrans("Erasing needs permission to edit customers: ask a CRM supervisor.") }}
+                        </p>
+                        <template v-else>
+                            <textarea v-model="erasureReason" rows="2" class="w-full rounded border-gray-300 text-xs" :placeholder="ctrans('Why')" />
+                            <label class="block text-gray-600">
+                                {{ ctrans("Type :text to confirm", { text: customerProfile.erasure.confirmation }) }}
+                                <input v-model="erasureConfirmation" type="text" class="mt-1 w-full rounded border-gray-300 text-xs" />
+                            </label>
+                            <button type="button"
+                                class="rounded bg-red-600 px-2 py-1 font-medium text-white disabled:opacity-40"
+                                :disabled="isErasing || !erasureReason.trim() || erasureConfirmation !== customerProfile.erasure.confirmation"
+                                @click="eraseCustomer">
+                                {{ isErasing ? ctrans("Erasing…") : ctrans("Erase their data") }}
+                            </button>
+                        </template>
+                    </template>
                 </div>
 
                 <div v-if="customerProfile.previous_chats?.length" class="px-4 py-3 space-y-2">

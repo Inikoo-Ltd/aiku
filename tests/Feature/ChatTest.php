@@ -5848,6 +5848,17 @@ test('an agent unsubscribes a customer from every newsletter and reminder in one
         ->and(\App\Actions\Chat\ChatSession\OpenChatFactDrawer::make()->handle('subscriptions', $this->shop, $customer, [])['channels']['marketing']['subscribed'])->toBeFalse();
 });
 
+test('the chat customer panel says what erasing a customer would keep, and offers it only to whoever may do it', function () {
+    $customer = createOwnCustomer($this->shop, 'gdpr-panel');
+
+    $erasure = \App\Actions\Chat\ChatSession\GetChatCustomerProfile::make()->contactAndLastOrders($customer)['erasure'];
+
+    expect($erasure['orders'])->toBe(0)
+        ->and($erasure['invoices'])->toBe(0)
+        ->and($erasure['confirmation'])->toBe($customer->reference)
+        ->and($erasure['route'])->toBeNull();
+});
+
 
 test('an email is found by an order or consignment number in its subject or body', function () {
     \Illuminate\Support\Facades\Http::fake();
