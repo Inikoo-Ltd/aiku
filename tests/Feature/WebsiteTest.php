@@ -61,6 +61,8 @@ use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
 use App\Actions\Web\Website\HydrateWebsite;
+use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberHitsLast24Hours;
+use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberVisitorsLast24Hours;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
@@ -3117,3 +3119,12 @@ test('a catalogue webpage with no share image of its own shares the image of its
 
     UpdateWebpage::make()->action($chosen, ['seo_image_url' => null]);
 })->depends('create catalogue webpages');
+
+test('last 24 hours website hydrators stay unique until their delayed run has finished', function () {
+    $dispatchDelay    = 900;
+    $analyticsTimeout = config('horizon.defaults.analytics.timeout');
+
+    foreach ([WebsiteHydrateNumberHitsLast24Hours::class, WebsiteHydrateNumberVisitorsLast24Hours::class] as $hydrator) {
+        expect($hydrator::makeJob(1)->uniqueFor)->toBeGreaterThan($dispatchDelay + $analyticsTimeout);
+    }
+});

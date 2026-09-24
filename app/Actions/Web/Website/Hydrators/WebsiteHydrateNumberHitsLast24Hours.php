@@ -18,6 +18,8 @@ class WebsiteHydrateNumberHitsLast24Hours implements ShouldBeUnique
 
     public string $jobQueue = 'analytics';
 
+    public int $jobUniqueFor = 1800;
+
     public function getJobUniqueId(int $websiteID): string
     {
         return (string) $websiteID;
