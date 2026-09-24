@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
@@ -15,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +32,12 @@ class DeleteMasterProductCategory extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, bool $forceDelete = false): MasterProductCategory
     {
+        foreach ($masterProductCategory->productCategories as $productCategory) {
+            if (!$this->productCategoryHasContent($productCategory)) {
+                DeleteProductCategory::run($productCategory);
+            }
+        }
+
         DB::table('product_categories')->where('master_product_category_id', $masterProductCategory->id)->update(['master_product_category_id' => null]);
 
         if ($forceDelete) {
@@ -77,6 +85,17 @@ class DeleteMasterProductCategory extends OrgAction
         if ($this->masterProductCategory->children()->exists()) {
             $validator->errors()->add('children', 'This category has sub-categories associated with it.');
         }
+
+        foreach ($this->masterProductCategory->productCategories as $productCategory) {
+            if ($this->productCategoryHasContent($productCategory)) {
+                $validator->errors()->add('product_categories', 'The shop category '.$productCategory->slug.' still has products or sub-categories.');
+            }
+        }
+    }
+
+    private function productCategoryHasContent(ProductCategory $productCategory): bool
+    {
+        return $productCategory->children()->exists() || $productCategory->getProducts()->isNotEmpty();
     }
 
     public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): \Illuminate\Http\Response|array|\Illuminate\Http\RedirectResponse

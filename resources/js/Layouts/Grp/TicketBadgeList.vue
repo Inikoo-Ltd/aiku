@@ -1,25 +1,31 @@
 <script setup lang="ts">
+import { ticketsRoute } from "@/Composables/useTicketsRoute"
 import { computed, inject } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import { Link } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import type { TicketBadgeRow } from '@/types/TicketBadges'
+import type { TicketBadgeRow, TicketRecentUpdate } from '@/types/TicketBadges'
 
 const props = defineProps<{
     title: string
     rows: Record<string, TicketBadgeRow>
     close: () => void
+    recent?: TicketRecentUpdate[]
 }>()
 
 const layout = inject('layout', layoutStructure)
 
-const ticketNotifications = computed(() => (layout.notifications ?? []).filter(notif => !notif.read && String(notif.route ?? '').includes('/tickets/')).slice(0, 8))
+const recentItems = computed<TicketRecentUpdate[]>(() => props.recent
+    ?? (layout.notifications ?? [])
+        .filter(notif => !notif.read && String(notif.route ?? '').includes('/tickets/'))
+        .slice(0, 8)
+        .map(notif => ({ id: String(notif.id), title: notif.title, body: notif.body, route: String(notif.route), read: false, created_at: notif.created_at })))
 
 const rowHref = (row: TicketBadgeRow) => {
     const query: Record<string, string> = {}
     Object.entries(row.elements).forEach(([key, value]) => query[`elements[${key}]`] = value)
-    return route('grp.tickets.index', query)
+    return ticketsRoute('index', query)
 }
 </script>
 
@@ -34,14 +40,17 @@ const rowHref = (row: TicketBadgeRow) => {
                 </Link>
             </li>
         </ul>
-        <div v-if="ticketNotifications.length" class="mt-3 pt-2 border-t border-gray-200">
-            <div class="text-xs text-gray-500 mb-1">{{ trans('Recent') }}</div>
-            <Link v-for="notif in ticketNotifications" :key="notif.id + notif.title" :href="String(notif.route)" @click="close()" class="block py-1 px-1 rounded hover:bg-gray-50">
+        <div v-if="recentItems.length" class="mt-3 pt-2 border-t border-gray-200">
+            <div class="text-xs text-gray-500 mb-1">{{ ctrans('Recent') }}</div>
+            <Link v-for="item in recentItems" :key="item.id + item.title" :href="item.route" @click="close()" class="block py-1 px-1 rounded hover:bg-gray-50 transition duration-200">
                 <div class="flex justify-between gap-2">
-                    <span class="truncate">{{ notif.title }}</span>
-                    <span class="text-[10px] text-gray-400 shrink-0">{{ useFormatTime(notif.created_at) }}</span>
+                    <span class="flex min-w-0 items-center gap-1.5">
+                        <span v-if="!item.read" class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" :title="ctrans('Not opened yet')" />
+                        <span class="truncate" :class="item.read ? 'text-gray-500' : 'font-medium text-gray-900'">{{ item.title }}</span>
+                    </span>
+                    <span class="text-[10px] text-gray-400 shrink-0">{{ useFormatTime(item.created_at) }}</span>
                 </div>
-                <div class="text-xs text-gray-500 truncate">{{ notif.body }}</div>
+                <div class="text-xs text-gray-500 truncate" :class="!item.read && 'pl-3'">{{ item.body }}</div>
             </Link>
         </div>
     </div>

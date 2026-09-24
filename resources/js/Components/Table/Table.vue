@@ -6,6 +6,7 @@ import TableFilterSearch from '@/Components/Table/TableFilterSearch.vue'
 import TableElements from '@/Components/Table/TableElements.vue'
 import TablePeriodFilter from '@/Components/Table/TablePeriodFilter.vue'
 import TableWrapper from '@/Components/Table/TableWrapper.vue'
+import TableColumns from '@/Components/Table/TableColumns.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { Link, router, usePage } from "@inertiajs/vue3";
@@ -516,6 +517,33 @@ function getColumnsForQuery() {
     return visibleColumnKeys;
 }
 
+// Only in the URL once somebody has moved a column, so every other table's links stay as they were
+function getColumnOrderForQuery() {
+    const current = map(queryBuilderData.value.columns, 'key');
+
+    return isEqual(current, queryBuilderProps.value.defaultColumnOrder ?? current) ? [] : current;
+}
+
+function changeColumnStatus(key: string, hidden: boolean) {
+    const column = (queryBuilderData.value.columns ?? []).find((column: any) => column.key === key);
+
+    if (!column) return;
+
+    column.hidden = !hidden;
+    immediateVisit();
+}
+
+function moveColumn(key: string, direction: -1 | 1) {
+    const columns = queryBuilderData.value.columns ?? [];
+    const index = columns.findIndex((column: any) => column.key === key);
+    const target = index + direction;
+
+    if (index < 0 || target < 0 || target >= columns.length) return;
+
+    [columns[index], columns[target]] = [columns[target], columns[index]];
+    immediateVisit();
+}
+
 // To generate query in url (?period[type]=year&period[date]=2024&sort=slug)
 function dataForNewQueryString() {
     const filterForQuery = getFilterForQuery();
@@ -528,6 +556,12 @@ function dataForNewQueryString() {
 
     if (Object.keys(columnsForQuery).length > 0) {
         queryData.columns = columnsForQuery;
+    }
+
+    const columnOrder = getColumnOrderForQuery();
+
+    if (columnOrder.length > 0) {
+        queryData.column_order = columnOrder;
     }
 
     const cursor = queryBuilderData.value.cursor
@@ -585,7 +619,7 @@ function generateNewQueryString() {
 
     forEach(managedKeys, (k : any) => { delete externalFilters[k] })
     // To exclude 'filter', 'columns', 'cursor', and 'sort' that received from the URL
-    forEach(['columns', 'cursor', 'sort'], (key) => {
+    forEach(['columns', 'column_order', 'cursor', 'sort'], (key) => {
         delete queryStringData[prefix + key];
     });
 
@@ -718,12 +752,16 @@ const immediateVisit = () => {
 // TableElements reports the selection it read from the URL right after mount. The server already
 // rendered that selection, so the state is stored without letting the watcher fire off a visit for
 // a query string identical to the current one.
-const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false) => {
+const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter', data: object, isInitial = false, isImmediate = false) => {
     if (isInitial) {
         skipNextDebouncedVisit = true;
     }
 
     queryBuilderData.value[key] = data;
+
+    if (isImmediate && !isInitial && isMounted) {
+        immediateVisit();
+    }
 };
 
 const inertiaListener = () => {
@@ -1049,7 +1087,7 @@ const getSeverity = (type?: string) => {
                             getSeverity(warning.type) === 'success' ? 'text-green-800' :
                                 getSeverity(warning.type) === 'error' ? 'text-red-800' :
                                     'text-blue-500'
-                    ]" />
+                    ]" fixed-width />
 
                     <!-- Content -->
                     <div class="flex flex-col">
@@ -1075,14 +1113,14 @@ const getSeverity = (type?: string) => {
                     'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
                 }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('elementFilter', data, isInitial)"
+                        @checkboxChanged="(data, isInitial, isImmediate) => onElementFilterChanged('elementFilter', data, isInitial, isImmediate)"
                         :tableName="props.name"
                     />
                 </div>
 
                 <div v-if="Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length" class="w-full border-b border-gray-300">
                     <TableElements :elements="queryBuilderProps.additionalElementGroups"
-                        @checkboxChanged="(data, isInitial) => onElementFilterChanged('additionalElementFilter', data, isInitial)"
+                        @checkboxChanged="(data, isInitial, isImmediate) => onElementFilterChanged('additionalElementFilter', data, isInitial, isImmediate)"
                         :tableName="props.name"
                         :isAdditional="true"
                     />
@@ -1229,6 +1267,12 @@ const getSeverity = (type?: string) => {
                                 :tableName="props.name" :isVisiting />
                         </div>
 
+                        <div v-if="queryBuilderProps.columnChooser && queryBuilderProps.hasToggleableColumns" class="w-fit">
+                            <TableColumns
+                                :columns="queryBuilderData.columns"
+                                :on-change="changeColumnStatus"
+                                :on-move="moveColumn" />
+                        </div>
 
                         <slot name="add-on-button">
                         </slot>

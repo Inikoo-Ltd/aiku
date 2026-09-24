@@ -16,7 +16,9 @@ class UploadProductImageToWix extends RetinaAction
     use AsAction;
 
     /**
-     * Wix imports product media by URL, so the image only has to be publicly reachable.
+     * Wix imports product media by fetching the URL itself, and the V1 catalogue does that
+     * asynchronously without reporting back, so a URL it cannot read as an image simply leaves
+     * the product with no pictures. The extension keeps the URL recognisable as one.
      */
     public function handle(Media $media): ?string
     {
@@ -26,6 +28,6 @@ class UploadProductImageToWix extends RetinaAction
             return null;
         }
 
-        return GetImgProxyUrl::run($image->resize(1000, 1000));
+        return GetImgProxyUrl::run($image->extension('jpg')->resize(1000, 1000));
     }
 }

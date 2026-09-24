@@ -88,6 +88,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("google-ads")
                     ->name("google_ads.")
                     ->group(__DIR__ . "/google_ads.php");
+                Route::prefix("suggestions")
+                    ->name("ad_proposals.")
+                    ->group(__DIR__ . "/ad_proposals.php");
 
                 Route::prefix("whatsapp-campaigns")
                     ->name("whatsapp_campaigns.")
@@ -106,6 +109,14 @@ Route::prefix('{shop}')->name('show.')
         Route::prefix("chat")
             ->name("chat.")
             ->group(__DIR__ . "/chat.php");
+
+        Route::prefix("tasks")
+            ->name("tasks.")
+            ->group(__DIR__ . "/tasks.php");
+
+        Route::prefix("tickets")
+            ->name("tickets.")
+            ->group(__DIR__ . "/tickets.php");
 
         Route::prefix("reviews")
             ->name("reviews.")

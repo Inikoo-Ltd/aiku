@@ -41,7 +41,7 @@ import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
-import { faShapes, faStar } from '@fas'
+import { faShapes, faStar, faExclamationTriangle } from '@fas'
 import { faHatCowboy } from "@far"
 import TableOffers from '@/Components/Shop/Offers/TableOffers.vue'
 import TableReviews from "@/Components/Shop/Reviews/TableReviews.vue"
@@ -51,6 +51,7 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
 import ModalCreateStepDiscountProduct from '@/Components/Offers/ModalCreateStepDiscountProduct.vue'
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 
 library.add(
     faFolder,
@@ -81,6 +82,7 @@ library.add(
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    staff_task?: { model_type: 'Product' | 'Customer' | 'Order' | 'DeliveryNote'; model_id: number }
     tabs: {
         current: string
         navigation: {}
@@ -111,6 +113,11 @@ const props = defineProps<{
     variant?: {}
     is_variant_leader?: boolean
     webpage_canonical_url?: string
+    retirement_decision?: {
+        replacement: { code: string, name: string, price: string, route: routeType }
+        retire_route: routeType
+        keep_route: routeType
+    } | null
     sales?: {}
     salesData?: object
     is_single_trade_unit?: boolean
@@ -191,6 +198,16 @@ const goToEdit = () => {
     }
 }
 
+const retirementLoading = ref<string | null>(null)
+const submitRetirementDecision = (decisionRoute: routeType, key: string) => {
+    router.patch(route(decisionRoute.name, decisionRoute.parameters), {}, {
+        preserveScroll: true,
+        onStart: () => retirementLoading.value = key,
+        onFinish: () => retirementLoading.value = null,
+        onError: (errors) => notify({ title: trans('Something went wrong'), text: Object.values(errors)[0] as string, type: 'error' }),
+    })
+}
+
 const loadingSave = ref(false)
 const reviewErrors = ref<Record<string, string[] | string>>({})
 
@@ -256,12 +273,12 @@ const saveProductReview = async () => {
              <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="trans('Go to Master')">
                 <FontAwesomeIcon
                     icon="fab fa-octopus-deploy"
-                    color="#4B0082"
+                    color="#4B0082" fixed-width
                 />
             </Link>
             <Link v-if="is_single_trade_unit && trade_unit_slug" :href="route('grp.trade_units.units.show', [trade_unit_slug])" v-tooltip="trans('Go to Trade Unit')">
                 <FontAwesomeIcon
-                    icon="fal fa-atom"
+                    icon="fal fa-atom" fixed-width
                 />
             </Link>
 
@@ -270,7 +287,7 @@ const saveProductReview = async () => {
                 v-tooltip="trans('This product have independent Trade Unit setting')"
                 @click="goToEdit"
                 :icon="faHatCowboy"
-                class="text-red-500 cursor-pointer"
+                class="text-red-500 cursor-pointer" fixed-width
             />
 
             <FontAwesomeLayers
@@ -280,16 +297,16 @@ const saveProductReview = async () => {
             >
                 <FontAwesomeIcon 
                     :icon="faHatCowboy"
-                    :class="'text-red-500 text-[17px] !top-[-93%] !right-[-50%] !rotate-[17deg]'"
+                    :class="'text-red-500 text-[17px] !top-[-93%] !right-[-50%] !rotate-[17deg]'" fixed-width
                 />
                 <FontAwesomeIcon 
                     :icon="faCameraRetro"
-                    :class="'text-red-500'"
+                    :class="'text-red-500'" fixed-width
                 />
             </FontAwesomeLayers>
 
             <Link  v-if="variant"  :href="routeVariant()" v-tooltip="trans('Go to Variant')">
-                <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" />
+                <FontAwesomeIcon :icon="is_variant_leader ? faStar : faShapes" class="text-yellow-500 cursor-pointer" fixed-width />
             </Link>
 
 
@@ -302,6 +319,7 @@ const saveProductReview = async () => {
             </div>
         </template>        
         <template #other>
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
         </template>
         <template #otherBefore>
             <Action
@@ -343,6 +361,7 @@ const saveProductReview = async () => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    
     <div v-if="mini_breadcrumbs?.length" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
@@ -352,12 +371,43 @@ const saveProductReview = async () => {
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" fixed-width />
                         <span>{{ item.label || '-' }}</span> <span v-if="item.post_label" class="text-gray-400">{{ item.post_label }}</span>
                     </component>
                 </div>
             </template>
         </Breadcrumb>
+    </div>
+    
+    <div v-if="retirement_decision" class="m-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
+        <div class="flex items-center gap-2 text-base font-semibold text-amber-800">
+            <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
+            {{ trans('This product needs a decision') }}
+        </div>
+        <p class="mt-2 text-gray-700">
+            {{ trans('At the Aurora cutover this product was merged into') }}
+            <Link :href="route(retirement_decision.replacement.route.name, retirement_decision.replacement.route.parameters)" class="font-semibold underline">{{ retirement_decision.replacement.code }}</Link>
+            {{ trans('which took over its webpage and sells the same goods with quantity discounts. It was later put back on sale without a webpage of its own, so its link on the website opens the other product.') }}
+        </p>
+
+        <div class="mt-4 font-semibold text-gray-800">{{ trans('Choose one option') }}:</div>
+        <div class="mt-2 flex flex-col gap-3 md:flex-row md:items-stretch">
+            <div class="flex flex-1 flex-col rounded-md border border-red-200 bg-white p-4">
+                <div class="text-xs font-semibold uppercase tracking-wide text-red-600">{{ trans('Option 1') }}</div>
+                <div class="mt-1 font-semibold text-gray-900">{{ trans('Sell it only through :code', { code: retirement_decision.replacement.code }) }}</div>
+                <p class="mt-2 flex-1 text-gray-600">{{ trans('This product is taken off sale and discontinued. Customers buy the other product and get the quantity discount. If it sits in an order being processed it is hidden now and discontinued later.') }}</p>
+                <Button class="mt-3 self-start" type="negative" :label="trans('Retire this product')" :loading="retirementLoading === 'retire'" :disabled="!!retirementLoading" @click="submitRetirementDecision(retirement_decision.retire_route, 'retire')" />
+            </div>
+
+            <div class="flex items-center justify-center text-xs font-semibold uppercase text-gray-400">{{ trans('or') }}</div>
+
+            <div class="flex flex-1 flex-col rounded-md border border-green-200 bg-white p-4">
+                <div class="text-xs font-semibold uppercase tracking-wide text-green-600">{{ trans('Option 2') }}</div>
+                <div class="mt-1 font-semibold text-gray-900">{{ trans('Keep it as its own product') }}</div>
+                <p class="mt-2 flex-1 text-gray-600">{{ trans('This product gets its webpage back and stays on sale. :code goes back to its own webpage, which may need content. Review the quantity discount on :code afterwards so both do not undercut each other.', { code: retirement_decision.replacement.code }) }}</p>
+                <Button class="mt-3 self-start" type="save" :label="trans('Keep as separate product')" :loading="retirementLoading === 'keep'" :disabled="!!retirementLoading" @click="submitRetirementDecision(retirement_decision.keep_route, 'keep')" />
+            </div>
+        </div>
     </div>
 
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />

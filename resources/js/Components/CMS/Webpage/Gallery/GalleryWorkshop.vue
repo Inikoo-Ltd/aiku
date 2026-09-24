@@ -70,7 +70,7 @@ const onCloseGallery = () => {
         <div @click="() => onOpenGallery(index)">
           <div v-if="!modelValue.value?.picture.length"
             class="flex rounded-md border border-black border-dashed w-full p-10 justify-center">
-            <FontAwesomeIcon :icon="faImage" class="h-10 w-10 object-cover object-center group-hover:opacity-75" />
+            <FontAwesomeIcon :icon="faImage" class="h-10 w-10 object-cover object-center group-hover:opacity-75" fixed-width />
           </div>
           <div v-else class="w-full h-full">
             <Image :src="modelValue.value?.picture[0].image.source"
@@ -85,7 +85,7 @@ const onCloseGallery = () => {
           <div @click="() => onOpenGallery(index)">
             <div v-if="!product.image"
               class="flex rounded-md border border-black border-dashed w-full p-10 justify-center">
-              <FontAwesomeIcon :icon="faImage" class="h-10 w-10 object-cover object-center group-hover:opacity-75" />
+              <FontAwesomeIcon :icon="faImage" class="h-10 w-10 object-cover object-center group-hover:opacity-75" fixed-width />
             </div>
             <div v-else class="w-full h-full">
               <Image :src="product.image.source"

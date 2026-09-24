@@ -37,9 +37,39 @@ const props = defineProps<{
         file_size: number | null
         file_mime: string | null
         download_route: { url: string } | null
+        attachments?: Array<{
+            id: number
+            is_image: boolean
+            media_url: { original: string; webp?: string } | null
+            original_url: string
+            file_name: string
+            file_size: number
+            file_mime: string
+            download_route: { url: string }
+        }>
         created_at: string
     }>
 }>()
+
+type MessageProp = typeof props.messages[0]
+type MessageAttachment = NonNullable<MessageProp['attachments']>[0]
+
+function attachmentList(msg: MessageProp): MessageAttachment[] {
+    if (msg.attachments?.length) return msg.attachments
+
+    if (!msg.media_url && !msg.download_route) return []
+
+    return [{
+        id: msg.id,
+        is_image: msg.message_type === 'image',
+        media_url: msg.media_url ? { original: msg.media_url } : null,
+        original_url: msg.media_url ?? '',
+        file_name: msg.file_name ?? '',
+        file_size: msg.file_size ?? 0,
+        file_mime: msg.file_mime ?? '',
+        download_route: msg.download_route ?? { url: '' },
+    }]
+}
 
 const statusColors: Record<string, string> = {
     active: 'bg-green-100 text-green-700',
@@ -121,29 +151,35 @@ function formatFileSize(bytes: number | null): string {
                             {{ senderLabel(msg) }}
                         </div>
 
-                        <template v-if="msg.message_type === 'image' && msg.media_url">
-                            <img
-                                :src="msg.media_url"
-                                class="rounded-lg max-w-full max-h-64 object-contain"
-                                alt="image"
-                            />
-                        </template>
+                        <template v-if="attachmentList(msg).length">
+                            <p v-if="msg.message_text" class="text-sm whitespace-pre-wrap break-words mb-1">
+                                {{ msg.message_text }}
+                            </p>
 
-                        <template v-else-if="msg.message_type === 'file' && msg.download_route">
-                            <a
-                                :href="msg.download_route.url"
-                                target="_blank"
-                                :class="[
-                                    'flex items-center gap-x-2 text-sm underline',
-                                    isFromAgent(msg) ? 'text-white/90' : 'text-indigo-600'
-                                ]"
-                            >
-                                <FontAwesomeIcon icon="fal fa-paperclip" />
-                                <span>{{ msg.file_name || 'Download file' }}</span>
-                                <span v-if="msg.file_size" class="text-xs opacity-60">
-                                    ({{ formatFileSize(msg.file_size) }})
-                                </span>
-                            </a>
+                            <template v-for="attachment in attachmentList(msg)" :key="attachment.id">
+                                <img
+                                    v-if="attachment.is_image && attachment.media_url"
+                                    :src="attachment.media_url.webp ?? attachment.media_url.original"
+                                    class="rounded-lg max-w-full max-h-64 object-contain mt-1"
+                                    alt="image"
+                                />
+
+                                <a
+                                    v-else
+                                    :href="attachment.download_route.url"
+                                    target="_blank"
+                                    :class="[
+                                        'flex items-center gap-x-2 text-sm underline mt-1',
+                                        isFromAgent(msg) ? 'text-white/90' : 'text-indigo-600'
+                                    ]"
+                                >
+                                    <FontAwesomeIcon icon="fal fa-paperclip" fixed-width />
+                                    <span>{{ attachment.file_name || 'Download file' }}</span>
+                                    <span v-if="attachment.file_size" class="text-xs opacity-60">
+                                        ({{ formatFileSize(attachment.file_size) }})
+                                    </span>
+                                </a>
+                            </template>
                         </template>
 
                         <template v-else>
@@ -165,8 +201,8 @@ function formatFileSize(bytes: number | null): string {
 
                 <div v-else class="flex justify-center">
                     <span class="text-xs text-gray-400 bg-gray-50 rounded-full px-3 py-1 border border-gray-100">
-                        <FontAwesomeIcon v-if="msg.is_ai" icon="fal fa-robot" class="mr-1" />
-                        <FontAwesomeIcon v-else icon="fal fa-cog" class="mr-1" />
+                        <FontAwesomeIcon v-if="msg.is_ai" icon="fal fa-robot" class="mr-1" fixed-width />
+                        <FontAwesomeIcon v-else icon="fal fa-cog" class="mr-1" fixed-width />
                         {{ msg.message_text }}
                     </span>
                 </div>

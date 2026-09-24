@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\BackInStockReminder\UI\IndexCustomerBackInStockReminders;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\Chat\ChatSession\StartCustomerEmailChat;
 use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Favourite\UI\IndexCustomerFavourites;
 use App\Actions\Discounts\Offer\UI\IndexOffers;
@@ -135,7 +136,14 @@ class ShowCustomer extends OrgAction
                 ],
                 'sales_channels'   => GetSalesChannelOptions::make()->getOptions($customer->shop),
                 'can_add_order'    => $this->shop->type == ShopTypeEnum::B2B,
+                'can_email_customer' => StartCustomerEmailChat::canBeStarted($customer),
+                'customer_email'     => $customer->email,
+                'emailCustomerRoute' => [
+                    'name'       => 'grp.models.customer.email_chat.store',
+                    'parameters' => ['customer' => $customer->id],
+                ],
                 'gr_data'          => $grData,
+                'staff_task'       => ['model_type' => 'Customer', 'model_id' => $customer->id],
                 'pageHead'         => [
                     'title'         => $customer->name,
                     'icon'          => [

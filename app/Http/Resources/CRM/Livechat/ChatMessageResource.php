@@ -2,13 +2,26 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
+use App\Enums\CRM\Livechat\ChatRetractionReasonEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ChatMessageResource extends JsonResource
 {
     use HasSelfCall;
+
+    /**
+     * Metadata this resource never puts on the wire. The customer's widget reads the same
+     * resource as the inbox does, and it is also what goes out over the public session
+     * channel, so what was said before an edit and why a message was taken back are kept
+     * out of it whoever is asking.
+     *
+     * @var array<int, string>
+     */
+    public const PRIVATE_METADATA = ['edit_history', 'retraction_note'];
 
     public function toArray($request): array
     {
@@ -19,6 +32,9 @@ class ChatMessageResource extends JsonResource
         return [
             'id' => $chatMessage->id,
             'message_text' => $chatMessage->message_text,
+            // Already purified when it was stored, and shown inside a sandboxed frame. The text
+            // above stays the message of record: it is what search and translation read.
+            'html_body' => $chatMessage->html_body,
             'original' => [
                 'text'          => $chatMessage->original_text,
                 'language_name' => $chatMessage->originalLanguage?->name,
@@ -46,12 +62,19 @@ class ChatMessageResource extends JsonResource
             'is_system' => $chatMessage->sender_type->value === ChatSenderTypeEnum::SYSTEM->value,
             'is_ai' => $chatMessage->sender_type->value === ChatSenderTypeEnum::AI->value,
             'is_read' => $chatMessage->is_read,
+            'is_redacted' => isset($chatMessage->metadata['redacted_at']),
+            'is_attachment_redacted' => isset($chatMessage->metadata['attachment_redacted_at']),
+            'is_retracted' => $chatMessage->trashed(),
+            'retracted_at' => $chatMessage->deleted_at?->toISOString(),
+            'retraction_reason' => ChatRetractionReasonEnum::tryFrom(
+                (string) ($chatMessage->metadata['retraction_reason'] ?? '')
+            )?->label(),
             'is_ai_generated' => $chatMessage->is_ai_generated,
             'is_validated' => $chatMessage->is_validated,
             'is_verifiable_image' => $chatMessage->isVerifiableCustomerImage(),
             'ai_verification' => $chatMessage->metadata['ai_verification'] ?? null,
-            'media_url' => $chatMessage->imageSources(0, 0, 'attachment'),
-            'original_url' => $chatMessage->attachment ? $chatMessage->attachment->getUrl() : null,
+            'media_url' => $chatMessage->attachment?->getCustomProperty('archived_at') ? null : $chatMessage->imageSources(0, 0, 'attachment'),
+            'original_url' => $chatMessage->attachment ? ($chatMessage->attachment->getCustomProperty('archived_at') ? route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid]) : $chatMessage->attachment->getUrl()) : null,
             'file_name' => $chatMessage->attachment ? $chatMessage->attachment->file_name : null,
             'file_size' => $chatMessage->attachment ? $chatMessage->attachment->size : null,
             'file_mime' => $chatMessage->attachment ? $chatMessage->attachment->mime_type : null,
@@ -63,6 +86,28 @@ class ChatMessageResource extends JsonResource
                 'method'     => 'get',
                 'url'        => route('grp.api.chats.chat.attachment.download', ['ulid' => $chatMessage->attachment->ulid])
             ] : null,
+            'attachments' => $chatMessage->attachedFiles()->map(function ($media) {
+                $isArchived = (bool) $media->getCustomProperty('archived_at');
+                $isImage    = str_starts_with((string) $media->mime_type, 'image/') && !$isArchived;
+                $download   = route('grp.api.chats.chat.attachment.download', ['ulid' => $media->ulid]);
+
+                return [
+                    'id'             => $media->id,
+                    'is_image'       => $isImage,
+                    'is_archived'    => $isArchived,
+                    'media_url'      => $isImage ? GetPictureSources::run($media->getImage()->resize(0, 0)) : null,
+                    'original_url'   => $isArchived ? $download : $media->getUrl(),
+                    'file_name'      => $media->name ?: $media->file_name,
+                    'file_size'      => $media->size,
+                    'file_mime'      => $media->mime_type,
+                    'download_route' => [
+                        'name'       => 'grp.api.chats.chat.attachment.download',
+                        'parameters' => ['ulid' => $media->ulid],
+                        'method'     => 'get',
+                        'url'        => $download,
+                    ],
+                ];
+            })->values(),
             'reactions' => $chatMessage->reactions
                 ->groupBy('emoji')
                 ->map(function ($group, $emoji) {
@@ -77,7 +122,7 @@ class ChatMessageResource extends JsonResource
                         })->values(),
                     ];
                 })->values(),
-            'metadata' => $chatMessage->metadata,
+            'metadata' => Arr::except($chatMessage->metadata ?? [], self::PRIVATE_METADATA),
             'is_offline_message' => $chatMessage->metadata['is_offline_message'] ?? false,
             'edited_at' => $chatMessage->edited_at,
             'created_at' => $this->created_at,

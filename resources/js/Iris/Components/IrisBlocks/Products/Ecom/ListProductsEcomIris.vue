@@ -2,24 +2,26 @@
 import { faFilter } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { getStyles } from "@/Composables/styles"
-import { ref, onMounted, watch, computed, toRaw, inject } from "vue"
+import { ref, onMounted, onBeforeUnmount, watch, computed, toRaw, inject, defineAsyncComponent } from "vue"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
-import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue"
-import Drawer from "primevue/drawer"
 import Skeleton from "primevue/skeleton"
 import { debounce, get } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import MobileShowMoreButton from "@/Iris/Components/MobileShowMoreButton.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
 import Image from "@common/Components/Image.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
+
+const FilterProducts = defineAsyncComponent(() => import("@/Components/CMS/Webpage/Products/FilterProduct.vue"))
+const Drawer = defineAsyncComponent(() => import("primevue/drawer"))
 
 
 const props = defineProps<{
@@ -88,7 +90,6 @@ const isFetchingOutOfStock = ref(false)
 const isNewArrivals = ref(false)
 const isLoadingInitial = ref(false)
 const isLoadingMore = ref(false)
-const renderKey = ref(0)
 
 
 const getRoutes = () => {
@@ -166,12 +167,9 @@ function buildFilters(): Record<string, any> {
 
 
 
-const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
+const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false, freshInStockProducts: any[] | null = null) => {
     if (isLoadMore) {
         isLoadingMore.value = true;
-    } else {
-        if (firstLoad.value == 1)
-            isLoadingInitial.value = false;
     }
 
     const filters = buildFilters();
@@ -206,30 +204,41 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
             totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
         }
 
-        if (isLoadMore) {
-            products.value = [...products.value, ...(data?.data ?? [])];
-        } else {
-            products.value = data?.data ?? [];
+        const fetchedProducts = data?.data ?? [];
+        const willFetchOutOfStock = !ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value;
+
+        if (freshInStockProducts) {
+            products.value = [...freshInStockProducts, ...fetchedProducts];
+        } else if (isLoadMore) {
+            products.value = [...products.value, ...fetchedProducts];
+        } else if (!willFetchOutOfStock) {
+            products.value = fetchedProducts;
         }
 
-        if (!ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value) {
+        if (willFetchOutOfStock) {
             isFetchingOutOfStock.value = true;
             page.value = 1;
-            await fetchProducts(true, true);
+            await fetchProducts(true, true, isLoadMore ? null : fetchedProducts);
         }
 
     } catch (error) {
         console.log(error);
+        if (freshInStockProducts) {
+            products.value = freshInStockProducts;
+        }
         notify({ title: "Error", text: "Failed to load products.", type: "error" });
     } finally {
         isLoadingInitial.value = false;
         isLoadingMore.value = false;
         firstLoad.value++;
-        renderKey.value++;
     }
 };
 
 const debFetchProducts = debounce(fetchProducts, 300)
+
+onBeforeUnmount(() => {
+    debFetchProducts.cancel()
+})
 
 const handleSearch = () => {
     page.value = 1
@@ -264,16 +273,16 @@ const loadMore = () => {
 const sortOptions = computed(() => {
     const baseOptions = [
         /* { label: "Latest Arrivals", value: "created_at" }, */
-        { label: trans("New arrivals"), value: "created_at" },
-        { label: trans("Product Code"), value: "code" },
-        { label: trans("Name"), value: "name" }
+        { label: ctrans("New arrivals"), value: "created_at" },
+        { label: ctrans("Product Code"), value: "code" },
+        { label: ctrans("Name"), value: "name" }
     ]
     if (layout?.iris?.is_logged_in) {
-        baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
-        baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
+        baseOptions.splice(1, 0, { label: ctrans("Price"), value: "price" })
+        baseOptions.splice(1, 0, { label: ctrans("RRP"), value: "rrp" })
     }
     if (props.fieldValue?.sub_type == 'family') {
-        baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+        baseOptions.splice(1, 0, { label: ctrans("Recommended"), value: "recommended" })
     }
     return baseOptions
 })
@@ -356,6 +365,8 @@ const updateQueryParams = () => {
 }
 
 const toggleSort = (key: string) => {
+    isLoadingInitial.value = true
+
     if (sortKey.value === key) {
         isAscending.value = !isAscending.value
     } else {
@@ -427,6 +438,11 @@ const gridColsVars = computed(() => {
 })
 
 
+const cardStyle = computed(() => getStyles(props.fieldValue?.card_product?.properties, props.screenType))
+const buttonStyle = computed(() => getStyles(props.fieldValue?.button?.properties, props.screenType, false))
+const buttonStyleLogin = computed(() => getStyles(props.fieldValue?.buttonLogin?.properties, props.screenType))
+const buttonStyleHover = computed(() => getStyles(props.fieldValue?.buttonHover?.properties, props.screenType, false))
+
 const search_sort_class = ref(getStyles(props.fieldValue?.search_sort?.sort?.properties, props.screenType, false))
 const placeholder_class = ref(getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false))
 const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false))
@@ -443,11 +459,10 @@ watch(
 </script>
 
 <template>
-
     <div :id="fieldValue?.id ? fieldValue?.id : 'list-products-ecom-iris'" component="list-products-ecom-iris" class="">
         <ConfirmDialog>
             <template #icon>
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
             </template>
         </ConfirmDialog>
         <div class="flex flex-col lg:flex-row" :style="{
@@ -458,7 +473,7 @@ watch(
             <!-- Sidebar Filters for Desktop -->
             <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
                 <aside v-show="!isMobile && isShowAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
-                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" :search="q"
+                    <FilterProducts v-if="isShowAside" v-model="filter" :productCategory="props.fieldValue.model_id" :search="q"
                         @handleSearch="handleSearch" @update:search="(e) => q = e" />
                 </aside>
             </transition>
@@ -484,28 +499,29 @@ watch(
                         <div
                             class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
                             <span class="font-medium">
-                                {{ trans("Showing") }}
+                                {{ ctrans("Showing") }}
                                 <span :class="['font-semibold', `text-[--theme-color-0]`]">
                                     {{ products.length }}
                                 </span>
-                                {{ trans("of") }}
+                                {{ ctrans("of") }}
                                 <span :class="['font-semibold', `text-[--theme-color-0]`]">
                                     {{ totalProducts }}
                                 </span>
-                                {{ products.length === 1 ? trans("product") : trans("products") }}
+                                {{ products.length === 1 ? ctrans("product") : ctrans("products") }}
                             </span>
                         </div>
                     </div>
 
                     <!-- Sort Tabs -->
                     <div class="flex space-x-6 w-fit max-w-full overflow-x-auto mt-2 md:mt-0">
-                        <button v-for="(option,index) in sortOptions" :key="`${renderKey}-${option.value}-${index}`"  @click="toggleSort(option.value)"
+                        <button v-for="option in sortOptions" :key="option.value"  @click="toggleSort(option.value)"
                             class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
                             :class="[
                                 sortKey === option.value
                                     ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
                                     : `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
                             ]" :disabled="isLoadingInitial || isLoadingMore">
+                            <LoadingIcon v-if="isLoadingInitial && sortKey === option.value" />
                             {{ option.label }} {{ getArrow(option.value) }}
                         </button>
                     </div>
@@ -528,14 +544,14 @@ watch(
 
                     <template v-else-if="products.length">
                         <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
-                        <div v-for="(product, index) in products" :key="`${renderKey}-${index}`"
-                            :style="getStyles(fieldValue?.card_product?.properties, screenType)"
+                        <div v-for="(product, index) in products" :key="product.id"
+                            :style="cardStyle"
                             class=" relative rounded flex md:flex-1 justify-center"
                             :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">
-                            <RenderProduct :code="code" :product="product" :key="`${renderKey}-${index}`"
-                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
-                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType)"
-                                :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
+                            <RenderProduct :code="code" :product="product"
+                                :buttonStyle="buttonStyle"
+                                :buttonStyleLogin="buttonStyleLogin"
+                                :buttonStyleHover="buttonStyleHover"
                                 :button="fieldValue?.button"
                                 :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
                                 :bestSeller="fieldValue.bestseller" :screenType />
@@ -588,13 +604,13 @@ watch(
                         <template v-if="isLoadingMore">
                             <LoadingText />
                         </template>
-                        <template v-else>{{ trans("Load More") }}</template>
+                        <template v-else>{{ ctrans("Load More") }}</template>
                     </Button>
                 </div>
             </div>
 
             <!-- Mobile Filters Drawer -->
-            <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"
+            <Drawer v-if="isShowFilters" v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"
                 :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
                     <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" :search="q"
@@ -605,7 +621,6 @@ watch(
     </div>
 
     <!-- <ReviewFamily v-if="layout?.iris?.website?.reviews_settings" :products="products" code="family" /> -->
-
 </template>
 
 

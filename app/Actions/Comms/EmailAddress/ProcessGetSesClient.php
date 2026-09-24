@@ -26,6 +26,8 @@ class ProcessGetSesClient
         OutboxCodeEnum::REORDER_REMINDER_3RD,
         OutboxCodeEnum::OOS_NOTIFICATION,
         OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
+        OutboxCodeEnum::BASKET_ON_OFFER,
+        OutboxCodeEnum::FAVOURITES_ON_OFFER,
         OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
         OutboxCodeEnum::REVIEW_REMINDER
     ];

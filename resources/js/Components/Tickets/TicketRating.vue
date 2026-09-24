@@ -32,13 +32,13 @@ const submit = () => {
     <div v-if="rating" class="rounded-lg border border-green-200 bg-green-50 p-4">
         <p class="text-xs text-gray-500 mb-1">{{ trans("Satisfaction") }}</p>
         <div class="flex items-center gap-1 text-amber-400">
-            <FontAwesomeIcon v-for="star in 5" :key="star" :icon="faStar" :class="star <= rating ? '' : 'text-gray-300'" />
+            <FontAwesomeIcon v-for="star in 5" :key="star" :icon="faStar" :class="star <= rating ? '' : 'text-gray-300'" fixed-width />
             <span class="ml-2 text-sm font-medium text-gray-700">{{ rating }}/5</span>
         </div>
         <p v-if="ratingComment" class="mt-2 text-sm whitespace-pre-wrap">{{ ratingComment }}</p>
     </div>
 
-    <form v-else-if="canRate" class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 space-y-3" @submit.prevent="submit">
+    <form v-else-if="canRate" class="rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] p-4 space-y-3" @submit.prevent="submit">
         <p class="text-sm font-medium">{{ trans("This ticket is resolved. How did we do?") }}</p>
         <div class="flex items-center gap-1 text-2xl" @mouseleave="hovered = 0">
             <button
@@ -51,7 +51,7 @@ const submit = () => {
                 @mouseenter="hovered = star"
                 @click="form.rating = star"
             >
-                <FontAwesomeIcon :icon="faStar" />
+                <FontAwesomeIcon :icon="faStar" fixed-width />
             </button>
         </div>
         <textarea v-model="form.comment" rows="2" class="w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-0" :placeholder="trans('Anything we could do better? (optional)')" />

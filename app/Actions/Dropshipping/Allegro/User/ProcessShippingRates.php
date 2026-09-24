@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Allegro\User;
 
+use App\Actions\Dropshipping\Allegro\Traits\WithAllegroShippingRates;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\AllegroUser;
@@ -21,6 +22,7 @@ class ProcessShippingRates extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithAllegroShippingRates;
 
     public function handle(AllegroUser $allegroUser): array
     {
@@ -59,7 +61,7 @@ class ProcessShippingRates extends RetinaAction
             }
 
             $shippingRatesData = [
-                'name' => 'AW-EU-'.$allegroUser->customerSalesChannel->slug . '-' . $countryCode,
+                'name' => $this->allegroShippingRatesName($allegroUser, $countryCode),
                 'rates' => [
                     [
                         'deliveryMethod' => [

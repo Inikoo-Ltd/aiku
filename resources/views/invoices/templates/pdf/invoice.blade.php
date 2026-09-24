@@ -154,22 +154,22 @@
         </td>
         <td style="text-align: right">
             <div>
-                {{ $dateLabel }}: <b>{{ $invoice->date?->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
+                {{ $dateLabel }}: <b>{{ $invoice->date?->copy()->setTimezone($shop->timezone->name)->translatedFormat('j F Y') }}</b>
             </div>
             @if($invoice->is_pastpay && $invoice->date)
                 <div style="text-align: right">
-                    {{ __('Payment due date') }}: <b>{{ $invoice->date->copy()->addDays((int) data_get($invoice->order?->data, 'pastpay.termDays', 30))->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
+                    {{ __('Payment due date') }}: <b>{{ $invoice->date->copy()->addDays((int) data_get($invoice->order?->data, 'pastpay.termDays', 30))->setTimezone($shop->timezone->name)->translatedFormat('j F Y') }}</b>
                 </div>
             @endif
             @if($invoice->tax_liability_at && data_get($invoice->organisation->settings, 'invoicing.show_tax_liability_date'))
                 <div style="text-align: right">
-                    {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
+                    {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->copy()->setTimezone($shop->timezone->name)->translatedFormat('j F Y') }}</b>
                 </div>
             @endif
 
             @if($invoice->order && $invoice->order->submitted_at )
                 <div style="text-align: right">
-                    {{ __('Order date') }}: <b>{{ $invoice->order->submitted_at->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
+                    {{ __('Order date') }}: <b>{{ $invoice->order->submitted_at->copy()->setTimezone($shop->timezone->name)->translatedFormat('j F Y') }}</b>
                 </div>
             @endif
             @if($invoice->originalInvoice)
@@ -379,10 +379,6 @@
 
                     <td style="text-align:left" colspan="2">
                         @if($transaction->historicAsset)
-                            @php($packUnits = soldPackUnits($transaction->historicAsset->units, $transaction->model?->units))
-                            @if(!$pro_mode && $packUnits > 1)
-                                {{ trimDecimalZeros($packUnits) }}x
-                            @endif
                             {{ $transaction->historicAsset->name }}
                             @if(isset($transaction->pallet))
                                 <br>
@@ -438,7 +434,6 @@
                                 {{ __('VAT refund') }}
                             @elseif($discretionaryRefundLine)
                             @elseif($transaction->quantity==0 || $transaction->quantity==null)
-                                {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
@@ -449,7 +444,7 @@
                             @endif
                         </td>
                         @if(!$isTaxOnlyRefund)
-                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : packQuantityLabel($transaction->quantity, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
                         @endif
                     @else
                         <td style="text-align:left">
@@ -457,7 +452,6 @@
                                 {{ __('VAT refund') }}
                             @elseif($discretionaryRefundLine)
                             @elseif($transaction->quantity==0 || $transaction->quantity==null)
-                                {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
@@ -468,7 +462,7 @@
                             @endif
                         </td>
                         @if(!$isTaxOnlyRefund)
-                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : trimDecimalZeros($transaction->quantity) }}</td>
+                            <td style="text-align:right">{{ $transaction->is_refund ? ($refundQtyDisplay ?? '') : packQuantityLabel($transaction->quantity, soldPackUnits($transaction->historicAsset?->units, $transaction->model?->units)) }}</td>
                         @endif
                     @endif
                     @if($showDiscountColumn)
@@ -786,7 +780,7 @@
                     @endif
                 </td>
                 <td style="text-align:right">
-                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('M j, Y H:i') }}
+                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->translatedFormat('M j, Y H:i') }}
                 </td>
                 <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
                 <td style="text-align:left">{{ $payment->reference }}</td>

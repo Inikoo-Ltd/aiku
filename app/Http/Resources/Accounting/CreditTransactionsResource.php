@@ -11,6 +11,7 @@ namespace App\Http\Resources\Accounting;
 
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property int $id
@@ -40,6 +41,10 @@ class CreditTransactionsResource extends JsonResource
             'order_slug'        => $this->order_slug,
             'order_reference'   => $this->order_reference,
             'notes'             => $this->notes,
+            'requested_by'      => Arr::get($this->data, 'requested_by'),
+            'applied_by'        => Arr::get($this->data, 'applied_by'),
+            'credit_note_slug'  => $this->credit_note_slug,
+            'credit_note_reference' => $this->credit_note_reference,
             'customer_slug'     => $this->customer_slug,
             'customer_ref'      => $this->customer_ref,
             'shop_slug'         => $this->shop_slug,

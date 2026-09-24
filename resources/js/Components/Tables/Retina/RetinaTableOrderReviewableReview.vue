@@ -17,7 +17,7 @@ import FormReview from "@/Components/Retina/FormReview.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { GridProducts } from "@/Components/Product"
 
 library.add(faStar, falStar)

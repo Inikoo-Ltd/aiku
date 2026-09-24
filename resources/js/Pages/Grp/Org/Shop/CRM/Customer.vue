@@ -9,7 +9,8 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, toRef } from "vue"
+import { useComposerDraft } from "@/Composables/useComposerDraft"
 import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
@@ -28,7 +29,7 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute } from "@fal"
@@ -38,12 +39,17 @@ import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/Tabl
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
+import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
 import { useForm } from "@inertiajs/vue3"
 import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute)
 
@@ -51,6 +57,7 @@ library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
+    staff_task?: { model_type: 'Product' | 'Customer' | 'Order' | 'DeliveryNote'; model_id: number }
     tabs: {
         current: string
         navigation: {}
@@ -66,6 +73,9 @@ const props = defineProps<{
     orders?: {}
     sales_channels: Array<{ id: number, name: string, code: string, type: string, icon: string }>
     can_add_order: boolean
+    can_email_customer?: boolean
+    emailCustomerRoute?: routeType
+    customer_email?: string | null
     products?: {}
     dispatched_emails?: {}
     api_requests?: {}
@@ -110,6 +120,24 @@ const isModalUploadOpen = ref(false)
 const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
+const isEmailModalOpen = ref(false)
+const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
+
+const emailForm = useForm({
+    email: props.customer_email ?? '',
+    subject: '',
+    message: '',
+    attachments: [] as File[],
+})
+const emailDraftKey = (field: string) => () => `customer-email:${props.shop_data.customer_id}:${field}`
+useComposerDraft(emailDraftKey('subject'), toRef(emailForm, 'subject'))
+useComposerDraft(emailDraftKey('message'), toRef(emailForm, 'message'))
+const submitEmail = () => {
+    emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters), {
+        onSuccess: () => emailForm.reset('subject', 'message', 'attachments'),
+    })
+}
+
 const orderForm = useForm({
     sales_channel_id: null as number | null
 })
@@ -153,8 +181,8 @@ const layout = inject('layout')
         <template #button-delete-customer="{ action }">
             <ModalConfirmationDelete
                 :routeDelete="action.route"
-                :title="trans('Delete this customer?')"
-                :description="trans('The customer and their login will be permanently deleted. This can not be undone.')">
+                :title="ctrans('Delete this customer?')"
+                :description="ctrans('The customer and their login will be permanently deleted. This can not be undone.')">
                 <template #default="{ changeModel }">
                     <Button :style="'delete'" :icon="['far', 'fa-trash-alt']" v-tooltip="action.tooltip"
                         @click="changeModel" />
@@ -165,8 +193,11 @@ const layout = inject('layout')
             <ModalCreateCustomerOffers v-if="currentTab === 'offers'" :shop_data="props.shop_data" :customer_id="props.shop_data.customer_id" />
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
+            <Button v-if="can_email_customer" @click="isEmailModalOpen = true" :label="ctrans('New email')" style="secondary"
+                icon="fal fa-envelope" />
             <Button v-if="can_add_order" @click="isOrderModalOpen = true" label="Add Order" style="create"
-                icon="plus" />            
+                icon="plus" />
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
         </template>
     </PageHeading>
 
@@ -220,6 +251,34 @@ const layout = inject('layout')
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
+
+    <Modal :show="isEmailModalOpen" @close="isEmailModalOpen = false" width="w-full max-w-2xl">
+        <div class="p-6 relative">
+            <LoadingOverlay :is-loading="emailForm.processing" position="absolute" />
+            <h2 class="text-lg font-medium text-gray-900">{{ ctrans('New email to this customer') }}</h2>
+            <p class="mt-1 text-sm text-gray-600">{{ ctrans('It opens a conversation in the chat inbox, and their reply comes back to it.') }}</p>
+            <div class="mt-4 space-y-3">
+                <div>
+                    <label class="text-xs font-medium text-gray-600">{{ ctrans('To') }}</label>
+                    <PureInput v-model="emailForm.email" type="email" :placeholder="ctrans('Email address')" />
+                </div>
+                <PureInput v-model="emailForm.subject" :placeholder="ctrans('Subject')" />
+                <div>
+                    <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline class="mb-1" />
+                    <ChatMessageEditor ref="messageEditor" v-model="emailForm.message" :placeholder="ctrans('Message')" allow-underline
+                        class="rounded-md border border-gray-300 px-3 py-2 focus-within:border-gray-500 [&_.ProseMirror]:min-h-40 [&_.ProseMirror]:max-h-80" />
+                </div>
+                <EmailAttachmentPicker v-model="emailForm.attachments" :errors="emailForm.errors" />
+                <p v-if="emailForm.errors.email" class="text-sm text-red-500">{{ emailForm.errors.email }}</p>
+                <p v-if="emailForm.errors.message" class="text-sm text-red-500">{{ emailForm.errors.message }}</p>
+                <p v-if="emailForm.errors.subject" class="text-sm text-red-500">{{ emailForm.errors.subject }}</p>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <Button :label="ctrans('Send')" style="primary" icon="fal fa-paper-plane" :loading="emailForm.processing"
+                    :disabled="!emailForm.email || !emailForm.subject || !emailForm.message" @click="submitEmail" />
+            </div>
+        </div>
+    </Modal>
 
     <Modal :show="isOrderModalOpen" @close="isOrderModalOpen = false" width="w-full max-w-5xl">
         <div class="p-6 relative">

@@ -483,7 +483,7 @@ onMounted(() => {
               v-else-if="picker"
               class="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 px-6 text-center text-gray-500"
             >
-              <FontAwesomeIcon :icon="faInfoCircle" class="text-2xl text-gray-300" aria-hidden="true" />
+              <FontAwesomeIcon :icon="faInfoCircle" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
               <div class="space-y-1">
                 <h3 class="text-sm font-semibold text-gray-700">{{ trans(picker.emptyTitle) }}</h3>
                 <p class="text-xs max-w-xs text-gray-500">{{ trans(picker.emptyDescription) }}</p>

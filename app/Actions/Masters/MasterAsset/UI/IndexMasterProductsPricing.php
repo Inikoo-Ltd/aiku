@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPriceTips;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -135,6 +136,10 @@ class IndexMasterProductsPricing extends OrgAction
 
             return $masterAsset;
         });
+
+        $priceTips = GetMasterProductsPriceTips::make()->handle($parent->masterShop, $masterAssets->getCollection());
+
+        $masterAssets->getCollection()->each(fn (MasterAsset $masterAsset) => $masterAsset->price_tip = $priceTips[$masterAsset->id] ?? null);
 
         return $masterAssets;
     }

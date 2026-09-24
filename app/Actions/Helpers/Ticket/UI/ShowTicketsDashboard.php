@@ -9,7 +9,6 @@
 namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
@@ -20,12 +19,16 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowTicketsDashboard extends OrgAction
 {
+    use WithTicketsScope;
+
     private const string PRIORITY_ORDER = "CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END";
 
     public function authorize(ActionRequest $request): bool
@@ -62,14 +65,15 @@ class ShowTicketsDashboard extends OrgAction
         ];
 
         if ($canManage || $canQa) {
-            $data['qa_queue'] = $this->tickets((clone $base)->where('qa_status', TicketQaStatusEnum::REQUESTED)->visibleTo($user)->orderBy('qa_requested_at'));
+            $data['qa_queue'] = $this->qaQueue($group, $user);
         }
 
         if ($canManage) {
             $byStatus = $open()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
-            $data['queue']       = $this->tickets((clone $base)->where('status', TicketStatusEnum::OPEN)->visibleTo($user)->orderByRaw(self::PRIORITY_ORDER)->orderBy('created_at')->limit(15));
+            $data['queue']       = $this->tickets((clone $base)->where('status', TicketStatusEnum::OPEN)->visibleTo($user)->orderByRaw(self::PRIORITY_ORDER)->orderBy('created_at')->limit(100));
             $data['assigned']    = $this->tickets($open()->where('assignee_id', $user->id)->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at'));
+            $data['collaborating'] = $this->tickets($open()->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at'));
             $data['waiting_due'] = $this->tickets((clone $base)->where('status', TicketStatusEnum::WAITING)->visibleTo($user)->where('waiting_until', '<=', now()->addDay())->orderBy('waiting_until'));
             $data['by_status']   = collect([TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY])->map(fn (TicketStatusEnum $status) => [
                 'status' => $status->value,
@@ -82,14 +86,40 @@ class ShowTicketsDashboard extends OrgAction
         return $data;
     }
 
+    public function qaQueue(Group $group, User $user, string $checker = 'all'): array
+    {
+        $query = Ticket::where('tickets.group_id', $group->id)
+            ->where('qa_status', TicketQaStatusEnum::REQUESTED)
+            ->visibleTo($user)
+            ->when($checker === 'anyone', fn (Builder $query) => $query->whereNull('qa_user_id'))
+            ->when($checker === 'me', fn (Builder $query) => $query->where('qa_user_id', $user->id))
+            ->orderBy('qa_requested_at');
+
+        return $this->tickets($query);
+    }
+
     private function tickets(Builder $query): array
     {
-        return TicketResource::collection($query->with(['reporter', 'assignee', 'customer'])->get())->toArray(request());
+        return TicketResource::collection($query->with(['reporter', 'assignee', 'customer', 'collaborators', 'qaUser'])->get())->toArray(request());
     }
 
     public function asController(ActionRequest $request): array
     {
-        $this->initialisationFromGroup(group(), $request);
+        $this->initialisationFromTicketsScope($request);
+
+        return $this->handle($this->group, $request->user());
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisationFromTicketsScope($request, $organisation);
+
+        return $this->handle($this->group, $request->user());
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    {
+        $this->initialisationFromTicketsScope($request, $organisation, $shop);
 
         return $this->handle($this->group, $request->user());
     }
@@ -99,7 +129,7 @@ class ShowTicketsDashboard extends OrgAction
         return Inertia::render(
             'Tickets/TicketsDashboard',
             [
-                'breadcrumbs' => $this->getBreadcrumbs(),
+                'breadcrumbs' => $this->ticketsBreadcrumbs(),
                 'title'       => __('Tickets'),
                 'pageHead'    => [
                     'title' => __('Tickets'),
@@ -114,19 +144,4 @@ class ShowTicketsDashboard extends OrgAction
         );
     }
 
-    public function getBreadcrumbs(): array
-    {
-        return array_merge(
-            ShowGroupDashboard::make()->getBreadcrumbs(),
-            [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => ['name' => 'grp.tickets.index'],
-                        'label' => __('Tickets'),
-                    ],
-                ],
-            ]
-        );
-    }
 }

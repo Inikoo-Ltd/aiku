@@ -49,6 +49,8 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Webpage;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -308,7 +310,7 @@ class ShowProduct extends OrgAction
                     ]
                 ],
             ]);
-        } elseif (!$product->is_minion_variant && !$isExternalShop) {
+        } elseif (!$product->is_minion_variant && !$isExternalShop && !$this->getRetirementDecision($product) && !$this->isUrlHeldByReplacement($product)) {
             $actions[] =
                 [
                     'type'  => 'button',
@@ -427,6 +429,7 @@ class ShowProduct extends OrgAction
                     'next'     => $this->getNextModel($product, $request),
                 ],
                 'mini_breadcrumbs'      => $miniBreadcrumbs,
+                'staff_task'            => ['model_type' => 'Product', 'model_id' => $product->id],
                 'pageHead'              => [
                     'title'      => $product->code,
                     'model'      => __('Product'),
@@ -474,6 +477,7 @@ class ShowProduct extends OrgAction
                 'family_slug'               => $product->family->slug ?? null,
                 'product_state'             => $product->state->value,
                 'webpage_canonical_url'     => $product->webpage?->canonical_url,
+                'retirement_decision'       => $this->canEdit ? $this->getRetirementDecision($product) : null,
                 'is_single_trade_unit'      => $product->is_single_trade_unit,
                 'trade_unit_slug'           => $product->tradeUnits?->first->slug,
                 ...$componentData,
@@ -975,5 +979,58 @@ class ShowProduct extends OrgAction
             ),
             default => []
         };
+    }
+
+    private function isUrlHeldByReplacement(Product $product): bool
+    {
+        $replacementId = Arr::get($product->data, 'replaced_by_product_id');
+        if (!Arr::get($product->data, 'retire_at_cutover') || !$replacementId) {
+            return false;
+        }
+
+        return Webpage::where('website_id', $product->shop->website?->id)
+            ->where('url', strtolower($product->code))
+            ->where('model_type', 'Product')
+            ->where('model_id', $replacementId)
+            ->exists();
+    }
+
+    /**
+     * @return array{replacement: array{code: string, name: string, price: string, route: array{name: string, parameters: array<string, string>}}, retire_route: array{name: string, parameters: array<string, int>}, keep_route: array{name: string, parameters: array<string, int>}}|null
+     */
+    private function getRetirementDecision(Product $product): ?array
+    {
+        if (!Arr::get($product->data, 'retire_at_cutover') || $product->state == ProductStateEnum::DISCONTINUED) {
+            return null;
+        }
+
+        $replacement = Product::find(Arr::get($product->data, 'replaced_by_product_id'));
+        if (!$replacement) {
+            return null;
+        }
+
+        return [
+            'replacement'  => [
+                'code'  => $replacement->code,
+                'name'  => $replacement->name,
+                'price' => $replacement->price,
+                'route' => [
+                    'name'       => 'grp.org.shops.show.catalogue.products.all_products.show',
+                    'parameters' => [
+                        'organisation' => $replacement->organisation->slug,
+                        'shop'         => $replacement->shop->slug,
+                        'product'      => $replacement->slug,
+                    ],
+                ],
+            ],
+            'retire_route' => [
+                'name'       => 'grp.models.product.retire_into_replacement',
+                'parameters' => ['product' => $product->id],
+            ],
+            'keep_route'   => [
+                'name'       => 'grp.models.product.keep_as_separate',
+                'parameters' => ['product' => $product->id],
+            ],
+        ];
     }
 }

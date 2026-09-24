@@ -354,12 +354,12 @@ const deleteReply = async () => {
                         <div class="flex gap-3">
                             <button @click="enterEditMode" class="text-gray-500 hover:text-gray-700 transition"
                                 :title="trans('Edit')">
-                                <FontAwesomeIcon :icon="faPencil" />
+                                <FontAwesomeIcon :icon="faPencil" fixed-width />
                             </button>
                             <button @click="deleteReply" :disabled="loadingDelete"
                                 class="text-gray-500 hover:text-red-600 transition disabled:opacity-50"
                                 :title="trans('Delete')">
-                                <FontAwesomeIcon :icon="faTrashAlt" />
+                                <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
                             </button>
                         </div>
                     </div>

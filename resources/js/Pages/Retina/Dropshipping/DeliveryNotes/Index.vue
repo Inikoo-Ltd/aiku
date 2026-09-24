@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ref, watch } from 'vue'
 
@@ -59,7 +59,7 @@ function channelRoute(item: any) {
     <Table :resource="data" class="mt-5">
         <template #cell(type)="{ item }">
             <div class="flex items-center gap-2">
-                <FontAwesomeIcon :icon="['fal', 'fa-box-open']" class="text-lg" />
+                <FontAwesomeIcon :icon="['fal', 'fa-box-open']" class="text-lg" fixed-width />
             </div>
         </template>
         <template #cell(reference)="{ item }">

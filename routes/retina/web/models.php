@@ -88,7 +88,6 @@ use App\Actions\Retina\Dropshipping\Orders\RemoveRetinaOrderVoucher;
 use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrderVoucher;
-use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
@@ -289,10 +288,6 @@ Route::name('customer.')->prefix('customer/{customer:id}')->whereNumber('custome
     Route::post('delivery-address/store', AddRetinaDeliveryAddressToCustomer::class)->name('delivery-address.store');
     Route::patch('delivery-address/update', UpdateRetinaCustomerDeliveryAddress::class)->name('delivery-address.update');
     Route::delete('delivery-address/{address:id}/delete', DeleteRetinaCustomerDeliveryAddress::class)->name('delivery-address.delete')->whereNumber('address');
-
-    Route::name('order.')->prefix('order')->group(function () {
-        Route::post('{platform:id}', StoreRetinaPlatformOrder::class)->name('platform.store')->whereNumber('platform');
-    });
 
     Route::post('tags/attach', [AttachTagsToModel::class, 'inRetina'])->name('tags.attach');
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inRetina'])->name('tags.detach')->whereNumber('tag');

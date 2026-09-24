@@ -11,6 +11,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
+use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
@@ -782,6 +783,36 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    /**
+     * @return array{number_boxes: int, missing_message: string|null, pdf_route: array, skip_route: array|null}|null
+     */
+    private function getBoxPackingList(DeliveryNote $deliveryNote): ?array
+    {
+        $boxPackingList = DeliveryNoteBoxPackingList::make();
+
+        if (!$boxPackingList->isRequired($deliveryNote)) {
+            return null;
+        }
+
+        $canSkip = (bool)request()->user()?->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ]);
+
+        return [
+            'number_boxes'    => $boxPackingList->numberBoxes($deliveryNote),
+            'missing_message' => $boxPackingList->missingBoxesMessage($deliveryNote),
+            'pdf_route'       => [
+                'name'       => 'grp.pdfs.packing-lists',
+                'parameters' => ['deliveryNote' => $deliveryNote->slug],
+            ],
+            'skip_route'      => $canSkip ? [
+                'name'       => 'grp.models.delivery_note.box_packing_list.skip',
+                'parameters' => ['deliveryNote' => $deliveryNote->id],
+            ] : null,
+        ];
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight     = ($deliveryNote->estimated_weight ?? 0) / 1000;
@@ -906,6 +937,7 @@ class ShowDeliveryNote extends OrgAction
             'picked_bays'                  => $pickedBays,
             'trolleys'                     => $trolleys,
             'parcels'                      => $deliveryNote->parcels,
+            'box_packing_list'             => $this->getBoxPackingList($deliveryNote),
             'shipments'                    => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
             'shipments_routes'             => [
                 ...$additionalShipmentRoutes,
@@ -1055,7 +1087,7 @@ class ShowDeliveryNote extends OrgAction
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $isEditable = false;
-        if ($this->parent instanceof Warehouse) {
+        if ($this->parent instanceof Warehouse && !$deliveryNote->isLockedInAurora()) {
             $isEditable = true;
         }
         $this->countriesAddressData ??= GetAddressData::run();
@@ -1064,7 +1096,8 @@ class ShowDeliveryNote extends OrgAction
 
         $this->allowAction = $allowAction;
 
-        $actions = $this->getActions($deliveryNote, $request);
+        $lockedInAurora = $deliveryNote->isLockedInAurora();
+        $actions        = $lockedInAurora ? [] : $this->getActions($deliveryNote, $request);
 
         $warning = null;
 
@@ -1230,6 +1263,7 @@ class ShowDeliveryNote extends OrgAction
                 'previous' => $this->getPrevious($deliveryNote, $request),
                 'next'     => $this->getNext($deliveryNote, $request),
             ],
+            'staff_task'    => ['model_type' => 'DeliveryNote', 'model_id' => $deliveryNote->id],
             'staff_chat'    => [
                 'context_type' => 'DeliveryNote',
                 'context_id'   => $deliveryNote->id,
@@ -1246,9 +1280,10 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'         => $actions,
-                'wrapped_actions' => $this->wrappedActions($deliveryNote),
+                'wrapped_actions' => $lockedInAurora ? [] : $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
+            'aurora_notice' => $lockedInAurora ? __('This delivery note belongs to an order submitted in Aurora. Pick, pack and dispatch it in Aurora, not here.') : null,
             'is_editable'   => $isEditable,
             'packaging'     => $this->getDeliveryNotePackagingProp($deliveryNote),
             'inserts'       => $this->getDeliveryNoteInsertsProp($deliveryNote),
@@ -1739,15 +1774,15 @@ class ShowDeliveryNote extends OrgAction
             defaultSort: $this->deliveryNoteDefaultSort($bucket),
             forward: $forward,
             sortValues: [
-                'customers.name'                            => $deliveryNote->customer?->name,
-                'NOT delivery_notes.is_premium_dispatch'    => !$deliveryNote->is_premium_dispatch,
+                'customers.name' => $deliveryNote->customer?->name,
+                "NOT (delivery_notes.is_premium_dispatch OR delivery_notes.type = 'replacement')" => !($deliveryNote->is_premium_dispatch || $deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT),
             ]
         );
     }
 
     /**
-     * Outside the dispatched bucket the index puts premium dispatch first, then oldest first,
-     * which is the ascending order of (not premium, date).
+     * Outside the dispatched bucket the index puts premium dispatch and replacements first, then oldest first,
+     * which is the ascending order of (not priority, date).
      *
      * @return array{0: string|array<string>, 1: bool}
      */
@@ -1757,7 +1792,7 @@ class ShowDeliveryNote extends OrgAction
             return ['delivery_notes.date', true];
         }
 
-        return [['NOT delivery_notes.is_premium_dispatch', 'delivery_notes.date'], false];
+        return [["NOT (delivery_notes.is_premium_dispatch OR delivery_notes.type = 'replacement')", 'delivery_notes.date'], false];
     }
 
     private function getNextPrevCommon($query, DeliveryNote $deliveryNote, ActionRequest $request)

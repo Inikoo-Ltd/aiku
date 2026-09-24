@@ -78,7 +78,7 @@ function applyStatus(status: string | null) {
             <button type="button" @click="applyStatus('no_clock_out')" class="px-2">
                 <div class="text-lg font-bold text-blue-600 flex justify-center items-center gap-1">
                     {{ statistics.no_clock_out }}
-                    <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" />
+                    <font-awesome-icon :icon="['fal', 'info-circle']" class="text-gray-400 text-[10px]" fixed-width />
                 </div>
                 <div class="text-xs text-gray-500 mt-1">
                     {{ trans("No clock out") }}

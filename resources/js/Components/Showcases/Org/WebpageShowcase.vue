@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -15,12 +15,15 @@ import {
   faExternalLink
 } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Message } from 'primevue'
 import { router } from "@inertiajs/vue3"
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
+import RealUserSpeed from '@/Components/DataDisplay/RealUserSpeed.vue'
+import WebpageSeo from '@/Components/DataDisplay/WebpageSeo.vue'
+import WebpageEngagement from '@/Components/DataDisplay/WebpageEngagement.vue'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -40,6 +43,7 @@ const props = defineProps<{
     canonical_url?: string
     url?: string
     search_in_website_availability?: any
+    is_hidden_from_search_engines?: boolean
     layout?: {
       web_blocks?: any[]
     }
@@ -48,8 +52,13 @@ const props = defineProps<{
     slug?: string
     code?: string
     url?: string
-  }
+  },
+  pagespeed?: any,
+  engagement?: any,
+  seo?: any
 }>()
+
+const detailBesidePreview = computed(() => (props.data?.is_hidden_from_search_engines ?? false) || props.data?.state !== 'live')
 
 const filterBlock = ref<boolean>(true)
 const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
@@ -85,81 +94,38 @@ const visitRedirect = () => {
   <Message v-if="redirected_to" :severity="'error'" class="!bg-red-100">
     <div class="px-2 font-normal hover:underline cursor-pointer grid" @click="visitRedirect">
       <span class="!no-underline">
-        {{ trans('This webpage is being redirected to another page') }}:
+        {{ ctrans('This webpage is being redirected to another page') }}:
       </span>
       <span>
         [ <span class="font-semibold italic"> {{ redirected_to?.code }} </span> | ../{{ redirected_to?.url }} ]
-        <FontAwesomeIcon 
-          v-tooltip="trans('Click here to view page')"
-          :icon="faExternalLink" 
-          class="ml-1 !no-underline"
+        <FontAwesomeIcon
+          v-tooltip="ctrans('Click here to view page')"
+          :icon="faExternalLink"
+          class="ml-1 !no-underline" fixed-width
         />
       </span>
-    </div> 
+    </div>
   </Message>
+
   <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <div v-if="redirected_to" class="grid grid-cols-2 align-items-center">
-      </div>
-      <!-- Left: Controls + Preview -->
-      <div class="space-y-4" v-else>
-        <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <!-- Left: Preview -->
+      <div v-if="!redirected_to" class="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-6 py-3">
           <!-- Logged In / Logged Out Switch -->
           <div class="flex items-center gap-3">
-            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" />
+            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" class="text-gray-500" fixed-width />
             <ToggleSwitch v-model="filterBlock" :true-value="true" :false-value="false" />
             <span class="text-sm font-medium text-gray-800">
-              {{ filterBlock ? 'Logged In' : 'Logged Out' }}
+              {{ filterBlock ? ctrans('Logged In') : ctrans('Logged Out') }}
             </span>
           </div>
           <!-- Screen Mode SelectButton -->
-          <div class="flex items-center">
-            <SelectButton v-model="screenMode" :options="screenModeOptions" optionLabel="label" optionValue="value"
-              class="p-button-outlined">
-              <template #option="slotProps">
-                <div class="flex items-center gap-2">
-                  <FontAwesomeIcon :icon="slotProps.option.icon" />
-                  <span>{{ slotProps.option.label }}</span>
-                </div>
-              </template>
-            </SelectButton>
-          </div>
-        </div>
-        <!-- Browser View -->
-        <div class="relative">
-          <BrowserView :screenMode="screenMode" :tab="{ icon: data?.typeIcon, label: data?.title }"
-            :url="{ domain: data?.domain, page: data?.canonical_url_without_domain }">
-            <template #page v-if="data?.layout?.web_blocks?.length">
-              <div class="relative w-full h-full">
-                <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
-                  <LoadingIcon class="w-24 h-24 text-6xl" />
-                </div>
-                <iframe 
-                  ref="_iframe" 
-                  :src="data?.canonical_url"
-                  :key="screenMode"
-                  :title="'props.title'" 
-                  class="w-full h-full"
-                  @load="isIframeLoading = false" />
-                </div>
-              </template>
-            </BrowserView>
-            
-            <div v-if="data?.state === 'closed'" class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
-              <img src="/assets/offline_stamp.webp" class="-rotate-[12deg] w-1/2"/>
-            </div>
-        </div>
-      </div>
-
-      <!-- Right Panel (Optional) -->
-      <div class="row-start-1 xl:row-start-auto flex justify-end w-full">
-        <!-- Optional sidebar -->
-        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit" v-if="data?.state == 'live'">
-          <div class="space-y-2">
+          <div class="flex items-center gap-2">
             <ModalConfirmationDelete
               v-if="data?.state == 'live'"
-              :description="trans('Purge all cached files. Purging your cache may slow your website temporarily')"
-              :title="trans('Break cache')" :noLabel="trans('Confirm')" noIcon="" :routeDelete="{
+              :description="ctrans('Purge all cached files. Purging your cache may slow your website temporarily')"
+              :title="ctrans('Break cache')" :noLabel="ctrans('Confirm')" noIcon="" :routeDelete="{
                 name: 'grp.models.webpage.break_cache',
                 parameters: {
                   webpage: data?.id
@@ -167,20 +133,67 @@ const visitRedirect = () => {
                 method: 'post'
               }">
               <template #default="{ changeModel }">
-                <ButtonWithLink @click="changeModel" :icon="faFragile" type="tertiary" :label="trans('Break cache')"
-                  full>
-                </ButtonWithLink>
+                <Button v-tooltip="ctrans('Break cache')" @click="changeModel" type="tertiary" size="xs" :icon="faFragile" :aria-label="ctrans('Break cache')" />
               </template>
             </ModalConfirmationDelete>
+            <SelectButton v-model="screenMode" :options="screenModeOptions" optionLabel="label" optionValue="value"
+              class="p-button-outlined">
+              <template #option="slotProps">
+                <div class="flex items-center gap-2">
+                  <FontAwesomeIcon :icon="slotProps.option.icon" fixed-width />
+                  <span>{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+            </SelectButton>
+          </div>
+        </div>
 
-            <!-- Internal Search Availability Checklist -->
-            <div v-if="data?.search_in_website_availability" class="mt-3 border-t border-gray-200 pt-3">
-                <SearchInWebsiteAvailabilityChecklist :availability="data?.search_in_website_availability" />
+        <!-- Browser View -->
+        <div class="p-6">
+          <div class="relative">
+            <BrowserView :screenMode="screenMode" :tab="{ icon: data?.typeIcon, label: data?.title }"
+              :url="{ domain: data?.domain, page: data?.canonical_url_without_domain }">
+              <template #page v-if="data?.layout?.web_blocks?.length">
+                <div class="relative w-full h-full">
+                  <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
+                    <LoadingIcon class="w-24 h-24 text-6xl" />
+                  </div>
+                  <iframe
+                    ref="_iframe"
+                    :src="data?.canonical_url"
+                    :key="screenMode"
+                    :title="'props.title'"
+                    class="w-full h-full"
+                    @load="isIframeLoading = false" />
+                </div>
+              </template>
+            </BrowserView>
+
+            <div v-if="data?.state === 'closed'" class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
+              <img src="/assets/offline_stamp.webp" class="-rotate-[12deg] w-1/2" />
             </div>
           </div>
         </div>
+
+        <!-- Internal Search Availability Checklist -->
+        <div v-if="data?.search_in_website_availability" class="border-t border-gray-200 px-6 py-4">
+          <SearchInWebsiteAvailabilityChecklist :availability="data?.search_in_website_availability" />
+        </div>
+      </div>
+
+      <!-- Right: real user speed, and the detail when there is no speed to show -->
+      <div v-if="!redirected_to" class="space-y-6">
+        <div v-if="pagespeed !== null" class="rounded-lg border border-gray-200 bg-white shadow-sm">
+          <RealUserSpeed embedded :report="pagespeed" />
+        </div>
+
+        <WebpageEngagement v-if="data?.is_hidden_from_search_engines" :engagement="engagement" />
+
+        <WebpageSeo v-if="detailBesidePreview" :seo="seo" stacked />
       </div>
     </div>
+
+    <WebpageSeo v-if="!redirected_to && !detailBesidePreview" :seo="seo" />
   </div>
 </template>
 

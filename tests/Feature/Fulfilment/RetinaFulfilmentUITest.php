@@ -1116,3 +1116,20 @@ test('web user cannot update another customer', function () {
     $response->assertForbidden();
     expect($otherCustomer->refresh()->contact_name)->toBe($originalContactName);
 });
+
+test('logging in flags the browser so the storefront can paint logged in before the first hit lands', function () {
+    $this->webUser->update(['password' => \Illuminate\Support\Facades\Hash::make('test')]);
+
+    $response = $this->post(route('retina.login.store'), [
+        'username' => $this->webUser->username,
+        'password' => 'test',
+    ]);
+
+    $response->assertSuccessful();
+
+    $authCookie = collect($response->headers->getCookies())
+        ->first(fn ($cookie) => $cookie->getName() === 'iris_vua');
+
+    expect($authCookie)->not->toBeNull()
+        ->and($authCookie->isHttpOnly())->toBeFalse();
+});

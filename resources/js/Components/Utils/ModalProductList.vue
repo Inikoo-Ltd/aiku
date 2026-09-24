@@ -15,7 +15,7 @@ import { useForm } from "@inertiajs/vue3"
 import { faBox, faCloud, faCompressWide, faExpandArrowsAlt, faPallet, faSearch, faSpinner, faStopCircle } from "@fal"
 import { faMinus, faPlus, faSave, faUndo } from "@fas"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "../NumberWithButtonSave.vue"
@@ -190,8 +190,8 @@ const notifySuccessProduct = (abc: string) => {
 
 const notifyFailedProduct = () => {
 	notify({
-		title: trans("Something went wrong!"),
-		text: trans("Failed to add or update the quantity"),
+		title: ctrans("Something went wrong!"),
+		text: ctrans("Failed to add or update the quantity"),
 		type: "error",
 	})
 }
@@ -230,16 +230,16 @@ const onSubmitPurchaseOrderProduct = async (product: any) => {
 				quantity_ordered: row.quantity_ordered,
 			})
 			await refreshSingleProduct(row)
-			notify({ title: trans('Success'), text: trans('Quantity updated'), type: 'success' })
+			notify({ title: ctrans('Success'), text: ctrans('Quantity updated'), type: 'success' })
 		} else if (Number(row.quantity_ordered) === 0 && row.deleteRoute) {
 			await axios.delete(route(row.deleteRoute.name, row.deleteRoute.parameters))
 			await refreshSingleProduct(row)
-			notify({ title: trans('Success'), text: trans('Product successfully deleted.'), type: 'success' })
+			notify({ title: ctrans('Success'), text: ctrans('Product successfully deleted.'), type: 'success' })
 		}
 	} catch (error: any) {
 		notify({
-			title: trans('Something went wrong'),
-			text: error?.response?.data?.message || trans('Failed to add or update the quantity'),
+			title: ctrans('Something went wrong'),
+			text: error?.response?.data?.message || ctrans('Failed to add or update the quantity'),
 			type: 'error',
 		})
 	} finally {
@@ -295,8 +295,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 					.post(
 						route(data.route?.name || "#", {
 							...data.route?.parameters,
-							historicSupplierProduct: product.data.historic_id,
-							orgStock: product.data.org_stock_id,
+							orgSupplierProduct: product.data.id,
 						}),
 						{
 							onError: () => {
@@ -354,15 +353,15 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 					}), {
 						onError: (errors) => {
 							notify({
-								title: trans("Something went wrong"),
-								text: errors.message || trans("Please try again later or contact administrator."),
+								title: ctrans("Something went wrong"),
+								text: errors.message || ctrans("Please try again later or contact administrator."),
 								type: "error",
 							})
 						},
 						onSuccess: () => {
 							notify({
-								title: trans("Success!"),
-								text: trans("Product successfully deleted."),
+								title: ctrans("Success!"),
+								text: ctrans("Product successfully deleted."),
 								type: "success",
 							})
 						}
@@ -381,8 +380,8 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 
 		// Notify error
 		notify({
-			title: trans("Something went wrong"),
-			text: trans("An error occurred while processing the product."),
+			title: ctrans("Something went wrong"),
+			text: ctrans("An error occurred while processing the product."),
 			type: "error",
 		})
 	}
@@ -446,7 +445,7 @@ watch(() => model.value, async (newValue) => {
 				<div>
 					<!-- Title -->
 					<div class="flex justify-center py-2 text-gray-600 font-medium mb-3">
-						<h2>{{ typeModel === 'service' ? trans('Services') : trans('Products') }}</h2>
+						<h2>{{ typeModel === 'service' ? ctrans('Services') : ctrans('Products') }}</h2>
 					</div>
 
 					<!-- Search and Table -->
@@ -466,7 +465,7 @@ watch(() => model.value, async (newValue) => {
 													@click="onClickProduct('products')"
 													icon="fal fa-compress-wide"
 													v-tooltip="'maximize '"
-													class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
+													class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" fixed-width />
 											</div>
 
 											<div class="flex items-center gap-2">
@@ -480,7 +479,7 @@ watch(() => model.value, async (newValue) => {
 													</InputIcon>
 													<InputText
 														v-model="searchQuery"
-														:placeholder="trans('Search products')"
+														:placeholder="ctrans('Search products')"
 														@input="onSearchQuery(searchQuery)"
 														class="border border-gray-300 rounded-lg px-4 py-2 text-sm" />
 												</IconField>
@@ -504,7 +503,7 @@ watch(() => model.value, async (newValue) => {
 									</div>
 								</template>
 
-								<template #empty> {{ trans("No Product found") }}. </template>
+								<template #empty> {{ ctrans("No Product found") }}. </template>
 
 								<!-- Loading Icon -->
 								<template #loading>
@@ -536,15 +535,15 @@ watch(() => model.value, async (newValue) => {
 												{{ slotProps.data?.name }}
 											</div>
 											<div v-if="typeModel !== 'purchase_order' && typeModel !== 'service'" class="opacity-60 text-sm italic" :class="slotProps.data?.available_quantity ? '' : 'text-red-500'">
-												{{ trans("Available quantity") }}: {{ slotProps.data?.available_quantity }}
+												{{ ctrans("Available quantity") }}: {{ slotProps.data?.available_quantity }}
 											</div>
 											<div
 												v-for="orgStock in slotProps.data?.org_stocks || []"
 												:key="orgStock.code"
 												class="text-xs text-teal-600">
-												{{ trans("Picked as") }}: {{ pickedUnits(orgStock, slotProps.data) }} ×
-												<span v-tooltip="orgStock.name">{{ orgStock.code }} ({{ trans("SKOs") }})</span>
-												<span v-if="orgStock.units_per_sku"> ({{ trans("packed in") }} {{ orgStock.units_per_sku }}s)</span>
+												{{ ctrans("Picked as") }}: {{ pickedUnits(orgStock, slotProps.data) }} ×
+												<span v-tooltip="orgStock.name">{{ orgStock.code }} ({{ ctrans("SKOs") }})</span>
+												<span v-if="orgStock.units_per_sku"> ({{ ctrans("packed in") }} {{ orgStock.units_per_sku }}s)</span>
 											</div>
 										</div>
 									</template>

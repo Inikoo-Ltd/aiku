@@ -102,6 +102,12 @@ trait WithAgentEditFields
                         'value'   => Arr::get($agent->data, 'delivery_time'),
                         'options' => ['inputType' => 'number']
                     ],
+                    'production_lead_days' => [
+                        'type'    => 'input',
+                        'label'   => __('Production lead time (days)'),
+                        'value'   => $agent->production_lead_days,
+                        'options' => ['inputType' => 'number']
+                    ],
                     'payment_terms' => [
                         'type'  => 'input',
                         'label' => __('Payment terms'),

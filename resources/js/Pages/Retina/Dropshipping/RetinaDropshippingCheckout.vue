@@ -14,7 +14,7 @@ import { faExclamationTriangle } from "@fas"
 import { Head } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
 import DropshippingSummaryCheckout from "@/Components/Retina/Dropshipping/DropshippingSummaryCheckout.vue"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 

@@ -26,8 +26,14 @@ class GetWebpageLock
         $users     = User::where('group_id', $webpage->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'username', 'contact_name']);
         $names     = $users->keyBy('id');
 
+        $declinedRequest = $user && $webpage->isLocked()
+            ? collect(Arr::get($webpage->lock_data, 'declined_requests', []))->firstWhere('user_id', $user->id)
+            : null;
+        $declinedBy      = $declinedRequest ? $names->get($declinedRequest['declined_by_user_id']) : null;
+
         return [
             'is_locked'    => $webpage->isLocked(),
+            'scope'        => $webpage->isLocked() ? Arr::get($webpage->lock_data, 'scope', 'webpage') : null,
             'owner'        => $webpage->lockedBy?->contact_name ?? $webpage->lockedBy?->username,
             'is_owner'     => $webpage->locked_by_user_id && $user && $webpage->locked_by_user_id == $user->id,
             'locked_at'    => $webpage->locked_at,
@@ -38,6 +44,7 @@ class GetWebpageLock
             ]))->values()->all(),
             'can_edit'     => $webpage->canBeEditedBy($user),
             'can_manage'   => $canManage,
+            'can_edit_lock' => $webpage->canEditLockBy($user),
             'message'      => $webpage->isLocked() ? $webpage->lockMessage() : null,
             'users'        => $canManage ? $users->map(fn (User $candidate) => [
                 'value' => $candidate->id,
@@ -47,6 +54,11 @@ class GetWebpageLock
                 'name' => $names->get($accessRequest['user_id'])?->contact_name ?: $names->get($accessRequest['user_id'])?->username,
             ]))->values()->all() : [],
             'has_requested_access' => $user && $webpage->isLocked() && collect(Arr::get($webpage->lock_data, 'requests', []))->contains('user_id', $user->id),
+            'declined_request' => $declinedRequest ? [
+                'declined_at' => $declinedRequest['declined_at'],
+                'declined_by' => $declinedBy?->contact_name ?: $declinedBy?->username,
+                'message'     => $declinedRequest['message'] ?? null,
+            ] : null,
             'lock_route'   => ['name' => 'grp.models.webpage.lock', 'parameters' => ['webpage' => $webpage->id]],
             'unlock_route' => ['name' => 'grp.models.webpage.unlock', 'parameters' => ['webpage' => $webpage->id]],
             'request_access_route' => ['name' => 'grp.models.webpage.edit_access.request', 'parameters' => ['webpage' => $webpage->id]],

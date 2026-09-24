@@ -8,11 +8,13 @@
 
 namespace App\Models\Helpers;
 
+use App\Actions\Helpers\Images\GetPictureSources;
 use App\Models\CRM\WebUser;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\CRM\Customer;
@@ -23,6 +25,7 @@ use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -42,6 +45,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property TicketModuleEnum|null $module
  * @property array<int, string> $tags
  * @property bool $is_confidential
+ * @property bool $blocks_source
+ * @property bool $closes_source
  * @property int $number
  * @property string $reference
  * @property TicketStatusEnum $status
@@ -98,6 +103,8 @@ class Ticket extends Model implements Auditable, HasMedia
         'module',
         'tags',
         'is_confidential',
+        'blocks_source',
+        'closes_source',
         'qa_status',
     ];
 
@@ -113,7 +120,10 @@ class Ticket extends Model implements Auditable, HasMedia
             'waiting_until' => 'datetime',
             'tags'        => 'array',
             'is_confidential' => 'boolean',
+            'blocks_source' => 'boolean',
+            'closes_source' => 'boolean',
             'qa_status'   => TicketQaStatusEnum::class,
+            'source_channel' => TicketSourceChannelEnum::class,
             'qa_requested_at' => 'datetime',
             'qa_checked_at' => 'datetime',
             'rated_at'    => 'datetime',
@@ -172,9 +182,19 @@ class Ticket extends Model implements Auditable, HasMedia
         return $this->morphTo();
     }
 
+    public function source(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
+    }
+
+    public function collaborators(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'ticket_collaborators')->withPivot('added_by_id')->withTimestamps();
     }
 
     public function qaUser(): BelongsTo
@@ -216,10 +236,71 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null;
     }
 
+    public static function canChooseType(?User $user): bool
+    {
+        return self::canBeManagedBy($user) || self::canCheckQa($user);
+    }
+
+    public function canChangeAssigneeBy(?User $user): bool
+    {
+        if (self::canBeAssignedBy($user)) {
+            return true;
+        }
+
+        if (!self::canBeManagedBy($user)) {
+            return false;
+        }
+
+        return $this->assignee_id === null
+            || $this->assignee_id === $user->id
+            || !self::canBeManagedBy($this->assignee()->first());
+    }
+
     public static function canBeAssignedBy(?User $user): bool
     {
         return $user !== null && $user->authTo('help-desk.assign');
     }
+
+    public function canChangeKindAndModuleBy(?User $user): bool
+    {
+        return $user !== null && (self::canBeAssignedBy($user) || $this->assignee_id === $user->id);
+    }
+
+    public function isAssignedTo(?User $user): bool
+    {
+        return $user !== null && $this->assignee_id === $user->id;
+    }
+
+    public function hasCollaborator(?User $user): bool
+    {
+        return $user !== null && $this->collaborators()->whereKey($user->id)->exists();
+    }
+
+    public function canBeUpdatedBy(?User $user): bool
+    {
+        return self::canBeAssignedBy($user) || (self::canBeManagedBy($user) && $this->isAssignedTo($user));
+    }
+
+    public function canContributeBy(?User $user): bool
+    {
+        return $this->canBeUpdatedBy($user) || $this->hasCollaborator($user);
+    }
+
+    public function canWriteEngineeringNotesBy(?User $user): bool
+    {
+        return self::canBeManagedBy($user) || $this->canContributeBy($user);
+    }
+
+    public function canManageCollaboratorsBy(?User $user): bool
+    {
+        return $this->canBeUpdatedBy($user);
+    }
+
+    public function canPreviewAttachmentsBy(?User $user): bool
+    {
+        return $user !== null && (self::canBeManagedBy($user) || self::canCheckQa($user) || $this->isReportedBy($user));
+    }
+
 
     public static function canUseAssistant(?User $user): bool
     {
@@ -228,7 +309,11 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public function commentsVisibleTo(mixed $viewer): HasMany
     {
-        return $this->comments()->when(!($viewer instanceof User && self::canBeAssignedBy($viewer)), fn ($query) => $query->where('is_internal', false));
+        $isLead = $viewer instanceof User && self::canBeAssignedBy($viewer);
+
+        return $this->comments()
+            ->when(!$isLead, fn ($query) => $query->where('is_lead_only', false))
+            ->when(!$viewer instanceof User, fn ($query) => $query->where('is_internal', false));
     }
 
     public function defaultWaitingHours(): int
@@ -241,6 +326,16 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null && $this->reporter_type === 'User' && $this->reporter_id === $user->id;
     }
 
+    public function canBeCancelledByReporter(?User $user): bool
+    {
+        return $this->isReportedBy($user) && $this->status->isOpen();
+    }
+
+    public function canBeReopenedByReporter(?User $user): bool
+    {
+        return $this->isReportedBy($user) && $this->status === TicketStatusEnum::RESOLVED;
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if (self::canBeAssignedBy($user)) {
@@ -250,12 +345,38 @@ class Ticket extends Model implements Auditable, HasMedia
         return $query->where(fn (Builder $query) => $query
             ->where('tickets.is_confidential', false)
             ->orWhere('tickets.assignee_id', $user->id)
+            ->orWhereExists(fn ($collaborators) => $collaborators->selectRaw('1')->from('ticket_collaborators')->whereColumn('ticket_collaborators.ticket_id', 'tickets.id')->where('ticket_collaborators.user_id', $user->id))
             ->orWhere(fn (Builder $query) => $query->where('tickets.reporter_type', 'User')->where('tickets.reporter_id', $user->id)));
     }
 
     public function isVisibleTo(User $user): bool
     {
         return static::query()->whereKey($this->id)->visibleTo($user)->exists();
+    }
+
+    /**
+     * @return array<int, array{name: string, url: string, mime: string|null, size: int, created_at: mixed, thumbnail: array<string, string>|null}>
+     */
+    public function attachmentGalleryFor(User|WebUser $viewer, string $routeName = 'grp.tickets.attachments.show'): array
+    {
+        $visibleCommentIds = $this->commentsVisibleTo($viewer)->pluck('id');
+
+        return Media::query()
+            ->whereIn('collection_name', ['ticket_images', 'ticket_attachments'])
+            ->where(fn ($query) => $query
+                ->where(fn ($ticketMedia) => $ticketMedia->where('model_type', $this->getMorphClass())->where('model_id', $this->id))
+                ->orWhere(fn ($commentMedia) => $commentMedia->where('model_type', (new TicketComment())->getMorphClass())->whereIn('model_id', $visibleCommentIds)))
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (Media $media) => [
+                'name'       => $media->name,
+                'url'        => route($routeName, ['ticket' => $this->reference, 'media' => $media->ulid]),
+                'mime'       => $media->mime_type,
+                'size'       => $media->size,
+                'created_at' => $media->created_at,
+                'thumbnail'  => $media->collection_name === 'ticket_images' ? GetPictureSources::run($media->getImage()->resize(400, 0)) : null,
+            ])
+            ->all();
     }
 
     public function hasAttachmentVisibleTo(Media $media, User|WebUser $viewer): bool

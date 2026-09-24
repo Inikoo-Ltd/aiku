@@ -8,6 +8,7 @@
 
 namespace App\Notifications;
 
+use App\Models\CRM\WebUser;
 use App\Models\Helpers\Ticket;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -21,7 +22,7 @@ class TicketNotification extends Notification implements ShouldQueue
     /**
      * @param array<int, string> $lines
      */
-    public function __construct(public Ticket $ticket, public string $subject, public array $lines, public string $actionLabel, public bool $byEmail = true)
+    public function __construct(public Ticket $ticket, public string $subject, public array $lines, public string $actionLabel, public bool $byEmail = true, public string $reason = 'update')
     {
     }
 
@@ -35,8 +36,10 @@ class TicketNotification extends Notification implements ShouldQueue
         return [
             'title' => $this->subject,
             'body'  => $this->lines[0] ?? '',
-            'type'  => 'ticket',
-            'route' => route('grp.tickets.show', $this->ticket->reference),
+            'type'      => 'ticket',
+            'ticket_id' => $this->ticket->id,
+            'reason'    => $this->reason,
+            'route'     => $this->ticketUrl($notifiable),
         ];
     }
 
@@ -47,10 +50,21 @@ class TicketNotification extends Notification implements ShouldQueue
             ->markdown('notifications::email', ['shop' => $this->ticket->group->name, 'shop_url' => config('app.url')])
             ->greeting(__('Hello :name,', ['name' => $notifiable->contact_name ?: $notifiable->username]));
 
+        if (app()->isProduction()) {
+            $message->mailer('ses')->from('help@aiku.io', 'Aiku Help');
+        }
+
         foreach ($this->lines as $line) {
             $message->line($line);
         }
 
-        return $message->action($this->actionLabel, route('grp.tickets.show', $this->ticket->reference));
+        return $message->action($this->actionLabel, $this->ticketUrl($notifiable));
+    }
+
+    private function ticketUrl($notifiable): string
+    {
+        return $notifiable instanceof WebUser
+            ? route('retina.dropshipping.tickets.show', $this->ticket->reference, false)
+            : route('grp.tickets.show', $this->ticket->reference);
     }
 }

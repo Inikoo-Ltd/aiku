@@ -76,7 +76,7 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
                 </span>
                 <span v-if="transaction.packed_in_message" class="italic opacity-80 pl-1">{{transaction.packed_in_message}}</span>
                 <span v-if="transaction.number_grouped_transactions" class="px-3">
-                    <FontAwesomeIcon icon="fal fa-stream" /> {{ transaction.number_grouped_transactions }}
+                    <FontAwesomeIcon icon="fal fa-stream" fixed-width /> {{ transaction.number_grouped_transactions }}
                 </span>
             </template>
             
@@ -86,7 +86,7 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
                 </span>
                 <span v-if="transaction.packed_in_message" class="italic opacity-80 pl-1">{{transaction.packed_in_message}}</span>
                 <span v-if="transaction.number_grouped_transactions" class="px-3">
-                    <FontAwesomeIcon icon="fal fa-stream" /> {{ transaction.number_grouped_transactions }}
+                    <FontAwesomeIcon icon="fal fa-stream" fixed-width /> {{ transaction.number_grouped_transactions }}
                 </span>
                 <span v-if="transaction.fulfilment_info" class="pl-2">
                     <span v-if="transaction.fulfilment_info.servicePalletInfo">

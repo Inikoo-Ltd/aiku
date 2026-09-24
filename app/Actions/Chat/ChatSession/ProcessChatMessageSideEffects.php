@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
@@ -25,6 +26,26 @@ class ProcessChatMessageSideEffects
     {
         $this->updateSessionTimestamps($chatSession, $senderType);
         $this->logMessageEvent($chatSession, $senderType, $senderId, $chatMessage);
+
+        if ($chatSession->channel !== ChatChannelEnum::EMAIL && in_array($senderType, [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value], true)) {
+            SendOutOfHoursReply::dispatch($chatSession);
+        }
+
+        if (config('chat.ai_drafts') && in_array($senderType, [ChatSenderTypeEnum::GUEST->value, ChatSenderTypeEnum::USER->value], true)) {
+            DraftChatReply::dispatch($chatSession);
+        }
+
+        if ($senderType === ChatSenderTypeEnum::AGENT->value) {
+            SettleChatAiDraft::run($chatSession, $chatMessage);
+        }
+
+        if ($senderType === ChatSenderTypeEnum::GUEST->value && $chatSession->channel !== ChatChannelEnum::EMAIL) {
+            $chatSession = SuggestChatSessionCustomer::run($chatSession->refresh());
+
+            if (ClassifyChatSessionNoise::isCandidate($chatSession)) {
+                ClassifyChatSessionNoise::dispatch($chatSession);
+            }
+        }
     }
 
     private function updateSessionTimestamps(ChatSession $chatSession, string $senderType): void

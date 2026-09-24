@@ -209,7 +209,7 @@ watchEffect(() => {
             <div v-for="(jobGroup, keyJob) in optionsJob" class="grid grid-cols-3 gap-x-1.5 px-2 items-center">
                 <!-- The box -->
                 <div class="flex items-center capitalize gap-x-1.5">
-                    <FontAwesomeIcon v-if="jobGroup[0].icon" :icon="jobGroup[0].icon" class='text-gray-400' aria-hidden='true' />
+                    <FontAwesomeIcon v-if="jobGroup[0].icon" :icon="jobGroup[0].icon" class='text-gray-400' fixed-width aria-hidden='true' />
                     {{ jobGroup[0].department }}
                 </div>
 
@@ -223,9 +223,9 @@ watchEffect(() => {
                     :disabled="selectedBox.admin && job.code != 'admin'? true : false"
                 >
                     <span class="relative">
-                        <FontAwesomeIcon v-if="selectedBox[keyJob] == 'admin'" icon='fas fa-check-circle' class='absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2' aria-hidden='true' />
-                        <FontAwesomeIcon v-else-if="selectedBox[keyJob] == job.code && !selectedBox.admin" icon='fas fa-check-circle' class='absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2' aria-hidden='true' />
-                        <FontAwesomeIcon v-else icon='fal fa-circle' class='absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2' aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedBox[keyJob] == 'admin'" icon='fas fa-check-circle' class='absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2' fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-else-if="selectedBox[keyJob] == job.code && !selectedBox.admin" icon='fas fa-check-circle' class='absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2' fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-else icon='fal fa-circle' class='absolute -left-1 -translate-x-full top-1/2 -translate-y-1/2' fixed-width aria-hidden='true' />
                         <span :class="[
                             selectedBox.admin && selectedBox[keyJob] != 'admin' ? 'text-gray-300' : ' text-gray-500 group-hover:text-gray-800'
                         ]">
@@ -238,8 +238,8 @@ watchEffect(() => {
 
         <!-- State: error icon & error description -->
         <div v-if="form.errors[fieldName] || form.recentlySuccessful " class="mt-1 flex items-center gap-x-1.5 pointer-events-none">
-            <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]" class="h-5 w-5 text-red-500" aria-hidden="true" />
-            <FontAwesomeIcon icon="fas fa-check-circle" v-if="form.recentlySuccessful" class="h-5 w-5 text-green-500" aria-hidden="true"/>
+            <FontAwesomeIcon icon="fas fa-exclamation-circle" v-if="form.errors[fieldName]" class="h-5 w-5 text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon icon="fas fa-check-circle" v-if="form.recentlySuccessful" class="h-5 w-5 text-green-500" fixed-width aria-hidden="true"/>
             <p v-if="form.errors[fieldName]" class="text-sm text-red-600 ">{{ form.errors[fieldName] }}</p>
         </div>
 

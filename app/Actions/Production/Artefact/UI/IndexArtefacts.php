@@ -349,6 +349,13 @@ class IndexArtefacts extends OrgAction
                 'number'   => $production->artefactFamilies()->count(),
             ],
             [
+                'label'    => __('Labels'),
+                'leftIcon' => ['icon' => 'fal fa-tags', 'tooltip' => __('Artefact labels')],
+                'root'     => 'grp.org.productions.show.crafts.labels.',
+                'route'    => ['name' => 'grp.org.productions.show.crafts.labels.index', 'parameters' => $parameters],
+                'number'   => $production->artefacts()->join('artefact_labels', 'artefact_labels.artefact_id', 'artefacts.id')->count(),
+            ],
+            [
                 'label'    => __('All artefacts'),
                 'leftIcon' => ['icon' => 'fal fa-bars', 'tooltip' => __('All artefacts')],
                 'root'     => 'grp.org.productions.show.crafts.artefacts.',

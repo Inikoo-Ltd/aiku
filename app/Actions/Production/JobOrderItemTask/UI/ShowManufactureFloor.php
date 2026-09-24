@@ -10,6 +10,7 @@ namespace App\Actions\Production\JobOrderItemTask\UI;
 
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\OrgAction;
+use App\Actions\Production\Production\UI\ShowProduction;
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
@@ -23,6 +24,7 @@ use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -134,7 +136,7 @@ class ShowManufactureFloor extends OrgAction
             'Org/Production/ManufactureFloor',
             [
                 'title'       => __('Manufacture floor'),
-                'breadcrumbs' => [],
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-industry'],
@@ -248,5 +250,24 @@ class ShowManufactureFloor extends OrgAction
                 'method'     => 'post',
             ],
         ];
+    }
+
+    public function getBreadcrumbs(array $routeParameters): array
+    {
+        return array_merge(
+            ShowProduction::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'production'])),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.floor',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'production']),
+                        ],
+                        'label' => __('Manufacture floor'),
+                    ],
+                ],
+            ]
+        );
     }
 }

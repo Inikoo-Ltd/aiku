@@ -48,7 +48,7 @@ const cardClass = (value: string) => {
                 :class="model === option.value
                     ? (savedValue === option.value ? 'bg-indigo-100 text-indigo-600' : 'bg-amber-100 text-amber-600')
                     : 'bg-gray-100 text-gray-500'">
-                <FontAwesomeIcon :icon="taxPresetIcon(option.value)" class="h-4 w-4" />
+                <FontAwesomeIcon :icon="taxPresetIcon(option.value)" class="h-4 w-4" fixed-width />
             </span>
 
             <span class="flex flex-1 flex-col">

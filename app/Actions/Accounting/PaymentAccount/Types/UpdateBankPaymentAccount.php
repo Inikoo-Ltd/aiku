@@ -28,11 +28,13 @@ class UpdateBankPaymentAccount extends OrgAction
             data_set(
                 $modelData,
                 match ($key) {
-                    'bank_name'                    => 'data.bank_name',
-                    'bank_account_name'            => 'data.bank_account_name',
-                    'bank_account_id'              => 'data.bank_account_id',
-                    'bank_swift_code'              => 'data.bank_swift_code',
-                    default                        => $key
+                    'bank_name'         => 'data.bank.name',
+                    'bank_account_name' => 'data.bank.recipient',
+                    'bank_account_id'   => 'data.bank.account',
+                    'bank_iban'         => 'data.bank.iban',
+                    'bank_swift_code'   => 'data.bank.swift',
+                    'bank_sort_code'    => 'data.bank.sort_code',
+                    default             => $key
                 },
                 $value
             );
@@ -54,10 +56,12 @@ class UpdateBankPaymentAccount extends OrgAction
     public function rules(): array
     {
         return [
-            'bank_name'                 => ['sometimes', 'string'],
-            'bank_account_name'         => ['sometimes', 'string'],
-            'bank_account_id'           => ['sometimes', 'string'],
-            'bank_swift_code'           => ['sometimes', 'string']
+            'bank_name'         => ['sometimes', 'string'],
+            'bank_account_name' => ['sometimes', 'string'],
+            'bank_account_id'   => ['sometimes', 'nullable', 'string'],
+            'bank_iban'         => ['sometimes', 'nullable', 'string'],
+            'bank_swift_code'   => ['sometimes', 'nullable', 'string'],
+            'bank_sort_code'    => ['sometimes', 'nullable', 'string'],
         ];
     }
 

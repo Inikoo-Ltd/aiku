@@ -34,6 +34,10 @@ class StoreShopifyProductVariant extends RetinaAction
      */
     public function handle(Portfolio $portfolio, $level = 1): array
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            return [false, 'This portfolio is linked to a variant the merchant already had, another variant is never created for it'];
+        }
+
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
         /** @var ShopifyUser $shopifyUser */
@@ -110,11 +114,13 @@ class StoreShopifyProductVariant extends RetinaAction
 
             ];
 
-            if ($product->marketing_weight) {
+            $shippingWeight = $product->gross_weight ?: $product->marketing_weight;
+
+            if ($shippingWeight) {
                 $inventoryItem['measurement'] = [
                     'weight' => [
                         'unit'  => 'GRAMS',
-                        'value' => $product->marketing_weight
+                        'value' => $shippingWeight
 
                     ]
                 ];

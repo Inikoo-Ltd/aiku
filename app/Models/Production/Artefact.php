@@ -101,6 +101,7 @@ class Artefact extends Model implements Auditable, HasMedia
         'description',
         'state',
         'artefact_department_id',
+        'recommended_batch_size',
     ];
 
     public function getRouteKeyName(): string

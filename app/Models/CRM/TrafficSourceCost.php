@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $org_amount
  * @property numeric $source_amount
  * @property int $source_currency_id
+ * @property string|null $fetched_via
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property numeric $grp_amount

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrder\UI;
 
+use App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
@@ -62,13 +63,21 @@ class ShowJobOrder extends OrgAction
         $warehouse = $this->organisation->warehouses()->first();
 
         $items = $jobOrder->jobOrderItems()
-            ->with(['artefact', 'tasks.manufactureTask'])
+            ->with(['artefact.orgStock', 'tasks.manufactureTask'])
             ->get()
             ->map(fn (JobOrderItem $item) => [
                 'id'                => $item->id,
                 'artefact_code'     => $item->artefact->code,
                 'artefact_name'     => $item->artefact->name,
                 'quantity'          => (int)$item->quantity,
+                'demand_skos'       => data_get($item->data, 'demand_skos'),
+                'suggested_quantity' => $item->artefact->recommended_batch_size && $item->quantity % $item->artefact->recommended_batch_size
+                    ? GetOpenJobOrderItemsOffBatch::make()->getSuggestedQuantity($item)
+                    : null,
+                'update_route'      => $this->canEdit && in_array($jobOrder->state, JobOrderStateEnum::open()) && $item->quantity_received == 0 ? [
+                    'name'       => 'grp.models.job-order-item.update',
+                    'parameters' => ['jobOrderItem' => $item->id],
+                ] : null,
                 'produced_quantity' => (float)($item->tasks->sortByDesc('position')->first()->quantity_made ?? 0),
                 'waiting_for'       => GetJobOrderItemMissingMixes::run($item),
                 'tasks'             => $item->tasks->map(fn (JobOrderItemTask $task) => [

@@ -7,4 +7,9 @@
 export interface Timesheet {
     organisation_slug?: any;
     id: string,
+    date?: string | null,
+    start_at?: string | null,
+    end_at?: string | null,
+    working_duration?: number | null,
+    breaks_duration?: number | null,
 }

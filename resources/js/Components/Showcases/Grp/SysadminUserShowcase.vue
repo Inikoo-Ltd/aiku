@@ -10,7 +10,8 @@ import { trans } from 'laravel-vue-i18n'
 import PermissionsPictogram from '@/Components/DataDisplay/PermissionsPictogram.vue'
 import Toggle from '@/Components/Pure/Toggle.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheck, faRobot, faSkull, faTimes, } from '@fal'
+import { faCheck, faRobot, faSkull, faTimes, faUserHardHat } from '@fal'
+import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -27,6 +28,7 @@ const props = defineProps<{
             username: string
             avatar: ImageTS
             email?: string
+            status: boolean
             parent_type: string
             contact_name: string
             authorizedOrganisations: {
@@ -49,6 +51,17 @@ const props = defineProps<{
             last_login: {
                 ip?: string
                 geolocation: string[]
+            }
+            employee?: {
+                slug: string
+                worker_number: string
+                contact_name: string
+                job_title?: string
+                state: string
+                route: {
+                    name: string
+                    parameters: Record<string, string>
+                }
             }
             mcp?: {
                 enabled: boolean
@@ -122,6 +135,18 @@ const force2FA = async () => {
             <div class="h-40 aspect-square rounded-full overflow-hidden shadow m-5">
                 <Image :src="data?.data?.avatar" :alt="data?.data?.contact_name" />
             </div>
+            <div class="text-center">
+                <span
+                    v-if="data?.data?.status"
+                    class="inline-block border rounded-md border-green-500 text-green-600 px-2 py-1 text-sm">
+                    <FontAwesomeIcon :icon="faCheck" fixed-width /> {{ trans('Active') }}
+                </span>
+                <span
+                    v-else
+                    class="inline-block border rounded-md border-red-500 text-red-600 px-2 py-1 text-sm">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width /> {{ trans('Inactive') }}
+                </span>
+            </div>
         </div>
 
         <dl class="w-full grid grid-cols-1 sm:grid-cols-2">
@@ -149,6 +174,20 @@ const force2FA = async () => {
                     <Tag :label="activeUsers[data?.data?.id] ? trans('Online') : trans('Offline')" :theme="activeUsers[data?.data?.id] ? 3 : undefined" />
                 </dd>
             </div> -->
+
+            <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
+                <dt class="text-sm font-medium">{{ trans("Employee") }}:</dt>
+                <dd class="mt-1 text-sm sm:mt-2">
+                    <Link
+                        v-if="data?.data?.employee"
+                        :href="route(data.data.employee.route.name, data.data.employee.route.parameters)"
+                        class="hover:underline">
+                        <FontAwesomeIcon :icon="faUserHardHat" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />{{ data.data.employee.worker_number }}
+                        <span class="text-gray-500">{{ data.data.employee.job_title }}</span>
+                    </Link>
+                    <span v-else class="text-gray-400">-</span>
+                </dd>
+            </div>
 
             <div class="border-t border-gray-100 px-4 py-6 sm:col-span-1 sm:px-0">
                 <dt class="text-sm font-medium">{{ trans("Last Active") }}:</dt>
@@ -216,16 +255,16 @@ const force2FA = async () => {
                 <dd class="pt-1 inline-grid w-full">
                     <div v-if="twoFAStatus?.has_2fa" class="w-full">
                         <span class="border rounded-md border-green-500 px-2 py-1">
-                            <FontAwesomeIcon :icon="faCheck" class="text-green-500"/> {{ trans('Enabled') }}
+                            <FontAwesomeIcon :icon="faCheck" class="text-green-500" fixed-width/> {{ trans('Enabled') }}
                         </span>
                         <span class="border rounded-md border-red-500 hover:border-red-300 active:border-red-700 text-red-500 hover:text-red-300 active:text-red-700 cursor-pointer px-2 py-1 ml-2" @click="disable2FA()">
                             <LoadingIcon v-if="isLoadingUpdate"/>
-                            <FontAwesomeIcon v-else :icon="faSkull"/>
+                            <FontAwesomeIcon v-else :icon="faSkull" fixed-width/>
                         </span>
                     </div>
                     <div v-else class="w-full">
                         <span class="border rounded-md border-red-500 px-2 py-1">
-                            <FontAwesomeIcon :icon="faTimes" class="text-red-500"/> {{ trans('Disabled') }}
+                            <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width/> {{ trans('Disabled') }}
                         </span>
                     </div>
                 </dd>

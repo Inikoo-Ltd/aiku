@@ -43,9 +43,9 @@ trait WithInvoicesExport
         }
     }
 
-    public function processDataExportPdf(Invoice $invoice): \Symfony\Component\HttpFoundation\Response
+    public function processDataExportPdf(Invoice $invoice, ?string $locale = null): \Symfony\Component\HttpFoundation\Response
     {
-        $locale = $invoice->shop->language->code;
+        $locale ??= $invoice->shop->language->code;
         app()->setLocale($locale);
 
         try {
@@ -96,7 +96,7 @@ trait WithInvoicesExport
         $outOfStockTransactionIds = DB::table('delivery_note_items')
             ->whereIn('transaction_id', $transactionIds)
             ->groupBy('transaction_id')
-            ->havingRaw('bool_and(state = ?)', [DeliveryNoteItemStateEnum::OUT_OF_STOCK->value])
+            ->havingRaw('bool_and(state = ? or coalesce(quantity_dispatched, 0) = 0)', [DeliveryNoteItemStateEnum::OUT_OF_STOCK->value])
             ->pluck('transaction_id')
             ->all();
 

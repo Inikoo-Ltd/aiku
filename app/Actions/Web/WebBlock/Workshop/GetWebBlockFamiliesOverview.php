@@ -58,6 +58,7 @@ class GetWebBlockFamiliesOverview
                 ->where('webpages.state', WebpageStateEnum::LIVE->value)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->orderByRaw('product_categories.created_at DESC')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
             $families = DB::table('product_categories')
@@ -77,6 +78,7 @@ class GetWebBlockFamiliesOverview
                 ->where('show_in_website', true)
                 ->whereNull('product_categories.deleted_at')
                 ->whereNull('webpages.deleted_at')
+                ->orderByRaw('product_categories.created_at DESC')
                 ->get();
         } else {
             return $webBlock;
@@ -95,6 +97,11 @@ class GetWebBlockFamiliesOverview
 
         $permissions = [];
 
+
+
+        if ($webpage->sub_type == WebpageSubTypeEnum::COLLECTION) {
+            $permissions = ['hidden'];
+        }
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['families_overview']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);

@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketSourceChannelEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
@@ -25,14 +26,14 @@ class StoreTicket extends OrgAction
 {
     public function handle(Group $group, array $modelData): Ticket
     {
-        $type = TicketTypeEnum::from(Arr::get($modelData, 'type', TicketTypeEnum::HELP->value));
+        $type = TicketTypeEnum::from(Arr::get($modelData, 'type') ?: TicketTypeEnum::HELP->value);
 
         $number = DB::selectOne('SELECT nextval(?) AS number', [$type->sequence()])->number;
 
         data_set($modelData, 'group_id', $group->id);
         data_set($modelData, 'type', $type);
         data_set($modelData, 'number', $number);
-        data_set($modelData, 'reference', $type->prefix().'-'.$number);
+        data_set($modelData, 'reference', $type->prefix().'-'.str_pad((string) $number, $type->numberPadding(), '0', STR_PAD_LEFT));
 
         $images = Arr::pull($modelData, 'images', []);
         Arr::forget($modelData, 'stay');
@@ -54,11 +55,13 @@ class StoreTicket extends OrgAction
         return [
             'subject'         => ['required', 'string', 'max:255'],
             'description'     => ['sometimes', 'nullable', 'string'],
-            'type'            => ['sometimes', Rule::enum(TicketTypeEnum::class)],
+            'type'            => ['sometimes', 'nullable', Rule::enum(TicketTypeEnum::class), Rule::when(!$this->asAction && !Ticket::canChooseType(request()->user()), Rule::in([TicketTypeEnum::HELP->value]))],
             'kind'            => ['sometimes', 'nullable', Rule::enum(TicketKindEnum::class), Rule::when(!$this->asAction && !Ticket::canBeManagedBy(request()->user()), Rule::notIn(TicketKindEnum::internalValues()))],
             'module'          => ['sometimes', 'nullable', Rule::enum(TicketModuleEnum::class)],
             'tags'            => ['sometimes', 'array'],
             'is_confidential' => ['sometimes', 'boolean'],
+            'blocks_source'   => ['sometimes', 'boolean'],
+            'closes_source'   => ['sometimes', 'boolean'],
             'tags.*'            => ['string', 'max:64'],
             'priority'        => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'assignee_id'     => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
@@ -69,12 +72,25 @@ class StoreTicket extends OrgAction
             'reporter_id'     => ['sometimes', 'nullable', 'integer'],
             'model_type'      => ['sometimes', 'nullable', 'string'],
             'model_id'        => ['sometimes', 'nullable', 'integer'],
+            'source_type'     => ['sometimes', 'nullable', 'string'],
+            'source_id'       => ['sometimes', 'nullable', 'integer'],
+            'source_channel'  => ['sometimes', 'nullable', Rule::enum(TicketSourceChannelEnum::class)],
             'data'            => ['sometimes', 'array'],
             'images'          => ['sometimes', 'array', 'max:5'],
             'images.*'        => Ticket::ticketFileRules(),
             'stay'            => ['sometimes', 'boolean'],
             'reference_url'   => ['sometimes', 'nullable', 'url', 'max:2048'],
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return Ticket::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return Ticket::ticketFileValidationAttributes($this->get('images', []));
     }
 
     public function authorize(ActionRequest $request): bool

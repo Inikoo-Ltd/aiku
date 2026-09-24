@@ -9,6 +9,7 @@
 namespace App\Actions\Search;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Inventory\Warehouse;
 use App\Models\Masters\MasterShop;
@@ -104,7 +105,7 @@ class Search extends OrgAction
     public function asController(ActionRequest $request): array
     {
         $route = $request->string('route_src')->toString();
-        $scope = $this->getRouteScope($route);
+        $scope = $this->isTicketReference($request->string('q')->toString()) ? 'tickets' : $this->getRouteScope($route);
 
         $options = [];
         if (in_array($scope, self::GROUP_SCOPES, true)) {
@@ -204,6 +205,13 @@ class Search extends OrgAction
     private function authoriseScope(ActionRequest $request, array $permissions): void
     {
         abort_unless($request->user()->authTo($permissions), 403);
+    }
+
+    private function isTicketReference(string $query): bool
+    {
+        $prefixes = implode('|', TicketTypeEnum::searchPrefixes());
+
+        return (bool) preg_match("~^($prefixes)-?\\d+$~i", trim($query));
     }
 
     public function getRouteScope(string $route): ?string

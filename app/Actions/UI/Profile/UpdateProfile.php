@@ -29,6 +29,8 @@ class UpdateProfile extends OrgAction
     use WithActionUpdate;
     use WithProfile;
 
+    private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague'];
+
     public function handle(User $user, array $modelData): User
     {
         if (Arr::exists($modelData, 'nickname')) {
@@ -89,10 +91,46 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['stale_orders_filters'] = Arr::pull($modelData, 'stale_orders_filters');
         }
 
+        if (Arr::exists($modelData, 'tickets_list_mine')) {
+            $modelData['settings']['tickets_list_mine'] = (string) Arr::pull($modelData, 'tickets_list_mine');
+        }
+
+        foreach (['ticket_comments_newest_first', 'ticket_history_newest_first'] as $ticketOrderSetting) {
+            if (Arr::exists($modelData, $ticketOrderSetting)) {
+                $modelData['settings'][$ticketOrderSetting] = (bool) Arr::pull($modelData, $ticketOrderSetting);
+            }
+        }
+
+        if (Arr::exists($modelData, 'alert_sounds')) {
+            $modelData['settings']['alert_sounds'] = Arr::only(Arr::pull($modelData, 'alert_sounds'), self::ALERT_SOUND_KINDS);
+        }
+
+        if (Arr::exists($modelData, 'alert_preview_seconds')) {
+            $modelData['settings']['alert_preview_seconds'] = (int) Arr::pull($modelData, 'alert_preview_seconds');
+        }
+
+        $organisationColoursWereSubmitted = Arr::exists($modelData, 'org_themes');
+
+        if ($organisationColoursWereSubmitted) {
+            $orgThemes                           = Arr::pull($modelData, 'org_themes');
+            $modelData['settings']['org_themes'] = [
+                'enabled' => (bool) Arr::get($orgThemes, 'enabled', false),
+                'themes'  => $this->sanitiseOrganisationThemes($user, Arr::get($orgThemes, 'themes', [])),
+            ];
+        }
+
         if (Arr::exists($modelData, 'chat_theme')) {
             $chatTheme                           = Arr::pull($modelData, 'chat_theme');
             $modelData['settings']['chat_theme'] = $chatTheme;
         }
+
+        if (Arr::exists($modelData, 'chat_signature')) {
+            $signature = Arr::pull($modelData, 'chat_signature');
+            if ($user->chatAgent) {
+                $user->chatAgent->update(['signature' => $signature]);
+            }
+        }
+
         data_forget($modelData, 'image');
 
         $languageWasSubmitted = Arr::has($modelData, 'language_id');
@@ -112,6 +150,14 @@ class UpdateProfile extends OrgAction
         }
 
         if ($avatarWasChanged) {
+            Session::put('reloadLayout', '1');
+        }
+
+        /*
+         * The organisation colours travel in the first load only layout props, so without asking for
+         * those props again the left navigation would keep the old colours until a full page load.
+         */
+        if ($organisationColoursWereSubmitted) {
             Session::put('reloadLayout', '1');
         }
 
@@ -144,7 +190,16 @@ class UpdateProfile extends OrgAction
             'language_id'       => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'         => ['sometimes', 'required'],
             'chat_theme'        => ['sometimes', 'nullable', Rule::in(['light', 'sky', 'blush', 'sand', 'mint', 'dracula', 'nord', 'gruvbox', 'monokai', 'onedark', 'solarized'])],
+            'org_themes'                          => ['sometimes', 'array'],
+            'org_themes.enabled'                  => ['sometimes', 'boolean'],
+            'org_themes.themes'                   => ['sometimes', 'array'],
+            'org_themes.themes.*.organisation_id' => ['required', 'integer'],
+            'org_themes.themes.*.colour'          => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
+            'alert_sounds'      => ['sometimes', 'array'],
+            'alert_preview_seconds' => ['sometimes', 'integer', 'between:2,30'],
+            'alert_sounds.*'    => [Rule::in(['chime', 'bells', 'dingdong', 'pop', 'marimba', 'submarine', 'voice', 'bird', 'boing', 'fart', 'silent'])],
             'notifications'     => ['sometimes', 'array'],
             'notifications.*'   => ['array'],
             'notifications.*.*' => [Rule::in(UserNotificationEnum::CHANNELS)],
@@ -166,7 +221,40 @@ class UpdateProfile extends OrgAction
             'stale_orders_filters.show_pos'       => ['sometimes', 'boolean'],
             'stale_orders_filters.agents'         => ['sometimes', 'array'],
             'stale_orders_filters.agents.*'       => ['string'],
+            'ticket_comments_newest_first'        => ['sometimes', 'boolean'],
+            'ticket_history_newest_first'         => ['sometimes', 'boolean'],
+            'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
+    }
+
+
+    /**
+     * Drops organisations the user can no longer reach, so a colour left behind by a revoked
+     * access cannot travel with the settings.
+     *
+     * @param  array<int, array{organisation_id: int, colour: string}>  $themes
+     * @return array<int, array{organisation_id: int, colour: string}>
+     */
+    protected function sanitiseOrganisationThemes(User $user, array $themes): array
+    {
+        $authorisedOrganisationIds = $user->authorisedOrganisations()->pluck('organisations.id')->all();
+
+        $sanitised = [];
+        foreach ($themes as $organisationTheme) {
+            $organisationId = (int) Arr::get($organisationTheme, 'organisation_id');
+            $colour         = Arr::get($organisationTheme, 'colour');
+
+            if (!in_array($organisationId, $authorisedOrganisationIds) || !is_string($colour) || !preg_match('/^#[0-9A-Fa-f]{6}$/', $colour)) {
+                continue;
+            }
+
+            $sanitised[$organisationId] = [
+                'organisation_id' => $organisationId,
+                'colour'          => strtolower($colour),
+            ];
+        }
+
+        return array_values($sanitised);
     }
 
 

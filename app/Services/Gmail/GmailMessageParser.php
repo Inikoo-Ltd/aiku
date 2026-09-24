@@ -1,0 +1,316 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 16 Sep 2026 12:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Services\Gmail;
+
+use Illuminate\Support\Arr;
+
+class GmailMessageParser
+{
+    public static function threadId(array $raw): string
+    {
+        return (string) Arr::get($raw, 'threadId');
+    }
+
+    public static function header(array $raw, string $name): ?string
+    {
+        $headers = Arr::get($raw, 'payload.headers', []);
+
+        foreach ($headers as $header) {
+            if (strcasecmp(Arr::get($header, 'name', ''), $name) === 0) {
+                return Arr::get($header, 'value');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{name: ?string, address: ?string}
+     */
+    public static function fromAddress(array $raw): array
+    {
+        $from = self::header($raw, 'From');
+
+        if (! $from) {
+            return ['name' => null, 'address' => null];
+        }
+
+        return self::parseAddress($from);
+    }
+
+    /**
+     * Everyone a header names. A comma inside a quoted name ("Doe, Jane" <jane@x.com>) is part
+     * of the name, not a separator.
+     *
+     * @return array<int, array{name: ?string, address: string}>
+     */
+    public static function addresses(array $raw, string $header): array
+    {
+        $value = self::header($raw, $header);
+
+        if (! $value) {
+            return [];
+        }
+
+        $addresses = [];
+
+        foreach (preg_split('/,(?=(?:[^"]*"[^"]*")*[^"]*$)/', $value) as $part) {
+            $address = self::parseAddress($part);
+
+            if ($address['address'] && filter_var($address['address'], FILTER_VALIDATE_EMAIL)) {
+                $addresses[] = $address;
+            }
+        }
+
+        return $addresses;
+    }
+
+    /**
+     * @return array{name: ?string, address: ?string}
+     */
+    private static function parseAddress(string $value): array
+    {
+        if (preg_match('/^(.*?)<(.+?)>$/', trim($value), $matches)) {
+            $name = trim($matches[1], " \t\"'");
+
+            return ['name' => $name !== '' ? $name : null, 'address' => trim($matches[2])];
+        }
+
+        $address = trim($value);
+
+        return ['name' => null, 'address' => $address !== '' ? $address : null];
+    }
+
+    public static function body(array $raw): string
+    {
+        $payload = Arr::get($raw, 'payload', []);
+
+        $plain = self::findPart($payload, 'text/plain');
+        if ($plain !== null) {
+            return self::trimQuotedHistory(self::decodeText($plain));
+        }
+
+        $html = self::findPart($payload, 'text/html');
+        if ($html !== null) {
+            return self::trimQuotedHistory(self::htmlToText(self::decodeText($html)));
+        }
+
+        return '';
+    }
+
+    /**
+     * The message as it was designed, for showing. Null when the sender only wrote plain text,
+     * which is most real correspondence: there is nothing to render and the text is the message.
+     */
+    public static function htmlBody(array $raw): ?string
+    {
+        $html = self::findPart(Arr::get($raw, 'payload', []), 'text/html');
+
+        return $html !== null ? self::decodeText($html) : null;
+    }
+
+    /**
+     * strip_tags removes the tags but keeps what is between them, so a stylesheet in the head
+     * survived as text and the message read "*{box-sizing:border-box}body{margin:0...". Those
+     * blocks go whole, before anything else is stripped.
+     */
+    private static function htmlToText(string $html): string
+    {
+        $html = str_ireplace(['<br>', '<br/>', '<br />', '</p>', '</div>', '</tr>'], "\n", $html);
+
+        // Decode before stripping, and do both twice: "&lt;script&gt;" survives a strip
+        // untouched, so decoding afterwards would write a real tag into the stored message.
+        $text = $html;
+
+        for ($pass = 0; $pass < 2; $pass++) {
+            $text = preg_replace('/<(style|script|head|title)\b[^>]*>.*?<\/\1>/is', ' ', $text) ?? $text;
+            $text = preg_replace('/<!--.*?-->/s', ' ', $text) ?? $text;
+            $text = strip_tags(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+
+        // Layout markup leaves runs of blank lines and non breaking spaces behind it.
+        $text = str_replace("\xc2\xa0", ' ', $text);
+        $text = preg_replace('/[ \t]+/', ' ', $text) ?? $text;
+        $text = preg_replace('/\n{3,}/', "\n\n", $text) ?? $text;
+
+        return trim($text);
+    }
+
+    /**
+     * Inline parts are reported too, marked as such: they are the pictures inside an email, and
+     * with the markup discarded they are the only way to see what was sent. The caller decides
+     * what to do with them, because most are signature logos and spacers.
+     *
+     * @return array<int, array{filename: string, mimeType: string, attachmentId: ?string, data: ?string, inline: bool, contentId: ?string, size: int}>
+     */
+    public static function attachments(array $part): array
+    {
+        $attachments = [];
+        $filename    = (string) Arr::get($part, 'filename', '');
+        $inline      = self::isInline($part);
+        $mimeType    = (string) Arr::get($part, 'mimeType', 'application/octet-stream');
+
+        if ($filename !== '' || ($inline && str_starts_with($mimeType, 'image/'))) {
+            $attachments[] = [
+                'filename'     => $filename !== '' ? $filename : 'image',
+                'mimeType'     => $mimeType,
+                'attachmentId' => Arr::get($part, 'body.attachmentId'),
+                'data'         => Arr::get($part, 'body.data'),
+                'inline'       => $inline,
+                'contentId'    => self::contentId($part),
+                'size'         => (int) Arr::get($part, 'body.size', 0),
+            ];
+        }
+
+        foreach (Arr::get($part, 'parts', []) as $child) {
+            array_push($attachments, ...self::attachments($child));
+        }
+
+        return $attachments;
+    }
+
+    /**
+     * Photographs too large to attach are sent as Drive links, and Gmail writes them into the
+     * text as "[image: Image]" with a filename and nothing behind it. The links are only in the
+     * markup, so that is where they are read from.
+     *
+     * @return array<int, string>
+     */
+    public static function driveFileIds(?string $html): array
+    {
+        if (! $html) {
+            return [];
+        }
+
+        preg_match_all('#drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:[^"\'<>]*&)?id=)([A-Za-z0-9_-]{10,})#i', $html, $matches);
+
+        return array_values(array_unique($matches[1]));
+    }
+
+    public static function decodeData(string $base64url): string
+    {
+        return self::decode($base64url);
+    }
+
+    /**
+     * What the markup points at with src="cid:...". The header carries it in angle brackets,
+     * the markup never does.
+     */
+    private static function contentId(array $part): ?string
+    {
+        $contentId = self::header(['payload' => $part], 'Content-ID');
+
+        if ($contentId === null) {
+            return null;
+        }
+
+        return trim(trim($contentId), '<>') ?: null;
+    }
+
+    private static function isInline(array $part): bool
+    {
+        $disposition = self::header(['payload' => $part], 'Content-Disposition');
+
+        return $disposition !== null && str_starts_with(strtolower(trim($disposition)), 'inline');
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function findPart(array $part, string $mimeType): ?array
+    {
+        if (Arr::get($part, 'mimeType') === $mimeType) {
+            return Arr::get($part, 'body.data') ? $part : null;
+        }
+
+        foreach (Arr::get($part, 'parts', []) as $child) {
+            $found = self::findPart($child, $mimeType);
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    private static function decode(string $base64url): string
+    {
+        return (string) base64_decode(str_replace(['-', '_'], ['+', '/'], $base64url));
+    }
+
+    /**
+     * @param  array<string, mixed>  $part
+     */
+    private static function decodeText(array $part): string
+    {
+        return self::toUtf8(
+            self::decode((string) Arr::get($part, 'body.data')),
+            self::charset($part)
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $part
+     */
+    private static function charset(array $part): ?string
+    {
+        $contentType = (string) self::header(['payload' => $part], 'Content-Type');
+
+        return preg_match('/charset\s*=\s*"?([A-Za-z0-9_\-]+)"?/i', $contentType, $matches) ? $matches[1] : null;
+    }
+
+    /**
+     * Mail does not have to be UTF-8, and does not always say honestly what it is. Stored as it
+     * arrived, a Latin body is bytes Postgres refuses outright, and the whole message was lost
+     * with it: the job failed, nothing was written and nothing labelled it, so it stayed unread
+     * in the inbox with no sign it had ever been offered to Aiku.
+     */
+    private static function toUtf8(string $text, ?string $charset): string
+    {
+        if ($charset !== null && ! in_array(strtolower($charset), ['utf-8', 'utf8', 'us-ascii', 'ascii'], true)) {
+            try {
+                $converted = mb_convert_encoding($text, 'UTF-8', $charset);
+
+                if (mb_check_encoding($converted, 'UTF-8')) {
+                    return $converted;
+                }
+            } catch (\ValueError) {
+                // An encoding name we do not know is no better than none: fall through.
+            }
+        }
+
+        if (mb_check_encoding($text, 'UTF-8')) {
+            return $text;
+        }
+
+        // Last resort for a body that lied about its charset or arrived damaged: readable and
+        // stored beats correct and discarded, and Windows-1252 maps every byte to something.
+        return mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
+    }
+
+    // ponytail: quoted-reply trimming is a heuristic (first "On ... wrote:" or leading ">" block), good enough until real threads misbehave
+    private static function trimQuotedHistory(string $body): string
+    {
+        // Split on real line endings only. \R also matches the single byte 0x85, which is the
+        // continuation byte of many ordinary letters: it cut Polish "a with ogonek" and calendar
+        // emoji in half, replaced the second byte with a newline, and what came out was no longer
+        // valid UTF-8, so the database refused the whole message and the mail was lost.
+        $lines = preg_split('/\r\n|\n|\r/', $body);
+        $cut   = count($lines);
+
+        foreach ($lines as $index => $line) {
+            if (preg_match('/^On .+wrote:$/', trim($line)) || str_starts_with(trim($line), '>')) {
+                $cut = $index;
+                break;
+            }
+        }
+
+        return trim(implode("\n", array_slice($lines, 0, $cut)));
+    }
+}

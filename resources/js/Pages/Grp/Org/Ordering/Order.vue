@@ -18,6 +18,7 @@ import Popover from "@/Components/Popover.vue"
 import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
+import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { trans } from "laravel-vue-i18n"
@@ -73,7 +74,8 @@ import {
     faTrash,
     faPercentage,
     faSackDollar,
-    faUndo as falUndo
+    faUndo as falUndo,
+    faInfoCircle,
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -103,7 +105,7 @@ import { Icon as IconTS } from "@/types/Utils/Icon"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle)
 
 interface OrderCharge {
     name: string
@@ -127,6 +129,7 @@ interface UploadSection {
 }
 
 const props = defineProps<{
+    aurora_notice?: string | null
     title: string
     tabs: TSTabs
     products?: TableTS
@@ -150,6 +153,7 @@ const props = defineProps<{
 
     pageHead: PageHeadingTypes
     staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
+    staff_task?: { model_type: 'Product' | 'Customer' | 'Order' | 'DeliveryNote'; model_id: number }
     alert?: {
         status: string
         title?: string
@@ -553,14 +557,15 @@ const generateRouteDeliveryNote = (slug: string) => {
 const cancelLoading = ref(false)
 const isModalCancelOrder = ref(false)
 const cancelOrderAction = ref<any>(null)
-const cancelOrderData = ref<{ cancellation_reason: string | null, cancellation_notes: string }>({
+const cancelOrderData = ref<{ cancellation_reason: string | null, cancellation_notes: string, refund_to_original_payment: boolean }>({
     cancellation_reason: null,
-    cancellation_notes: ''
+    cancellation_notes: '',
+    refund_to_original_payment: false
 })
 
 const openCancelOrderModal = (action) => {
     cancelOrderAction.value = action
-    cancelOrderData.value = { cancellation_reason: null, cancellation_notes: '' }
+    cancelOrderData.value = { cancellation_reason: null, cancellation_notes: '', refund_to_original_payment: false }
     isModalCancelOrder.value = true
 }
 
@@ -1547,7 +1552,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <Head :title="capitalize(title)" />
     <ConfirmDialog>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" fixed-width />
         </template>
     </ConfirmDialog>
 
@@ -1599,9 +1604,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
         <template #other>
-            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat" class="mr-2" />
-            <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
-                <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+            <div v-if="(!props.readonly || isShowProforma) && !is_shop_external && currentTab === 'attachments'" class="flex">
+                <Button @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
             <div v-if="is_shop_external && external_shop" class="absolute -top-1 md:top-auto md:bottom-0.5 left-0 md:left-12 text-xxs">
@@ -1612,6 +1616,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     {{ external_shop?.engine_label }}
                 </div>
             </div>
+            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat"/>
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id"/>
         </template>
 
         <template #button-replacement="{ action }">
@@ -1776,6 +1782,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 class="rounded bg-fuchsia-100 border border-fuchsia-300 px-1 text-xs font-semibold text-fuchsia-700 leading-tight">DS</span>
         </template>
     </PageHeading>
+
+    <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
+        <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
+        <div>
+            <div class="text-xl font-bold uppercase">{{ trans("Process in Aurora") }}</div>
+            <div class="text-base">{{ aurora_notice }}</div>
+        </div>
+    </div>
 
     <!-- Section: Pallet Warning -->
     <div v-if="alert?.status" class="p-2 pb-0">
@@ -2443,7 +2457,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     class="ml-auto h-6 mr-2 text-purple-400 hover:text-purple-600" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                     v-tooltip="ctrans('Apply discount to all products')">
                                     <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
-                                        class="h-4" />
+                                        class="h-4" fixed-width />
                                 </button>
                                 <button
                                     @click="() => {
@@ -2455,11 +2469,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
                                         <FontAwesomeIcon
                                             :icon="faTrash"
-                                            class="!text-lg !w-fit"
+                                            class="!text-lg !w-fit" fixed-width
                                         />
                                         <FontAwesomeIcon
                                             :icon="faPercentage"
-                                            class="text-xs !top-[25%]"
+                                            class="text-xs !top-[25%]" fixed-width
                                         />
                                     </FontAwesomeLayers>
                                 </button>
@@ -2467,7 +2481,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     class="ml-auto h-6 mr-2 text-red-500 hover:text-red-700" @click="restoreAllDiscount" aria-label="Edit Percentage"
                                     v-tooltip="ctrans('Restore original discount to all products')">
                                     <FontAwesomeIcon :icon="falUndo"
-                                        class="h-4" />
+                                        class="h-4" fixed-width />
                                 </button>
                             </template>
                         </dl>
@@ -2712,11 +2726,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             :minFractionDigits="0" :maxFractionDigits="2"
                                             :inputClass="[
                                                 'w-20 !px-1.5 !py-0 !text-sm !rounded !text-right',
-                                                ['dispatched'].some((item) => item == props.state) ? '!text-gray-500 !border-none' : ''
+                                                ['dispatched', 'finalised', 'cancelled'].includes(props.state) ? '!text-gray-500 !border-none' : ''
                                             ]"
                                             :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
                                             :min="0"
-                                            :readonly="['dispatched'].some((item) => item == props.state)"
+                                            :readonly="['dispatched', 'finalised', 'cancelled'].includes(props.state)"
                                         />
                                     </div>
                                 </Transition>
@@ -2950,7 +2964,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     {{ ctrans("Cancel Order") }}
                 </h2>
                 <p class="mt-1 text-sm text-gray-500">
-                    {{ ctrans("The reason will be shown to the customer in the credit balance notification.") }}
+                    {{ ctrans("The reason is shown to the customer in the store credit email, which is not sent when the money is refunded to the original payment method.") }}
                 </p>
             </div>
 
@@ -2973,6 +2987,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <div class="mt-1">
                         <PureTextarea v-model="cancelOrderData.cancellation_notes" rows="3" full
                             :placeholder="ctrans('Add more detail for the customer, e.g. which item is out of stock')" />
+                    </div>
+                </div>
+
+                <div v-if="cancelOrderAction?.is_paid">
+                    <label class="block text-sm font-medium leading-6">
+                        {{ ctrans("Paid amount") }}
+                    </label>
+                    <div class="mt-1 flex flex-col gap-y-2 text-sm">
+                        <label class="flex items-center gap-x-2 cursor-pointer">
+                            <RadioButton v-model="cancelOrderData.refund_to_original_payment" :value="false" />
+                            {{ ctrans("Keep as store credit, the customer is emailed about the credit") }}
+                        </label>
+                        <label class="flex items-center gap-x-2 cursor-pointer">
+                            <RadioButton v-model="cancelOrderData.refund_to_original_payment" :value="true" />
+                            {{ ctrans("Customer wants a refund to the original payment method, no credit email is sent") }}
+                        </label>
                     </div>
                 </div>
             </div>
@@ -3000,6 +3030,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <div v-for="check of proforma_invoice.check_list" :key="check.key" class="flex items-center gap-2">
                     <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
                     <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
+                    <FontAwesomeIcon v-if="check.tooltip" v-tooltip="check.tooltip" icon="fal fa-info-circle" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
             </div>
 

@@ -21,6 +21,7 @@ use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Language;
+use Illuminate\Validation\ValidationException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\patch;
@@ -221,4 +222,16 @@ test('a master translation reaches the shop map in every language but the shop o
         ->and($product->getTranslation('name_i8n', 'sk'))->toBe('levanduľové mydlo')
         ->and($product->name)->not->toBe('lavender soap')
         ->and($product->is_name_reviewed)->toBeFalse();
+});
+
+test('part of a trade unit is only accepted when the trade unit is divisible', function () {
+    $partOfABottle = ['trade_units' => [['id' => $this->bottle, 'quantity' => 0.01]]];
+
+    expect(fn () => UpdateMasterAsset::make()->action($this->masterAsset, $partOfABottle))
+        ->toThrow(ValidationException::class);
+
+    TradeUnit::find($this->bottle)->update(['is_divisible' => true]);
+    UpdateMasterAsset::make()->action($this->masterAsset, $partOfABottle);
+
+    expect((float) $this->masterAsset->refresh()->tradeUnits->first()->pivot->quantity)->toBe(0.01);
 });

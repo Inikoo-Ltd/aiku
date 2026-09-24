@@ -44,8 +44,8 @@ import GoldenProductBadge from "@/Components/CMS/Webpage/Products/GoldenProductB
 import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
 import { ctrans } from "@/Composables/useTrans"
+import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
@@ -57,6 +57,7 @@ import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLa
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import { getOfferTextColorClass } from "@/Composables/offerColors"
 import { Popover } from "primevue"
 import ProductDescriptionUseTab from "@/Iris/Components/BlocksUtils/ProductDescription/ProductDescriptionUseTab.vue"
 
@@ -209,39 +210,39 @@ const specificationRows = computed(() => {
     return [
         {
             key: "marketing_weight",
-            label: trans("Net Weight"),
+            label: ctrans("Net Weight"),
             value: specifications.marketing_weight
                 ? `${specifications.marketing_weight} g/${specifications.unit ?? product.value?.unit ?? ""}`.trim()
                 : null
         },
         {
             key: "gross_weight",
-            label: trans("Shipping Weight"),
+            label: ctrans("Shipping Weight"),
             value: specifications.gross_weight ? `${specifications.gross_weight} g` : null
         },
         {
             key: "dimensions",
-            label: trans("Dimensions"),
+            label: ctrans("Dimensions"),
             value: specifications.dimensions || null
         },
         {
             key: "ingredients",
-            label: trans("Materials/Ingredients"),
+            label: ctrans("Materials/Ingredients"),
             value: specifications.ingredients || null
         },
         {
             key: "barcode",
-            label: trans("Barcode"),
+            label: ctrans("Barcode"),
             value: specifications.barcode || null
         },
         {
             key: "cpnp",
-            label: trans("cpnp"),
+            label: ctrans("cpnp"),
             value: specifications.cpnp || null
         },
         {
             key: "origin",
-            label: trans("Origin"),
+            label: ctrans("Origin"),
             value: specifications.origin || null
         }
     ].filter(row => row.value)
@@ -278,6 +279,12 @@ const displayedMargin = computed(() =>
         ? props.fieldValue.product.discounted_margin
         : product.value?.margin
 )
+
+const discountColorClass = computed(() => getOfferTextColorClass(bestOffer.value))
+
+const priceColorClass = computed(() => discountColorClass.value ?? "text-black")
+
+const profitColorClass = computed(() => discountColorClass.value ?? "text-gray-500")
 
 const displayedPrice = computed(() => (bestOffer.value ? product.value?.discounted_price : product.value?.price) || 0)
 
@@ -383,6 +390,12 @@ const variantNavigation = ref<{ prevEl: HTMLElement | null; nextEl: HTMLElement 
     nextEl: null
 })
 
+const isVariantSwiperLocked = ref(true)
+
+const syncVariantNavigationState = (swiper: any) => {
+    isVariantSwiperLocked.value = swiper.isLocked ?? (swiper.isBeginning && swiper.isEnd)
+}
+
 onMounted(async () => {
     await nextTick()
     variantNavigation.value.prevEl = variantPrevEl.value
@@ -405,7 +418,7 @@ onMounted(async () => {
                 <div v-if="productTags.length" class="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4">
                     <div v-for="tag in productTags" :key="tag.id" class="flex items-center gap-2 text-gray-400">
                         <Image v-if="tag.image" :src="tag.image" :alt="tag.name" class="h-4 w-4 object-contain grayscale opacity-70" />
-                        <FontAwesomeIcon v-else :icon="faCheckCircle" class="text-sm" />
+                        <FontAwesomeIcon v-else :icon="faCheckCircle" class="text-sm" fixed-width />
                         <span class="text-xs font-medium">{{ tag.label || tag.name }}</span>
                     </div>
                 </div>
@@ -416,7 +429,7 @@ onMounted(async () => {
                     :type="bespokeData?.link?.type"
                     class="mt-6 block">
                     <div class="flex items-center gap-4 rounded-lg border border-gray-200 bg-[#F4F4F4] px-4 py-3">
-                        <FontAwesomeIcon :icon="faPencil" class="text-lg text-gray-500 shrink-0" />
+                        <FontAwesomeIcon :icon="faPencil" class="text-lg text-gray-500 shrink-0" fixed-width />
                         <div class="text-sm">
                             <div v-if="bespokeData?.title" class="font-semibold text-gray-800">{{ bespokeData.title }}</div>
                             <div v-if="bespokeData?.text" class="text-gray-600" v-html="bespokeData.text" />
@@ -436,17 +449,17 @@ onMounted(async () => {
                         </h1>
 
                         <div class="mt-1 text-xs text-gray-500">
-                            {{ trans("Product code") }}: <span class="font-medium text-gray-700">{{ product.code }}</span>
+                            {{ ctrans("Product code") }}: <span class="font-medium text-gray-700">{{ product.code }}</span>
                         </div>
 
                         <div v-if="layout?.iris?.is_logged_in" class="mt-2 flex items-center gap-2 text-xs">
                             <FontAwesomeIcon :icon="faCircle" class="text-[6px]"
-                                :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" />
+                                :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" fixed-width />
                             <span :class="product.stock > 0 ? 'text-gray-700' : 'text-red-600'">
                                 {{
                                     product.stock > 0
-                                        ? `${trans("In stock")} (${customerData?.stock})`
-                                        : trans("Out Of Stock")
+                                        ? `${ctrans("In stock")}`
+                                        : useOutOfStockLabel(product)
                                 }}
                             </span>
                         </div>
@@ -456,12 +469,12 @@ onMounted(async () => {
                             class="mt-2 flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-1.5 text-sm hover:bg-gray-200">
                             <LoadingIcon v-if="isLoadingRemindBackInStock" />
                             <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+                                :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                             <span>
                                 {{
                                     product.is_back_in_stock
-                                        ? trans("will be notified when in Stock")
-                                        : trans("Remind me")
+                                        ? ctrans("will be notified when in Stock")
+                                        : ctrans("Remind me")
                                 }}
                             </span>
                         </button>
@@ -471,8 +484,8 @@ onMounted(async () => {
                         <LoadingIcon v-if="isLoadingFavourite" class="text-2xl text-gray-500" />
                         <div v-else class="cursor-pointer text-2xl"
                             @click="customerData?.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)">
-                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" />
-                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" />
+                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" fixed-width />
+                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -486,13 +499,13 @@ onMounted(async () => {
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <div class="text-[11px] uppercase tracking-wide text-gray-400">
-                            {{ trans("Price (Excl. Tax)") }}
+                            {{ ctrans("Price (Excl. Tax)") }}
                         </div>
                         <div class="mt-1 flex items-baseline gap-2">
                             <span v-if="bestOffer" class="text-sm font-medium text-gray-400 line-through">
                                 {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                             </span>
-                            <span class="text-lg font-bold text-black">
+                            <span class="text-lg font-bold" :class="priceColorClass">
                                 {{ locale.currencyFormat(currency?.code, displayedPrice) }}
                             </span>
                             <span class="text-xs text-gray-500">
@@ -501,16 +514,16 @@ onMounted(async () => {
                         </div>
                     </div>
 
-                    <div class="text-right">
-                        <div class="text-[11px] uppercase tracking-wide text-gray-400">{{ trans("RRP") }}</div>
+                    <div v-if="product.rrp_per_unit > 0" class="text-right">
+                        <div class="text-[11px] uppercase tracking-wide text-gray-400">{{ ctrans("RRP") }}</div>
                         <div class="mt-1 text-sm text-gray-600">
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                         </div>
                     </div>
                 </div>
 
-                <div v-if="layout?.iris?.is_logged_in" class="mt-2 flex items-baseline gap-1 text-xs text-rose-500">
-                    <span>{{ trans("Profit") }}:</span>
+                <div v-if="layout?.iris?.is_logged_in" class="mt-2 flex items-baseline gap-1 text-xs" :class="profitColorClass">
+                    <span>{{ ctrans("Profit") }}:</span>
                     <span class="font-semibold">{{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}</span>
                     <span>({{ displayedMargin }})</span>
 
@@ -552,13 +565,13 @@ onMounted(async () => {
                         <EcomAddToBasketv2 v-if="product.stock > 0" ref="_desktopAddToBasket" v-model:product="product"
                             :customerData="customerData" :key="keyCustomer"
                             :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket" />
-                        <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
+                        <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
                     </div>
 
                     <LinkIris v-else :href="urlLoginWithRedirect()"
                         class="block w-full rounded border px-3 py-2 text-center text-sm text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
-                        {{ trans("Login or Register for Wholesale Prices") }}
+                        {{ ctrans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
                 </div>
 
@@ -568,19 +581,22 @@ onMounted(async () => {
                         <span class="ml-1">{{ selectedVariantLabel }}</span>
                     </div>
 
-                    <div class="relative px-5">
-                        <button ref="variantPrevEl" type="button"
-                            class="absolute left-0 top-1/2 z-10 -translate-y-1/2 text-gray-500 hover:text-gray-800">
-                            <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" />
+                    <div class="group/variants relative px-5">
+                        <button v-show="!isVariantSwiperLocked" ref="variantPrevEl" type="button"
+                            class="absolute left-0 top-1/2 z-10 -translate-y-1/2 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
+                            <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" fixed-width />
                         </button>
 
-                        <button ref="variantNextEl" type="button"
-                            class="absolute right-0 top-1/2 z-10 -translate-y-1/2 text-gray-500 hover:text-gray-800">
-                            <FontAwesomeIcon :icon="faChevronRight" class="text-sm" />
+                        <button v-show="!isVariantSwiperLocked" ref="variantNextEl" type="button"
+                            class="absolute right-0 top-1/2 z-10 -translate-y-1/2 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
+                            <FontAwesomeIcon :icon="faChevronRight" class="text-sm" fixed-width />
                         </button>
 
                         <Swiper :modules="[Navigation]" :navigation="variantNavigation" :space-between="8"
-                            :slides-per-view="4" :grab-cursor="true">
+                            :slides-per-view="4" :grab-cursor="true"
+                            @swiper="syncVariantNavigationState" @resize="syncVariantNavigationState"
+                            @breakpoint="syncVariantNavigationState" @lock="syncVariantNavigationState"
+                            @unlock="syncVariantNavigationState">
                             <SwiperSlide v-for="item in listProducts" :key="item.id">
                                 <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
                                     class="group relative flex w-full flex-col overflow-hidden rounded-lg border bg-[#F4F4F4] transition"
@@ -591,13 +607,13 @@ onMounted(async () => {
                                             class="absolute inset-0 h-full w-full object-contain transition-transform duration-300 ease-out group-hover:scale-110" />
 
                                         <FontAwesomeIcon v-else :icon="faImage"
-                                            class="absolute inset-0 m-auto text-xl text-gray-300" />
+                                            class="absolute inset-0 m-auto text-xl text-gray-300" fixed-width />
+                                    </div>
 
-                                        <div class="pointer-events-none absolute bottom-1 left-1 right-1 translate-y-1 opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
-                                            <span class="block truncate rounded bg-gray-900/80 px-2 py-0.5 text-center text-[11px] font-medium text-white backdrop-blur">
-                                                {{ item.variant_label }}
-                                            </span>
-                                        </div>
+                                    <div v-if="item.variant_label" class="p-1">
+                                        <span class="block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700">
+                                            {{ item.variant_label }}
+                                        </span>
                                     </div>
                                 </button>
                             </SwiperSlide>
@@ -627,7 +643,7 @@ onMounted(async () => {
                         </div>
 
                         <div v-if="countriesOfOrigin.length" class="spec-row">
-                            <div class="spec-label">{{ trans('Origin Country') }}</div>
+                            <div class="spec-label">{{ ctrans('Origin Country') }}</div>
                             <div class="spec-value flex  gap-1 justify-end align-end">
                                 <div v-for="country in countriesOfOrigin" :key="country.code" class="flex items-center gap-2">
                                     <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name"
@@ -646,12 +662,12 @@ onMounted(async () => {
                         <div v-for="item in documentations" :key="`${item.label}-${item.caption}`" class="spec-row">
                             <div class="spec-label">{{ item.label }}</div>
                             <div class="spec-value flex items-center justify-end gap-2">
-                                <a :href="item.url" target="_blank" class="text-xs text-gray-500 underline hover:text-gray-700">
-                                    {{ trans("Link") }}
-                                </a>
+                          <!--       <a :href="item.url" target="_blank" class="text-xs text-gray-500 underline hover:text-gray-700">
+                                    {{ ctrans("Link") }}
+                                </a> -->
                                 <a :href="item.url" target="_blank" download class="doc-download">
-                                    {{ trans("Download File") }}
-                                    <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" />
+                                    {{ ctrans("Download File") }}
+                                    <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" fixed-width />
                                 </a>
                             </div>
                         </div>
@@ -661,7 +677,7 @@ onMounted(async () => {
                 <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment && fieldValue?.appointment_data?.link?.href"
                     :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type">
                     <div class="group my-4 flex w-full items-center gap-3 rounded-lg border bg-[#F4F4F4] px-4 py-2 transition hover:border-gray-300 hover:bg-gray-100">
-                        <FontAwesomeIcon :icon="faMapMarkerAlt" class="shrink-0 text-gray-600 transition group-hover:text-gray-800" />
+                        <FontAwesomeIcon :icon="faMapMarkerAlt" class="shrink-0 text-gray-600 transition group-hover:text-gray-800" fixed-width />
                         <span class="max-w-[420px] truncate text-sm font-medium text-gray-800 underline">
                             <div v-html="fieldValue?.appointment_data?.text" />
                         </span>
@@ -684,18 +700,18 @@ onMounted(async () => {
                 </h1>
 
                 <div class="mt-1 text-xs text-gray-500">
-                    {{ trans("Product code") }}: <span class="font-medium text-gray-700">{{ product.code }}</span>
+                    {{ ctrans("Product code") }}: <span class="font-medium text-gray-700">{{ product.code }}</span>
                 </div>
 
                 <div class="mt-2 flex items-center justify-between">
                     <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-xs">
                         <FontAwesomeIcon :icon="faCircle" class="text-[6px]"
-                            :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" />
+                            :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" fixed-width />
                         <span :class="product.stock > 0 ? 'text-gray-700' : 'text-red-600'">
                             {{
                                 product.stock > 0
-                                    ? `${trans('In stock')} (${customerData?.stock})`
-                                    : trans('Out Of Stock')
+                                    ? `${ctrans('In stock')}`
+                                    : useOutOfStockLabel(product)
                             }}
                         </span>
                     </div>
@@ -705,7 +721,7 @@ onMounted(async () => {
                         <FontAwesomeIcon v-else :icon="customerData?.is_favourite ? fasHeart : faHeart"
                             class="cursor-pointer text-xl transition"
                             :class="customerData?.is_favourite ? 'text-pink-500' : 'text-pink-300 hover:text-pink-400'"
-                            @click="customerData?.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)" />
+                            @click="customerData?.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)" fixed-width />
                     </div>
                 </div>
             </div>
@@ -718,12 +734,12 @@ onMounted(async () => {
 
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <div class="text-[11px] uppercase tracking-wide text-gray-400">{{ trans("Price (Excl. Tax)") }}</div>
+                    <div class="text-[11px] uppercase tracking-wide text-gray-400">{{ ctrans("Price (Excl. Tax)") }}</div>
                     <div class="mt-1 flex items-baseline gap-2">
                         <span v-if="bestOffer" class="text-sm font-medium text-gray-400 line-through">
                             {{ locale.currencyFormat(currency?.code, product.price || 0) }}
                         </span>
-                        <span class="text-lg font-bold text-black">
+                        <span class="text-lg font-bold" :class="priceColorClass">
                             {{ locale.currencyFormat(currency?.code, displayedPrice) }}
                         </span>
                         <span class="text-xs text-gray-500">
@@ -732,16 +748,16 @@ onMounted(async () => {
                     </div>
                 </div>
 
-                <div class="text-right">
-                    <div class="text-[11px] uppercase tracking-wide text-gray-400">{{ trans("RRP") }}</div>
+                <div v-if="product.rrp_per_unit > 0" class="text-right">
+                    <div class="text-[11px] uppercase tracking-wide text-gray-400">{{ ctrans("RRP") }}</div>
                     <div class="mt-1 text-sm text-gray-600">
                         {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
                     </div>
                 </div>
             </div>
 
-            <div v-if="layout?.iris?.is_logged_in" class="flex items-baseline gap-1 text-xs text-rose-500">
-                <span>{{ trans("Profit") }}:</span>
+            <div v-if="layout?.iris?.is_logged_in" class="flex items-baseline gap-1 text-xs" :class="profitColorClass">
+                <span>{{ ctrans("Profit") }}:</span>
                 <span class="font-semibold">{{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}</span>
                 <span>({{ displayedMargin }})</span>
 
@@ -781,12 +797,12 @@ onMounted(async () => {
                 @click="product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                 class="flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-2 text-sm">
                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" />
+                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
                 <span>
                     {{
                         product.is_back_in_stock
-                            ? trans('will be notified when in Stock')
-                            : trans('Remind me')
+                            ? ctrans('will be notified when in Stock')
+                            : ctrans('Remind me')
                     }}
                 </span>
             </button>
@@ -795,18 +811,18 @@ onMounted(async () => {
                 <EcomAddToBasketv2 v-if="product.stock > 0" ref="_mobileAddToBasket" v-model:product="product"
                     :customerData="customerData" :key="keyCustomer"
                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket w-full" />
-                <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
+                <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
             </template>
 
             <LinkIris v-else :href="urlLoginWithRedirect()"
                 class="block w-full rounded border px-3 py-2 text-center text-sm text-gray-600">
-                {{ trans("Login or Register for Wholesale Prices") }}
+                {{ ctrans("Login or Register for Wholesale Prices") }}
             </LinkIris>
 
             <div v-if="productTags.length" class="flex flex-wrap items-center gap-x-6 gap-y-3">
                 <div v-for="tag in productTags" :key="tag.id" class="flex items-center gap-2 text-gray-400">
                     <Image v-if="tag.image" :src="tag.image" :alt="tag.name" class="h-4 w-4 object-contain grayscale opacity-70" />
-                    <FontAwesomeIcon v-else :icon="faCheckCircle" class="text-sm" />
+                    <FontAwesomeIcon v-else :icon="faCheckCircle" class="text-sm" fixed-width />
                     <span class="text-xs font-medium">{{ tag.label || tag.name }}</span>
                 </div>
             </div>
@@ -817,7 +833,7 @@ onMounted(async () => {
                 :type="bespokeData?.link?.type"
                 class="block">
                 <div class="flex items-center gap-4 rounded-lg border border-gray-200 bg-[#F4F4F4] px-4 py-3">
-                    <FontAwesomeIcon :icon="faPencil" class="shrink-0 text-lg text-gray-500" />
+                    <FontAwesomeIcon :icon="faPencil" class="shrink-0 text-lg text-gray-500" fixed-width />
                     <div class="text-sm">
                         <div v-if="bespokeData?.title" class="font-semibold text-gray-800">{{ bespokeData.title }}</div>
                         <div v-if="bespokeData?.text" class="text-gray-600" v-html="bespokeData.text" />
@@ -849,7 +865,7 @@ onMounted(async () => {
             <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment && fieldValue?.appointment_data?.link?.href"
                 :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type">
                 <div class="flex items-center gap-3 rounded-lg border bg-[#F4F4F4] px-4 py-2">
-                    <FontAwesomeIcon :icon="faMapMarkerAlt" />
+                    <FontAwesomeIcon :icon="faMapMarkerAlt" fixed-width />
                     <div v-html="fieldValue?.appointment_data?.text" class="text-sm underline" />
                 </div>
             </LinkIris>
@@ -873,7 +889,7 @@ onMounted(async () => {
                     </div>
 
                     <div v-if="countriesOfOrigin.length" class="spec-row">
-                        <div class="spec-label">{{ trans('Origin Country') }}</div>
+                        <div class="spec-label">{{ ctrans('Origin Country') }}</div>
                         <div class="spec-value flex flex-col gap-1 justify-end align-end">
                             <div v-for="country in countriesOfOrigin" :key="country.code" class="flex items-center gap-2 ">
                                 <img :src="'/flags/' + country.code.toLowerCase() + '.png'" :alt="country.name"
@@ -893,11 +909,11 @@ onMounted(async () => {
                         <div class="spec-label">{{ item.label }}</div>
                         <div class="spec-value flex flex-wrap items-center justify-end gap-2">
                            <!--  <a :href="item.url" target="_blank" class="text-xs text-gray-500 underline hover:text-gray-700">
-                                {{ trans("Link") }}
+                                {{ ctrans("Link") }}
                             </a> -->
                             <a :href="item.url" target="_blank" download class="doc-download">
-                                {{ trans("Download File") }}
-                                <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" />
+                                {{ ctrans("Download File") }}
+                                <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" fixed-width />
                             </a>
                         </div>
                     </div>

@@ -31,6 +31,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class DeliveryNoteItemsStateUnassignedResource extends JsonResource
 {
+    use WithOrderedAsset;
+
     public function toArray($request): array
     {
         $packedIn = $this->packed_in;
@@ -74,6 +76,8 @@ class DeliveryNoteItemsStateUnassignedResource extends JsonResource
             'org_stock_slug'                           => $this->org_stock_slug,
             'org_stock_code'                           => $this->org_stock_code,
             'org_stock_name'                           => $this->org_stock_name,
+            'ordered_asset'                            => $this->getOrderedAssetForFractionalQuantity(),
+            'replacement_reason_label'                 => $this->replacement_reason?->label(),
             'barcode'                                  => $this->barcode,
             'org_stock_id'                             => $this->org_stock_id,
             'batch_code'                               => $this->batch_code,

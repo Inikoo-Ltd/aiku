@@ -5,7 +5,7 @@ import { inject, onMounted, onBeforeUnmount, nextTick, computed, watch } from 'v
 import formatDistanceStrict from 'date-fns/formatDistanceStrict'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmpty as faDollyFlatbedEmptyFal } from "@fal"
+import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faClock, faDollyFlatbedEmpty as faDollyFlatbedEmptyFal } from "@fal"
 import { faShoppingBasket, faStickyNote, faShoppingCart, faPlusCircle, faBox, faBan, faDollyFlatbedEmpty as faDollyFlatbedEmptyFas } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref } from 'vue'
@@ -28,9 +28,10 @@ import AddLocations from './AddLocations.vue'
 import EditLocations from './EditLocations.vue'
 import { WINDOW } from '@sentry/vue'
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
+import StockCoverLabel from '@/Components/Procurement/StockCoverLabel.vue'
 import { useLowStockAuditBroadcast, LowStockAuditedEvent } from '@/Composables/useLowStockAuditBroadcast'
 import { debounce } from 'lodash-es'
-library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
+library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faClock, faDollyFlatbedEmptyFal, faShoppingBasket, faStickyNote, faShoppingCart, faDollyFlatbedEmptyFas)
 
 const props = defineProps<{
     stocks_management: StocksManagementTS
@@ -520,7 +521,7 @@ const onAddLocationShow = () => {
                 </h2>
             </span>
             <div v-if="data.is_quantity_excess" v-tooltip="ctrans('Excess stock')" class="text-gray-500 hover:text-gray-700">
-                <FontAwesomeIcon :icon="faPlusCircle" class="text-xl"></FontAwesomeIcon>
+                <FontAwesomeIcon :icon="faPlusCircle" class="text-xl" fixed-width></FontAwesomeIcon>
             </div>
         </div>
 
@@ -544,6 +545,19 @@ const onAddLocationShow = () => {
                     <template v-else>{{ locale.number(stocks_management.qty_in_location ?? 0) }}</template>
                 </span>
             </div>
+        </div>
+
+        <!-- Section: Stock cover -->
+        <div v-if="stocks_management.cover" class="flex flex-wrap items-baseline gap-x-2 text-sm text-gray-500">
+            <FontAwesomeIcon :icon="faClock" class="text-gray-400" fixed-width aria-hidden="true" />
+            <StockCoverLabel :days="stocks_management.cover.days" />
+            <span v-if="stocks_management.cover.out_at" class="text-xs text-gray-400">
+                ({{ ctrans("empty on") }} {{ useFormatTime(stocks_management.cover.out_at) }})
+            </span>
+            <span v-if="stocks_management.cover.daily_usage" class="text-xs text-gray-400"
+                v-tooltip="ctrans('Forecast usage per day, seasonally adjusted, counting only days the SKO was on the shelf')">
+                &middot; {{ stocks_management.cover.daily_usage }} {{ ctrans("a day") }}
+            </span>
         </div>
 
         <!-- Section: Location Grid -->

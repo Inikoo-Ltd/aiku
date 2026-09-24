@@ -181,7 +181,7 @@ const isUserInputPassed = (dataToCheck: Record<string, any>) => {
               <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
                   <div>
                       <div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100">
-                          <FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-red-500 text-4xl" />
+                          <FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-red-500 text-4xl" fixed-width />
                       </div>
 
                       <div class="mt-3 text-center">
@@ -210,7 +210,7 @@ const isUserInputPassed = (dataToCheck: Record<string, any>) => {
               <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
                   <div>
                       <div class="mx-auto flex size-16 items-center justify-center rounded-full bg-gray-100">
-                          <FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-amber-500 text-4xl" />
+                          <FontAwesomeIcon icon='fas fa-exclamation-triangle' class="text-amber-500 text-4xl" fixed-width />
                       </div>
 
                       <div class="mt-3 text-center">

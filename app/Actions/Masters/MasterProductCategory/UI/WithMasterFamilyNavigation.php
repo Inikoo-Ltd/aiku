@@ -34,7 +34,8 @@ trait WithMasterFamilyNavigation
     protected function applyNavigationFilters(Builder $query, Model $model, ActionRequest $request): void
     {
         /** @var MasterProductCategory $model */
-        $query->where('master_shop_id', $model->master_shop_id);
+        $query->where('master_shop_id', $model->master_shop_id)
+            ->where($model->getTable().'.status', $model->status);
         $routeName = $request->route()->getName();
 
         if (in_array($routeName, [

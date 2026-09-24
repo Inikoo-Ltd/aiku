@@ -7,6 +7,8 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Events\BroadcastMetaChatListEvent;
@@ -14,13 +16,13 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class MarkMetaChatSessionAsSpam
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * Only hides the thread. Status and assignment are left intact so un-marking
@@ -36,6 +38,9 @@ class MarkMetaChatSessionAsSpam
                 'spam_at'             => now(),
                 'spammed_by_agent_id' => $agent->id,
             ]);
+
+            ClassifyChatSessionNoise::humanDecided($metaChatSession, true);
+
 
             StoreMetaChatEvent::make()->handle(
                 $metaChatSession,
@@ -59,12 +64,19 @@ class MarkMetaChatSessionAsSpam
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, MetaChatSession $metaChatSession): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($metaChatSession);
 
         if (!$agent) {
             return response()->json([
                 'success' => false,
                 'message' => __('Only authenticated agents can mark chats as spam'),
+            ], 403);
+        }
+
+        if (!$this->userCanDisposeOfChat($agent->user, $metaChatSession)) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->chatHeldByAnotherAgentMessage($metaChatSession),
             ], 403);
         }
 

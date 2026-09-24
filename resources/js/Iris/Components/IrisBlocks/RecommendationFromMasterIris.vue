@@ -83,7 +83,6 @@ onMounted(()=>{
   key.value ++
 })
 
-console.log('related product :', props)
 </script>
 
 <template>
@@ -103,11 +102,11 @@ console.log('related product :', props)
     <div v-if="products.length" class="relative px-4 py-6">
       <!-- Navigation -->
       <button ref="prevEl" class="swiper-nav-button hidden lg:block left-12 top-1/2">
-        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl" />
+        <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-xl" fixed-width />
       </button>
 
       <button ref="nextEl" class="swiper-nav-button hidden lg:block right-12 top-1/2">
-        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl" />
+        <FontAwesomeIcon :icon="faChevronCircleRight" class="text-xl" fixed-width />
       </button>
 
       <!-- Swiper -->

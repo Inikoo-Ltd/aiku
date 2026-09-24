@@ -226,7 +226,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
         <button v-if="swiperInstance?.allowSlidePrev" ref="prevEl"
           class="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full cursor-pointer text-gray-500"
           @click.stop="scrollLeft" @keydown="onArrowKeyLeft" aria-label="Scroll left" type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" />
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-left']" fixed-width />
         </button>
 
         <Swiper @swiper="(s) => (swiperInstance = s)"
@@ -252,7 +252,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
           class="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full cursor-pointer text-gray-500"
           @click.stop="scrollRight" @keydown="onArrowKeyRight" aria-label="Scroll right"
           type="button">
-          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" />
+          <FontAwesomeIcon :icon="['fas', 'chevron-circle-right']" fixed-width />
         </button>
 
       </div>

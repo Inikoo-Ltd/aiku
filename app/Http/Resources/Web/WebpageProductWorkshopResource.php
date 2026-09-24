@@ -68,7 +68,6 @@ class WebpageProductWorkshopResource extends JsonResource
 
 
         return [
-            'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
             'name'              => $product->name,

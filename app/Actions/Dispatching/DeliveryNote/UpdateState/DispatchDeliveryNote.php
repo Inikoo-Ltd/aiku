@@ -74,6 +74,7 @@ class DispatchDeliveryNote extends OrgAction
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::DISPATCHED);
+        $this->intrastatHydrators($deliveryNote);
 
         DeliveryNoteHydrateDispatchTotals::dispatch($deliveryNote);
 

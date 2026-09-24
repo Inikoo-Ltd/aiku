@@ -35,7 +35,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         array $allowedElements,
         callable $engine,
         ?string $prefix = null,
-        ?string $default = null
+        ?string $default = null,
+        bool $optional = false
     ): self {
         $elementsData = null;
 
@@ -45,14 +46,14 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             $elements               = explode(',', request()->input("$argumentName.$key"));
             $validatedElements      = array_intersect($allowedElements, $elements);
             $countValidatedElements = count($validatedElements);
-            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
+            if ($countValidatedElements > 0 && ($optional || $countValidatedElements < count($allowedElements))) {
                 $elementsData = $validatedElements;
             }
         } elseif ($default !== null) {
             $defaultElements        = explode(',', $default);
             $validatedElements      = array_intersect($allowedElements, $defaultElements);
             $countValidatedElements = count($validatedElements);
-            if ($countValidatedElements > 0 && $countValidatedElements < count($allowedElements)) {
+            if ($countValidatedElements > 0 && ($optional || $countValidatedElements < count($allowedElements))) {
                 $elementsData = $validatedElements;
             }
         }

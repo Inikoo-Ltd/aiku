@@ -68,7 +68,7 @@ const isModalOpen = inject('isModalOpen', ref(false));
           <FontAwesomeIcon
             v-else
             :icon="['far', 'image']"
-            class="text-gray-400 w-5 h-5"
+            class="text-gray-400 w-5 h-5" fixed-width
           />
         </div>
 

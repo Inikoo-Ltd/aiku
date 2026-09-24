@@ -27,7 +27,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -60,10 +59,6 @@ class StoreSupplier extends OrgAction
     {
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
-
-        if (Arr::get($modelData, 'order_number_prefix')) {
-            data_set($modelData, 'order_number_prefix', Str::upper($modelData['order_number_prefix']));
-        }
 
         if (Arr::get($modelData, 'delivery_type') !== 'container') {
             Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);

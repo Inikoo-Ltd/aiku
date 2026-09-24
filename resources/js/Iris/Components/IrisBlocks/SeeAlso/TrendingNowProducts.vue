@@ -46,11 +46,11 @@ const getImage = (product: any) => {
 <template>
   <div class="relative mx-auto w-full max-w-[1400px] px-4 py-6 2xl:max-w-[1700px] 2xl:px-10 2xl:py-8">
     <button ref="prevEl" class="swiper-nav-button hidden lg:block left-0">
-      <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg" />
+      <FontAwesomeIcon :icon="faChevronCircleLeft" class="text-lg" fixed-width />
     </button>
 
     <button ref="nextEl" class="swiper-nav-button hidden lg:block right-0">
-      <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg" />
+      <FontAwesomeIcon :icon="faChevronCircleRight" class="text-lg" fixed-width />
     </button>
 
     <Swiper
@@ -82,7 +82,7 @@ const getImage = (product: any) => {
             <FontAwesomeIcon
               v-else
               icon="fal fa-image"
-              class="opacity-20 text-3xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 2xl:text-5xl"
+              class="opacity-20 text-3xl absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 2xl:text-5xl" fixed-width
             />
           </div>
 

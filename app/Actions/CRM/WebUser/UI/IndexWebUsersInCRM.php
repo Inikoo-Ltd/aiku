@@ -44,7 +44,8 @@ class IndexWebUsersInCRM extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('username', $value);
+                $query->whereStartWith('username', $value)
+                    ->orWhereStartWith('web_users.email', $value);
             });
         });
         if ($prefix) {
@@ -63,7 +64,8 @@ class IndexWebUsersInCRM extends OrgAction
 
         $queryBuilder
             ->leftJoin('organisations', 'web_users.organisation_id', '=', 'organisations.id')
-            ->leftJoin('shops', 'web_users.shop_id', '=', 'shops.id');
+            ->leftJoin('shops', 'web_users.shop_id', '=', 'shops.id')
+            ->leftJoin('web_user_stats', 'web_users.id', '=', 'web_user_stats.web_user_id');
 
 
         return $queryBuilder
@@ -76,6 +78,9 @@ class IndexWebUsersInCRM extends OrgAction
                 'web_users.slug',
                 'web_users.created_at',
                 'web_users.customer_id',
+                'web_users.is_root',
+                'web_users.status',
+                'web_users.contact_name',
                 'organisations.name as organisation_name',
                 'organisations.code as organisation_code',
                 'organisations.slug as organisation_slug',
@@ -83,8 +88,12 @@ class IndexWebUsersInCRM extends OrgAction
                 'shops.code as shop_code',
                 'shops.slug as shop_slug',
                 'shops.type as shop_type',
+                'web_user_stats.last_login_at',
+                'web_user_stats.number_logins',
+                'web_user_stats.number_failed_logins',
+                'web_user_stats.last_failed_login_at',
             ])
-            ->allowedSorts(['email', 'username', 'created_at', 'organisation_name'])
+            ->allowedSorts(['email', 'username', 'created_at', 'organisation_name', 'last_login_at', 'number_failed_logins'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -186,7 +195,19 @@ class IndexWebUsersInCRM extends OrgAction
                         default => null
                     }
                 )
-                ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'email', label: __('Email'), sortable: true, searchable: true)
+                ->column(key: 'contact_name', label: __('Contact name'), sortable: true, searchable: true)
+                ->column(key: 'is_root', label: __('Admin'), type: 'icon')
+                ->column(key: 'status', label: __('Status'), type: 'icon')
+                ->column(key: 'last_login_at', label: __('Last login'), sortable: true)
+                ->column(key: 'number_logins', label: __('Logins'), sortable: true)
+                ->column(key: 'number_failed_logins', label: __('Failed logins'), sortable: true);
+            if (!$parent instanceof Customer) {
+                $table
+                    ->column(key: 'organisation_name', label: __('Organisation'))
+                    ->column(key: 'shop_name', label: __('Shop'));
+            }
             $table
                 ->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Customer) {

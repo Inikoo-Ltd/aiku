@@ -20,7 +20,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
-import { ProductHit } from "@/types/Luigi/LuigiTypes"
+import { RecommendationProduct } from "@/types/RecommendationProduct"
 import { notify } from "@kyvg/vue3-notification"
 import RecommendationCRBSlideIris from "@/Components/Iris/Recommendations/RecommendationCRBSlideIris.vue"
 library.add(faChevronLeft, faChevronRight)
@@ -61,7 +61,7 @@ const slidesPerView = computed(() => {
 
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<ProductHit[] | null>()
+const listProducts = ref<RecommendationProduct[] | null>()
 const isLoadingFetch = ref(false)
 const fetchRecommenders = async () => {
     if (route().has('grp.json.product_category.last-ordered-products.index') && props.modelValue?.family?.id) {

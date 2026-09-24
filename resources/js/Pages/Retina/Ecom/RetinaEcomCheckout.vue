@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import type { Component } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans as trans } from "@/Composables/useTrans"
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
 import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
@@ -15,7 +15,7 @@ import { Head } from "@inertiajs/vue3"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaymentCashOnDelivery.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -38,6 +38,7 @@ const props = defineProps<{
         charges_amount: string
     }
     balance: string
+    on_account?: { available_credit: number } | null
     total_amount: string
     routes: {
         back_to_basket: routeType
@@ -217,7 +218,7 @@ const locale = inject("locale", aikuLocaleStructure)
             <div class="w-64">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
-                    :label="trans('Place order')"
+                    :label="on_account ? trans('Place order on account') : trans('Place order')"
                     :routeTarget="routes?.pay_with_balance"
                     full
                 >
@@ -227,7 +228,12 @@ const locale = inject("locale", aikuLocaleStructure)
             <div class="text-xs text-gray-500 xmt-2 italic text-center gap-x-1 w-80 justify-center">
                 <FontAwesomeIcon icon="fal fa-info-circle" xclass="mt-[4px]" fixed-width aria-hidden="true" />
                 <div class="leading-5 text-center inline">
-                    {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                    <template v-if="on_account">
+                        {{ trans("This is your final confirmation. The order will be charged to your account, available credit :amount.", { amount: locale?.currencyFormat(currency_code, on_account.available_credit) }) }}
+                    </template>
+                    <template v-else>
+                        {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                    </template>
                 </div>
             </div>
         </div>

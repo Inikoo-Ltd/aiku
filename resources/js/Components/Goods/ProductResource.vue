@@ -9,7 +9,7 @@ import { useStringToHex } from "@/Composables/useStringToHex"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
 import { faTag } from "@far"
-import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo, faStamp, faTimesCircle } from "@fal"
+import { faFileCheck, faFilePdf, faFileWord, faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo, faStamp, faTimesCircle, faGlobe } from "@fal"
 
 interface TariffCodeByOrganisation {
     organisation_code: string
@@ -80,6 +80,7 @@ interface LabelInfoPresence {
 }
 
 interface LabelInfo extends LabelInfoPresence {
+    label_info_approved?: { show: boolean }
     safety_icons?: { show: boolean }
     markets?: { show: boolean, value: { value: string, label: string }[] }
     languages?: { show: boolean, value: { code: string, name: string, flag?: string }[] }
@@ -281,7 +282,7 @@ const getIcon = (type?: string) => {
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-gray-700">{{ trans("Brands & Tags") }}</span>
-                        <FontAwesomeIcon :icon="faTag" class="text-orange-500" />
+                        <FontAwesomeIcon :icon="faTag" class="text-orange-500" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
@@ -325,7 +326,7 @@ const getIcon = (type?: string) => {
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-gray-700">{{ trans("Properties") }}</span>
-                        <FontAwesomeIcon icon="fal fa-puzzle-piece" class="text-indigo-500" />
+                        <FontAwesomeIcon icon="fal fa-puzzle-piece" class="text-indigo-500" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
@@ -385,8 +386,8 @@ const getIcon = (type?: string) => {
                                         <span class="font-medium" :class="{ 'text-amber-700': row.national_extension }">{{ row.tariff_code || '-' }}</span>
                                         <span v-if="row.national_extension" v-tooltip="row.reason" class="ml-1 text-gray-500">{{ trans("override") }}, {{ row.approved_by }}</span>
                                         <template v-if="row.can_edit">
-                                            <button class="ml-1 text-gray-500 hover:text-indigo-600" @click="startEditing(row)"><FontAwesomeIcon :icon="faEdit" /></button>
-                                            <button v-if="row.national_extension" class="ml-1 text-gray-500 hover:text-red-600" @click="removeOverride(row)"><FontAwesomeIcon :icon="falTrash" /></button>
+                                            <button class="ml-1 text-gray-500 hover:text-indigo-600" @click="startEditing(row)"><FontAwesomeIcon :icon="faEdit" fixed-width /></button>
+                                            <button v-if="row.national_extension" class="ml-1 text-gray-500 hover:text-red-600" @click="removeOverride(row)"><FontAwesomeIcon :icon="falTrash" fixed-width /></button>
                                         </template>
                                     </template>
                                 </dd>
@@ -427,7 +428,7 @@ const getIcon = (type?: string) => {
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-gray-700">{{ trans("Health & Safety") }}</span>
-                        <FontAwesomeIcon icon="fal fa-shield-alt" class="text-red-500" />
+                        <FontAwesomeIcon icon="fal fa-shield-alt" class="text-red-500" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
@@ -469,7 +470,7 @@ const getIcon = (type?: string) => {
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-gray-700">GPSR</span>
-                        <FontAwesomeIcon icon="fal fa-shield-alt" class="text-blue-500" />
+                        <FontAwesomeIcon icon="fal fa-shield-alt" class="text-blue-500" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
@@ -524,7 +525,7 @@ const getIcon = (type?: string) => {
                                 </div>
                                 <div v-if="getActiveHazards().length === 0"
                                     class="flex items-center text-gray-400 text-sm">
-                                    <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" />
+                                    <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" fixed-width />
                                     {{ trans("No hazards identified") }}
                                 </div>
                             </div>
@@ -542,7 +543,7 @@ const getIcon = (type?: string) => {
                                         </p>
                                         <button @click="showFullWarnings = true"
                                             class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                                            <FontAwesomeIcon icon="fal fa-chevron-down" />
+                                            <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width />
                                             {{ trans("Show more") }}
                                         </button>
                                     </div>
@@ -551,14 +552,14 @@ const getIcon = (type?: string) => {
                                             {{ gpsr?.warnings }}</p>
                                         <button v-if="gpsr?.warnings.length > 200" @click="showFullWarnings = false"
                                             class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                                            <FontAwesomeIcon icon="fal fa-chevron-up" />
+                                            <FontAwesomeIcon icon="fal fa-chevron-up" fixed-width />
                                             {{ trans("Show less") }}
                                         </button>
                                     </div>
                                 </div>
                             </div>
                             <div v-else class="flex items-center text-gray-400 text-sm">
-                                <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" />
+                                <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" fixed-width />
                                 {{ trans("No warnings specified") }}
                             </div>
                         </div>
@@ -577,7 +578,7 @@ const getIcon = (type?: string) => {
                                         </p>
                                         <button @click="showFullInstructions = true"
                                             class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                                            <FontAwesomeIcon icon="fal fa-chevron-down" />
+                                            <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width />
                                             {{ trans("Show more") }}
                                         </button>
                                     </div>
@@ -587,14 +588,14 @@ const getIcon = (type?: string) => {
                                         <button v-if="gpsr?.how_to_use.length > 200"
                                             @click="showFullInstructions = false"
                                             class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                                            <FontAwesomeIcon icon="fal fa-chevron-up" />
+                                            <FontAwesomeIcon icon="fal fa-chevron-up" fixed-width />
                                             {{ trans("Show less") }}
                                         </button>
                                     </div>
                                 </div>
                             </div>
                             <div v-else class="flex items-center text-gray-400 text-sm">
-                                <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" />
+                                <FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" fixed-width />
                                 {{ trans("No instructions specified") }}
                             </div>
                         </div>
@@ -606,11 +607,23 @@ const getIcon = (type?: string) => {
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-gray-700">{{ trans("Labeling & Compliance Marks") }}</span>
-                        <FontAwesomeIcon :icon="faStamp" class="text-emerald-600" />
+                        <FontAwesomeIcon :icon="faStamp" class="text-emerald-600" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
                     <div class="space-y-3 py-2">
+                        <div class="flex justify-between items-center gap-3">
+                            <dt class="text-gray-500">{{ trans("Regulatory & Label Information tab") }}</dt>
+                            <dd v-if="labelInfo.label_info_approved?.show" class="font-medium text-green-600 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faCheckCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Published on the website") }}
+                            </dd>
+                            <dd v-else class="text-gray-400 flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faTimesCircle" class="text-xs" fixed-width aria-hidden="true" />
+                                {{ trans("Hidden on the website") }}
+                            </dd>
+                        </div>
+
                         <div v-for="(label, key) in labelInfoLabels" :key="key" class="flex justify-between items-center gap-3">
                             <dt class="text-gray-500">{{ label }}</dt>
                             <dd v-if="labelInfo[key]?.show" class="font-medium text-green-600 flex items-center gap-1">
@@ -638,7 +651,8 @@ const getIcon = (type?: string) => {
                             <dt class="text-gray-500 whitespace-nowrap">{{ trans("Markets") }}</dt>
                             <dd v-if="labelInfo.markets?.show" class="font-medium flex flex-wrap gap-1 justify-end">
                                 <span v-for="market in labelInfo.markets.value" :key="market.value"
-                                    class="px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    <FontAwesomeIcon v-if="market.value === 'other'" :icon="faGlobe" class="text-[10px]" fixed-width aria-hidden="true" />
                                     {{ market.label }}
                                 </span>
                             </dd>
@@ -689,7 +703,7 @@ const getIcon = (type?: string) => {
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-gray-700">Attachments (Private) ({{ props.attachments?.private?.filter(i => i.attachment)?.length ?? 0}})</span>
-                        <FontAwesomeIcon icon="fal fa-lock" class="text-red-500" />
+                        <FontAwesomeIcon icon="fal fa-lock" class="text-red-500" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
@@ -707,7 +721,7 @@ const getIcon = (type?: string) => {
                                 :class="[
                                     item.attachment ? 'text-green-500' : 'text-gray-400',
                                     'transition'
-                                ]"
+                                ]" fixed-width
                                 />
                                 <span class="text-gray-700">{{ item.label }}</span>
                             </div>
@@ -719,7 +733,7 @@ const getIcon = (type?: string) => {
                                     target="_blank"
                                     class="text-xs text-green-600 flex items-center gap-1 hover:underline"
                                 >
-                                    <FontAwesomeIcon :icon="faCheckCircle" class="text-green-500 text-xs" />
+                                    <FontAwesomeIcon :icon="faCheckCircle" class="text-green-500 text-xs" fixed-width />
                                     {{ item.attachment.name }}
                                 </a>
                                 </template>
@@ -738,7 +752,7 @@ const getIcon = (type?: string) => {
                 <AccordionHeader>
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-gray-700">Attachments (Public) ({{ props.attachments?.public?.filter(i => i.attachment)?.length ?? 0 }})</span>
-                        <FontAwesomeIcon icon="fal fa-lock" class="text-blue-500" />
+                        <FontAwesomeIcon icon="fal fa-lock" class="text-blue-500" fixed-width />
                     </div>
                 </AccordionHeader>
                 <AccordionContent>
@@ -756,7 +770,7 @@ const getIcon = (type?: string) => {
                                 :class="[
                                     item.attachment ? 'text-green-500' : 'text-gray-400',
                                     'transition'
-                                ]"
+                                ]" fixed-width
                                 />
                                 <span class="text-gray-700">{{ item.label }}</span>
                             </div>
@@ -768,7 +782,7 @@ const getIcon = (type?: string) => {
                                     target="_blank"
                                     class="text-xs text-green-600 flex items-center gap-1 hover:underline"
                                 >
-                                    <FontAwesomeIcon :icon="faCheckCircle" class="text-green-500 text-xs" />
+                                    <FontAwesomeIcon :icon="faCheckCircle" class="text-green-500 text-xs" fixed-width />
                                     {{ item.attachment.name }}
                                 </a>
                                 </template>

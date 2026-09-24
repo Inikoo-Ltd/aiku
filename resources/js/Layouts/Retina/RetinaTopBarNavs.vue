@@ -42,7 +42,7 @@ const layout = useLayoutStore()
             >
                 <FontAwesomeIcon :icon="menu.icon"
                     class="h-5 lg:h-3.5 w-auto group-hover:opacity-100 opacity-70 transition duration-100 ease-in-out"
-                    aria-hidden="true"/>
+                    fixed-width aria-hidden="true"/>
                 <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ menu.label }}</span>
 
                 <!-- The line appear on hover and active state -->
@@ -59,7 +59,7 @@ const layout = useLayoutStore()
             >
                 <FontAwesomeIcon :icon="menu.icon"
                     class="h-5 lg:h-3.5 w-auto group-hover:opacity-100 opacity-70 transition duration-100 ease-in-out"
-                    aria-hidden="true"/>
+                    fixed-width aria-hidden="true"/>
                 <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ trans(menu.label) }}</span>
                 <!-- The line appear on hover and active state -->
                 <div :class="[route(layout.currentRoute, route().routeParams).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
@@ -75,7 +75,7 @@ const layout = useLayoutStore()
             >
                 <FontAwesomeIcon :icon="menu.icon"
                     class="h-5 lg:h-3.5 w-auto group-hover:opacity-100 opacity-70 transition duration-100 ease-in-out"
-                    aria-hidden="true"/>
+                    fixed-width aria-hidden="true"/>
                 <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ trans(menu.label) }}</span>
                 <!-- The line appear on hover and active state -->
                 <div :class="[route(layout.currentRoute, route().routeParams).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />

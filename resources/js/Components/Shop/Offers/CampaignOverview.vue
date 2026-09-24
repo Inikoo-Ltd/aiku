@@ -136,7 +136,7 @@ const severity = computed(() => {
                 <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm flex-1">
 
                     <span>
-                        <FontAwesomeIcon icon="fal fa-candle-holder" class="" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-candle-holder" class="" fixed-width aria-hidden="true" />
                         Gold Reward Amnesty
                     </span>
                     <div class="flex items-center gap-2">
@@ -144,7 +144,7 @@ const severity = computed(() => {
                             {{ useFormatTime(campaign.start_at, { formatTime: 'PPP' }) }}
                         </span>
 
-                        <FontAwesomeIcon icon="fas fa-arrow-right" class="" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fas fa-arrow-right" class="" fixed-width aria-hidden="true" />
 
                         <span>
                             {{ useFormatTime(campaign.end_at, { formatTime: 'PPP' }) }}

@@ -98,7 +98,7 @@ function triggerExport(): void {
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                 @click="showExportModal = true"
             >
-                <FontAwesomeIcon :icon="['fal', 'fa-file-download']" class="text-sm" />
+                <FontAwesomeIcon :icon="['fal', 'fa-file-download']" class="text-sm" fixed-width />
                 Export Data
             </button>
         </template>
@@ -198,7 +198,7 @@ function triggerExport(): void {
         <template #footer>
             <Button label="Cancel" severity="secondary" text @click="showExportModal = false" />
             <Button @click="triggerExport">
-                <FontAwesomeIcon :icon="['fal', 'fa-file-download']" class="mr-1.5" />
+                <FontAwesomeIcon :icon="['fal', 'fa-file-download']" class="mr-1.5" fixed-width />
                 Download {{ exportFormat.toUpperCase() }}
             </Button>
         </template>

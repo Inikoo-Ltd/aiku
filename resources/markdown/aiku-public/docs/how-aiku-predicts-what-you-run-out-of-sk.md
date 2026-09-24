@@ -62,7 +62,7 @@ Auto-fill zoraďuje kandidátov podľa toho, ako skoro vám dôjdu, a najprv dop
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
-<li><b>Vidieť čísla pri jednotlivých položkách:</b> <b>Procurement → Partners</b> (alebo <b>Suppliers</b>, alebo <b>Agents</b>) → otvorte jedného → <b>Browse</b>: každá karta ukazuje <i>our stock</i>, <i>our sales / quarter</i>, <i>we run out in</i> a čiarkovaný čip <b>suggested</b>, ktorý vyplní pole s množstvom.</li>
+<li><b>Vidieť čísla pri jednotlivých položkách:</b> <b>Procurement → Partners</b> (alebo <b>Suppliers</b>, alebo <b>Agents</b>) → otvorte jedného → <b>Browse</b>: každá karta ukazuje <i>our stock</i>, <i>our sales / quarter</i>, <i>Estimated: Would run out in</i> a čiarkovaný čip <b>suggested</b>, ktorý vyplní pole s množstvom.</li>
 <li><b>Vidieť ich naprieč katalógom:</b> panel **Shopping** toho istého partnera → dlaždice stock-at-risk sú postavené na dni vypredania; kliknite na číslo dlaždice pre položky za ním.</li>
 <li><b>Vidieť ich na otvorenej objednávke:</b> <b>Shopping list</b> → stĺpec **Info** nesie príbeh o sklade pre každý riadok.</li>
 <li><b>Prebiť jednu z nich:</b> zadajte vlastné množstvo do poľa na karte <b>Browse</b> — priamo tým upravíte otvorený riadok. Nič sa nad vami znovu nenavrhne.</li>

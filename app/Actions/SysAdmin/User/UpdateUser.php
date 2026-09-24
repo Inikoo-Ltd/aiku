@@ -8,11 +8,14 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Actions\Chat\Agent\RevokeChatAgentAccess;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\UI\Grp\BreakUserUiProps;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
+use App\Models\HumanResources\Employee;
 use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\Models\SysAdmin\User;
 use App\Rules\AlphaDashDot;
@@ -44,9 +47,15 @@ class UpdateUser extends OrgAction
             data_set($modelData, 'is_two_factor_required', (bool) Arr::pull($modelData, 'is_two_factor_required'));
         }
 
+        if (Arr::exists($modelData, 'reason')) {
+            $user->auditReason = Arr::pull($modelData, 'reason');
+        }
+
         $canUseMcp = Arr::exists($modelData, 'can_use_mcp') ? (bool) $modelData['can_use_mcp'] : $user->can_use_mcp;
         if (!$canUseMcp) {
             data_set($modelData, 'can_use_mcp_sql', false);
+            data_set($modelData, 'can_use_mcp_discontinue', false);
+            data_set($modelData, 'can_use_mcp_web', false);
         }
 
         $user = $this->update($user, $modelData, ['profile', 'settings']);
@@ -59,6 +68,11 @@ class UpdateUser extends OrgAction
                 });
             }
 
+            // Losing the login hands the conversations back and suspends the profile;
+            // getting it back brings the profile with it. Both directions, one call.
+            if ($chatAgent = $user->chatAgent()->withTrashed()->first()) {
+                RevokeChatAgentAccess::run($chatAgent);
+            }
         }
 
         if ($user->wasChanged('language_id')) {
@@ -82,6 +96,8 @@ class UpdateUser extends OrgAction
         $rules = [
             'can_use_mcp'     => ['sometimes', 'boolean'],
             'can_use_mcp_sql' => ['sometimes', 'boolean'],
+            'can_use_mcp_discontinue' => ['sometimes', 'boolean'],
+            'can_use_mcp_web'         => ['sometimes', 'boolean'],
             'username'       => [
                 'sometimes',
                 'required',
@@ -122,6 +138,7 @@ class UpdateUser extends OrgAction
             'reset_password' => ['sometimes', 'boolean'],
             'auth_type'      => ['sometimes', Rule::enum(UserAuthTypeEnum::class)],
             'status'         => ['sometimes', 'boolean'],
+            'reason'         => [$this->needsReinstatementReason() ? 'required' : 'sometimes', 'nullable', 'string', 'max:1024'],
             'language_id'    => ['sometimes', 'required', 'exists:languages,id'],
             'disable_2fa'    => ['sometimes', 'boolean'],
             'is_two_factor_required'   => ['sometimes', 'boolean']
@@ -136,6 +153,21 @@ class UpdateUser extends OrgAction
         }
 
         return $rules;
+    }
+
+    /**
+     * Somebody who is no longer working does not get their login back silently: the reason
+     * goes on the audit, where the next person to ask why they can log in will look.
+     */
+    public function needsReinstatementReason(): bool
+    {
+        if (!$this->strict || $this->user->status || !filter_var($this->get('status'), FILTER_VALIDATE_BOOLEAN)) {
+            return false;
+        }
+
+        return Employee::where('user_id', $this->user->id)
+            ->whereIn('state', [EmployeeStateEnum::LEFT->value, EmployeeStateEnum::LEAVING->value])
+            ->exists();
     }
 
     public function asController(User $user, ActionRequest $request): User

@@ -212,7 +212,7 @@ const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
 
         <template #cell(end_at)="{ item: offer }">
             <span v-if="offer.duration == 'permanent'" class="">
-                <FontAwesomeIcon :icon="faInfinity" v-tooltip="ctrans('Permanent Offer')" />
+                <FontAwesomeIcon :icon="faInfinity" v-tooltip="ctrans('Permanent Offer')" fixed-width />
             </span>
             <span v-else class="">
                 {{ useFormatTime(offer.end_at, { localeCode: locale.language.code, formatTime: "hm" }) }}
@@ -237,7 +237,7 @@ const terminateOffer = (item: { id: number, code?: string, name?: string }) => {
         <template #cell(created_by)="{ item }">
             <Link :href="offerRoute(item, {tab: 'history'})" class="hover:opacity-80 transition text-black primaryLink">
                 <FontAwesomeIcon 
-                    :icon="faClock"
+                    :icon="faClock" fixed-width
                 />
             </Link>
             {{ item.created_by ?? ctrans('System') }}

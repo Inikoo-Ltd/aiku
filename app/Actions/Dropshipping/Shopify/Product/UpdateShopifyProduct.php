@@ -31,9 +31,17 @@ class UpdateShopifyProduct extends RetinaAction
 
     public function handle(Portfolio $portfolio): array
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            return [true, 'The merchant owns this listing, nothing is sent'];
+        }
+
         /** @var ShopifyUser $shopifyUser */
-        $shopifyUser = $portfolio->customerSalesChannel->user;
+        $shopifyUser = $portfolio->customerSalesChannel?->user;
         $website = $portfolio->customerSalesChannel?->shop?->website;
+
+        if (!$shopifyUser) {
+            return [false, 'Shopify user not found for this customer sales channel'];
+        }
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
@@ -107,6 +115,7 @@ class UpdateShopifyProduct extends RetinaAction
             $variables = [
                 'input' => [
                     'id'              => $portfolio->platform_product_id,
+                    'title'           => $portfolio->customer_product_name,
                     'descriptionHtml' => $portfolio->customer_description.' '.$product->description_extra . ' ' .$description,
                 ]
             ];

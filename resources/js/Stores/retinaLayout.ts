@@ -10,6 +10,7 @@ import { Colors } from "@/types/Color"
 import { ref } from 'vue'
 import { StackedComponent } from '@/types/LayoutRules'
 import { useFamilyPageBasket } from '@/Composables/useFamilyPageBasket'
+import { resolveIsLoggedIn } from '@/Composables/irisAuthFlag'
 
 const getLocalStorage = () => {
 	let storageIris = {}
@@ -58,7 +59,7 @@ export const useLayoutStore = defineStore("retinaLayout", () => {
         isFetching : false
     }
     const iris = {
-        is_logged_in : getLocalStorage().is_logged_in || false
+        is_logged_in : resolveIsLoggedIn(getLocalStorage().is_logged_in)
     }
     const iris_variables = getLocalStorage().iris_variables || {}
 

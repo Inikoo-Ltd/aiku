@@ -74,11 +74,14 @@ use App\Actions\Ordering\Order\CalculateOrderShipping;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionDiscretionaryDiscount;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\SysAdmin\User;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -400,6 +403,24 @@ test('an offer whose end date has passed is swept off, keeping its end date', fu
         ->and($offer->state)->toBe(OfferStateEnum::FINISHED)
         ->and($offer->end_at->toDateTimeString())->toBe($endAt->toDateTimeString());
     $this->travelBack();
+});
+
+test('the sweep finishes an offer whose whole window passed while it sat in process', function () {
+    $offerCampaign = $this->shop->offerCampaigns()->first();
+    $offer         = StoreOffer::make()->action($offerCampaign, Offer::factory()->definition());
+
+    $offer->update([
+        'state'    => OfferStateEnum::IN_PROCESS,
+        'status'   => false,
+        'start_at' => now()->subMonth(),
+        'end_at'   => now()->subWeek(),
+    ]);
+
+    $this->artisan('offer:update_status_from_dates')->assertExitCode(0);
+
+    $offer->refresh();
+    expect($offer->state)->toBe(OfferStateEnum::FINISHED)
+        ->and($offer->status)->toBeFalse();
 });
 
 test('the sweep never resurrects a finished offer', function () {
@@ -741,6 +762,21 @@ test('store gifts offers', function () {
 
     return $offer;
 });
+
+test('a discounts clerk can open the gift offer edit page', function (Offer $offer) {
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    setPermissionsTeamId($this->organisation->group_id);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::DISCOUNTS_CLERK->value, $this->shop));
+    actingAs($clerk);
+
+    $response = get(route('grp.org.shops.show.discounts.campaigns.gift.edit', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $offer->offerCampaign->slug,
+        $offer->slug,
+    ]));
+    $response->assertOk();
+})->depends('store gifts offers');
 
 test('store product offers no-op', function () {
     StoreProductOffers::make()->handle([]);
@@ -1424,6 +1460,30 @@ describe('calculate order discounts', function () {
         $order->shop->update(['type' => $originalType]);
     });
 
+    test('CalculateOrderDiscounts gives no shop offer to an intercompany order, a partner is not a customer to win', function () {
+        $order = Order::latest('id')->first();
+
+        $intercompany = \App\Models\Ordering\SalesChannel::where('group_id', $order->group_id)->where('code', 'intercompany')->first()
+            ?? \App\Actions\Ordering\SalesChannel\StoreSalesChannel::make()->action($order->group, [
+                'code' => 'intercompany',
+                'name' => 'Intercompany',
+                'type' => \App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum::OTHER,
+            ]);
+
+        $order->update(['sales_channel_id' => $intercompany->id]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe((float)$transaction->gross_amount);
+
+        expect(fn () => AddVoucherToOrder::run($order->refresh(), ['voucher' => 'ANYTHING']))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $order->update(['sales_channel_id' => null]);
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction = DB::table('transactions')->where('order_id', $order->id)->first();
+        expect((float)$transaction->net_amount)->toBe(80.0);
+    });
+
     test('Faire discount targets the invoice, never a credit note', function () {
         $order = Order::latest('id')->first();
 
@@ -1956,6 +2016,77 @@ describe('calculate order discounts', function () {
         expect($giftTransaction->fresh()->trashed())->toBeTrue();
 
         $giftTransaction->forceDelete();
+    });
+
+    test('SubmitOrder: a gift for a product already bought in the basket is its own line and leaves the paid line alone', function () {
+        $order       = Order::latest('id')->first();
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();
+
+        $paidTransaction = StoreTransaction::make()->action($order, $giftProduct->currentHistoricProduct, ['quantity_ordered' => 1]);
+
+        $offer = StoreBuyXGetCheapestFree::make()->actionForProduct(
+            $this->product,
+            [
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 1,
+                'free_product_id'            => $giftProduct->id,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+
+        $paidTransaction->refresh();
+        $giftTransaction = Transaction::where('order_id', $order->id)->where('is_gift', true)->where('model_id', $giftProduct->id)->first();
+
+        expect($paidTransaction->trashed())->toBeFalse()
+            ->and($paidTransaction->is_gift)->toBeFalse()
+            ->and((float)$paidTransaction->quantity_ordered)->toBe(1.0)
+            ->and(Arr::get($paidTransaction->offers_data, 'o.t'))->not->toBe('gift')
+            ->and($giftTransaction)->not->toBeNull()
+            ->and($giftTransaction->id)->not->toBe($paidTransaction->id)
+            ->and((float)$giftTransaction->quantity_bonus)->toBe(1.0);
+
+        $giftTransaction->forceDelete();
+        $paidTransaction->forceDelete();
+        SuspendOffer::run($offer);
+    });
+
+    test('SubmitOrder: re-submitting an order sent back to the basket does not add the gift twice', function () {
+        $order       = Order::latest('id')->first();
+        $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();
+
+        $offer = StoreBuyXGetCheapestFree::make()->actionForProduct(
+            $this->product,
+            [
+                'trigger_data_item_quantity' => 3,
+                'free_quantity'              => 1,
+                'free_product_id'            => $giftProduct->id,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+
+        $giftTransactions = Transaction::where('order_id', $order->id)->where('is_gift', true)->where('model_id', $giftProduct->id)->get();
+
+        expect($giftTransactions)->toHaveCount(1);
+
+        DeleteTransaction::make()->action($giftTransactions->first());
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+
+        $giftTransactions = Transaction::withTrashed()->where('order_id', $order->id)->where('is_gift', true)->where('model_id', $giftProduct->id)->get();
+
+        expect($giftTransactions->whereNull('deleted_at'))->toHaveCount(1);
+
+        DB::table('transaction_has_offer_allowances')->whereIn('transaction_id', $giftTransactions->pluck('id'))->delete();
+        $giftTransactions->each->forceDelete();
+        SuspendOffer::run($offer);
     });
 
     test('CalculateOrderDiscounts: mix and match cheapest free across different family products', function () {
@@ -3451,4 +3582,141 @@ describe('unique job lock bounds', function () {
         expect($onLongQueue->uniqueFor)->toBe(7200 + BoundedUniqueJobDecorator::LOCK_MARGIN)
             ->and($onLongQueue->uniqueFor)->toBeGreaterThan(config('horizon.defaults.long-low-priority.timeout'));
     });
+});
+
+test('a line added to a submitted first order keeps the first order bonus (HELP-3157)', function () {
+    $offer = Offer::where('shop_id', $this->shop->id)->where('type', 'Amount AND Order Number')->where('state', '!=', OfferStateEnum::FINISHED)->first()
+        ?? StoreFirstOrderBonus::make()->action($this->shop, ['trigger_data_min_amount' => 150.0, 'percentage_off' => 0.10]);
+    $offer->update(['state' => OfferStateEnum::ACTIVE, 'status' => true]);
+    expect($offer->status)->toBeTrue();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order    = StoreOrder::make()->action($customer, []);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, ['quantity_ordered' => 2]);
+    SubmitOrder::make()->action($order->refresh());
+
+    $replacementData = array_merge(
+        Product::factory()->definition(),
+        [
+            'code'        => 'FOB-SUB',
+            'price'       => 100,
+            'trade_units' => [
+                [
+                    'id'       => $this->tradeUnit[0]->id ?? $this->tradeUnit->id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]
+    );
+    $replacement = StoreProduct::make()->action($this->product->family, $replacementData);
+
+    $replacementTransaction = StoreTransaction::make()->action($order->refresh(), $replacement->currentHistoricProduct, ['quantity_ordered' => 1]);
+
+    expect((float)$replacementTransaction->refresh()->net_amount)->toBe(90.0);
+});
+
+test('an order sent back to the basket and submitted again keeps one shop gift and one GR gift (HELP-3170)', function () {
+    $shopGiftOffer = StoreGiftsOffers::make()->handle($this->shop, [
+        'name'             => 'Resubmit Gift',
+        'product_id'       => $this->product->id,
+        'duration'         => 'permanent',
+        'min_order_amount' => 50,
+        'quantity'         => 1,
+        'start_at'         => now()->toDateTimeString(),
+    ]);
+
+    $grGiftOffer = Offer::where('shop_id', $this->shop->id)->where('type', 'VolGr Gift')->first()
+        ?? StoreVolGrGift::make()->handle(
+            $this->shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::VOLUME_DISCOUNT)->first(),
+            ['amount' => 100, 'products' => [['id' => $this->product->id, 'default' => true]]]
+        );
+    $grGiftOffer->update(['state' => OfferStateEnum::ACTIVE, 'status' => true, 'trigger_data' => ['min_amount' => 100]]);
+
+    $offersData = $this->shop->refresh()->offers_data;
+    data_set($offersData, 'gr.gifts_offer_id', $grGiftOffer->id);
+    data_set($offersData, 'gr.gifts_products', [['id' => $this->product->id, 'default' => true]]);
+    $this->shop->update(['offers_data' => $offersData]);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->update(['gr_extended_until' => now()->addMonth()]);
+    $order = StoreOrder::make()->action($customer, []);
+    $paidTransaction = StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, ['quantity_ordered' => 10]);
+
+    $order = SubmitOrder::make()->action($order->refresh());
+    $order = SendOrderBackToBasket::make()->action($order->refresh());
+    SubmitOrder::make()->action($order->refresh());
+
+    $liveGiftsPerOffer = DB::table('transaction_has_offer_allowances as pivot')
+        ->join('transactions', 'transactions.id', '=', 'pivot.transaction_id')
+        ->where('pivot.order_id', $order->id)
+        ->where('pivot.is_gift', true)
+        ->whereNull('transactions.deleted_at')
+        ->selectRaw('pivot.offer_id, count(*) as gifts, bool_and(transactions.is_gift) as all_on_gift_lines')
+        ->groupBy('pivot.offer_id')
+        ->get()
+        ->keyBy('offer_id');
+
+    expect($liveGiftsPerOffer->get($shopGiftOffer->id)?->gifts)->toBe(1)
+        ->and($liveGiftsPerOffer->get($grGiftOffer->id)?->gifts)->toBe(1)
+        ->and($liveGiftsPerOffer->every(fn ($row) => $row->gifts === 1 && $row->all_on_gift_lines))->toBeTrue()
+        ->and((float)$paidTransaction->refresh()->quantity_ordered)->toBe(10.0)
+        ->and($paidTransaction->is_gift)->toBeFalse();
+
+    SuspendOffer::run($shopGiftOffer);
+});
+
+test('a voucher gift is added once however many times the order is submitted (HELP-3170)', function () {
+    $voucherGiftOffer = StoreGiftsOffers::make()->handle($this->shop, [
+        'name'             => 'Voucher Gift',
+        'product_id'       => $this->product->id,
+        'duration'         => 'permanent',
+        'min_order_amount' => 50,
+        'quantity'         => 1,
+        'start_at'         => now()->toDateTimeString(),
+    ]);
+    $voucherGiftAllowance = $voucherGiftOffer->offerAllowances()->first();
+
+    $offersData = $this->shop->refresh()->offers_data;
+    data_set($offersData, 'gift_from_vouchers', [
+        $voucherGiftOffer->id => [
+            'id'                 => $voucherGiftOffer->id,
+            'name'               => $voucherGiftOffer->name,
+            'offer_campaign_id'  => $voucherGiftOffer->offer_campaign_id,
+            'offer_allowance_id' => $voucherGiftAllowance->id,
+            'min_amount'         => 50,
+        ],
+    ]);
+    $this->shop->update(['offers_data' => $offersData]);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order    = StoreOrder::make()->action($customer, []);
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, ['quantity_ordered' => 10]);
+    $order->update(['offer_voucher_id' => $voucherGiftOffer->id]);
+
+    SubmitOrder::make()->processVoucherGiftOffers($order->refresh());
+    SubmitOrder::make()->processVoucherGiftOffers($order->refresh());
+
+    $giftTransactions = Transaction::where('order_id', $order->id)->where('is_gift', true)->get();
+
+    expect($giftTransactions)->toHaveCount(1)
+        ->and((float)$giftTransactions->first()->quantity_bonus)->toBe(1.0)
+        ->and(Arr::get($giftTransactions->first()->offers_data, 'o.o'))->toBe($voucherGiftOffer->id);
+
+    SuspendOffer::run($voucherGiftOffer);
+});
+
+test('a line added by staff through the order page can never be flagged as a gift (HELP-3170)', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order    = StoreOrder::make()->action($customer, []);
+
+    $this->post(route('grp.models.order.transaction.store', [$order->id, $this->product->currentHistoricProduct->id]), [
+        'quantity_ordered' => 2,
+        'is_gift'          => true,
+    ]);
+
+    $transaction = Transaction::where('order_id', $order->id)->first();
+
+    expect($transaction)->not->toBeNull()
+        ->and($transaction->is_gift)->toBeFalse()
+        ->and((float)$transaction->net_amount)->toBeGreaterThan(0);
 });

@@ -2,7 +2,7 @@
 import { trans } from "laravel-vue-i18n"
 import { Head } from '@inertiajs/vue3'
 import { PageHeadingTypes } from "@/types/PageHeading"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { inject } from 'vue'
 
 

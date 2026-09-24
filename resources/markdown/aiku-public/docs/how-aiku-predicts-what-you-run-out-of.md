@@ -1,20 +1,20 @@
 ---
 title: How aiku predicts what you run out of
-summary: What "we run out in ~12 days" and the suggested quantity actually mean, why a bestseller that is out of stock asks for so much, and when to trust the number over your own judgement.
+summary: What "Estimated: Would run out in ~12 days" and the suggested quantity actually mean, why a bestseller that is out of stock asks for so much, and when to trust the number over your own judgement.
 date: 2026-09-01
 tags: procurement, stock, intercompany, shopping-list
 category: procurement
 ---
 
 <aside class="tldr">
-For anyone who buys stock. Two numbers follow every SKO you carry around the buying screens: <b>we run out in ~N days</b> and a <b>suggested</b> quantity. This page explains where they come from, so you know when to accept them and when to overrule them. If you just want to get an order out, the <a href="/docs/reading-the-partner-shopping-dashboard">shopping dashboard</a> and <a href="/docs/buying-from-a-partner">buyer's guide</a> are the practical guides — come back here when a number looks wrong.
+For anyone who buys stock. Two numbers follow every SKO you carry around the buying screens: <b>Estimated: Would run out in ~N days</b> and a <b>suggested</b> quantity. This page explains where they come from, so you know when to accept them and when to overrule them. If you just want to get an order out, the <a href="/docs/reading-the-partner-shopping-dashboard">shopping dashboard</a> and <a href="/docs/buying-from-a-partner">buyer's guide</a> are the practical guides — come back here when a number looks wrong.
 </aside>
 
 ## The two numbers
 
 Wherever you are buying — a partner's **Browse** cards, the **Shopping list**, a supplier or agent dashboard, an Auto-fill proposal — the same pair follows the item.
 
-**We run out in ~N days** is what you have on hand divided by how fast aiku thinks it is leaving. It goes red at two weeks or less, amber up to a month. "We run out now" means the shelf is already empty.
+**Estimated: Would run out in ~N days** is what you have on hand divided by how fast aiku thinks it is leaving. It goes red at two weeks or less, amber up to a month. "We run out now" means the shelf is already empty.
 
 **Suggested** is the quantity that would carry you to the next order and a bit beyond: enough for the supplier's lead time, plus the gap until you would normally order again, plus a cushion sized to how erratic the item is — then minus what is on the shelf and what is already on its way. It is rounded to whole shipping units, because that is what you can actually buy.
 
@@ -61,7 +61,7 @@ Auto-fill ranks candidates by how soon you run out and tops up the most urgent f
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
-<li><b>See the numbers per item:</b> <b>Procurement → Partners</b> (or <b>Suppliers</b>, or <b>Agents</b>) → open one → <b>Browse</b>: each card shows <i>our stock</i>, <i>our sales / quarter</i>, <i>we run out in</i> and a dashed <b>suggested</b> chip that fills the quantity box.</li>
+<li><b>See the numbers per item:</b> <b>Procurement → Partners</b> (or <b>Suppliers</b>, or <b>Agents</b>) → open one → <b>Browse</b>: each card shows <i>our stock</i>, <i>our sales / quarter</i>, <i>Estimated: Would run out in</i> and a dashed <b>suggested</b> chip that fills the quantity box.</li>
 <li><b>See them across the catalogue:</b> the same partner's <b>Shopping</b> dashboard → the stock-at-risk tiles are built from the run-out day; click a tile's number for the items behind it.</li>
 <li><b>See them on an open order:</b> <b>Shopping list</b> → the <b>Info</b> column carries the stock story for each line.</li>
 <li><b>Overrule one:</b> type your own quantity in the stepper on the <b>Browse</b> card — it edits the open line directly. Nothing re-suggests over the top of you.</li>

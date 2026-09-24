@@ -14,6 +14,7 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
@@ -49,6 +50,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -198,6 +200,8 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
+        TranslateProductGpsrText::make()->recordShopTranslation($product, array_keys($changed));
+
 
         if ($product->webpage && !empty($webpageData)) {
             UpdateWebpage::make()->action($product->webpage, $webpageData);
@@ -242,6 +246,11 @@ class UpdateProduct extends OrgAction
             $product->auditCustomNew = $newData;
 
             Event::dispatch(new AuditCustom($product));
+        }
+
+        if (Arr::has($changed, 'barcode')) {
+            $product->portfolios()->update(['barcode' => $product->barcode]);
+            ShopHydrateProductsWithDuplicatedBarcode::dispatch($product->shop)->delay($this->hydratorsDelay);
         }
 
         if (Arr::has($changed, 'description_title')) {
@@ -306,7 +315,7 @@ class UpdateProduct extends OrgAction
         $isInStock = $product->available_quantity > 0;
 
 
-        $fieldsUsedInLuigi = [
+        $productContentFields = [
             'code',
             'name',
             'description',
@@ -318,7 +327,7 @@ class UpdateProduct extends OrgAction
 
 
         $fieldsUsedInWebpages = array_merge(
-            $fieldsUsedInLuigi,
+            $productContentFields,
             ['rrp', 'units', 'unit'],
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()
@@ -439,6 +448,8 @@ class UpdateProduct extends OrgAction
             'is_description_title_reviewed' => ['sometimes', 'boolean'],
             'is_description_reviewed'       => ['sometimes', 'boolean'],
             'is_description_extra_reviewed' => ['sometimes', 'boolean'],
+            'is_gpsr_warnings_reviewed'     => ['sometimes', 'boolean'],
+            'is_gpsr_manual_reviewed'       => ['sometimes', 'boolean'],
             'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'rrp_per_unit'              => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
             'data'                      => ['sometimes', 'array'],
@@ -455,7 +466,20 @@ class UpdateProduct extends OrgAction
                 'string',
                 'max:255',
                 Rule::exists('barcodes', 'number')
-                    ->whereNull('deleted_at')
+                    ->whereNull('deleted_at'),
+                /*
+                 * Within one shop a barcode belongs to at most one listing: WooCommerce and Wix
+                 * refuse the second one outright. The collisions already in the catalogue are
+                 * worked through by hand, this only stops new ones being written.
+                 */
+                Rule::unique('products', 'barcode')
+                    ->ignore($this->product->id)
+                    ->where(fn ($query) => $query
+                        ->where('shop_id', $this->shop->id)
+                        ->where('is_main', true)
+                        ->whereNull('exclusive_for_customer_id')
+                        ->whereNull('deleted_at')
+                        ->where('state', '<>', ProductStateEnum::DISCONTINUED->value)),
             ],
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
@@ -526,6 +550,7 @@ class UpdateProduct extends OrgAction
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
             'not_follow_master_media'       => ['sometimes', 'boolean'],
+            'independent_barcode'           => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
         ];
 
@@ -555,7 +580,7 @@ class UpdateProduct extends OrgAction
         $this->product = $product;
         $this->initialisationFromShop($product->shop, $request);
 
-        return $this->handle($product, $this->markWrittenTextAsReviewed($this->validatedData));
+        return $this->handle($product, $this->markBarcodeAsChosen($this->markWrittenTextAsReviewed($this->validatedData)));
     }
 
     /**
@@ -571,13 +596,39 @@ class UpdateProduct extends OrgAction
      */
     private function markWrittenTextAsReviewed(array $modelData): array
     {
-        foreach (PropagateMasterContentToProducts::REVIEW_FLAGS as $field => $reviewFlag) {
+        foreach (array_merge(PropagateMasterContentToProducts::REVIEW_FLAGS, TranslateProductGpsrText::REVIEW_FLAGS) as $field => $reviewFlag) {
             if (Arr::has($modelData, $field)) {
                 data_set($modelData, $reviewFlag, true, false);
             }
         }
 
         return $modelData;
+    }
+
+    /**
+     * A barcode reaching here was picked by a person, so no hydrator may write over it again.
+     * Like markWrittenTextAsReviewed this belongs to the controller: the cascade from the master
+     * calls handle() directly and must not raise the flag, or the first cascade would orphan
+     * every child from the next one.
+     *
+     * @param array<string, mixed> $modelData
+     *
+     * @return array<string, mixed>
+     */
+    private function markBarcodeAsChosen(array $modelData): array
+    {
+        if (Arr::has($modelData, 'barcode')) {
+            data_set($modelData, 'independent_barcode', true);
+        }
+
+        return $modelData;
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->strict) {
+            $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
     }
 
     public function action(Product $product, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Product

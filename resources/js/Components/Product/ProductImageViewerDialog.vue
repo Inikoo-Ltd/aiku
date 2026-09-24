@@ -47,7 +47,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       <div class="w-full flex justify-end mb-2">
         <button class="text-white text-3xl hover:text-gray-300 z-50" aria-label="Close viewer"
           @click="visible = false">
-          <FontAwesomeIcon :icon="faTimes" />
+          <FontAwesomeIcon :icon="faTimes" fixed-width />
         </button>
       </div>
 
@@ -67,11 +67,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       <template v-if="!showVideo && images.length > 1">
         <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40" aria-label="Previous image"
           @click="onPrevNavigation">
-          <FontAwesomeIcon :icon="faChevronCircleLeft" />
+          <FontAwesomeIcon :icon="faChevronCircleLeft" fixed-width />
         </button>
         <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40" aria-label="Next image"
           @click="onNextNavigation">
-          <FontAwesomeIcon :icon="faChevronCircleRight" />
+          <FontAwesomeIcon :icon="faChevronCircleRight" fixed-width />
         </button>
       </template>
     </div>

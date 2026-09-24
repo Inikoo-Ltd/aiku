@@ -207,6 +207,12 @@ const variantNavigation = ref<{ prevEl: HTMLElement | null; nextEl: HTMLElement 
     nextEl: null
 })
 
+const isVariantSwiperLocked = ref(true)
+
+const syncVariantNavigationState = (swiper: any) => {
+    isVariantSwiperLocked.value = swiper.isLocked ?? (swiper.isBeginning && swiper.isEnd)
+}
+
 onMounted(async () => {
     if (props.templateEdit != 'webpage') {
         layout.iris = {
@@ -245,7 +251,7 @@ defineOptions({
                         hover:bg-gray-100 hover:border-gray-300
                     ">
                         <FontAwesomeIcon :icon="faArrowToBottom"
-                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" />
+                            class="text-gray-600 transition group-hover:text-gray-800 shrink-0" fixed-width />
 
                         <span class="
                             font-medium text-sm text-gray-800
@@ -285,7 +291,7 @@ defineOptions({
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
                                 <FontAwesomeIcon v-else
                                     :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" />
+                                    :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                                 <span>
                                     {{
                                         product.is_back_in_stock
@@ -304,8 +310,8 @@ defineOptions({
                                 ? onUnselectFavourite(product)
                                 : onAddFavourite(product)
                             ">
-                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" />
-                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" />
+                            <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" class="text-pink-500" fixed-width />
+                            <FontAwesomeIcon v-else :icon="faHeart" class="text-pink-300 hover:text-pink-400" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -322,10 +328,12 @@ defineOptions({
                     </div>
 
                     <div class="text-right">
-                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                        <p class="text-xs text-black leading-tight line-through">
-                            {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
-                        </p>
+                        <template v-if="product.rrp_per_unit > 0">
+                            <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                            <p class="text-xs text-black leading-tight line-through">
+                                {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                            </p>
+                        </template>
 
                         <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                         <div class="flex items-baseline justify-end gap-1 text-black">
@@ -367,15 +375,15 @@ defineOptions({
                         <span class="ml-1">{{ selectedVariantLabel }}</span>
                     </div>
 
-                    <div class="relative px-5">
-                        <button ref="variantPrevEl" type="button"
-                            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800">
-                            <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" />
+                    <div class="group/variants relative px-5">
+                        <button v-show="!isVariantSwiperLocked" ref="variantPrevEl" type="button"
+                            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
+                            <FontAwesomeIcon :icon="faChevronLeft" class="text-sm" fixed-width />
                         </button>
 
-                        <button ref="variantNextEl" type="button"
-                            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800">
-                            <FontAwesomeIcon :icon="faChevronRight" class="text-sm" />
+                        <button v-show="!isVariantSwiperLocked" ref="variantNextEl" type="button"
+                            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 text-gray-500 hover:text-gray-800 opacity-0 group-hover/variants:opacity-100 transition-opacity">
+                            <FontAwesomeIcon :icon="faChevronRight" class="text-sm" fixed-width />
                         </button>
 
                         <Swiper :modules="[Navigation]" :navigation="variantNavigation" :space-between="8"
@@ -383,7 +391,10 @@ defineOptions({
                                 640: { slidesPerView: 4 },
                                 768: { slidesPerView: 4 },
                                 1024: { slidesPerView: 4 }
-                            }">
+                            }"
+                            @swiper="syncVariantNavigationState" @resize="syncVariantNavigationState"
+                            @breakpoint="syncVariantNavigationState" @lock="syncVariantNavigationState"
+                            @unlock="syncVariantNavigationState">
                             <SwiperSlide v-for="item in listProducts" :key="item.id">
                                 <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
                                     class="group relative w-full rounded-lg border bg-white overflow-hidden transition flex flex-col"
@@ -396,15 +407,13 @@ defineOptions({
                                             class="absolute inset-0 w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-110" />
 
                                         <FontAwesomeIcon v-else :icon="faImage"
-                                            class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                            class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
+                                    </div>
 
-                                        <div
-                                            class="pointer-events-none absolute bottom-1 left-1 right-1 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0">
-                                            <span
-                                                class="block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-900/80 text-white backdrop-blur">
-                                                {{ item.variant_label }}
-                                            </span>
-                                        </div>
+                                    <div v-if="item.variant_label" class="p-1">
+                                        <span class="block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700">
+                                            {{ item.variant_label }}
+                                        </span>
                                     </div>
                                 </button>
                             </SwiperSlide>
@@ -415,7 +424,7 @@ defineOptions({
                 <div v-if="layout?.iris?.is_logged_in && modelValue?.setting?.appointment && modelValue?.appointment_data?.text && modelValue?.appointment_data?.link?.href"
                     class="group flex items-center gap-3 py-2 px-4 mt-4 w-full border rounded-lg bg-[#f9f8f5] transition hover:bg-gray-100 hover:border-gray-300 my-2">
                     <FontAwesomeIcon :icon="faMapMarkerAlt"
-                        class="text-black transition shrink-0" />
+                        class="text-black transition shrink-0" fixed-width />
 
                     <span class="font-medium text-sm underline text-black truncate max-w-[420px]">
                         <div v-html="modelValue?.appointment_data?.text"></div>
@@ -496,7 +505,7 @@ defineOptions({
                                         class="text-xs font-thin text-black underline cursor-pointer flex items-center">
                                         <a :href="item.url" target="_blank" class="flex items-center">
                                             <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))"
-                                                class="mr-1" />
+                                                class="mr-1" fixed-width />
                                             {{ item.caption }}.{{ extractFileType(item.mime_type) }}
                                         </a>
                                     </div>
@@ -552,7 +561,7 @@ defineOptions({
                                 customerData?.is_favourite
                                     ? onUnselectFavourite(product)
                                     : onAddFavourite(product)
-                                " />
+                                " fixed-width />
                 </div>
             </div>
 
@@ -568,10 +577,12 @@ defineOptions({
                 </div>
 
                 <div class="text-right">
-                    <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
-                    <p class="text-xs text-black leading-tight line-through">
-                        {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
-                    </p>
+                    <template v-if="product.rrp_per_unit > 0">
+                        <p class="text-xs text-black leading-tight">{{ trans("Retail Price") }}:</p>
+                        <p class="text-xs text-black leading-tight line-through">
+                            {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit || 0) }}/{{ product.unit }}
+                        </p>
+                    </template>
 
                     <p class="mt-2 text-xs text-black leading-tight">{{ trans("Profit") }}:</p>
                     <div class="flex items-baseline justify-end gap-1 text-black">
@@ -598,7 +609,7 @@ defineOptions({
                     : onAddBackInStock(product)
                 " class="flex items-center gap-2 px-3 py-2 rounded-full border bg-gray-100 text-sm">
                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" />
+                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
                 <span>
                     {{
                         product.is_back_in_stock
@@ -613,7 +624,7 @@ defineOptions({
             <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
 
             <div class="flex items-center gap-3 px-4 py-2 rounded-lg border bg-[#f9f8f5]">
-                <FontAwesomeIcon :icon="faArrowToBottom" />
+                <FontAwesomeIcon :icon="faArrowToBottom" fixed-width />
                 <span class="text-sm font-medium truncate">
                     {{ trans('Download Marketing Materials for') }} {{ product.name }}
                 </span>
@@ -641,7 +652,7 @@ defineOptions({
 
             <div v-if="layout?.iris?.is_logged_in && modelValue?.setting?.appointment && modelValue?.appointment_data?.text && modelValue?.appointment_data?.link?.href"
                 class="flex gap-3 items-center px-4 py-2 border rounded-lg bg-[#f9f8f5] text-black">
-                <FontAwesomeIcon :icon="faMapMarkerAlt" />
+                <FontAwesomeIcon :icon="faMapMarkerAlt" fixed-width />
                 <div v-html="modelValue?.appointment_data?.text" class="text-sm underline text-black" />
             </div>
 
@@ -717,7 +728,7 @@ defineOptions({
                                     class="text-xs font-thin text-black underline cursor-pointer flex items-center">
                                     <a :href="item.url" target="_blank" class="flex items-center">
                                         <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))"
-                                            class="mr-1" />
+                                            class="mr-1" fixed-width />
                                         {{ item.caption }}.{{ extractFileType(item.mime_type) }}
                                     </a>
                                 </div>

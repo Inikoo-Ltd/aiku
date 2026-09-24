@@ -29,25 +29,31 @@ use App\Actions\Web\ExternalLink\AttachExternalLinkToWebBlock;
 use App\Actions\Web\ExternalLink\CheckExternalLinkStatus;
 use App\Actions\Web\ExternalLink\StoreExternalLink;
 use App\Actions\Web\ModelHasWebBlocks\DeleteModelHasWebBlocks;
+use App\Actions\Web\ModelHasWebBlocks\DuplicateModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
-use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
+use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Webpage\HydrateWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisRobotsTxt;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaLogin;
+use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaRegisterChooseMethod;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Actions\Web\Webpage\ProcessWebpageTimeSeriesRecords;
 use App\Actions\Web\Webpage\StoreWebpage;
-use App\Actions\Web\Webpage\StoreWebpagePageSpeedTimeSeriesRecord;
+use App\Actions\Web\Website\FetchCruxHistory;
+use App\Actions\Web\Website\GetCruxReport;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use Illuminate\Support\Arr;
 use App\Actions\Web\Webpage\LockWebpage;
 use App\Actions\Web\Webpage\UnlockWebpage;
 use App\Actions\Web\Webpage\RequestWebpageEditAccess;
 use App\Actions\Web\Webpage\ApproveWebpageEditAccess;
 use App\Actions\Web\Webpage\DeclineWebpageEditAccess;
 use App\Notifications\WebpageEditAccessNotification;
+use App\Actions\Web\Webpage\UI\GetWebpageLock;
+use App\Events\BroadcastPersonalNotification;
 use Illuminate\Support\Facades\Notification;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Models\SysAdmin\Guest;
@@ -58,7 +64,13 @@ use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
-use App\Actions\Web\Webpage\GetWebpagePageSpeed;
+use App\Actions\Web\Webpage\DeleteWebpage;
+use App\Models\Web\CruxRecord;
+use App\Actions\Web\WebVital\GetWebVitalsReport;
+use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
+use App\Actions\Web\Webpage\GetWebpageSeo;
+use App\Actions\Web\Website\PruneWebsitePageViews;
+use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Helpers\Audit\AuditEventEnum;
@@ -122,6 +134,8 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
+use App\Actions\Helpers\Media\SaveModelImages;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Decorators\JobDecorator;
@@ -129,6 +143,7 @@ use Lorisleiva\Actions\Decorators\JobDecorator;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\post;
 
 beforeAll(function () {
@@ -230,6 +245,84 @@ test('create webpage', function (Website $website) {
     return $webpage;
 })->depends('create b2b website');
 
+test('create ads testing webpage is hidden from search engines', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+
+    $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    expect($adsTestingWebpage->sub_type)->toBe(WebpageSubTypeEnum::ADS_TESTING)
+        ->and($adsTestingWebpage->index_page)->toBeFalse()
+        ->and($adsTestingWebpage->follow_link)->toBeFalse()
+        ->and($contentWebpage->index_page)->toBeTrue()
+        ->and($contentWebpage->follow_link)->toBeTrue();
+
+    return $adsTestingWebpage;
+})->depends('create b2b website');
+
+test('ads testing webpage cannot be put back in the index', function (Webpage $adsTestingWebpage) {
+    $adsTestingWebpage = UpdateWebpage::make()->action($adsTestingWebpage, [
+        'index_page'  => true,
+        'follow_link' => true,
+    ]);
+
+    expect($adsTestingWebpage->index_page)->toBeFalse()
+        ->and($adsTestingWebpage->follow_link)->toBeFalse()
+        ->and(GetWebpageSeo::run($adsTestingWebpage)['robots'])->toBe('noindex, nofollow');
+})->depends('create ads testing webpage is hidden from search engines');
+
+test('internal link options leave out ads testing pages', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+    $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    foreach ([$adsTestingWebpage, $contentWebpage] as $webpage) {
+        $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    }
+
+    $routeParams = [$this->organisation->slug, $this->shop->slug, $website->slug];
+
+    // Searched by code because the options are paginated and a content page sorts last.
+    $optionCodes = fn (string $routeName, array $parameters, string $code) => collect(
+        getJson(route($routeName, $parameters).'?'.http_build_query(['filter' => ['global' => $code]]))
+            ->assertOk()
+            ->json('data')
+    )->pluck('code');
+
+    $workshopSelect = 'grp.json.webpages_for_workshop_select';
+    $webpagesIndex  = 'grp.org.shops.show.web.webpages.index';
+    $redirectOption = 'grp.org.shops.show.web.webpages.index.redirect-options';
+
+    expect($optionCodes($workshopSelect, ['website' => $website->slug], $contentWebpage->code))->toContain($contentWebpage->code)
+        ->and($optionCodes($workshopSelect, ['website' => $website->slug], $adsTestingWebpage->code))->toBeEmpty()
+        ->and($optionCodes($webpagesIndex, $routeParams, $contentWebpage->code))->toContain($contentWebpage->code)
+        ->and($optionCodes($webpagesIndex, $routeParams, $adsTestingWebpage->code))->toBeEmpty()
+        ->and($optionCodes($redirectOption, array_merge($routeParams, [$contentWebpage->slug]), $adsTestingWebpage->code))
+        ->toContain($adsTestingWebpage->code);
+})->depends('launch website');
+
+test('UI edit ads testing webpage does not offer the indexing settings', function (Website $website, Webpage $adsTestingWebpage) {
+    $response = get(route('grp.org.shops.show.web.webpages.edit', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $adsTestingWebpage->slug,
+    ]));
+
+    $response->assertOk();
+
+    $fieldKeys = collect($response->original->getData()['page']['props']['formData']['blueprint'])
+        ->flatMap(fn (array $section) => array_keys($section['fields'] ?? []));
+
+    expect($fieldKeys)->not->toContain('index_page')
+        ->and($fieldKeys)->not->toContain('follow_link')
+        ->and($response->original->getData()['page']['props']['warning']['title'])->toBe('Hidden from search engines');
+})->depends('create b2b website', 'create ads testing webpage is hidden from search engines');
+
 test('create model has web block', function (Webpage $webpage) {
     /** @var WebBlockType $webBlockType */
     $webBlockType = $webpage->group->webBlockTypes()->where('code', 'text')->first();
@@ -252,6 +345,41 @@ test('create model has web block', function (Webpage $webpage) {
     return $modelHasWebBlock;
 })->depends('create webpage');
 
+
+test('duplicate model has web block lands at the requested position', function (Website $website) {
+    $webpage      = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $webBlockType = $webpage->group->webBlockTypes()->where('code', 'text')->first();
+
+    $firstBlock  = StoreModelHasWebBlock::make()->action($webpage, ['web_block_type_id' => $webBlockType->id]);
+    $secondBlock = StoreModelHasWebBlock::make()->action($webpage, ['web_block_type_id' => $webBlockType->id]);
+
+    $copy = DuplicateModelHasWebBlock::make()->action($webpage, $firstBlock, ['position' => 1]);
+
+    $orderedIds = $webpage->modelHasWebBlocks()->orderBy('position')->pluck('id')->all();
+
+    expect($orderedIds)->toBe([$firstBlock->id, $copy->id, $secondBlock->id])
+        ->and($copy->webBlock->layout)->toEqual($firstBlock->webBlock->layout);
+
+    $appendedCopy = DuplicateModelHasWebBlock::make()->action($webpage, $secondBlock);
+
+    expect($webpage->modelHasWebBlocks()->orderBy('position')->pluck('id')->last())->toBe($appendedCopy->id);
+})->depends('create b2b website');
+
+test('paste model has web block into another webpage belongs to that webpage', function (Website $website) {
+    $sourceWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $targetWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $webBlockType  = $sourceWebpage->group->webBlockTypes()->where('code', 'text')->first();
+
+    $sourceBlock = StoreModelHasWebBlock::make()->action($sourceWebpage, ['web_block_type_id' => $webBlockType->id]);
+
+    $pastedBlock = DuplicateModelHasWebBlock::make()->action($targetWebpage, $sourceBlock, ['position' => 0]);
+
+    expect($pastedBlock->webpage_id)->toBe($targetWebpage->id)
+        ->and($pastedBlock->model_id)->toBe($targetWebpage->id)
+        ->and($pastedBlock->model_type)->toBe('Webpage')
+        ->and($sourceWebpage->modelHasWebBlocks()->count())->toBe(1)
+        ->and($targetWebpage->modelHasWebBlocks()->count())->toBe(1);
+})->depends('create b2b website');
 
 test('model external link', function () {
     $externalLink = ExternalLink::class;
@@ -493,6 +621,23 @@ test('UI show website exposes showcase props the component actually reads', func
                 ->etc()
         )
         ->etc());
+
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('pagespeed_history');
+})->depends('launch website');
+
+test('UI show website showcase offers the ads testing card', function (Website $website) {
+    $response = get(route('grp.org.shops.show.web.websites.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+    ]));
+
+    $adsTestingCard = collect($response->original->getData()['page']['props']['showcase']['content_blog_stats'])
+        ->firstWhere('label', 'Ads Testing');
+
+    expect($adsTestingCard)->not->toBeNull()
+        ->and($adsTestingCard['route']['name'])->toBe('grp.org.shops.show.web.webpages.index.sub_type.ads_testing')
+        ->and($adsTestingCard['value'])->toBe($website->refresh()->webStats->number_webpages_sub_type_ads_testing);
 })->depends('launch website');
 
 test('UI index websites in organisation', function () {
@@ -880,6 +1025,9 @@ test('UI delete banner in shop', function (Website $website) {
 test('UI show webpage in shop website', function (Website $website, Webpage $webpage) {
     $this->withoutExceptionHandling();
 
+    $originalState = $webpage->state;
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+
     $response = get(
         route('grp.org.shops.show.web.webpages.show', [
             $this->organisation->slug,
@@ -897,9 +1045,70 @@ test('UI show webpage in shop website', function (Website $website, Webpage $web
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $webpage->code)->etc()
             )
-            ->has('tabs');
+            ->has('tabs')
+            ->has('seo');
     });
+
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->toHaveKey('pagespeed');
+
+    $webpage->update(['state' => $originalState]);
 })->depends('create b2b website', 'create webpage');
+
+test('a webpage that is not live offers no page speed report', function (Website $website, Webpage $webpage) {
+    $this->withoutExceptionHandling();
+
+    $originalState = $webpage->state;
+    $webpage->update(['state' => WebpageStateEnum::IN_PROCESS]);
+
+    $response = get(
+        route('grp.org.shops.show.web.webpages.show', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $website->slug,
+            $webpage->slug
+        ])
+    );
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('pagespeed', null)->etc());
+
+    expect($response->original->getData()['page']['deferredProps'] ?? [])->not->toHaveKey('pagespeed');
+
+    $webpage->update(['state' => $originalState]);
+})->depends('create b2b website', 'create webpage');
+
+test('the seo block of a webpage reads back the head the public site renders', function (Webpage $webpage) {
+    $asItWas = $webpage->only(['title', 'description', 'index_page', 'follow_link', 'seo_data', 'settings']);
+
+    $webpage->update([
+        'title'       => 'Blue widgets',
+        'description' => 'The best blue widgets',
+        'index_page'  => false,
+        'follow_link' => true,
+        'seo_data'    => [
+            'image_alt'       => 'A blue widget',
+            'structured_data' => ['@type' => 'Product'],
+        ],
+        'settings'    => ['webpage' => ['title_prefix' => 'Shop', 'title_suffix' => '| Aiku']],
+    ]);
+
+    $seo = GetWebpageSeo::run($webpage->refresh());
+
+    expect($seo['title'])->toBe('Shop Blue widgets | Aiku')
+        ->and($seo['page_title'])->toBe('Blue widgets')
+        ->and($seo['description'])->toBe('The best blue widgets')
+        ->and($seo['robots'])->toBe('noindex, follow')
+        ->and($seo['share_image']['url'])->toBeNull()
+        ->and($seo['share_image']['alt'])->toBe('A blue widget')
+        ->and($seo['structured_data'])->toBe(['@type' => 'Product'])
+        ->and($seo['structured_data_types'])->toBe(['Product'])
+        ->and($seo['canonical_url'])->toBe($webpage->canonical_url);
+
+    $webpage->update(['seo_data' => ['use_title_prefix_suffix' => false]]);
+
+    expect(GetWebpageSeo::run($webpage->refresh())['title'])->toBe('Blue widgets');
+
+    $webpage->update($asItWas);
+})->depends('create webpage');
 
 test('UI show webpage workshop in shop website', function (Website $website, Webpage $webpage) {
     $this->withoutExceptionHandling();
@@ -1305,6 +1514,7 @@ test('UI smoke catalogue webpage routes', function (Website $website, array $cat
         'grp.org.shops.show.web.webpages.index.sub_type.sub_department.families'    => $subDept,
         'grp.org.shops.show.web.webpages.index.sub_type.sub_department.products'    => $subDept,
         'grp.org.shops.show.web.webpages.index.type.content'                        => $base,
+        'grp.org.shops.show.web.webpages.index.sub_type.ads_testing'                => $base,
         'grp.org.shops.show.web.webpages.index.type.info'                           => $base,
         'grp.org.shops.show.web.webpages.index.type.operations'                     => $base,
         'grp.org.shops.show.web.webpages.index.redirect-options'                    => [$org, $shop, $w, $cat['departmentWebpage']->slug],
@@ -1333,6 +1543,20 @@ test('UI smoke catalogue webpage routes', function (Website $website, array $cat
     }
 
     expect($failures)->toBe([]);
+})->depends('launch website', 'create catalogue webpages');
+
+test('UI show blog webpage sends the webpage lock', function (Website $website, array $cat) {
+    $website->refresh();
+
+    get(route('grp.org.shops.show.web.blogs.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $cat['blogWebpage']->slug,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Web/Webpage')
+        ->has('lock.editors')
+        ->where('lock.is_locked', false));
 })->depends('launch website', 'create catalogue webpages');
 
 test('UI smoke iris storefront routes', function (Website $website, array $cat) {
@@ -1375,6 +1599,69 @@ test('update webpage', function (Website $website) {
 
     expect($updated)->toBeInstanceOf(Webpage::class)
         ->and($updated->id)->toBe($webpage->id);
+})->depends('launch website');
+
+test('delete webpage that is not yet live', function (Website $website) {
+    $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    expect($webpage->state)->toBe(WebpageStateEnum::IN_PROCESS);
+
+    $deleted = DeleteWebpage::make()->action($webpage, false, ['redirects' => null]);
+
+    expect($deleted->trashed())->toBeTrue()
+        ->and(Webpage::find($webpage->id))->toBeNull()
+        ->and(Redirect::where('website_id', $website->id)->where('from_path', $webpage->url)->exists())->toBeFalse();
+})->depends('launch website');
+
+test('url of a deleted webpage can be reused', function (Website $website) {
+    $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $url     = $webpage->url;
+    $code    = $webpage->code;
+
+    DeleteWebpage::make()->action($webpage, false, ['redirects' => null]);
+
+    $reused = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['url' => $url, 'code' => $code]
+    ));
+
+    expect($reused->id)->not->toBe($webpage->id)
+        ->and($reused->url)->toBe($url)
+        ->and($reused->code)->toBe($code);
+
+    $reusedUnderWebsite = StoreWebpage::make()->action($website, array_merge(
+        Webpage::factory()->definition(),
+        ['url' => $url.'-2', 'code' => $code.'-2']
+    ));
+    DeleteWebpage::make()->action($reusedUnderWebsite, false, ['redirects' => null]);
+
+    expect(StoreWebpage::make()->action($website, array_merge(
+        Webpage::factory()->definition(),
+        ['url' => $url.'-2', 'code' => $code.'-2']
+    ))->url)->toBe($url.'-2');
+})->depends('launch website');
+
+test('webpage title can skip the title prefix and suffix', function (Website $website) {
+    $webpage = StoreWebpage::make()->action($website->storefront, array_merge(Webpage::factory()->definition(), ['title' => 'Bath bombs']));
+    $webpage = UpdateWebpage::make()->action($webpage, [
+        'webpage_title_prefix' => 'Wholesale',
+        'webpage_title_suffix' => '| AW',
+    ]);
+
+    expect(Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true))->toBeTrue()
+        ->and(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Wholesale Bath bombs | AW');
+
+    $webpage = UpdateWebpage::make()->action($webpage, ['use_title_prefix_suffix' => false]);
+
+    expect(Arr::get($webpage->seo_data, 'use_title_prefix_suffix'))->toBeFalse()
+        ->and(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Bath bombs');
+
+    UpdateWebsite::make()->action($website, ['webpage_title_suffix' => '| Website']);
+    $webpage = UpdateWebpage::make()->action($webpage, ['use_title_prefix_suffix' => true, 'webpage_title_suffix' => null]);
+
+    expect(ShowIrisWebpage::make()->getWebpageData($webpage->id, [], false)['webpage_data']['title'])->toBe('Wholesale Bath bombs | Website');
+
+    UpdateWebsite::make()->action($website, ['webpage_title_suffix' => null]);
 })->depends('launch website');
 
 test('store redirect from webpage', function (Webpage $webpage) {
@@ -1425,6 +1712,25 @@ test('save website sitemap', function (Website $website) {
     $count = SaveWebsiteSitemap::run($website);
 
     expect($count)->toBeInt()->toBeGreaterThanOrEqual(0);
+})->depends('launch website');
+
+test('save website sitemap leaves out ads testing pages', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+    $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    foreach ([$adsTestingWebpage, $contentWebpage] as $webpage) {
+        $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    }
+
+    SaveWebsiteSitemap::run($website);
+
+    $sitemap = Storage::disk('local')->get("sitemaps/contents_$website->id.xml");
+
+    expect($sitemap)->toContain($contentWebpage->canonical_url)
+        ->not->toContain($adsTestingWebpage->canonical_url);
 })->depends('launch website');
 
 test('robots txt is generated on demand with absolute sitemap urls', function (Website $website) {
@@ -1573,154 +1879,318 @@ test('process webpage time series records', function (Webpage $webpage) {
     expect($webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->exists())->toBeTrue();
 })->depends('create webpage');
 
-test('pagespeed runs are kept in the webpage time series, averaged per week and plotted in the webpage performance', function (Webpage $webpage) {
-    $pageSpeedResult = fn (string $strategy, string $fetchedAt, int $performance) => [
-        'url'            => 'https://www.example.com/landing',
-        'strategy'       => $strategy,
-        'fetched_at'     => $fetchedAt,
-        'scores'         => [
-            ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
-            ['key' => 'accessibility', 'label' => 'Accessibility', 'score' => 97, 'rating' => 'fast'],
-            ['key' => 'best-practices', 'label' => 'Best practices', 'score' => 96, 'rating' => 'fast'],
-            ['key' => 'seo', 'label' => 'SEO', 'score' => 85, 'rating' => 'average'],
-        ],
-        'lab'            => [],
-        'field'          => [],
-        'overall_rating' => 'AVERAGE',
-    ];
-
-    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('desktop', '2026-06-01T08:00:00.000Z', 80));
-    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('desktop', '2026-06-02T08:00:00.000Z', 90));
-    StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, $pageSpeedResult('mobile', '2026-06-02T08:10:00.000Z', 40));
-
-    ProcessWebpageTimeSeriesRecords::run($webpage->id, TimeSeriesFrequencyEnum::DAILY, '2026-06-01', '2026-06-07');
-
-    $dailyRecord = $webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)->first()
-        ->records()->where('period', '2026-06-02')->first();
-
-    expect($dailyRecord->pagespeed_desktop_performance)->toBe(90)
-        ->and($dailyRecord->pagespeed_mobile_performance)->toBe(40)
-        ->and($dailyRecord->pagespeed_desktop_accessibility)->toBe(97)
-        ->and($dailyRecord->pagespeed_desktop_best_practices)->toBe(96)
-        ->and($dailyRecord->pagespeed_desktop_seo)->toBe(85);
-
-    $weeklyRecord = $webpage->timeSeries()->where('frequency', TimeSeriesFrequencyEnum::WEEKLY->value)->first()
-        ->records()->where('period', '2026 W23')->first();
-
-    expect($weeklyRecord->pagespeed_desktop_performance)->toBe(85)
-        ->and($weeklyRecord->pagespeed_mobile_performance)->toBe(40)
-        ->and($weeklyRecord->pagespeed_desktop_accessibility)->toBe(97);
-
-    $dailyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-06-01', 'endDate' => '2026-06-07']);
-
-    expect($dailyPerformance['pagespeed_frequency'])->toBe('daily')
-        ->and($dailyPerformance['pagespeed'])->toHaveCount(2)
-        ->and($dailyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
-        ->and($dailyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(80)
-        ->and($dailyPerformance['pagespeed'][0]['mobile']['performance'])->toBeNull()
-        ->and($dailyPerformance['pagespeed'][1]['mobile']['performance'])->toBe(40)
-        ->and($dailyPerformance['pagespeed'][1]['desktop'])->toBe([
-            'performance'    => 90,
-            'accessibility'  => 97,
-            'best_practices' => 96,
-            'seo'            => 85,
-        ]);
-
-    $weeklyPerformance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-03-01', 'endDate' => '2026-06-30']);
-
-    expect($weeklyPerformance['pagespeed_frequency'])->toBe('weekly')
-        ->and($weeklyPerformance['pagespeed'])->toHaveCount(1)
-        ->and($weeklyPerformance['pagespeed'][0]['date'])->toBe('2026-06-01')
-        ->and($weeklyPerformance['pagespeed'][0]['desktop']['performance'])->toBe(85);
-})->depends('create webpage');
-
-test('webpage performance adds a cached pagespeed result that is not in the history yet', function (Webpage $webpage) {
-    $result = [
-        'url'            => 'https://www.example.com/landing',
-        'strategy'       => 'mobile',
-        'fetched_at'     => '2026-07-14T09:30:00.000Z',
-        'scores'         => [
-            ['key' => 'performance', 'label' => 'Performance', 'score' => 52, 'rating' => 'average'],
-            ['key' => 'accessibility', 'label' => 'Accessibility', 'score' => 90, 'rating' => 'fast'],
-            ['key' => 'best-practices', 'label' => 'Best practices', 'score' => 78, 'rating' => 'average'],
-            ['key' => 'seo', 'label' => 'SEO', 'score' => 92, 'rating' => 'fast'],
-        ],
-        'lab'            => [],
-        'field'          => [],
-        'overall_rating' => null,
-    ];
-
-    cache()->put(GetWebpagePageSpeed::resultKey($webpage, 'mobile'), $result, now()->addHour());
-
-    expect(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeFalse();
-
-    $performance = GetWebpagePerformance::run($webpage, ['startDate' => '2026-07-13', 'endDate' => '2026-07-19']);
-
-    expect($performance['pagespeed'])->toHaveCount(1)
-        ->and($performance['pagespeed'][0]['date'])->toBe('2026-07-14')
-        ->and($performance['pagespeed'][0]['mobile'])->toBe([
-            'performance'    => 52,
-            'accessibility'  => 90,
-            'best_practices' => 78,
-            'seo'            => 92,
-        ])
-        ->and($performance['pagespeed'][0]['desktop']['performance'])->toBeNull()
-        ->and(StoreWebpagePageSpeedTimeSeriesRecord::isRecorded($webpage, $result))->toBeTrue();
-})->depends('create webpage');
-
-test('the daily pagespeed crawl queues every department and the best performing capped webpages', function (Website $website) {
-    config()->set('app.analytics.google.pagespeed_api_key', 'test-key');
-
-    $storePageSpeedWebpage = function (WebpageTypeEnum $type, WebpageSubTypeEnum $subType, ?int $performance) use ($website) {
-        $webpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
-
-        $webpage->update([
-            'type'          => $type,
-            'sub_type'      => $subType,
-            'state'         => WebpageStateEnum::LIVE,
-            'canonical_url' => 'https://www.example.com/'.$webpage->slug,
-        ]);
-
-        if ($performance !== null) {
-            StoreWebpagePageSpeedTimeSeriesRecord::run($webpage, [
-                'strategy'   => 'mobile',
-                'fetched_at' => '2026-08-01T08:00:00.000Z',
-                'scores'     => [
-                    ['key' => 'performance', 'label' => 'Performance', 'score' => $performance, 'rating' => 'average'],
+function cruxHistoryRecord(int $lcp): array
+{
+    return [
+        'metrics'           => [
+            'largest_contentful_paint'        => [
+                'histogramTimeseries'   => [
+                    ['start' => 0, 'end' => 2500, 'densities' => [0.8, 0.9]],
+                    ['start' => 2500, 'end' => 4000, 'densities' => [0.15, 0.07]],
+                    ['start' => 4000, 'densities' => [0.05, 0.03]],
                 ],
-            ]);
-        }
+                'percentilesTimeseries' => ['p75s' => [$lcp + 300, $lcp]],
+            ],
+            'interaction_to_next_paint'       => [
+                'percentilesTimeseries' => ['p75s' => ['NaN', 103]],
+            ],
+            'cumulative_layout_shift'         => [
+                'histogramTimeseries'   => [
+                    ['start' => '0.00', 'end' => '0.10', 'densities' => ['NaN', 0.7]],
+                    ['start' => '0.10', 'end' => '0.25', 'densities' => ['NaN', 0.2]],
+                    ['start' => '0.25', 'densities' => ['NaN', 0.1]],
+                ],
+                'percentilesTimeseries' => ['p75s' => [null, '0.21']],
+            ],
+            'experimental_time_to_first_byte' => [
+                'percentilesTimeseries' => ['p75s' => [300, 280]],
+            ],
+        ],
+        'collectionPeriods' => [
+            ['firstDate' => ['year' => 2026, 'month' => 8, 'day' => 16], 'lastDate' => ['year' => 2026, 'month' => 9, 'day' => 12]],
+            ['firstDate' => ['year' => 2026, 'month' => 8, 'day' => 23], 'lastDate' => ['year' => 2026, 'month' => 9, 'day' => 19]],
+        ],
+    ];
+}
 
-        return $webpage->refresh();
-    };
+test('real user speed from the chrome ux report is stored per page, and a page without data shows the whole website', function (Website $website) {
+    config()->set('app.analytics.google.crux_api_key', 'test-key');
 
-    $fastFamily    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 95);
-    $slowFamily    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 20);
-    $department    = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::DEPARTMENT, null);
-    $productPage   = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::PRODUCT, 99);
-    $closedFamily  = $storePageSpeedWebpage(WebpageTypeEnum::CATALOGUE, WebpageSubTypeEnum::FAMILY, 99);
-    $closedFamily->update(['state' => WebpageStateEnum::CLOSED]);
+    $storefront          = $website->storefront;
+    $storefrontCanonical = $storefront->canonical_url;
+    $storefront->update(['canonical_url' => 'https://www.crux-example.com']);
 
-    Queue::fake();
+    $visitedWebpage   = StoreWebpage::make()->action($storefront, Webpage::factory()->definition());
+    $unvisitedWebpage = StoreWebpage::make()->action($storefront, Webpage::factory()->definition());
+    $visitedWebpage->update(['canonical_url' => 'https://www.crux-example.com/visited']);
+    $unvisitedWebpage->update(['canonical_url' => 'https://www.crux-example.com/unvisited']);
 
-    $summary = FetchTopWebpagesPageSpeed::run(1);
+    foreach ([null, $visitedWebpage, $unvisitedWebpage] as $checked) {
+        cache()->forget(FetchCruxHistory::checkedKey($website, $checked));
+    }
 
-    $queuedWebpageIds = collect();
+    Http::fake(function (\Illuminate\Http\Client\Request $request) {
+        $query = $request->data();
 
-    Queue::assertPushed(JobDecorator::class, function (JobDecorator $job) use ($queuedWebpageIds) {
-        if ($job->decorates(GetWebpagePageSpeed::class)) {
-            $queuedWebpageIds->push($job->getParameters()[0]->id);
-        }
-
-        return true;
+        return match ($query['url'] ?? $query['origin']) {
+            'https://www.crux-example.com/visited' => ($query['formFactor'] ?? null) === 'PHONE'
+                ? Http::response(['error' => ['code' => 404]], 404)
+                : Http::response(['record' => cruxHistoryRecord(1200)]),
+            'https://www.crux-example.com' => Http::response(['record' => cruxHistoryRecord(2000)]),
+            default => Http::response(['error' => ['code' => 404, 'message' => 'chrome ux report data not found']], 404),
+        };
     });
 
-    expect($summary['queued_runs'])->toBe($queuedWebpageIds->count())
-        ->and($queuedWebpageIds->countBy()->get($fastFamily->id))->toBe(count(GetWebpagePageSpeed::STRATEGIES))
-        ->and($queuedWebpageIds)->toContain($department->id)
-        ->and($queuedWebpageIds)->not->toContain($slowFamily->id)
-        ->and($queuedWebpageIds)->not->toContain($productPage->id)
-        ->and($queuedWebpageIds)->not->toContain($closedFamily->id);
+    $pageReport = GetCruxReport::run($website, $visitedWebpage);
+
+    $latest = CruxRecord::where('webpage_id', $visitedWebpage->id)->where('form_factor', 'desktop')->where('period_end', '2026-09-19')->first();
+    $first  = CruxRecord::where('webpage_id', $visitedWebpage->id)->where('form_factor', 'desktop')->where('period_end', '2026-09-12')->first();
+
+    expect($pageReport['scope'])->toBe('page')
+        ->and(array_keys($pageReport['history']))->toEqualCanonicalizing(['all', 'desktop'])
+        ->and($latest->lcp_p75)->toBe(1200)
+        ->and($latest->inp_p75)->toBe(103)
+        ->and($latest->cls_p75)->toBe(0.21)
+        ->and($latest->ttfb_p75)->toBe(280)
+        ->and($latest->fcp_p75)->toBeNull()
+        ->and($latest->histograms)->toEqual(['lcp' => [0.9, 0.07, 0.03], 'cls' => [0.7, 0.2, 0.1]])
+        ->and($first->inp_p75)->toBeNull()
+        ->and($first->histograms)->toBe(['lcp' => [0.8, 0.15, 0.05]]);
+
+    $unvisitedReport = GetCruxReport::run($website, $unvisitedWebpage);
+
+    expect($unvisitedReport['scope'])->toBe('website')
+        ->and($unvisitedReport['url'])->toBe('https://www.crux-example.com')
+        ->and(end($unvisitedReport['history']['phone'])['lcp'])->toBe(2000)
+        ->and(CruxRecord::where('webpage_id', $unvisitedWebpage->id)->exists())->toBeFalse();
+
+    $callsBefore = count(Http::recorded());
+    GetCruxReport::run($website, $visitedWebpage);
+    GetCruxReport::run($website);
+
+    expect(count(Http::recorded()))->toBe($callsBefore)
+        ->and(GetCruxReport::run($website)['scope'])->toBe('website');
+
+    cache()->forget(FetchCruxHistory::checkedKey($website, null));
+    FetchCruxHistory::run($website);
+
+    expect(CruxRecord::where('website_id', $website->id)->whereNull('webpage_id')->count())->toBe(6);
+
+    $storefront->update(['canonical_url' => $storefrontCanonical]);
+})->depends('launch website');
+
+test('the weekly chrome ux report fetch queues every live website and the pages with enough views', function (Website $website) {
+    Queue::fake();
+
+    $busyWebpage  = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $quietWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $busyWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    $quietWebpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    $visitorId = DB::table('website_visitors')->insertGetId([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $website->id,
+        'session_id'      => 'sess-'.Str::random(10),
+        'visitor_hash'    => Str::random(16),
+        'device_type'     => 'desktop',
+        'os'              => 'linux',
+        'browser'         => 'firefox',
+        'user_agent'      => 'test-agent',
+        'ip_hash'         => Str::random(16),
+        'first_seen_at'   => now(),
+        'last_seen_at'    => now(),
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $pageViews = fn (Webpage $webpage, int $views) => DB::table('website_page_views')->insert(array_fill(0, $views, [
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $visitorId,
+        'webpage_id'         => $webpage->id,
+        'page_url'           => 'https://test/'.$webpage->url,
+        'page_path'          => '/'.$webpage->url,
+        'view_date'          => now()->toDateString(),
+        'duration_seconds'   => 0,
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]));
+
+    $pageViews($busyWebpage, FetchCruxRecords::MIN_PAGE_VIEWS);
+    $pageViews($quietWebpage, FetchCruxRecords::MIN_PAGE_VIEWS - 1);
+
+    FetchCruxRecords::run();
+
+    $queued = collect(Queue::pushed(JobDecorator::class))
+        ->filter(fn (JobDecorator $job) => $job->decorates(FetchCruxHistory::class))
+        ->map(fn (JobDecorator $job) => [$job->getParameters()[0]->id, ($job->getParameters()[1] ?? null)?->id]);
+
+    expect($queued)->toContain([$website->id, null])
+        ->and($queued)->toContain([$website->id, $busyWebpage->id])
+        ->and($queued)->not->toContain([$website->id, $quietWebpage->id]);
+})->depends('launch website');
+
+test('our visitors web vitals are reported as the daily 75th percentile, a page with too few loads shows the whole website', function (Website $website) {
+    $measuredWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $quietWebpage    = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    cache()->forget("web-vitals-report:$website->id");
+
+    $sample = fn (?Webpage $webpage, string $device, int $lcp, int $daysAgo = 0) => [
+        'website_id' => $website->id,
+        'webpage_id' => $webpage?->id,
+        'device'     => $device,
+        'lcp'        => $lcp,
+        'cls'        => 0.05,
+        'created_at' => now()->subDays($daysAgo),
+    ];
+
+    DB::table('web_vital_samples')->insert([
+        ...array_map(fn (int $lcp) => $sample($measuredWebpage, 'desktop', $lcp), [1000, 2000, 3000, 4000, 5000]),
+        ...array_map(fn (int $lcp) => $sample($measuredWebpage, 'phone', $lcp), [6000, 7000]),
+        ...array_map(fn (int $lcp) => $sample($quietWebpage, 'desktop', $lcp), [900, 900, 900, 900]),
+        $sample($measuredWebpage, 'desktop', 1000, GetWebVitalsReport::DAYS + 2),
+    ]);
+
+    $pageReport = GetWebVitalsReport::run($website, $measuredWebpage);
+    $today      = now()->utc()->toDateString();
+
+    expect($pageReport['scope'])->toBe('page')
+        ->and($pageReport['history']['desktop'])->toHaveCount(1)
+        ->and($pageReport['history']['desktop'][0])->toMatchArray(['period_end' => $today, 'samples' => 5, 'lcp' => 4000, 'cls' => 0.05, 'inp' => null])
+        ->and($pageReport['history'])->not->toHaveKey('phone')
+        ->and($pageReport['history']['all'][0]['samples'])->toBe(7);
+
+    $quietReport = GetWebVitalsReport::run($website, $quietWebpage);
+
+    expect($quietReport['scope'])->toBe('website')
+        ->and($quietReport['history']['desktop'][0]['samples'])->toBe(9)
+        ->and($quietReport['history']['all'][0]['samples'])->toBe(11);
+})->depends('launch website');
+
+test('UI show ads testing webpage does not offer page speed', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+    $contentWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+
+    $showPage = fn (Webpage $webpage) => get(route('grp.org.shops.show.web.webpages.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $webpage->slug,
+    ]))->assertOk()->original->getData()['page'];
+
+    $adsTestingPage = $showPage($adsTestingWebpage);
+    $contentPage    = $showPage($contentWebpage);
+
+    // The showcase moves the detail up beside the preview when there is no page speed to show, and
+    // shows how the visitors the advert is bought for behaved instead.
+    expect($adsTestingPage['props']['pagespeed'])->toBeNull()
+        ->and($adsTestingPage['deferredProps'] ?? [])->not->toHaveKey('pagespeed')
+        ->and($adsTestingPage['deferredProps'] ?? [])->toHaveKey('engagement')
+        ->and($adsTestingPage['props']['showcase']['is_hidden_from_search_engines'])->toBeTrue()
+        ->and($contentPage['deferredProps'] ?? [])->toHaveKey('pagespeed')
+        ->and($contentPage['deferredProps'] ?? [])->not->toHaveKey('engagement')
+        ->and($contentPage['props']['engagement'])->toBeNull()
+        ->and($contentPage['props']['showcase']['is_hidden_from_search_engines'])->toBeFalse();
+})->depends('launch website');
+
+test('ads testing webpage metrics are read from the page views already recorded', function (Website $website) {
+    $adsTestingWebpage = StoreWebpage::make()->action($website->storefront, array_merge(
+        Webpage::factory()->definition(),
+        ['sub_type' => WebpageSubTypeEnum::ADS_TESTING->value]
+    ));
+
+    $storeVisitor = fn () => DB::table('website_visitors')->insertGetId([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $website->id,
+        'session_id'      => 'sess-'.Str::random(10),
+        'visitor_hash'    => Str::random(16),
+        'device_type'     => 'desktop',
+        'os'              => 'linux',
+        'browser'         => 'firefox',
+        'user_agent'      => 'test-agent',
+        'ip_hash'         => Str::random(16),
+        'first_seen_at'   => now(),
+        'last_seen_at'    => now(),
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+
+    $storePageView = fn (int $visitorId, ?int $webpageId, string $path, int $duration = 0) => DB::table('website_page_views')->insert([
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $visitorId,
+        'webpage_id'         => $webpageId,
+        'page_url'           => 'https://test'.$path,
+        'page_path'          => $path,
+        'view_date'          => now()->toDateString(),
+        'duration_seconds'   => $duration,
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]);
+
+    $adsTestingPath = '/'.$adsTestingWebpage->url;
+
+    // A session that saw the advert page and nothing else: a bounce, and one the server cannot time.
+    $storePageView($storeVisitor(), $adsTestingWebpage->id, $adsTestingPath);
+
+    // A session that read the page for 40 seconds and went on somewhere else: not a bounce.
+    $engagedVisitor = $storeVisitor();
+    $storePageView($engagedVisitor, $adsTestingWebpage->id, $adsTestingPath, 40);
+    $storePageView($engagedVisitor, null, '/elsewhere');
+
+    DB::table('website_conversion_events')->insert([
+        'group_id'           => $this->shop->group_id,
+        'organisation_id'    => $this->shop->organisation_id,
+        'shop_id'            => $this->shop->id,
+        'website_id'         => $website->id,
+        'website_visitor_id' => $engagedVisitor,
+        'webpage_id'         => $adsTestingWebpage->id,
+        'event_type'         => WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value,
+        'quantity'           => 1,
+        'page_url'           => 'https://test'.$adsTestingPath,
+        'page_path'          => $adsTestingPath,
+        'event_date'         => now()->toDateString(),
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]);
+
+    $metrics = GetWebpageEngagementMetrics::run($adsTestingWebpage);
+
+    expect($metrics['page_views'])->toBe(2)
+        ->and($metrics['visitors'])->toBe(2)
+        ->and($metrics['add_to_baskets'])->toBe(1)
+        ->and($metrics['conversion_rate'])->toBe(50.0)
+        ->and($metrics['bounces'])->toBe(1)
+        ->and($metrics['bounce_rate'])->toBe(50.0)
+        ->and($metrics['timed_page_views'])->toBe(1)
+        ->and($metrics['avg_time_on_page'])->toBe(40)
+        ->and($metrics['days'])->toBe(PruneWebsitePageViews::RETENTION_DAYS);
+
+    // The chart is drawn from a row per day, including the days nothing happened on, and the last
+    // one is today: a rate is left empty on a day with no views rather than drawn as nought.
+    $today     = collect($metrics['history'])->last();
+    $yesterday = collect($metrics['history'])->firstWhere('date', now()->subDay()->toDateString());
+
+    expect($metrics['history'])->toHaveCount(PruneWebsitePageViews::RETENTION_DAYS)
+        ->and($today['date'])->toBe(now()->toDateString())
+        ->and($today['page_views'])->toBe(2)
+        ->and($today['conversion_rate'])->toBe(50.0)
+        ->and($today['bounce_rate'])->toBe(50.0)
+        ->and($today['avg_time_on_page'])->toBe(40)
+        ->and($yesterday['page_views'])->toBe(0)
+        ->and($yesterday['conversion_rate'])->toBeNull()
+        ->and($yesterday['avg_time_on_page'])->toBeNull();
 })->depends('launch website');
 
 test('publish announcement', function (Website $website) {
@@ -2314,8 +2784,40 @@ test('storing a system page wires it to the website', function (Website $website
 
         expect($website->refresh()->{$systemPage['website_field']})->toBe($webpage->id)
             ->and($webpage->webBlocks()->count())->toBeGreaterThan(0)
+            ->and($webpage->webBlocks()->first()->webBlockType->code)->toBe($systemPage['web_block'])
             ->and(WebpageSubTypeEnum::labels())->toHaveKey($subTypeValue);
     }
+})->depends('launch website');
+
+test('repair create system pages puts back a missing system web block', function (Website $website) {
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    $registerDashboard->modelHasWebBlocks()->delete();
+    expect($registerDashboard->webBlocks()->count())->toBe(0);
+
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    $registerDashboard->refresh();
+    expect($registerDashboard->webBlocks()->count())->toBe(1)
+        ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard-2')
+        ->and($registerDashboard->state)->not->toBe(WebpageStateEnum::LIVE)
+        ->and($website->refresh()->register_dashboard_page_id)->toBe($registerDashboard->id);
+})->depends('launch website');
+
+test('repair create system pages replaces the register dashboard block with register dashboard 2', function (Website $website) {
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    $registerDashboard->modelHasWebBlocks()->delete();
+
+    StoreModelHasWebBlock::make()->action($registerDashboard, [
+        'web_block_type_id' => $website->group->webBlockTypes()->where('code', 'register-dashboard')->firstOrFail()->id,
+        'position'          => 0,
+    ]);
+    expect($registerDashboard->refresh()->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard');
+
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    $registerDashboard->refresh();
+    expect($registerDashboard->webBlocks()->count())->toBe(1)
+        ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard-2');
 })->depends('launch website');
 
 test('retina login renders the iris login block only when that page is live', function (Website $website) {
@@ -2343,6 +2845,39 @@ test('retina login renders the iris login block only when that page is live', fu
     $liveResponse = (new ShowRetinaLogin())->handle($request);
     expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
         ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id);
+})->depends('launch website');
+
+test('retina register renders the iris register dashboard block only when that page is live', function (Website $website) {
+    config()->set('iris.cache.webpage_path.ttl', 0);
+    config()->set('iris.cache.webpage.ttl', 0);
+
+    $request = ActionRequest::createFrom(Request::create('https://'.$website->domain.'/app/register'));
+    $request->merge(['website' => $website]);
+    app()->instance('request', $request);
+    Inertia\Inertia::setRootView('app-retina');
+
+    $registerDashboard = $website->refresh()->registerDashboardPage;
+    expect($registerDashboard)->not->toBeNull()
+        ->and($registerDashboard->state)->not->toBe(WebpageStateEnum::LIVE);
+
+    $inertiaResponse = (new ShowRetinaRegisterChooseMethod())->handle($request);
+    $component       = new ReflectionProperty($inertiaResponse, 'component');
+    $component->setAccessible(true);
+
+    expect($inertiaResponse)->toBeInstanceOf(Inertia\Response::class)
+        ->and($component->getValue($inertiaResponse))->toBe('Auth/RegisterSelectMethod');
+
+    $registerDashboard->update(['state' => WebpageStateEnum::LIVE]);
+
+    $liveResponse = (new ShowRetinaRegisterChooseMethod())->handle($request);
+    expect($liveResponse)->toBeInstanceOf(Illuminate\Http\Response::class)
+        ->and($liveResponse->headers->get('X-AIKU-WEBSITE'))->toBe((string) $website->id)
+        ->and($liveResponse->headers->get('X-AIKU-WEBPAGE'))->toBe((string) $registerDashboard->id);
+
+    $irisPath = ShowIrisWebpage::make()->handle('register-dashboard', [], $request);
+    $redirect = ShowIrisWebpage::make()->htmlResponse($irisPath);
+    expect($irisPath)->toBe('register-dashboard')
+        ->and($redirect->getTargetUrl())->toEndWith('/app/register');
 })->depends('launch website');
 
 test('locked webpage rejects writes from other users, accepts owner and granted editor, and relocks after publish', function (Webpage $webpage) {
@@ -2394,6 +2929,18 @@ test('locked webpage stays editable for group admins and read only for other use
 
     actingAs($this->user);
 
+    $this->postJson(route('grp.models.webpage.lock', $webpage->id), ['reason' => 'Taking over the lock'])->assertForbidden();
+    expect($webpage->fresh()->lock_data['reason'])->toBe('Protected by owner')
+        ->and($webpage->canEditLockBy($this->user))->toBeFalse()
+        ->and($webpage->canEditLockBy($owner))->toBeTrue()
+        ->and($webpage->canEditLockBy($outsider))->toBeFalse();
+
+    $this->postJson(route('grp.models.webpage.unlock', $webpage->id), ['reason' => 'Admin override'])->assertForbidden();
+    $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $outsider->id, 'mode' => 'one_hour'])->assertForbidden();
+    expect($webpage->fresh()->isLocked())->toBeTrue()
+        ->and($webpage->canManageLockBy($this->user))->toBeFalse()
+        ->and($webpage->canManageLockBy($owner))->toBeTrue();
+
     $workshopParameters = [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug];
 
     get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))
@@ -2421,6 +2968,7 @@ test('locked webpage stays editable for group admins and read only for other use
 
 test('locked webpage edit access can be requested, allowed temporarily and declined', function (Webpage $webpage) {
     Notification::fake();
+    Event::fake([BroadcastPersonalNotification::class]);
 
     $owner     = $this->user;
     $requester = StoreGuest::make()->action($this->organisation->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
@@ -2434,6 +2982,7 @@ test('locked webpage edit access can be requested, allowed temporarily and decli
         ->and($webpage->lock_data['requests'][0]['user_id'])->toBe($requester->id)
         ->and($webpage->lock_data['requests'][0]['note'])->toBe('Fix a typo');
     Notification::assertSentTo($owner, WebpageEditAccessNotification::class);
+    Event::assertDispatched(BroadcastPersonalNotification::class, fn (BroadcastPersonalNotification $event) => $event->userId === $owner->id);
 
     $this->postJson(route('grp.models.webpage.edit_access.approve', $webpage->id), ['user_id' => $requester->id, 'mode' => 'one_hour'])->assertForbidden();
 
@@ -2460,12 +3009,81 @@ test('locked webpage edit access can be requested, allowed temporarily and decli
     $webpage = LockWebpage::make()->action($webpage, $owner, ['reason' => 'Final copy approved']);
     expect($webpage->lock_data['requests'])->toHaveCount(1);
 
-    $webpage = DeclineWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id]);
+    $webpage = DeclineWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id, 'message' => 'Copy is final, raise a ticket instead']);
+    $requesterLock = GetWebpageLock::run($webpage, $requester);
     expect($webpage->lock_data['requests'])->toBeEmpty()
-        ->and($webpage->canBeEditedBy($requester))->toBeFalse();
+        ->and($webpage->canBeEditedBy($requester))->toBeFalse()
+        ->and($requesterLock['has_requested_access'])->toBeFalse()
+        ->and($requesterLock['declined_request']['message'])->toBe('Copy is final, raise a ticket instead')
+        ->and($requesterLock['declined_request']['declined_by'])->toBe($owner->contact_name ?: $owner->username)
+        ->and(GetWebpageLock::run($webpage, $owner)['declined_request'])->toBeNull();
+
+    $webpage = RequestWebpageEditAccess::make()->action($webpage, $requester, []);
+    expect(GetWebpageLock::run($webpage, $requester)['declined_request'])->toBeNull()
+        ->and($webpage->lock_data['requests'])->toHaveCount(1);
+
+    $webpage = DeclineWebpageEditAccess::make()->action($webpage, $owner, ['user_id' => $requester->id]);
 
     UnlockWebpage::make()->action($webpage, $owner, []);
 
-    get(route('grp.org.shops.show.web.webpages.workshop', $workshopParameters))
+    get(route('grp.org.shops.show.web.webpages.workshop', [$this->organisation->slug, $this->shop->slug, $webpage->website->slug, $webpage->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('editable', true));
 })->depends('create webpage');
+
+test('iris page render data is cached deflated and entries written before that still read', function () {
+    config(['iris.cache.webpage.ttl' => 60]);
+    $key = 'iris_webpage_cache_test_out_1';
+    cache()->forget($key);
+
+    $pageData = ['status' => 'ok', 'web_blocks' => array_fill(0, 200, ['type' => 'family', 'layout' => ['title' => 'Bath bombs']])];
+
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => $pageData))->toBe($pageData)
+        ->and(cache()->get($key))->toBeString()
+        ->and(strlen(cache()->get($key)))->toBeLessThan(strlen(serialize($pageData)) / 4)
+        ->and(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe($pageData);
+
+    cache()->put($key, ['status' => 'written before'], 60);
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe(['status' => 'written before']);
+
+    cache()->put($key, 'not a deflated page', 60);
+    expect(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'rebuilt']))->toBe(['status' => 'rebuilt'])
+        ->and(ShowIrisWebpage::make()->rememberCompressed($key, fn () => ['status' => 'again']))->toBe(['status' => 'rebuilt']);
+
+    cache()->forget($key);
+});
+
+test('a catalogue webpage with no share image of its own shares the image of its product', function (array $catalogue) {
+    Storage::fake('public');
+
+    $product        = $catalogue['product'];
+    $productWebpage = $catalogue['productWebpage'];
+
+    expect(GetWebpageSeo::run($productWebpage)['share_image']['url'])->toBeNull();
+
+    $fakeImage = UploadedFile::fake()->image('bath-bomb.jpg');
+    SaveModelImages::run(
+        model: $product,
+        mediaData: [
+            'path'         => Storage::disk('public')->path($fakeImage->store('photos', 'public')),
+            'originalName' => $fakeImage->getClientOriginalName(),
+        ],
+        mediaScope: 'product_images',
+        modelHasMediaData: ['scope' => 'photo']
+    );
+    $product->refresh();
+    $productWebpage->refresh();
+
+    $seo = GetWebpageSeo::run($productWebpage);
+
+    expect($seo['share_image']['url'])->not->toBeNull()
+        ->and($seo['share_image']['alt'])->toBe($seo['title'])
+        ->and(ShowIrisWebpage::make()->getWebpageData($productWebpage->id, [], false)['webpage_img'])->not->toBeEmpty();
+
+    $chosen = UpdateWebpage::make()->action($productWebpage, ['seo_image_url' => 'https://cdn.example.com/chosen.png', 'seo_image_alt' => 'Chosen by hand']);
+    $chosenSeo = GetWebpageSeo::run($chosen);
+
+    expect($chosenSeo['share_image']['url'])->toBe('https://cdn.example.com/chosen.png')
+        ->and($chosenSeo['share_image']['alt'])->toBe('Chosen by hand');
+
+    UpdateWebpage::make()->action($chosen, ['seo_image_url' => null]);
+})->depends('create catalogue webpages');

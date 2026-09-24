@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Enums\CRM\TrafficSource\TrafficSourceCostFetchedViaEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
@@ -27,6 +28,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * optional `shop` field in the body is only a sanity check against the wrong token being pasted into
  * the wrong account's script. Tokens are hashed at rest, named, and revocable one at a time, which is
  * what an external agency holding one for a single shop requires.
+ *
+ * The endpoint stays open to scripts while sources move to an API pull of their own. A day that the
+ * pull has already fetched is kept and the post is counted as stored: the script cannot know it has
+ * been overtaken, and answering it with an error would leave an agency chasing a failure that is not
+ * one. Google Ads is on the pull now; see FetchGoogleAdsCosts.
  */
 class ReceiveTrafficSourceCostWebhook
 {
@@ -99,6 +105,7 @@ class ReceiveTrafficSourceCostWebhook
                     'date'                       => Arr::get($cost, 'date'),
                     'source_amount'              => (float) Arr::get($cost, 'amount'),
                     'source_currency_id'         => $currency->id,
+                    'fetched_via'                => TrafficSourceCostFetchedViaEnum::WEBHOOK->value,
                     'traffic_source_campaign_id' => GetTrafficSourceCampaign::run(
                         $trafficSource,
                         Arr::get($cost, 'campaign'),

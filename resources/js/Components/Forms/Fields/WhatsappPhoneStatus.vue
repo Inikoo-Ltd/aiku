@@ -8,6 +8,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInfoCircle, faExclamationTriangle } from "@fal"
+import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 
 library.add(faInfoCircle, faExclamationTriangle)
 
@@ -30,12 +31,23 @@ const props = defineProps<{
             request_code: RouteType
             verify_code: RouteType
             register: RouteType
+            subscribed_apps: RouteType
+            subscribe_app: RouteType
         }
+        value?: { at: string; status: PhoneStatus } | null
     }
 }>()
 
-const status = ref<PhoneStatus | null>(null)
+// Seeded from the last check stored on the shop, so the page opens with what Meta last said
+// instead of a blank badge. It is a dated copy, never presented without its age.
+const status = ref<PhoneStatus | null>(props.fieldData.value?.status ?? null)
+const checkedAt = ref<string | null>(props.fieldData.value?.at ?? null)
 const isChecking = ref(false)
+
+// Not stored on the shop like the phone status, so it stays unknown until a check runs
+// rather than opening on a dated claim that the webhooks are wired up.
+const isSubscribed = ref<boolean | null>(null)
+const isSubscribing = ref(false)
 
 const isOpen = ref(false)
 const step = ref(1)
@@ -64,6 +76,13 @@ const badge = computed(() => {
     return { label: status.value.status || trans("Offline"), class: "bg-amber-100 text-amber-700 ring-amber-300" }
 })
 
+const subscriptionBadge = computed(() => {
+    if (isSubscribed.value) {
+        return { label: trans("App subscribed"), class: "bg-lime-100 text-lime-700 ring-lime-300" }
+    }
+    return { label: trans("App not subscribed"), class: "bg-amber-100 text-amber-700 ring-amber-300" }
+})
+
 const post = async (routeTarget: RouteType, data: Record<string, unknown> = {}) => {
     const response = await axios.post(route(routeTarget.name, routeTarget.parameters), data)
     return response.data
@@ -76,8 +95,14 @@ const checkStatus = async () => {
     try {
         const data = await post(props.fieldData.routes.status)
         status.value = data.data ?? {}
+        checkedAt.value = new Date().toISOString()
+
+        const subscription = await post(props.fieldData.routes.subscribed_apps)
+        isSubscribed.value = subscription.data?.subscribed ?? false
     } catch (error: any) {
         status.value = null
+        checkedAt.value = null
+        isSubscribed.value = null
         notify({
             title: trans("Something went wrong."),
             text: error.response?.data?.message ?? trans("Could not read the status of this number."),
@@ -85,6 +110,28 @@ const checkStatus = async () => {
         })
     }
     isChecking.value = false
+}
+
+// A number can be connected while its WABA has no app subscribed, which is what silently
+// keeps inbound messages from ever reaching Aiku.
+const subscribeApp = async () => {
+    isSubscribing.value = true
+    try {
+        await post(props.fieldData.routes.subscribe_app)
+        notify({
+            title: trans("App subscribed"),
+            text: trans("Meta will now deliver messages for this account to Aiku."),
+            type: "success",
+        })
+        await checkStatus()
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong."),
+            text: error.response?.data?.message ?? trans("Could not subscribe the app to this account."),
+            type: "error",
+        })
+    }
+    isSubscribing.value = false
 }
 
 const openModal = () => {
@@ -150,6 +197,20 @@ const register = () =>
                 {{ badge.label }}
             </span>
 
+            <span
+                v-if="isSubscribed !== null"
+                class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
+                :class="subscriptionBadge.class">
+                {{ subscriptionBadge.label }}
+            </span>
+
+            <span
+                v-if="checkedAt"
+                v-tooltip="useFormatTime(checkedAt, { formatTime: 'hms' })"
+                class="text-xs text-gray-500">
+                {{ trans("checked :ago ago", { ago: useRangeFromNow(checkedAt) }) }}
+            </span>
+
             <Button
                 :style="'tertiary'"
                 size="xs"
@@ -163,6 +224,14 @@ const register = () =>
                 size="xs"
                 :label="trans('Verify number')"
                 @click="openModal" />
+
+            <Button
+                v-if="isSubscribed === false"
+                :style="'save'"
+                size="xs"
+                :label="trans('Subscribe app')"
+                :loading="isSubscribing"
+                @click="subscribeApp" />
         </div>
 
         <dl v-if="status" class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 sm:max-w-md">

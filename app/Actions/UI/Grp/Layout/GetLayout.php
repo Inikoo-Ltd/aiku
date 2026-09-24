@@ -36,6 +36,7 @@ class GetLayout
                 'org' => GetOrganisationsLayout::run($user),
             ],
             'app_theme'      => $user->settings['app_theme'] ?? null,
+            'org_themes'     => $this->getOrganisationThemes($user),
             'chat_theme'     => $user->settings['chat_theme'] ?? 'dracula',
             'staff_chat'     => [
                 'quick_replies' => Arr::get($user->group->settings, 'staff_chat.quick_replies') ?: null,
@@ -43,6 +44,41 @@ class GetLayout
 
 
         ];
+    }
+
+    /**
+     * Keyed by organisation slug because the front end only knows which organisation it is in from
+     * the route parameter, and the layout props are cached per user, never per organisation.
+     *
+     * @return array<string, string>
+     */
+    public function getOrganisationThemes(User $user): array
+    {
+        if (!Arr::get($user->settings, 'org_themes.enabled')) {
+            return [];
+        }
+
+        $themes = Arr::get($user->settings, 'org_themes.themes', []);
+        if (!is_array($themes) || $themes === []) {
+            return [];
+        }
+
+        $slugs = $user->authorisedOrganisations()
+            ->get(['organisations.id', 'organisations.slug'])
+            ->pluck('slug', 'id')
+            ->all();
+
+        $coloursBySlug = [];
+        foreach ($themes as $organisationTheme) {
+            $slug   = Arr::get($slugs, (int) Arr::get($organisationTheme, 'organisation_id'));
+            $colour = Arr::get($organisationTheme, 'colour');
+
+            if ($slug && is_string($colour) && $colour !== '') {
+                $coloursBySlug[$slug] = $colour;
+            }
+        }
+
+        return $coloursBySlug;
     }
 
     public function getGroupData(Group $group): array

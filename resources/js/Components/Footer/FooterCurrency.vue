@@ -60,7 +60,7 @@ const selectedCurrency = ref(currencyList[0])
     <Popover v-slot="{ open }" class="relative h-full">
         <PopoverButton :class="open ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-200'"
             class="group inline-flex items-center px-3 h-full font-medium gap-x-1">
-            <FontAwesomeIcon icon='fal fa-money-bill-alt' class='' aria-hidden='true' />
+            <FontAwesomeIcon icon='fal fa-money-bill-alt' class='' fixed-width aria-hidden='true' />
             <div class="h-full font-extralight text-xs flex items-center leading-none">
                 Organisation (<FontAwesomeIcon :icon='selectedCurrency.symbol' class='' fixed-width aria-hidden='true' />)
             </div>

@@ -36,14 +36,12 @@ trait WithGoogleAdsOAuth
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
         ]);
-        // 'https://aiku.io/webhooks/google-ads/callback'
 
-        $redirectUri = 'https://89de-59-153-131-200.ngrok-free.app/webhooks/google-ads/callback';
-        if (app()->isProduction()) {
-            $redirectUri = route('google_ads.callback');
-        }
-
-        $client->setRedirectUri($redirectUri);
+        /* The webhook routes already carry SANDBOX_LOCAL_WEBHOOKS_URL as their domain off production,
+           so the route resolves to whichever tunnel is in front of this machine. Whatever it resolves
+           to has to be listed verbatim under Authorized redirect URIs on the Google Cloud OAuth client
+           or Google answers redirect_uri_mismatch before the consent screen is ever shown. */
+        $client->setRedirectUri(route('google_ads.callback'));
         $client->setScopes([self::GOOGLE_ADS_SCOPE, self::DATA_MANAGER_SCOPE]);
         $client->setState($shop->id);
         $client->setAccessType('offline');

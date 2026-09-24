@@ -197,6 +197,12 @@ const warehouseDaysClass = (days?: number | null) => {
                     <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
                         {{ deliveryNote["reference"] }}
                     </Link>
+                    <span
+                        v-if="deliveryNote.handled_in_aurora"
+                        v-tooltip="trans('Submitted in Aurora: process it in Aurora, not here')"
+                        class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white">
+                        Aurora
+                    </span>
                     <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
                         icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon
@@ -218,7 +224,7 @@ const warehouseDaysClass = (days?: number | null) => {
                     {{ ctrans('Collection') }}
                     <FontAwesomeIcon 
                         :icon="faMapMarkerAlt"
-                        class="text-pink-500"
+                        class="text-pink-500" fixed-width
                     />
                 </span>
                 <template v-if="deliveryNote.picking_sessions_count > 0 && deliveryNote.picking_session_ids">
@@ -249,7 +255,7 @@ const warehouseDaysClass = (days?: number | null) => {
         </template>
 
         <template #cell(action)="{ item: deliveryNote }">
-            <Button @click="() => isModalPick = deliveryNote" type="secondary" :label="trans('Pick')" size="xs" />
+            <Button v-if="!deliveryNote.handled_in_aurora" @click="() => isModalPick = deliveryNote" type="secondary" :label="trans('Pick')" size="xs" />
         </template>
     </Table>
 

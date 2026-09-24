@@ -44,7 +44,7 @@ const status = computed(() => ({
           <Image v-if="props.data?.image" :src="props.data.image"
             class="w-full h-full object-cover object-center rounded-t-lg" />
           <div v-else class="flex justify-center items-center bg-gray-100 w-full h-full">
-            <FontAwesomeIcon :icon="faImage" class="w-10 h-10 text-gray-400" />
+            <FontAwesomeIcon :icon="faImage" class="w-10 h-10 text-gray-400" fixed-width />
           </div>
         </div>
       </slot>

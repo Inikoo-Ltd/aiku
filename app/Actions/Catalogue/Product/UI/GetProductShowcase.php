@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Traits\HasBucketImages;
 use App\Actions\Traits\WithSearchInWebsiteAvailabilityChecklist;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -25,6 +26,7 @@ use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Inventory\OrgStocksResource;
+use Illuminate\Support\Facades\DB;
 
 class GetProductShowcase
 {
@@ -105,6 +107,7 @@ class GetProductShowcase
             'gpsr'                         => $gpsr,
             'label_info'                   => [
                 ...TradeUnitLabelPresenceEnum::presenceFromLabelInfo($product->label_info),
+                'label_info_approved' => ['show' => data_get($product->label_info, 'label_info_approved', false) === true],
                 'markets'   => TradeUnitMarketEnum::marketsFromLabelInfo($product->label_info),
                 'languages' => GetLabelInfoLanguages::run($product->label_info),
                 'best_before' => TradeUnitBestBeforeEnum::bestBeforeFromLabelInfo($product->label_info),
@@ -113,6 +116,8 @@ class GetProductShowcase
             'parts'                        => // todo: delete this asap use org_stocks
                 OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'org_stocks'                   => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+            'stock_locations'              => $this->getStockLocations($product),
+            'incoming_stock'               => GetProductIncomingStock::run($product),
             'stats'                        => $product->stats,
             'images'                       => $this->getImagesData($product, true),
             'brand'                        => $product->brand(),
@@ -132,4 +137,39 @@ class GetProductShowcase
         ];
     }
 
+    /**
+     * Where the product's org stocks physically sit, most stock first.
+     *
+     * @return array<int, array{location_code: string, warehouse_code: string, org_stock_code: string, quantity: float}>
+     */
+    private function getStockLocations(Product $product): array
+    {
+        $orgStockIds = $product->orgStocks->pluck('id')->all();
+
+        if (!$orgStockIds) {
+            return [];
+        }
+
+        return DB::table('location_org_stocks')
+            ->join('locations', 'locations.id', 'location_org_stocks.location_id')
+            ->join('warehouses', 'warehouses.id', 'location_org_stocks.warehouse_id')
+            ->join('org_stocks', 'org_stocks.id', 'location_org_stocks.org_stock_id')
+            ->whereIn('location_org_stocks.org_stock_id', $orgStockIds)
+            ->where('location_org_stocks.quantity', '!=', 0)
+            ->orderByDesc('location_org_stocks.quantity')
+            ->select([
+                'locations.code as location_code',
+                'warehouses.code as warehouse_code',
+                'org_stocks.code as org_stock_code',
+                'location_org_stocks.quantity',
+            ])
+            ->get()
+            ->map(fn ($row) => [
+                'location_code'  => $row->location_code,
+                'warehouse_code' => $row->warehouse_code,
+                'org_stock_code' => $row->org_stock_code,
+                'quantity'       => (float) $row->quantity,
+            ])
+            ->all();
+    }
 }

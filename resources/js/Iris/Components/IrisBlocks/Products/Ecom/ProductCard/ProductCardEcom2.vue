@@ -17,7 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 import { useLocaleStore } from "@/Stores/locale"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 import { ProductResource } from '@/types/Iris/Products'
 import { routeType } from '@/types/route'
@@ -46,6 +46,7 @@ const props = withDefaults(
         isLoadingRemindBackInStock?: boolean
         button: any
         screenType:string
+        imageSizes?: string
     }>(),
     {
         isLoadingFavourite: false,
@@ -117,7 +118,7 @@ defineExpose({
                     :type="typeOfLink" class="block w-full mb-1 rounded-xl sm:h-[305px] h-[180px] relative"
                     @start="idxSlideLoading = true" @finish="idxSlideLoading = false">
                     <slot name="image" :product="product">
-                        <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery"
+                        <Image v-if="product?.web_images?.main?.gallery" :src="product?.web_images?.main?.gallery" :sizes="imageSizes"
                             :alt="product.name" :style="{
                                 objectFit: 'contain',
                                 opacity: product.stock > 0 ? 1 : 0.4
@@ -145,7 +146,7 @@ defineExpose({
                                     backdrop-blur-sm
                                 "
                             >
-                                {{ trans("Out of Stock") }}
+                                {{ ctrans("Out of Stock") }}
                             </div>
                         </div>
                     </slot>
@@ -204,8 +205,8 @@ defineExpose({
                             {{ product?.code }}
                         </span>
 
-                        <span  class="text-left md:text-right text-xs break-words">
-                            {{ trans("RRP") }}:
+                        <span v-if="product.rrp_per_unit > 0" class="text-left md:text-right text-xs break-words">
+                            {{ ctrans("RRP") }}:
                             {{ locale.currencyFormatRrp(currency?.code, product.rrp_per_unit) }} / {{ product.unit }}
                         </span>
                     </div>
@@ -222,8 +223,8 @@ defineExpose({
                        <!--  <FontAwesomeIcon :icon="faCircle" class="text-[6px] shrink-0" /> -->
                         <span>
                            {{ product?.stock >= 250
-                                    ? trans("Unlimited quantity available")
-                                    : (product.stock > 0 ?   ` ${product.stock} ${trans("available")}` : trans("Out Of Stock"))
+                                    ? ctrans("Unlimited quantity available")
+                                    : (product.stock > 0 ?   ` ${product.stock} ${ctrans("available")}` : ctrans("Out Of Stock"))
                                 }}
                         </span>
                     </span>
@@ -235,7 +236,7 @@ defineExpose({
             <div  v-if="layout?.iris?.is_logged_in" class="relative px-3 text-xs text-gray-600 mb-1 grid grid-cols-1 md:grid-cols-[auto_1fr] gap-1">
                 <div class="">
                     <div class="font-extrabold text-black text-sm">
-                        {{ trans("Price") }}:
+                        {{ ctrans("Price") }}:
                         <template v-if="product?.product_offers_data?.number_offers">
                             <span class="mr-1.5 line-through text-gray-500 text-xs font-normal opacity-60">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
                             <span class="text-red-600">{{ locale.currencyFormat(currency?.code, product.discounted_price) }}</span>
@@ -245,7 +246,7 @@ defineExpose({
 
                     
                     <div class="mt-1 mr-9">
-                        <span v-if="product?.product_offers_data?.number_offers"  v-tooltip="trans('Discounted to :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.discounted_price_per_unit) })" class="text-red-600">
+                        <span v-if="product?.product_offers_data?.number_offers"  v-tooltip="ctrans('Discounted to :price_per_unit/:product_unit', { product_unit: product.unit, price_per_unit: locale.currencyFormat(currency?.code, product.discounted_price_per_unit) })" class="text-red-600">
                             ({{ locale.currencyFormat(currency?.code, product.discounted_price_per_unit) }}<span class="">/{{ product.unit }}</span>)
                         </span>
                         <span v-else class="">
@@ -275,8 +276,8 @@ defineExpose({
                         <button v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && !product.variant" @click.prevent="toggleBackInStock"
                             class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all shadow-lg"
                             v-tooltip="product.is_back_in_stock
-                                ? trans('You will be notified')
-                                : trans('Remind me when back in stock')">
+                                ? ctrans('You will be notified')
+                                : ctrans('Remind me when back in stock')">
                             <LoadingIcon v-if="isLoadingRemindBackInStock" />
                             <FontAwesomeIcon v-else
                                 :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width
@@ -287,14 +288,14 @@ defineExpose({
 
                     <div v-if="layout?.iris?.is_logged_in && product.variant">
                          <div class="hidden md:block mr-2">
-                            <Button :label="trans('Choose variants')" size="xs"
+                            <Button :label="ctrans('Choose variants')" size="xs"
                                 @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
                         </div>
                     </div>
                 </div>
                 <div v-if="layout?.iris?.is_logged_in && product.variant">
                          <div class="md:hidden block mr-2">
-                            <Button :label="trans('Choose variants')" size="xs"
+                            <Button :label="ctrans('Choose variants')" size="xs"
                                 @click="(e)=>onClickVariant(product,e)"  :ref="(e)=>_button_variant = e"/>
                         </div>
                 </div>

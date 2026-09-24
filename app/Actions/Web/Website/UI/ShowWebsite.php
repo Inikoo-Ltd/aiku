@@ -17,6 +17,8 @@ use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
 use App\Actions\Web\Crawl\UI\IndexCrawls;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
+use App\Actions\Web\Website\GetCruxReport;
+use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebsiteTabsEnum;
@@ -163,6 +165,20 @@ class ShowWebsite extends OrgAction
                 'icon'  => 'fal fa-newspaper',
                 "color" => "#f59e0b",
                 'value' => $website->webStats->number_webpages_sub_type_blog,
+            ],
+            [
+                'label' => __('Ads Testing'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.webpages.index.sub_type.ads_testing',
+                    'parameters' => [
+                        'organisation' => $shop->organisation->slug,
+                        'shop'         => $shop->slug,
+                        'website'      => $website->slug
+                    ]
+                ],
+                'icon'  => 'fal fa-ad',
+                "color" => "#db2777",
+                'value' => $website->webStats->number_webpages_sub_type_ads_testing,
             ],
         ];
         $liveVisitorsEnabled = (bool) config('iris.analytics.live_visitors');
@@ -336,6 +352,13 @@ class ShowWebsite extends OrgAction
                 'route_register'     => $route_register_page,
                 'route_forgot_pass'  => $route_forgot_pass_page,
 
+                'pagespeed_history' => $this->tab == WebsiteTabsEnum::SHOWCASE->value
+                    ? Inertia::defer(fn () => [
+                        'crux'     => GetCruxReport::run($website),
+                        'visitors' => GetWebVitalsReport::run($website),
+                    ], 'pagespeed_history')
+                    : null,
+
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
                     WebsiteResource::make($website)->getArray(),
                     [
@@ -349,6 +372,10 @@ class ShowWebsite extends OrgAction
                         'live_visitors_enabled' => $liveVisitorsEnabled,
                         'currency_code'        => $website->shop?->currency?->code,
                         'route_live_users'     => $analyticsRoute('live_users'),
+                        'route_chat_visitors'  => route('grp.org.shops.show.chat.dashboard-visitors', [
+                            $website->organisation->slug,
+                            $website->shop->slug,
+                        ]),
                         'website_type'         => $website->shop->type,
                         'migrated'             => $website->migrated,
                         'search_insights'      => GetWebsiteSearchAnalytics::run($website),

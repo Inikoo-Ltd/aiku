@@ -7,9 +7,13 @@ use App\Actions\Chat\ChatSession\UI\ShowOrgChatConversation;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatInbox;
 use App\Actions\Chat\ChatSession\UI\ShowShopChatConversations;
 use App\Actions\Chat\ChatSession\UI\ShowShopChatDashboard;
+use App\Actions\Chat\PhoneCall\UI\ShowOrgChatPhoneCalls;
+use App\Actions\Chat\UI\ShowChatSettings;
 use App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus;
+use App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps;
 use App\Actions\Chat\Whatsapp\RegisterWhatsappPhoneNumber;
 use App\Actions\Chat\Whatsapp\RequestWhatsappPhoneNumberCode;
+use App\Actions\Chat\Whatsapp\SubscribeWhatsappApp;
 use App\Actions\Chat\Whatsapp\VerifyWhatsappPhoneNumberCode;
 use App\Actions\Chat\Whatsapp\Templates\DeleteWhatsappMessageTemplate;
 use App\Actions\Chat\Whatsapp\Templates\RefreshWhatsappMessageTemplate;
@@ -25,10 +29,13 @@ use App\Actions\Chat\Whatsapp\Templates\UpdateWhatsappTemplateTags;
 use App\Actions\Chat\Whatsapp\Templates\UI\IndexWhatsappMessageTemplates;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/dashboard', ShowShopChatDashboard::class)->name('dashboard');
+Route::get('/reports', ShowShopChatDashboard::class)->name('reports');
 Route::get('/inbox', [ShowOrgChatInbox::class, 'inShop'])->name('inbox');
+Route::get('/supervision', [ShowOrgChatInbox::class, 'supervisionInShop'])->name('supervision');
 Route::get('/dashboard-visitors', [GetChatDashboardVisitors::class, 'inShop'])->name('dashboard-visitors');
 Route::get('/agents', ShowShopAgents::class)->name('agents.show');
+Route::get('/phone-calls', [ShowOrgChatPhoneCalls::class, 'inShop'])->name('phone_calls.index');
+Route::get('/settings', [ShowChatSettings::class, 'inShop'])->name('settings');
 Route::get('/conversations/export', [ExportChatConversations::class, 'inShop'])->name('conversations.export');
 Route::get('/conversations', ShowShopChatConversations::class)->name('conversations.show');
 Route::get('/conversations/{chatSession}', [ShowOrgChatConversation::class, 'inShop'])->name('conversations.detail');
@@ -52,3 +59,6 @@ Route::post('/whatsapp-phone/status', GetWhatsappPhoneNumberStatus::class)->name
 Route::post('/whatsapp-phone/request-code', RequestWhatsappPhoneNumberCode::class)->name('whatsapp_phone.request_code');
 Route::post('/whatsapp-phone/verify-code', VerifyWhatsappPhoneNumberCode::class)->name('whatsapp_phone.verify_code');
 Route::post('/whatsapp-phone/register', RegisterWhatsappPhoneNumber::class)->name('whatsapp_phone.register');
+
+Route::post('/whatsapp-app/subscribed', GetWhatsappSubscribedApps::class)->name('whatsapp_app.subscribed');
+Route::post('/whatsapp-app/subscribe', SubscribeWhatsappApp::class)->name('whatsapp_app.subscribe');

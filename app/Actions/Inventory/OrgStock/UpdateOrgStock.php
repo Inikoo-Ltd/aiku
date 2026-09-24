@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Goods\Stock\RepairStocksSkoBarcodes;
@@ -97,6 +98,10 @@ class UpdateOrgStock extends OrgAction
 
             if ($orgStock->orgStockFamily) {
                 OrgStockFamilyHydrateOrgStocks::dispatch($orgStock->orgStockFamily);
+            }
+
+            if ($orgStock->stock_id && in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUING, OrgStockStateEnum::DISCONTINUED], true)) {
+                PartnerShoppingListItem::openRestockRequestsFor($orgStock)->get()->each->delete();
             }
         }
 

@@ -23,6 +23,10 @@ class UpdateShopifyProductDimensions
 
     public function handle(CustomerSalesChannel $customerSalesChannel, Portfolio $portfolio): void
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            return;
+        }
+
         try {
             /** @var ShopifyUser $shopifyUser */
             $shopifyUser = $customerSalesChannel->user;

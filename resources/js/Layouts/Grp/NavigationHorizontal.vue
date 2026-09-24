@@ -190,14 +190,14 @@ const isLoadingNavigation = ref<string | boolean>(false)
 <template>
     <div v-if="isShowHorizontal()" class="relative isolate ring-1 ring-white/20 rounded transition-all"
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
-        :style="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
+        :style="{ 'box-shadow': `0 0 0 1px ${layout.app.navigation_theme[1]}55` }">
         <span v-if="false" class="text-white">
             {{ previousNavigation() }}
         </span>
 
         <!-- Label: Icon shops/warehouses and slug -->
         <div v-if="!!currentNavigation()" class="relative w-full flex justify-between items-end pt-2 pl-2 pr-0.5 pb-2"
-            :style="{ color: layout.app.theme[1] + '99' }">
+            :style="{ color: layout.app.navigation_theme[1] + '99' }">
 
             <!-- Label: 'UK (Shop)' -->
             <div :href="routeLabelHorizontal()" class="relative flex gap-x-1.5 items-center pt-1 select-none cursor-default">
@@ -267,7 +267,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
         <div v-if="Object.keys(orgNav || []).length === 1" class="flex flex-col gap-y-1 mb-1">
             <!-- group only 1 -->
             <template v-for="nav, navIndex, index in orgNav[Object.keys(orgNav)[0]]" :key="navIndex + index">
-                <NavigationSimple :nav="nav" :navKey="navIndex" />
+                <NavigationSimple :nav="nav" :navKey="navIndex" :class="{ hidden: ['chat', 'tasks', 'tickets'].includes(String(navIndex)) }" />
             </template>
         </div>
 
@@ -279,7 +279,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                 v-for="nav, navKey, navIndex in currentNavigation()?.value.subNavigation"
                 :key="navKey + navIndex">
                 <!-- {{ navKey }} -->
-                <NavigationSimple :nav="nav" :navKey="navKey" />
+                <NavigationSimple :nav="nav" :navKey="navKey" :class="{ hidden: ['chat', 'tasks', 'tickets'].includes(String(navKey)) }" />
 
                 <!-- <div v-if="(nav.route?.name ? isRouteSameAsCurrentUrl(route(nav.route.name, nav.route.parameters)) : false)"
                         class="absolute inset-0 bg-black/20 rounded -z-10"

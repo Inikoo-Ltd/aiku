@@ -5,11 +5,13 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from "@inertiajs/vue3"
+import { ticketRoute, ticketsRoute, ticketsRouteObject } from "@/Composables/useTicketsRoute"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import Chart from "primevue/chart"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
@@ -25,8 +27,10 @@ const props = defineProps<{
     pageHead: any
     title: string
     createdIntervals: Record<string, string>
+    assigneeOptions: { label: string; value: string }[]
     stats: {
         interval: string
+        assignee: string | null
         days: number
         bucket: "day" | "week" | "month"
         from: string
@@ -37,19 +41,21 @@ const props = defineProps<{
         oldest_open: { reference: string; age_days: number } | null
         csat: number | null
         csat_by_month: { month: string; average: number | null; total: number }[]
-        daily: { date: string; created: number; done: number }[]
+        daily: { date: string; created: number; done: number; open: number }[]
         by_status: { status: string; label: string; color: string; total: number }[]
-        assignees: (Metrics & { name: string; username: string; short_name: string; avatar: any })[]
+        assignees: (Metrics & { name: string; username: string; short_name: string; avatar: any; collaborating?: Record<"assigned" | "in_progress" | "open" | "done", number> })[]
         assignees_total: Metrics
-        resolvers: (Metrics & { name: string; username: string; short_name: string; avatar: any })[]
+        resolvers: (Metrics & { name: string; username: string; short_name: string; avatar: any; collaborating?: Record<"assigned" | "in_progress" | "open" | "done", number> })[]
         resolvers_total: Metrics
-        reporters: (Metrics & { key: string; name: string; is_staff: boolean })[]
+        reporters: (Metrics & { key: string; name: string; is_staff: boolean; avatar?: any })[]
     }
 }>()
 
 type Metrics = { created: number; open: number; assigned: number; in_progress: number; resolved: number; cancelled: number; done: number; median_hours: number | null; longest_wait_days: number | null; rating: number | null; ratings: number }
 
 const peopleTab = ref<"assignees" | "reporters">("assignees")
+
+const filterByAssignee = (username: string) => router.reload({ data: { assignee: username || undefined }, preserveScroll: true })
 
 useLiveTickets(["stats"])
 
@@ -77,8 +83,9 @@ const lineChart = computed(() => {
     return {
         labels: props.stats.daily.map((day) => bucketLabel(day.date)),
         datasets: [
-            { label: trans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0, borderWidth: 1.5, pointRadius },
-            { label: trans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius },
+            { label: ctrans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0, borderWidth: 1.5, pointRadius },
+            { label: ctrans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius },
+            { label: ctrans("Open"), data: props.stats.daily.map((day) => day.open), borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 1.5, pointRadius },
         ],
     }
 })
@@ -88,8 +95,19 @@ const lineOptions = computed(() => ({
     maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
     plugins: {
-        legend: { position: "bottom", labels: { boxWidth: 12 } },
-        tooltip: { callbacks: { title: (items: any[]) => (props.stats.bucket === "day" ? items[0].label : `${trans(props.stats.bucket === "week" ? "Week of" : "Month")} ${items[0].label}`) } },
+        legend: {
+            position: "bottom",
+            labels: { boxWidth: 12 },
+            onClick: (_event: unknown, legendItem: { datasetIndex: number }, legend: { chart: any }) => {
+                const chart = legend.chart
+                const isVisible = chart.isDatasetVisible(legendItem.datasetIndex)
+                const visibleCount = chart.data.datasets.filter((_dataset: unknown, index: number) => chart.isDatasetVisible(index)).length
+                if (isVisible && visibleCount <= 1) return
+                chart.setDatasetVisibility(legendItem.datasetIndex, !isVisible)
+                chart.update()
+            },
+        },
+        tooltip: { callbacks: { title: (items: any[]) => (props.stats.bucket === "day" ? items[0].label : `${ctrans(props.stats.bucket === "week" ? "Week of" : "Month")} ${items[0].label}`) } },
     },
     scales: {
         x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
@@ -102,15 +120,46 @@ const donutChart = computed(() => ({
     datasets: [{ data: props.stats.by_status.map((row) => row.total), backgroundColor: props.stats.by_status.map((row) => STATUS_COLORS[row.status] ?? "#9ca3af") }],
 }))
 
-const donutOptions = { responsive: true, maintainAspectRatio: false, cutout: "70%", plugins: { legend: { display: false } } }
+const openStatusSlice = (statusIndex: number | undefined) => {
+    const row = statusIndex === undefined ? null : props.stats.by_status[statusIndex]
+    if (row) router.visit(listUrl({ filter: { created_since: props.stats.from }, elements: { status: row.status } }))
+}
+
+const donutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: "70%",
+    hoverOffset: 8,
+    onHover: (_event: unknown, activeElements: { index: number }[], chart: { canvas: HTMLCanvasElement }) => {
+        chart.canvas.style.cursor = activeElements.length ? "pointer" : "default"
+    },
+    onClick: (_event: unknown, activeElements: { index: number }[]) => openStatusSlice(activeElements[0]?.index),
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            padding: 10,
+            boxPadding: 6,
+            callbacks: {
+                label: (item: { raw: number }) => `${item.raw} ${item.raw === 1 ? ctrans("ticket") : ctrans("tickets")}`,
+            },
+        },
+    },
+}
 
 const csatChart = computed(() => ({
     labels: props.stats.csat_by_month.map((row) => row.month.slice(2)),
-    datasets: [{ label: trans("Average rating"), data: props.stats.csat_by_month.map((row) => row.average), backgroundColor: "#3b82f6", borderRadius: 4 }],
+    datasets: [{ label: ctrans("Average rating"), data: props.stats.csat_by_month.map((row) => row.average), backgroundColor: "#3b82f6", borderRadius: 4 }],
 }))
 
 const csatOptions = {
     responsive: true,
+    onClick: (_event: unknown, elements: { index: number }[]) => {
+        const row = props.stats.csat_by_month[elements[0]?.index]
+        if (row?.total) router.visit(listUrl({ filter: { rated_month: row.month, ...(props.stats.assignee ? { assignee: props.stats.assignee } : {}) } }))
+    },
+    onHover: (event: { native?: { target?: HTMLElement } }, elements: unknown[]) => {
+        if (event.native?.target) event.native.target.style.cursor = elements.length ? "pointer" : "default"
+    },
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: { x: { grid: { display: false } }, y: { beginAtZero: true, max: 5, ticks: { stepSize: 1 } } },
@@ -118,13 +167,13 @@ const csatOptions = {
 
 const totalTickets = computed(() => props.stats.by_status.reduce((sum, row) => sum + row.total, 0))
 
-const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${trans("days")}` : `${value} ${trans("h")}`)
+const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `${(value / 24).toFixed(1)} ${ctrans("days")}` : `${value} ${ctrans("h")}`)
 
 const OPEN_STATUSES = computed(() => props.stats.by_status.filter((s) => !["resolved", "cancelled"].includes(s.status)).map((s) => s.status).join(","))
 
-const listUrl = (params: Record<string, any>) => route("grp.tickets.list", params)
+const listUrl = (params: Record<string, any>) => ticketsRoute("list", params)
 
-const listRoute = (params: Record<string, any>) => ({ name: "grp.tickets.list", parameters: params })
+const listRoute = (params: Record<string, any>) => ticketsRouteObject("list", params)
 
 const pillValue = (value: string | number | null) => (value === null ? "-" : value)
 
@@ -161,7 +210,34 @@ const sortRows = <T extends Record<string, any>>(rows: T[], table: TableMode): T
 
 const sortedReporters = computed(() => sortRows(props.stats.reporters, "reporters"))
 
-const engineerRows = (mode: "assignees" | "resolvers") => sortRows(mode === "resolvers" ? props.stats.resolvers : props.stats.assignees, mode)
+type Involvement = "assignee" | "collaborator" | "involved"
+
+const involvement = ref<Involvement>("assignee")
+
+const involvementTabs: { key: Involvement; label: string }[] = [
+    { key: "assignee", label: ctrans("Assigned") },
+    { key: "collaborator", label: ctrans("Collaborating") },
+    { key: "involved", label: ctrans("Both") },
+]
+
+const INVOLVEMENT_COUNT_KEYS = ["assigned", "in_progress", "open", "done"] as const
+
+const involvementFor = (mode: "assignees" | "resolvers"): Involvement => (mode === "assignees" ? involvement.value : "assignee")
+
+const withInvolvement = <T extends Record<string, any>>(row: T, mode: "assignees" | "resolvers"): T => {
+    const view = involvementFor(mode)
+    if (view === "assignee") return row
+    const counts = Object.fromEntries(INVOLVEMENT_COUNT_KEYS.map((key) => [key, (view === "involved" ? row[key] : 0) + (row.collaborating?.[key] ?? 0)]))
+    return view === "collaborator" ? { ...row, ...counts, median_hours: null, longest_wait_days: null, rating: null, ratings: 0 } : { ...row, ...counts }
+}
+
+const engineerRows = (mode: "assignees" | "resolvers") =>
+    sortRows(
+        (mode === "resolvers" ? props.stats.resolvers : props.stats.assignees)
+            .map((row) => withInvolvement(row, mode))
+            .filter((row) => (involvementFor(mode) === "assignee" ? row.created > 0 || row.done > 0 : INVOLVEMENT_COUNT_KEYS.some((key) => row[key] > 0))),
+        mode
+    )
 
 const engineerTotal = (mode: "assignees" | "resolvers") => (mode === "resolvers" ? props.stats.resolvers_total : props.stats.assignees_total)
 
@@ -170,37 +246,42 @@ const sharePercent = (value: number, total: number) => (total && value ? `${((va
 const inDays = (hoursValue: number | null) => (hoursValue === null ? "-" : (hoursValue / 24).toFixed(1))
 
 const peopleTabs = [
-    { key: "assignees", label: trans("Engineers") },
-    { key: "reporters", label: trans("Reporters") },
+    { key: "assignees", label: ctrans("Engineers") },
+    { key: "reporters", label: ctrans("Reporters") },
 ]
 
 const reporterColumns = [
-    { key: "name", label: trans("Reporter") },
-    { key: "created", label: trans("Created") },
-    { key: "open", label: trans("Still open") },
-    { key: "resolved", label: trans("Resolved") },
-    { key: "cancelled", label: trans("Cancelled") },
-    { key: "median_hours", label: trans("Median time to resolve (days)") },
-    { key: "longest_wait_days", label: trans("Longest wait (days)") },
-    { key: "rating", label: trans("Average rating") },
+    { key: "name", label: ctrans("Reporter") },
+    { key: "created", label: ctrans("Created") },
+    { key: "open", label: ctrans("Still open") },
+    { key: "resolved", label: ctrans("Resolved") },
+    { key: "cancelled", label: ctrans("Cancelled") },
+    { key: "median_hours", label: ctrans("Median time to resolve (days)") },
+    { key: "longest_wait_days", label: ctrans("Longest wait (days)") },
+    { key: "rating", label: ctrans("Average rating") },
 ]
 
 const assigneeColumns = [
-    { key: "short_name", label: trans("Engineer") },
-    { key: "assigned", label: trans("To do") },
-    { key: "in_progress", label: trans("Working on") },
-    { key: "open", label: trans("Still open") },
-    { key: "done", label: trans("Resolved") },
-    { key: "median_hours", label: trans("Median time to resolve (days)") },
-    { key: "longest_wait_days", label: trans("Longest wait (days)") },
-    { key: "rating", label: trans("Average rating") },
+    { key: "short_name", label: ctrans("Engineer") },
+    { key: "assigned", label: ctrans("To do") },
+    { key: "in_progress", label: ctrans("Working on") },
+    { key: "open", label: ctrans("Still open") },
+    { key: "done", label: ctrans("Resolved") },
+    { key: "median_hours", label: ctrans("Median time to resolve (days)") },
+    { key: "longest_wait_days", label: ctrans("Longest wait (days)") },
+    { key: "rating", label: ctrans("Average rating") },
 ]
 
 const engineerColumns = (mode: "assignees" | "resolvers") =>
     mode === "resolvers" ? assigneeColumns.filter((column) => !["assigned", "in_progress", "open", "longest_wait_days"].includes(column.key)) : assigneeColumns
 
-const assigneeFilter = (mode: "assignees" | "resolvers", username: string) =>
-    mode === "resolvers" ? { assignee: username, resolved_since: props.stats.from } : { assignee: username, created_since: props.stats.from }
+const assigneeFilter = (mode: "assignees" | "resolvers", username: string, role: "assignee" | "collaborator" | "involved" = "assignee") =>
+    mode === "resolvers" ? { [role]: username, resolved_since: props.stats.from } : { [role]: username, created_since: props.stats.from }
+
+const engineerTotalFilter = (mode: "assignees" | "resolvers") =>
+    mode === "resolvers" ? { has_assignee: 1, resolved_since: props.stats.from } : { has_assignee: 1, created_since: props.stats.from }
+
+const reporterFilter = (reporterKey: string) => ({ reporter: reporterKey, created_since: props.stats.from })
 
 const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["people"] as const) : (["people", "cleared"] as const)))
 </script>
@@ -210,23 +291,37 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
         <div class="flex flex-wrap gap-3">
-            <ProcurementOverviewPill :card="{ label: trans('Open now'), description: '', icon: 'fal fa-inbox-in', value: stats.open, tone: 'amber', route: listRoute({ elements: { status: OPEN_STATUSES } }), metrics: [] }" />
-            <Link v-if="stats.oldest_open" v-tooltip="trans('Oldest open')" :href="route('grp.tickets.show', stats.oldest_open.reference)" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
-                <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-red-500" fixed-width aria-hidden="true" />{{ stats.oldest_open.age_days }} {{ trans("days") }}
+            <ProcurementOverviewPill :card="{ label: ctrans('Open now'), description: '', icon: 'fal fa-inbox-in', value: stats.open, tone: 'amber', route: listRoute({ elements: { status: OPEN_STATUSES } }), metrics: [] }" />
+            <Link v-if="stats.oldest_open" v-tooltip="ctrans('Oldest open')" :href="ticketRoute(stats.oldest_open.reference)" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+                <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-red-500" fixed-width aria-hidden="true" />{{ stats.oldest_open.age_days }} {{ ctrans("days") }}
                 <span class="border-l border-gray-200 pl-2 font-normal text-gray-500">{{ stats.oldest_open.reference }}</span>
             </Link>
         </div>
 
         <div class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-        <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" />
+        <div class="flex flex-wrap items-center gap-3">
+            <TicketsCreatedInterval :options="createdIntervals" :selected="stats.interval" class="min-w-0 flex-1" />
+            <label class="ml-auto flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+                {{ ctrans("Filter by") }}
+                <select
+                    :value="stats.assignee ?? ''"
+                    class="cursor-pointer rounded-md border-gray-300 py-1.5 pl-2 pr-8 text-sm normal-case tracking-normal text-gray-700 transition duration-200 focus:border-[--app-accent] focus:ring-[--app-accent]"
+                    :class="stats.assignee && '!border-[--app-accent] !bg-[--app-accent-soft] !text-[--app-accent-strong]'"
+                    :aria-label="ctrans('Filter by assignee')"
+                    @change="filterByAssignee(($event.target as HTMLSelectElement).value)">
+                    <option value="">{{ ctrans("All assignees") }}</option>
+                    <option v-for="option in assigneeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+            </label>
+        </div>
 
         <div class="flex flex-wrap gap-3">
-            <ProcurementOverviewPill :card="{ label: trans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" />
-            <ProcurementOverviewPill :card="{ label: trans('Resolved'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" />
-            <Link v-tooltip="trans('Median time to resolve')" :href="listUrl({ filter: { resolved_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
-                <FontAwesomeIcon icon="fal fa-stopwatch" class="text-indigo-600" fixed-width aria-hidden="true" />{{ hours(stats.median_hours) }}
+            <ProcurementOverviewPill :card="{ label: ctrans('Created'), description: '', icon: 'fal fa-ticket-alt', value: stats.created, tone: 'violet', route: listRoute({ filter: { created_since: stats.from } }), metrics: [] }" />
+            <ProcurementOverviewPill :card="{ label: ctrans('Resolved'), description: '', icon: 'fal fa-check', value: stats.done, tone: 'emerald', route: listRoute({ filter: { resolved_since: stats.from } }), metrics: [] }" />
+            <Link v-tooltip="ctrans('Median time to resolve')" :href="listUrl({ filter: { resolved_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+                <FontAwesomeIcon icon="fal fa-stopwatch" class="text-[--app-accent-strong]" fixed-width aria-hidden="true" />{{ hours(stats.median_hours) }}
             </Link>
-            <Link v-tooltip="trans('Customer satisfaction')" :href="listUrl({ filter: { rated_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
+            <Link v-tooltip="ctrans('Customer satisfaction')" :href="listUrl({ filter: { rated_since: stats.from } })" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm tabular-nums">
                 <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />{{ pillValue(stats.csat) }}<span class="font-normal text-gray-400">/5</span>
             </Link>
         </div>
@@ -235,9 +330,9 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                     <FontAwesomeIcon icon="fal fa-chart-line" class="text-pink-600" fixed-width aria-hidden="true" />
-                    {{ trans("Created vs Resolved") }}
+                    {{ ctrans("Created vs Resolved") }}
                 </span>
-                <span class="text-xs text-gray-400">{{ stats.created }} {{ trans("created") }} · {{ stats.done }} {{ trans("resolved") }}</span>
+                <span class="text-xs text-gray-400">{{ stats.created }} {{ ctrans("created") }} · {{ stats.done }} {{ ctrans("resolved") }}</span>
             </template>
             <div class="grid gap-6 lg:grid-cols-5">
                 <div class="h-72 lg:col-span-3">
@@ -246,30 +341,35 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 <div class="lg:col-span-2 lg:border-l lg:border-gray-100 lg:pl-6">
                     <p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
                         <FontAwesomeIcon icon="fal fa-chart-pie" class="text-blue-600" fixed-width aria-hidden="true" />
-                        {{ trans("Status overview") }}
-                        <span class="text-xs font-normal text-gray-400">{{ trans("Tickets created in this period") }} · <Link :href="listUrl({ filter: { created_since: stats.from } })" class="hover:text-gray-600">{{ trans("View all") }}</Link></span>
+                        {{ ctrans("Status overview") }}
+                        <span class="text-xs font-normal text-gray-400">{{ ctrans("Tickets created in this period") }} · <Link :href="listUrl({ filter: { created_since: stats.from } })" class="hover:text-gray-600">{{ ctrans("View all") }}</Link></span>
                     </p>
-                    <div class="flex flex-wrap items-center gap-6">
-                        <div class="relative h-56 w-56 shrink-0">
-                            <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="h-full" />
-                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div class="flex items-center gap-4">
+                        <div class="relative h-44 w-44 shrink-0">
+                            <Chart type="doughnut" :data="donutChart" :options="donutOptions" class="relative z-10 h-full" />
+                            <div class="absolute inset-0 z-0 flex flex-col items-center justify-center pointer-events-none">
                                 <span class="text-3xl font-bold">{{ totalTickets }}</span>
-                                <span class="text-xs text-gray-500">{{ trans("Total") }}</span>
+                                <span class="text-xs text-gray-500">{{ ctrans("Total") }}</span>
                             </div>
                         </div>
-                        <table class="text-base tabular-nums">
+                        <table class="text-sm tabular-nums">
                             <tbody>
-                                <tr v-for="row in stats.by_status.filter((status) => status.total)" :key="row.status">
-                                    <td class="py-1 pr-5">
-                                        <span class="flex items-center gap-2">
-                                            <span class="h-3 w-3 shrink-0 rounded-sm" :style="{ backgroundColor: STATUS_COLORS[row.status] ?? '#9ca3af' }" />
+                                <tr
+                                    v-for="row in stats.by_status.filter((status) => status.total)"
+                                    :key="row.status"
+                                    tabindex="0"
+                                    role="link"
+                                    class="group cursor-pointer outline-none"
+                                    @click="router.visit(listUrl({ filter: { created_since: stats.from }, elements: { status: row.status } }))"
+                                    @keydown.enter="router.visit(listUrl({ filter: { created_since: stats.from }, elements: { status: row.status } }))">
+                                    <td class="rounded-l-md py-1 pl-2 pr-5 transition duration-200 group-hover:bg-[--app-accent-soft] group-focus-visible:bg-[--app-accent-soft]">
+                                        <span class="flex items-center gap-2 transition duration-200 group-hover:text-[--app-accent-strong] group-focus-visible:text-[--app-accent-strong]">
+                                            <span class="h-3 w-3 shrink-0 rounded-sm transition duration-200 group-hover:scale-110" :style="{ backgroundColor: STATUS_COLORS[row.status] ?? '#9ca3af' }" />
                                             {{ row.label }}
                                         </span>
                                     </td>
-                                    <td class="py-1 pr-5 text-right font-medium">
-                                        <Link :href="listUrl({ filter: { created_since: stats.from }, elements: { status: row.status } })" class="hover:underline">{{ row.total }}</Link>
-                                    </td>
-                                    <td class="py-1 text-right text-gray-500">{{ totalTickets ? ((row.total / totalTickets) * 100).toFixed(1) : 0 }}%</td>
+                                    <td class="py-1 pr-5 text-right font-medium transition duration-200 group-hover:bg-[--app-accent-soft] group-hover:text-[--app-accent-strong] group-focus-visible:bg-[--app-accent-soft] group-focus-visible:text-[--app-accent-strong]">{{ row.total }}</td>
+                                    <td class="rounded-r-md py-1 pr-2 text-right text-gray-500 transition duration-200 group-hover:bg-[--app-accent-soft] group-hover:text-[--app-accent-strong] group-focus-visible:bg-[--app-accent-soft] group-focus-visible:text-[--app-accent-strong]">{{ totalTickets ? ((row.total / totalTickets) * 100).toFixed(1) : 0 }}%</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -283,7 +383,7 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 <template v-if="box === 'people'">
                     <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                         <FontAwesomeIcon icon="fal fa-users" class="text-violet-600" fixed-width aria-hidden="true" />
-                        {{ trans("People") }}
+                        {{ ctrans("People") }}
                     </span>
                     <span class="flex items-center gap-1.5">
                         <button
@@ -291,19 +391,30 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                             :key="tab.key"
                             type="button"
                             class="rounded-full border px-2.5 py-px text-xs"
-                            :class="peopleTab === tab.key ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
+                            :class="peopleTab === tab.key ? 'border-[--app-accent] bg-[--app-accent-soft] text-[--app-accent-strong]' : 'border-gray-200 text-gray-500 hover:bg-gray-50'"
                             @click="peopleTab = tab.key as 'assignees' | 'reporters'">
                             {{ tab.label }}
                         </button>
                     </span>
-                    <span class="text-xs text-gray-400">{{ trans("Tickets created in this period") }}</span>
+                    <span v-if="peopleTab === 'assignees'" class="ml-2 inline-flex overflow-hidden rounded-full border border-gray-200 text-xs">
+                        <button
+                            v-for="tab in involvementTabs"
+                            :key="tab.key"
+                            type="button"
+                            class="px-2.5 py-px transition duration-200"
+                            :class="involvement === tab.key ? 'bg-[--app-accent-soft] text-[--app-accent-strong]' : 'text-gray-500 hover:bg-gray-50'"
+                            @click="involvement = tab.key">
+                            {{ tab.label }}
+                        </button>
+                    </span>
+                    <span class="text-xs text-gray-400">{{ ctrans("Tickets created in this period") }}</span>
                 </template>
                 <template v-else>
                     <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                         <FontAwesomeIcon icon="fal fa-check" class="text-emerald-600" fixed-width aria-hidden="true" />
-                        {{ trans("Cleared") }}
+                        {{ ctrans("Cleared") }}
                     </span>
-                    <span class="text-xs text-gray-400">{{ trans("Older tickets, created before this period, resolved in it") }}</span>
+                    <span class="text-xs text-gray-400">{{ ctrans("Older tickets, created before this period, resolved in it") }}</span>
                 </template>
             </template>
 
@@ -319,35 +430,38 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                 <tbody>
                     <tr v-for="row in sortedReporters" :key="row.key" class="border-t border-gray-100">
                         <td class="px-4 py-2 font-medium">
-                            {{ row.name ?? "-" }}
-                            <span v-if="!row.is_staff" class="ml-1 text-xs text-gray-400">{{ trans("Customer") }}</span>
+                            <span class="inline-flex items-center gap-2">
+                                <TicketUserAvatar :name="row.name ?? '-'" :avatar="row.avatar" size="sm" />
+                                {{ row.name ?? "-" }}
+                                <span v-if="!row.is_staff" class="text-xs font-normal text-gray-400">{{ ctrans("Customer") }}</span>
+                            </span>
                         </td>
-                        <td class="px-4 py-2 text-right">{{ row.created }}<span class="inline-block w-16 text-gray-400">{{ sharePercent(row.created, stats.assignees_total.created) }}</span></td>
-                        <td class="px-4 py-2 text-right">{{ row.open }}</td>
-                        <td class="px-4 py-2 text-right">{{ row.resolved }}</td>
-                        <td class="px-4 py-2 text-right"><span class="inline-block w-12 pr-2 text-[9px] text-gray-400">{{ sharePercent(row.cancelled, row.created) }}</span>{{ row.cancelled }}</td>
+                        <td class="px-4 py-2 text-right"><Link v-if="row.created" :href="listUrl({ filter: reporterFilter(row.key) })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row.created }}</Link><span v-else>{{ row.created }}</span><span class="inline-block w-16 text-gray-400">{{ sharePercent(row.created, stats.assignees_total.created) }}</span></td>
+                        <td class="px-4 py-2 text-right"><Link v-if="row.open" :href="listUrl({ filter: reporterFilter(row.key), elements: { status: OPEN_STATUSES } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row.open }}</Link><span v-else>{{ row.open }}</span></td>
+                        <td class="px-4 py-2 text-right"><Link v-if="row.resolved" :href="listUrl({ filter: reporterFilter(row.key), elements: { status: 'resolved' } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row.resolved }}</Link><span v-else>{{ row.resolved }}</span></td>
+                        <td class="px-4 py-2 text-right"><span class="inline-block w-12 pr-2 text-[9px] text-gray-400">{{ sharePercent(row.cancelled, row.created) }}</span><Link v-if="row.cancelled" :href="listUrl({ filter: reporterFilter(row.key), elements: { status: 'cancelled' } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row.cancelled }}</Link><span v-else>{{ row.cancelled }}</span></td>
                         <td class="px-4 py-2 text-right">{{ inDays(row.median_hours) }}</td>
                         <td class="px-4 py-2 text-right">{{ row.longest_wait_days ?? "-" }}</td>
                         <td class="px-4 py-2 text-right">
-                            <template v-if="row.rating !== null">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></template>
+                            <Link v-if="row.rating !== null" :href="listUrl({ filter: { ...reporterFilter(row.key), rated: 1 } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></Link>
                             <span v-else>-</span>
                         </td>
                     </tr>
                     <tr v-if="!stats.reporters.length">
-                        <td colspan="8" class="px-4 py-6 text-center text-gray-400">{{ trans("No tickets in this period") }}</td>
+                        <td colspan="8" class="px-4 py-6 text-center text-gray-400">{{ ctrans("No tickets in this period") }}</td>
                     </tr>
                 </tbody>
                 <tfoot v-if="stats.reporters.length" class="border-t-2 border-gray-200 font-semibold">
                     <tr>
-                        <td class="px-4 py-2">{{ trans("Total") }}</td>
-                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.created }}<span class="inline-block w-16" /></td>
-                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.open }}</td>
-                        <td class="px-4 py-2 text-right">{{ stats.assignees_total.resolved }}</td>
-                        <td class="px-4 py-2 text-right"><span class="inline-block w-12 pr-2 text-[9px] text-gray-400">{{ sharePercent(stats.assignees_total.cancelled, stats.assignees_total.created) }}</span>{{ stats.assignees_total.cancelled }}</td>
+                        <td class="px-4 py-2">{{ ctrans("Total") }}</td>
+                        <td class="px-4 py-2 text-right"><Link v-if="stats.assignees_total.created" :href="listUrl({ filter: { created_since: stats.from } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ stats.assignees_total.created }}</Link><span v-else>{{ stats.assignees_total.created }}</span><span class="inline-block w-16" /></td>
+                        <td class="px-4 py-2 text-right"><Link v-if="stats.assignees_total.open" :href="listUrl({ filter: { created_since: stats.from }, elements: { status: OPEN_STATUSES } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ stats.assignees_total.open }}</Link><span v-else>{{ stats.assignees_total.open }}</span></td>
+                        <td class="px-4 py-2 text-right"><Link v-if="stats.assignees_total.resolved" :href="listUrl({ filter: { created_since: stats.from }, elements: { status: 'resolved' } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ stats.assignees_total.resolved }}</Link><span v-else>{{ stats.assignees_total.resolved }}</span></td>
+                        <td class="px-4 py-2 text-right"><span class="inline-block w-12 pr-2 text-[9px] text-gray-400">{{ sharePercent(stats.assignees_total.cancelled, stats.assignees_total.created) }}</span><Link v-if="stats.assignees_total.cancelled" :href="listUrl({ filter: { created_since: stats.from }, elements: { status: 'cancelled' } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ stats.assignees_total.cancelled }}</Link><span v-else>{{ stats.assignees_total.cancelled }}</span></td>
                         <td class="px-4 py-2 text-right">{{ inDays(stats.assignees_total.median_hours) }}</td>
                         <td class="px-4 py-2 text-right">{{ stats.assignees_total.longest_wait_days ?? "-" }}</td>
                         <td class="px-4 py-2 text-right">
-                            <template v-if="stats.assignees_total.rating !== null">{{ stats.assignees_total.rating }}<span class="text-gray-400">/5 ({{ stats.assignees_total.ratings }})</span></template>
+                            <Link v-if="stats.assignees_total.rating !== null" :href="listUrl({ filter: { created_since: stats.from, rated: 1 } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ stats.assignees_total.rating }}<span class="text-gray-400">/5 ({{ stats.assignees_total.ratings }})</span></Link>
                             <span v-else>-</span>
                         </td>
                     </tr>
@@ -368,48 +482,47 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
                     <tr v-for="row in engineerRows(mode)" :key="row.username" class="border-t border-gray-100">
                         <td class="px-4 py-2 font-medium">
                             <span class="inline-flex items-center gap-2" v-tooltip="{ content: row.name, delay: 0 }">
-                                <img v-if="row.avatar?.original" :src="row.avatar.original" class="h-6 w-6 rounded-full object-cover" />
-                                <span v-else class="h-6 w-6 rounded-full bg-gray-300 inline-block" />
+                                <TicketUserAvatar :name="row.name" :avatar="row.avatar" size="sm" />
                                 {{ row.short_name }}
                             </span>
                         </td>
                         <template v-if="mode === 'assignees'">
                             <td v-for="status in ['assigned', 'in_progress'] as const" :key="status" class="px-4 py-2 text-right">
-                                <Link v-if="row[status]" :href="listUrl({ filter: assigneeFilter(mode, row.username), elements: { status } })" class="hover:underline">{{ row[status] }}</Link>
+    <Link v-if="row[status]" :href="listUrl({ filter: assigneeFilter(mode, row.username, involvementFor(mode)), elements: { status: status } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row[status] }}</Link>
                                 <span v-else>{{ row[status] }}</span>
                             </td>
                         </template>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">
-                            <Link v-if="row.open" :href="listUrl({ filter: assigneeFilter(mode, row.username), elements: { status: OPEN_STATUSES } })" class="hover:underline">{{ row.open }}</Link>
+<Link v-if="row.open" :href="listUrl({ filter: assigneeFilter(mode, row.username, involvementFor(mode)), elements: { status: OPEN_STATUSES } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row.open }}</Link>
                             <span v-else>{{ row.open }}</span>
                         </td>
                         <td class="px-4 py-2 text-right">
-                            <Link v-if="row.done" :href="listUrl({ filter: assigneeFilter(mode, row.username), elements: { status: 'resolved' } })" class="hover:underline">{{ row.done }}</Link>
+<Link v-if="row.done" :href="listUrl({ filter: assigneeFilter(mode, row.username, involvementFor(mode)), elements: { status: 'resolved' } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row.done }}</Link>
                             <span v-else>{{ row.done }}</span>
                             <span class="inline-block w-16 text-gray-400">{{ sharePercent(row.done, engineerTotal(mode).done) }}</span>
                         </td>
                         <td class="px-4 py-2 text-right">{{ inDays(row.median_hours) }}</td>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ row.longest_wait_days ?? "-" }}</td>
                         <td class="px-4 py-2 text-right">
-                            <template v-if="row.rating !== null">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></template>
+                            <Link v-if="row.rating !== null" :href="listUrl({ filter: { ...assigneeFilter(mode, row.username), rated: 1 } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ row.rating }}<span class="text-gray-400">/5 ({{ row.ratings }})</span></Link>
                             <span v-else>-</span>
                         </td>
                     </tr>
                     <tr v-if="!engineerRows(mode).length">
-                        <td :colspan="engineerColumns(mode).length" class="px-4 py-6 text-center text-gray-400">{{ trans("No tickets in this period") }}</td>
+                        <td :colspan="engineerColumns(mode).length" class="px-4 py-6 text-center text-gray-400">{{ ctrans("No tickets in this period") }}</td>
                     </tr>
                 </tbody>
-                <tfoot v-if="engineerRows(mode).length" class="border-t-2 border-gray-200 font-semibold">
+                <tfoot v-if="engineerRows(mode).length && involvementFor(mode) === 'assignee'" class="border-t-2 border-gray-200 font-semibold">
                     <tr>
-                        <td class="px-4 py-2">{{ trans("Total") }}</td>
-                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).assigned }}</td>
-                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).in_progress }}</td>
-                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).open }}</td>
-                        <td class="px-4 py-2 text-right">{{ engineerTotal(mode).done }}<span class="inline-block w-16" /></td>
+                        <td class="px-4 py-2">{{ ctrans("Total") }}</td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right"><Link v-if="engineerTotal(mode).assigned" :href="listUrl({ filter: engineerTotalFilter(mode), elements: { status: 'assigned' } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ engineerTotal(mode).assigned }}</Link><span v-else>{{ engineerTotal(mode).assigned }}</span></td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right"><Link v-if="engineerTotal(mode).in_progress" :href="listUrl({ filter: engineerTotalFilter(mode), elements: { status: 'in_progress' } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ engineerTotal(mode).in_progress }}</Link><span v-else>{{ engineerTotal(mode).in_progress }}</span></td>
+                        <td v-if="mode === 'assignees'" class="px-4 py-2 text-right"><Link v-if="engineerTotal(mode).open" :href="listUrl({ filter: engineerTotalFilter(mode), elements: { status: OPEN_STATUSES } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ engineerTotal(mode).open }}</Link><span v-else>{{ engineerTotal(mode).open }}</span></td>
+                        <td class="px-4 py-2 text-right"><Link v-if="engineerTotal(mode).done" :href="listUrl({ filter: engineerTotalFilter(mode), elements: { status: 'resolved' } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ engineerTotal(mode).done }}</Link><span v-else>{{ engineerTotal(mode).done }}</span><span class="inline-block w-16" /></td>
                         <td class="px-4 py-2 text-right">{{ inDays(engineerTotal(mode).median_hours) }}</td>
                         <td v-if="mode === 'assignees'" class="px-4 py-2 text-right">{{ engineerTotal(mode).longest_wait_days ?? "-" }}</td>
                         <td class="px-4 py-2 text-right">
-                            <template v-if="engineerTotal(mode).rating !== null">{{ engineerTotal(mode).rating }}<span class="text-gray-400">/5 ({{ engineerTotal(mode).ratings }})</span></template>
+                            <Link v-if="engineerTotal(mode).rating !== null" :href="listUrl({ filter: { ...engineerTotalFilter(mode), rated: 1 } })" class="text-[--app-accent-strong] underline-offset-2 transition duration-200 hover:text-[--app-accent-deep] hover:underline">{{ engineerTotal(mode).rating }}<span class="text-gray-400">/5 ({{ engineerTotal(mode).ratings }})</span></Link>
                             <span v-else>-</span>
                         </td>
                     </tr>
@@ -423,9 +536,9 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                     <FontAwesomeIcon icon="fal fa-star" class="text-sky-600" fixed-width aria-hidden="true" />
-                    {{ trans("Customer satisfaction") }}
+                    {{ ctrans("Customer satisfaction") }}
                 </span>
-                <span class="text-xs text-gray-400">{{ trans("Average rating per month, last 12 months") }}</span>
+                <span class="text-xs text-gray-400">{{ ctrans("Average rating per month, last 12 months") }}</span>
             </template>
             <div class="h-56">
                 <Chart type="bar" :data="csatChart" :options="csatOptions" class="h-full" />

@@ -166,15 +166,15 @@ const handleSubmit = () => {
         <FontAwesomeIcon
           v-if="form.processing"
           icon="fad fa-spinner-third"
-          class="text-2xl animate-spin"
+          class="text-2xl animate-spin" fixed-width
         />
-         <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+         <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
     </div>
 
       <FontAwesomeIcon
         v-else
         icon="fas fa-question"
-        class="h-8 text-gray-300"
+        class="h-8 text-gray-300" fixed-width
       />
     </span>
   </div>

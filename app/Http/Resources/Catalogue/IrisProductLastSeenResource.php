@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
-class IrisProductLastSeenResource extends IrisLuigiBoxRecommendationResource
+class IrisProductLastSeenResource extends IrisProductRecommendationResource
 {
     public function toArray($request): array
     {

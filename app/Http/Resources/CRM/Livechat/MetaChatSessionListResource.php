@@ -7,6 +7,8 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Enums\CRM\Livechat\ChatTopicEnum;
+use App\Actions\Helpers\Country\GetCountryCodeFromPhone;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -78,6 +80,9 @@ class MetaChatSessionListResource extends JsonResource
                 'summary'     => Arr::get($summaryData, 'summary'),
                 'key_points'  => Arr::get($summaryData, 'key_points', []),
                 'sentiment'   => Arr::get($summaryData, 'sentiment', 'neutral'),
+                'status'      => Arr::get($summaryData, 'status'),
+                'topic'       => $this->topic,
+                'topic_label' => ChatTopicEnum::tryFrom((string) $this->topic)?->label(),
             ];
         }
 
@@ -87,6 +92,7 @@ class MetaChatSessionListResource extends JsonResource
             'status' => $status,
             'guest_identifier' => $this->guest_identifier ?? $this->phone_number,
             'phone_number' => $this->phone_number,
+            'country_code' => GetCountryCodeFromPhone::run($this->phone_number),
             'created_at' => $this->created_at,
             'priority' => $this->priority,
             'contact_name' => $customer?->contact_name
@@ -111,6 +117,9 @@ class MetaChatSessionListResource extends JsonResource
             // customer rather than to a web user account.
             'customer' => $customer ? [
                 'id' => $customer->id,
+                // Same key the website and email rows carry, so one row template links the
+                // name through the majordomo redirect whatever channel it arrived on.
+                'customer_id' => $customer->id,
                 'name' => $customer->contact_name ?? $customer->name,
                 'slug' => $customer->slug,
                 'email' => $customer->email,
@@ -144,6 +153,11 @@ class MetaChatSessionListResource extends JsonResource
                 ]
             ] : null,
 
+            'open_tickets_count'     => (int) ($this->open_tickets_count ?? 0),
+            'blocking_tickets_count' => (int) ($this->blocking_tickets_count ?? 0),
+
+            'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
+
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,
                 'user_id' => $activeAssignment->chatAgent?->user_id,
@@ -151,6 +165,9 @@ class MetaChatSessionListResource extends JsonResource
             ] : null,
 
             'is_spam'        => (bool) $this->is_spam,
+            'customer_suggestion' => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($this->resource),
+            'noise'          => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
+            'claim'          => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
 
             'unread_count' => (int) ($this->unread_count ?? 0),

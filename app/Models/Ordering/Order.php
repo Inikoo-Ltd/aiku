@@ -16,6 +16,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use Illuminate\Support\Arr;
 use App\Enums\Ordering\Order\OrderStatusEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
@@ -38,6 +39,7 @@ use App\Models\Helpers\Currency;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Reviews\OrderReviewStat;
+use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
@@ -78,6 +80,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property OrderStateEnum $state
  * @property OrderStatusEnum $status
  * @property OrderHandingTypeEnum $handing_type
+ * @property bool $handled_in_aurora
  * @property bool $customer_locked
  * @property bool $billing_locked
  * @property bool $delivery_locked
@@ -230,6 +233,7 @@ class Order extends Model implements HasMedia, Auditable
     public const PAY_SETTLED_STATUSES = [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED];
 
     protected $casts = [
+        'handled_in_aurora'             => 'boolean',
         'data'                          => 'array',
         'payment_data'                  => 'array',
         'post_submit_modification_data' => 'array',
@@ -429,6 +433,11 @@ class Order extends Model implements HasMedia, Auditable
             ->saveSlugsTo('slug');
     }
 
+    public function isPartnerOrder(): bool
+    {
+        return OrgPartner::where('customer_id', $this->customer_id)->exists();
+    }
+
     public function customerClient(): BelongsTo
     {
         return $this->belongsTo(CustomerClient::class);
@@ -519,6 +528,17 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(Currency::class);
     }
 
+    /**
+     * The tax a marketplace (Faire) actually charged the retailer. When set it is the order's
+     * and its invoice's tax, whatever Aiku's own per-line rates would add up to.
+     */
+    public function getMarketplaceTaxAmount(): ?float
+    {
+        $amount = Arr::get($this->data, 'marketplace_tax_amount');
+
+        return is_null($amount) ? null : (float)$amount;
+    }
+
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
@@ -596,6 +616,11 @@ class Order extends Model implements HasMedia, Auditable
      * Placed on a platform without the customer watching, so nobody was at a checkout to see a
      * payment fail. These get the on-hold notice instead of a confirmation when unpaid (HELP-3116).
      */
+    public function isDeclinedPlatformRequest(): bool
+    {
+        return $this->state === OrderStateEnum::CANCELLED && filled(Arr::get($this->data, 'declined_reason'));
+    }
+
     public function isPlacedOnAChannel(): bool
     {
         return $this->shop->type === ShopTypeEnum::DROPSHIPPING
@@ -629,4 +654,9 @@ class Order extends Model implements HasMedia, Auditable
             ->withTimestamps();
     }
 
+
+    public function isLockedInAurora(): bool
+    {
+        return $this->handled_in_aurora && !in_array($this->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED]);
+    }
 }

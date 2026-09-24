@@ -85,6 +85,8 @@ class ProductsExport implements FromArray, ShouldAutoSize, WithHeadings
             'image_2'               => ['heading' => '2nd image', 'select' => self::imageExpression(1)],
             'image_3'               => ['heading' => '3rd image', 'select' => self::imageExpression(2)],
             'created_at'            => ['heading' => 'Creation date', 'select' => 'products.created_at'],
+            'marketing_weight_unit' => ['heading' => 'Unit weight (marketing) unit', 'select' => "CASE WHEN products.marketing_weight IS NOT NULL THEN 'g' END"],
+            'gross_weight_unit'     => ['heading' => 'Gross weight unit', 'select' => "CASE WHEN products.gross_weight IS NOT NULL THEN 'g' END"],
         ];
     }
 

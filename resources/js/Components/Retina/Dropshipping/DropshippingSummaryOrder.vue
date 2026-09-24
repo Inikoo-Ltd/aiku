@@ -344,14 +344,14 @@ const onPayWithBalance = () => {
                             <div
                                 class="flex items-center gap-1 rounded-md border border-amber-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-amber-700"
                                 v-tooltip="trans('overall review')">
-                                <FontAwesomeIcon :icon="faStar" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faStar" class="text-[10px]" fixed-width />
                                 <span>{{ review_summary?.overall_review }}/1</span>
                             </div>
 
                             <div
                                 class="flex items-center gap-1 rounded-md border border-blue-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-blue-700"
                                 v-tooltip="trans('family review')">
-                                <FontAwesomeIcon :icon="faFolder" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faFolder" class="text-[10px]" fixed-width />
                                 <span>
                                     {{ review_summary?.family_review }}/{{
                                         review_summary?.total_family_review
@@ -362,7 +362,7 @@ const onPayWithBalance = () => {
                             <div
                                 class="flex items-center gap-1 rounded-md border border-emerald-200 bg-white/70 px-2 py-1 text-[11px] font-medium text-emerald-700"
                                 v-tooltip="trans('product review')">
-                                <FontAwesomeIcon :icon="faCube" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="faCube" class="text-[10px]" fixed-width />
                                 <span>
                                     {{ review_summary?.product_review }}/{{
                                         review_summary?.total_product_review

@@ -43,10 +43,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $shop_type
  * @property int|null $webpage_id
  * @property string|null $webpage_canonical_url
- * @property int|null $webpage_website_id
- * @property int|null $webpage_group_id
- * @property int|null $webpage_organisation_id
- * @property int|null $webpage_shop_id
  * @property \App\Models\Helpers\Media|null $productImage
  */
 class RetinaEcomBasketTransactionsResources extends JsonResource
@@ -58,10 +54,8 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
         $transaction = $this;
 
         $webpageUrl    = null;
-        $luigiIdentity = null;
         if ($transaction->model_type === 'Product' && $transaction->webpage_id) {
             $webpageUrl    = Webpage::canonicalUrlForEnvironment($transaction->webpage_canonical_url, fn () => ShopTypeEnum::from($transaction->shop_type));
-            $luigiIdentity = "$transaction->webpage_group_id:$transaction->webpage_organisation_id:$transaction->webpage_shop_id:$transaction->webpage_website_id:$transaction->webpage_id";
         }
 
         return [
@@ -86,7 +80,6 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'available_quantity'    => $transaction->available_quantity,
             'currency_code'       => $transaction->currency_code,
             'webpage_url'         => $webpageUrl,
-            'luigi_identity'      => $luigiIdentity,
             'offers_data'         => $transaction->offers_data,
             'is_cut_view'         => $transaction->is_cut_view,
             'held_quantity'       => (float) Arr::get($transaction->data, SyncBasketLinesWithProductStock::HELD_QUANTITY_KEY, 0),

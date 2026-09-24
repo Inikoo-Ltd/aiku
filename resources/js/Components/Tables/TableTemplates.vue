@@ -31,6 +31,13 @@ const locale = inject("locale", aikuLocaleStructure);
 function mailshotRoute(mailshot: Mailshot) {
     // console.log(route().current())
     switch (route().current()) {
+        case "grp.org.shops.show.dashboard.comms.templates.index":
+            return route(
+                "grp.org.shops.show.dashboard.comms.templates.workshop",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    mailshot.slug]);
         case "grp.org.shops.show.marketing.templates.index":
             return route(
                 "grp.org.shops.show.marketing.templates.workshop",
@@ -73,7 +80,7 @@ function mailshotRoute(mailshot: Mailshot) {
                     v-tooltip="mailshot.has_compiled_layout ? null : ctrans('Please save the email template by clicking the SAVE button in the BeeFree workspace before it can be used')"
                     class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium text-slate-600 rounded hover:bg-slate-200 cursor-pointer transition">
                     <FontAwesomeIcon :icon="mailshot.has_compiled_layout ? faCheck : faHourglassStart" class="mr-1"
-                        :style="{ color: mailshot.has_compiled_layout ? '#22c55e' : '#f59e0b' }" />
+                        :style="{ color: mailshot.has_compiled_layout ? '#22c55e' : '#f59e0b' }" fixed-width />
                     {{ mailshot.has_compiled_layout ? ctrans("Ready") : ctrans("Temporary Save") }}
                 </span>
             </div>

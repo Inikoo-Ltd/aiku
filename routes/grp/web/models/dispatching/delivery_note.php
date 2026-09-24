@@ -11,6 +11,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNotePackaging;
 use App\Actions\Dispatching\DeliveryNoteLeaflet\PrintDeliveryNoteLeaflet;
 use App\Actions\Dispatching\DeliveryNoteLeaflet\PullDeliveryNoteLeafletMediaFromPreference;
 use App\Actions\Dispatching\DeliveryNoteLeaflet\PrintDeliveryNoteLeaflets;
+use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Dispatching\DeliveryNote\UI\ExportDeliveryNoteTariffCodes;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
@@ -29,6 +30,7 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UnpackDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
+use App\Actions\Dispatching\DeliveryNote\SkipDeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToHandlingBlocked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
@@ -43,7 +45,7 @@ use App\Actions\Dropshipping\Tiktok\Order\ProcessTiktokOrderShipment;
 use App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote;
 use Illuminate\Support\Facades\Route;
 
-Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
+Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {
     Route::name('return.')->prefix('return')->group(function () {
         Route::patch('process', ProcessReturnDeliveryNote::class)->name('process');
     });
@@ -65,6 +67,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
 
     Route::patch('attach-trolley/{trolley:id}', AttachTrolleyToDeliveryNote::class)->name('trolleys.attach')->withoutScopedBindings();
     Route::patch('detach-trolley/{trolley:id}', DetachTrolleyFromDeliveryNote::class)->name('trolleys.detach');
+    Route::patch('skip-box-packing-list', SkipDeliveryNoteBoxPackingList::class)->name('box_packing_list.skip');
 
 
     Route::name('state.')->prefix('state')->group(function () {

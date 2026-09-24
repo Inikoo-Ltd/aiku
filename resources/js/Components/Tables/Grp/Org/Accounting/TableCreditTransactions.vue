@@ -115,6 +115,13 @@ function customerRoute(credit_transaction?: CreditTransaction){
     }
 }
 
+function creditNoteRoute(credit_transaction: CreditTransaction) {
+    return route('grp.org.accounting.refunds.show', {
+        organisation: credit_transaction.org_slug ?? (route().params as RouteParams).organisation,
+        refund: credit_transaction.credit_note_slug
+    })
+}
+
 // Function to open refund modal
 function openRefundModal(transaction: CreditTransaction) {
     selectedTransaction.value = transaction
@@ -179,6 +186,16 @@ function createRefundRoute(transaction: CreditTransaction) {
                     {{ credit_transaction.type }}
                 </div>
                 <NotesDisplay v-if="credit_transaction.notes" :item="credit_transaction" reference-field="type" :class="'ml-3'"/>
+            </div>
+        </template>
+        <template #cell(credit_note_reference)="{ item: credit_transaction }">
+            <div v-if="credit_transaction.credit_note_slug">
+                <Link :href="creditNoteRoute(credit_transaction)" class="primaryLink">
+                    {{ credit_transaction.credit_note_reference }}
+                </Link>
+                <div v-if="credit_transaction.requested_by" class="text-xs text-gray-500">
+                    {{ trans('Requested by') }} {{ credit_transaction.requested_by }}
+                </div>
             </div>
         </template>
         <template #cell(order_reference)="{ item: credit_transaction }">

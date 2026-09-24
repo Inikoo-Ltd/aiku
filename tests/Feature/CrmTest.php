@@ -86,6 +86,8 @@ use App\Models\CRM\PollOption;
 use App\Models\CRM\PollReply;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
+use App\Models\CRM\WebUserLogin;
+use App\Models\CRM\WebUserFailedLogin;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
@@ -93,7 +95,9 @@ use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Queue;
@@ -954,6 +958,54 @@ test('UI show customer web users', function () {
     });
 });
 
+test('UI show customer web users logins tab', function () {
+    $webUser = WebUser::first();
+
+    WebUserLogin::create([
+        'date'        => now(),
+        'web_user_id' => $webUser->id,
+        'source'      => 'A',
+    ]);
+
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $webUser->customer->slug,
+        $webUser->slug
+    ]).'?tab=logins');
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/WebUser')
+            ->has('logins.data', 1);
+    });
+});
+
+test('UI show customer web users failed logins tab', function () {
+    $webUser = WebUser::first();
+
+    WebUserFailedLogin::create([
+        'failed_at'   => now(),
+        'website_id'  => $webUser->website_id,
+        'username'    => $webUser->username,
+        'web_user_id' => $webUser->id,
+        'source'      => 'A',
+    ]);
+
+    $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $webUser->customer->slug,
+        $webUser->slug
+    ]).'?tab=failed_logins');
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/WebUser')
+            ->has('failed_logins.data', 1);
+    });
+});
+
 test('UI Edit customer web users', function () {
     $webUser  = WebUser::first();
     $response = $this->get(route('grp.org.shops.show.crm.customers.show.web_users.edit', [
@@ -1709,4 +1761,18 @@ test('repair moves never-validated australian tax numbers to the customer countr
     expect($customer->refresh()->taxNumber->country_code)->toBe('IT')
         ->and($customer->taxNumber->status)->not->toBe(TaxNumberStatusEnum::UNKNOWN)
         ->and($repair->query()->where('tax_numbers.owner_id', $customer->id)->exists())->toBeFalse();
+});
+
+test('a shop has one partner customer per organisation', function () {
+    DB::beginTransaction();
+    $partnerCustomers = [
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition())->id,
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition())->id,
+    ];
+    DB::table('customers')->where('id', $partnerCustomers[0])->update(['as_organisation_id' => $this->organisation->id]);
+
+    expect(fn () => DB::table('customers')->where('id', $partnerCustomers[1])->update(['as_organisation_id' => $this->organisation->id]))
+        ->toThrow(UniqueConstraintViolationException::class);
+
+    DB::rollBack();
 });

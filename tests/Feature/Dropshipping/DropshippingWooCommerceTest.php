@@ -33,12 +33,16 @@ use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWoo
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkDispatchProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
+use Illuminate\Support\Facades\Redis;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
 use App\Events\UploadProductToSalesChannelProgressEvent;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
 use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
+use Illuminate\Http\Client\ConnectionException;
+use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
 use App\Actions\Maintenance\Dropshipping\RepairWooChannelReconnects;
@@ -482,6 +486,25 @@ test('re-authorisation writes the new keys on the existing user', function () {
     expect($wooCommerceUser->fresh()->consumer_key)->toBe('ck_new')
         ->and($wooCommerceUser->fresh()->consumer_secret)->toBe('cs_new')
         ->and($wooCommerceUser->customerSalesChannel->fresh()->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED);
+});
+
+test('re-authorisation answers WooCommerce without waiting for the store', function () {
+    Queue::fake();
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $token = ReAuthorizeRetinaWooCommerceUser::make()->storeWooAuthorizationToken(['woo_commerce_user_id' => $wooCommerceUser->id]);
+
+    $timedOut = fn () => throw new ConnectionException('cURL error 28: Connection timed out');
+    wooFake(['GET settings' => $timedOut, 'GET orders' => $timedOut]);
+
+    postJson(route('webhooks.woo.callback'), [
+        'user_id'         => $token,
+        'consumer_key'    => 'ck_slow',
+        'consumer_secret' => 'cs_slow',
+        'key_permissions' => 'read_write',
+    ])->assertSuccessful();
+
+    expect($wooCommerceUser->fresh()->consumer_key)->toBe('ck_slow');
+    CheckWooChannel::assertPushed(fn (CheckWooChannel $job, array $arguments) => $arguments[0]->id === $wooCommerceUser->id);
 });
 
 test('the order webhook only queues a fetch, its payload is never trusted', function () {
@@ -1297,4 +1320,53 @@ test('a bulk upload shares one progress counter across its chunks and a killed p
     StoreNewProductToCurrentWooCommerce::make()->jobFailed(new RuntimeException('killed'), $wooCommerceUser, $portfolio, false, $bulkProgress);
 
     Event::assertDispatched(UploadProductToSalesChannelProgressEvent::class, fn ($event) => $event->statistics === ['total' => 1, 'success' => 0, 'fail' => 1]);
+});
+
+test('a created product is trusted from the create reply so a slow store is not asked again', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'aw-created-slow');
+
+    wooFake([
+        'POST products'    => Http::response(wooProduct(802, ['sku' => 'aw-created-slow']), 201),
+        'GET products/802' => Http::response('<html>Service Unavailable</html>', 503),
+    ]);
+
+    StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio);
+    $portfolio->refresh();
+
+    expect(wooSent('GET', 'products/802'))->toBeEmpty()
+        ->and($portfolio->platform_product_id)->toBe('802')
+        ->and($portfolio->platform_status)->toBeTrue()
+        ->and($portfolio->errors_response)->toBeNull()
+        ->and(Arr::get($portfolio->data, 'woo_product.id'))->toBe(802);
+});
+
+test('a product upload waits for a free slot when the store already has its maximum of creates running', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'aw-store-busy');
+    $funnel          = 'woo_product_create_'.$wooCommerceUser->id;
+
+    wooFake();
+
+    $job = Mockery::mock(JobDecorator::class);
+    $job->shouldReceive('release')->once()->with(StoreNewProductToCurrentWooCommerce::WAIT_FOR_SLOT_SECONDS);
+
+    $holdSlots = function (int $left) use (&$holdSlots, $funnel, $job, $wooCommerceUser, $portfolio) {
+        if ($left === 0) {
+            StoreNewProductToCurrentWooCommerce::make()->asJob($job, $wooCommerceUser, $portfolio, false);
+
+            return;
+        }
+
+        Redis::funnel($funnel)
+            ->limit(StoreNewProductToCurrentWooCommerce::MAX_CONCURRENT_CREATES_PER_STORE)
+            ->releaseAfter(60)
+            ->block(0)
+            ->then(fn () => $holdSlots($left - 1));
+    };
+
+    $holdSlots(StoreNewProductToCurrentWooCommerce::MAX_CONCURRENT_CREATES_PER_STORE);
+
+    expect(wooSent('POST', 'products'))->toBeEmpty()
+        ->and($portfolio->refresh()->platform_status)->toBeFalse();
 });

@@ -15,8 +15,10 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Decorators\JobDecorator;
 
 class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeUnique
 {
@@ -25,6 +27,17 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
 
     public string $jobQueue = 'woo';
 
+    public int $jobMaxExceptions = 2;
+
+    /**
+     * A shared host serves few requests at once and each create downloads every image, so a bulk
+     * upload sending one request per worker stalls the store past the timeout and holds the shared
+     * dropshipping workers meanwhile. ponytail: fixed cap for every store, per-channel setting if a
+     * host needs lower.
+     */
+    public const int MAX_CONCURRENT_CREATES_PER_STORE = 4;
+
+    public const int WAIT_FOR_SLOT_SECONDS = 20;
 
     public function getJobUniqueId(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): string
     {
@@ -62,6 +75,27 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
         }
 
         return $portfolio;
+    }
+
+    /**
+     * Waiting for a slot releases the job instead of blocking a worker; a release is an attempt, so
+     * the job lives by retryUntil and only real exceptions count against it.
+     */
+    public function asJob(JobDecorator $job, WooCommerceUser $wooCommerceUser, Portfolio $portfolio, bool $checkConnection = true, ?array $bulkProgress = null): void
+    {
+        Redis::funnel('woo_product_create_'.$wooCommerceUser->id)
+            ->limit(self::MAX_CONCURRENT_CREATES_PER_STORE)
+            ->releaseAfter(StoreWooCommerceProduct::CREATE_TIMEOUT_SECONDS * 3)
+            ->block(0)
+            ->then(
+                fn () => $this->handle($wooCommerceUser, $portfolio, $checkConnection, $bulkProgress),
+                fn () => $job->release(self::WAIT_FOR_SLOT_SECONDS)
+            );
+    }
+
+    public function getJobRetryUntil(): \DateTimeInterface
+    {
+        return now()->addHours(6);
     }
 
     /**

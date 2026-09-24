@@ -186,7 +186,7 @@ watch(freeQuantityMax, (max) => {
 
                 <div class="space-y-2">
                     <label class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer name') }}:
                     </label>
                     <PureInput v-model="offerLabel" :placeholder="trans('Enter offer name')" />
@@ -194,7 +194,7 @@ watch(freeQuantityMax, (max) => {
 
                 <div class="space-y-2">
                     <div class="font-medium mb-2 flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Rule') }}:
                         <InformationIcon :information="trans('Customer buys any mix of products in this family and gets the cheapest ones free')" />
                     </div>
@@ -217,7 +217,7 @@ watch(freeQuantityMax, (max) => {
 
                 <div class="space-y-3">
                     <div class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer Duration') }}:
                     </div>
 
@@ -253,7 +253,7 @@ watch(freeQuantityMax, (max) => {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <label class="font-medium mb-2 block">
-                                <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                                <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                                 {{ trans('Start Date') }}
                                 <InformationIcon :information="trans('If start date is empty, will start immediately')" />:
                             </label>

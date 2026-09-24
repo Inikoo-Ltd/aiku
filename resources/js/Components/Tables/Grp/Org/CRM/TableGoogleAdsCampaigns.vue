@@ -7,37 +7,140 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { useLocaleStore } from "@/Stores/locale"
+import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
+import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {
+    faBan,
+    faBullseye,
+    faBullseyeArrow,
+    faClock,
+    faExclamationTriangle,
+    faEye,
+    faFlagCheckered,
+    faHandPointer,
+    faPause,
+    faPlay,
+    faQuestionCircle,
+    faSackDollar,
+    faShoppingCart,
+    faSignalStream,
+    faTrash,
+    faUserPlus,
+    faWallet,
+} from "@fal"
 
-const props = defineProps<{
+/* The header icons and the status icons the listing draws, both resolved by name at render time, so
+   both have to be in the library before the first row paints. */
+library.add(
+    faSignalStream,
+    faEye,
+    faHandPointer,
+    faWallet,
+    faBullseyeArrow,
+    faBullseye,
+    faSackDollar,
+    faShoppingCart,
+    faUserPlus,
+    faPlay,
+    faPause,
+    faBan,
+    faClock,
+    faFlagCheckered,
+    faTrash,
+    faQuestionCircle,
+    faExclamationTriangle
+)
+
+defineProps<{
     data: {}
     currency: string
     tab?: string
 }>()
+
+type Kind = "count" | "money" | "shop_money" | "percent" | "share" | "roas"
+type Better = "up" | "down" | "none"
+
+/* Spend is the one figure in the shop's currency; everything else with a currency is in the ad
+   account's. `better` says which direction the comparison colours green: a cost per click going up
+   is bad news, spend going up is just news. */
+const metricCells: Record<string, { kind: Kind; better?: Better; strong?: boolean }> = {
+    impressions: { kind: "count" },
+    clicks: { kind: "count" },
+    ctr: { kind: "percent" },
+    avg_cpc: { kind: "money", better: "down" },
+    budget_amount: { kind: "money", better: "none" },
+    spend: { kind: "shop_money", better: "none", strong: true },
+    conversions: { kind: "count" },
+    cost_per_conversion: { kind: "money", better: "down" },
+    conversions_value: { kind: "money" },
+    roas: { kind: "roas" },
+    all_conversions: { kind: "count" },
+    all_conversions_value: { kind: "money" },
+    purchases: { kind: "count" },
+    cost_per_purchase: { kind: "money", better: "down" },
+    purchase_rate: { kind: "percent" },
+    registrations: { kind: "count" },
+    cost_per_registration: { kind: "money", better: "down" },
+    registration_rate: { kind: "percent" },
+    search_impression_share: { kind: "share" },
+    search_rank_lost_impression_share: { kind: "share", better: "down" },
+    search_budget_lost_impression_share: { kind: "share", better: "down" },
+    search_top_impression_share: { kind: "share" },
+    search_rank_lost_top_impression_share: { kind: "share", better: "down" },
+    search_budget_lost_top_impression_share: { kind: "share", better: "down" },
+    search_absolute_top_impression_share: { kind: "share" },
+    search_rank_lost_absolute_top_impression_share: { kind: "share", better: "down" },
+    search_budget_lost_absolute_top_impression_share: { kind: "share", better: "down" },
+}
+
+const cellSlot = (key: string) => `cell(${key})`
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
-      <template #cell(name)="{ item }">
-            <Link :href="route(item.route.name, item.route.parameters)" class="primaryLink">
-                {{ item.name }}
-            </Link>
-        </template>
-      <template #cell(status)="{ item }">
-            <div v-if="!item.status" class="text-gray-400">—</div>
-            <div v-else :class="item.status === 'ENABLED' ? 'text-green-600' : 'text-gray-500'">
-                {{ item.status }}
-            </div>
-        </template>
-      <template #cell(budget_amount)="{ item }">
-            <div v-if="item.budget_amount === null" class="text-gray-400">—</div>
-            <div v-else class="text-gray-500">{{ useLocaleStore().currencyFormat(item.currency_code, item.budget_amount) }}</div>
-        </template>
-      <template #cell(spend_30d)="{ item }">
-            <div class="text-gray-500">{{ useLocaleStore().currencyFormat(currency, item.spend_30d) }}</div>
-        </template>
-      <template #cell(spend_total)="{ item }">
-            <div class="text-gray-500">{{ useLocaleStore().currencyFormat(currency, item.spend_total) }}</div>
-        </template>
-    </Table>
+    <div>
+        <Table :resource="data" :name="tab" class="mt-3">
+            <template #cell(name)="{ item }">
+                <Link :href="route(item.route.name, item.route.parameters)" class="primaryLink">
+                    {{ item.name }}
+                </Link>
+            </template>
+
+            <template #cell(channel_type)="{ item }">
+                <div class="text-gray-600">{{ campaignTypeLabel(item.channel_type) ?? "—" }}</div>
+            </template>
+
+            <template v-for="(cell, key) in metricCells" :key="key" #[cellSlot(key)]="{ item }">
+                <GoogleAdsMetric
+                    :value="item[key]"
+                    :kind="cell.kind === 'shop_money' ? 'money' : cell.kind"
+                    :currency="cell.kind === 'shop_money' ? currency : item.currency_code ?? currency"
+                    :previous="item.previous ? item.previous[key] : undefined"
+                    :better="cell.better ?? 'up'"
+                    :strong="cell.strong ?? false" />
+            </template>
+        </Table>
+    </div>
 </template>
+
+<style scoped>
+/*
+ * Every figure here is right aligned by the shared table, which then reserves 2.25rem to the right of
+ * it for the sort arrow. Across the wide columns that carry a sentence of a label that space is
+ * invisible, but this table is twenty narrow columns of five-character numbers, and the reserved
+ * space leaves each figure sitting nearer the middle of its cell than its right edge, which reads as
+ * centred however the browser aligned it.
+ *
+ * Trimming it to the cell's own left padding puts the figures against the right edge where a column
+ * of numbers is read from. The arrow keeps its place in the heading and simply overhangs them.
+ */
+:deep(tbody td.text-right) {
+	padding-right: 0.5rem;
+}
+
+@media (min-width: 1024px) {
+	:deep(tbody td.text-right) {
+		padding-right: 0.75rem;
+	}
+}
+</style>

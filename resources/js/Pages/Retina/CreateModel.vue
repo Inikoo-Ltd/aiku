@@ -15,7 +15,7 @@ import { trans } from "laravel-vue-i18n"
 import { isArray } from 'lodash-es'
 
 import { ref, onMounted } from 'vue'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
@@ -223,7 +223,7 @@ const onSelectSubmitChange = (value) => {
                         <!-- Title -->
                         <div class="flex items-center gap-x-2" ref="buttonRefs">
                             <FontAwesomeIcon v-if="sectionData.icon" :icon='sectionData.icon' class=''
-                                aria-hidden='true' />
+                                fixed-width aria-hidden='true' />
                             <h3 v-if="sectionData.title" class="text-lg leading-6 font-medium text-gray-700">
                                 {{ sectionData.title }}
                             </h3>
@@ -243,7 +243,7 @@ const onSelectSubmitChange = (value) => {
                                             <!-- Icon: Required -->
                                             <FontAwesomeIcon v-if="fieldData.required"
                                                 :icon="['fas', 'asterisk']"
-                                                class="font-light text-[12px] text-red-400 mr-1" />
+                                                class="font-light text-[12px] text-red-400 mr-1" fixed-width />
                                         </div>
                                     </dt>
                                     

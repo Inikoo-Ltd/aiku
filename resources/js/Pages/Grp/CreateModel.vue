@@ -303,7 +303,7 @@ console.log("formdata create", props.formData)
                         <!-- Title -->
                         <div class="flex items-center gap-x-2" ref="buttonRefs">
                             <FontAwesomeIcon v-if="sectionData.icon" :icon='sectionData.icon' class=''
-                                aria-hidden='true' />
+                                fixed-width aria-hidden='true' />
                             <h3 v-if="sectionData.title" class="text-lg leading-6 font-medium text-gray-700">
                                 {{ sectionData.title }}
                             </h3>
@@ -322,7 +322,7 @@ console.log("formdata create", props.formData)
                                             <span>{{ fieldLabel(fieldData) }}</span>
                                             <!-- Icon: Required -->
                                             <FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']"
-                                                class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" />
+                                                class="ml-1 font-light text-[8px] text-red-400 mr-1 opacity-75" fixed-width />
                                             <InformationIcon v-if="fieldData.information" :information="fieldData.information" class="ml-1" />
                                         </div>
                                     </dt>

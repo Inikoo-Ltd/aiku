@@ -6,7 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
+use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
@@ -23,6 +25,7 @@ use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\RemoveVoucherFromOrder;
 use App\Actions\Ordering\Order\SaveOrderModification;
+use App\Actions\Ordering\Order\StoreFollowUpOrder;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
@@ -67,7 +70,7 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
     Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
 });
 
-Route::name('order.')->prefix('order/{order:id}')->group(function () {
+Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {
     Route::post('discretionary-charge-transaction', StoreDiscretionaryChargeTransaction::class)->name('discretionary_charge_transaction');
 
 
@@ -88,6 +91,8 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('return', StoreReturn::class)->name('return.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
+    Route::post('follow-up', StoreFollowUpOrder::class)->name('follow_up.store');
+    Route::post('payment-link', StoreOrderPaymentLink::class)->name('payment_link.store');
     Route::patch('update-discount', UpdateOrderDiscretionaryDiscount::class)->name('discount.update');
     Route::patch('remove-discount', RemoveOrderDiscount::class)->name('discount.removal');
     Route::post('add-voucher', AddVoucherToOrder::class)->name('add_voucher');
@@ -126,7 +131,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('recalculate-vat', UpdateOrderReCalculateVAT::class)->name('recalculate-vat');
 });
 
-Route::name('picking.')->prefix('picking/{picking:id}')->group(function () {
+Route::name('picking.')->prefix('picking/{picking:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {
     Route::patch('update', UpdatePicking::class)->name('update');
     Route::delete('delete', DeletePicking::class)->name('delete');
     Route::post('split', SplitPicking::class)->name('split');

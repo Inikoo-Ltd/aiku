@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { inject, onMounted, ref, nextTick } from "vue"
+import { computed, inject, ref } from "vue"
+import { readableTextOn } from "@/Composables/useAppAccent"
+import { useScrollArrows } from "@/Composables/useScrollArrows"
 import { router } from "@inertiajs/vue3"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -28,33 +30,20 @@ const emit = defineEmits<{
 }>()
 
 const layout = inject("layout", layoutStructure)
+
+const accentColor = computed(() => layout?.app?.theme?.[4] || "#6366f1")
+
+const accentTextColor = computed(() => readableTextOn(accentColor.value))
+
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
 
 // Overflow detection
 const navElement = ref<HTMLElement | null>(null)
-const hasOverflowLeft = ref(false)
-const hasOverflowRight = ref(false)
+const { canScrollLeft: hasOverflowLeft, canScrollRight: hasOverflowRight, scrollBy: scrollIntervals } = useScrollArrows(navElement)
 
-const checkOverflow = () => {
-    if (!navElement.value) return
-
-    const element = navElement.value
-    hasOverflowLeft.value = element.scrollLeft > 0
-    hasOverflowRight.value = element.scrollLeft < (element.scrollWidth - element.clientWidth)
-}
-
-const scrollLeft = () => {
-    if (navElement.value) {
-        navElement.value.scrollBy({ left: -200, behavior: 'smooth' })
-    }
-}
-
-const scrollRight = () => {
-    if (navElement.value) {
-        navElement.value.scrollBy({ left: 200, behavior: 'smooth' })
-    }
-}
+const scrollLeft = () => scrollIntervals(-1)
+const scrollRight = () => scrollIntervals(1)
 
 // Section: Interval
 const storeIntervalCode = debounce((interval_code) => {
@@ -220,12 +209,6 @@ const updateTopCustomersLimit = (value: number) => {
     )
 }
 
-onMounted(() => {
-    nextTick(() => {
-        checkOverflow()
-        window.addEventListener('resize', checkOverflow)
-    })
-})
 </script>
 
 <template>
@@ -237,10 +220,8 @@ onMounted(() => {
                 <transition name="fade">
                     <div v-if="hasOverflowLeft"
                          @click="scrollLeft"
-                         class="absolute left-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-r from-white via-white to-transparent pl-1 pr-3 sm:pr-6">
-                        <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors flex items-center min-h-full px-2">
-                            <FontAwesomeIcon icon="far fa-chevron-left" class="text-[10px] sm:text-xs" />
-                        </div>
+                         class="absolute left-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-l bg-white text-gray-500 shadow-[6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
+                        <FontAwesomeIcon icon="far fa-chevron-left" class="text-xs" fixed-width />
                     </div>
                 </transition>
 
@@ -248,16 +229,13 @@ onMounted(() => {
                 <transition name="fade">
                     <div v-if="hasOverflowRight"
                          @click="scrollRight"
-                         class="absolute right-0 top-0 bottom-0 z-10 flex items-center cursor-pointer bg-gradient-to-l from-white via-white to-transparent pr-1 pl-3 sm:pl-6">
-                        <div class="bg-indigo-500 text-white rounded-full p-1 sm:p-1.5 shadow-lg hover:bg-indigo-600 transition-colors flex items-center min-h-full px-2">
-                            <FontAwesomeIcon icon="far fa-chevron-right" class="text-[10px] sm:text-xs" />
-                        </div>
+                         class="absolute right-0 top-0 bottom-0 z-10 flex w-6 items-center justify-center cursor-pointer rounded-r bg-white text-gray-500 shadow-[-6px_0_6px_-4px_rgba(0,0,0,0.12)] hover:text-gray-800">
+                        <FontAwesomeIcon icon="far fa-chevron-right" class="text-xs" fixed-width />
                     </div>
                 </transition>
 
                 <nav
                     ref="navElement"
-                    @scroll="checkOverflow"
                     class="isolate rounded border py-1 px-1 sm:px-2 flex gap-1 items-center w-full overflow-x-scroll scrollbar-hide"
                     aria-label="Tabs">
                     <div>
@@ -270,7 +248,7 @@ onMounted(() => {
                         @click="updateInterval(interval.value)"
                         :class="[
                             interval.value === intervals.value
-                                ? 'bg-indigo-500 text-white font-medium'
+                                ? 'dashboard-accent font-medium'
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
                         ]"
                         v-tooltip="interval.label"
@@ -292,7 +270,7 @@ onMounted(() => {
                 v-tooltip="trans('Open advanced settings')"
                 @click="isSectionVisible = !isSectionVisible"
                 class="cursor-pointer p-2 rounded border flex items-center justify-center flex-shrink-0 self-start sm:self-auto"
-                :class="isSectionVisible ? 'bg-indigo-200 text-indigo-500 border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
+                :class="isSectionVisible ? 'dashboard-accent-soft border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
                 <FontAwesomeIcon icon="far fa-cog" fixed-width aria-hidden="true" class="text-xl sm:text-2xl" />
             </div>
         </div>
@@ -304,7 +282,7 @@ onMounted(() => {
                     <!-- Toggle: model_state -->
                     <Transition name="slide-to-right">
                         <div v-if="settings.model_state_type && currentTab === 'shops'" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
-                            <p v-tooltip="settings.model_state_type.options[0].tooltip" class="leading-none whitespace-nowrap" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+                            <p v-tooltip="settings.model_state_type.options[0].tooltip" class="leading-none whitespace-nowrap" :class="[ settings.model_state_type.options[0].value === settings.model_state_type.value ? 'font-semibold dashboard-accent-text underline' : 'opacity-50', ]">
                                 {{ settings.model_state_type.options[0].label }}
                             </p>
                             <ToggleSwitch
@@ -314,7 +292,7 @@ onMounted(() => {
                                 :trueValue="settings.model_state_type.options[1]?.value"
                                 :disabled="`left_model_state_type` === isLoadingToggle"
                             />
-                            <p v-tooltip="settings.model_state_type.options[1]?.tooltip" class="whitespace-nowrap" :class="[ settings.model_state_type.options[1]?.value === settings.model_state_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+                            <p v-tooltip="settings.model_state_type.options[1]?.tooltip" class="whitespace-nowrap" :class="[ settings.model_state_type.options[1]?.value === settings.model_state_type.value ? 'font-semibold dashboard-accent-text underline' : 'opacity-50', ]">
                                 {{ settings.model_state_type.options[1]?.label }}
                             </p>
                         </div>
@@ -324,7 +302,7 @@ onMounted(() => {
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-x-4 lg:gap-x-8 text-xs sm:text-sm md:text-base">
                     <!-- Toggle: data_display_type (minified, full) -->
                     <div v-if="settings.data_display_type" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
-                        <p v-tooltip="settings.data_display_type.options[0].tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+                        <p v-tooltip="settings.data_display_type.options[0].tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-semibold dashboard-accent-text underline' : 'opacity-50', ]">
                             {{ settings.data_display_type.options[0].label }}
                         </p>
                         <ToggleSwitch
@@ -334,7 +312,7 @@ onMounted(() => {
                             :trueValue="settings.data_display_type.options[1]?.value"
                             :disabled="`left_data_display_type` === isLoadingToggle"
                         />
-                        <p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-semibold text-indigo-500 underline' : 'opacity-50', ]">
+                        <p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-semibold dashboard-accent-text underline' : 'opacity-50', ]">
                             {{ settings.data_display_type.options[1]?.label }}
                         </p>
                     </div>
@@ -359,7 +337,7 @@ onMounted(() => {
                                 >
                                     <div :class="[
                                             'cursor-pointer focus:outline-none flex items-center justify-center py-1 sm:py-2 md:py-3 px-2 sm:px-3 text-xs sm:text-sm font-medium whitespace-nowrap',
-                                            checked ? 'bg-indigo-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-200',
+                                            checked ? 'dashboard-accent' : 'bg-white text-gray-700 hover:bg-gray-200',
                                         ]"
                                          v-tooltip="option.tooltip"
                                     >
@@ -389,7 +367,7 @@ onMounted(() => {
                                 >
                                     <div :class="[
                                             'cursor-pointer focus:outline-none flex items-center justify-center py-1 sm:py-2 md:py-3 px-2 sm:px-3 text-xs sm:text-sm font-medium whitespace-nowrap',
-                                            checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
+                                            checked ? 'dashboard-accent' : ' bg-white text-gray-700 hover:bg-gray-200',
                                         ]"
                                          v-tooltip="option.tooltip"
                                     >
@@ -426,6 +404,20 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.dashboard-accent {
+    background-color: v-bind(accentColor);
+    color: v-bind(accentTextColor);
+}
+
+.dashboard-accent-soft {
+    background-color: v-bind("`color-mix(in srgb, ${accentColor} 18%, transparent)`");
+    color: v-bind("`color-mix(in srgb, ${accentColor} 75%, black)`");
+}
+
+.dashboard-accent-text {
+    color: v-bind("`color-mix(in srgb, ${accentColor} 75%, black)`");
+}
+
 :deep(#dashboard-settings) {
     --p-toggleswitch-background: v-bind('layout?.app?.theme[4]');
     --p-toggleswitch-hover-background: v-bind('layout?.app?.theme[2]');

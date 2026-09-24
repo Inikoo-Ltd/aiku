@@ -230,7 +230,7 @@ onMounted(() => {
           class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
           style="height: 100%;">
           <div class="flex flex-col items-center gap-2">
-            <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
+            <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" fixed-width />
             <h3 class="text-lg font-semibold">{{ trans('No department selected') }}</h3>
             <p class="text-sm max-w-xs">
               {{ trans('Please pick a department to preview its data here.') }}
@@ -265,7 +265,7 @@ onMounted(() => {
               <FontAwesomeIcon :icon="faDotCircle" class="w-4 h-4" :class="dept?.slug == dataPicked?.sub_department?.slug
                   ? 'text-blue-500'
                   : 'text-gray-400'
-                " />
+                " fixed-width />
 
               <span class="group-hover:underline">
                 {{ dept.name }}

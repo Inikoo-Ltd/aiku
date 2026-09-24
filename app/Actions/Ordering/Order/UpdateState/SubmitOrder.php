@@ -282,6 +282,22 @@ class SubmitOrder extends OrgAction
         }
     }
 
+    /**
+     * An order sent back to the basket keeps the gift line it got at its first submit;
+     * re-submitting must not add a second one.
+     */
+    public function orderHasGiftFromOffer(Order $order, ?int $offerId): bool
+    {
+        return DB::table('transaction_has_offer_allowances as pivot')
+            ->join('transactions', 'transactions.id', '=', 'pivot.transaction_id')
+            ->where('pivot.order_id', $order->id)
+            ->where('pivot.offer_id', $offerId)
+            ->where('pivot.is_gift', true)
+            ->where('transactions.is_gift', true)
+            ->whereNull('transactions.deleted_at')
+            ->exists();
+    }
+
     public function processGiftOffers(Order $order): Order
     {
         if ($this->isGiftOptedOut($order)) {
@@ -319,7 +335,7 @@ class SubmitOrder extends OrgAction
                     /** @var Product $gift */
                     $gift     = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
                     $quantity = Arr::get($allowanceGiftData, 'quantity', 0);
-                    if ($quantity > 0 && $gift) {
+                    if ($quantity > 0 && $gift && !$this->orderHasGiftFromOffer($order, $giftOfferData->id)) {
                         $giftTransaction = StoreTransaction::make()->action(
                             $order,
                             $gift->currentHistoricProduct,
@@ -387,7 +403,7 @@ class SubmitOrder extends OrgAction
                     /** @var Product $gift */
                     $gift     = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
                     $quantity = Arr::get($allowanceGiftData, 'quantity', 0);
-                    if ($quantity > 0 && $gift) {
+                    if ($quantity > 0 && $gift && !$this->orderHasGiftFromOffer($order, Arr::get($voucherOfferData, 'id'))) {
                         $giftTransaction = StoreTransaction::make()->action(
                             $order,
                             $gift->currentHistoricProduct,
@@ -489,7 +505,7 @@ class SubmitOrder extends OrgAction
                 $giftAllowance = $grGiftOffer->offerAllowances()->first();
                 if ($giftAllowance) {
                     $selectedGrGiftProduct = Product::where('shop_id', $order->shop_id)->where('id', $selectedGrGift)->first();
-                    if ($selectedGrGiftProduct) {
+                    if ($selectedGrGiftProduct && !$this->orderHasGiftFromOffer($order, $grGiftOffer->id)) {
                         $grGiftTransaction = StoreTransaction::make()->action(
                             $order,
                             $selectedGrGiftProduct->currentHistoricProduct,

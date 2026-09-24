@@ -15,7 +15,6 @@ use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\Miscellaneous\GenderEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\Task;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
@@ -114,7 +113,6 @@ use App\Models\Traits\HasSearch;
  * @property-read Organisation $organisation
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\HumanResources\EmployeeStats|null $stats
- * @property-read Collection<int, Task> $tasks
  * @property-read Collection<int, \App\Models\HumanResources\TimeTracker> $timeTrackers
  * @property-read Collection<int, \App\Models\HumanResources\Timesheet> $timesheets
  * @property-read User|null $user
@@ -332,9 +330,21 @@ class Employee extends Model implements HasMedia, Auditable
         return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
     }
 
-    public function tasks(): MorphMany
+    /**
+     * The hours this employee is actually held to: their own when they have any, otherwise the
+     * organisation's. An employee schedule with no days at all says nothing, so it does not
+     * override - which is what lets somebody be given a four day week without every other
+     * screen deciding they work no days at all.
+     */
+    public function getEffectiveWorkSchedule(): ?WorkSchedule
     {
-        return $this->morphMany(Task::class, 'assigner');
+        $own = $this->getDefaultWorkSchedule();
+
+        if ($own && $own->days()->exists()) {
+            return $own;
+        }
+
+        return $this->organisation?->getDefaultWorkSchedule();
     }
 
     public function hrAnnouncements(): MorphMany

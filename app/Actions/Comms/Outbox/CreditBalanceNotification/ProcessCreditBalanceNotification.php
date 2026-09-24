@@ -16,7 +16,7 @@ use App\Models\CRM\Customer;
 
 class ProcessCreditBalanceNotification extends OrgAction
 {
-    public function handle(Customer $customer)
+    public function handle(Customer $customer, bool $notifyCustomer = true): void
     {
         // get last 2 credit transactions
         $creditBalances = $customer->creditTransactions()->orderBy('id', 'desc')->limit(2)->get();
@@ -112,7 +112,9 @@ class ProcessCreditBalanceNotification extends OrgAction
             'preview_amount' => $previewAmountHtml ?? 'N/A',
         ];
 
-        SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalDataForCustomer);
+        if ($notifyCustomer && ($currentCreditBalance->reason || $currentCreditBalance->notes)) {
+            SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalDataForCustomer);
+        }
         SendCreditBalanceEmailToUser::dispatch($customer, $additionalDataForUser);
     }
 }

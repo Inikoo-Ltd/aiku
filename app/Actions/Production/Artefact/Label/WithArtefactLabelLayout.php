@@ -10,15 +10,23 @@ namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Models\Helpers\Media;
-use App\Models\Production\Artefact;
+use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
+use App\Models\Inventory\OrgStock;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 trait WithArtefactLabelLayout
 {
     private const ARTWORK_SCOPE = 'label_artwork';
 
     private const ARTWORK_MIME_TYPES = 'image/jpeg,image/png,image/gif,image/webp,application/pdf';
+
+    private const DEFAULT_BARCODE_TYPE = 'code128';
+
+    private const DEFAULT_BARCODE_WIDTH = 0.6;
+
+    private const DEFAULT_BARCODE_HEIGHT = 0.3;
 
     private const LAYOUT_KEYS = [
         'orientation',
@@ -47,7 +55,7 @@ trait WithArtefactLabelLayout
             'canvas_rotation'    => ['sometimes', 'integer', 'in:0,90,180,270'],
             'is_sheet_artwork'   => ['sometimes', 'boolean'],
             'fields'             => ['sometimes', 'array', 'max:100'],
-            'fields.*.text'      => ['required', 'string', 'max:255'],
+            'fields.*.text'      => ['required', 'string', 'max:2000'],
             'fields.*.x'         => ['required', 'numeric', 'min:0', 'max:1'],
             'fields.*.y'         => ['required', 'numeric', 'min:0', 'max:1'],
             'fields.*.font_size' => ['required', 'numeric', 'min:3', 'max:72'],
@@ -56,7 +64,11 @@ trait WithArtefactLabelLayout
             'fields.*.bold'      => ['sometimes', 'boolean'],
             'fields.*.rotation'  => ['sometimes', 'integer', 'in:0,90,180,270'],
             'fields.*.length'    => ['sometimes', 'numeric', 'min:0.1', 'max:1000'],
-            'fields.*.source'    => ['sometimes', 'string', 'in:batch_code,expiry_date'],
+            'fields.*.source'    => ['sometimes', 'string', Rule::in(ArtefactLabelInformationEnum::placeableValues())],
+            'fields.*.barcode_type'       => ['sometimes', 'string', 'in:ean13,code128'],
+            'fields.*.barcode_width'      => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
+            'fields.*.barcode_height'     => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
+            'fields.*.barcode_show_value' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -100,6 +112,10 @@ trait WithArtefactLabelLayout
                     'background_color' => Arr::get($field, 'background_color') ?: null,
                     'bold'      => filter_var(Arr::get($field, 'bold', false), FILTER_VALIDATE_BOOLEAN),
                     'rotation'  => (int) Arr::get($field, 'rotation', 0),
+                    'barcode_type'       => Arr::get($field, 'barcode_type', self::DEFAULT_BARCODE_TYPE),
+                    'barcode_width'      => (float) Arr::get($field, 'barcode_width', self::DEFAULT_BARCODE_WIDTH),
+                    'barcode_height'     => (float) Arr::get($field, 'barcode_height', self::DEFAULT_BARCODE_HEIGHT),
+                    'barcode_show_value' => filter_var(Arr::get($field, 'barcode_show_value', true), FILTER_VALIDATE_BOOLEAN),
                 ],
                 Arr::get($layout, 'fields', [])
             )),
@@ -110,9 +126,9 @@ trait WithArtefactLabelLayout
      * The artwork is kept as an attachment of the artefact so a label opened months later still
      * prints the sheet it was designed against, and so the artefact keeps its own photos apart.
      */
-    protected function saveArtwork(Artefact $artefact, UploadedFile $file): Media
+    protected function saveArtwork(OrgStock $orgStock, UploadedFile $file): Media
     {
-        return SaveModelAttachment::make()->action($artefact, [
+        return SaveModelAttachment::make()->action($orgStock, [
             'path'         => $file->getPathName(),
             'originalName' => $file->getClientOriginalName(),
             'extension'    => $file->guessClientExtension(),

@@ -384,7 +384,7 @@ const contactPreferencesData = computed(() => {
                                     <FontAwesomeIcon
                                         :icon="getStatusIcon(data?.prospect?.customer?.tax_number?.status, data?.prospect?.customer?.tax_number?.valid)"
                                         :class="getStatusColor(data?.prospect?.customer?.tax_number?.status, data?.prospect?.customer?.tax_number?.valid)"
-                                        class="text-sm" />
+                                        class="text-sm" fixed-width />
 
 
                                     <div class="space-y-2">

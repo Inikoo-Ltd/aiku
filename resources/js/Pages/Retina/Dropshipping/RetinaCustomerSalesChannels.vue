@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Table } from '@/types/Table'

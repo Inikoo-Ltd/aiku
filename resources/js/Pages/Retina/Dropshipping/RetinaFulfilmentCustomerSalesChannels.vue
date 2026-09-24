@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from '@/types/PageHeading'

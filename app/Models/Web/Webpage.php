@@ -8,15 +8,12 @@
 
 namespace App\Models\Web;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Analytics\WebUserRequest;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Helpers\Deployment;
@@ -96,6 +93,7 @@ use App\Models\Traits\HasSearch;
  * @property bool $allow_fetch If false changes in Aurora webpages are not fetched
  * @property bool|null $show_in_parent
  * @property int|null $seo_image_id
+ * @property string|null $seo_image_url
  * @property int|null $redirect_webpage_id
  * @property string|null $seo_title
  * @property string|null $seo_description
@@ -286,7 +284,19 @@ class Webpage extends Model implements Auditable, HasMedia
             return true;
         }
 
-        return $user->id == $this->locked_by_user_id || $user->authTo('sysadmin.edit');
+        return $user->id == $this->locked_by_user_id;
+    }
+
+    public function canEditLockBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        if (!$this->isLocked()) {
+            return true;
+        }
+
+        return $user->id == $this->locked_by_user_id;
     }
 
     public function lockMessage(): string
@@ -364,6 +374,25 @@ class Webpage extends Model implements Auditable, HasMedia
             $withAmbiguousFallback,
             $this->shop?->type
         );
+    }
+
+    /**
+     * What is told to search engines about this webpage. A sub type hidden from search engines
+     * overrules the stored columns, so a page that must never be indexed stays that way whatever
+     * an import, a migration or an older row left behind.
+     *
+     * @return array{index_page: bool, follow_link: bool}
+     */
+    public function searchEngineVisibility(): array
+    {
+        if ($this->sub_type?->isHiddenFromSearchEngines()) {
+            return $this->sub_type->searchEngineVisibility();
+        }
+
+        return [
+            'index_page'  => (bool)$this->index_page,
+            'follow_link' => (bool)$this->follow_link,
+        ];
     }
 
     public function getUrl($withWWW = false): string
@@ -468,49 +497,6 @@ class Webpage extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(Redirect::class);
     }
-
-    public function luigiIdentity(): string
-    {
-        //todo simplify to use this instead
-        //return 'webpage-' . $this->slug;
-
-        if ($this->model instanceof Product) {
-            return "$this->group_id:$this->organisation_id:$this->shop_id:{$this->website->id}:$this->id";
-        } else {
-
-            $model = $this->model;
-
-            // Start with just the current webpage's URL
-            $segments = [];
-
-            if ($model instanceof ProductCategory) {
-                if ($model->type === ProductCategoryTypeEnum::DEPARTMENT) {
-                    $segments = [
-                        optional($model->webpage ?? null)->url,
-                    ];
-                } elseif ($model->type === ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                    $segments = collect([
-                        optional($model->department?->webpage ?? null)->url,
-                        $this->url,
-                    ])->filter()->all();
-                } elseif ($model->type === ProductCategoryTypeEnum::FAMILY) {
-                    $segments = collect([
-                        optional($model->department?->webpage ?? null)->url,
-                        optional($model->subDepartment?->webpage ?? null)->url,
-                        $this->url,
-                    ])->filter()->all();
-                }
-            } else {
-                $segments = [$this->url];
-            }
-
-            return '/'.collect($segments)->implode('/');
-
-        }
-
-
-    }
-
 
     public function toSearchableArray(): array
     {

@@ -252,7 +252,7 @@ watch(target, () => {
                 <div class="space-y-2">
                     <label for="amount" class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk"
-                                            class="font-light text-xs text-red-400 align-middle" />
+                                            class="font-light text-xs text-red-400 align-middle" fixed-width />
 
                         {{ trans("Offer name") }}:
                     </label>
@@ -269,7 +269,7 @@ watch(target, () => {
                         <label class="font-semibold">
                             <FontAwesomeIcon
                                 icon="fas fa-asterisk"
-                                class="font-light text-xs text-red-400 align-middle" />
+                                class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ trans("Trigger") }}
                         </label>
 
@@ -310,7 +310,7 @@ watch(target, () => {
                 <div class="space-y-2">
                     <label class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk"
-                                            class="font-light text-xs text-red-400 align-middle" />
+                                            class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans("Minimum purchase amount") }}:
                     </label>
 
@@ -323,7 +323,7 @@ watch(target, () => {
                 <div class="space-y-2">
                     <label class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-bolt"
-                                            class="text-xs text-amber-400 align-middle" />
+                                            class="text-xs text-amber-400 align-middle" fixed-width />
                         {{ ctrans("Quick apply duration") }}
                         <InformationIcon :information="ctrans('Select a preset to automatically set the offer duration (start-end)')" />
                         :
@@ -345,7 +345,7 @@ watch(target, () => {
                     <div>
                         <label class="font-medium mb-2 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk"
-                                                class="font-light text-xs text-red-400 align-middle" />
+                                                class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ ctrans("Start date") }}
                             <InformationIcon
                                 :information="trans('If start date is empty, will start immediately')" />
@@ -358,7 +358,7 @@ watch(target, () => {
                     <div>
                         <label class="font-medium mb-2 flex items-center gap-x-1">
                             <FontAwesomeIcon icon="fas fa-asterisk"
-                                                class="font-light text-xs text-red-400 align-middle" />
+                                                class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ trans("End date") }}
                             <InformationIcon
                                 :information="trans('If end date is empty, will treat as permanent')" />

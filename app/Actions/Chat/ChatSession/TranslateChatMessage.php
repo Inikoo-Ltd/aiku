@@ -52,8 +52,10 @@ class TranslateChatMessage
         }
         $session = $message->chatSession;
 
-        if ($this->isUserMessage($message)) {
-            $this->handleUserLanguageDetection($message, $session, $textToProcess);
+        $this->detectOriginalLanguage($message, $textToProcess);
+
+        if ($this->isUserMessage($message) && $message->original_language_id) {
+            $this->updateSessionLanguage($session, $message->original_language_id);
         }
 
         $targetLangId = $this->determineTargetLanguage(
@@ -71,6 +73,10 @@ class TranslateChatMessage
             return;
         }
 
+        if ($message->isFromAgent() && !$message->original_language_id) {
+            return;
+        }
+
         $this->performTranslation($message, $textToProcess, $targetLangId, $requestFrom);
     }
 
@@ -82,24 +88,16 @@ class TranslateChatMessage
         return $message->isFromUser() || $message->isFromGuest();
     }
 
-    /**
-     *
-     */
-    protected function handleUserLanguageDetection(ChatMessage $message, ChatSession $session, string $text): void
+    protected function detectOriginalLanguage(ChatMessage $message, string $text): void
     {
         if ($message->original_language_id) {
-            $this->updateSessionLanguage($session, $message->original_language_id);
-
             return;
         }
 
-
         $language = $this->detectLanguageCode($text);
-
 
         if ($language) {
             $message->update(['original_language_id' => $language->id]);
-            $this->updateSessionLanguage($session, $language->id);
         }
     }
 
@@ -146,8 +144,7 @@ class TranslateChatMessage
 
         if ($message->isFromAgent()) {
             return $session->active_user_language_id
-                ?? $session->user_language_id
-                ?? $session->shop?->language_id;
+                ?? $session->user_language_id;
         }
 
         return null;

@@ -10,6 +10,7 @@
 
 use App\Actions\Accounting\Reports\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
+use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Accounting\CreditTransaction\UpdateCreditTransaction;
 use App\Actions\Accounting\Invoice\DeleteInvoice;
 use App\Actions\Accounting\Invoice\ISDocInvoice;
@@ -62,6 +63,7 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Helpers\TaxCategory;
@@ -295,6 +297,49 @@ test('retina bank transfer checkout data shows note only when set', function (Pa
         ->and($checkoutData['data']['swift'])->toBe('TRWIBEB1XXX')
         ->and($checkoutData['data']['recipient'])->toBe('Ancient Wisdom s.r.o.');
 })->depends('update payment account shop');
+
+test('retina bank transfer checkout data shows sort code only for GB accounts', function (PaymentAccount $paymentAccount) {
+    $paymentAccountShop = $paymentAccount->paymentAccountShops()->first();
+    $paymentAccountShop->update(['state' => PaymentAccountShopStateEnum::ACTIVE]);
+    $order    = new \App\Models\Ordering\Order();
+    $apiPoint = new \App\Models\Accounting\OrderPaymentApiPoint();
+
+    $paymentAccount->update(['data' => ['bank' => ['name' => 'Tatra Banka a.s.', 'iban' => 'SK35 1100 0000 0029 4803 8424', 'account' => '2948038424', 'sort_code' => '1100']]]);
+    $checkoutData = \App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->fresh(), $apiPoint);
+    expect($checkoutData['data'])->not->toHaveKey('sort_code');
+
+    $paymentAccount->update(['data' => ['bank' => ['name' => 'HSBC', 'iban' => 'GB74HBUK40415780719102', 'account' => '80719102', 'sort_code' => '404157']]]);
+    $checkoutData = \App\Actions\Accounting\PaymentAccountShop\UI\GetRetinaPaymentAccountShopData::run($order, $paymentAccountShop->fresh(), $apiPoint);
+    expect($checkoutData['data']['sort_code'])->toBe('404157');
+})->depends('update payment account shop');
+
+test('bank payment account create and edit write the fields checkout reads', function () {
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        [
+            'code'            => 'bank-sort-code',
+            'name'            => 'HSBC GBP',
+            'bank_name'       => 'HSBC',
+            'bank_iban'       => 'GB74HBUK40415780719102',
+            'bank_swift_code' => 'HBUKGB4B',
+        ]
+    );
+
+    expect($paymentAccount->data['bank'])->not->toHaveKey('sort_code');
+
+    $paymentAccount = UpdatePaymentAccount::make()->action($paymentAccount, [
+        'bank_name'      => 'HSBC UK',
+        'bank_sort_code' => '404157',
+    ]);
+
+    expect($paymentAccount->data['bank'])->toMatchArray([
+        'name'      => 'HSBC UK',
+        'sort_code' => '404157',
+        'iban'      => 'GB74HBUK40415780719102',
+        'swift'     => 'HBUKGB4B',
+    ]);
+});
 
 test('update payment account', function ($paymentAccount) {
     $paymentAccount = UpdatePaymentAccount::make()->action(
@@ -2025,6 +2070,76 @@ test('increase and decrease customer credit', function () {
     expect($customer->balance)->toBe('400.00');
 });
 
+test('accounting clerk without crm edit can decrease customer balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    \App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount' => 220.43,
+        'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'type'   => CreditTransactionTypeEnum::COMPENSATION->value,
+    ]);
+
+    setPermissionsTeamId($this->group->id);
+    $guest = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    );
+    $user = $guest->getUser();
+    $user->givePermissionTo(\Spatie\Permission\Models\Permission::findByName("accounting.{$this->organisation->id}.edit"));
+    $user->refresh();
+    actingAs($user);
+
+    $response = patch(
+        route('grp.models.credit_transaction.decrease', $customer->id),
+        [
+            'amount' => -220.43,
+            'notes'  => 'Refund of excess payment',
+            'type'   => CreditTransactionTypeEnum::RETURN->value,
+            'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::MONEY_BACK->value,
+        ]
+    );
+
+    $response->assertSuccessful();
+    expect((float)$customer->refresh()->balance)->toBe(0.0);
+});
+
+test('only accounting managers set a customer credit line', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    setPermissionsTeamId($this->group->id);
+    $guest = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    );
+    $user = $guest->getUser();
+    $user->givePermissionTo([
+        "accounting.{$this->organisation->id}.edit",
+        "crm.{$this->shop->id}.edit",
+    ]);
+    $user->refresh();
+    actingAs($user);
+
+    patch(route('grp.models.customer.credit_line.update', $customer->id), ['credit_limit' => 500])->assertForbidden();
+    patch(route('grp.models.customer.update', $customer->id), ['credit_limit' => 500])->assertSessionHasErrors('credit_limit');
+    expect((float)$customer->refresh()->credit_limit)->toBe(0.0);
+
+    $user->givePermissionTo("org-supervisor.{$this->organisation->id}.accounting");
+    $user->refresh();
+    actingAs($user);
+
+    patch(route('grp.models.customer.credit_line.update', $customer->id), ['credit_limit' => 500, 'payment_terms_days' => 30], ['X-Inertia' => 'true'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+    patch(route('grp.models.customer.update', $customer->id), ['contact_name' => 'Credit Line Test'], ['X-Inertia' => 'true'])
+        ->assertRedirect();
+    $customer->refresh();
+    expect((float)$customer->credit_limit)->toBe(500.0)
+        ->and($customer->payment_terms_days)->toBe(30)
+        ->and($customer->spendableBalance())->toBe(500.0);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Actions: MIT saved card store + update
@@ -2090,7 +2205,8 @@ test('update payment account by type', function () {
         'bank_name'         => 'Big Bank',
         'bank_account_name' => 'Ops',
     ]);
-    expect(\Illuminate\Support\Arr::get($account->data, 'bank_name'))->toBe('Big Bank');
+    expect(\Illuminate\Support\Arr::get($account->data, 'bank.name'))->toBe('Big Bank')
+        ->and(\Illuminate\Support\Arr::get($account->data, 'bank.recipient'))->toBe('Ops');
 
     $account = \App\Actions\Accounting\PaymentAccount\Types\UpdateCashPaymentAccount::make()->action($account, [
         'name' => 'Petty Cash',
@@ -3215,6 +3331,18 @@ describe('invoice pdf tax number display', function () {
             ->toContain('Collection address')
             ->and($renderInvoiceTemplate($invoice->refresh(), null, true))->not->toContain('Delivery address');
     });
+
+    test('invoice dates print the month in the shop language', function () use ($renderInvoiceTemplate) {
+        $customer = createCustomer($this->shop);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $invoice->update(['date' => '2026-07-29 10:00:00']);
+
+        app()->setLocale('pl');
+        $html = $renderInvoiceTemplate($invoice->refresh());
+        app()->setLocale('en');
+
+        expect($html)->toContain('29 lipca 2026')->not->toContain('29 July 2026');
+    });
 });
 
 test('a pdf whose html is larger than the default pcre backtrack limit still renders', function () {
@@ -3270,4 +3398,42 @@ test('AEAT intrastat export forced with an empty origin falls back to the organi
     $result = $action->handle($this->organisation, [], ['weight_kg' => '1', 'origin' => '']);
 
     expect($result['lines'][0])->toContain(';'.$this->organisation->country->code.';');
+});
+
+test('balance increase for compensation issues a settled credit note', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $creditTransaction = IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount'            => 12,
+        'reason'            => CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'notes'             => 'Broken jar in parcel',
+        'issue_credit_note' => true,
+        'requested_by'      => 'Aimee',
+    ]);
+
+    $creditNote = Invoice::where('customer_id', $customer->id)->where('type', InvoiceTypeEnum::REFUND)->first();
+    $rate       = (float)$creditNote->taxCategory->rate;
+
+    expect($creditNote)->not->toBeNull()
+        ->and($creditNote->original_invoice_id)->toBeNull()
+        ->and($creditNote->in_process)->toBeFalse()
+        ->and($creditNote->reference)->not->toContain('-refund-')
+        ->and((float)$creditNote->total_amount)->toBe(-12.0)
+        ->and(round((float)$creditNote->net_amount * $rate, 2))->toBe((float)$creditNote->tax_amount)
+        ->and($creditNote->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and($creditNote->footer)->toBe(CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->label())
+        ->and($creditTransaction->type)->toBe(CreditTransactionTypeEnum::COMPENSATION)
+        ->and((float)$creditTransaction->amount)->toBe(12.0)
+        ->and($creditTransaction->data['requested_by'])->toBe('Aimee')
+        ->and($creditNote->payments()->pluck('payments.id')->all())->toBe([$creditTransaction->payment_id])
+        ->and((float)$customer->refresh()->balance)->toBe(12.0);
+
+    $plain = IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount' => 5,
+        'reason' => CreditTransactionReasonEnum::OTHER->value,
+        'notes'  => 'no paperwork',
+    ]);
+
+    expect($plain->payment_id)->toBeNull()
+        ->and(Invoice::where('customer_id', $customer->id)->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(1);
 });

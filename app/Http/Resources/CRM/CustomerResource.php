@@ -54,7 +54,7 @@ class CustomerResource extends JsonResource
         $shop = $customer->shop;
 
 
-         if ($shop?->type == ShopTypeEnum::B2B) {
+        if ($shop?->type == ShopTypeEnum::B2B) {
             $subscriptions['whatsapp_newsletter'] = [
                 'label'           => __('WhatsApp Newsletter'),
                 'field'           => 'is_subscribed_to_whatsapp_newsletter',
@@ -99,6 +99,8 @@ class CustomerResource extends JsonResource
             'contact_website'               => $customer->contact_website,
             'created_at'                    => $customer->created_at,
             'balance'                       => $customer->balance,
+            'credit_limit'                  => $customer->credit_limit,
+            'payment_terms_days'            => $customer->payment_terms_days,
             'tax_number'                    => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [],
             'state'                         => $customer->state,
             'status'                        => $customer->status,

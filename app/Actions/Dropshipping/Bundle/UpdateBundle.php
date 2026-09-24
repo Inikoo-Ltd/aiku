@@ -12,7 +12,9 @@ use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBundles;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Portfolio\WithPortfolioSKU;
 use App\Actions\OrgAction;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithAttachMediaToModel;
@@ -23,7 +25,6 @@ use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Bundle;
 use App\Models\Dropshipping\BundleItem;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Faker\Factory as Faker;
 use Illuminate\Console\Command;
@@ -37,6 +38,8 @@ class UpdateBundle extends OrgAction
     use WithActionUpdate;
     use WithAttachMediaToModel;
     use WithOpenCustomerSalesChannelCheck;
+    use WithBundleTradeUnits;
+    use WithPortfolioSKU;
 
     private Customer $customer;
 
@@ -48,7 +51,6 @@ class UpdateBundle extends OrgAction
         $this->assertCustomerSalesChannelIsOpen($bundle->customerSalesChannel);
 
         return DB::transaction(function () use ($bundle, $modelData) {
-            $tradeUnits = [];
             Arr::forget($modelData, 'id');
 
             /** @var Product $product */
@@ -89,21 +91,14 @@ class UpdateBundle extends OrgAction
                 ]);
             }
 
+            $productPrice = null;
+            $productRrp   = null;
+
             if (Arr::get($modelData, 'payloadItems')) {
                 $selectedBundleItems = Arr::get($modelData, 'payloadItems');
 
                 foreach ($selectedBundleItems as $selectedBundleItem) {
                     $bundleItem = BundleItem::find($selectedBundleItem['bundle_item_id']);
-
-                    /** @var Product $productSelected */
-                    $productSelected = $bundleItem->item;
-
-                    foreach ($productSelected->tradeUnits as $tradeUnit) {
-                        $tradeUnits[] = [
-                            'id' => $tradeUnit->id,
-                            'quantity' => $selectedBundleItem['quantity']
-                        ];
-                    }
 
                     $this->update($bundleItem, [
                         'quantity' => $selectedBundleItem['quantity']
@@ -121,34 +116,10 @@ class UpdateBundle extends OrgAction
                     return $bundleItem->item->rrp * $selectedBundleItem['quantity'];
                 });
                 $productRrp = $productRrp * (1 - ($shopBundleDiscount / 100));
-
-                UpdateProduct::run($product, [
-                    'trade_units' => $tradeUnits,
-                    'price' => $productPrice,
-                    'rrp' => $productRrp,
-                ]);
-
-                data_set($portfolioData, 'selling_price', $productRrp);
-                data_set($portfolioData, 'customer_price', $productRrp);
+                $productRrp = Arr::get($modelData, 'rrp') ?? $productRrp;
             }
 
             if (! blank($selectedProducts)) {
-                $productSelected = Product::where('shop_id', $bundle->customer->shop_id)
-                    ->whereIn('id', Arr::pluck($selectedProducts, 'product_id'))
-                    ->get();
-
-                $tradeUnits = array_merge($tradeUnits, $productSelected->map(function ($product) use ($selectedProducts) {
-                    return $product->tradeUnits->map(function (TradeUnit $tradeUnit) use ($product, $selectedProducts) {
-                        /** @var array $productQty */
-                        $productQty = collect($selectedProducts)->where('product_id', $product->id)->first();
-
-                        return [
-                            'id' => $tradeUnit->id,
-                            'quantity' => Arr::get($productQty, 'quantity')
-                        ];
-                    });
-                })->collapse()->toArray());
-
                 foreach ($selectedProducts as $selectedProduct) {
                     $bundleItem = BundleItem::where('bundle_id', $bundle->id)
                         ->where('item_type', class_basename(Product::class))
@@ -171,16 +142,28 @@ class UpdateBundle extends OrgAction
                 }
 
                 $calculatedPrice = CalculateBundleItemPriceDetails::run($bundle->customerSalesChannel, $modelData);
+                $productPrice    = Arr::get($calculatedPrice, 'total_price');
+                $productRrp      = Arr::get($modelData, 'rrp') ?? Arr::get($calculatedPrice, 'total_rrp');
+            }
 
+            /* The trade units are read back off the bundle once every item has been created,
+               requantified or deleted, so what the product carries is the whole of what the bundle
+               now holds rather than whichever slice this request happened to mention. */
+            if ($productRrp !== null) {
                 UpdateProduct::make()->action($product, [
-                    'trade_units' => $tradeUnits,
-                    'price' => Arr::get($calculatedPrice, 'total_price'),
-                    'rrp' => Arr::get($calculatedPrice, 'total_rrp')
+                    'trade_units' => $this->getCurrentBundleTradeUnits($bundle),
+                    'price'       => $productPrice,
+                    'rrp'         => $productRrp
                 ]);
+
+                data_set($portfolioData, 'selling_price', $productRrp);
+                data_set($portfolioData, 'customer_price', $productRrp);
+                data_set($portfolioData, 'sku', $this->getSKU($product->refresh()));
             }
 
             if ($portfolio && $portfolioData) {
                 UpdatePortfolio::make()->action($portfolio, $portfolioData);
+                UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, []);
             }
 
             $bundle->refresh();
@@ -189,6 +172,25 @@ class UpdateBundle extends OrgAction
 
             return $bundle;
         });
+    }
+
+    /**
+     * @return array<int, array{id: int, quantity: float}>
+     */
+    private function getCurrentBundleTradeUnits(Bundle $bundle): array
+    {
+        $bundleItems = $bundle->items()
+            ->where('item_type', class_basename(Product::class))
+            ->get();
+
+        $componentProducts = Product::whereIn('id', $bundleItems->pluck('item_id'))->get();
+
+        $componentQuantities = $bundleItems->map(fn (BundleItem $bundleItem) => [
+            'product_id' => $bundleItem->item_id,
+            'quantity'   => $bundleItem->quantity
+        ])->all();
+
+        return $this->getBundleTradeUnits($componentProducts, $componentQuantities);
     }
 
     private function getPortfolioPresentationData(array $modelData): array

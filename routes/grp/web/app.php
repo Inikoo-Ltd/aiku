@@ -7,6 +7,7 @@
  */
 
 use App\Actions\DevOps\UI\IndexAppDeployments;
+use App\Actions\Comms\Mailbox\CallbackShopMailbox;
 use App\Actions\HumanResources\ClockingMachine\UI\RedirectClockingMachineQrScan;
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
 use App\Actions\SysAdmin\UI\ShowGrpLlmsTxt;
@@ -33,6 +34,8 @@ Route::middleware(
     });
 
     Route::get('llms.txt', ShowGrpLlmsTxt::class)->name('llms_txt');
+
+    Route::get('gmail/callback', CallbackShopMailbox::class)->name('gmail.callback');
 
     if (!app()->isProduction()) {
         Route::get('routes', function () {
@@ -211,6 +214,10 @@ Route::middleware(
     Route::prefix("tickets")
         ->name("tickets.")
         ->group(__DIR__."/tickets.php");
+
+    Route::prefix("tasks")
+        ->name("tasks.")
+        ->group(__DIR__."/tasks.php");
 
     Route::prefix("devops")
         ->name("devops.")

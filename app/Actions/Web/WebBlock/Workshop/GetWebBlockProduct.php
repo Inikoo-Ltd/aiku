@@ -76,6 +76,7 @@ class GetWebBlockProduct
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.label_info', $this->getProductLabelInfo($product));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product.is_label_info_approved', $this->isProductLabelInfoApproved($product));
 
         if ($variant) {
             data_set($webBlock, 'web_block.layout.data.fieldValue.variant', $variant->only(['id', 'data']));

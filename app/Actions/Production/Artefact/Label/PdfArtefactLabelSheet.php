@@ -9,22 +9,39 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Mpdf\Mpdf;
+use Picqer\Barcode\BarcodeGenerator;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class PdfArtefactLabelSheet extends OrgAction
 {
     use WithArtefactLabelLayout;
+    use WithArtefactLabelAuthorisation;
 
     private const LINE_HEIGHT = 1.1;
 
     private const TEXT_BOX_HEADROOM = 2.0;
+
+    private const BARCODE_TYPES = [
+        'ean13'   => BarcodeGenerator::TYPE_EAN_13,
+        'code128' => BarcodeGenerator::TYPE_CODE_128,
+    ];
+
+    /**
+     * The bars are drawn this many user units wide before being stretched onto the box the designer
+     * drew, which keeps every module a whole number of units apart and the ratios exact.
+     */
+    private const BARCODE_UNIT_WIDTH = 2.0;
+
+    private const BARCODE_UNIT_HEIGHT = 30.0;
 
     private const PAGE_SIZES = [
         'portrait'  => ['width' => 210.0, 'height' => 297.0],
@@ -36,7 +53,7 @@ class PdfArtefactLabelSheet extends OrgAction
      *
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Artefact $artefact, array $modelData, ?array $artwork): Response
+    public function handle(Artefact|OrgStock $model, array $modelData, ?array $artwork): Response
     {
         $orientation    = $modelData['orientation'];
         $columns        = (int) $modelData['columns'];
@@ -53,7 +70,7 @@ class PdfArtefactLabelSheet extends OrgAction
             abort(422, __('The grid does not fit on the page, reduce the number of labels, the margin or the gap.'));
         }
 
-        $filename = 'labels-'.$artefact->code.'-'.now()->format('Y-m-d').'.pdf';
+        $filename = 'labels-'.$model->code.'-'.now()->format('Y-m-d').'.pdf';
         $cells    = $this->getCells($columns, $rows, $pageMargin, $gap, $labelWidth, $labelHeight);
         $isVector = Arr::get($artwork, 'mime_type') === 'application/pdf';
 
@@ -167,7 +184,7 @@ class PdfArtefactLabelSheet extends OrgAction
 
     /**
      * @param  array<int, array<string, mixed>>  $fields
-     * @return array<int, array{text: string, left: float, top: float, width: float, height: float, font_size: float, color: string, background_color: string|null, weight: string, rotation: int}>
+     * @return array<int, array{text: string, left: float, top: float, width: float, height: float, font_size: float, color: string, background_color: string|null, weight: string, rotation: int, barcode: array{uri: string, width: float, height: float, show_value: bool}|null}>
      */
     private function getFields(array $fields, float $labelWidth, float $labelHeight, float $longestPageSide): array
     {
@@ -183,8 +200,15 @@ class PdfArtefactLabelSheet extends OrgAction
             $fontSize   = (float) ($field['font_size'] ?? 8);
             $rotation   = (int) ($field['rotation'] ?? 0);
             $lineHeight = $fontSize * self::LINE_HEIGHT * 25.4 / 72;
-            $textLength = (float) ($field['length'] ?? max($labelWidth - (float) $field['x'] * $labelWidth, 1));
-            $boxWidth   = min($textLength + self::TEXT_BOX_HEADROOM, $longestPageSide);
+            $isBarcode  = ($field['source'] ?? null) === 'barcode';
+            $barcode    = $isBarcode ? $this->getBarcode($field, $text, $labelWidth, $labelHeight) : null;
+            $textLength = $barcode
+                ? $barcode['width']
+                : (float) ($field['length'] ?? max($labelWidth - (float) $field['x'] * $labelWidth, 1));
+            $boxWidth   = $barcode
+                ? $barcode['width']
+                : min($textLength + self::TEXT_BOX_HEADROOM, $longestPageSide);
+            $blockHeight = $barcode ? $barcode['height'] + ($barcode['show_value'] ? $lineHeight : 0) : $lineHeight;
 
             [$left, $top] = $this->getRotatedOrigin(
                 $rotation,
@@ -192,7 +216,7 @@ class PdfArtefactLabelSheet extends OrgAction
                 (float) $field['y'] * $labelHeight,
                 $textLength,
                 $boxWidth,
-                $lineHeight
+                $blockHeight
             );
 
             $placedFields[] = [
@@ -200,8 +224,9 @@ class PdfArtefactLabelSheet extends OrgAction
                 'left'      => $left,
                 'top'       => $top,
                 'width'     => $boxWidth,
-                'height'    => $lineHeight,
+                'height'    => $blockHeight,
                 'font_size' => $fontSize,
+                'barcode'   => $barcode,
                 'color'     => $field['color'] ?? '#000000',
                 'background_color' => $this->getBackgroundColor($field['background_color'] ?? null),
                 'weight'    => filter_var($field['bold'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'bold' : 'normal',
@@ -210,6 +235,70 @@ class PdfArtefactLabelSheet extends OrgAction
         }
 
         return $placedFields;
+    }
+
+    /**
+     * The generator pads and re-checksums whatever it is given, which would print bars that read
+     * back as a different number than the digits underneath them, so the code is checked first.
+     */
+    private function isValidEan13(string $text): bool
+    {
+        if (!preg_match('/^\d{13}$/', $text)) {
+            return false;
+        }
+
+        $digits = str_split($text);
+        $check  = (int) array_pop($digits);
+        $sum    = 0;
+
+        foreach ($digits as $index => $digit) {
+            $sum += (int) $digit * ($index % 2 === 0 ? 1 : 3);
+        }
+
+        return (10 - $sum % 10) % 10 === $check;
+    }
+
+    /**
+     * The bars are handed over as a vector SVG so mPDF copies the paths straight into the sheet,
+     * which keeps them sharp at any print size, which is what a scanner needs.
+     *
+     * @param  array<string, mixed>  $field
+     * @return array{uri: string, width: float, height: float, show_value: bool}
+     */
+    private function getBarcode(array $field, string $text, float $labelWidth, float $labelHeight): array
+    {
+        $symbology = $field['barcode_type'] ?? 'code128';
+        $type      = self::BARCODE_TYPES[$symbology] ?? BarcodeGenerator::TYPE_CODE_128;
+        $width     = max((float) ($field['barcode_width'] ?? 0.6) * $labelWidth, 1);
+        $height    = max((float) ($field['barcode_height'] ?? 0.3) * $labelHeight, 1);
+
+        if ($symbology === 'ean13' && !$this->isValidEan13($text)) {
+            abort(422, __(':text is not an EAN13, it needs 13 digits ending in the right check digit, print it as a CODE 128 instead.', [
+                'text' => $text,
+            ]));
+        }
+
+        try {
+            $svg = (new BarcodeGeneratorSVG())->getBarcode(
+                $text,
+                $type,
+                self::BARCODE_UNIT_WIDTH,
+                self::BARCODE_UNIT_HEIGHT,
+                $field['color'] ?? '#000000'
+            );
+        } catch (Throwable) {
+            abort(422, __(':text cannot be printed as a :type barcode, correct it or pick the other symbology.', [
+                'text' => $text,
+                'type' => strtoupper((string) ($field['barcode_type'] ?? 'code128')),
+            ]));
+        }
+
+        return [
+            'uri'        => 'data:image/svg+xml;base64,'.base64_encode($svg),
+            'width'      => $width,
+            'height'     => $height,
+            'show_value' => filter_var($field['barcode_show_value'] ?? true, FILTER_VALIDATE_BOOLEAN),
+        ];
     }
 
     private function getBackgroundColor(mixed $backgroundColor): ?string
@@ -266,6 +355,10 @@ class PdfArtefactLabelSheet extends OrgAction
             return true;
         }
 
+        if (!isset($this->production)) {
+            return $this->canViewLabels($request);
+        }
+
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
@@ -290,13 +383,27 @@ class PdfArtefactLabelSheet extends OrgAction
     }
 
     /**
+     * @throws \Mpdf\MpdfException
+     */
+    public function inOrgStock(OrgStock $orgStock, ActionRequest $request): Response
+    {
+        $this->initialisation($orgStock->organisation, $request);
+
+        return $this->handle(
+            $orgStock,
+            $this->validatedData,
+            $this->getArtwork($orgStock, $request->file('background_artwork'), $this->validatedData)
+        );
+    }
+
+    /**
      * A freshly uploaded artwork wins, otherwise a saved label prints against the artwork it was
      * designed with, which is the whole reason that file is kept.
      *
      * @param  array<string, mixed>  $modelData
      * @return array{path: string, mime_type: string|null}|null
      */
-    private function getArtwork(Artefact $artefact, ?UploadedFile $uploaded, array $modelData): ?array
+    private function getArtwork(Artefact|OrgStock $model, ?UploadedFile $uploaded, array $modelData): ?array
     {
         if ($uploaded) {
             return [
@@ -306,7 +413,7 @@ class PdfArtefactLabelSheet extends OrgAction
         }
 
         $label = Arr::get($modelData, 'artefact_label_id')
-            ? $artefact->labels()->find(Arr::get($modelData, 'artefact_label_id'))
+            ? $model->labels()->find(Arr::get($modelData, 'artefact_label_id'))
             : null;
 
         if (!$label?->artwork) {

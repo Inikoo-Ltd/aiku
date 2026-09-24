@@ -170,7 +170,7 @@ defineExpose({
             : 'hover:bg-gray-50 border-gray-200'
           " @click="toggleSelect(item)">
         <FontAwesomeIcon v-if="isSelected(item.id)" icon="fas fa-check-circle"
-          class="absolute top-2 right-2 text-green-500" />
+          class="absolute top-2 right-2 text-green-500" fixed-width />
 
         <Image v-if="item.image" :src="item.image" class="w-full h-20 object-cover mb-2 rounded" />
 

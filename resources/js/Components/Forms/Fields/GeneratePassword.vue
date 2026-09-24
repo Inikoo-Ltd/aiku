@@ -90,7 +90,7 @@ const generatePassword = () => {
         type="button"
             class="mt-4 text-sm bg-gray-200 inline-block select-none rounded-xs border w-full py-2 text-center hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 cursor-pointer"
             @click="generatePassword">
-            <FontAwesomeIcon class="mr-1" :icon="faSync" /> Generate
+            <FontAwesomeIcon class="mr-1" :icon="faSync" fixed-width /> Generate
         </div>
     </div>
 </template>

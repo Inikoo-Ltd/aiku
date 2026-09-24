@@ -16,8 +16,11 @@ use App\Actions\UI\WithInertia;
 use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
-use App\Actions\Web\Webpage\GetWebpagePageSpeedReport;
+use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
+use App\Actions\Web\Website\GetCruxReport;
+use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
+use App\Actions\Web\Webpage\GetWebpageSeo;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -269,6 +272,17 @@ class ShowWebpage extends OrgAction
         return $actions;
     }
 
+    /**
+     * @return array{crux: array, visitors: array}
+     */
+    private function realUserSpeed(Webpage $webpage): array
+    {
+        return [
+            'crux'     => GetCruxReport::run($webpage->website, $webpage),
+            'visitors' => GetWebVitalsReport::run($webpage->website, $webpage),
+        ];
+    }
+
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
         $subNavigation = $this->getWebpageNavigation($webpage->website);
@@ -294,6 +308,20 @@ class ShowWebpage extends OrgAction
 
         $tabsNavigation = WebpageTabsEnum::navigation();
         data_set($tabsNavigation, 'redirects.number', $webpage->stats->number_redirects);
+
+        $isHiddenFromSearchEngines = (bool)$webpage->sub_type?->isHiddenFromSearchEngines();
+
+        /**
+         * A page kept out of the index is never measured: nobody tunes an advert page for search
+         * results, so its report is not offered and no PageSpeed run is spent on it. What it is
+         * judged on instead is how the visitors it is bought for behave. A page that is not live
+         * has nothing published to measure, so it gets no report either.
+         */
+        $pagespeed = match (true) {
+            $isHiddenFromSearchEngines, $webpage->state != WebpageStateEnum::LIVE => null,
+            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed'),
+            default => Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+        };
 
         return Inertia::render(
             'Org/Web/Webpage',
@@ -356,9 +384,15 @@ class ShowWebpage extends OrgAction
                     fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))
                     : Inertia::optional(fn () => GetWebpagePerformance::run($webpage, $request->only(['startDate', 'endDate']))),
 
-                'pagespeed' => $this->tab == WebpageTabsEnum::ANALYTICS->value
-                    ? Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed')
-                    : Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+                'pagespeed' => $pagespeed,
+
+                'engagement' => $isHiddenFromSearchEngines && $this->tab == WebpageTabsEnum::SHOWCASE->value
+                    ? Inertia::defer(fn () => GetWebpageEngagementMetrics::run($webpage), 'engagement')
+                    : null,
+
+                'seo' => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
+                    fn () => GetWebpageSeo::run($webpage)
+                    : Inertia::optional(fn () => GetWebpageSeo::run($webpage)),
 
                 WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($webpage, WebpageTabsEnum::CHANGELOG->value))

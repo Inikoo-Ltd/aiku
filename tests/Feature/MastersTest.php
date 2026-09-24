@@ -36,6 +36,12 @@ use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\Web\Webpage\LockWebpage;
+use App\Actions\Web\Webpage\UI\GetMasterFamilyWebpageLocks;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterFamilyMasterDepartment;
@@ -1421,7 +1427,7 @@ test('UI Edit Master Product', function (MasterAsset $masterAsset) {
                     ->has('args.updateRoute')
                     ->where('args.updateRoute.name', 'grp.models.master_asset.update')
                     ->where('args.updateRoute.parameters.masterAsset', $masterAsset->id)
-                    ->has('blueprint.5.fields.composition.route')
+                    ->has('blueprint.6.fields.composition.route')
                     ->etc()
             );
     });
@@ -2034,6 +2040,72 @@ test('DetachMasterCollectionFromModel detaches a master collection from a depart
     expect($masterDepartment->masterCollections()->where('master_collections.id', $masterCollection->id)->exists())->toBeFalse();
 });
 
+test('master family locks only the webpages of the selected websites', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'LOCKDEP-'.uniqid(), 'name' => 'Lock Dept']);
+    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'LOCKFAM-'.uniqid(), 'name' => 'Lock Family']);
+
+    createProduct($this->shop);
+    createWebsite($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+
+    $makeFamily = fn () => StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+
+    $selectedFamily   = $makeFamily();
+    $translatedFamily = $makeFamily();
+    $unrelatedFamily  = $makeFamily();
+
+    $selectedWebpage   = StoreProductCategoryWebpage::make()->action($selectedFamily);
+    $translatedWebpage = StoreProductCategoryWebpage::make()->action($translatedFamily);
+    $unrelatedWebpage  = StoreProductCategoryWebpage::make()->action($unrelatedFamily);
+
+    $selectedFamily->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+    $translatedFamily->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+
+    $user = $this->adminGuest->getUser();
+
+    $webpageLocks = GetMasterFamilyWebpageLocks::run($masterFamily, $user);
+    expect(collect($webpageLocks['webpages'])->pluck('id')->all())->toEqualCanonicalizing([$selectedWebpage->id, $translatedWebpage->id])
+        ->and(collect($webpageLocks['webpages'])->every(fn (array $webpage) => !$webpage['is_locked']))->toBeTrue();
+
+    $this->postJson(route('grp.models.master_product_category.lock_webpages', $masterFamily->id), [
+        'webpage_ids' => [$selectedWebpage->id, $unrelatedWebpage->id],
+        'reason'      => 'Final copy approved',
+    ])->assertSuccessful();
+
+    $selectedWebpage->refresh();
+    expect($selectedWebpage->isLocked())->toBeTrue()
+        ->and($selectedWebpage->locked_by_user_id)->toBe($user->id)
+        ->and($selectedWebpage->lock_data['scope'])->toBe('master_family')
+        ->and($selectedWebpage->lock_data['master_product_category_id'])->toBe($masterFamily->id)
+        ->and($translatedWebpage->fresh()->isLocked())->toBeFalse()
+        ->and($unrelatedWebpage->fresh()->isLocked())->toBeFalse();
+
+    $selectedWebpage = LockWebpage::make()->action($selectedWebpage, $user, ['reason' => 'Reason updated on the webpage']);
+    expect($selectedWebpage->lock_data['scope'])->toBe('master_family');
+
+    $this->postJson(route('grp.models.master_product_category.lock_webpages', $masterFamily->id), ['reason' => 'Nothing picked'])
+        ->assertStatus(422)->assertJsonValidationErrors('webpage_ids');
+
+    $singleWebpage = LockWebpage::make()->action($translatedWebpage->fresh(), $user, ['reason' => 'This page only']);
+    expect($singleWebpage->lock_data['scope'])->toBe('webpage');
+
+    $this->postJson(route('grp.models.master_product_category.unlock_webpages', $masterFamily->id), ['webpage_ids' => [$selectedWebpage->id]])
+        ->assertStatus(422)->assertJsonValidationErrors('reason');
+
+    $this->postJson(route('grp.models.master_product_category.unlock_webpages', $masterFamily->id), [
+        'webpage_ids' => [$selectedWebpage->id, $unrelatedWebpage->id],
+        'reason'      => 'Copy needs updating',
+    ])->assertSuccessful();
+
+    expect($selectedWebpage->fresh()->isLocked())->toBeFalse()
+        ->and($selectedWebpage->fresh()->lock_data['unlock_reason'])->toBe('Copy needs updating')
+        ->and($translatedWebpage->fresh()->isLocked())->toBeTrue();
+});
+
 test('DetachMasterModelFromMasterCollection detaches a master family from a master collection', function () {
     $masterShop      = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
@@ -2099,6 +2171,32 @@ test('DeleteMasterProductCategory force deletes a master sub department without 
     DeleteMasterProductCategory::make()->handle($masterSubDepartment, true);
 
     expect(MasterProductCategory::find($masterSubDepartmentId))->toBeNull();
+});
+
+test('DeleteMasterProductCategory deletes empty shop categories and keeps the ones with products', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'DMC-DEPT-'.uniqid(), 'name' => 'Delete Cascade Department']);
+    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'DMC-FAM-'.uniqid(), 'name' => 'Delete Cascade Family']);
+
+    [, $product] = createProduct($this->shop);
+    $department  = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $emptyFamily = StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+    $familyWithProducts = $product->family;
+
+    $emptyFamily->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+    $familyWithProducts->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+
+    expect(fn () => DeleteMasterProductCategory::make()->action($masterFamily))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    DeleteMasterProductCategory::make()->handle($masterFamily);
+
+    expect(ProductCategory::find($emptyFamily->id))->toBeNull()
+        ->and(ProductCategory::find($familyWithProducts->id))->not->toBeNull()
+        ->and(MasterProductCategory::find($masterFamily->id))->toBeNull()
+        ->and($familyWithProducts->fresh()->master_product_category_id)->toBeNull();
 });
 
 test('AttachMasterFamiliesToMasterDepartment moves families under a department', function () {
@@ -3145,6 +3243,32 @@ test('creating a master asset queues its effective cost hydration', function (Ma
     );
 })->depends("create master family");
 
+test('changing a master composition queues its effective cost hydration', function (MasterProductCategory $masterFamily) {
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'EFFECTIVE_COST_2',
+        'name'    => 'effective cost 2',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    Queue::fake();
+
+    UpdateMasterAsset::make()->action($masterAsset, [
+        'trade_units' => [
+            ['id' => $tradeUnit->id, 'quantity' => 1],
+        ],
+    ]);
+
+    Queue::assertPushed(
+        \App\Jobs\BoundedUniqueJobDecorator::class,
+        fn ($job) => $job->displayName() === MasterAssetHydrateEffectiveCost::class
+            && $job->getParameters()[0]->id === $masterAsset->id
+    );
+})->depends("create master family");
+
 test('upload and delete sound sample on master asset', function () {
     $masterDepartment = ensureMasterProductCategory();
     $masterFamily     = StoreMasterProductCategory::make()->action($masterDepartment, [
@@ -3263,4 +3387,110 @@ test('recommended trade units follow the linked trade unit family, not the famil
 
     expect($recommended)->toContain($tradeUnit->id)
         ->and($recommended)->toContain($prefixOnlyTradeUnit->id);
+});
+
+test('store master variant is blocked while a product waits for its cutover retirement decision', function () {
+    $masterShop   = createFreshMasterShop();
+    $masterFamily = StoreMasterFamily::make()->action(
+        StoreMasterDepartment::make()->action($masterShop, ['code' => 'RTD-DEP-'.uniqid(), 'name' => 'Retirement Dept']),
+        ['code' => 'RTD-FAM-'.uniqid(), 'name' => 'Retirement Family']
+    );
+    $leader = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RTD-LEAD-'.uniqid(),
+        'name'    => 'Retired Leader',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $originalData           = $product->data;
+    $originalMasterProduct  = $product->master_product_id;
+    $product->updateQuietly([
+        'master_product_id' => $leader->id,
+        'data'              => array_merge($product->data ?? [], ['retire_at_cutover' => true, 'replaced_by_product_id' => $product->id]),
+    ]);
+
+    try {
+        $response = post(route('grp.models.master_variant.store', $masterFamily->id), [
+            'data_variants' => [
+                'variants' => [['label' => 'Size', 'options' => ['S']]],
+                'groupBy'  => 'Size',
+                'products' => [$leader->id => ['is_leader' => true, 'product' => ['id' => $leader->id]]],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('leader_id');
+        expect($leader->refresh()->master_variant_id)->toBeNull();
+    } finally {
+        $product->updateQuietly(['master_product_id' => $originalMasterProduct, 'data' => $originalData]);
+    }
+});
+
+test('master products can be looked up by the codes pasted into the ordering tab', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PASTE-DEP-'.uniqid(),
+        'name' => 'Paste order department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PASTE-FAM-'.uniqid(),
+        'name' => 'Paste order family',
+    ]);
+    $otherFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PASTE-OTHER-'.uniqid(),
+        'name' => 'Paste order other family',
+    ]);
+
+    $first = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PASTE-A1',
+        'name'    => 'Paste asset one',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $second = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PASTE-A2',
+        'name'    => 'Paste asset two',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 11,
+        'stocks'  => [],
+    ]);
+    $outsider = StoreMasterAsset::make()->action($otherFamily, [
+        'code'    => 'PASTE-OUT',
+        'name'    => 'Paste asset from another family',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12,
+        'stocks'  => [],
+    ]);
+
+    $codes = collect(get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterFamily->id,
+        'codes'                 => 'paste-a2, PASTE-A1 ,PASTE-OUT,PASTE-NOPE',
+    ]))->assertOk()->json('data'))->pluck('code');
+
+    expect($codes->all())->toContain($first->code, $second->code)
+        ->and($codes->all())->not->toContain($outsider->code);
+
+    get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterDepartment->id,
+        'codes'                 => 'PASTE-A1',
+    ]))->assertForbidden();
+
+    get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterFamily->id,
+    ]))->assertSessionHasErrors('codes');
+
+    $shopCodes = collect(get(route('grp.json.master_shop.products_by_codes', [
+        'masterShop' => $masterShop->id,
+        'codes'      => 'PASTE-A1,PASTE-OUT',
+    ]))->assertOk()->json('data'))->pluck('code');
+
+    expect($shopCodes->all())->toContain($first->code, $outsider->code);
 });

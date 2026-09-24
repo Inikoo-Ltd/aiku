@@ -8,6 +8,7 @@
 import { Head, router } from "@inertiajs/vue3"
 import { ref, computed, watch } from "vue"
 import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -49,6 +50,9 @@ const props = defineProps<{
         artefact_code: string
         artefact_name: string
         quantity: number
+        demand_skos: number | null
+        suggested_quantity: number | null
+        update_route: null | { name: string, parameters: object }
         produced_quantity: number
         waiting_for: { code: string, needed: number, on_hand: number }[]
         tasks: ItemTask[]
@@ -105,6 +109,27 @@ function addItem() {
                 newArtefactId.value = null
                 newQuantity.value = null
             },
+        }
+    )
+}
+
+const editingItemId = ref<number | null>(null)
+const editedQuantity = ref<number | null>(null)
+
+function startEditingQuantity(item: { id: number, quantity: number }) {
+    editingItemId.value = item.id
+    editedQuantity.value = item.quantity
+}
+
+function saveQuantity(item: { update_route: null | { name: string, parameters: object } }, quantity: number | null) {
+    if (!item.update_route || !quantity || quantity < 1) return
+    router.patch(
+        route(item.update_route.name, item.update_route.parameters),
+        { quantity: quantity },
+        {
+            preserveScroll: true,
+            onSuccess: () => editingItemId.value = null,
+            onError: (errors) => notify({ title: trans('Something went wrong'), text: Object.values(errors).join(' '), type: 'error' }),
         }
     )
 }
@@ -193,7 +218,20 @@ function receiveIntoStock() {
                     {{ item.artefact_code }}
                     <span class="text-gray-500 font-normal ml-2">{{ item.artefact_name }}</span>
                 </div>
-                <div class="tabular-nums text-gray-700">× {{ item.quantity }}</div>
+                <form v-if="editingItemId === item.id" class="flex items-center gap-2" @submit.prevent="saveQuantity(item, editedQuantity)">
+                    <input v-model.number="editedQuantity" type="number" min="1" step="1" class="w-24 rounded border-gray-300 text-sm tabular-nums" :aria-label="trans('Quantity')" />
+                    <button type="submit" class="text-sm font-medium text-indigo-600">{{ trans('Save') }}</button>
+                    <button type="button" class="text-sm text-gray-500" @click="editingItemId = null">{{ trans('Cancel') }}</button>
+                </form>
+                <div v-else class="tabular-nums text-gray-700">
+                    × {{ item.quantity }}
+                    <button v-if="item.update_route" type="button" class="ml-2 text-sm text-indigo-600" @click="startEditingQuantity(item)">{{ trans('Change') }}</button>
+                </div>
+            </div>
+
+            <div v-if="item.update_route && item.suggested_quantity && item.suggested_quantity !== item.quantity" class="mt-2 text-sm text-amber-600">
+                {{ trans('Raised with a different batch size') }}: {{ item.demand_skos }} {{ trans('SKOs asked for') }} &rarr; {{ item.suggested_quantity }}
+                <button type="button" class="ml-2 font-medium underline" @click="saveQuantity(item, item.suggested_quantity)">{{ trans('Set to') }} {{ item.suggested_quantity }}</button>
             </div>
 
             <div v-if="item.waiting_for.length" class="mt-2 text-sm text-amber-600">

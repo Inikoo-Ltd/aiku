@@ -3,6 +3,7 @@
 namespace App\Actions\Chat\MetaChatSession;
 
 use App\Models\Chat\MetaChatSession;
+use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Models\CRM\Customer;
 use Illuminate\Http\JsonResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,6 +31,8 @@ class GetMetaChatCustomerProfile
             'email'       => $customer->email,
             'phone'       => $customer->phone,
             'profile_url' => $this->customerProfileUrl($customer),
+            ...GetChatCustomerProfile::make()->contactAndLastOrders($customer),
+            ...GetChatCustomerProfile::make()->previousContact($customer, $metaChatSession),
 
             'tags' => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,

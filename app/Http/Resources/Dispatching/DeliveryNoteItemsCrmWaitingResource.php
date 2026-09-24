@@ -32,6 +32,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_waiting_crm
  * @property mixed $notes
  * @property mixed $shop_slug
+ * @property mixed $product_code
+ * @property mixed $number_skos_in_product
+ * @property mixed $quantity_ordered
+ * @property mixed $currency_code
+ * @property mixed $net_amount
+ * @property mixed $tax_rate
  */
 class DeliveryNoteItemsCrmWaitingResource extends JsonResource
 {
@@ -94,8 +100,12 @@ class DeliveryNoteItemsCrmWaitingResource extends JsonResource
             'is_handled'                     => $this->is_handled,
             'quantity_required_fractional'   => $requiredFactionalData,
             'notes'                          => $this->notes,
-
-
+            'product_code'                   => $this->product_code,
+            'number_skos_in_product'         => (int) $this->number_skos_in_product,
+            'quantity_ordered'               => $this->quantity_ordered,
+            'currency_code'                  => $this->currency_code,
+            'net_amount'                     => $this->net_amount,
+            'net_amount_with_tax'            => $this->net_amount === null ? null : round($this->net_amount * (1 + (float) $this->tax_rate), 2),
         ];
     }
 }

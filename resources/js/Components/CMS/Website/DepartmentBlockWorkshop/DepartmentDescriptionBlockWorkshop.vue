@@ -218,7 +218,7 @@ const sidebarOpen = ref(true)
 				 <div class="flex items-center gap-2">
             <button type="button" class="w-8 h-8 rounded-lg hover:bg-gray-200 transition"
               @click="sidebarOpen = !sidebarOpen">
-              <FontAwesomeIcon :icon="sidebarOpen ? faExpand : faCompressWide" />
+              <FontAwesomeIcon :icon="sidebarOpen ? faExpand : faCompressWide" fixed-width />
             </button>
 
             <div class="py-1 px-2 hidden lg:block">
@@ -261,7 +261,7 @@ const sidebarOpen = ref(true)
 					class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
 					style="height: 100%">
 					<div class="flex flex-col items-center gap-2">
-						<FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
+						<FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" fixed-width />
 						<h3 class="text-lg font-semibold">{{ trans("No department selected") }}</h3>
 						<p class="text-sm max-w-xs">
 							{{ trans("Please pick a department to preview its data here.") }}
@@ -310,7 +310,7 @@ const sidebarOpen = ref(true)
 									dept?.slug == dataPicked?.department?.slug
 										? 'text-blue-500'
 										: 'text-gray-400'
-								" />
+								" fixed-width />
 
 							<span class="group-hover:underline">
 								{{ dept.name }}

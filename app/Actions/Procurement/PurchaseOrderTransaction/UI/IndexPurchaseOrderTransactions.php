@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -128,11 +129,18 @@ class IndexPurchaseOrderTransactions extends OrgAction
             }
         }
 
-        return $query->allowedSorts([AllowedSort::field('code', 'sp.code')])
+        $paginator = $query->allowedSorts([AllowedSort::field('code', 'sp.code')])
             ->defaultSort('purchase_order_transactions.id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $quarterlyUsage = GetOrgStocksQuarterlyUsage::run($paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values());
+        $paginator->getCollection()->each(
+            fn (PurchaseOrderTransaction $transaction) => $transaction->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
+        );
+
+        return $paginator;
     }
 
 

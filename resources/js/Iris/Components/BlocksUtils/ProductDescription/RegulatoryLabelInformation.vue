@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { ulid } from "ulid"
 import {
 	faShieldCheck,
 	faGlobe,
@@ -131,12 +132,19 @@ const openRow = ref<string | null>(null)
 const toggleRow = (key: string) => {
 	openRow.value = openRow.value === key ? null : key
 }
+
+const renderKey = ref("server")
+
+onMounted(() => {
+	renderKey.value = ulid()
+})
 </script>
 
 <template>
-	<div v-if="cards.length || rows.length" class="regulatory-panel py-5 md:py-6 lg:py-8" :style="containerStyle">
+	<div :key="renderKey" class="py-5 md:py-6 lg:py-12" :style="{ paddingTop:'3rem', paddingBottom:'3rem' }">
+	<div v-if="cards.length || rows.length" class="regulatory-panel" :style="containerStyle">
 		<div class="flex items-start gap-3">
-			<FontAwesomeIcon :icon="faShieldCheck" class="mt-1  text-primary " style="font-size: 40px;" />
+			<FontAwesomeIcon :icon="faShieldCheck" class="mt-1  text-primary " style="font-size: 40px;" fixed-width />
 			<div>
 				<h2 class="!mt-0 !mb-1 text-[16px] font-semibold text-[#22374a] md:text-[18px]">
 					{{ ctrans("Regulatory & Label Information") }}
@@ -156,7 +164,7 @@ const toggleRow = (key: string) => {
 				class="flex items-start gap-3 rounded-[8px] border panel-border bg-white px-3 py-3">
 				<span
 					class="flex h-7 w-7 shrink-0 items-center justify-center  text-primary">
-					<FontAwesomeIcon :icon="card.icon" class="text-[16px]" />
+					<FontAwesomeIcon :icon="card.icon" class="text-[16px]" fixed-width />
 				</span>
 
 				<div class="min-w-0">
@@ -169,7 +177,8 @@ const toggleRow = (key: string) => {
 							<span
 								v-for="market in card.value"
 								:key="market.value"
-								class="rounded border accent-chip px-1.5 py-0.5 text-[10px]">
+								class="inline-flex items-center gap-1 rounded border accent-chip px-1.5 py-0.5 text-[10px]">
+								<FontAwesomeIcon v-if="market.value === 'other'" :icon="faGlobe" class="text-[10px]" fixed-width />
 								{{ market.label }}
 							</span>
 						</div>
@@ -221,12 +230,12 @@ const toggleRow = (key: string) => {
 					class="flex w-full items-center gap-3 px-3 py-3 text-left"
 					:aria-expanded="openRow === row.key"
 					@click="toggleRow(row.key)">
-					<FontAwesomeIcon :icon="row.icon" class="shrink-0 text-[12px] text-primary" />
+					<FontAwesomeIcon :icon="row.icon" class="shrink-0 text-[12px] text-primary" fixed-width />
 					<span class="flex-1 text-[12px] text-[#334155] md:text-[13px]">{{ row.label }}</span>
 					<FontAwesomeIcon
 						:icon="faChevronDown"
 						class="shrink-0 text-[11px] text-[#9a9a9a] transition-transform duration-200"
-						:class="{ 'rotate-180': openRow === row.key }" />
+						:class="{ 'rotate-180': openRow === row.key }" fixed-width />
 				</button>
 
 				<div
@@ -294,7 +303,7 @@ const toggleRow = (key: string) => {
 
 					<template v-else-if="isPresenceRow(row.key)">
 						<span class="inline-flex items-center gap-1 accent-text">
-							<FontAwesomeIcon :icon="faCheckCircle" class="text-[11px]" />
+							<FontAwesomeIcon :icon="faCheckCircle" class="text-[11px]" fixed-width />
 							{{ ctrans("Present on the label") }}
 						</span>
 					</template>
@@ -305,6 +314,7 @@ const toggleRow = (key: string) => {
 				</div>
 			</div>
 		</div>
+	</div>	
 	</div>
 </template>
 

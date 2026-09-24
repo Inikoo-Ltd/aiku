@@ -160,7 +160,7 @@ class IndexUsers extends OrgAction
                 ->withLabelRecord([__('user'),__('users')])
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->column(key: 'status', label: ['data' => ['fal', 'fa-yin-yang'], 'type' => 'icon', 'tooltip' => __('Status')], type: 'icon')
+                ->column(key: 'status', label: __('Status'), type: 'icon', sortable: true)
                 ->column(key: 'image', label: ['data' => ['fal', 'fa-user-circle'], 'type' => 'icon', 'tooltip' => __('Avatar')], type: 'avatar')
                 ->column(key: 'username', label: __('Username'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'contact_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)

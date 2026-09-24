@@ -111,7 +111,7 @@ class FetchAuroraDispatchedEmail extends FetchAurora
 
 
         $this->parsedData['dispatchedEmail'] = [
-            'provider_dispatch_id' => $providerId,
+            'ses_id'               => $providerId,
             'email_address'        => $this->auroraModelData->{'Email Tracking Email'},
             'state'                => $state,
             'source_id'            => $this->organisation->id.':'.$this->auroraModelData->{'Email Tracking Key'},

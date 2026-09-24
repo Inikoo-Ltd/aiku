@@ -62,7 +62,7 @@ class ShowArtefact extends OrgAction
         return Inertia::render(
             'Org/Production/Artefact',
             [
-                'title'                                => __('warehouse area'),
+                'title'                                => __('Artefact') . ' ' . $artefact->code,
                 'breadcrumbs'                          => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
@@ -145,6 +145,10 @@ class ShowArtefact extends OrgAction
                 ArtefactTabsEnum::MANUFACTURE_TASKS->value => $this->tab == ArtefactTabsEnum::MANUFACTURE_TASKS->value
                     ? fn () => GetArtefactManufactureTasks::run($artefact)
                     : Inertia::optional(fn () => GetArtefactManufactureTasks::run($artefact)),
+
+                ArtefactTabsEnum::LABELS->value => $this->tab == ArtefactTabsEnum::LABELS->value
+                    ? fn () => GetArtefactLabels::run($artefact)
+                    : Inertia::optional(fn () => GetArtefactLabels::run($artefact)),
 
                 ArtefactTabsEnum::COMPLIANCE->value => $this->tab == ArtefactTabsEnum::COMPLIANCE->value
                     ? fn () => GetArtefactCompliance::run($artefact)

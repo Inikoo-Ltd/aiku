@@ -122,6 +122,7 @@ class CallApiGlsEsShipping extends OrgAction
         $createResults = $this->executeParallelCurl($xmlPayloads, $url, $headers);
 
         $trackings = [];
+        $barcodes = [];
         $soapResults = [];
         foreach ($createResults as $index => $res) {
             if (!$res['success'] || empty($res['content'])) {
@@ -185,12 +186,14 @@ class CallApiGlsEsShipping extends OrgAction
             $uid = $ret[0]->xpath("//Servicios/Envio/@uid");
 
             $codbarras = (string)$cb[0]["codbarras"];
-            $trackings[] = $codbarras;
+            $barcodes[] = $codbarras;
+            $tracking = $this->getTrackingNumber($ret[0]);
+            $trackings[] = $tracking;
 
             $soapResults[$index] = [
                 'reference' => $codbarras,
-                'trackings' => [$codbarras],
-                'tracking' => $codbarras,
+                'trackings' => [$tracking],
+                'tracking' => $tracking,
                 'data' => [
                     'codexp' => (string)$codExp[0]["codexp"],
                     'codbarras' => $codbarras,
@@ -201,7 +204,7 @@ class CallApiGlsEsShipping extends OrgAction
 
         $uidClient = $this->getAccessToken($shipper);
         $labelXmlPayloads = [];
-        foreach ($trackings as $reference) {
+        foreach ($barcodes as $reference) {
             $labelXmlPayloads[] = '<?xml version="1.0" encoding="utf-8"?>
 <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
 <soap:Body>
@@ -486,10 +489,22 @@ class CallApiGlsEsShipping extends OrgAction
 
 
         $modelData['reference']   = $modelData['data']['codbarras'];
-        $modelData['trackings'][] = $modelData['data']['codbarras'];
-        $modelData['tracking']    = $modelData['data']['codbarras'];
+        $modelData['tracking']    = $this->getTrackingNumber($ret[0]);
+        $modelData['trackings'][] = $modelData['tracking'];
 
         return $modelData;
+    }
+
+    /**
+     * International services return the GLS Track ID (the "Z..." code printed on the label) as
+     * Referencia tipo G; only that one works on GLS tracking outside Spain. Domestic shipments
+     * have no tipo G, so they keep the Spanish barcode.
+     */
+    public function getTrackingNumber(\SimpleXMLElement $envio): string
+    {
+        $trackId = $envio->xpath('Referencias/Referencia[@tipo="G"]');
+
+        return trim((string)($trackId[0] ?? '')) ?: (string)$envio['codbarras'];
     }
 
     public function getCreateLabelXml(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?float $splitWeight = null, ?int $suffix = null): string

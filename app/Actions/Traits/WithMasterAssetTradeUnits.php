@@ -9,6 +9,7 @@
 namespace App\Actions\Traits;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateGrossWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateHealthAndSafetyFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateLabelInfoFromTradeUnits;
@@ -17,6 +18,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Validator;
 
 trait WithMasterAssetTradeUnits
 {
@@ -115,6 +117,26 @@ trait WithMasterAssetTradeUnits
         return ['units' => $units, 'unit' => 'bundle'];
     }
 
+    /**
+     * @param array<int, array{id?: mixed, quantity?: mixed}> $tradeUnits
+     */
+    public function validateTradeUnitQuantities(Validator $validator, array $tradeUnits): void
+    {
+        $fractional = collect($tradeUnits)->filter(fn (array $tradeUnit) => fmod(round((float) Arr::get($tradeUnit, 'quantity', 1), 3), 1.0) !== 0.0);
+
+        if ($fractional->isEmpty()) {
+            return;
+        }
+
+        TradeUnit::whereIn('id', $fractional->pluck('id'))
+            ->where('is_divisible', false)
+            ->pluck('code')
+            ->each(fn (string $code) => $validator->errors()->add(
+                'trade_units',
+                __(':code is sold in whole units only. Mark the trade unit as divisible to use part of it.', ['code' => $code])
+            ));
+    }
+
     public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnitsRaw): void
     {
         $stocks     = [];
@@ -140,6 +162,7 @@ trait WithMasterAssetTradeUnits
         MasterAssetHydrateMarketingWeightFromTradeUnits::run($masterAsset->id);
         MasterAssetHydrateGrossWeightFromTradeUnits::run($masterAsset->id);
         ProductHydrateMarketingIngredientsFromTradeUnits::run($masterAsset);
+        MasterAssetHydrateEffectiveCost::dispatch($masterAsset)->afterCommit();
 
         $masterAsset->refresh();
     }

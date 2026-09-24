@@ -195,7 +195,7 @@ const locale = inject("locale", aikuLocaleStructure);
             <Icon :data="dispatchedEmail.mask_as_spam" class="pl-1" />
             <span v-if="dispatchedEmail.has_email_preview" @click="() => { openEmailPreview(dispatchedEmail); }"
                   class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 cursor-pointer transition">
-                  <FontAwesomeIcon :icon="faEyeEvil" class="mr-1" />
+                  <FontAwesomeIcon :icon="faEyeEvil" class="mr-1" fixed-width />
                   {{ trans("Preview") }}
             </span>
 

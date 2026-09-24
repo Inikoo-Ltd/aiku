@@ -66,7 +66,7 @@ const onFetchWebhook = async () => {
                 </a>
 
                 <div @click="() => onFetchWebhook()" class="cursor-pointer h-full aspect-square flex justify-center items-center">
-                    <FontAwesomeIcon icon='fal fa-sync' class='text-gray-400 hover:text-gray-600' :class="isWebhookLoading ? 'animate-spin' : ''" aria-hidden='true' />
+                    <FontAwesomeIcon icon='fal fa-sync' class='text-gray-400 hover:text-gray-600' :class="isWebhookLoading ? 'animate-spin' : ''" fixed-width aria-hidden='true' />
                 </div>
 
                 <Button :style="'tertiary'" icon='far fa-link' class="" size="l" @click="useCopyText(data.webhook.domain + webhookValue + '?type=human')" tooltip="Copy url to clipboard" />

@@ -121,6 +121,15 @@ class UpdatePaymentAccount extends OrgAction
             $rules['paypal_client_secret']    = ['sometimes'];
         }
 
+        if ($this->paymentAccount->type == PaymentAccountTypeEnum::BANK) {
+            $rules['bank_name']         = ['sometimes', 'string'];
+            $rules['bank_account_name'] = ['sometimes', 'string'];
+            $rules['bank_account_id']   = ['sometimes', 'nullable', 'string'];
+            $rules['bank_iban']         = ['sometimes', 'nullable', 'string'];
+            $rules['bank_swift_code']   = ['sometimes', 'nullable', 'string'];
+            $rules['bank_sort_code']    = ['sometimes', 'nullable', 'string'];
+        }
+
         if ($this->paymentAccount->type == PaymentAccountTypeEnum::PASTPAY) {
             $rules['pastpay_apikey']     = ['sometimes'];
             $rules['pastpay_charges']    = ['sometimes'];

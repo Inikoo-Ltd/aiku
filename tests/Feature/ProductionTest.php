@@ -470,7 +470,7 @@ test('UI create raw material', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'creatingModel');
     });
 });
 
@@ -500,7 +500,7 @@ test('UI edit raw material', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 7)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });
 });
 
@@ -565,7 +565,7 @@ test('UI create artefact', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'creatingModel');
     });
 });
 
@@ -630,7 +630,7 @@ test('UI edit artefact', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 9)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });
 });
 
@@ -651,7 +651,7 @@ test('UI create production task', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->has('title')->has('formData')->has('pageHead')->has('breadcrumbs', 4);
+            ->has('title')->has('formData')->has('pageHead')->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'creatingModel');
     });
 });
 
@@ -704,7 +704,7 @@ test('UI edit manufacture task', function () {
             ->has('title')
             ->has('formData.blueprint.0.fields', 13)
             ->has('pageHead')
-            ->has('breadcrumbs', 4);
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });
 });
 
@@ -864,8 +864,15 @@ test('closing short can finish the job or carry the shortfall to a new job order
         ->and($carried->id)->not->toBe($jobOrder->id)
         ->and($carried->state)->toBe(JobOrderStateEnum::CONFIRMED)
         ->and($carried->jobOrderItems()->first()->quantity)->toBe(15)
+        ->and($carried->reference)->toBe($jobOrder->reference.'a')
         ->and((float)$carried->jobOrderItems()->first()->tasks()->first()->quantity_required)->toBe(15.0);
 
+    $carriedTask    = $carried->jobOrderItems()->first()->tasks()->first();
+    $carriedSession = StartManufactureTaskSession::make()->action($user, $carriedTask);
+    CloseManufactureTaskSession::make()->action($carriedSession, ['quantity_made' => 5, 'outcome' => 'carry_over']);
+    $carriedAgain = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+
+    expect($carriedAgain->reference)->toBe($jobOrder->reference.'b');
 });
 
 test('historic job orders do not generate a work queue', function () {
@@ -948,6 +955,8 @@ test('UI show manufacture floor', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Production/ManufactureFloor')
+            ->has('breadcrumbs', 3)
+            ->where('breadcrumbs.2.simple.label', 'Manufacture floor')
             ->has('tasks')
             ->has('today', fn (AssertableInertia $page) => $page
                 ->has('sessions')
@@ -1130,7 +1139,7 @@ test('UI show manufacture payroll', function () {
         $page
             ->component('Org/Production/ManufacturePayroll')
             ->has('payroll_export_route')
-            ->has('breadcrumbs', 4);
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['simple']['route']['name'] === 'grp.org.productions.show.artisans.payroll');
     });
 });
 
@@ -1432,6 +1441,8 @@ test('completed job order into stock converts units and deducts raw materials', 
         'unit_cost'   => 10,
     ]);
     UpdateRawMaterial::make()->action($rawMaterial, ['org_stock_id' => $inputOrgStock->id]);
+    /* The recipe counts raw material units, the stock counts SKOs of five. */
+    $inputOrgStock->update(['packed_in' => 5]);
 
     AttachRawMaterialToRecipeStep::make()->action($recipeStep, [
         'raw_material_id'   => $rawMaterial->id,
@@ -1499,10 +1510,10 @@ test('completed job order into stock converts units and deducts raw materials', 
         ->where('quantity', '<', 0)
         ->first();
     expect($deductionMovement)->not->toBeNull()
-        ->and((float) $deductionMovement->quantity)->toBe(-5.0);
+        ->and((float) $deductionMovement->quantity)->toBe(-1.0);
 
     $inputLocationOrgStock->refresh();
-    expect((float) $inputLocationOrgStock->quantity)->toBe(95.0);
+    expect((float) $inputLocationOrgStock->quantity)->toBe(99.0);
 });
 
 test('artefact compliance status reflects its items', function () {
@@ -1513,6 +1524,7 @@ test('artefact compliance status reflects its items', function () {
         'group_id'        => $this->artefact->group_id,
         'organisation_id' => $this->artefact->organisation_id,
         'artefact_id'     => $this->artefact->id,
+        'org_stock_id'    => $this->artefact->org_stock_id ?? labelTestOrgStock($this->organisation, $this->group)->id,
         'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::CERTIFICATE,
         'reference'       => 'CERT-1',
         'is_required'     => true,
@@ -1525,6 +1537,7 @@ test('artefact compliance status reflects its items', function () {
         'group_id'        => $this->artefact->group_id,
         'organisation_id' => $this->artefact->organisation_id,
         'artefact_id'     => $this->artefact->id,
+        'org_stock_id'    => $this->artefact->org_stock_id ?? labelTestOrgStock($this->organisation, $this->group)->id,
         'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::SAFETY_TEST,
         'reference'       => null,
         'is_required'     => true,
@@ -1552,6 +1565,7 @@ test('a job order cannot be released while an artefact is not compliant', functi
         'group_id'        => $this->artefact->group_id,
         'organisation_id' => $this->artefact->organisation_id,
         'artefact_id'     => $this->artefact->id,
+        'org_stock_id'    => $this->artefact->org_stock_id ?? labelTestOrgStock($this->organisation, $this->group)->id,
         'type'            => \App\Enums\Production\Artefact\ArtefactComplianceTypeEnum::CERTIFICATE,
         'reference'       => null,
         'is_required'     => true,
@@ -2139,7 +2153,9 @@ test('mixes to prepare are derived from open job orders and become job orders', 
     $created   = StoreJobOrdersForMixes::make()->action($this->production, [['artefact_id' => $mixArtefact->id, 'quantity' => $shortfall]]);
     expect($created)->toHaveCount(1)
         ->and($created[0]->jobOrderItems()->first()->artefact_id)->toBe($mixArtefact->id)
-        ->and($created[0]->jobOrderItems()->first()->quantity)->toBe((int) ceil($shortfall));
+        ->and($created[0]->jobOrderItems()->first()->quantity)->toBe((int) ceil($shortfall))
+        ->and($created[0]->jobOrderItems()->first()->data['batch_code'])->toBe($created[0]->reference.'-'.$mixArtefact->code)
+        ->and($created[0]->jobOrderItems()->first()->data['expiry_date'])->toBeNull();
 
     $mixes = collect(GetMixesToPrepare::run($this->production))->keyBy('code');
     expect($mixes->get('MIX-BASE')['in_progress'])->toBe((float) ceil($shortfall))
@@ -2351,8 +2367,12 @@ test('an operative only sees the factory jobs page and nothing group or commerci
 
     actingAs($user);
     get(route('grp.dashboard.show'))->assertRedirect(route('grp.org.dashboard.show', $this->organisation->slug));
-    get(route('grp.org.dashboard.show', $this->organisation->slug))
-        ->assertRedirect(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]));
+    get(route('grp.org.dashboard.show', $this->organisation->slug))->assertOk()
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+            ->component('Dashboard/OrganisationDashboard')
+            ->where('dashboard.super_blocks', [])
+        );
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
     ]);
@@ -2378,7 +2398,7 @@ test('an operative only sees the factory jobs page and nothing group or commerci
     expect((float) $session->refresh()->quantity_rejected)->toBe(0.0)
         ->and((float) $session->quantity_made)->toBe(2.0);
 
-    get(route('grp.org.chat.dashboard', $this->organisation->slug))->assertForbidden();
+    get(route('grp.org.chat.reports', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.offer.calendar', $this->organisation->slug))->assertForbidden();
     get(route('grp.org.overview.hub', $this->organisation->slug))->assertForbidden();
     actingAs($this->guest->getUser());
@@ -2503,13 +2523,22 @@ test('to produce queue only shows lines with an artefact in this factory', funct
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-BRD', 'name' => 'Board loc'] + \App\Models\Inventory\Location::factory()->definition());
     $hubProps  = fn () => get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $warehouse->slug]))
         ->assertOk()->viewData('page')['props'];
-    $hubOutput = fn () => collect($hubProps()['production_output'])->pluck('jobs')->flatten(1)->pluck('reference')->all();
+    $hubRows   = fn () => collect($hubProps()['production_output']['data']);
+    $hubOutput = fn () => $hubRows()->pluck('job_order_reference')->all();
     expect($hubOutput())->toContain($jobOrder->reference)
-        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count($hubProps()['production_output']));
+        ->and($hubProps()['tabs']['navigation']['production_output']['number'])->toBe(count(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse)));
 
-    $stockItem = collect($hubProps()['production_output'])->where('destination.type', 'stock')->pluck('jobs')->flatten(1)->firstWhere('reference', $jobOrder->reference)['items'][0];
+    $stockItem        = $hubRows()->firstWhere('job_order_reference', $jobOrder->reference);
+    $stockDestination = collect($stockItem['destinations'])->firstWhere('type', 'stock');
+    expect($stockItem['job_order_id'])->toBe($jobOrder->id)
+        ->and(array_column($stockDestination['locations'], 'code'))->toBe(array_filter([$stockDestination['location_code']]));
     expect(fn () => \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD']))
         ->toThrow(ValidationException::class, 'is not kept in L-BRD yet');
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'L-BRD'], true, [$stockItem['id'] => 1]);
+    $stillWaiting = collect($hubRows()->firstWhere('id', $stockItem['id'])['destinations'])->firstWhere('type', 'stock');
+    expect($stillWaiting['quantity'])->toEqual(round($stockDestination['quantity'] - 1, 3))
+        ->and($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
 
     \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], [$stockItem['id'] => 'l-brd'], true);
     expect(\App\Models\Inventory\LocationOrgStock::where('location_id', $location->id)->exists())->toBeTrue()
@@ -2556,17 +2585,70 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $backlog = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
         ->assertOk()->viewData('page')['props']['groups'])
         ->firstWhere('label', 'Backlog')['items'];
+    $toRestock = fn () => get(route('grp.org.productions.show.to_restock.index', $routeParameters))
+        ->assertOk()->viewData('page')['props'];
 
     expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id)
         ->and($counts()['to_produce'])->toBe($before['to_produce'])
-        ->and($counts()['pre_pick'])->toBe($before['pre_pick'] + 1);
+        ->and($counts()['pre_pick'])->toBe($before['pre_pick'] + 1)
+        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->not->toContain($line->id)
+        ->and($toRestock()['sentFromStock'])->toBe($before['pre_pick'] + 1);
 
     $orgStocks[0]->update(['quantity_in_locations' => 2, 'quantity_available' => 2]);
     expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id);
 
     $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
     expect(collect($backlog())->pluck('id')->all())->toContain($line->id)
-        ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1);
+        ->and($counts()['to_produce'])->toBe($before['to_produce'] + 1)
+        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->toContain($line->id);
+
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+    expect(collect($backlog())->pluck('id')->all())->not->toContain($line->id)
+        ->and(collect($toRestock()['lanes']['queued'])->pluck('id')->all())->not->toContain($line->id)
+        ->and($counts()['to_produce'])->toBe($before['to_produce']);
+
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
+});
+
+test('keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {
+    $stocks       = createStocks($this->group);
+    $makerOrgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $makerOrgStock->id)->update(['org_stock_id' => null]);
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'EXPIRY-01', 'name' => 'Dated for a partner']);
+    $made->update(['org_stock_id' => $makerOrgStock->id]);
+
+    $buyer = \App\Models\SysAdmin\Organisation::where('code', 'EXPBUY')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+            'code' => 'EXPBUY',
+            'name' => 'Expiry buyer',
+            'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+        ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+    $orgPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $buyer->id)->where('partner_id', $this->organisation->id)->first()
+        ?? \App\Actions\Procurement\OrgPartner\StoreOrgPartner::make()->action($buyer, $this->organisation);
+
+    $line = \App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem::make()->action($orgPartner, $makerOrgStock, ['quantity' => 4]);
+    expect($line->org_stock_id)->not->toBe($makerOrgStock->id)
+        ->and($line->stock_id)->toBe($stocks[0]->id);
+
+    $label = \App\Models\Production\ArtefactLabel::create([
+        'group_id'        => $made->group_id,
+        'organisation_id' => $made->organisation_id,
+        'artefact_id'     => $made->id,
+        'org_stock_id'    => $makerOrgStock->id,
+        'name'            => 'Dated',
+        'state'           => \App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED,
+        'layout'          => ['fields' => [['source' => 'name', 'text' => 'Kept'], ['source' => 'expiry_date', 'text' => '']]],
+    ]);
+
+    actingAs($this->guest->getUser());
+    \Pest\Laravel\post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $this->production->slug]), [
+        'preparing' => true,
+        'lines'     => [['id' => $line->id, 'expiry_date' => '2027-03-09', 'expiry_applies_to_label' => true]],
+    ])->assertRedirect();
+
+    expect($line->refresh()->preparing_at)->not->toBeNull()
+        ->and($label->refresh()->layout['fields'][1]['text'])->toBe('09/03/2027')
+        ->and($label->layout['fields'][0]['text'])->toBe('Kept');
 });
 
 test('an own customer line leaves the to produce board once its order is dispatched', function () {
@@ -2977,7 +3059,8 @@ test('set artefacts batch size in bulk and rehydrate the family', function () {
     expect($changed)->toBe(2)
         ->and($one->refresh()->recommended_batch_size)->toBe(200)
         ->and($two->refresh()->recommended_batch_size)->toBe(200)
-        ->and($family->refresh()->number_artefacts_without_batch_size)->toBe(0);
+        ->and($family->refresh()->number_artefacts_without_batch_size)->toBe(0)
+        ->and($one->audits()->where('event', 'updated')->latest('id')->first()->new_values)->toBe(['recommended_batch_size' => 200]);
 });
 
 test('bulk batch size leaves artefacts of another production alone', function () {
@@ -3240,7 +3323,7 @@ test('a short day splits the made goods into whole destination trips and carries
         'organisation_id'         => $buyer['organisation']->id,
         'partner_organisation_id' => $this->organisation->id,
         'stock_id'                => $stock->id,
-        'org_stock_id'            => $orgStock->id,
+        'org_stock_id'            => createOrgStocks($buyer['organisation'], [$stock])[0]->id,
         'quantity'                => $quantity,
     ]);
 
@@ -3357,7 +3440,23 @@ test('factory search is gated by production permissions', function () {
         ->assertOk();
 });
 
+function labelTestOrgStock(\App\Models\SysAdmin\Organisation $organisation, \App\Models\SysAdmin\Group $group): \App\Models\Inventory\OrgStock
+{
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+
+    return \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($organisation, $stock);
+}
+
 test('artefact labels can be saved, updated and deleted', function () {
+    $orgStock = labelTestOrgStock($this->organisation, $this->group);
+    $this->artefact = StoreArtefact::make()->action($this->production, ['code' => 'LABEL-'.$orgStock->id, 'name' => 'Labelled']);
+    $this->artefact->update(['org_stock_id' => $orgStock->id]);
+
     $layout = [
         'orientation' => 'portrait',
         'columns'     => 3,
@@ -3372,7 +3471,10 @@ test('artefact labels can be saved, updated and deleted', function () {
         ->json('data.id');
 
     $label = \App\Models\Production\ArtefactLabel::find($labelId);
-    expect($label->name)->toBe('Front')
+    expect($label->org_stock_id)->toBe($orgStock->id)
+        ->and($label->artefact_id)->toBe($this->artefact->id)
+        ->and($orgStock->labels()->pluck('id')->all())->toBe([$labelId])
+        ->and($label->name)->toBe('Front')
         ->and($label->layout['columns'])->toBe(3)
         ->and($label->layout['fields'][0]['text'])->toBe('B-1');
 
@@ -3391,6 +3493,7 @@ test('artefact labels cannot be changed with view only production access', funct
         'group_id'        => $this->artefact->group_id,
         'organisation_id' => $this->artefact->organisation_id,
         'artefact_id'     => $this->artefact->id,
+        'org_stock_id'    => labelTestOrgStock($this->organisation, $this->group)->id,
         'name'            => 'Kept',
         'layout'          => ['columns' => 3],
     ]);
@@ -3405,6 +3508,61 @@ test('artefact labels cannot be changed with view only production access', funct
         ->assertForbidden();
 
     expect($label->refresh()->deleted_at)->toBeNull();
+});
+
+test('SKO labels are the compliance team\'s: workers draft, supervisors publish, and a label missing mandatory information cannot be published', function () {
+    \App\Actions\SysAdmin\Group\Seeders\SeedGroupPermissions::run($this->group);
+    $orgStock = labelTestOrgStock($this->organisation, $this->group);
+    $layout   = [
+        'orientation' => 'portrait',
+        'columns'     => 2,
+        'rows'        => 4,
+        'page_margin' => 8,
+        'gap'         => 3,
+        'fields'      => [['source' => 'cpnp_number', 'text' => 'CPNP 123', 'x' => 0.1, 'y' => 0.2, 'font_size' => 8, 'color' => '#111827']],
+    ];
+
+    $userWithRole = function (string $role) {
+        $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+        $user->syncRoles([$role]);
+
+        return $user->fresh();
+    };
+
+    actingAs($userWithRole('compliance-worker'));
+    $labelId = \Pest\Laravel\postJson(route('grp.models.org_stock.labels.store', $orgStock->id), array_merge($layout, ['name' => 'Imported']))
+        ->assertCreated()
+        ->json('data.id');
+    $label = \App\Models\Production\ArtefactLabel::find($labelId);
+
+    expect($label->org_stock_id)->toBe($orgStock->id)
+        ->and($label->artefact_id)->toBeNull();
+
+    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
+        ->assertForbidden();
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.publish', [$orgStock->id, $labelId]))
+        ->assertForbidden();
+
+    actingAs($userWithRole('compliance-manager'));
+    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
+        ->assertOk();
+    expect($label->refresh()->missingMandatoryInformation())->toBe(['ingredients']);
+
+    actingAs($userWithRole('compliance-supervisor'));
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.publish', [$orgStock->id, $labelId]))
+        ->assertUnprocessable();
+
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.on_artwork', [$orgStock->id, $labelId]), ['on_artwork' => ['ingredients']])
+        ->assertOk();
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.publish', [$orgStock->id, $labelId]))
+        ->assertOk();
+
+    expect($label->refresh()->state)->toBe(\App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED)
+        ->and($label->missingMandatoryInformation())->toBe([]);
+
+    $otherOrgStock = labelTestOrgStock($this->organisation, $this->group);
+    \Pest\Laravel\postJson(route('grp.models.org_stock.labels.unpublish', [$otherOrgStock->id, $labelId]))
+        ->assertNotFound();
 });
 
 test('breaks belong to the artisan, are capped at their planned length and only their overlap is deducted from a session', function () {
@@ -3453,4 +3611,140 @@ test('breaks belong to the artisan, are capped at their planned length and only 
         ->and($session->break_minutes)->toBe(8)
         ->and((float) $session->hours)->toBe(round(52 / 60, 4));
     $this->travelBack();
+});
+
+test('a batch size change flags open jobs raised with the old one and their quantity can be corrected', function () {
+    $stocks   = createStocks($this->group);
+    $orgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
+
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStock->id)
+        ->update(['org_stock_id' => null]);
+    $orgStock->update(['packed_in' => 12]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'                   => 'OFFBATCH-01',
+        'name'                   => 'Raised at three hundred and sixty',
+        'recommended_batch_size' => 360,
+    ]);
+    $artefact->update(['org_stock_id' => $orgStock->id]);
+
+    $jobOrder = \App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan::run($this->production, [
+        ['artefact' => $artefact, 'quantity' => 40, 'batch_code' => null, 'expiry_date' => null],
+    ])[0];
+    $item = $jobOrder->jobOrderItems()->first();
+
+    expect($item->quantity)->toBe(720)
+        ->and((float) $item->data['demand_skos'])->toBe(40.0)
+        ->and(\App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch::run([$artefact->id]))->toBeEmpty();
+
+    SetArtefactsBatchSize::make()->action($this->production, [
+        'artefacts'              => [$artefact->id],
+        'recommended_batch_size' => 480,
+    ]);
+
+    $offBatch = \App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch::run([$artefact->id]);
+
+    expect($offBatch)->toHaveCount(1)
+        ->and($offBatch[0]['id'])->toBe($item->id)
+        ->and($offBatch[0]['suggested_quantity'])->toBe(480);
+
+    actingAs($this->guest->getUser());
+    $this->patch(route('grp.models.job-order-item.update', [$item->id]), ['quantity' => 480])->assertSessionHasNoErrors();
+
+    expect($item->refresh()->quantity)->toBe(480)
+        ->and((float) $item->tasks()->first()->quantity_required)->toBe(480.0)
+        ->and(\App\Actions\Production\JobOrderItem\GetOpenJobOrderItemsOffBatch::run([$artefact->id]))->toBeEmpty();
+
+    $item->tasks()->first()->update(['quantity_made' => 100]);
+
+    $this->patch(route('grp.models.job-order-item.update', [$item->id]), ['quantity' => 50])->assertSessionHasErrors('quantity');
+
+    expect($item->refresh()->quantity)->toBe(480);
+});
+
+test('a discontinued SKO leaves the to produce board unless a job order already carries it', function () {
+    $stocks    = [\App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]))];
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $orgStocks[0]->id)->update(['org_stock_id' => null]);
+    $made = StoreArtefact::make()->action($this->production, ['code' => 'DISC-SKO-01', 'name' => 'Discontinued']);
+    $made->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['quantity_in_locations' => 0, 'quantity_available' => 0]);
+
+    $line = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $orgStocks[0]->stock_id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 5,
+    ]);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $backlog = fn () => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters))
+        ->assertOk()->viewData('page')['props']['groups'])->firstWhere('label', 'Backlog')['items'];
+    $listed = fn () => collect(get(route('grp.org.productions.show.to_produce.list', $routeParameters))
+        ->assertOk()->viewData('page')['props']['data']['data'])->pluck('stock_code')->all();
+
+    expect(collect($backlog())->pluck('stock_code')->all())->toBe([$stocks[0]->code]);
+
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+    expect($backlog())->toBe([])
+        ->and($listed())->not->toContain($stocks[0]->code);
+
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
+    \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$line->id]);
+    $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::DISCONTINUED]);
+    expect($listed())->toContain($stocks[0]->code);
+});
+
+test('a job carried to another day is one row on the board, with the amount the whole job asks for', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $user      = $this->guest->getUser();
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-CRY', 'name' => 'Carry warehouse']);
+    \App\Models\Production\ManufactureTaskSession::where('user_id', $user->id)
+        ->where('state', \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN)->delete();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 40]);
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $item->tasks()->first()),
+        ['quantity_made' => 23, 'outcome' => 'carry_over']
+    );
+
+    $rowsOf = fn () => collect(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse))
+        ->flatMap(fn (array $trip) => collect($trip['jobs'])->flatMap(fn (array $job) => $job['items']))
+        ->filter(fn (array $row) => str_starts_with((string) $row['reference'], $jobOrder->reference))
+        ->values();
+
+    /* The board counts SKOs, the artisan artefact units; packed_in is whatever this fixture left. */
+    $skos = fn (float $units) => round($units / max(1, (int) $this->artefact->orgStock?->packed_in), 3);
+
+    $rows = $rowsOf();
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['reference'])->toBe($jobOrder->reference)
+        ->and($rows[0]['quantity'])->toEqual($skos(23))
+        ->and($rows[0]['quantity_made'])->toEqual($skos(23))
+        ->and($rows[0]['quantity_total'])->toEqual($skos(40))
+        ->and($rows[0]['in_progress'])->toBeTrue();
+
+    $carried = \App\Models\Production\JobOrder::where('production_id', $this->production->id)->orderByDesc('id')->first();
+    CloseManufactureTaskSession::make()->action(
+        StartManufactureTaskSession::make()->action($user, $carried->jobOrderItems()->first()->tasks()->first()),
+        ['quantity_made' => 17, 'outcome' => 'complete']
+    );
+
+    $rows = $rowsOf();
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['reference'])->toBe($jobOrder->reference)
+        ->and($rows[0]['item_ids'])->toHaveCount(2)
+        ->and($rows[0]['job_order_ids'])->toHaveCount(2)
+        ->and($rows[0]['quantity'])->toEqual($skos(40))
+        ->and($rows[0]['quantity_made'])->toEqual($skos(40))
+        ->and($rows[0]['quantity_total'])->toEqual($skos(40))
+        ->and($rows[0]['in_progress'])->toBeFalse();
 });

@@ -61,6 +61,16 @@ class EditProfileSettings
             $printers = [];
         }
 
+        $organisations = $user->authorisedOrganisations()
+            ->orderBy('organisations.name')
+            ->get(['organisations.id', 'organisations.slug', 'organisations.code', 'organisations.name'])
+            ->map(fn ($organisation) => [
+                'id'    => $organisation->id,
+                'slug'  => $organisation->slug,
+                'code'  => $organisation->code,
+                'label' => $organisation->name,
+            ])->all();
+
         return [
             "title"       => __("Preferences"),
             "pageHead"    => [
@@ -84,10 +94,39 @@ class EditProfileSettings
                                 "label" => __("Theme color"),
                                 "value" => Arr::get($user->settings, 'app_theme'),
                             ],
+                            "org_themes" => [
+                                "type"        => "org_themes",
+                                "label"       => __("Colour per organisation"),
+                                "information" => __("Give each organisation its own colour for the left navigation, so you can tell at a glance which one you are working in"),
+                                "full"        => true,
+                                "options"     => [
+                                    "organisations" => $organisations,
+                                ],
+                                "value"       => [
+                                    "enabled" => (bool) Arr::get($user->settings, 'org_themes.enabled', false),
+                                    "themes"  => array_values(Arr::get($user->settings, 'org_themes.themes') ?: []),
+                                ],
+                            ],
                             "chat_theme" => [
                                 "type"  => "chat_theme",
                                 "label" => __("Chat panel color"),
                                 "value" => Arr::get($user->settings, 'chat_theme'),
+                            ],
+                            "alert_sounds" => [
+                                "type"        => "alert_sounds",
+                                "label"       => __("Alert sounds"),
+                                "information" => __("The sound played when a customer or a colleague writes to you"),
+                                "value"       => Arr::get($user->settings, 'alert_sounds'),
+                            ],
+                            "alert_preview_seconds" => [
+                                "type"        => "select",
+                                "label"       => __("Message preview time"),
+                                "information" => __("How long a new customer message shows beside the customers waiting box"),
+                                "value"       => Arr::get($user->settings, 'alert_preview_seconds', 6),
+                                "options"     => collect([3, 4, 6, 8, 10, 15, 20])->map(fn (int $seconds) => [
+                                    'value' => $seconds,
+                                    'label' => __(':count seconds', ['count' => $seconds]),
+                                ])->all(),
                             ],
                             "hide_logo" => [
                                 "type"    => "toggle",

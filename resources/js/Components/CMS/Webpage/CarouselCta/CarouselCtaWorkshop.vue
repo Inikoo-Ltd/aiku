@@ -76,7 +76,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
             <div class="carousel-cta-content">
                 <button type="button" class="carousel-cta-nav carousel-cta-nav-prev" aria-label="Previous"
                     :disabled="!isLooping && isBeginning" @click.stop="slidePrev">
-                    <FontAwesomeIcon :icon="faChevronLeft" />
+                    <FontAwesomeIcon :icon="faChevronLeft" fixed-width />
                 </button>
 
                 <Swiper class="w-full min-w-0" :modules="[Autoplay]" :slides-per-view="1" :space-between="0"
@@ -154,7 +154,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
                 <button type="button" class="carousel-cta-nav carousel-cta-nav-next" aria-label="Next"
                     :disabled="!isLooping && isEnd" @click.stop="slideNext">
-                    <FontAwesomeIcon :icon="faChevronRight" />
+                    <FontAwesomeIcon :icon="faChevronRight" fixed-width />
                 </button>
             </div>
         </div>

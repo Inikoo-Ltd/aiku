@@ -40,7 +40,7 @@ class ShowStaffMessaging extends OrgAction
 
     public function inConversation(StaffConversation $staffConversation, ActionRequest $request): Group
     {
-        abort_unless($staffConversation->hasParticipant($request->user()), 403);
+        abort_unless($staffConversation->canBeAccessedBy($request->user()), 403);
 
         $this->conversation = $staffConversation;
         $this->initialisationFromGroup(app('group'), $request);
@@ -50,7 +50,7 @@ class ShowStaffMessaging extends OrgAction
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
-        $title        = __('Messaging');
+        $title        = __('Internal Messages');
         $conversation = $this->conversation;
 
         return Inertia::render(
@@ -85,7 +85,7 @@ class ShowStaffMessaging extends OrgAction
                         'route' => [
                             'name' => 'grp.chat.staff.index',
                         ],
-                        'label' => __('Messaging'),
+                        'label' => __('Internal Messages'),
                     ],
                 ],
             ]

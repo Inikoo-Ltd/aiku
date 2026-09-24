@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import {Head, router} from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import {capitalize} from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import {computed, inject, ref} from 'vue'
@@ -259,8 +259,11 @@ const syncOrderCancellationShopify = async (order) => {
     <Head :title="capitalize(title)"/>
 
     <PageHeading :data="pageHead">
-        <template v-if="!(box_stats.products.payment.paid_amount >= box_stats.products.payment.total_amount) && !(order.data.state === 'cancelled' || order.data.state === 'creating')" #afterTitle2>
-            <div class="border border-red-400 bg-red-200/70 px-1.5 py-0.5 font-normal text-sm text-red-600 rounded-sm">
+        <template v-if="['unpaid', 'paid'].includes(box_stats.products.payment.pay_status) && !(order.data.state === 'cancelled' || order.data.state === 'creating')" #afterTitle2>
+            <div v-if="box_stats.products.payment.pay_status === 'paid'" class="border border-green-400 bg-green-200/70 px-1.5 py-0.5 font-normal text-sm text-green-700 rounded-sm">
+                {{ trans("Paid") }}
+            </div>
+            <div v-else class="border border-red-400 bg-red-200/70 px-1.5 py-0.5 font-normal text-sm text-red-600 rounded-sm">
                 {{ trans("Unpaid") }}
             </div>
         </template>
@@ -272,15 +275,15 @@ const syncOrderCancellationShopify = async (order) => {
                 class="py-2 px-3 border border-solid border-gray-500 rounded-md cursor-pointer font-medium" 
             >
                 <LoadingIcon v-if="isLoadingSyncStatus" />
-                <FontAwesomeIcon v-else :icon="faSync" />
+                <FontAwesomeIcon v-else :icon="faSync" fixed-width />
             </span>
             <span v-if="order?.data.state == 'cancelled'" :class="order?.data.state_icon.class" class="py-2 px-3 border border-solid border-red-500 rounded-md cursor-default font-medium" v-tooltip="trans('Order is cancelled')">
-                <FontAwesomeIcon :icon="order?.data.state_icon.icon"/>
+                <FontAwesomeIcon :icon="order?.data.state_icon.icon" fixed-width/>
                 {{ order?.data.state_label }}
             </span>
             <!-- To display if order have missing items / items that are not picked -->
             <span v-if="order?.data.state == 'dispatched' && hasModified" class="py-2 px-3 border border-solid text-purple-500 border-purple-500 rounded-md cursor-default font-medium" v-tooltip="trans('Some items are not being sent. Excessed payments have been refunded automatically')">
-                <FontAwesomeIcon :icon="order?.data.state_icon.icon"/>
+                <FontAwesomeIcon :icon="order?.data.state_icon.icon" fixed-width/>
                 {{ order?.data.state_label }} | Modified
             </span>
         </template>
@@ -310,7 +313,7 @@ const syncOrderCancellationShopify = async (order) => {
     </Message>
 
     <!-- Section: Alert if unpaid -->
-    <Message v-if="!(box_stats.products.payment.paid_amount >= box_stats.products.payment.total_amount) && !(order.data.state === 'cancelled' || order.data.state === 'creating') && (!is_forbidden_delivery && !is_forbidden_billing)" severity="warn" class="mx-4 mt-4 ">
+    <Message v-if="box_stats.products.payment.pay_status === 'unpaid' && !(order.data.state === 'cancelled' || order.data.state === 'creating') && (!is_forbidden_delivery && !is_forbidden_billing)" severity="warn" class="mx-4 mt-4 ">
         <template #icon>
             <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-xl" fixed-width aria-hidden="true"/>
         </template>

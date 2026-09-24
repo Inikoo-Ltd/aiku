@@ -44,12 +44,12 @@ class UsersResource extends JsonResource
             'email'                     => $this->email,
             'status'                    => match ($this->status) {
                 true => [
-                    'tooltip' => __('active'),
+                    'tooltip' => __('Active'),
                     'icon'    => 'fal fa-check',
                     'class'   => 'text-green-500'
                 ],
                 default => [
-                    'tooltip' => __('suspended'),
+                    'tooltip' => __('Inactive'),
                     'icon'    => 'fal fa-times',
                     'class'   => 'text-red-500'
                 ]
@@ -62,6 +62,8 @@ class UsersResource extends JsonResource
             'is_two_factor_required'    => $this->is_two_factor_required,
             'can_use_mcp'               => (bool) $this->can_use_mcp,
             'can_use_mcp_sql'           => (bool) $this->can_use_mcp_sql,
+            'can_use_mcp_discontinue'   => (bool) $this->can_use_mcp_discontinue,
+            'can_use_mcp_web'           => (bool) $this->can_use_mcp_web,
             'has_mcp_queries'           => (bool) $this->has_mcp_queries,
             'last_active'               => $this->last_active,
         ];

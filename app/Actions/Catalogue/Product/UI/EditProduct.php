@@ -8,8 +8,11 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithBarcodeChoice;
+use App\Actions\Traits\WithDuplicatedBarcodeProducts;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
@@ -28,6 +31,8 @@ class EditProduct extends OrgAction
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
     use WithUnitsChangeConfirmation;
+    use WithBarcodeChoice;
+    use WithDuplicatedBarcodeProducts;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -259,10 +264,24 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        $barcodes  = $product->tradeUnits->pluck('barcode')->filter()->unique();
+        $barcodeChoice = $this->getBarcodeChoice($product);
+        $followsMasterBarcode = $product->masterProduct && !$product->independent_barcode;
+
+        /*
+         * The same item listed in several pack sizes shares one trade unit, so all of them mirror
+         * its barcode. Correct as data, refused by the shop: one of them keeps the GTIN and the
+         * others publish without, which only a person can decide, so the field opens here.
+         */
+        $barcodeSharedWith = $product->barcode
+            ? $this->duplicatedBarcodeProducts($product->shop)
+                ->where('products.barcode', $product->barcode)
+                ->where('products.id', '!=', $product->id)
+                ->pluck('products.code')
+                ->all()
+            : [];
         $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
 
-        $canEditNotForSale = true;
+        $canEditNotForSale = $product->state != ProductStateEnum::DISCONTINUED;
         if ($product->masterProduct && !$product->masterProduct->is_for_sale) {
             $canEditNotForSale = false;
         }
@@ -623,6 +642,14 @@ class EditProduct extends OrgAction
                     'fields' => array_filter($nameFields)
                 ],
                 [
+                    'label'  => __('GPSR'),
+                    'icon'   => 'fa-light fa-biohazard',
+                    'fields' => [
+                        'gpsr_warnings' => $this->getGpsrTextField($product, 'gpsr_warnings', __('Warnings'), $languages),
+                        'gpsr_manual'   => $this->getGpsrTextField($product, 'gpsr_manual', __('How To Use'), $languages),
+                    ]
+                ],
+                [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => $pricingFields
@@ -650,7 +677,7 @@ class EditProduct extends OrgAction
                         'label'  => __('Properties'),
                         'title'  => __('id'),
                         'icon'   => 'fa-light fa-fingerprint',
-                        'fields' => [
+                        'fields' => array_filter([
                             'unit'                 => [
                                 'type'  => 'input',
                                 'label' => __('Unit'),
@@ -686,18 +713,26 @@ class EditProduct extends OrgAction
                                 'label'       => __('Marketing dimension'),
                                 'value'       => $product->marketing_dimensions,
                             ],
+                            'independent_barcode'  => $product->masterProduct && $barcodeChoice['hasChoice'] ? [
+                                'type'        => 'toggle',
+                                'label'       => __('Do not follow master barcode'),
+                                'value'       => $product->independent_barcode,
+                                'information' => __('The GTIN is chosen once on the master composition. Enabling this lets this shop publish a different one.'),
+                            ] : null,
                             'barcode'              => [
-                                'type'     => 'select',
-                                'label'    => __('Barcode'),
-                                'value'    => $product->barcode,
-                                'readonly' => $product->tradeUnits->count() == 1,
-                                'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                                    return [(string)$barcode => $barcode];
-                                })->toArray()
+                                'type'        => 'barcode_choice',
+                                'label'       => __('Barcode'),
+                                'value'       => $product->barcode,
+                                /* One trade unit mirrors it, and a child following its master is decided there. */
+                                'readonly'    => (!$barcodeChoice['hasChoice'] || $followsMasterBarcode) && !$barcodeSharedWith,
+                                'options'     => $barcodeChoice,
+                                'information' => $barcodeSharedWith
+                                    ? __('This barcode is also on :listings in this shop. A shop accepts it on one listing only.', ['listings' => implode(', ', $barcodeSharedWith)])
+                                    : null,
                             ],
 
 
-                        ]
+                        ])
                     ],
                 $canEditNotForSale
                     ? [
@@ -765,6 +800,32 @@ class EditProduct extends OrgAction
                 ],
             ]
         );
+    }
+
+    private function getGpsrTextField(Product $product, string $field, string $label, array $languages): array
+    {
+        $englishText = $product->getTranslation($field.'_i8n', 'en', false) ?: $product->masterProduct?->$field;
+
+        if (!$englishText) {
+            return [
+                'type'  => 'textarea',
+                'label' => $label,
+                'value' => $product->$field,
+            ];
+        }
+
+        return [
+            'type'          => 'input_translation',
+            'label'         => $label,
+            'language_from' => 'en',
+            'full'          => true,
+            'main'          => $englishText,
+            'languages'     => $languages,
+            'mode'          => 'single',
+            'textarea'      => true,
+            'value'         => $product->$field,
+            'reviewed'      => $product->{'is_'.$field.'_reviewed'},
+        ];
     }
 
     private function getTradeUnitsWithPackingData(Product $product)

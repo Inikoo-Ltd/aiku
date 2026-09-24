@@ -18,21 +18,25 @@ import TopBar from "@/Layouts/Grp/TopBar.vue"
 import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import MessagingSideBar from "@/Layouts/Grp/MessagingSideBar.vue"
+import ChatPane from "@/Layouts/Grp/ChatPane.vue"
 import MessagingDock from "@/Components/Messaging/MessagingDock.vue"
+import PhoneCallDock from "@/Components/Chat/PhoneCallDock.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from "primevue/dialog"
 import { setColorStyleRoot } from "@/Composables/useApp"
-import { fetchUnreadCount } from "@/Composables/useNotificationSound"
+import { startWorkAlerts } from "@/Composables/useNotificationSound"
+import { useStaffMessaging } from "@/Stores/staff-messaging"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
+import { useAppAccentVariables } from "@/Composables/useAppAccent"
 
 
 import "@/Composables/Icon/ImportGrpFalIcon"
@@ -48,8 +52,9 @@ initialiseApp()
 
 
 const layout = useLayoutStore()
-const isEmbedded = usePage().url.includes("embed=1")
+const isEmbedded = window.self !== window.top
 const sidebarOpen = ref(false)
+useAppAccentVariables(() => layout.app?.theme)
 
 // Section: Notification
 watch(
@@ -148,25 +153,12 @@ const checkScreenType = () => {
     else screenType.value = "desktop"
 }
 provide("screenType", screenType)
+provide("isEmbedded", isEmbedded)
 
-const requestNotificationPermission = () => {
-    if (!("Notification" in window)) return
-    if (Notification.permission === "default") {
-        Notification.requestPermission()
-    }
-    if (Notification.permission === "denied") {
-        notify({
-            title: trans("Alert"),
-            text: trans("You must allow notification to get notif from chat"),
-            type: "error"
-        })
-    }
-}
-
-const baseUrl = layout?.appUrl ?? ""
-const myAgentId = layout.user?.id
 onMounted(() => {
-    fetchUnreadCount(baseUrl, "", myAgentId)
+    if (!isEmbedded) {
+        startWorkAlerts(useStaffMessaging())
+    }
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
     onCheckAppVersion()
@@ -215,7 +207,7 @@ const safeTheme = computed(() => {
 
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
-            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
+            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4 md:pr-[calc(1rem_+_var(--chat-pane,0px))]"
             :class="[
 				layout.leftSidebar.show
 					? (layout.messagingSidebar.show
@@ -234,7 +226,7 @@ const safeTheme = computed(() => {
         <div class="">
             <!-- Mobile Helper: background to close hamburger -->
             <div
-                class="bg-gray-200/80 fixed top-0 w-screen h-screen z-10 md:hidden"
+                class="bg-gray-900/30 fixed top-0 w-screen h-screen z-[19] md:hidden"
                 v-if="sidebarOpen"
                 @click="sidebarOpen = !sidebarOpen" />
             <LeftSideBar
@@ -247,9 +239,10 @@ const safeTheme = computed(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
+				'mr-4',
 				layout.messagingSidebar.show ? 'md:mr-56' : (layout.messagingSidebar.micro ? 'md:mr-4' : 'md:mr-12'),
 				layout.hasTopBanner ? 'mt-6' : '',
 			]">
@@ -257,8 +250,15 @@ const safeTheme = computed(() => {
         </main>
 
         <MessagingSideBar />
+        <ChatPane />
         <Teleport to="body">
             <MessagingDock />
+        </Teleport>
+
+        <!-- A call running is kept in front of whoever is on it, on every page, because the only
+             thing that ends it is somebody remembering they are on it. -->
+        <Teleport to="body">
+            <PhoneCallDock />
         </Teleport>
 
         <!-- Sidebar: Right -->
@@ -317,7 +317,7 @@ const safeTheme = computed(() => {
                     icon="fas fa-exclamation"
                     class="text-orange-500 text-2xl"
                     fixed
-                    aria-hidden="true" />
+                    fixed-width aria-hidden="true" />
                 <FontAwesomeIcon
                     v-if="selectedModal?.status == 'info'"
                     icon="fas fa-info"
@@ -419,15 +419,15 @@ const safeTheme = computed(() => {
 .navigationActive {
     @apply rounded py-2 font-semibold transition-all duration-0 ease-out;
     box-shadow: v-bind(
-        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.theme[2]}, 20% white)`"
+        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.navigation_theme[2]}, 20% white)`"
     ) !important;
-    background-color: v-bind("layout?.app?.theme[2]");
-    color: v-bind("layout?.app?.theme[3]");
+    background-color: v-bind("layout?.app?.navigation_theme[2]");
+    color: v-bind("layout?.app?.navigation_theme[3]");
 }
 
 .navigation {
     @apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
-    color: v-bind("layout?.app?.theme[1]");
+    color: v-bind("layout?.app?.navigation_theme[1]");
 }
 
 .subNavActive {

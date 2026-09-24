@@ -9,7 +9,6 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
-use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -30,6 +29,7 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreMasterAsset extends OrgAction
 {
@@ -124,7 +124,6 @@ class StoreMasterAsset extends OrgAction
 
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
 
-        MasterAssetHydrateEffectiveCost::dispatch($masterAsset)->delay($this->hydratorsDelay);
         GroupHydrateMasterAssets::dispatch($masterFamily->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
         if ($masterAsset->masterdepartment) {
@@ -221,6 +220,13 @@ class StoreMasterAsset extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->strict) {
+            $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
+    }
+
     public function action(MasterProductCategory $masterFamily, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): MasterAsset
     {
         if (!$audit) {

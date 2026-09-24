@@ -62,7 +62,8 @@ jobs:
           else
             echo "::warning::No coverage driver (pcov/xdebug) for php8.4 on this runner, running tests without coverage"
           fi
-          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --parallel --processes=8 $COVERAGE --log-junit junit.xml
+          sed 's/name="memory_limit" value="5120M"/name="memory_limit" value="-1"/' phpunit.xml > phpunit.coverage.xml
+          /usr/bin/php8.4 -d memory_limit=-1 -d newrelic.enabled=0 vendor/bin/pest --configuration phpunit.coverage.xml --parallel --processes=8 $COVERAGE --log-junit junit.xml
       - name: Upload coverage to Codecov
         if: ${{ hashFiles('clover.xml') != '' }}
         uses: codecov/codecov-action@v5
@@ -72,6 +73,15 @@ jobs:
           files: clover.xml
           flags: backend
           fail_ci_if_error: true
+      - name: Editorial translation audit
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          if ! /usr/bin/php8.4 -dxdebug.mode=off -d newrelic.enabled=0 vendor/bin/pest tests/Feature/AikuPublicTest.php --group=editorial; then
+            echo "::warning::Documentation translations are missing or stale; see the editorial audit output."
+            echo "Documentation translations need attention. See the Editorial translation audit step for missing or stale guides." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1

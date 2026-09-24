@@ -89,7 +89,8 @@ class SendOrderBackToBasket extends OrgAction
 
     public function action(Order $order): Order
     {
-        $this->order = $order;
+        $this->asAction = true;
+        $this->order    = $order;
         $this->initialisationFromShop($order->shop, []);
 
         return $this->handle($order);

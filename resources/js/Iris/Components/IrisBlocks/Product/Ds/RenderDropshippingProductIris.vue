@@ -69,7 +69,6 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {})
 const injectedWebpageData = inject<any>("webpage_data", null)
-console.log(layout)
 
 const customerData = ref<Record<number, any>>({})
 const product = ref<any>(props.fieldValue?.product ?? null)
@@ -311,15 +310,6 @@ const pushViewItem = () => {
 
   if (!prod) {
     return
-  }
-
-  if (prod.luigi_identity) {
-    window?.dataLayer?.push({
-      event: "view_item",
-      ecommerce: {
-        items: [{ item_id: prod.luigi_identity }],
-      },
-    })
   }
 
   const item: Record<string, any> = {

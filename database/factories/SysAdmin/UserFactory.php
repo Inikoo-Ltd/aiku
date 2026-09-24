@@ -21,6 +21,7 @@ class UserFactory extends Factory
             'password'   => 'password',
             'email'      => fake()->email,
             'language_id' => 1,
+            'status'     => true,
         ];
     }
 }

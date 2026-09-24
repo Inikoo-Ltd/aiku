@@ -52,6 +52,7 @@ class UpdateAgent extends OrgAction
                 'is_available',
                 'current_chat_count',
                 'language_id',
+                'signature',
             ];
 
             $updateData = array_intersect_key(
@@ -168,6 +169,13 @@ class UpdateAgent extends OrgAction
             'auto_accept' => [
                 'sometimes',
                 'boolean',
+            ],
+
+            'signature' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:20000',
             ],
         ];
     }

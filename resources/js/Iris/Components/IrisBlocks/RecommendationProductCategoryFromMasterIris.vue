@@ -141,7 +141,6 @@ watch([allItems, () => props.fieldValue?.chip, () => props.fieldValue?.container
   await computeMaxHeight()
 }, { deep: true })
 
-console.log(props)
 </script>
 
 <template>
@@ -182,7 +181,7 @@ console.log(props)
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 
               <div v-else class="flex h-full items-center justify-center">
-                <FontAwesomeIcon :icon="faImage" class="text-3xl text-gray-300" />
+                <FontAwesomeIcon :icon="faImage" class="text-3xl text-gray-300" fixed-width />
               </div>
 
               <div v-if="isLoading" class="absolute inset-0 grid place-items-center bg-black/50 text-5xl text-white">

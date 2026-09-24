@@ -46,6 +46,8 @@ import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import LoginBlueprint from "@/Components/CMS/Webpage/Login/Blueprint"
 import RegisterBlueprint from "@/Components/CMS/Webpage/Register/Blueprint"
+import RegisterDashboardBlueprint from "@/Components/CMS/Webpage/RegisterDashboard/Blueprint"
+import RegisterDashboard2Blueprint from "@/Components/CMS/Webpage/RegisterDashboard2/Blueprint"
 import ForgetPasswordBlueprint from "@/Components/CMS/Webpage/ForgetPassword/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 import Families2Blueprint from '@/Components/CMS/Webpage/Families2/Blueprint'
@@ -184,6 +186,8 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"user-subscribe": UserSubscribe.blueprint,
 		"login": LoginBlueprint.blueprint,
 		"register": RegisterBlueprint.blueprint,
+		"register-dashboard": RegisterDashboardBlueprint.blueprint,
+		"register-dashboard-2": RegisterDashboard2Blueprint.blueprint,
 		"forgot-password": ForgetPasswordBlueprint.blueprint,
 		"cta4": Cta4Blueprint.blueprint,
 		'carousel-cta' : CtaCarousel.blueprint,
@@ -219,6 +223,18 @@ export const getHiddenPermissions = (data: PermissionData) => hasPermission(data
 
 // try to bulid rename fitur
 export const getRenamePermision = (data: PermissionData) => hasPermission(data, 'edit')
+
+export const BLOCKS_WITHOUT_VISIBILITY_OPTIONS = [
+    "login",
+    "register",
+    "register-dashboard",
+    "register-dashboard-2",
+    "forgot-password",
+    "blog-categories",
+]
+
+export const getCopyPermissions = (block: { type: string, web_block: { layout: { data: PermissionData } } }) =>
+    getEditPermissions(block.web_block.layout.data) && !BLOCKS_WITHOUT_VISIBILITY_OPTIONS.includes(block.type)
 
 
 

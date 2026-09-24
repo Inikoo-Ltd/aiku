@@ -27,10 +27,14 @@ export const useEchoRetinaPersonal = defineStore("echo-retina-personal", {
     state: () => ({
         progressBars: {} as ProgressBar,
         isShowProgress: false,
-        recentlyUploaded: []
+        recentlyUploaded: [],
+        ticketBadges: null as null | { mine: Record<string, { label: string; count: number }>; recent: { id: string; title: string; body: string; route: string; read: boolean; created_at: string }[] }
     }),
     actions: {
         subscribe(webUserID: number) {
+            window.Echo.private("retina.personal." + webUserID).listen(".ticket-badges-update", (eventData: { ticket_badges: any }) => {
+                this.ticketBadges = eventData.ticket_badges
+            })
              window.Echo.private("retina.personal." + webUserID).listen(
                 ".action-progress",
                 (eventData) => {

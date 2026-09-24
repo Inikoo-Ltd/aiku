@@ -92,13 +92,13 @@ const linkRedirectAsset = (item) => {
                 v-if="!item.status"
                 v-tooltip="ctrans('Variant is disabled')"
                 :icon="faSkull"
-                class="text-red-500"
+                class="text-red-500" fixed-width
             />
             <FontAwesomeIcon 
               v-else
               v-tooltip="ctrans('Variant is enabled')"
               :icon="faCheckDouble"
-              class="text-green-500"
+              class="text-green-500" fixed-width
             />
       </template>
       <template #cell(code)="{ item }">
@@ -159,8 +159,8 @@ const linkRedirectAsset = (item) => {
             {{ product.name }}
           </div>
           <div class="pr-3 text-center">
-            <FontAwesomeIcon :icon="faCheck" v-if="product.is_for_sale" class="text-green-500"/>
-            <FontAwesomeIcon :icon="faTimes" v-else class="text-red-500"/>
+            <FontAwesomeIcon :icon="faCheck" v-if="product.is_for_sale" class="text-green-500" fixed-width/>
+            <FontAwesomeIcon :icon="faTimes" v-else class="text-red-500" fixed-width/>
           </div>
         </div>
       </div>

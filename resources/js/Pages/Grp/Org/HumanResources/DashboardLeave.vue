@@ -669,7 +669,7 @@ const submitExport = () => {
 						@input="debouncedSearch"
 						type="text"
 						:placeholder="trans('Search employees...')"
-						class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pl-8 pr-3 py-2" />
+						class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm pl-8 pr-3 py-2" />
 					<div
 						class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
 						<svg
@@ -693,7 +693,7 @@ const submitExport = () => {
 						class="px-3 py-2 text-sm"
 						:class="
 							selectedView === 'month'
-								? 'bg-indigo-600 text-white'
+								? 'bg-[--app-accent] text-white'
 								: 'bg-white text-gray-700 hover:bg-gray-50'
 						"
 						@click="changeView('month')">
@@ -704,7 +704,7 @@ const submitExport = () => {
 						class="px-3 py-2 text-sm border-l border-gray-200"
 						:class="
 							selectedView === 'week'
-								? 'bg-indigo-600 text-white'
+								? 'bg-[--app-accent] text-white'
 								: 'bg-white text-gray-700 hover:bg-gray-50'
 						"
 						@click="changeView('week')">
@@ -715,7 +715,7 @@ const submitExport = () => {
 				<select
 					v-model="selectedEmployeeId"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option :value="null">{{ trans("All Employees") }}</option>
 					<option
 						v-for="employee in employeeOptions"
@@ -738,7 +738,7 @@ const submitExport = () => {
 				<select
 					v-model="selectedDepartment"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option :value="null">{{ trans("All Departments") }}</option>
 					<option v-for="dept in departmentOptions" :key="dept.value" :value="dept.value">
 						{{ dept.label }}
@@ -748,7 +748,7 @@ const submitExport = () => {
 				<select
 					v-model="selectedYear"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option v-for="year in yearOptions" :key="year.value" :value="year.value">
 						{{ year.label }}
 					</option>
@@ -757,7 +757,7 @@ const submitExport = () => {
 				<select
 					v-model="selectedSortBy"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option value="name">{{ trans("Name") }}</option>
 					<option value="last_name">{{ trans("Last Name") }}</option>
 					<option value="first_name">{{ trans("First Name") }}</option>
@@ -767,7 +767,7 @@ const submitExport = () => {
 				<select
 					v-model="selectedMonth"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option v-for="month in monthOptions" :key="month.value" :value="month.value">
 						{{ month.label }}
 					</option>
@@ -813,7 +813,7 @@ const submitExport = () => {
 						class="px-3 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 sticky left-0 z-10 bg-white">
 						<div class="flex items-center gap-2">
 							<div
-								class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-600">
+								class="w-8 h-8 rounded-full bg-[--app-accent-soft] flex items-center justify-center text-xs font-semibold text-[--app-accent]">
 								{{
 									employee.name
 										.split(" ")
@@ -1095,7 +1095,7 @@ const submitExport = () => {
 						<input
 							type="checkbox"
 							v-model="exportForm.include_summary"
-							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+							class="rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 						<span class="text-sm">{{ trans("Include Summary") }}</span>
 					</label>
 				</div>
@@ -1105,7 +1105,7 @@ const submitExport = () => {
 						<input
 							type="checkbox"
 							v-model="exportForm.print_view"
-							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+							class="rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 						<span class="text-sm">{{ trans("Print View") }}</span>
 					</label>
 				</div>

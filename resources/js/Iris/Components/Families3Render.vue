@@ -28,6 +28,7 @@ defineProps<{
     }
   }
   isLoading?: boolean
+  imageSizes?: string
 }>()
 </script>
 
@@ -42,12 +43,13 @@ defineProps<{
         <Image
           :src="data.web_images.main.gallery"
           :alt="data?.name"
+          :sizes="imageSizes"
         />
       </template>
 
       <template v-else>
         <div class="absolute inset-0 flex items-center justify-center">
-          <FontAwesomeIcon :icon="faImage" class="text-3xl text-gray-300" />
+          <FontAwesomeIcon :icon="faImage" class="text-3xl text-gray-300" fixed-width />
         </div>
       </template>
 

@@ -32,8 +32,12 @@ class PurchaseOrderTransactionResource extends JsonResource
             'supplier_slug'        => $transaction->orgSupplierProduct?->orgSupplier?->slug,
             'org_stock_id'         => $transaction->org_stock_id,
             'image_thumbnail'      => $tradeUnit?->imageSources(64, 64),
+            'stock_in_locations'   => $transaction->orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($transaction->orgStock->quantity_in_locations),
+            'quarterly_usage'      => $transaction->quarterly_usage ?? [],
 
-            'unit_cost'            => $supplierProduct?->cost,
+            'unit_cost'            => $transaction->unit_cost ?? $supplierProduct?->cost,
+            'supplier_unit_cost'   => $supplierProduct?->cost,
+            'can_update_supplier_cost' => (bool)$request->user()?->authTo('supply-chain.edit'),
             'units_per_pack'       => $supplierProduct?->units_per_pack,
             'units_per_carton'     => $supplierProduct?->units_per_carton,
             'quantity_ordered'     => $transaction->quantity_ordered,

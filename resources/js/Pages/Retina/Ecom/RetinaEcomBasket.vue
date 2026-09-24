@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
@@ -18,7 +18,7 @@ import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
@@ -203,8 +203,8 @@ const onSelectShipper = async (shipperId: number) => {
     )
         .catch((exception: any) => {
             notify({
-                title: trans("Something went wrong"),
-                text: exception.response?.data?.message ?? trans("Failed to change shipping method"),
+                title: ctrans("Something went wrong"),
+                text: exception.response?.data?.message ?? ctrans("Failed to change shipping method"),
                 type: "error"
             })
         })
@@ -315,8 +315,8 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         }, 3000)
 
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update the note, try again."),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update the note, try again."),
             type: "error",
         })
     }
@@ -401,8 +401,8 @@ const onAddProducts = async (product: Product) => {
             onBefore: () => 'isLoadingSubmit.value = true',
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: error.products || undefined,
+                    title: ctrans("Something went wrong."),
+                    text: error.products || error.message,
                     type: "error"
                 })
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
@@ -463,16 +463,16 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
             },
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: error.products || undefined,
+                    title: ctrans("Something went wrong."),
+                    text: error.products || error.message,
                     type: "error"
                 })
                 listLoadingProducts.value[`recommender-${productId}`] = 'error'
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success!"),
-                    text: trans("Product added to basket"),
+                    title: ctrans("Success!"),
+                    text: ctrans("Product added to basket"),
                     type: "success"
                 })
                 
@@ -514,22 +514,22 @@ const onChangePriorityDispatch = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is changed to priority dispatch!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to priority dispatch!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is no longer on priority dispatch."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on priority dispatch."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update priority dispatch, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update priority dispatch, try again."),
                     type: "error"
                 })
             },
@@ -558,22 +558,22 @@ const onChangeExtraPacking = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is changed to extra packing!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to extra packing!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is no longer on extra packing."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on extra packing."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update extra packing, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update extra packing, try again."),
                     type: "error"
                 })
             },
@@ -602,22 +602,22 @@ const onChangeInsurance = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order has insurance!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order has insurance!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order no longer has insurance."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order no longer has insurance."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update insurance, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update insurance, try again."),
                     type: "error"
                 })
             },
@@ -630,21 +630,21 @@ const onChangeInsurance = async (val: boolean) => {
 </script>
 
 <template>
-    <Head :title="trans('Basket')" />
+    <Head :title="ctrans('Basket')" />
     <PageHeading :data="pageHead">
         <template #other>
             <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
                 <Button
                     v-if="upload_spreadsheet"
                     @click="() => isModalUploadSpreadsheet = true"
-                    :label="trans('Upload products')"
+                    :label="ctrans('Upload products')"
                     icon="upload"
                     type="tertiary"
                     class="rounded-none border-0"
                 />
                 <Button
                     @click="() => isModalProductListOpen = true"
-                    :label="trans('Add products')"
+                    :label="ctrans('Add products')"
                     type="tertiary"
 					icon="fas fa-plus"
 					class="rounded-none border-none"
@@ -655,9 +655,9 @@ const onChangeInsurance = async (val: boolean) => {
     </PageHeading>
 
     <div v-if="order?.has_insurance || order?.is_premium_dispatch || order?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
-        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="ctrans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="ctrans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
     </div>
 
     <EcomCheckoutSummary
@@ -684,7 +684,7 @@ const onChangeInsurance = async (val: boolean) => {
             />
 
             <div v-if="shipping_options" class="mx-3 md:mx-6 my-4 border border-gray-200 rounded-md p-3">
-                <div class="font-medium mb-2">{{ trans('Shipping method') }}</div>
+                <div class="font-medium mb-2">{{ ctrans('Shipping method') }}</div>
                 <div class="space-y-1">
                     <label
                         v-for="option in shipping_options"
@@ -703,7 +703,7 @@ const onChangeInsurance = async (val: boolean) => {
                             <span>{{ option.name }}</span>
                         </span>
                         <span class="text-gray-500">
-                            {{ option.is_tbc ? trans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
+                            {{ option.is_tbc ? ctrans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
                         </span>
                     </label>
                 </div>
@@ -739,7 +739,7 @@ const onChangeInsurance = async (val: boolean) => {
                             <div class="">
                                 <div class="text-sm text-gray-500">
                                     <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
-                                    {{ trans("Other Instructions") }}:
+                                    {{ ctrans("Other Instructions") }}:
                                 </div>
                                 <PureTextarea
                                     v-model="noteToSubmit"
@@ -816,7 +816,7 @@ const onChangeInsurance = async (val: boolean) => {
                     <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                         <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
                             <InformationIcon v-if="charges.extra_packing?.description" :information="charges.extra_packing.description ?? ''" />
-                            {{ charges.extra_packing?.label ? trans(charges.extra_packing.label) : trans(charges.extra_packing?.name ?? '') }}
+                            {{ charges.extra_packing?.label ? ctrans(charges.extra_packing.label) : ctrans(charges.extra_packing?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
                         </div>
                         <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
@@ -839,7 +839,7 @@ const onChangeInsurance = async (val: boolean) => {
                     <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                         <div class="px-2 flex justify-end items-center gap-x-1 relative">
                             <InformationIcon v-if="charges.insurance?.description" :information="charges.insurance.description ?? ''" />
-                            {{ charges.insurance?.label ? trans(charges.insurance.label) : trans(charges.insurance?.name ?? '') }}
+                            {{ charges.insurance?.label ? ctrans(charges.insurance.label) : ctrans(charges.insurance?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
                         </div>
                         <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
@@ -872,7 +872,7 @@ const onChangeInsurance = async (val: boolean) => {
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
                             iconRight="fas fa-arrow-right"
-                            :label="trans('Place order')"
+                            :label="ctrans('Place order')"
                             :routeTarget="routes?.pay_with_balance"
                             full
                             :size="screenType === 'mobile' ? 'xl' : undefined"
@@ -883,7 +883,7 @@ const onChangeInsurance = async (val: boolean) => {
                         <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
                             <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
                             <div class="leading-5">
-                                {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                                {{ ctrans("This is your final confirmation. You can pay totally with your current balance.") }}
                             </div>
                         </div>
                     </template>
@@ -892,7 +892,7 @@ const onChangeInsurance = async (val: boolean) => {
                     <ButtonWithLink
                         v-else
                         iconRight="fas fa-arrow-right"
-                        :label="trans('Go to checkout')"
+                        :label="ctrans('Go to checkout')"
                         :routeTarget="{
                             name: 'retina.ecom.checkout.show',
                             parameters: {
@@ -906,8 +906,8 @@ const onChangeInsurance = async (val: boolean) => {
                     />
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
-                    <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
-                    <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
+                    <div v-if="is_forbidden_billing" class="text-red-500">*{{ ctrans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>
+                    <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ ctrans("We cannot deliver to :_country. Please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>
@@ -916,7 +916,7 @@ const onChangeInsurance = async (val: boolean) => {
     <div v-else class="text-center w-full">
         <EmptyState
             :data="{
-                title: trans('Basket is empty')
+                title: ctrans('Basket is empty')
             }"
         />
     </div>
@@ -939,7 +939,7 @@ const onChangeInsurance = async (val: boolean) => {
     <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl" key="">
         <ProductsSelectorAutoSelect
-            :headLabel="trans('Add products to basket')"
+            :headLabel="ctrans('Add products to basket')"
             :routeFetch="props.routes.select_products"
             :isLoadingSubmit
             @submit="(products: {}) => onAddProducts(products)"
@@ -951,7 +951,7 @@ const onChangeInsurance = async (val: boolean) => {
         <div class="md:hidden">
             <Button
                 @click="() => isModalProductListOpen = false"
-                :label="trans('Complete')"
+                :label="ctrans('Complete')"
                 type="tertiary"
                 full
             />

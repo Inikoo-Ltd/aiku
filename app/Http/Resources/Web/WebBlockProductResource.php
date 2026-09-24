@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
@@ -87,7 +88,6 @@ class WebBlockProductResource extends JsonResource
 
 
         return [
-            'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
             'family_code'       => $product->family?->code,
@@ -123,6 +123,9 @@ class WebBlockProductResource extends JsonResource
             'is_on_demand'      => $product->is_on_demand,
             'is_golden_product' => (bool)$product->is_golden_product,
             'is_back_in_stock'  => $product->backInStockReminders,
+            'expected_back_in_stock_at' => $product->available_quantity > 0
+                ? null
+                : GetProductIncomingStock::make()->earliestEta($product),
             'back_in_stock'     => $back_in_stock,
 
 

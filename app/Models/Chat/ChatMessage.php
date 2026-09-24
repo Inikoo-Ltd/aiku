@@ -102,6 +102,17 @@ class ChatMessage extends Model implements HasMedia
         return $this->belongsTo(Media::class, 'media_id');
     }
 
+    /**
+     * @return \Illuminate\Support\Collection<int, Media>
+     */
+    public function attachedFiles(): \Illuminate\Support\Collection
+    {
+        return $this->media
+            ->whereIn('collection_name', ['chat_images', 'chat_attachments'])
+            ->sortBy('order_column')
+            ->values();
+    }
+
 
     public function sender(): MorphTo
     {

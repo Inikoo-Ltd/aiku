@@ -13,6 +13,10 @@ use App\Actions\Dropshipping\Shopify\Order\StoreOrderFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -22,10 +26,31 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
+    private const int LOCK_SECONDS = 120;
+
+    private const int LOCK_WAIT_SECONDS = 15;
+
     /**
+     * The webhook, the poller and a retry can reach the same fulfilment order at once, and the order
+     * is only looked up before it is created, so one of them would create and charge it twice.
+     *
      * @throws \Throwable
      */
     public function handle(ShopifyUser $shopifyUser, array $fulfillmentOrder): void
+    {
+        $lockKey = 'shopify_fulfilment_order_'.$shopifyUser->id.'_'.Arr::get($fulfillmentOrder, 'id');
+
+        try {
+            Cache::lock($lockKey, self::LOCK_SECONDS)->block(self::LOCK_WAIT_SECONDS, fn () => $this->createOrder($shopifyUser, $fulfillmentOrder));
+        } catch (LockTimeoutException) {
+            Log::warning('Shopify fulfilment order skipped, another import held '.$lockKey.' for over '.self::LOCK_WAIT_SECONDS.' seconds; fetch the channel orders again if it is missing from AW.');
+        }
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    private function createOrder(ShopifyUser $shopifyUser, array $fulfillmentOrder): void
     {
         $assignedLineItems = [];
 
@@ -43,7 +68,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
             $productId = data_get($lineItem, 'lineItem.product.id');
             $productVariantId = data_get($lineItem, 'lineItem.variant.id');
 
-            if (empty($productId)) {
+            if (empty($productId) && empty($productVariantId) && blank($lineItem['sku'] ?? null)) {
                 continue;
             }
 
@@ -60,7 +85,7 @@ class CreateFulfilmentOrderFromShopify extends OrgAction
             ];
         }
 
-        if (empty($assignedLineItems)) {
+        if (empty($assignedLineItems) && !Arr::has($fulfillmentOrder, 'declined_reason')) {
             return;
         }
 

@@ -81,6 +81,8 @@ class CheckIfProductExistsInShopify
 
             return $result;
         } catch (\Exception) {
+            data_set($result, 'error', true);
+
             return $result;
         }
     }

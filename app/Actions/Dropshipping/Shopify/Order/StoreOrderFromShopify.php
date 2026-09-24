@@ -18,6 +18,7 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerClient;
@@ -45,18 +46,35 @@ class StoreOrderFromShopify extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $deliveryAddress = Arr::get($modelData, 'shipping_address', []); // AIKU-Z20: fallback empty array
-
-        $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
-        $shopifyProducts = collect($modelData['line_items']);
-        $attributes = $this->getShopifyAttributesFromWebhook(Arr::get($modelData, 'customer'), $deliveryAddress);
-        $deliveryAddress = Arr::get($attributes, 'address');
+        $declinedReason = Arr::get($modelData, 'declined_reason');
 
         $existOrder = Order::where('platform_order_id', Arr::get($modelData, 'id'))->first();
 
         if ($existOrder) {
-            return;
+            if (!$existOrder->isDeclinedPlatformRequest()) {
+                return;
+            }
+
+            if ($declinedReason) {
+                $existOrder->update([
+                    'public_notes' => $this->getDeclinedPublicNotes($declinedReason),
+                    'data'         => array_merge((array) $existOrder->data, ['declined_reason' => $declinedReason]),
+                ]);
+
+                return;
+            }
+
+            $existOrder->update(['platform_order_id' => null]);
         }
+
+        $attributes      = $this->getShopifyAttributesFromWebhook(Arr::get($modelData, 'customer'), Arr::get($modelData, 'shipping_address', []));
+        $deliveryAddress = Arr::get($attributes, 'address');
+
+        if ($declinedReason && !filled(Arr::get($deliveryAddress, 'country_id'))) {
+            $deliveryAddress = $this->getFallbackDeliveryAddress($shopifyUser);
+        }
+
+        $shopifyProducts = collect(Arr::get($modelData, 'line_items', []));
 
         $matchedShopifyProducts = [];
         $unmatchedShopifyProducts = [];
@@ -84,6 +102,31 @@ class StoreOrderFromShopify extends OrgAction
             );
         }
 
+        if (!$declinedReason && !$matchedShopifyProducts) {
+            return;
+        }
+
+        $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData, $deliveryAddress);
+
+        if ($declinedReason) {
+            StoreOrder::make()->action($customerClient, [
+                'platform_id'               => $shopifyUser->platform_id,
+                'customer_sales_channel_id' => $shopifyUser->customer_sales_channel_id,
+                'date'                      => $modelData['created_at'],
+                'delivery_address'          => new Address($deliveryAddress),
+                'data'                      => [
+                    'shopify_data'    => Arr::except($modelData, 'declined_reason'),
+                    'declined_reason' => $declinedReason,
+                ],
+                'platform_order_id'         => Arr::get($modelData, 'id'),
+                'public_notes'              => $this->getDeclinedPublicNotes($declinedReason),
+                'state'                     => OrderStateEnum::CANCELLED,
+                'cancelled_at'              => now(),
+            ]);
+
+            return;
+        }
+
         if ($matchedShopifyProducts) {
             $order = DB::transaction(function () use ($shopifyUser, $customerClient, $modelData, $deliveryAddress, $matchedShopifyProducts) {
                 $order = StoreOrder::make()->action($customerClient, [
@@ -99,7 +142,6 @@ class StoreOrderFromShopify extends OrgAction
                         ]
                     ],
                     'platform_order_id'         => Arr::get($modelData, 'id'),
-
                 ]);
 
                 foreach ($matchedShopifyProducts as [$portfolio, $shopifyProduct]) {
@@ -135,9 +177,41 @@ class StoreOrderFromShopify extends OrgAction
     }
 
     /**
+     * A fulfilment request Shopify was told we decline still lands in AW, as a cancelled order that
+     * says why, so the customer sees it without going to Shopify (HELP-3151). When they fix the
+     * problem and request fulfilment again the placeholder gives up the platform order id and the
+     * real order takes it.
+     *
+     */
+    protected function getDeclinedPublicNotes(string $declinedReason): string
+    {
+        return __('Fulfilment request declined: :reason', ['reason' => $declinedReason]).' '
+            .__('Fix the order in Shopify and request fulfilment again.');
+    }
+
+    /**
+     * A declined request may come with no delivery address at all, and both the client and the order
+     * insist on one; the customer's own address stands in on the cancelled placeholder.
+     */
+    protected function getFallbackDeliveryAddress(ShopifyUser $shopifyUser): array
+    {
+        return Arr::only($shopifyUser->customer->address?->toArray() ?? [], [
+            'address_line_1',
+            'address_line_2',
+            'sorting_code',
+            'postal_code',
+            'dependent_locality',
+            'locality',
+            'administrative_area',
+            'country_code',
+            'country_id',
+        ]);
+    }
+
+    /**
      * @throws \Throwable
      */
-    public function digestShopifyCustomerClient(ShopifyUser $shopifyUser, array $shopifyOrderData): CustomerClient
+    public function digestShopifyCustomerClient(ShopifyUser $shopifyUser, array $shopifyOrderData, array $deliveryAddress): CustomerClient
     {
         $receiverDetail = Arr::get($shopifyOrderData, 'shipping_address');
 
@@ -148,14 +222,11 @@ class StoreOrderFromShopify extends OrgAction
             ->where('reference', $reference)
             ->first();
 
-        $attributes = $this->getShopifyAttributesFromWebhook(Arr::get($shopifyOrderData, 'customer'), Arr::get($shopifyOrderData, 'shipping_address'));
-        $deliveryAddress = Arr::get($attributes, 'address');
-
         if (!$customerClientID) {
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, [
                 'reference'    => $reference,
                 'email'        => Arr::get($shopifyOrderData, 'customer.email'),
-                'contact_name' => Arr::get($receiverDetail, 'firstName').' '.Arr::get($receiverDetail, 'lastName'),
+                'contact_name' => $this->getShopifyContactName($shopifyOrderData),
                 'phone'        => $this->sanitizePhone(Arr::get($receiverDetail, 'phone')),
                 'address'      => $deliveryAddress,
                 'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
@@ -164,7 +235,7 @@ class StoreOrderFromShopify extends OrgAction
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
                 'email'        => Arr::get($shopifyOrderData, 'customer.email'),
-                'contact_name' => Arr::get($receiverDetail, 'firstName').' '.Arr::get($receiverDetail, 'lastName'),
+                'contact_name' => $this->getShopifyContactName($shopifyOrderData),
                 'phone'        => $this->sanitizePhone(Arr::get($receiverDetail, 'phone')),
                 'address'      => $deliveryAddress,
                 'platform_customer_id' => Arr::get($shopifyOrderData, 'customer.id')
@@ -172,6 +243,13 @@ class StoreOrderFromShopify extends OrgAction
         }
 
         return $customerClient;
+    }
+
+    protected function getShopifyContactName(array $shopifyOrderData): string
+    {
+        $receiver = Arr::get($shopifyOrderData, 'shipping_address') ?: Arr::get($shopifyOrderData, 'customer', []);
+
+        return trim(Arr::get($receiver, 'firstName').' '.Arr::get($receiver, 'lastName'));
     }
 
 }

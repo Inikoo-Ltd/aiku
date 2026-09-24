@@ -445,7 +445,18 @@ test("UI Edit Trade Unit", function () {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $tradeUnit->name)->etc()
             )
-            ->has("formData");
+            ->where("formData.blueprint", function ($blueprint) {
+                $languagesField = collect($blueprint)->pluck('fields.languages')->filter()->first();
+
+                expect($languagesField['labelProp'])->toBe('label')
+                    ->and($languagesField['options'])->not->toBeEmpty();
+
+                foreach ($languagesField['options'] as $language) {
+                    expect($language['label'])->toBe('('.strtoupper($language['code']).') '.$language['name']);
+                }
+
+                return true;
+            });
     });
 });
 

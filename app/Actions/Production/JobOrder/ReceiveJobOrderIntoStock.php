@@ -22,6 +22,7 @@ use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -99,7 +100,8 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 }
 
                 StoreBatchCode::make()->action($location->warehouse, [
-                    'code'         => $jobOrder->reference.'-'.$item->artefact->code,
+                    'code'         => Arr::get($item->data, 'batch_code') ?: $jobOrder->reference.'-'.$item->artefact->code,
+                    'expiry_date'  => Arr::get($item->data, 'expiry_date'),
                     'org_stock_id' => $orgStock->id,
                 ]);
 
@@ -194,7 +196,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
             }
 
             StoreOrgStockMovement::make()->action($orgStock, $deductionLocationOrgStock->location, [
-                'quantity' => -$consumption['quantity'],
+                'quantity' => -$consumption['quantity'] / max(1, (int) $orgStock->packed_in),
                 'type'     => OrgStockMovementTypeEnum::PRODUCTION,
                 'user_id'  => $userId,
             ]);

@@ -114,6 +114,10 @@ class ZentradaWebApi extends RetinaAction
         ]);
     }
 
+    /**
+     * Zentrada keeps the last value it imported for a field left empty, so the promotion has to be
+     * published as an explicit 0: an empty column leaves a discount running forever.
+     */
     private function mapRow(Product $row, ?string $currency, string $vat): array
     {
         $unitsPerPackage  = $row->units > 0 ? $row->units : 1;
@@ -145,7 +149,7 @@ class ZentradaWebApi extends RetinaAction
             'quantity_of_units_per_package'           => $unitsPerPackage,
             'minimum_order_quantity_in_packing_units' => 1,
             'net_price_per_unit'                      => ($row->price ?? 0) / $unitsPerPackage,
-            'promotion_discount'                      => '',
+            'promotion_discount'                      => '0',
             'volumedbasedpricing_quantity1'           => '',
             'volumebasedpricing_price1'               => '',
             'volumedbasedpricing_quantity2'           => '',

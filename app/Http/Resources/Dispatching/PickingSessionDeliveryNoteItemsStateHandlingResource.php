@@ -8,6 +8,8 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
@@ -98,6 +100,12 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
     ) as pickings_data',
                 ['pick', $this->id]
             )
+            ->orderByRaw(PartnerBayPickingOrder::sql((string) (int) $this->id))
+            ->orderByRaw(
+                $this->shop_type == ShopTypeEnum::B2B->value
+                    ? 'location_org_stocks.default_wholesale_picking_location::int desc'
+                    : 'location_org_stocks.default_dropshipping_picking_location::int desc'
+            )
             ->orderBy('picking_priority')->get();
 
 
@@ -161,6 +169,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_code'                    => $this->org_stock_code,
             'org_stock_slug'                    => $this->org_stock_slug,
             'org_stock_name'                    => $this->org_stock_name,
+            'replacement_reason_label'          => $this->replacement_reason?->label(),
             'barcode'                           => $this->barcode,
             'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $deliveryNoteItem?->organisation_id) : [],
             'pickings'                          => PickingResource::collection($pickings),

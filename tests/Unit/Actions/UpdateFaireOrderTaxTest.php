@@ -46,3 +46,12 @@ test('sums multiple tax items', function () {
 test('returns zero when faire order has no taxes', function () {
     expect(UpdateFaireOrder::make()->getFaireTaxAmount(['payout_costs' => []], fakeGbpShop()))->toBe(0.0);
 });
+
+test('reads the current store name from the faire order address', function () {
+    expect(UpdateFaireOrder::make()->getFaireCompanyName(['address' => ['company_name' => ' The Hearth Studio ']]))->toBe('The Hearth Studio');
+});
+
+test('has no store name when the faire order address has none', function () {
+    expect(UpdateFaireOrder::make()->getFaireCompanyName(['address' => ['company_name' => '']]))->toBeNull()
+        ->and(UpdateFaireOrder::make()->getFaireCompanyName([]))->toBeNull();
+});

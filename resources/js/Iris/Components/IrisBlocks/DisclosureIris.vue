@@ -10,7 +10,7 @@ import { trans } from 'laravel-vue-i18n'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPlus, faMinus } from '@fas'
-import { inject, onBeforeUnmount, onMounted, ref } from "vue"
+import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
 import { useFaqStructuredData } from "@/Iris/Composables/useFaqStructuredData"
 
 library.add(faPlus, faMinus)
@@ -42,14 +42,16 @@ onBeforeUnmount(() => {
   removeStructuredDataScript(faqStructuredDataScript.value)
 })
 
+const containerStyle = computed(() => ({
+  ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+  ...getStyles(props.fieldValue.container?.properties, props.screenType),
+}))
+
 </script>
 
 <template>
   <div :id="fieldValue?.id ? fieldValue?.id  : 'disclosure'+indexBlock"  component="disclosure">
-    <div :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue.container?.properties, screenType)
-    }">
+    <div :style="containerStyle">
       <dl class="space-y-0  rounded-md overflow-hidden">
         <Disclosure v-for="(faq, index) in fieldValue.value" :key="index" as="div"
           :class="index !== 0 ? 'border-t border-gray-200' : ''" v-slot="{ open }">
@@ -63,7 +65,7 @@ onBeforeUnmount(() => {
             <DisclosureButton class="ml-2 flex h-[44px] w-[44px] items-center justify-center transition "
               :name="'disclosure-button-' + index"
               :aria-label="open ? ctrans('Hide answer') : ctrans('Show answer')">
-              <font-awesome-icon :icon="open ? 'minus' : 'plus'" aria-hidden="true" />
+              <font-awesome-icon :icon="open ? 'minus' : 'plus'" fixed-width aria-hidden="true" />
             </DisclosureButton>
           </dt>
           <DisclosurePanel as="dd" :unmount="false" class="px-4 pb-4 text-base text-gray-600 transition-all duration-300 ease-in-out !text-left">

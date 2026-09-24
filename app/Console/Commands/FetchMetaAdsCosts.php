@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 use App\Actions\CRM\TrafficSource\GetTrafficSourceCampaign;
 use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
+use App\Enums\CRM\TrafficSource\TrafficSourceCostFetchedViaEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
@@ -296,6 +297,7 @@ class FetchMetaAdsCosts extends Command
                 'date'                       => $row['date'],
                 'source_amount'              => $row['amount'],
                 'source_currency_id'         => $currency->id,
+                'fetched_via'                => TrafficSourceCostFetchedViaEnum::API->value,
                 'traffic_source_campaign_id' => GetTrafficSourceCampaign::run(
                     $trafficSource,
                     $this->campaignReference($row['type'], $row['campaign_id']),

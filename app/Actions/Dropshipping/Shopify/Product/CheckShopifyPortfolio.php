@@ -45,7 +45,7 @@ class CheckShopifyPortfolio
             $productExistsInShopifyError = $productExistsInShopifyResult['error'];
 
 
-            $hasVariantAtLocationResult = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+            $hasVariantAtLocationResult = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id, $portfolio->isShopifyVariantAdopted() ? $portfolio->platform_product_variant_id : null);
             $hasVariantAtLocation       = $hasVariantAtLocationResult['exist'];
             $hasVariantAtLocationError  = $hasVariantAtLocationResult['error'];
         }

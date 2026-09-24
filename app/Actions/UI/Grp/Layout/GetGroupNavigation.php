@@ -31,6 +31,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label'   => __("Catalogue"),
                         "tooltip" => __("Catalogue"),
                         "icon"    => ["fal", "fa-books"],
                         'root'    => 'grp.catalogue.show',
@@ -40,6 +41,7 @@ class GetGroupNavigation
                         ],
                     ],
                     [
+                        'label'   => __("Platform"),
                         "tooltip" => __("Platform"),
                         'icon'    => ['fal', 'fa-code-branch'],
                         'root'    => 'grp.platforms.index',
@@ -92,6 +94,23 @@ class GetGroupNavigation
             ];
         }
 
+        $groupNavigation['tasks'] = [
+            'label'   => __('Tasks'),
+            'icon'    => ['fal', 'fa-tasks'],
+            'root'    => 'grp.tasks.',
+            'route'   => [
+                'name' => 'grp.tasks.index',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    ['label' => __('My tasks'), 'icon' => ['fal', 'fa-tasks'], 'root' => 'grp.tasks.index', 'route' => ['name' => 'grp.tasks.index']],
+                    ['label' => __('All'), 'icon' => ['fal', 'fa-list'], 'root' => 'grp.tasks.list_all', 'route' => ['name' => 'grp.tasks.list_all']],
+                    ['label' => __('Board'), 'icon' => ['fal', 'fa-columns'], 'root' => 'grp.tasks.board', 'route' => ['name' => 'grp.tasks.board']],
+                    ['label' => __('Reports'), 'icon' => ['fal', 'fa-chart-line'], 'root' => 'grp.tasks.reports', 'route' => ['name' => 'grp.tasks.reports']],
+                ],
+            ],
+        ];
+
         $groupNavigation['tickets'] = [
             'label'   => __('Tickets'),
             'icon'    => ['fal', 'fa-life-ring'],
@@ -143,39 +162,46 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-comment-alt'],
             'root'    => 'grp.chat.',
             'route'   => [
-                'name' => 'grp.chat.dashboard',
+                'name' => 'grp.chat.reports',
             ],
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label'   => __('Messaging'),
-                        'tooltip' => __('Messaging'),
+                        'label'   => __('Customer Inbox'),
+                        'tooltip' => __('Customer Inbox'),
+                        'icon'    => ['fal', 'fa-inbox'],
+                        'root'    => 'grp.chat.inbox',
+                        'route'   => [
+                            'name' => 'grp.chat.inbox',
+                        ],
+                    ],
+                    [
+                        'label'   => __('Internal Messages'),
+                        'tooltip' => __('Internal Messages'),
                         'icon'    => ['fal', 'fa-comments'],
                         'root'    => 'grp.chat.staff.index',
                         'route'   => [
                             'name' => 'grp.chat.staff.index',
                         ],
                     ],
-                    [
-                        'label'   => __('Dashboard'),
-                        'tooltip' => __('Dashboard'),
-                        'icon'    => ['fal', 'fa-comment-alt'],
-                        'root'    => 'grp.chat.dashboard',
+                    ...($user->hasGroupAccess() ? [[
+                        'label'   => __('AI assist'),
+                        'tooltip' => __('AI assist'),
+                        'icon'    => ['fal', 'fa-robot'],
+                        'root'    => 'grp.chat.ai.',
                         'route'   => [
-                            'name' => 'grp.chat.dashboard',
+                            'name' => 'grp.chat.ai.dashboard',
+                        ],
+                    ]] : []),
+                    [
+                        'label'   => __('Reports'),
+                        'tooltip' => __('Reports'),
+                        'icon'    => ['fal', 'fa-chart-line'],
+                        'root'    => 'grp.chat.reports',
+                        'route'   => [
+                            'name' => 'grp.chat.reports',
                         ],
                     ],
-                    ...($user->chatAgent ? [
-                        [
-                            'label'   => __('Inbox'),
-                            'tooltip' => __('Inbox'),
-                            'icon'    => ['fal', 'fa-inbox'],
-                            'root'    => 'grp.chat.inbox',
-                            'route'   => [
-                                'name' => 'grp.chat.inbox',
-                            ],
-                        ],
-                    ] : []),
                     // [
                     //     'label'   => __('Agents'),
                     //     'tooltip' => __('Agents'),
@@ -289,8 +315,9 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label'   => __("Master Catalogue"),
                         "tooltip" => __("Master Catalogue"),
-                        "icon"    => ["fal", "fa-books"],
+                        "icon"    => ["fab", "fa-octopus-deploy"],
                         'root'    => 'grp.masters.dashboard',
                         "route"   => [
                             "name"       => 'grp.masters.dashboard',
@@ -378,6 +405,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label' => __('Dashboard'),
                         'icon'  => ['fal', 'fa-chart-network'],
                         'root'  => 'grp.supply-chain.dashboard',
                         'route' => [
@@ -503,6 +531,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
+                        'label'   => __('System Administration'),
                         'tooltip' => __('System Administration'),
                         'icon'    => ['fal', 'fa-users-cog'],
                         'root'    => 'grp.sysadmin.dashboard',

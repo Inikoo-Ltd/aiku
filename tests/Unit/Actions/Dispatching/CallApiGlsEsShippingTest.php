@@ -143,3 +143,13 @@ it('merges PDF strings preserving orientation and template size', function () {
         @unlink($tempFile);
     }
 });
+
+it('uses the GLS Track ID when GLS returns one, otherwise the Spanish barcode', function (string $references, string $expected) {
+    $envio = simplexml_load_string('<Envio codbarras="61771311823020"><Referencias>'.$references.'</Referencias></Envio>');
+
+    expect((new CallApiGlsEsShipping())->getTrackingNumber($envio))->toBe($expected);
+})->with([
+    'international' => ['<Referencia tipo="C">AFR1</Referencia><Referencia tipo="G">Z6SYWVRR</Referencia><Referencia tipo="N">36448223959</Referencia>', 'Z6SYWVRR'],
+    'domestic'      => ['<Referencia tipo="C">AFR1</Referencia>', '61771311823020'],
+    'blank track id' => ['<Referencia tipo="G"> </Referencia>', '61771311823020'],
+]);

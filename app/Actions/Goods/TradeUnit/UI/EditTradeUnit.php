@@ -197,6 +197,12 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Unit label'),
                                     'value' => $tradeUnit->type
                                 ],
+                                'is_divisible' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Divisible'),
+                                    'information' => __('Bulk material such as a litre of oil or a kilo of powder: products can use part of it. Leave off for pieces.'),
+                                    'value'       => $tradeUnit->is_divisible
+                                ],
                             ],
                         ],
                         [
@@ -375,17 +381,17 @@ class EditTradeUnit extends OrgAction
                                     'value' => $tradeUnit->gpsr_eu_responsible
                                 ],
                                 'gpsr_warnings' => [
-                                    'type'  => 'input',
+                                    'type'  => 'textarea',
                                     'label' => __('Warnings'),
                                     'value' => $tradeUnit->gpsr_warnings
                                 ],
                                 'gpsr_manual' => [
-                                    'type'  => 'input',
+                                    'type'  => 'textarea',
                                     'label' => __('How To Use'),
                                     'value' => $tradeUnit->gpsr_manual
                                 ],
                                 'gpsr_class_category_danger' => [
-                                    'type'  => 'input',
+                                    'type'  => 'textarea',
                                     'label' => __('Class & category of danger'),
                                     'value' => $tradeUnit->gpsr_class_category_danger,
                                 ],
@@ -449,6 +455,15 @@ class EditTradeUnit extends OrgAction
                             'label'  => __('Labeling & Compliance Marks'),
                             'icon'   => 'fa-light fa-stamp',
                             'fields' => [
+                                'label_info_approved' => [
+                                    'type'               => 'toggle',
+                                    'label'              => __('Publish Regulatory & Label Information'),
+                                    'value'              => data_get($tradeUnit->label_info, 'label_info_approved', false),
+                                    'single_description' => __('Switch on only once all the regulatory and label information below has been checked and completed. While off, the Regulatory & Label Information tab stays hidden on the website.'),
+                                    'saveConfirmation'   => [
+                                        'description' => __('The Regulatory & Label Information tab is only published on the website when every trade unit of a product has been approved.'),
+                                    ],
+                                ],
                                 'markets' => [
                                     'type'         => 'checkbox',
                                     'label'        => __('Markets'),
@@ -460,8 +475,11 @@ class EditTradeUnit extends OrgAction
                                     'type'         => 'select-improved',
                                     'label'        => __('Languages'),
                                     'placeholder'  => __('Select languages'),
-                                    'options'      => array_values(GetLanguagesOptions::make()->all()),
-                                    'labelProp'    => 'name',
+                                    'options'      => array_values(array_map(
+                                        fn (array $language) => $language + ['label' => '('.strtoupper($language['code']).') '.$language['name']],
+                                        GetLanguagesOptions::make()->all()
+                                    )),
+                                    'labelProp'    => 'label',
                                     'valueProp'    => 'code',
                                     'tagLabelProp' => 'code',
                                     'tagUppercase' => true,

@@ -13,6 +13,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { RouteParams } from "@/types/route-params";
 import { trans } from 'laravel-vue-i18n'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 defineProps<{
     data: object
@@ -99,7 +100,20 @@ function webUserEditRoute(webUser: WebUser) {
         </template>
 
         <template #cell(is_root)="{ item: webUser }">
-            {{ webUser["is_root"] }}
+            <FontAwesomeIcon v-if="webUser.is_root?.icon" :icon="webUser.is_root.icon" v-tooltip="webUser.is_root.tooltip" fixed-width aria-hidden="true" />
+        </template>
+
+        <template #cell(status)="{ item: webUser }">
+            <FontAwesomeIcon :icon="webUser.status.icon" :class="webUser.status.class" v-tooltip="webUser.status.tooltip" fixed-width aria-hidden="true" />
+        </template>
+
+        <template #cell(last_login_at)="{ item: webUser }">
+            {{ webUser.last_login_at ? useFormatTime(webUser.last_login_at) : trans('never') }}
+        </template>
+
+        <template #cell(number_failed_logins)="{ item: webUser }">
+            {{ webUser.number_failed_logins }}
+            <span v-if="webUser.last_failed_login_at" class="text-gray-400 text-xs">({{ useFormatTime(webUser.last_failed_login_at) }})</span>
         </template>
 
         <!-- Column: Created at -->

@@ -68,21 +68,6 @@ const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = async (product: ProductResource) => {
     isLoadingAllPortfolios.value = true
 
-    // Luigi: event add to cart
-    const addToCartEcommerce = {
-        currency: layout?.iris?.currency?.code,
-        value: product.price,
-        channel: 'all',
-        items: [
-            {
-                item_id: product?.luigi_identity,
-            }
-        ]
-    }
-    window?.dataLayer?.push({
-        event: "add_to_cart",
-        ecommerce: addToCartEcommerce,
-    })
 
     try {
         const response = await axios.post(
@@ -129,21 +114,6 @@ const onAddPortfoliosSpecificChannel = async (product: ProductResource, channel:
     // Start loading
     isLoadingSpecificChannel.value.push(channelId)
 
-    // Luigi: event add to cart
-    const addToCartEcommerce = {
-        currency: layout?.iris?.currency?.code,
-        value: product.price,
-        channel: channel?.platform_slug || null,
-        items: [
-            {
-                item_id: product?.luigi_identity,
-            }
-        ]
-    }
-    window?.dataLayer?.push({
-        event: "add_to_cart",
-        ecommerce: addToCartEcommerce,
-    })
 
     try {
         const response = await axios.post(

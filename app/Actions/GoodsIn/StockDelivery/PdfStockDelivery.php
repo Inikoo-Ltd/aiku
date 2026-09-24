@@ -3,7 +3,7 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithExportData;
+use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PdfStockDelivery extends OrgAction
 {
-    use WithExportData;
+    use WithProcurementAuthorisation;
 
     /**
      * @throws MpdfException
@@ -30,18 +30,14 @@ class PdfStockDelivery extends OrgAction
             'items'         => $stockDelivery->items,
         ]);
 
-        return response($pdf->stream($filename.'.pdf'), 200)
+        return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
     }
 
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     public function asController(Organisation $organisation, StockDelivery $stockDelivery, ActionRequest $request): Response
     {
+        abort_unless($stockDelivery->organisation_id === $organisation->id, 404);
         $this->initialisation($organisation, $request);
 
         return $this->handle($stockDelivery);

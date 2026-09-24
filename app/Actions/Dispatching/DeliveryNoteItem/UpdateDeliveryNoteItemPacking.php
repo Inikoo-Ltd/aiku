@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\OrgAction;
@@ -89,7 +90,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
          */
         $hasWaitingItems = $deliveryNote->hasBlockingItems();
 
-        if ($hasUnfinishedPackings->count() == 0 && !$hasWaitingItems) {
+        if ($hasUnfinishedPackings->count() == 0 && !$hasWaitingItems && !UpdateDeliveryNoteStatePacked::hasMissingParcelDimensions($deliveryNote) && !DeliveryNoteBoxPackingList::make()->missingBoxesMessage($deliveryNote)) {
             UpdateDeliveryNoteStatePacked::make()->action($deliveryNote, $user);
         }
 

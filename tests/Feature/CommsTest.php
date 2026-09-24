@@ -10,6 +10,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Comms\SesNotification\ProcessSesNotification;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
@@ -237,7 +238,8 @@ test(
         $shop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
         expect($shop->group->commsStats->number_outboxes)->toBe($shop->group->outboxes()->count())
             ->and($shop->organisation->commsStats->number_outboxes)->toBe($shop->organisation->outboxes()->count())
-            ->and($shop->commsStats->number_outboxes)->toBe($shop->outboxes()->count());
+            ->and($shop->commsStats->number_outboxes)->toBe($shop->outboxes()->count())
+            ->and($shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER)->exists())->toBeFalse();
 
         return $shop;
     }
@@ -295,7 +297,8 @@ test(
         $fulfilment = createFulfilment($this->organisation);
         expect($fulfilment->group->commsStats->number_outboxes)->toBe($fulfilment->group->outboxes()->count())
             ->and($fulfilment->organisation->commsStats->number_outboxes)->toBe($fulfilment->organisation->outboxes()->count())
-            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe($fulfilment->shop->outboxes()->count());
+            ->and($fulfilment->shop->commsStats->number_outboxes)->toBe($fulfilment->shop->outboxes()->count())
+            ->and($fulfilment->shop->outboxes()->where('code', OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER)->exists())->toBeTrue();
 
         return $fulfilment;
     }
@@ -974,6 +977,23 @@ test('ensure email has unsubscribe link adds link when missing', function () {
 test('ensure email has unsubscribe link leaves existing link untouched', function () {
     $html = '<html><body>hello {{unsubscribe}}</body></html>';
     expect(EnsureEmailHasUnsubscribeLink::run($html))->toBe($html);
+});
+
+test('ses notification finds the dispatched email by its ses id, falling back to the legacy lookup table', function () {
+    $outbox       = $this->shop->outboxes()->first();
+    $withSesId    = $outbox->dispatchedEmails()->create(['data' => [], 'ses_id' => 'ses-direct-'.uniqid()]);
+    $legacyLinked = $outbox->dispatchedEmails()->create(['data' => []]);
+    DB::table('ses_dispatched_emails')->insert([
+        'dispatched_email_id' => $legacyLinked->id,
+        'ses_id'              => $legacySesId = 'ses-legacy-'.uniqid(),
+        'send_at'             => now(),
+    ]);
+
+    $processSesNotification = ProcessSesNotification::make();
+
+    expect($processSesNotification->getDispatchedEmail($withSesId->ses_id)?->id)->toBe($withSesId->id)
+        ->and($processSesNotification->getDispatchedEmail($legacySesId)?->id)->toBe($legacyLinked->id)
+        ->and($processSesNotification->getDispatchedEmail('ses-unknown-'.uniqid()))->toBeNull();
 });
 
 test('store email copy', function () {
@@ -2700,6 +2720,40 @@ test('process credit balance notification does nothing when no credit transactio
     expect(true)->toBeTrue();
 });
 
+test('credit balance email to customer is only sent when the credit explains itself', function (array $explanation, bool $isSent) {
+    Queue::fake();
+
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($this->customer, [
+        'amount' => 10,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::FROM_EXCESS,
+        ...$explanation,
+    ]);
+
+    if ($isSent) {
+        \App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer::assertPushed();
+    } else {
+        \App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer::assertNotPushed();
+    }
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToUser::assertPushed();
+})->with([
+    'unexplained' => [[], false],
+    'with notes'  => [['notes' => 'Refund for items not shipped in order X1'], true],
+]);
+
+test('credit balance email to customer is not sent when the money is refunded to the original payment', function () {
+    Queue::fake();
+
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($this->customer, [
+        'amount' => 10,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::MONEY_BACK,
+        'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::ORDER_CANCELLED,
+        'notes'  => 'Order #X1 cancelled. Money to be refunded to the original payment method.',
+    ], notifyCustomer: false);
+
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer::assertNotPushed();
+    \App\Actions\Comms\Email\SendCreditBalanceEmailToUser::assertPushed();
+});
+
 test('delete outbox has subscriber again is idempotent at handle level', function () {
     $outbox = createOutboxDirectly($this->shop, OutboxCode::REORDER_REMINDER);
     $outboxHasSubscriber = StoreOutboxHasSubscriber::make()->action($outbox, [
@@ -3304,6 +3358,30 @@ test('update sender email', function (\App\Models\Comms\SenderEmail $senderEmail
     expect($senderEmail->usage_count)->toBe(5);
 })->depends('store sender email');
 
+test('a spam complaint flags the email and takes the customer off newsletters and marketing', function () {
+    $outbox          = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot        = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $mailshot,
+        $this->customer,
+        ['email_address' => 'complainer@example.com']
+    );
+    $dispatchedEmail->update(['ses_id' => $sesId = 'ses-complaint-'.uniqid()]);
+    $this->customer->comms->update(['is_subscribed_to_newsletter' => true, 'is_subscribed_to_marketing' => true]);
+
+    $sesNotification = \App\Models\Comms\SesNotification::create([
+        'message_id' => $sesId,
+        'data'       => ['eventType' => 'Complaint', 'complaint' => ['timestamp' => now()->toIso8601String(), 'complaintFeedbackType' => 'abuse']],
+    ]);
+
+    ProcessSesNotification::run($sesNotification);
+
+    $comms = $this->customer->comms->refresh();
+    expect($dispatchedEmail->refresh()->mask_as_spam)->toBeTrue()
+        ->and($comms->is_subscribed_to_newsletter)->toBeFalse()
+        ->and($comms->is_subscribed_to_marketing)->toBeFalse();
+});
+
 test('process ses notification deletes itself when no matching dispatched email', function () {
     $sesNotification = \App\Models\Comms\SesNotification::create([
         'message_id' => 'no-matching-dispatched-email',
@@ -3372,6 +3450,25 @@ test('unsubscribe mailshot updates customer comms', function () {
 
     expect($result['id'])->toBe($dispatchedEmail->id);
     expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::UNSUBSCRIBED);
+});
+
+test('mail clients unsubscribe with one click on the list unsubscribe link', function () {
+    $outbox          = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+    $mailshot        = StoreMailshot::make()->action($outbox, Mailshot::factory()->definition());
+    $dispatchedEmail = \App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail::make()->handle(
+        $mailshot,
+        $this->customer,
+        ['email_address' => 'one-click-target@example.com']
+    );
+    $this->customer->comms->update(['is_subscribed_to_newsletter' => true]);
+
+    $this->post(
+        route('grp.one_click_unsubscribe', [\Illuminate\Support\Facades\Crypt::encryptString($dispatchedEmail->id), 'tag' => 'customer']),
+        ['List-Unsubscribe' => 'One-Click']
+    )->assertOk();
+
+    expect($dispatchedEmail->refresh()->state)->toBe(\App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum::UNSUBSCRIBED)
+        ->and($this->customer->comms->refresh()->is_subscribed_to_newsletter)->toBeFalse();
 });
 
 describe('email retention', function () {

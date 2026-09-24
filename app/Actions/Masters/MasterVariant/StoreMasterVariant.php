@@ -11,8 +11,10 @@ namespace App\Actions\Masters\MasterVariant;
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Catalogue\Variant\StoreVariantFromMaster;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterVariant;
@@ -117,6 +119,21 @@ class StoreMasterVariant extends OrgAction
         }
 
         $this->leader_id = data_get(collect($request->input('data_variants.products'))->where('is_leader', true)->first(), 'product.id');
+
+        $productsAwaitingRetirementDecision = Product::whereIn('master_product_id', array_keys($request->input('data_variants.products')))
+            ->whereRaw("data->>'retire_at_cutover' = 'true'")
+            ->whereNotNull('data->replaced_by_product_id')
+            ->where('state', '!=', ProductStateEnum::DISCONTINUED)
+            ->with('shop:id,code')
+            ->get();
+
+        if ($productsAwaitingRetirementDecision->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'leader_id' => __('These products were merged into another product at the cutover and are waiting for a decision (retire or keep as separate product) on their product page: :products', [
+                    'products' => $productsAwaitingRetirementDecision->map(fn (Product $product) => $product->shop->code.' '.$product->code)->implode(', ')
+                ])
+            ]);
+        }
 
         $code = MasterAsset::find($this->leader_id)->code;
         $this->set('code', $code);

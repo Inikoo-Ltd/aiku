@@ -17,6 +17,7 @@ use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Catalogue\Product\TranslateProductGpsrText;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
@@ -42,6 +43,7 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -113,6 +115,15 @@ class UpdateMasterAsset extends OrgAction
                 data_set($modelData, 'master_department_id', null);
                 data_set($modelData, 'master_sub_department_id', null);
             }
+        }
+
+        /*
+         * A barcode on a master built from several trade units has no automatic answer, so the
+         * only way it gets one is a person choosing it here. Marking it independent is what
+         * keeps ProductHydrateBarcodeFromTradeUnit off it afterwards.
+         */
+        if (Arr::has($modelData, 'barcode')) {
+            data_set($modelData, 'independent_barcode', true);
         }
 
         if (Arr::has($modelData, 'is_for_sale')) {
@@ -248,6 +259,20 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        $changedGpsrTexts = array_filter(
+            array_keys(TranslateProductGpsrText::REVIEW_FLAGS),
+            fn (string $field) => $masterAsset->wasChanged($field)
+        );
+
+        if ($changedGpsrTexts) {
+            $translateProductGpsrText = TranslateProductGpsrText::make();
+            $translateProductGpsrText->recordMasterSource($masterAsset, $changedGpsrTexts);
+
+            foreach ($masterAsset->products()->with('shop.language')->get() as $product) {
+                $translateProductGpsrText->applyTo($product, $masterAsset->only($changedGpsrTexts));
+            }
+        }
+
         if ($masterAsset->wasChanged('units')) {
             foreach ($masterAsset->products()->where('has_independent_units', false)->get() as $product) {
                 UpdateProduct::run($product, [
@@ -370,6 +395,15 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($masterAsset->wasChanged('barcode')) {
+            /** A child that has had its own barcode chosen keeps it, like every other override. */
+            foreach ($masterAsset->products()->where('products.independent_barcode', false)->get() as $product) {
+                UpdateProduct::run($product, [
+                    'barcode' => $masterAsset->barcode,
+                ]);
+            }
+        }
+
         if ($masterAsset->wasChanged('is_golden_product')) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::make()->action($product, [
@@ -437,7 +471,9 @@ class UpdateMasterAsset extends OrgAction
             'description_title_i8n'        => ['sometimes', 'array'],
             'description_i8n'              => ['sometimes', 'array'],
             'description_extra_i8n'        => ['sometimes', 'array'],
-            'is_for_sale'                  => ['sometimes', 'boolean'],
+            'gpsr_warnings'                => ['sometimes', 'nullable', 'string'],
+            'gpsr_manual'                  => ['sometimes', 'nullable', 'string'],
+            'is_for_sale'                => ['sometimes', 'boolean'],
             'not_for_sale_from_trade_unit' => ['sometimes', 'boolean'],
             'follow_trade_unit_media'      => ['sometimes', 'boolean'],
             'tax_category'                 => ['sometimes', 'array'],
@@ -451,6 +487,13 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
+            'barcode'                       => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+                Rule::exists('barcodes', 'number')->whereNull('deleted_at')
+            ],
         ];
 
         if (!$this->strict) {
@@ -490,6 +533,13 @@ class UpdateMasterAsset extends OrgAction
     /**
      * @throws \Throwable
      */
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->strict) {
+            $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
+    }
+
     public function action(MasterAsset $masterAsset, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): MasterAsset
     {
         $this->strict = $strict;

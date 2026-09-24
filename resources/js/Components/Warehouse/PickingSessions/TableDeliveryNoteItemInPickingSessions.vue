@@ -501,7 +501,9 @@ onUnmounted(() => {
         </template>
 
         <template #cell(org_stock_name)="{ item: deliveryNoteItem }">
-            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span></div>
+            <div>{{ deliveryNoteItem.org_stock_name }} <span class="italic opacity-80">{{deliveryNoteItem.packed_in_message}}</span>
+                <span v-if="deliveryNoteItem.replacement_reason_label" class="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">{{ deliveryNoteItem.replacement_reason_label }}</span>
+            </div>
             <OrgStockHandlingNotes :noteToPickers="deliveryNoteItem.note_to_pickers" :noteToPackers="deliveryNoteItem.note_to_packers" />
             <div class="mb-2">
                 <!-- Helper to make the row's height consistent -->
@@ -762,8 +764,8 @@ onUnmounted(() => {
 
                     <Button
                         v-if="
-                            pickingSession.state === 'picking_finished'
-                            && deliveryItem.delivery_note_state === 'handling'
+                            (pickingSession.state === 'picking_finished' || (pickingSession.state === 'handling_blocked'))
+                            && ['handling', 'picked'].includes(deliveryItem.delivery_note_state)
                             && !deliveryItem.delivery_note_has_waiting_items
                         "
                         type="save"
@@ -772,7 +774,7 @@ onUnmounted(() => {
                         @click="onOpenModalDetail(deliveryItem)"
                     />
 
-                    <div v-if="deliveryItem.pickings?.length && deliveryItem.state == 'handling'" class="space-y-1">
+                    <div v-if="deliveryItem.pickings?.length && ['handling', 'picked'].includes(deliveryItem.state)" class="space-y-1">
                         <div v-for="picking in deliveryItem.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                             <!-- {{ picking.location_code }} -->
                             <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
@@ -803,7 +805,7 @@ onUnmounted(() => {
                             </div>
 
                             <ButtonWithLink
-                                v-if="!deliveryItem.is_packed && deliveryItem.state == 'handling'"
+                                v-if="!deliveryItem.is_packed && ['handling', 'picked'].includes(deliveryItem.state)"
                                 v-tooltip="ctrans('Undo')"
                                 type="negative"
                                 size="xxs"
@@ -1003,9 +1005,10 @@ onUnmounted(() => {
 
             <Button
                 v-if="
-                    pickingSession.state === 'picking_finished'
+                    (pickingSession.state === 'picking_finished' || (pickingSession.state === 'handling_blocked'))
                     && (
                         itemValue.delivery_note_state === 'handling'
+                        || itemValue.delivery_note_state === 'picked'
                         || itemValue.delivery_note_state === 'packing'
                     )
                     && !itemValue.delivery_note_has_waiting_items

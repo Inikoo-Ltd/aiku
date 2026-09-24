@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { inject, onMounted } from "vue"
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBoxUsd, faUsersCog, faChartLine, faUserHardHat, faBlenderPhone, faUser, faInventory, faConveyorBeltAlt,
     faChevronDown, faPalletAlt, faAbacus,faCloudRainbow,faShoppingCart,faMountains, faTasksAlt, faTruck,
@@ -37,7 +37,41 @@ onMounted(() => {
             layout.leftSidebar.show = JSON.parse(localStorage.getItem('leftSideBar') ?? '')
         }
     }
+
+    measureNavigationScroll()
+    if (navigationScroll.value && typeof ResizeObserver !== "undefined") {
+        const observer = new ResizeObserver(measureNavigationScroll)
+        observer.observe(navigationScroll.value)
+        stopWatchingNavigationSize = () => observer.disconnect()
+    }
 })
+
+const bottomNavigationKeys = ['tasks', 'tickets', 'chat']
+
+const navigationScroll = ref<HTMLElement | null>(null)
+const scrolledFromTop = ref(0)
+const scrollLeftToBottom = ref(0)
+
+const fadeOpacity = (distance: number) => Math.min(1, Math.max(0, distance / 32))
+
+const topFadeOpacity = computed(() => fadeOpacity(scrolledFromTop.value))
+const bottomFadeOpacity = computed(() => fadeOpacity(scrollLeftToBottom.value))
+
+const measureNavigationScroll = () => {
+    const element = navigationScroll.value
+    if (!element) return
+    scrolledFromTop.value = element.scrollTop
+    scrollLeftToBottom.value = element.scrollHeight - element.clientHeight - element.scrollTop
+}
+
+let stopWatchingNavigationSize: (() => void) | null = null
+
+onBeforeUnmount(() => stopWatchingNavigationSize?.())
+
+watch(
+    () => [layout.currentRoute, layout.leftSidebar.show],
+    () => nextTick(measureNavigationScroll)
+)
 
 const iconList: { [key: string]: string } = {
     shop: 'fal fa-store-alt',
@@ -49,7 +83,8 @@ const iconList: { [key: string]: string } = {
 </script>
 
 <template>
-    <nav class="text-white isolate relative flex flex-grow flex-col pt-3 pb-4 px-2 h-full overflow-y-auto custom-hide-scrollbar flex-1 gap-y-1.5" aria-label="Sidebar">
+    <div class="relative flex flex-grow flex-col h-full min-h-0">
+    <nav ref="navigationScroll" class="text-white isolate relative flex flex-grow flex-col pt-3 pb-4 px-2 h-full overflow-y-auto custom-hide-scrollbar flex-1 gap-y-1.5" aria-label="Sidebar" @scroll.passive="measureNavigationScroll">
         <div class="hidden">
             {{ get(layout, ['navigation', 'org', layout.currentParams?.organisation], false) }}
         </div>
@@ -164,6 +199,7 @@ const iconList: { [key: string]: string } = {
                     <NavigationSimple
                         :nav="orgNav"
                         :navKey="itemKey"
+                        :class="{ hidden: bottomNavigationKeys.includes(String(itemKey)) }"
                     />
                 </template>
             </template>
@@ -171,12 +207,32 @@ const iconList: { [key: string]: string } = {
 
         <!-- LeftSidebar: Grp -->
         <template v-else>
-            <NavigationSimple
-                v-for="(grpNav, itemKey) in layout.navigation.grp"
-                :nav="grpNav"
-                :navKey="itemKey"
-            />
+            <template v-for="(grpNav, itemKey) in layout.navigation.grp" :key="itemKey">
+                <div v-if="bottomNavigationKeys.includes(String(itemKey))" class="hidden">
+                    <NavigationSimple :nav="grpNav" :navKey="itemKey" />
+                </div>
+                <NavigationSimple v-else :nav="grpNav" :navKey="itemKey" />
+            </template>
         </template>
 
     </nav>
+    <div
+        class="navigationFadeTop pointer-events-none absolute inset-x-0 top-0 h-6 transition-opacity duration-200"
+        :style="{ opacity: topFadeOpacity }"
+        aria-hidden="true" />
+    <div
+        class="navigationFadeBottom pointer-events-none absolute inset-x-0 bottom-0 h-8 transition-opacity duration-200"
+        :style="{ opacity: bottomFadeOpacity }"
+        aria-hidden="true" />
+    </div>
 </template>
+
+<style scoped>
+.navigationFadeTop {
+    background: v-bind("`linear-gradient(to bottom, color-mix(in srgb, ${layout?.app?.navigation_theme[0]}, 15% black), transparent)`");
+}
+
+.navigationFadeBottom {
+    background: v-bind("`linear-gradient(to top, color-mix(in srgb, ${layout?.app?.navigation_theme[0]}, 15% black), transparent)`");
+}
+</style>

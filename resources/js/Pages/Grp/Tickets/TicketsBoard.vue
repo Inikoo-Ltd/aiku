@@ -5,20 +5,41 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3"
+import { ticketRoute, ticketsRoute } from "@/Composables/useTicketsRoute"
+import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import draggable from "vuedraggable"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faRocket } from "@fal"
+import { faVial, faShieldCheck, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
+import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
+import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
+import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 
-library.add(faVial, faShieldCheck, faShield, faRocket)
+library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan)
+
+const kindIcons: Record<string, string> = {
+	bug: "fal fa-bug",
+	feature: "fal fa-lightbulb",
+	escalation: "fal fa-level-up",
+	task: "fal fa-tasks",
+	qa: "fal fa-vial",
+	documentation: "fal fa-books",
+	data_integrity: "fal fa-database",
+	support: "fal fa-search",
+}
+
+const cardPeople = (ticket: { assignee?: string | null; assignee_avatar?: any; collaborators?: { id: number; name: string; avatar?: any }[] }) => [
+	...(ticket.assignee ? [{ key: "assignee", name: ticket.assignee, avatar: ticket.assignee_avatar }] : []),
+	...(ticket.collaborators ?? []).map((collaborator) => ({ key: `collaborator-${collaborator.id}`, name: collaborator.name, avatar: collaborator.avatar })),
+]
 
 const props = defineProps<{
 	pageHead: any
@@ -40,8 +61,11 @@ const props = defineProps<{
 	assignees: { label: string; value: number; avatar: any; is_me: boolean }[]
 	createdIntervals: Record<string, string>
 	createdInterval: string
+	typeFilter?: string | null
+	typeOptions?: { label: string; value: string; icon: any }[]
 	updateRoute: string
 	can_manage: boolean
+	can_assign: boolean
 }>()
 
 
@@ -60,9 +84,9 @@ const columnClasses: Record<string, string> = {
 
 const periodLabels: Record<string, string> = {
 	"24h": "24h",
-	today: trans("Today"),
-	"1w": trans("1 week"),
-	all: trans("All"),
+	today: ctrans("Today"),
+	"1w": ctrans("1 week"),
+	all: ctrans("All"),
 }
 
 const openPicker = ref<string | null>(null)
@@ -73,7 +97,7 @@ const setPeriod = (columnKey: string, period: string) => {
 	props.columns.forEach((column) => {
 		if (column.period) periods[column.key] = column.key === columnKey ? period : column.period
 	})
-	router.get(route("grp.tickets.board"), { periods }, { preserveScroll: true })
+	router.get(ticketsRoute("board"), { periods }, { preserveScroll: true })
 }
 
 const bucketStamps: Record<string, string> = {
@@ -87,10 +111,10 @@ const bucketStamps: Record<string, string> = {
 type SortField = "created_at" | "updated_at" | "priority" | "in_column"
 
 const sortFields: { key: SortField; label: string }[] = [
-	{ key: "created_at", label: trans("Created") },
-	{ key: "updated_at", label: trans("Updated") },
-	{ key: "priority", label: trans("Urgency") },
-	{ key: "in_column", label: trans("In column") },
+	{ key: "created_at", label: ctrans("Created") },
+	{ key: "updated_at", label: ctrans("Updated") },
+	{ key: "priority", label: ctrans("Urgency") },
+	{ key: "in_column", label: ctrans("In column") },
 ]
 
 const priorityRank: Record<string, number> = { urgent: 3, high: 2, normal: 1, low: 0 }
@@ -151,10 +175,10 @@ const boardFilters = reactive<Record<FilterKey, string[]>>({
 })
 
 const filterLabels: Record<FilterKey, string> = {
-	module_label: trans("Module"),
-	kind_label: trans("Kind"),
-	priority_label: trans("Urgency"),
-	assignee_username: trans("Assignee"),
+	module_label: ctrans("Module"),
+	kind_label: ctrans("Kind"),
+	priority_label: ctrans("Urgency"),
+	assignee_username: ctrans("Assignee"),
 }
 
 const countedBy = (key: FilterKey) => {
@@ -178,8 +202,8 @@ const filterOptions = computed(() => ({
 }))
 
 const assigneeGroups = computed(() => [
-	{ label: trans("Current"), options: filterOptions.value.assignee_username.filter((option) => !props.formerAssignees.includes(option.value)) },
-	{ label: trans("Former"), options: filterOptions.value.assignee_username.filter((option) => props.formerAssignees.includes(option.value)) },
+	{ label: ctrans("Current"), options: filterOptions.value.assignee_username.filter((option) => !props.formerAssignees.includes(option.value)) },
+	{ label: ctrans("Former"), options: filterOptions.value.assignee_username.filter((option) => props.formerAssignees.includes(option.value)) },
 ].filter((group) => group.options.length))
 
 const shortName = (username: string) => username.charAt(0).toUpperCase() + username.slice(1)
@@ -204,6 +228,48 @@ const subFilter = reactive<Record<string, string | null>>({})
 
 const toggleSubFilter = (columnKey: string, status: string) =>
 	(subFilter[columnKey] = subFilter[columnKey] === status ? null : status)
+
+const columnToggles: Record<string, { order: string[]; labels: Record<string, string> }> = {
+	in_progress: { order: ["in_progress", "pending_deploy"], labels: { in_progress: ctrans("Working"), pending_deploy: ctrans("Deploying") } },
+	waiting: { order: ["answered", "waiting"], labels: { answered: ctrans("Replied"), waiting: ctrans("Waiting") } },
+	closed: { order: ["resolved", "cancelled"], labels: { resolved: ctrans("Done"), cancelled: ctrans("Cancelled") } },
+}
+
+const hasColumnToggle = (columnKey: string) => Boolean(columnToggles[columnKey])
+
+const chosenColumnToggles = reactive<Record<string, boolean>>({})
+
+const chooseColumnToggle = (columnKey: string, status: string) => {
+	chosenColumnToggles[columnKey] = true
+	subFilter[columnKey] = status
+}
+
+const subDotClasses: Record<string, string> = {
+	blue: "bg-blue-500",
+	amber: "bg-amber-500",
+	green: "bg-green-600",
+	red: "bg-red-500",
+}
+
+const columnToggleOptions = (column: { key: string; statuses: { status: string; label: string; color: string }[] }) => {
+	const order = columnToggles[column.key]?.order ?? []
+	return [...column.statuses].sort((first, second) => order.indexOf(first.status) - order.indexOf(second.status))
+}
+
+const columnTotal = (column: { key: string; tickets: any[] }) =>
+	column.tickets.filter((ticket) => matchesBoardFilters(ticket, column.key)).length
+
+watch(
+	() => props.columns,
+	(columns) => {
+		columns.forEach((column) => {
+			const toggle = columnToggles[column.key]
+			if (!toggle || chosenColumnToggles[column.key]) return
+			subFilter[column.key] = toggle.order.find((status) => (column.statuses.find((sub) => sub.status === status)?.count ?? 0) > 0) ?? toggle.order[0]
+		})
+	},
+	{ immediate: true }
+)
 
 const matchesBoardFilters = (ticket: any, columnKey: string) =>
 	(Object.keys(boardFilters) as FilterKey[]).every(
@@ -239,7 +305,7 @@ const closeQuickLook = () => {
 }
 
 // ponytail: vuedraggable eats dblclick and bubbled clicks, so the board listens in capture
-let lastClick = { id: 0, at: 0 }
+let lastDragEndedAt = 0
 
 const onBoardClick = (event: MouseEvent) => {
 	const target = event.target as HTMLElement
@@ -248,18 +314,39 @@ const onBoardClick = (event: MouseEvent) => {
 		openSortPicker.value = null
 	}
 
-	const card = target?.closest?.("[data-ticket-id]") as HTMLElement | null
-	if (!card) return
-
-	const id = Number(card.dataset.ticketId)
-	const now = Date.now()
-
-	if (lastClick.id === id && now - lastClick.at < 600) {
-		quickLook.value = props.columns.flatMap((column) => column.tickets).find((t) => t.id === id)
-	}
-
-	lastClick = { id, at: now }
 }
+
+const openQuickLook = (ticket: any, event: MouseEvent) => {
+	const target = event.target as HTMLElement | null
+	if (target?.closest("a, button") || Date.now() - lastDragEndedAt < 300) return
+	quickLook.value = ticket
+}
+
+const filterByType = (type: string | null) =>
+	router.reload({ data: { type: type ?? undefined }, preserveScroll: true })
+
+const myUserId = computed(() => (usePage().props.auth as { user?: { id: number } } | undefined)?.user?.id ?? null)
+
+const canDragTicket = (ticket: { assignee_id: number | null }) =>
+	props.can_assign || (props.can_manage && (ticket.assignee_id === null || (myUserId.value !== null && ticket.assignee_id === myUserId.value)))
+
+const engineerMoves: Record<string, string[]> = {
+	open: ["assigned", "in_progress", "closed"],
+	assigned: ["in_progress", "closed"],
+	in_progress: ["waiting", "closed"],
+	waiting: ["in_progress", "closed"],
+}
+
+const canDropTicket = (ticket: { assignee_id: number | null }, fromColumn: string, toColumn: string) => {
+	if (fromColumn === toColumn) return true
+	if (!canDragTicket(ticket)) return false
+	if (!ticket.assignee_id) return toColumn === "assigned"
+	if (props.can_assign) return true
+	return engineerMoves[fromColumn]?.includes(toColumn) ?? false
+}
+
+const onMoveCheck = (event: { draggedContext: { element: any }; from: HTMLElement; to: HTMLElement }) =>
+	canDropTicket(event.draggedContext.element, event.from.dataset.column ?? "", event.to.dataset.column ?? "")
 
 onMounted(() => window.addEventListener("click", onBoardClick, true))
 onBeforeUnmount(() => window.removeEventListener("click", onBoardClick, true))
@@ -301,22 +388,62 @@ const assignPosition = ref({ x: 0, y: 0 })
 
 const onDragEnd = (event: { originalEvent?: MouseEvent }) => {
 	dragging.value = false
+	lastDragEndedAt = Date.now()
 	assignPosition.value = {
 		x: Math.max(8, Math.min((event.originalEvent?.clientX ?? 0) - 40, window.innerWidth - 330)),
 		y: Math.max(8, Math.min((event.originalEvent?.clientY ?? 0) + 8, window.innerHeight - 360)),
 	}
 }
 
-const patchTicket = (ticketId: number, data: Record<string, unknown>) =>
-	router.patch(route(props.updateRoute, { ticket: ticketId }), data, { preserveScroll: true, preserveState: true })
+const savingTicketIds = ref<number[]>([])
 
-const onMoved = (status: string, event: { added?: { element: any } }) => {
+const patchTicket = (ticketId: number, data: Record<string, unknown>) =>
+	router.patch(route(props.updateRoute, { ticket: ticketId }), data, {
+		preserveScroll: true,
+		preserveState: true,
+		onStart: () => savingTicketIds.value.push(ticketId),
+		onFinish: () => (savingTicketIds.value = savingTicketIds.value.filter((id) => id !== ticketId)),
+	})
+
+const dropDialogTicket = ref<any | null>(null)
+const isDropAskReporterOpen = ref(false)
+const isDropStatusNoteOpen = ref(false)
+let isDropDialogSaved = false
+
+const openDropDialog = (ticket: any, dialog: "ask" | "note") => {
+	dropDialogTicket.value = ticket
+	isDropDialogSaved = false
+	if (dialog === "ask") isDropAskReporterOpen.value = true
+	else isDropStatusNoteOpen.value = true
+}
+
+watch([isDropAskReporterOpen, isDropStatusNoteOpen], ([isAskOpen, isNoteOpen]) => {
+	if (isAskOpen || isNoteOpen || !dropDialogTicket.value) return
+	if (!isDropDialogSaved) router.reload({ only: ["columns"] })
+	dropDialogTicket.value = null
+})
+
+const onMoved = (column: { key: string; status: string }, event: { added?: { element: any } }) => {
 	if (!event.added) return
-	if (status === "assigned" && !event.added.element.assignee_id) {
-		assigning.value = event.added.element
+	const ticket = event.added.element
+
+	if (!canDragTicket(ticket) || (!ticket.assignee_id && column.key !== "assigned")) {
+		router.reload({ only: ["columns"] })
 		return
 	}
-	patchTicket(event.added.element.id, { status })
+	if (column.key === "assigned" && !ticket.assignee_id) {
+		assigning.value = ticket
+		return
+	}
+	if (column.key === "waiting") {
+		openDropDialog(ticket, "ask")
+		return
+	}
+	if (column.key === "closed") {
+		openDropDialog(ticket, "note")
+		return
+	}
+	patchTicket(ticket.id, { status: column.status })
 }
 
 const assignTo = (assigneeId: number) => {
@@ -333,8 +460,28 @@ const cancelAssign = () => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" />
-	<div class="p-4 overflow-x-auto">
+	<div class="p-4 min-w-0">
 		<TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mb-3" />
+		<div v-if="typeOptions?.length" class="mb-3 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
+			<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Type") }}</span>
+			<button
+				type="button"
+				class="rounded-md px-3 py-1 transition duration-200"
+				:class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+				@click="filterByType(null)">
+				{{ ctrans("All") }}
+			</button>
+			<button
+				v-for="option in typeOptions"
+				:key="option.value"
+				type="button"
+				class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
+				:class="typeFilter === option.value ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+				@click="filterByType(option.value)">
+				<Icon v-if="option.icon" :data="option.icon" />
+				{{ option.label }}
+			</button>
+		</div>
 		<div
 			class="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm">
 			<div
@@ -352,7 +499,7 @@ const cancelAssign = () => {
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						boardFilters[key].includes(option.value)
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: option.value === 'Urgent'
 								? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
 								: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
@@ -379,26 +526,26 @@ const cancelAssign = () => {
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						onlyMine
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="toggleMine()">
 					<img v-if="myAvatar" :src="myAvatar" class="h-5 w-5 rounded-full object-cover" alt="" />
-					{{ trans("Me") }}
+					{{ ctrans("Me") }}
 				</button>
 				<button
 					type="button"
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						boardFilters.assignee_username.length && !onlyMine
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="assigneeMenuOpen = !assigneeMenuOpen">
 					<span class="max-w-48 truncate">{{
 						boardFilters.assignee_username.length && !onlyMine
 							? boardFilters.assignee_username.map(shortName).join(", ")
-							: trans("Everybody")
+							: ctrans("Everybody")
 					}}</span>
 					<span
 						class="rounded-full px-1.5 text-xs tabular-nums"
@@ -427,17 +574,8 @@ const cancelAssign = () => {
 								type="checkbox"
 								:checked="boardFilters.assignee_username.includes(option.value)"
 								@change="toggleFilter('assignee_username', option.value)" />
-							<img
-								v-if="avatarFor(option.value)"
-								:src="avatarFor(option.value)"
-								class="h-6 w-6 rounded-full object-cover"
-								:alt="option.value" />
-							<span
-								v-else
-								class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
-								>{{ initials(option.value) }}</span
-							>
-							<span class="truncate">{{ shortName(option.value) }}</span>
+							<TicketUserAvatar :name="option.label ?? option.value" :avatar="avatarFor(option.value) ? { original: avatarFor(option.value) } : null" size="xs" />
+							<span class="truncate text-sm text-gray-700">{{ shortName(option.value) }}</span>
 							<span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
 						</label>
 					</template>
@@ -446,7 +584,7 @@ const cancelAssign = () => {
 						type="button"
 						class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50"
 						@click="boardFilters.assignee_username = []">
-						{{ trans("Everybody") }}
+						{{ ctrans("Everybody") }}
 					</button>
 				</div>
 			</div>
@@ -455,9 +593,10 @@ const cancelAssign = () => {
 				type="button"
 				class="text-xs text-gray-400 hover:text-gray-600"
 				@click="clearFilters()">
-				× {{ trans("Clear") }}
+				× {{ ctrans("Clear") }}
 			</button>
 		</div>
+		<div class="-mx-4 overflow-x-auto px-4 pb-2">
 		<div class="flex gap-3 min-w-max">
 			<div
 				v-for="column in columns"
@@ -468,9 +607,9 @@ const cancelAssign = () => {
 					<Icon :data="column.icon" />
 					<span class="text-sm font-semibold">{{ column.label }}</span>
 					<span
-						v-if="column.statuses.length === 1"
+						v-if="column.statuses.length === 1 || hasColumnToggle(column.key)"
 						class="text-xs text-gray-600 bg-white/70 rounded px-1.5 py-0.5 tabular-nums"
-						>{{ visibleCount(column) }}</span
+						>{{ hasColumnToggle(column.key) ? columnTotal(column) : visibleCount(column) }}</span
 					>
 					<span
 						v-else
@@ -498,7 +637,7 @@ const cancelAssign = () => {
 							<button
 								type="button"
 								class="px-1 py-0.5 hover:text-gray-900"
-								:title="trans('Sort by')"
+								:title="ctrans('Sort by')"
 								@click="openSortPicker = openSortPicker === column.key ? null : column.key">
 								{{ sortFields.find((option) => option.key === sortOf(column.key).field)?.label }}
 							</button>
@@ -519,7 +658,7 @@ const cancelAssign = () => {
 						<button
 							type="button"
 							class="px-1 py-0.5 hover:text-gray-900"
-							:title="sortOf(column.key).desc ? trans('Newest or highest first') : trans('Oldest or lowest first')"
+							:title="sortOf(column.key).desc ? ctrans('Newest or highest first') : ctrans('Oldest or lowest first')"
 							@click="changeSort(column, 'direction')">
 							{{ sortOf(column.key).desc ? "↓" : "↑" }}
 						</button>
@@ -550,61 +689,100 @@ const cancelAssign = () => {
 						</div>
 					</div>
 				</div>
+				<div v-if="hasColumnToggle(column.key)" class="mb-2 flex gap-0.5 rounded-md bg-white/70 p-0.5 text-xs">
+					<button
+						v-for="sub in columnToggleOptions(column)"
+						:key="sub.status"
+						type="button"
+						class="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded px-2 py-1 transition duration-200"
+						:class="subFilter[column.key] === sub.status ? [subActiveClasses[sub.color], 'font-medium shadow-sm'] : 'text-gray-500 hover:bg-white hover:text-gray-800'"
+						@click="chooseColumnToggle(column.key, sub.status)">
+						<span class="h-2 w-2 shrink-0 rounded-full" :class="subFilter[column.key] === sub.status ? 'bg-white/80' : subDotClasses[sub.color]" />
+						{{ columnToggles[column.key].labels[sub.status] ?? sub.label }}
+						<span class="tabular-nums" :class="subFilter[column.key] === sub.status ? 'text-white/80' : 'text-gray-400'">{{ subCount(column, sub.status) }}</span>
+					</button>
+				</div>
 				<draggable
 					v-model="column.tickets"
 					item-key="id"
 					group="tickets"
+					:data-column="column.key"
+					:move="onMoveCheck"
+					filter=".ticket-card-locked"
+					:prevent-on-filter="false"
+					:force-fallback="true"
+					:fallback-tolerance="4"
 					:disabled="!can_manage"
-					class="flex-1 space-y-2 min-h-24 max-h-[70vh] overflow-y-auto pr-0.5"
+					class="thinScrollbar flex-1 space-y-2 min-h-24 overflow-y-auto pr-1"
+					:class="hasColumnToggle(column.key) ? 'max-h-[70vh]' : 'max-h-[calc(70vh+2.25rem)]'"
 					@start="dragging = true"
 					@end="onDragEnd"
-					@change="onMoved(column.status, $event)">
+					@change="onMoved(column, $event)">
 					<template #item="{ element }">
 						<div
 							v-show="matchesFilters(element, column.key)"
-							class="bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
-							:class="can_manage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'"
-							:data-ticket-id="element.id">
-							<p class="text-sm leading-snug break-words line-clamp-3">
+							class="relative bg-white rounded-md border border-gray-200 shadow-sm p-2.5 hover:border-gray-400"
+							:aria-busy="savingTicketIds.includes(element.id)"
+							:class="canDragTicket(element) ? 'cursor-grab active:cursor-grabbing' : 'ticket-card-locked cursor-pointer'"
+							:data-ticket-id="element.id"
+							@click="openQuickLook(element, $event)">
+							<FontAwesomeIcon v-if="savingTicketIds.includes(element.id)" icon="fal fa-spinner" spin fixed-width class="absolute right-1.5 top-1.5 text-xs text-gray-400" />
+
+							<div class="flex items-start justify-between gap-2 text-xs">
+								<span class="flex min-w-0 flex-col gap-0.5">
+									<span class="flex items-center gap-1.5">
+										<Icon v-if="element.type_icon" :data="element.type_icon" class="text-gray-400" />
+										<Link
+											:href="ticketRoute(element.reference)"
+											class="primaryLink font-medium"
+											@click.stop
+											>{{ element.reference }}</Link
+										>
+									</span>
+									<span class="flex items-center gap-1.5 text-[11px]">
+										<span class="text-gray-400" v-tooltip="{ content: ctrans('Raised'), delay: 0 }">{{ shortDate(element.created_at) }}</span>
+										<span class="text-gray-500" v-tooltip="{ content: column.label, delay: 0 }">{{ ageIn(column, element) }}</span>
+									</span>
+								</span>
+								<span v-if="(column.statuses.length > 1 && element.status_icon) || element.qa_status_icon" class="flex shrink-0 items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0.5">
+									<Icon
+										v-if="column.statuses.length > 1"
+										:data="element.status_icon" />
+									<Icon
+										v-if="element.qa_status_icon"
+										:data="element.qa_status_icon" />
+								</span>
+							</div>
+
+							<p class="mt-1.5 text-sm leading-snug break-words line-clamp-3">
 								{{ element.subject }}
 							</p>
-							<div class="flex items-center gap-2 text-xs mt-2">
-								<Link
-									:href="route('grp.tickets.show', element.reference)"
-									class="primaryLink font-medium"
-									@click.stop
-									>{{ element.reference }}</Link
-								>
-								<Icon
-									v-if="column.statuses.length > 1"
-									:data="element.status_icon" />
-								<Icon
-									v-if="element.qa_status_icon"
-									:data="element.qa_status_icon" />
+
+							<div class="mt-2 flex items-end justify-between gap-2 text-xs">
+								<span class="flex min-w-0 items-center gap-1.5 text-gray-500">
+									<FontAwesomeIcon
+										v-if="element.kind"
+										v-tooltip="{ content: element.kind_label, delay: 0 }"
+										:icon="kindIcons[element.kind] ?? 'fal fa-question-circle'"
+										fixed-width />
+									<span v-if="element.module_label" class="truncate">{{ element.module_label }}</span>
+								</span>
 								<span
-									class="text-gray-400"
-									v-tooltip="{ content: trans('Raised'), delay: 0 }"
-									>{{ shortDate(element.created_at) }}</span
-								>
-								<span
-									class="text-gray-500"
-									v-tooltip="{ content: column.label, delay: 0 }"
-									>{{ ageIn(column, element) }}</span
-								>
-								<span
-									v-if="element.assignee"
-									v-tooltip="{ content: element.assignee, delay: 0 }"
-									class="ml-auto">
-									<img
-										v-if="element.assignee_avatar?.original"
-										:src="element.assignee_avatar.original"
-										class="w-6 h-6 rounded-full object-cover"
-										:alt="element.assignee" />
+									v-if="cardPeople(element).length"
+									v-tooltip="{ content: cardPeople(element).map((person) => person.name).join(', '), delay: 0 }"
+									class="flex shrink-0 -space-x-1.5">
+									<TicketUserAvatar
+										v-for="person in cardPeople(element).slice(0, 3)"
+										:key="person.key"
+										:name="person.name"
+										:avatar="person.avatar"
+										size="xs"
+										class="ring-2 ring-white" />
 									<span
-										v-else
-										class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[10px] font-medium">
-										{{ (element.assignee_short || "?").slice(0, 2) }}
-									</span>
+										v-if="cardPeople(element).length > 3"
+										class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[8px] font-medium text-gray-600 ring-2 ring-white"
+										>+{{ cardPeople(element).length - 3 }}</span
+									>
 								</span>
 							</div>
 						</div>
@@ -612,44 +790,63 @@ const cancelAssign = () => {
 				</draggable>
 			</div>
 		</div>
+		</div>
 	</div>
 	<Teleport to="body">
 		<div v-if="assigning" class="fixed inset-0 z-40" @click="cancelAssign" />
 		<div
 			v-if="assigning"
-			class="fixed z-50 w-80 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl"
+			class="fixed z-50 w-80 rounded-lg border border-[--app-accent-muted] bg-white p-3 text-xs shadow-xl"
 			:style="{ left: assignPosition.x + 'px', top: assignPosition.y + 'px' }">
 			<div class="mb-1.5 font-medium">{{ assigning.reference }} <span class="font-normal text-gray-500">{{ assigning.subject }}</span></div>
-			<div class="mb-1 text-gray-500">{{ trans("Assign to") }}</div>
+			<div class="mb-1 text-gray-500">{{ ctrans("Assign to") }}</div>
 			<div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
 				<button
 					v-for="engineer in assignees"
 					:key="engineer.value"
 					type="button"
-					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-indigo-50"
+					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-[--app-accent-soft]"
 					@click="assignTo(engineer.value)">
-					<img v-if="engineer.avatar?.original" :src="engineer.avatar.original" class="h-5 w-5 rounded-full object-cover" alt="" />
-					<span v-else class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] text-gray-600">{{ initials(engineer.label) }}</span>
+					<TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="xs" />
 					<span :class="engineer.is_me && 'font-medium'">{{ engineer.label }}</span>
-					<span v-if="engineer.is_me" class="text-gray-400">{{ trans("me") }}</span>
+					<span v-if="engineer.is_me" class="text-gray-400">{{ ctrans("me") }}</span>
 				</button>
 			</div>
 		</div>
 	</Teleport>
-	<div
-		v-if="quickLook"
-		class="fixed inset-0 z-50 flex items-stretch justify-center bg-black/40 p-4"
-		@click.self="closeQuickLook">
-		<div class="relative flex w-4/5 flex-col rounded-2xl bg-white shadow-xl">
-			<button
-				type="button"
-				class="absolute -right-3 -top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500 shadow hover:text-gray-800"
-				@click="closeQuickLook">
-				<FontAwesomeIcon icon="fal fa-times" fixed-width />
-			</button>
-			<iframe
-				:src="route('grp.tickets.show', quickLook.reference) + '?embed=1'"
-				class="h-full w-full flex-1 rounded-2xl border-0" />
-		</div>
-	</div>
+	<TicketAskReporterDialog
+		v-if="dropDialogTicket"
+		v-model:visible="isDropAskReporterOpen"
+		:update-route="{ name: updateRoute, parameters: { ticket: dropDialogTicket.id } }"
+		:default-waiting-hours="dropDialogTicket.default_waiting_hours"
+		@updated="isDropDialogSaved = true" />
+	<TicketStatusNoteDialog
+		v-if="dropDialogTicket"
+		v-model:visible="isDropStatusNoteOpen"
+		status="resolved"
+		:update-route="{ name: updateRoute, parameters: { ticket: dropDialogTicket.id } }"
+		:can-wait-for-deployment="dropDialogTicket.status !== 'pending_deploy'"
+		:closes-conversation="dropDialogTicket.closes_source"
+		@updated="isDropDialogSaved = true" />
+	<TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>
+
+<style scoped>
+.thinScrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+}
+
+.thinScrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.thinScrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.thinScrollbar::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray.300');
+    border-radius: 9999px;
+}
+</style>

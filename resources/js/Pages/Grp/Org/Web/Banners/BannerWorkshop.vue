@@ -1,74 +1,50 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
-import { ref, onBeforeMount, watch, onBeforeUnmount, computed, inject, shallowRef } from "vue"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { capitalize } from "@/Composables/capitalize"
+import { ref, watch, computed } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import BannerWorkshopComponent from '@/Components/Banners/BannerWorkshopComponent.vue'
-import { debounce } from "lodash-es"
-import { useBannerHash } from "@/Composables/useBannerHash"
+import { faRedo, faUndo, faUser, faUserFriends } from "@fal"
+import { faRocketLaunch } from "@far"
+import { faAsterisk } from "@fas"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import BannerWorkshopComponent from "@/Components/Banners/BannerWorkshopComponent.vue"
 import Publish from "@/Components/Utils/Publish.vue"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { faUser, faUserFriends } from '@fal'
-import { faRocketLaunch } from '@far'
-import { faAsterisk } from '@fas'
-import { trans } from "laravel-vue-i18n"
+import { capitalize } from "@/Composables/capitalize"
+import { ctrans } from "@/Composables/useTrans"
+import { useAutoSave } from "@/Composables/useAutoSave"
+import { useBannerHistory } from "@/Composables/useBannerHistory"
+import { useBannerHash } from "@/Composables/useBannerHash"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import type { BannerWorkshop, BannerWorkshopResource } from "@/types/BannerWorkshop"
+import type { PageHeadingTypes } from "@/types/PageHeading"
+import type { routeType } from "@/types/route"
 
-library.add(faAsterisk, faRocketLaunch, faUser, faUserFriends)
+library.add(faAsterisk, faRocketLaunch, faRedo, faUndo, faUser, faUserFriends)
 
 const props = defineProps<{
-    modelValue: any
     title: string
-    pageHead: any
-    banner: any
-    imagesUploadRoute: any
-    autoSaveRoute: any
-    publishRoute: any
+    pageHead: PageHeadingTypes
+    banner: BannerWorkshopResource
+    imagesUploadRoute: routeType
+    autoSaveRoute: routeType
+    publishRoute: routeType
     galleryRoute: {
-        stock_images: any,
-        uploaded_images: any
+        stock_images: routeType
+        uploaded_images: routeType
     }
 }>()
 
-const emits = defineEmits<{
-    (e: 'update:modelValue', value: any): void
-}>()
+const data = ref<BannerWorkshop>(props.banner.compiled_layout)
 
-inject('layout', layoutStructure)
+const exitRoute = computed(() => props.pageHead.actions.find((action) => action.style === "exit")?.route)
 
-const isLoading = ref(false)
-const comment = ref("")
-const loadingState = ref(true)
-const isInitial = ref(true)
+const { status, saveDebounced, saveNow, cancelPendingSave } = useAutoSave(props.autoSaveRoute, () => data.value)
+const { canUndo, canRedo, undo, redo, flushHistory } = useBannerHistory(data)
 
-const routeExit = props.pageHead.actions.find((i:any) => i.style === "exit")
+watch(data, () => saveDebounced(), { deep: true })
 
-const internalData = shallowRef<any>({})
-
-const data = computed({
-    get: () => internalData.value,
-    set: (val) => {
-        internalData.value = val
-        emits('update:modelValue', val)
-    }
-})
-
-onBeforeMount(() => {
-    loadingState.value = true
-    internalData.value = props.banner?.compiled_layout || {}
-
-    setTimeout(() => {
-        isInitial.value = false
-        loadingState.value = false
-    }, 50)
-})
-
-const compCurrentHash = computed(() => {
+const currentHash = computed(() => {
     try {
         return useBannerHash(data.value)
     } catch {
@@ -76,113 +52,76 @@ const compCurrentHash = computed(() => {
     }
 })
 
-const status = ref<null | 'loading' | 'success' | 'error'>(null)
-let statusTimeout:any = null
+const isPublishedHashSame = computed(() => currentHash.value === data.value?.published_hash)
+const isBannerEmpty = computed(() => !data.value?.components?.length)
+const isPublishing = ref(false)
+const comment = ref("")
 
-const setStatus = (s:any) => {
-    status.value = s
-    if (statusTimeout) clearTimeout(statusTimeout)
-
-    if (s === "success" || s === "error") {
-        statusTimeout = setTimeout(() => status.value = null, 2500)
-    }
-}
-
-const patchAutoSave = () => {
-    setStatus("loading")
-
-    router.patch(
-        route(props.autoSaveRoute.name, props.autoSaveRoute.parameters),
-        data.value,
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => setStatus("success"),
-            onError: () => {
-                setStatus("error")
-                notify({
-                    title: trans("Save failed"),
-                    text: trans("Auto save failed"),
-                    type: "error"
-                })
-            }
-        }
-    )
-}
-
-const autoSave = debounce(patchAutoSave, 2500)
-
-watch(
-    () => data.value,
-    () => {
-        if (isInitial.value) return
-        autoSave()
-    },
-    { deep: true }
-)
-
-const saveBanner = () => {
-    patchAutoSave()
-}
-
-const sendDataToServer = () => {
-    isLoading.value = true
-
-    const payload:any = {
-        ...data.value,
-        ...(props.banner.state !== "unpublished" && { comment: comment.value })
-    }
+const publishBanner = () => {
+    isPublishing.value = true
+    flushHistory()
+    cancelPendingSave()
 
     router.patch(
         route(props.publishRoute.name, props.publishRoute.parameters),
-        payload,
+        {
+            ...data.value,
+            published_hash: currentHash.value,
+            ...(props.banner.state !== "unpublished" && { comment: comment.value })
+        },
         {
             onSuccess: () => {
-                isLoading.value = false
-                router.visit(route(routeExit.route.name, routeExit.route.parameters))
+                isPublishing.value = false
                 notify({
-                    title: "Success",
-                    text: "Banner published",
+                    title: ctrans("Success"),
+                    text: ctrans("Banner published"),
                     type: "success"
                 })
+
+                if (exitRoute.value) {
+                    router.visit(route(exitRoute.value.name, exitRoute.value.parameters))
+                }
             },
-            onError: (err:any) => {
-                isLoading.value = false
+            onError: (errors) => {
+                isPublishing.value = false
                 notify({
-                    title: "Publish failed",
-                    text: err,
+                    title: ctrans("Publish failed"),
+                    text: Object.values(errors).join(", "),
                     type: "error"
                 })
             }
         }
     )
 }
-
-const compIsHashSameWithPrevious = computed(() => {
-    return compCurrentHash.value === data.value?.published_hash
-})
-
-const compIsDataFirstTimeCreated = computed(() => {
-    return compCurrentHash.value === "fd186208ae9dab06d40e49141f34bef9"
-})
-
-onBeforeUnmount(() => {
-    autoSave.cancel()
-})
 </script>
 
 <template>
 <Head :title="capitalize(title)" />
 <PageHeading :data="pageHead">
     <template #afterTitle2>
-        <!-- {{ status }} -->
-        <!-- <ConditionIcon v-if="status" :state="status" class="text-xl" /> -->
+        <Button
+            v-tooltip="ctrans('Undo (Ctrl+Z)')"
+            @click="undo"
+            type="tertiary"
+            icon="fal fa-undo"
+            size="sm"
+            :disabled="!canUndo"
+        />
 
         <Button
-            v-tooltip="useFormatTime(banner.updated_at, {formatTime: 'hms'})"
-            @click="saveBanner"
+            v-tooltip="ctrans('Redo (Ctrl+Shift+Z)')"
+            @click="redo"
             type="tertiary"
-            :label="trans('Save')"
+            icon="fal fa-redo"
+            size="sm"
+            :disabled="!canRedo"
+        />
+
+        <Button
+            v-tooltip="useFormatTime(banner.updated_at, { formatTime: 'hms' })"
+            @click="saveNow"
+            type="tertiary"
+            :label="ctrans('Save')"
             :icon="status === 'success' ? 'fal fa-check' : 'fas fa-save'"
             size="sm"
             :loading="status === 'loading'"
@@ -191,30 +130,22 @@ onBeforeUnmount(() => {
 
     <template #other>
         <Publish
-            v-if="data?.components?.length"
             v-model="comment"
-            :isDataFirstTimeCreated="compIsDataFirstTimeCreated"
-            :isHashSame="compIsHashSameWithPrevious"
-            :isLoading="isLoading"
-            :saveFunction="sendDataToServer"
+            :isDataFirstTimeCreated="isBannerEmpty"
+            :isHashSame="isPublishedHashSame"
+            :isLoading="isPublishing"
+            :saveFunction="publishBanner"
             :firstPublish="banner.state === 'unpublished'"
         />
     </template>
 </PageHeading>
 
 <section>
-    <div v-if="loadingState" class="w-full min-h-screen flex justify-center items-center">
-        <LoadingIcon class='h-12 text-gray-600' />
-    </div>
-
-    <div v-else>
-        <BannerWorkshopComponent
-            v-model="data"
-            :imagesUploadRoute="imagesUploadRoute"
-            :banner="banner"
-            :galleryRoute="galleryRoute"
-            :ratio="banner.ratio"
-        />
-    </div>
+    <BannerWorkshopComponent
+        v-model="data"
+        :imagesUploadRoute="imagesUploadRoute"
+        :galleryRoute="galleryRoute"
+        :ratio="banner.ratio"
+    />
 </section>
 </template>

@@ -15,9 +15,11 @@ use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\Shipment\StoreShipment;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
+use App\Actions\Dropshipping\Order\RetryOrderImport;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CancelFulfillOrderToShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
@@ -27,6 +29,7 @@ use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteAllFulfilmentServic
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Order\FetchShopifyOrdersFromApi;
 use App\Actions\Dropshipping\Shopify\Order\GetShopifyFulfilmentOrderFromApi;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\FetchRetinaCustomerSalesChannelOrders;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
@@ -35,6 +38,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Dropshipping\OrderImportRetryStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Listeners\ShopifyAppInstalledListener;
 use App\Models\Catalogue\Shop;
@@ -45,6 +49,10 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -131,8 +139,10 @@ function shopifyFulfilmentOrder(array $lineItems, array $overrides = []): array
     }
 
     return array_replace_recursive([
-        'id'          => 'gid://shopify/FulfillmentOrder/6001',
-        'destination' => [
+        'id'               => 'gid://shopify/FulfillmentOrder/6001',
+        'requestStatus'    => 'SUBMITTED',
+        'assignedLocation' => ['location' => ['id' => 'gid://shopify/Location/1001']],
+        'destination'      => [
             'firstName'   => 'Ada',
             'lastName'    => 'Lovelace',
             'address1'    => '12 Analytical Lane',
@@ -252,7 +262,7 @@ test('a line item outside the portfolio splits the request, rejects the rest and
         ->and(Order::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->count())->toBe(0);
 });
 
-test('a request with nothing from the portfolio is rejected without a split and a failed split does not blow up', function () {
+test('a request with nothing from the portfolio is rejected, lands in aiku as a cancelled order with the reason, and a failed split does not blow up', function () {
     Queue::fake();
     $shopifyUser = shopifyOrderChannel($this, 'orders-reject');
     shopifyPortfolioFor($this, $shopifyUser);
@@ -260,13 +270,24 @@ test('a request with nothing from the portfolio is rejected without a split and 
     $foreign = ['sku' => 'not-ours', 'lineItem' => ['variant' => ['id' => 'gid://shopify/ProductVariant/1'], 'product' => ['id' => 'gid://shopify/Product/1']]];
 
     ShopifyFake::fake([
-        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([$foreign])]),
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([$foreign], ['id' => 'gid://shopify/FulfillmentOrder/6008'])]),
         'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
     ]);
 
     CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $declined = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6008')->first();
     expect(ShopifyFake::calls('rejectFulfillmentRequest'))->toHaveCount(1)
-        ->and(ShopifyFake::calls('fulfillmentOrderSplit'))->toBe([]);
+        ->and(ShopifyFake::calls('fulfillmentOrderSplit'))->toBe([])
+        ->and($declined)->not->toBeNull()
+        ->and($declined->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and($declined->transactions()->count())->toBe(0)
+        ->and($declined->public_notes)->toContain("Fulfilment request declined: The items can't be fulfilled")
+        ->and(Arr::get($declined->data, 'declined_reason'))->toContain('portfolio');
+
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+    expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6008')->count())->toBe(1)
+        ->and(Order::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->count())->toBe(1);
 
     ShopifyFake::fake([
         'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([[], $foreign])]),
@@ -276,7 +297,46 @@ test('a request with nothing from the portfolio is rejected without a split and 
 
     CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
     expect(ShopifyFake::calls('fulfillmentOrderSubmitFulfillmentRequest'))->toBe([])
-        ->and(ShopifyFake::calls('acceptFulfillmentRequest'))->toBe([]);
+        ->and(ShopifyFake::calls('acceptFulfillmentRequest'))->toBe([])
+        ->and(Order::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->count())->toBe(1);
+});
+
+test('a request without a delivery address is declined into a cancelled order and the retry after fixing it replaces the placeholder', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-no-address');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/6007', 'destination' => null])]),
+        'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
+    ]);
+
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $declined = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6007')->first();
+    expect(ShopifyFake::calls('rejectFulfillmentRequest')[0]['variables']['message'])->toBe("Order don't have shipping information")
+        ->and(ShopifyFake::calls('acceptFulfillmentRequest'))->toBe([])
+        ->and($declined)->not->toBeNull()
+        ->and($declined->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and((float) $declined->payment_amount)->toBe(0.0)
+        ->and($declined->public_notes)->toContain("Order don't have shipping information")
+        ->and($declined->deliveryAddress->country_id)->toBe($shopifyUser->customer->address->country_id);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/6007'])]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
+    ]);
+
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6007')->first();
+    expect(ShopifyFake::calls('acceptFulfillmentRequest'))->toHaveCount(1)
+        ->and($order->id)->not->toBe($declined->id)
+        ->and($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->transactions()->count())->toBe(1)
+        ->and($order->deliveryAddress->address_line_1)->toBe('12 Analytical Lane')
+        ->and($declined->refresh()->platform_order_id)->toBeNull()
+        ->and($declined->state)->toBe(OrderStateEnum::CANCELLED);
 });
 
 test('lines with nothing left to fulfil are skipped and a guest checkout without a shopify customer still becomes an order', function () {
@@ -306,6 +366,102 @@ test('lines with nothing left to fulfil are skipped and a guest checkout without
         ->and($order->customerClient->contact_name)->toBe('Ada Lovelace')
         ->and($order->customerClient->email)->toBeNull()
         ->and($order->customerClient->platform_customer_id)->toBeNull();
+});
+
+test('a marketplace import line with only a sku and no shopify product still becomes an order, and one outside the portfolio leaves no client behind', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-sku-only');
+    $portfolio   = shopifyPortfolioFor($this, $shopifyUser);
+    $portfolio->update(['status' => true]);
+
+    $skuOnlyLine = fn (string $sku) => [['sku' => $sku, 'remainingQuantity' => 1, 'lineItem' => ['variant' => null, 'product' => null]]];
+    $accept      = ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder($skuOnlyLine(Str::lower($portfolio->item_code)), ['id' => 'gid://shopify/FulfillmentOrder/6090'])]),
+        'acceptFulfillmentRequest'  => $accept,
+    ]);
+
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6090')->first();
+    expect(ShopifyFake::calls('acceptFulfillmentRequest'))->toHaveCount(1)
+        ->and($order)->not->toBeNull()
+        ->and($order->transactions()->count())->toBe(1)
+        ->and($order->transactions()->first()->asset_id)->toBe($portfolio->item->asset_id)
+        ->and((float) $order->transactions()->first()->quantity_ordered)->toBe(1.0);
+
+    $channel = $shopifyUser->customerSalesChannel;
+    $order->customerClient->delete();
+
+    CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder($skuOnlyLine('not-ours'), ['id' => 'gid://shopify/FulfillmentOrder/6091']));
+
+    expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6091')->exists())->toBeFalse()
+        ->and($channel->clients()->count())->toBe(0);
+});
+
+test('a retry by the shopify order id recognises the order already imported under its fulfilment order id', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-retry-known');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/6092', 'order' => ['id' => 'gid://shopify/Order/5092']])]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $channel = $shopifyUser->customerSalesChannel;
+    $order   = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6092')->firstOrFail();
+
+    foreach (['5092', 'gid://shopify/Order/5092'] as $shopifyOrderId) {
+        $result = RetryOrderImport::run($channel, $shopifyOrderId, true);
+
+        expect($result['status'])->toBe(OrderImportRetryStatusEnum::ALREADY_IMPORTED)
+            ->and($result['order']->id)->toBe($order->id);
+    }
+
+    $foreign = ['sku' => 'not-ours', 'lineItem' => ['variant' => ['id' => 'gid://shopify/ProductVariant/1'], 'product' => ['id' => 'gid://shopify/Product/1']]];
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([$foreign], ['id' => 'gid://shopify/FulfillmentOrder/6093', 'order' => ['id' => 'gid://shopify/Order/5092']])]),
+        'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $placeholder = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6093')->firstOrFail();
+    $result      = RetryOrderImport::run($channel, '5092', true);
+
+    expect($placeholder->isDeclinedPlatformRequest())->toBeTrue()
+        ->and($placeholder->id)->toBeGreaterThan($order->id)
+        ->and($result['status'])->toBe(OrderImportRetryStatusEnum::ALREADY_IMPORTED)
+        ->and($result['order']->id)->toBe($order->id);
+});
+
+test('a retry that imports nothing next to a declined placeholder is reported as failed, not as imported', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-retry-placeholder');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    $foreign        = ['sku' => 'not-ours', 'lineItem' => ['variant' => ['id' => 'gid://shopify/ProductVariant/1'], 'product' => ['id' => 'gid://shopify/Product/1']]];
+    $declinedFulfilmentOrder = shopifyFulfilmentOrder([$foreign], ['id' => 'gid://shopify/FulfillmentOrder/6094', 'order' => ['id' => 'gid://shopify/Order/5094']]);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([$declinedFulfilmentOrder]),
+        'rejectFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $shopifyOrder = array_merge($declinedFulfilmentOrder['order'], [
+        'name'              => '#1094',
+        'fulfillmentOrders' => ['edges' => [['node' => array_merge(Arr::except($declinedFulfilmentOrder, 'order'), ['status' => 'OPEN', 'requestStatus' => 'REJECTED'])]]],
+    ]);
+    ShopifyFake::fake(['getFulfilmentOrder' => ShopifyFake::graphql(['order' => $shopifyOrder])]);
+
+    $result = RetryOrderImport::run($shopifyUser->customerSalesChannel, '5094', true);
+
+    expect($result['status'])->toBe(OrderImportRetryStatusEnum::FAILED)
+        ->and($result['message'])->toContain('nothing AW can import')
+        ->and($shopifyUser->customerSalesChannel->orders()->count())->toBe(1);
 });
 
 test('a cancellation request is accepted for an order still in the office and rejected once the warehouse has it', function () {
@@ -383,13 +539,14 @@ test('the order poller imports the open fulfilment order of each unfulfilled sho
             'fulfillmentOrders' => ['edges' => array_map(fn ($node) => ['node' => $node], $fulfilmentOrders)],
         ];
     };
-    $fulfilmentOrder = fn (string $gid, string $status) => array_merge(shopifyFulfilmentOrder([[]]), ['id' => $gid, 'status' => $status]);
+    $fulfilmentOrder = fn (string $gid, string $status) => array_merge(shopifyFulfilmentOrder([[]]), ['id' => $gid, 'status' => $status, 'requestStatus' => $status === 'IN_PROGRESS' ? 'ACCEPTED' : 'SUBMITTED']);
 
     ShopifyFake::fake([
         'getUnfulfilledOrders' => ShopifyFake::graphql(['orders' => ['edges' => [
             ['node' => $orderNode('gid://shopify/Order/5020', [$fulfilmentOrder('gid://shopify/FulfillmentOrder/6020', 'CLOSED'), $fulfilmentOrder('gid://shopify/FulfillmentOrder/6021', 'OPEN')])],
             ['node' => $orderNode('gid://shopify/Order/5022', [])],
         ]]]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'IN_PROGRESS', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
     ]);
 
     FetchShopifyOrdersFromApi::run($shopifyUser, 7);
@@ -412,6 +569,254 @@ test('the order poller imports the open fulfilment order of each unfulfilled sho
     expect(ShopifyFake::calls('getFulfilmentOrder')[0]['variables']['id'])->toBe('gid://shopify/Order/5030')
         ->and($payload['id'])->toBe('gid://shopify/FulfillmentOrder/6030')
         ->and($payload['order']['id'])->toBe('gid://shopify/Order/5030');
+});
+
+function shopifyPolledFulfilmentOrder(string $gid, string $status, string $requestStatus, string $locationGid = 'gid://shopify/Location/1001', array $lineItems = [[]]): array
+{
+    return array_merge(Arr::except(shopifyFulfilmentOrder($lineItems), 'order'), [
+        'id'               => $gid,
+        'status'           => $status,
+        'requestStatus'    => $requestStatus,
+        'assignedLocation' => ['location' => ['id' => $locationGid]],
+    ]);
+}
+
+function shopifyPolledOrder(string $orderGid, array $fulfilmentOrders): array
+{
+    return [
+        'id'                => $orderGid,
+        'name'              => '#1040',
+        'createdAt'         => '2026-09-02T08:00:00Z',
+        'processedAt'       => '2026-09-02T08:01:00Z',
+        'customer'          => ['id' => 'gid://shopify/Customer/4001', 'email' => 'ada@example.com', 'firstName' => 'Ada', 'lastName' => 'Lovelace', 'phone' => null],
+        'fulfillmentOrders' => ['edges' => array_map(fn ($node) => ['node' => $node], $fulfilmentOrders)],
+    ];
+}
+
+function shopifyUnfulfilledOrdersReply(array $orders): array
+{
+    return ShopifyFake::graphql(['orders' => ['edges' => array_map(fn ($order) => ['node' => $order], $orders)]]);
+}
+
+function shopifyAcceptReply(): array
+{
+    return ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'IN_PROGRESS', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]);
+}
+
+function shopifyForeignLineItem(): array
+{
+    return ['sku' => 'not-ours', 'lineItem' => ['variant' => ['id' => 'gid://shopify/ProductVariant/1'], 'product' => ['id' => 'gid://shopify/Product/1']]];
+}
+
+test('the order poller imports every fulfilment order requested from our location and nothing else', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-poll-location');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    $tooManyLines = shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6053', 'OPEN', 'SUBMITTED');
+    data_set($tooManyLines, 'lineItems.pageInfo.hasNextPage', true);
+
+    $poll = [
+        'getUnfulfilledOrders'     => shopifyUnfulfilledOrdersReply([
+            shopifyPolledOrder('gid://shopify/Order/5040', [
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6040', 'OPEN', 'UNSUBMITTED', 'gid://shopify/Location/9999'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6041', 'IN_PROGRESS', 'ACCEPTED'),
+            ]),
+            shopifyPolledOrder('gid://shopify/Order/5043', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6043', 'OPEN', 'REJECTED')]),
+            shopifyPolledOrder('gid://shopify/Order/5044', [
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6044', 'CLOSED', 'ACCEPTED'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6045', 'CLOSED', 'CLOSED'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6046', 'OPEN', 'UNSUBMITTED', 'gid://shopify/Location/9999'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6047', 'OPEN', 'SUBMITTED'),
+            ]),
+            shopifyPolledOrder('gid://shopify/Order/5050', [
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6050', 'OPEN', 'SUBMITTED', 'gid://shopify/Location/9999'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6054', 'IN_PROGRESS', 'ACCEPTED', 'gid://shopify/Location/9999'),
+            ]),
+            shopifyPolledOrder('gid://shopify/Order/5051', [
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6051', 'IN_PROGRESS', 'ACCEPTED'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6052', 'OPEN', 'SUBMITTED'),
+            ]),
+            shopifyPolledOrder('gid://shopify/Order/5053', [$tooManyLines]),
+        ]),
+        'acceptFulfillmentRequest' => shopifyAcceptReply(),
+    ];
+    $importedIds = fn () => $shopifyUser->customerSalesChannel->orders()->pluck('platform_order_id')->sort()->values()->all();
+    $acceptedIds = fn () => array_column(array_column(ShopifyFake::calls('acceptFulfillmentRequest'), 'variables'), 'id');
+
+    Log::spy();
+    ShopifyFake::fake($poll);
+    FetchShopifyOrdersFromApi::run($shopifyUser);
+
+    Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => str_contains($message, 'FulfillmentOrder/6053'))->once();
+    expect($importedIds())->toBe(['gid://shopify/FulfillmentOrder/6041', 'gid://shopify/FulfillmentOrder/6047', 'gid://shopify/FulfillmentOrder/6051', 'gid://shopify/FulfillmentOrder/6052'])
+        ->and($acceptedIds())->toBe(['gid://shopify/FulfillmentOrder/6047', 'gid://shopify/FulfillmentOrder/6052']);
+
+    ShopifyFake::fake($poll);
+    FetchShopifyOrdersFromApi::run($shopifyUser);
+
+    expect($importedIds())->toHaveCount(4)
+        ->and($acceptedIds())->toBe(['gid://shopify/FulfillmentOrder/6047', 'gid://shopify/FulfillmentOrder/6052']);
+});
+
+test('a request aw already holds an order for is only accepted, never split or declined, and left alone once staff cancelled it', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-poll-existing');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    ShopifyFake::fake([
+        'getUnfulfilledOrders'     => shopifyUnfulfilledOrdersReply([shopifyPolledOrder('gid://shopify/Order/5060', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6060', 'OPEN', 'SUBMITTED')])]),
+        'acceptFulfillmentRequest' => shopifyAcceptReply(),
+    ]);
+    FetchShopifyOrdersFromApi::run($shopifyUser);
+    $order = $shopifyUser->customerSalesChannel->orders()->where('platform_order_id', 'gid://shopify/FulfillmentOrder/6060')->firstOrFail();
+
+    $withLineNoLongerInPortfolio = [
+        'getUnfulfilledOrders'     => shopifyUnfulfilledOrdersReply([shopifyPolledOrder('gid://shopify/Order/5060', [
+            shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6060', 'OPEN', 'SUBMITTED', lineItems: [shopifyForeignLineItem()]),
+        ])]),
+        'acceptFulfillmentRequest' => shopifyAcceptReply(),
+    ];
+    ShopifyFake::fake($withLineNoLongerInPortfolio);
+    FetchShopifyOrdersFromApi::run($shopifyUser);
+
+    expect(ShopifyFake::calls('acceptFulfillmentRequest'))->toHaveCount(1)
+        ->and($shopifyUser->customerSalesChannel->orders()->count())->toBe(1);
+
+    $order->update(['state' => OrderStateEnum::CANCELLED]);
+    ShopifyFake::fake($withLineNoLongerInPortfolio);
+    FetchShopifyOrdersFromApi::run($shopifyUser);
+
+    expect(ShopifyFake::calls('acceptFulfillmentRequest'))->toBe([]);
+});
+
+test('a request the poller declines in shopify is not announced to the customer as an imported order', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-poll-declined');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    ShopifyFake::fake([
+        'getUnfulfilledOrders'     => shopifyUnfulfilledOrdersReply([shopifyPolledOrder('gid://shopify/Order/5049', [
+            shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6049', 'OPEN', 'SUBMITTED', lineItems: [shopifyForeignLineItem()]),
+        ])]),
+        'rejectFulfillmentRequest' => ShopifyFake::graphql(['fulfillmentOrderRejectFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'REJECTED'], 'userErrors' => []]]),
+    ]);
+
+    $notification = FetchRetinaCustomerSalesChannelOrders::make()->handle($shopifyUser->customerSalesChannel);
+
+    expect(ShopifyFake::calls('rejectFulfillmentRequest')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentOrder/6049')
+        ->and($shopifyUser->customerSalesChannel->orders()->where('platform_order_id', 'gid://shopify/FulfillmentOrder/6049')->firstOrFail()->isDeclinedPlatformRequest())->toBeTrue()
+        ->and($notification['title'])->toBe('No new orders');
+});
+
+test('an accept shopify refuses leaves no order and the poll carries on with the next request', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-poll-refused');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    ShopifyFake::fake([
+        'getUnfulfilledOrders'     => shopifyUnfulfilledOrdersReply([
+            shopifyPolledOrder('gid://shopify/Order/5070', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6070', 'OPEN', 'SUBMITTED')]),
+            shopifyPolledOrder('gid://shopify/Order/5071', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6071', 'OPEN', 'SUBMITTED')]),
+            shopifyPolledOrder('gid://shopify/Order/5072', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6072', 'OPEN', 'SUBMITTED')]),
+        ]),
+        'acceptFulfillmentRequest' => fn (array $variables) => match ($variables['id']) {
+            'gid://shopify/FulfillmentOrder/6070' => Http::response('', 500),
+            'gid://shopify/FulfillmentOrder/6071' => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => null, 'userErrors' => [['field' => ['id'], 'message' => 'Fulfillment order is not in a state that can be accepted.']]]]),
+            default                               => shopifyAcceptReply(),
+        },
+    ]);
+
+    FetchShopifyOrdersFromApi::run($shopifyUser);
+
+    expect($shopifyUser->customerSalesChannel->orders()->pluck('platform_order_id')->all())->toBe(['gid://shopify/FulfillmentOrder/6072']);
+});
+
+test('a fulfilment order another process is importing is skipped instead of created twice', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-poll-locked');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    $busyLock = Mockery::mock(Lock::class);
+    $busyLock->shouldReceive('block')->once()->andThrow(new LockTimeoutException());
+    Cache::partialMock()->shouldReceive('lock')
+        ->with('shopify_fulfilment_order_'.$shopifyUser->id.'_gid://shopify/FulfillmentOrder/6080', 120)
+        ->once()
+        ->andReturn($busyLock);
+
+    ShopifyFake::fake(['getUnfulfilledOrders' => shopifyUnfulfilledOrdersReply([
+        shopifyPolledOrder('gid://shopify/Order/5080', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6080', 'IN_PROGRESS', 'ACCEPTED')]),
+    ])]);
+    Log::spy();
+    FetchShopifyOrdersFromApi::run($shopifyUser);
+
+    expect($shopifyUser->customerSalesChannel->orders()->count())->toBe(0);
+    Log::shouldHaveReceived('warning')->withArgs(fn (string $message) => str_contains($message, 'FulfillmentOrder/6080'))->once();
+});
+
+test('the retry imports the open request of an order and tells apart not found, nothing for aw, an unreadable store and a channel without location', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-retry-answers');
+    shopifyPortfolioFor($this, $shopifyUser);
+    $channel = $shopifyUser->customerSalesChannel;
+
+    ShopifyFake::fake(['getFulfilmentOrder' => ShopifyFake::graphql(['order' => shopifyPolledOrder('gid://shopify/Order/5042', [
+        shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6042', 'OPEN', 'UNSUBMITTED', 'gid://shopify/Location/9999'),
+    ])])]);
+    $result = RetryOrderImport::run($channel, '5042', true);
+    expect($result['status'])->toBe(OrderImportRetryStatusEnum::FAILED)
+        ->and($result['message'])->toContain('nothing AW can import');
+
+    ShopifyFake::fake(['getFulfilmentOrder' => ShopifyFake::graphql(['order' => null])]);
+    expect(RetryOrderImport::run($channel, '5099', true)['status'])->toBe(OrderImportRetryStatusEnum::NOT_FOUND_ON_PLATFORM);
+
+    ShopifyFake::fake(['getFulfilmentOrder' => Http::response('', 500)]);
+    $result = RetryOrderImport::run($channel, '5099', true);
+    expect($result['status'])->toBe(OrderImportRetryStatusEnum::FAILED)
+        ->and($result['message'])->toContain('Could not read the order from the channel');
+
+    $orderWithBoth = shopifyPolledOrder('gid://shopify/Order/5048', [
+        shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6047', 'IN_PROGRESS', 'ACCEPTED'),
+        shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6048', 'OPEN', 'SUBMITTED'),
+    ]);
+    ShopifyFake::fake(['getFulfilmentOrder' => ShopifyFake::graphql(['order' => $orderWithBoth], [['message' => 'Access denied for customer field.']])]);
+    expect(RetryOrderImport::run($channel, '5048')['status'])->toBe(OrderImportRetryStatusEnum::READY_TO_IMPORT);
+
+    ShopifyFake::fake([
+        'getFulfilmentOrder'       => ShopifyFake::graphql(['order' => $orderWithBoth]),
+        'acceptFulfillmentRequest' => shopifyAcceptReply(),
+    ]);
+    $result = RetryOrderImport::run($channel, '5048', true);
+    expect($result['status'])->toBe(OrderImportRetryStatusEnum::IMPORTED)
+        ->and($result['order']->platform_order_id)->toBe('gid://shopify/FulfillmentOrder/6048')
+        ->and(ShopifyFake::calls('acceptFulfillmentRequest')[0]['variables']['id'])->toBe('gid://shopify/FulfillmentOrder/6048');
+
+    ShopifyFake::fake(['getFulfilmentOrder' => ShopifyFake::graphql(['order' => shopifyPolledOrder('gid://shopify/Order/5055', [
+        shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6055', 'OPEN', 'SUBMITTED', lineItems: [
+            ['lineItem' => ['variant' => ['id' => 'gid://shopify/ProductVariant/8001'], 'product' => ['id' => 'gid://shopify/Product/7999']]],
+            shopifyForeignLineItem(),
+        ]),
+    ])])]);
+    foreach ([false, true] as $import) {
+        $result = RetryOrderImport::run($channel, '5055', $import);
+        expect($result['status'])->toBe(OrderImportRetryStatusEnum::FAILED)
+            ->and($result['message'])->toContain('not-ours are not in this channel portfolio');
+    }
+    expect($channel->orders()->where('platform_order_id', 'gid://shopify/FulfillmentOrder/6055')->exists())->toBeFalse()
+        ->and($channel->portfolios()->first()->platform_product_id)->toBe('gid://shopify/Product/7001');
+
+    ShopifyFake::fake(['getFulfilmentOrder' => ShopifyFake::graphql(['order' => shopifyPolledOrder('gid://shopify/Order/5056', [
+        shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6056', 'IN_PROGRESS', 'ACCEPTED', lineItems: [[], shopifyForeignLineItem()]),
+    ])])]);
+    $result = RetryOrderImport::run($channel, '5056', true);
+    expect($result['status'])->toBe(OrderImportRetryStatusEnum::IMPORTED)
+        ->and($result['order']->transactions()->count())->toBe(1);
+
+    $shopifyUser->update(['shopify_location_id' => null]);
+    $result = RetryOrderImport::run($channel->fresh(), '5050', true);
+    expect($result['status'])->toBe(OrderImportRetryStatusEnum::FAILED)
+        ->and($result['message'])->toContain('no AW location in Shopify')
+        ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser->refresh()))->toThrow(Exception::class, 'no AW location in Shopify');
 });
 
 test('dispatching sends the fulfilment to shopify with the tracking of the delivery note and a refusal never blocks the dispatch', function () {

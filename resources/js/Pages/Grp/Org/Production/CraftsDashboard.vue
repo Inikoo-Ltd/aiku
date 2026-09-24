@@ -5,18 +5,18 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
-import PageHeading from "@/Components/Headings/PageHeading.vue";
-import StatsBox from "@/Components/Stats/StatsBox.vue";
-import StatsBoxNegativeList from "@/Components/Stats/StatsBoxNegativeList.vue";
-import { StatsBoxTS } from "@/types/Components/StatsBox";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faNetworkWired, faHamsa, faExclamationTriangle, faClipboardCheck, faFolder, faFolderTree, faUnlink, faSeedling } from "@fal";
-import { trans } from "laravel-vue-i18n";
-import { capitalize } from "@/Composables/capitalize";
-import { PageHeadingTypes } from "@/types/PageHeading";
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import StatsBox from "@/Components/Stats/StatsBox.vue"
+import StatsBoxNegativeList from "@/Components/Stats/StatsBoxNegativeList.vue"
+import { StatsBoxTS } from "@/types/Components/StatsBox"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faNetworkWired, faHamsa, faExclamationTriangle, faClipboardCheck, faFolder, faFolderTree, faUnlink, faSeedling, faTags } from "@fal"
+import { trans } from "laravel-vue-i18n"
+import { capitalize } from "@/Composables/capitalize"
+import { PageHeadingTypes } from "@/types/PageHeading"
 
-library.add(faNetworkWired, faHamsa, faExclamationTriangle, faClipboardCheck, faFolder, faFolderTree, faUnlink, faSeedling);
+library.add(faNetworkWired, faHamsa, faExclamationTriangle, faClipboardCheck, faFolder, faFolderTree, faUnlink, faSeedling, faTags)
 
 defineProps<{
     title: string
@@ -24,7 +24,7 @@ defineProps<{
     stats: StatsBoxTS[]
     statsBoxNegative: StatsBoxTS[]
     statsBoxNegativeTitle: string
-}>();
+}>()
 </script>
 
 <template>

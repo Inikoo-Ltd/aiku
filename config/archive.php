@@ -51,6 +51,14 @@ return [
     'stock_history_nightly' => (bool) env('STOCK_HISTORY_NIGHTLY_ARCHIVE', false),
 
     /*
+     * How long a chat image or attachment file stays on the application server's disk. Older files
+     * are moved into the archive database and their media rows are flagged, so downloads and email
+     * replies read them back from there: slower, never lost. Previews are only drawn for files still
+     * on disk, an archived image shows as a download.
+     */
+    'chat_media_retention_days' => (int) env('CHAT_MEDIA_RETENTION_DAYS', 30),
+
+    /*
      * Every archiver pauses between delete batches while any replica is further behind than this,
      * so archiving can never build up the WAL backlog that once filled boro's disk.
      */

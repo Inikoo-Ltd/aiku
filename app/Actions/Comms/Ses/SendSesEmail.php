@@ -18,7 +18,6 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use Aws\Exception\AwsException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -141,17 +140,9 @@ class SendSesEmail
                         [
                             'state'   => DispatchedEmailStateEnum::SENT,
                             'sent_at' => now(),
+                            'ses_id'  => $isTest ? null : Arr::get($result, 'MessageId'),
                         ]
                     );
-
-                    if (!$isTest && Arr::get($result, 'MessageId')) {
-                        DB::table('ses_dispatched_emails')->insert([
-                            'dispatched_email_id' => $dispatchedEmail->id,
-                            'ses_id'              => Arr::get($result, 'MessageId'),
-                            'send_at'             => now()
-                        ]);
-                    }
-
 
                     if (!$isTest && $dispatchedEmail->outbox
                         && in_array($dispatchedEmail->outbox->code, [

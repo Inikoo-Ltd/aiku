@@ -14,6 +14,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -70,6 +71,7 @@ class StoreDeliveryNoteItem extends OrgAction
                 ],
             'quantity_required'          => ['required', 'numeric'],
             'original_quantity_required' => ['sometimes', 'numeric'],
+            'replacement_reason'         => ['sometimes', 'nullable', Rule::enum(DeliveryNoteItemReplacementReasonEnum::class)],
 
         ];
 

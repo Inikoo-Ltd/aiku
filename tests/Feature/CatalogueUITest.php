@@ -374,6 +374,48 @@ test('UI show product navigation follows the list sort', function () {
     );
 });
 
+test('UI show product navigation skips non-main variants', function () {
+    $this->withoutExceptionHandling();
+
+    $makeProduct = function (string $code) {
+        $productData = \App\Models\Catalogue\Product::factory()->definition();
+        data_set($productData, 'code', $code);
+        data_set($productData, 'trade_units', [['id' => $this->product->tradeUnits()->first()->id, 'quantity' => 1]]);
+        data_set($productData, 'price', 100);
+
+        return \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->family, $productData);
+    };
+
+    $first = $makeProduct('VARA01');
+    $last  = $makeProduct('VARC03');
+
+    \App\Actions\Catalogue\Product\StoreProductVariant::run($first, [
+        'code'    => 'VARB02',
+        'ratio'   => 2,
+        'price'   => 200,
+        'name'    => $first->name.' 1000u',
+        'is_main' => false
+    ]);
+
+    $showRoute = fn ($product) => route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $product->slug
+    ]);
+
+    get($showRoute($first).'?bucket_sort=code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.next.label', $last->name)
+            ->etc()
+    );
+
+    get($showRoute($last).'?bucket_sort=code')->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('navigation.previous.label', $first->name)
+            ->etc()
+    );
+});
+
 test('UI Index catalogue product all', function () {
     $response = get(route('grp.org.shops.show.catalogue.products.all_products.index', [
         $this->organisation->slug,
@@ -893,4 +935,47 @@ test('products export links every image as a jpg', function () {
     $originalExport = new \App\Exports\Catalogue\ProductsExport($this->shop, 'all', ['image_1']);
     expect($originalExport->mapRow($originalExport->dataQuery()->where('products.id', $product->id)->first()))
         ->toBe(['https://media.test/signature/'.$encodeSource('local://media/first.jpeg')]);
+});
+
+test('products export ends with the weight unit columns', function () {
+    $product = \App\Models\Catalogue\Product::where('shop_id', $this->shop->id)->where('is_main', true)->whereNull('exclusive_for_customer_id')->first();
+    $product->update(['marketing_weight' => 250, 'gross_weight' => null]);
+
+    $export = new \App\Exports\Catalogue\ProductsExport($this->shop, 'all');
+    $row    = $export->mapRow($export->dataQuery()->where('products.id', $product->id)->first());
+
+    expect(array_slice($export->headings(), -2))->toBe(['Unit weight (marketing) unit', 'Gross weight unit'])
+        ->and(array_slice($row, -2))->toBe(['g', null]);
+});
+
+test('UI show product sends the available stock of each part', function () {
+    $this->withoutExceptionHandling();
+    $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->first();
+    $orgStock->update(['quantity_available' => 7]);
+    $this->product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->product->slug
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('showcase.org_stocks.0.id', $orgStock->id)
+            ->where('showcase.org_stocks.0.quantity_available', '7')
+            ->where('showcase.org_stocks.0.quantity', fn ($quantity) => (float) $quantity === 1.0)
+            ->etc()
+    );
+});
+
+test('customer portfolio showcase does not send the stock of each part', function () {
+    $orgStock = \App\Models\Inventory\OrgStock::where('organisation_id', $this->organisation->id)->first();
+    $orgStock->update(['quantity_available' => 7]);
+    $this->product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+    request()->setRouteResolver(fn () => (new \Illuminate\Routing\Route('GET', 'portfolio', []))->name('retina.portfolio'));
+
+    $showcase = \App\Actions\Catalogue\Product\UI\GetProductShowcaseInPortfolio::run($this->product);
+
+    expect($showcase['org_stocks'][0]['id'])->toBe($orgStock->id)
+        ->and($showcase['org_stocks'][0])->not->toHaveKeys(['quantity', 'quantity_available'])
+        ->and($showcase['parts'][0])->not->toHaveKeys(['quantity', 'quantity_available']);
 });

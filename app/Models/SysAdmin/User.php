@@ -84,8 +84,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_two_factor_required
  * @property array<array-key, mixed> $bookmarks
  * @property int|null $employed_in_organisation_id
+ * @property bool $is_bot
  * @property bool $can_use_mcp
  * @property bool $can_use_mcp_sql
+ * @property bool $can_use_mcp_discontinue
+ * @property bool $can_use_mcp_web
  * @property int|null $timezone_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Organisation> $authorisedAgentsOrganisations
@@ -118,7 +121,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\SysAdmin\UserStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OutBoxHasSubscriber> $subscribedOutboxes
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\Task> $tasks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SysAdmin\UserTimeSeries> $timeSeries
  * @property-read Timezone|null $timezone
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
@@ -245,6 +247,17 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     protected array $attributeModifiers = [
         'password' => PasswordRedactor::class,
     ];
+
+    public ?string $auditReason = null;
+
+    public function transformAudit(array $data): array
+    {
+        if ($this->auditReason) {
+            $data['comments'] = $this->auditReason;
+        }
+
+        return $data;
+    }
 
     public function getSlugOptions(): SlugOptions
     {
@@ -395,11 +408,6 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     public function authorisedProductions(): MorphToMany
     {
         return $this->morphedByMany(Production::class, 'model', 'user_has_authorised_models')->withTimestamps();
-    }
-
-    public function tasks(): MorphToMany
-    {
-        return $this->morphToMany(Task::class, 'taskable', 'users_has_tasks');
     }
 
     public function pseudoJobPositions(): BelongsToMany

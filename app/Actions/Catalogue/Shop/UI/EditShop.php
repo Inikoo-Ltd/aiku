@@ -101,6 +101,10 @@ class EditShop extends OrgAction
 
         $isGoogleAdsConnected = filled(Arr::get($shop->settings, 'google_ads.refresh_token'));
 
+        $isMailboxConnected = filled(Arr::get($shop->settings, 'gmail.email'));
+        $mailboxEmail       = Arr::get($shop->settings, 'gmail.email');
+        $mailboxConnectedAt = Arr::get($shop->settings, 'gmail.connected_at');
+
         $googleAdsLastSyncInformation = '';
         if ($lastSync = Arr::get($shop->settings, 'google_ads.last_sync')) {
             $googleAdsLastSyncInformation = ' ' . __('Last sync: :at, uploaded :uploaded, removed :removed.', [
@@ -112,6 +116,7 @@ class EditShop extends OrgAction
 
         $viewContactOptionsPanel = (bool) Arr::get($shop->settings, 'chat.view_contact_options_panel', false);
         $enableWhatsapp = (bool) Arr::get($shop->settings, 'whatsapp.enabled', false);
+        $whatsappLastStatusCheck = Arr::get($shop->settings, 'whatsapp.last_status_check');
         $whatsappRouteParameters = [
             'organisation' => $shop->organisation->slug,
             'shop'         => $shop->slug,
@@ -766,6 +771,33 @@ class EditShop extends OrgAction
                                 'value'       => Arr::get($shop->settings, 'chat.data_contact_options_panel') ?? [],
                             ],
                         ] : [],
+                        'chat_unclaimed_website_seconds'  => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '30', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('Website chat unclaimed after (seconds)'),
+                            'information' => __('How long a website conversation may sit with nobody holding it before it joins the unclaimed queue everybody sees. Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.website') ?? '',
+                        ],
+                        'chat_unclaimed_whatsapp_seconds' => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '60', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('WhatsApp unclaimed after (seconds)'),
+                            'information' => __('Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.whatsapp') ?? '',
+                        ],
+                        'chat_unclaimed_email_seconds'    => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '300', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('Email unclaimed after (seconds)'),
+                            'information' => __('Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.email') ?? '',
+                        ],
+                        'chat_email_offline_replies' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Answer offline messages by email'),
+                            'information' => __('When nobody is on cover the widget asks the visitor for an email address. With this on, the conversation becomes an email one, so the answer written later is sent to them rather than left in a widget they have closed. Needs a mailbox connected to this shop.'),
+                            'value'       => (bool) Arr::get($shop->settings, 'chat.email_offline_replies', false),
+                        ],
                         'enable_whatsapp' => [
                             'type'        => 'toggle',
                             'label'       => __('Enable WhatsApp Channel'),
@@ -804,11 +836,14 @@ class EditShop extends OrgAction
                                 'label'        => __('Phone Number Status'),
                                 'information'  => __('Ask Meta whether this number is live. A number that is not connected can be brought online here.'),
                                 'noSaveButton' => true,
+                                'value'        => $whatsappLastStatusCheck,
                                 'routes'       => [
                                     'status'       => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.status', 'parameters' => $whatsappRouteParameters],
                                     'request_code' => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.request_code', 'parameters' => $whatsappRouteParameters],
                                     'verify_code'  => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.verify_code', 'parameters' => $whatsappRouteParameters],
                                     'register'     => ['name' => 'grp.org.shops.show.chat.whatsapp_phone.register', 'parameters' => $whatsappRouteParameters],
+                                    'subscribed_apps' => ['name' => 'grp.org.shops.show.chat.whatsapp_app.subscribed', 'parameters' => $whatsappRouteParameters],
+                                    'subscribe_app'   => ['name' => 'grp.org.shops.show.chat.whatsapp_app.subscribe', 'parameters' => $whatsappRouteParameters],
                                 ],
                             ],
                         ] : [],
@@ -888,6 +923,34 @@ class EditShop extends OrgAction
                             'label'       => __('Campaign Name Prefix'),
                             'placeholder' => __('Only when the ad account also advertises another shop'),
                             'value'       => Arr::get($shop->settings, 'meta_ads.campaign_name_prefix', ''),
+                        ],
+                    ],
+                ],
+                [
+                    'label'  => __('Customer mailbox'),
+                    'icon'   => 'fa-light fa-envelope',
+                    'fields' => [
+                        'mailbox' => [
+                            'type'    => 'mailbox_connect',
+                            'noTitle'      => true,
+                            'noSaveButton' => true,
+                            'value'   => [
+                                'connected'        => $isMailboxConnected,
+                                'email'            => $mailboxEmail,
+                                'connected_at'     => $mailboxConnectedAt,
+                                'connect_url'      => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]).($request->query('section') ? '?section='.$request->query('section') : ''),
+                                'disconnect_route' => [
+                                    'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',
+                                    'parameters' => [$shop->organisation->slug, $shop->slug],
+                                ],
+                                'inbox_url'        => route('grp.org.shops.show.chat.inbox', [$shop->organisation->slug, $shop->slug]),
+                            ],
+                        ],
+                        'mailbox_sender_name' => [
+                            'type'        => 'input',
+                            'label'       => __('Sender name'),
+                            'placeholder' => $shop->name,
+                            'value'       => Arr::get($shop->settings, 'gmail.sender_name', ''),
                         ],
                     ],
                 ],

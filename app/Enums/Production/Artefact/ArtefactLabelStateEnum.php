@@ -26,4 +26,25 @@ enum ArtefactLabelStateEnum: string
             'published' => __('Published'),
         ];
     }
+
+    public static function stateIcon(): array
+    {
+        return [
+            'raw'       => [
+                'tooltip' => __('Raw, nothing designed yet'),
+                'icon'    => 'fal fa-seedling',
+                'class'   => 'text-gray-400'
+            ],
+            'processed' => [
+                'tooltip' => __('Designed, not published'),
+                'icon'    => 'fal fa-pencil-ruler',
+                'class'   => 'text-amber-500'
+            ],
+            'published' => [
+                'tooltip' => __('Published, ready to print from the to produce board'),
+                'icon'    => 'fal fa-check-circle',
+                'class'   => 'text-green-500'
+            ],
+        ];
+    }
 }

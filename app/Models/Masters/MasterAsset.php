@@ -215,7 +215,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
     use InMasterShop;
     use HasEffectiveStockPackedIn;
 
-    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n', 'gpsr_warnings_i8n', 'gpsr_manual_i8n'];
 
     protected $guarded = [];
 
@@ -241,6 +241,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'web_images'              => 'array',
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
+        'independent_barcode'     => 'boolean',
         'master_prices'           => 'array',
         'master_rrps'             => 'array',
     ];
@@ -275,6 +276,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'unit',
         'is_main',
         'barcode',
+        'independent_barcode',
         'is_for_sale',
         'follow_trade_unit_media',
         'is_golden_product',

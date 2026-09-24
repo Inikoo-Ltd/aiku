@@ -91,14 +91,14 @@ onMounted(async () => {
           ref="mainPrevEl"
           class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto"
         >
-          <FontAwesomeIcon :icon="faChevronCircleLeft" />
+          <FontAwesomeIcon :icon="faChevronCircleLeft" fixed-width />
         </div>
 
         <div
           ref="mainNextEl"
           class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto"
         >
-          <FontAwesomeIcon :icon="faChevronCircleRight" />
+          <FontAwesomeIcon :icon="faChevronCircleRight" fixed-width />
         </div>
       </div>
 
@@ -128,7 +128,7 @@ onMounted(async () => {
         >
           <FontAwesomeIcon
             :icon="faVideo"
-            class="text-5xl text-white/80 absolute"
+            class="text-5xl text-white/80 absolute" fixed-width
           />
           <iframe
             class="w-full h-full opacity-50 pointer-events-none"
@@ -157,14 +157,14 @@ onMounted(async () => {
           ref="thumbPrevEl"
           class="absolute left-0 top-1/2 -translate-y-1/2 text-2xl pointer-events-auto"
         >
-          <FontAwesomeIcon :icon="faChevronCircleLeft" />
+          <FontAwesomeIcon :icon="faChevronCircleLeft" fixed-width />
         </div>
 
         <div
           ref="thumbNextEl"
           class="absolute right-0 top-1/2 -translate-y-1/2 text-2xl pointer-events-auto"
         >
-          <FontAwesomeIcon :icon="faChevronCircleRight" />
+          <FontAwesomeIcon :icon="faChevronCircleRight" fixed-width />
         </div>
       </div>
 
@@ -191,7 +191,7 @@ onMounted(async () => {
         >
           <FontAwesomeIcon
             :icon="faVideo"
-            class="text-2xl text-white/80 absolute"
+            class="text-2xl text-white/80 absolute" fixed-width
           />
           <iframe
             class="w-full h-full opacity-50 pointer-events-none"

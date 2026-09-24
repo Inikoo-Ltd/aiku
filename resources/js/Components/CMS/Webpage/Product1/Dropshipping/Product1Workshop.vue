@@ -133,7 +133,7 @@ defineOptions({
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="product?.tags?.length">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in product.tags"
                         :key="index">
-                        <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
+                        <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" fixed-width />
                         <div v-else class="aspect-square w-full h-[15px]">
                             <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
                                 class="w-full h-full object-cover" />
@@ -160,7 +160,7 @@ defineOptions({
                         <div v-if="layout?.iris?.is_logged_in"
                             class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="(product?.is_on_demand || product.stock > 0 ) ? 'text-green-600' : 'text-red-600'" />
+                                :class="(product?.is_on_demand || product.stock > 0 ) ? 'text-green-600' : 'text-red-600'" fixed-width />
                             <span>
                                <span>
                                     {{ product?.is_on_demand
@@ -192,7 +192,7 @@ defineOptions({
                                     <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
                                         :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
                                     <FontAwesomeIcon v-else :icon="faImage"
-                                        class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                        class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                                 </div>
 
                                 <!-- VARIANT LABEL -->
@@ -278,7 +278,7 @@ defineOptions({
         <div class="flex flex-wrap gap-2 mt-4" v-if="product?.tags?.length">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in product.tags"
                 :key="index">
-                <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" />
+                <FontAwesomeIcon v-if="!tag.image" :icon="['fas', 'dot-circle']" class="text-sm" fixed-width />
                 <div v-else class="aspect-square w-full h-[15px]">
                     <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`" class="w-full h-full object-cover" />
                 </div>
@@ -313,7 +313,7 @@ defineOptions({
                             <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
                                 :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
                             <FontAwesomeIcon v-else :icon="faImage"
-                                class="absolute inset-0 m-auto text-gray-300 text-xl" />
+                                class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                         </div>
 
                         <!-- VARIANT LABEL -->

@@ -47,7 +47,7 @@ const onOpenGallery = (index: number) => {
         <div class="w-full" @click="() => onOpenGallery(0)">
           <div v-if="!modelValue.value?.picture.length"
             class="flex rounded-md border border-black border-dashed w-full h-[300px] sm:h-[400px] md:h-[500px] p-10 justify-center items-center">
-            <FontAwesomeIcon :icon="faImage" class="h-10 w-10 object-cover object-center group-hover:opacity-75" />
+            <FontAwesomeIcon :icon="faImage" class="h-10 w-10 object-cover object-center group-hover:opacity-75" fixed-width />
           </div>
           <div v-else class="relative w-full h-[300px] sm:h-[400px] md:h-[500px] overflow-hidden">
             <div v-if="!loadedImages['picture']" class="absolute inset-0 animate-pulse bg-gray-200"></div>
@@ -64,7 +64,7 @@ const onOpenGallery = (index: number) => {
           <div @click="() => onOpenGallery(index)">
             <div v-if="!product.image"
               class="flex rounded-md border border-black border-dashed w-full aspect-square p-10 justify-center items-center">
-              <FontAwesomeIcon :icon="faImage" class="h-10 w-10 object-cover object-center group-hover:opacity-75" />
+              <FontAwesomeIcon :icon="faImage" class="h-10 w-10 object-cover object-center group-hover:opacity-75" fixed-width />
             </div>
             <div v-else class="relative w-full aspect-square overflow-hidden">
               <div v-if="!loadedImages[product.id ?? index]" class="absolute inset-0 animate-pulse bg-gray-200"></div>

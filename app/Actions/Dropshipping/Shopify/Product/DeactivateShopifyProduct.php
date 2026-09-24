@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
@@ -17,6 +18,7 @@ use Sentry;
 class DeactivateShopifyProduct
 {
     use AsAction;
+    use WithShopifyPortfolioVariant;
 
     public function handle(Portfolio $portfolio): bool
     {
@@ -89,8 +91,9 @@ class DeactivateShopifyProduct
             $body = $response['body']->toArray();
 
             // Check if the inventoryLevel.id exists in the response
-            if (isset($body['data']['product']['variants']['edges'][0]['node']['inventoryItem']['inventoryLevel']['id'])) {
-                $variantLevelId = $body['data']['product']['variants']['edges'][0]['node']['inventoryItem']['inventoryLevel']['id'];
+            $variantLevelId = Arr::get($this->portfolioVariantNode($portfolio, Arr::get($body, 'data.product.variants.edges', [])), 'inventoryItem.inventoryLevel.id');
+
+            if ($variantLevelId) {
 
                 // Now use the inventoryLevel.id to deactivate the inventory
                 $mutation = <<<'MUTATION'

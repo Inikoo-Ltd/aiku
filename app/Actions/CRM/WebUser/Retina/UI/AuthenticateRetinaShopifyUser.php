@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
@@ -16,6 +17,7 @@ use Lorisleiva\Actions\Concerns\AsController;
 class AuthenticateRetinaShopifyUser
 {
     use AsController;
+    use WithIrisAuthCookie;
 
     public function handle(ActionRequest $request): RedirectResponse
     {
@@ -25,6 +27,7 @@ class AuthenticateRetinaShopifyUser
 
             if ($shopifyUser) {
                 auth('retina')->login($shopifyUser->customer?->webUsers?->first());
+                $this->queueIrisAuthCookie();
                 return redirect()->intended($retinaHome);
             }
         }

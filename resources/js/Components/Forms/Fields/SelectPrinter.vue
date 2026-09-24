@@ -87,7 +87,7 @@ const selectOption = (val: string) => {
         </template>
         <span v-else class="text-gray-400">{{ fieldData.placeholder ?? trans('Select an option') }}</span>
       </div>
-      <FontAwesomeIcon icon="fas fa-chevron-down" class="text-gray-500" />
+      <FontAwesomeIcon icon="fas fa-chevron-down" class="text-gray-500" fixed-width />
     </div>
 
     <p v-if="form.errors[fieldName]" class="mt-2 text-sm text-red-600">

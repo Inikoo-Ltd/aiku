@@ -228,7 +228,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 $transaction->historicAsset->code ?? 'N/A',
                 $productName,
                 $discountLabel,
-                rtrim(number_format($transaction->quantity_ordered, 3), '0.'),
+                packQuantityLabel($transaction->quantity_ordered, soldPackUnits($transaction->historicAsset?->units, $product?->units)),
                 $priceDisplay
             );
         }

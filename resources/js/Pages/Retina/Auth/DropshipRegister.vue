@@ -295,7 +295,7 @@ const onCallbackGoogleLogin = (e) => {
 							<div class="mt-2">
 								<IconField>
 									<InputIcon>
-										<FontAwesomeIcon :icon="faUser" />
+										<FontAwesomeIcon :icon="faUser" fixed-width />
 									</InputIcon>
 
 									<InputText
@@ -324,7 +324,7 @@ const onCallbackGoogleLogin = (e) => {
 								<!-- make IconField full-width -->
 								<IconField class="w-full">
 									<InputIcon>
-										<FontAwesomeIcon :icon="faEnvelope" />
+										<FontAwesomeIcon :icon="faEnvelope" fixed-width />
 									</InputIcon>
 
 									<!-- and make the input itself full-width -->
@@ -352,7 +352,7 @@ const onCallbackGoogleLogin = (e) => {
 							<div class="mt-2">
 								<IconField class="w-full">
 									<InputIcon>
-										<FontAwesomeIcon :icon="faPhone" />
+										<FontAwesomeIcon :icon="faPhone" fixed-width />
 									</InputIcon>
 
 									<InputText
@@ -380,7 +380,7 @@ const onCallbackGoogleLogin = (e) => {
 							<div class="mt-2">
 								<IconField class="w-full">
 									<InputIcon>
-										<FontAwesomeIcon :icon="faBuilding" />
+										<FontAwesomeIcon :icon="faBuilding" fixed-width />
 									</InputIcon>
 
 									<InputText
@@ -409,7 +409,7 @@ const onCallbackGoogleLogin = (e) => {
 							<div class="mt-2">
 								<IconField class="w-full">
 									<InputIcon>
-										<FontAwesomeIcon :icon="faGlobe" />
+										<FontAwesomeIcon :icon="faGlobe" fixed-width />
 									</InputIcon>
 
 									<InputText v-model="form.website" class="w-full" />

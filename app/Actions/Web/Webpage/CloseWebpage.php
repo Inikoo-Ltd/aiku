@@ -51,6 +51,7 @@ class CloseWebpage extends OrgAction
         ]);
 
         $this->dispatchWebpageHydratorsAndRefresh($webpage);
+        BreakWebpageCache::run($webpage);
 
         return $webpage;
     }

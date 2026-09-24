@@ -19,6 +19,14 @@ enum JobOrderStateEnum: string
     case BOOKING_IN   = 'booking_in';
     case BOOKED_IN    = 'booked_in';
 
+    /**
+     * @return array<int, JobOrderStateEnum>
+     */
+    public static function open(): array
+    {
+        return [self::IN_PROCESS, self::SUBMITTED, self::CONFIRMED];
+    }
+
     public static function labels($forElements = false): array
     {
         return [

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref, reactive, computed } from "vue"
 import {
 	Popover,
@@ -11,14 +11,14 @@ import {
 	MenuItems,
 } from "@headlessui/vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChevronDown, faCheckSquare, faSquare, faFilter } from "@fal"
+import { faChevronDown, faCheckSquare, faSquare, faFilter, faCheckDouble } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { onMounted } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import Button from "../Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
 import { Icon as IconTS } from "@/types/Utils/Icon"
-library.add(faChevronDown, faCheckSquare, faSquare, faFilter)
+library.add(faChevronDown, faCheckSquare, faSquare, faFilter, faCheckDouble)
 
 const props = defineProps<{
 	elements: {
@@ -30,6 +30,7 @@ const props = defineProps<{
 			key: string
 			label: string
 			default?: string | null
+			optional?: boolean
 		}
 	}
 	tableName: string
@@ -40,7 +41,7 @@ const props = defineProps<{
 }>()
 // console.log('element', props.elements)
 const emits = defineEmits<{
-	(e: "checkboxChanged", value: SelectedFilters, isInitial?: boolean): void
+	(e: "checkboxChanged", value: SelectedFilters | Record<string, string[] | string>, isInitial?: boolean, isImmediate?: boolean): void
 }>()
 
 interface SelectedFilters {
@@ -51,9 +52,11 @@ const selectedGroup = ref(Object.keys(props.elements)[0]) || ref("")
 const defaultSelectedFilters = computed(() =>
 	props.elements[selectedGroup.value]?.default
 		? props.elements[selectedGroup.value].default.split(",")
-		: props.elements[selectedGroup.value]?.elements
-			? Object.keys(props.elements[selectedGroup.value].elements)
-			: []
+		: props.elements[selectedGroup.value]?.optional
+			? []
+			: props.elements[selectedGroup.value]?.elements
+				? Object.keys(props.elements[selectedGroup.value].elements)
+				: []
 )
 const selectedFilters: SelectedFilters = reactive({
 	[selectedGroup.value]: defaultSelectedFilters.value,
@@ -127,7 +130,7 @@ const onClickCheckbox = (elementName: string, scope: string) => {
 
 		if (selectedFilters[scope].includes(elementName)) {
 			// If current active is more than 1, then can deselect
-			if (selectedFilters[scope].length > 1) {
+			if (selectedFilters[scope].length > 1 || props.elements[scope]?.optional) {
 				// console.log('qq', selectedFilters[scope])
 				selectedFilters[scope] = selectedFilters[scope].filter(
 					(item: string) => item !== elementName
@@ -139,8 +142,54 @@ const onClickCheckbox = (elementName: string, scope: string) => {
 		}
 
 		// console.log('end of onClick', selectedFilters[scope])
-		emits("checkboxChanged", selectedFilters)
+		emits("checkboxChanged", withClearedOptionalGroups())
 	}, 200)
+}
+
+const withClearedOptionalGroups = (): SelectedFilters | Record<string, string[] | string> => {
+	const clearedOptionalGroups = Object.keys(selectedFilters).filter(
+		(scope) => selectedFilters[scope].length === 0
+	)
+	if (!clearedOptionalGroups.length) {
+		return selectedFilters
+	}
+	return {
+		...selectedFilters,
+		...Object.fromEntries(clearedOptionalGroups.map((scope) => [scope, ""])),
+	}
+}
+
+const scopeElementKeys = (scope: string): string[] =>
+	Object.keys(props.elements[scope]?.elements ?? {})
+
+const selectionState = (scope: string): "all" | "partial" | "none" => {
+	const elementKeys = scopeElementKeys(scope)
+	const selectedCount = elementKeys.filter((elementKey) =>
+		selectedFilters[scope]?.includes(elementKey)
+	).length
+
+	if (selectedCount === 0) {
+		return "none"
+	}
+
+	return selectedCount === elementKeys.length ? "all" : "partial"
+}
+
+const isAllSelected = (scope: string): boolean => selectionState(scope) === "all"
+
+const toggleAllIcon = (scope: string): string =>
+	selectionState(scope) === "none" ? "fal fa-square" : "fal fa-check-double"
+
+const toggleAllIconClass = (scope: string): string =>
+	selectionState(scope) === "all" ? "text-green-600 border-green-500" : "text-gray-400"
+
+// Method: Check or uncheck every element of the group at once
+const onClickToggleAll = (scope: string) => {
+	clearTimeout(timeout)
+
+	selectedFilters[scope] = isAllSelected(scope) ? [] : scopeElementKeys(scope)
+
+	emits("checkboxChanged", withClearedOptionalGroups(), false, true)
 }
 
 // Method: Double click the box
@@ -182,6 +231,11 @@ onMounted(() => {
 	Object.keys(props.elements).forEach((scope) => {
 		const param = searchParams.get(`${prefix}[${scope}]`)
 
+		if (param === "") {
+			selectedFilters[scope] = []
+			return
+		}
+
 		if (!param) {
 			return
 		}
@@ -211,8 +265,22 @@ onMounted(() => {
 			:key="`inline-${elementScope}${idxElement}`"
 			class="w-full"
 			:class="idxElement === 0 ? '' : 'mt-4'">
-			<div class="text-center py-1 bg-slate-300 text-gray-600">
+			<div class="relative text-center py-1 bg-slate-300 text-gray-600">
 				{{ element.label }}
+				<button
+					type="button"
+					class="absolute inset-y-0 right-2 my-auto h-6 px-2 rounded hover:bg-slate-400/40 focus:outline-none"
+					v-tooltip="isAllSelected(elementScope) ? ctrans('Click to uncheck all') : ctrans('Click to check all')"
+					@click="onClickToggleAll(elementScope)">
+					<div
+						class="border border-gray-300 text-xxs rounded-sm bg-white"
+						:class="toggleAllIconClass(elementScope)">
+						<FontAwesomeIcon
+							:icon="toggleAllIcon(elementScope)"
+							:class="selectionState(elementScope) === 'none' ? 'opacity-0' : ''"
+							fixed-width aria-hidden="true" />
+					</div>
+				</button>
 			</div>
 			<!-- List of element (checkbox) -->
 			<div
@@ -232,8 +300,8 @@ onMounted(() => {
 					<FontAwesomeIcon
 						v-if="selectedFilters[elementScope]?.includes(elementKey)"
 						icon="fal fa-check-square"
-						aria-hidden="true" />
-					<FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
+						fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-else icon="fal fa-square" fixed-width aria-hidden="true" />
 					<div
 						:class="[
 							selectedFilters[elementScope]?.includes(elementKey)
@@ -256,7 +324,7 @@ onMounted(() => {
 		<PopoverButton
 			:as="Button"
 			type="tertiary"
-			:label="trans('Filter table')"
+			:label="ctrans('Filter table')"
 			icon="fal fa-filter" />
 
 		<Transition>
@@ -267,8 +335,22 @@ onMounted(() => {
 					:key="`${elementScope}${idxElement}}`"
 					class="w-full"
 					:class="idxElement === 0 ? '' : 'mt-4'">
-					<div class="text-center py-1 bg-slate-300 text-gray-600">
+					<div class="relative text-center py-1 bg-slate-300 text-gray-600">
 						{{ element.label }}
+						<button
+							type="button"
+							class="absolute inset-y-0 right-2 my-auto h-6 px-2 rounded hover:bg-slate-400/40 focus:outline-none"
+							v-tooltip="isAllSelected(elementScope) ? ctrans('Click to uncheck all') : ctrans('Click to check all')"
+							@click="onClickToggleAll(elementScope)">
+							<div
+								class="border border-gray-300 text-xxs rounded-sm bg-white"
+								:class="toggleAllIconClass(elementScope)">
+								<FontAwesomeIcon
+									:icon="toggleAllIcon(elementScope)"
+									:class="selectionState(elementScope) === 'none' ? 'opacity-0' : ''"
+									fixed-width aria-hidden="true" />
+							</div>
+						</button>
 					</div>
 					<!-- List of element (checkbox) -->
 					<div
@@ -288,8 +370,8 @@ onMounted(() => {
 							<FontAwesomeIcon
 								v-if="selectedFilters[elementScope]?.includes(elementKey)"
 								icon="fal fa-check-square"
-								aria-hidden="true" />
-							<FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
+								fixed-width aria-hidden="true" />
+							<FontAwesomeIcon v-else icon="fal fa-square" fixed-width aria-hidden="true" />
 							<div
 								:class="[
 									selectedFilters[elementScope]?.includes(elementKey)
@@ -313,6 +395,23 @@ onMounted(() => {
 
 	<div v-if="!!selectedGroup" class="hidden md:flex items-center text-xs justify-end w-full">
 		<div class="w-fit flex gap-x-1 lg:gap-x-0 border border-gray-200 rounded">
+			<!-- Button: Check/uncheck all -->
+			<button
+				type="button"
+				class="px-2.5 bg-white border-r border-gray-200 rounded-l hover:bg-gray-100 focus:outline-none"
+				v-tooltip="isAllSelected(selectedGroup) ? ctrans('Click to uncheck all') : ctrans('Click to check all')"
+				@click="onClickToggleAll(selectedGroup)">
+				<div class="border border-gray-300 text-xxs rounded-sm"
+				
+						:class="toggleAllIconClass(selectedGroup)"
+				>
+					<FontAwesomeIcon
+						:icon="toggleAllIcon(selectedGroup)"
+						:class="selectionState(selectedGroup) === 'none' ? 'opacity-0' : ''"
+						fixed-width aria-hidden="true" />
+				</div>
+			</button>
+
 			<!-- List of element (checkbox) -->
 			<div class="w-fit rounded overflow-hidden flex flex-wrap justify-end gap-0.5">
 				<div
@@ -331,8 +430,8 @@ onMounted(() => {
 					<FontAwesomeIcon
 						v-if="selectedFilters[selectedGroup]?.includes(element)"
 						icon="fal fa-check-square"
-						aria-hidden="true" />
-					<FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
+						fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-else icon="fal fa-square" fixed-width aria-hidden="true" />
 					<div
 						class="space-x-1"
 						:class="[
@@ -367,7 +466,7 @@ onMounted(() => {
 								icon="fal fa-chevron-down"
 								class="transition-all duration-200 ease-in-out"
 								:class="[open ? 'rotate-180' : '']"
-								aria-hidden="true" />
+								fixed-width aria-hidden="true" />
 						</span>
 						<span class="px-4 text-nowrap">{{ elements[selectedGroup].label }}</span>
 					</MenuButton>
@@ -396,7 +495,7 @@ onMounted(() => {
 										'group flex w-full items-center pl-4 py-2',
 									]">
 									<!-- <EditIcon :active="active" class="mr-2 h-5 w-5 text-orange-400" aria-hidden="true" /> -->
-									{{ element.key }}
+									{{ typeof element.label === 'string' && element.label ? element.label : element.key.charAt(0).toUpperCase() + element.key.slice(1) }}
 								</button>
 							</MenuItem>
 						</div>

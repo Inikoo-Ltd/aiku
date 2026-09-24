@@ -80,7 +80,6 @@ use App\Models\Reviews\ShopReviewStat;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
-use App\Models\SysAdmin\Task;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasHistory;
@@ -248,7 +247,6 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $shopCollections
  * @property-read \App\Models\Catalogue\ShopStats|null $stats
  * @property-read LaravelCollection<int, Tag> $tags
- * @property-read LaravelCollection<int, Task> $tasks
  * @property-read TaxNumber|null $taxNumber
  * @property-read LaravelCollection<int, TestEmailRecipient> $testEmailRecipients
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopTimeSeries> $timeSeries
@@ -658,11 +656,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function rentals(): HasMany
     {
         return $this->hasMany(Rental::class);
-    }
-
-    public function tasks()
-    {
-        return $this->morphMany(Task::class, 'assigner');
     }
 
     public function dropshippingStats(): HasOne

@@ -90,9 +90,9 @@ const updateFormValue = (newValue) => {
                 <template #stateIcon>
                     <div class="mr-2 h-full flex items-center pointer-events-none">
                         <FontAwesomeIcon v-if="get(form, ['errors', `${fieldName}`])" icon="fas fa-exclamation-circle"
-                            class="h-5 w-5 text-red-500" aria-hidden="true" />
+                            class="h-5 w-5 text-red-500" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon v-if="form.recentlySuccessful" icon="fas fa-check-circle"
-                            class="h-5 w-5 text-green-500" aria-hidden="true" />
+                            class="h-5 w-5 text-green-500" fixed-width aria-hidden="true" />
                         <!-- <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third" class="h-5 w-5 animate-spin" /> -->
                     </div>
                 </template>
@@ -100,7 +100,7 @@ const updateFormValue = (newValue) => {
 
             <div v-if="fieldData?.showWarning" class="w-full grid grid-cols-1 py-2 mt-2 bg-yellow-200 rounded-md border-yellow-400 border text-yellow-600">
                 <span v-if="fieldData?.warningTitle" class="font-medium px-3 text-xs" :class="[fieldData?.warningBody ? 'border-b border-yellow-400 pb-1' : '']">
-                    <FontAwesomeIcon :icon="faWarning"/> {{ fieldData?.warningTitle }}
+                    <FontAwesomeIcon :icon="faWarning" fixed-width/> {{ fieldData?.warningTitle }}
                 </span>
                 <span v-if="fieldData?.warningBody" class="font-medium px-3 text-xs" :class="[fieldData?.warningTitle ? 'pt-1' : '']">
                     {{ fieldData?.warningBody }}

@@ -2,36 +2,10 @@
 import { trans } from "laravel-vue-i18n"
 import { ref } from "vue"
 import axios from "axios"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFilePdf, faImage, faPlus, faTags, faTrashAlt } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import ArtefactLabelSheetModal from "@/Components/Production/Artefact/ArtefactLabelSheetModal.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
-
-library.add(faFilePdf, faImage, faPlus, faTags, faTrashAlt)
-
-interface ArtefactLabel {
-    id: number
-    name: string
-    layout: Record<string, any>
-    state: "raw" | "processed" | "published"
-    state_label: string
-    published_at: string | null
-    pdf_url: string | null
-    artwork: { name: string, size: number, mime_type: string, url: string } | null
-    updated_at: string | null
-}
-
-const LABEL_STATE_CLASSES: Record<ArtefactLabel["state"], string> = {
-    raw: "bg-gray-100 text-gray-600",
-    processed: "bg-amber-50 text-amber-700",
-    published: "bg-emerald-50 text-emerald-700",
-}
 
 interface ArtefactShowcaseData {
     code: string
@@ -40,21 +14,18 @@ interface ArtefactShowcaseData {
     compliance_status: string
     compliance_label: string
     recommended_batch_size: number | null
+    jobs_off_batch: { id: number, job_order_reference: string, quantity: number, batch_size: number, demand_skos: number | null, suggested_quantity: number | null, route: { name: string, parameters: object } }[]
     batch_pack: { packed_in: number, batch_in_skos: number, suggested_batch_size: number | null } | null
     update_route: { name: string, parameters: any }
-    label_sheet?: {
-        route: { name: string, parameters: any }
-        store_route: { name: string, parameters: any }
-        update_route: { name: string, parameters: any }
-        delete_route: { name: string, parameters: any }
-        batch_code: string
-        expiry_date: string
-        labels: ArtefactLabel[]
-    }
     artefact_department: { slug: string, name: string } | null
     tags: string[]
     trade_unit: { id: number, code: string, name: string } | null
-    org_stock: { id: number, code: string, quantity_in_locations: number | string } | null
+    org_stock: {
+        id: number
+        code: string
+        quantity_in_locations: number | string
+        route: { name: string, parameters: any } | null
+    } | null
     manufacture_tasks: {
         id: number
         code: string
@@ -70,55 +41,7 @@ const props = defineProps<{
 }>()
 
 const batchSize = ref<number | string>(props.data.recommended_batch_size ?? '')
-const isOpenLabelSheet = ref(false)
 const isSavingBatchSize = ref(false)
-const labelToEdit = ref<ArtefactLabel | null>(null)
-const deletingLabelId = ref<number | null>(null)
-
-const openLabel = (label: ArtefactLabel | null) => {
-    labelToEdit.value = label
-    isOpenLabelSheet.value = true
-}
-
-const onDeleteLabel = async (label: ArtefactLabel) => {
-    if (!props.data.label_sheet) return
-
-    deletingLabelId.value = label.id
-
-    try {
-        await axios.delete(route(props.data.label_sheet.delete_route.name, {
-            ...props.data.label_sheet.delete_route.parameters,
-            label: label.id,
-        }))
-        router.reload()
-    } catch (error: any) {
-        notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message ?? trans("The label could not be deleted"),
-            type: "error",
-        })
-    } finally {
-        deletingLabelId.value = null
-    }
-}
-
-const describeLabel = (label: ArtefactLabel) => {
-    const parts = [
-        `${label.layout.columns ?? '?'} × ${label.layout.rows ?? '?'}`,
-        label.layout.orientation === 'landscape' ? trans('Horizontal') : trans('Vertical'),
-    ]
-
-    if (label.artwork) {
-        parts.push(label.artwork.mime_type === 'application/pdf' ? trans('PDF artwork') : trans('Image artwork'))
-    }
-
-    if (label.updated_at) {
-        parts.push(useFormatTime(label.updated_at, { formatTime: 'aiku' }))
-    }
-
-    return parts.join(' · ')
-}
-
 const onSaveBatchSize = async () => {
     if (!batchSize.value || Number(batchSize.value) < 1) return
 
@@ -203,6 +126,18 @@ const onSaveBatchSize = async () => {
                 </div>
             </div>
 
+            <div v-if="data.jobs_off_batch.length" class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3" role="alert">
+                <div class="text-sm font-semibold text-amber-700">{{ trans('Open jobs raised with a different batch size') }}</div>
+                <div class="text-xs text-amber-700 mb-2">{{ trans('They keep the quantity they were raised with. Nothing is made yet, so it can still be changed on the job order.') }}</div>
+                <ul class="text-sm">
+                    <li v-for="job in data.jobs_off_batch" :key="job.id">
+                        <Link :href="route(job.route.name, job.route.parameters)" class="primaryLink">{{ job.job_order_reference }}</Link>
+                        <span class="tabular-nums ml-2">× {{ job.quantity }}</span>
+                        <span v-if="job.suggested_quantity" class="tabular-nums text-amber-700 ml-2">&rarr; {{ job.suggested_quantity }}</span>
+                    </li>
+                </ul>
+            </div>
+
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4" :aria-label="ctrans('Artefact details')">
                 <div>
                     <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('State') }}</dt>
@@ -227,92 +162,22 @@ const onSaveBatchSize = async () => {
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Stock (SKU)') }}</dt>
-                    <dd class="text-sm">{{ data.org_stock ? data.org_stock.code : '-' }}</dd>
+                    <dd class="text-sm">
+                        <Link
+                            v-if="data.org_stock?.route"
+                            :href="route(data.org_stock.route.name, data.org_stock.route.parameters)"
+                            class="primaryLink"
+                            :aria-label="ctrans('Open stock :code in the warehouse', { code: data.org_stock.code })">
+                            {{ data.org_stock.code }}
+                        </Link>
+                        <span v-else>{{ data.org_stock ? data.org_stock.code : '-' }}</span>
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500 uppercase tracking-wide">{{ trans('Quantity in locations') }}</dt>
                     <dd class="text-sm">{{ data.org_stock ? data.org_stock.quantity_in_locations : '-' }}</dd>
                 </div>
             </dl>
-
-            <hr class="my-6 border-t border-dashed border-gray-400" aria-hidden="true" />
-
-            <section class="" v-if="data.label_sheet" aria-labelledby="artefact-labels-title">
-                <div class="mb-3 flex items-center justify-between gap-2">
-                    <h3 id="artefact-labels-title" class="text-sm font-semibold">{{ trans('Labels') }}</h3>
-                    <Button
-                        type="tertiary"
-                        size="xs"
-                        icon="fal fa-plus"
-                        :label="trans('New label')"
-                        :aria-label="ctrans('Design a new label')"
-                        aria-haspopup="dialog"
-                        :aria-expanded="isOpenLabelSheet && !labelToEdit"
-                        @click="openLabel(null)" />
-                </div>
-
-                <div
-                    v-if="!data.label_sheet.labels.length"
-                    class="rounded border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500"
-                    role="status">
-                    {{ trans('No label designed yet. A saved label keeps its artwork, so it can be printed again any time.') }}
-                </div>
-
-                <ul v-else class="grid grid-cols-1 md:grid-cols-2 gap-2" :aria-label="ctrans('Saved labels')">
-                    <li
-                        v-for="label in data.label_sheet.labels"
-                        :key="label.id"
-                        class="flex items-center gap-3 rounded border border-gray-200 px-3 py-2 cursor-pointer hover:bg-gray-50"
-                        role="button"
-                        tabindex="0"
-                        aria-haspopup="dialog"
-                        :aria-label="ctrans('Edit label :name, :state, :details', { name: label.name, state: label.state_label, details: describeLabel(label) })"
-                        :aria-busy="deletingLabelId === label.id"
-                        :data-label-id="label.id"
-                        :data-label-state="label.state"
-                        @click="openLabel(label)"
-                        @keydown.enter.self.prevent="openLabel(label)"
-                        @keydown.space.self.prevent="openLabel(label)">
-                        <FontAwesomeIcon
-                            :icon="label.artwork
-                                ? (label.artwork.mime_type === 'application/pdf' ? 'fal fa-file-pdf' : 'fal fa-image')
-                                : 'fal fa-tags'"
-                            class="text-gray-400"
-                            fixed-width
-                            aria-hidden="true" />
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2">
-                                <span class="truncate text-sm">{{ label.name }}</span>
-                                <span
-                                    class="shrink-0 rounded-full px-2 py-px text-[10px] uppercase tracking-wide"
-                                    :class="LABEL_STATE_CLASSES[label.state]"
-                                    :aria-label="ctrans('State: :state', { state: label.state_label })">{{ label.state_label }}</span>
-                            </div>
-                            <div class="truncate text-xs text-gray-500">{{ describeLabel(label) }}</div>
-                        </div>
-                        <div @click.stop @keydown.stop>
-                            <ModalConfirmationDelete
-                                :title="trans('Delete label :name?', { name: label.name })"
-                                :description="trans('The label and its layout will no longer be available to print.')"
-                                @onYes="onDeleteLabel(label)">
-                                <template #default="{ changeModel }">
-                                    <button
-                                        type="button"
-                                        class="text-gray-400 hover:text-red-600 disabled:opacity-40"
-                                        :aria-label="ctrans('Delete label :name', { name: label.name })"
-                                        :title="ctrans('Delete label :name', { name: label.name })"
-                                        aria-haspopup="dialog"
-                                        :aria-busy="deletingLabelId === label.id"
-                                        :disabled="deletingLabelId === label.id"
-                                        @click="changeModel">
-                                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                                    </button>
-                                </template>
-                            </ModalConfirmationDelete>
-                        </div>
-                    </li>
-                </ul>
-            </section>
 
             <section class="mt-8" v-if="data.manufacture_tasks.length" aria-labelledby="artefact-recipe-steps-title">
                 <h3 id="artefact-recipe-steps-title" class="text-sm font-semibold mb-3">{{ trans('Recipe steps') }}</h3>
@@ -336,13 +201,5 @@ const onSaveBatchSize = async () => {
                 </table>
             </section>
         </section>
-
-        <ArtefactLabelSheetModal
-            v-if="data.label_sheet"
-            :isOpen="isOpenLabelSheet"
-            :labelSheet="data.label_sheet"
-            :labelToEdit="labelToEdit"
-            @onClose="isOpenLabelSheet = false"
-            @onSaved="router.reload()" />
     </div>
 </template>

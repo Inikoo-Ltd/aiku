@@ -2,6 +2,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
+use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\OrgAction;
@@ -74,11 +75,9 @@ class SplitShopifyFulfillmentRequest extends OrgAction
 
             RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], $rejectMsg);
 
-            if (! $destination) {
-                return ['error' => $rejectMsg];
-            }
+            if (! $destination || count($fulfillmentOrderItemsDefined) === 0) {
+                $this->storeDeclinedOrder($shopifyUser, $fulfillmentOrder, $rejectMsg);
 
-            if (count($fulfillmentOrderItemsDefined) === 0) {
                 return ['error' => $rejectMsg];
             }
 
@@ -156,5 +155,20 @@ class SplitShopifyFulfillmentRequest extends OrgAction
 
             return ['error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * A request declined in Shopify used to leave nothing in AW, so the customer saw no order and had
+     * to dig through Shopify to learn why (HELP-3151). The declined order is now imported as a
+     * cancelled order carrying the same reason Shopify was given; a new request for the same
+     * fulfilment order, once the customer has fixed it, replaces the placeholder.
+     */
+    protected function storeDeclinedOrder(ShopifyUser $shopifyUser, array $fulfillmentOrder, string $rejectMsg): void
+    {
+        if (!$shopifyUser->customer->is_dropshipping) {
+            return;
+        }
+
+        CreateFulfilmentOrderFromShopify::run($shopifyUser, array_merge($fulfillmentOrder, ['declined_reason' => $rejectMsg]));
     }
 }
