@@ -126,6 +126,7 @@ class EditShop extends OrgAction
             __('Faire Settings'),
             __('Shopify Keys'),
             __('Wix Keys'),
+            __('Chat widget'),
         ];
         $salesChannels          = SalesChannel::orderBy('id')->get();
         $salesChannelFields     = [];
@@ -712,6 +713,30 @@ class EditShop extends OrgAction
                         ],
                         default => []
                     } : [],
+                /*
+                 * An external shop's customers usually write on the marketplace rather than to us,
+                 * so chat is off by type. A shop running our widget on its own storefront turns it
+                 * on here, which is also what creates the chat permissions its agents need.
+                 */
+                $shop->type === ShopTypeEnum::EXTERNAL ? [
+                    'label'  => __('Chat widget'),
+                    'icon'   => 'fa-light fa-comments',
+                    'fields' => [
+                        'chat_enabled'    => [
+                            'type'        => 'toggle',
+                            'label'       => __('Enable chat on this shop'),
+                            'value'       => (bool) Arr::get($shop->settings, 'chat.enabled', false),
+                            'information' => __('Lets this shop be worked in the chat inbox and serves the widget to its storefront.'),
+                        ],
+                        'chat_widget_key' => [
+                            'type'        => 'input',
+                            'disabled'    => true,
+                            'label'       => __('Widget key'),
+                            'value'       => Arr::get($shop->settings, 'chat.widget_key', ''),
+                            'information' => __('Paste this key into the storefront embed. It is created when chat is enabled.'),
+                        ],
+                    ],
+                ] : [],
                 [
                     'label'  => __('AWS-SES configuration'),
                     'icon'   => 'fa-light fa-key',

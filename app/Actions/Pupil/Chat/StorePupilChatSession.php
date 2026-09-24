@@ -10,7 +10,6 @@ namespace App\Actions\Pupil\Chat;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
-use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Http\Resources\CRM\Livechat\ChatSessionResource;
 use App\Models\Chat\ChatSession;
 use App\Models\Dropshipping\ShopifyUser;
@@ -26,10 +25,9 @@ class StorePupilChatSession
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData = []): ChatSession
     {
-        $customer = $shopifyUser->customer;
-        $shop     = $customer?->shop;
+        $shop = GetPupilChatShop::run($shopifyUser);
 
-        if (!$shop || !ShopPermissionsEnum::shopHasChat($shop)) {
+        if (!$shop) {
             abort(403, 'This shop has no chat');
         }
 
@@ -37,9 +35,10 @@ class StorePupilChatSession
          * The merchant is signed in to Shopify, not to Retina, so the conversation is bound to
          * their web user here rather than from the request: the public chat endpoints refuse a
          * claimed web user id for exactly that reason, and everything an agent is shown about
-         * the customer follows the binding.
+         * the customer follows the binding. A merchant who has not linked an account yet has no
+         * web user, and writes as a guest.
          */
-        $webUser = $customer->webUsers()->where('status', true)->first();
+        $webUser = $shopifyUser->customer?->webUsers()->where('status', true)->first();
 
         return StoreChatSession::make()->handle([
             'shop_id'             => $shop->id,

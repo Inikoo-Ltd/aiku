@@ -30,6 +30,7 @@ use App\Actions\Chat\ChatSession\TranslateSessionMessages;
 use App\Actions\Chat\ChatSession\TranslateSingleMessage;
 use App\Actions\Chat\ChatSession\UpdateChatAgent;
 use App\Actions\Chat\ChatSession\UpdateChatSession;
+use App\Actions\Chat\Widget\GetChatWidgetConfig;
 use App\Actions\Chat\GetCrossChannelSessions;
 use App\Actions\Chat\GetCustomerChatHistory;
 use App\Actions\Chat\Whatsapp\SendWhatsappReaction;
@@ -63,6 +64,7 @@ Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::cla
 Route::post('/typing', HandleChatTyping::class)->name('typing');
 Route::post('/read', HandleChatRead::class)->name('read');
 Route::get('/status', GetChatStatus::class)->name('status');
+Route::get('/widget-config', GetChatWidgetConfig::class)->name('widget.config');
 Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)->name('chat.attachment.download');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
 Route::post('/messages/{chatMessage}/translate', TranslateSingleMessage::class)->name('messages.translate');

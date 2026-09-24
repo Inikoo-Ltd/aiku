@@ -20,6 +20,9 @@ import PupilLayout from '@/Layouts/PupilLayout.vue'
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import { definePreset } from '@primevue/themes';
+import { usePupilSessionToken } from '@/Composables/usePupilSessionToken';
+
+usePupilSessionToken();
 
 const appName = trans('Pupil') || window.document.getElementsByTagName('title')[0]?.innerText;
 

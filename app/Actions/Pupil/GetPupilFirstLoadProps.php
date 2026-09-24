@@ -9,8 +9,8 @@
 namespace App\Actions\Pupil;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Pupil\Chat\GetPupilChatShop;
 use App\Actions\Retina\UI\Layout\GetPupilDropshippingNavigation;
-use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Language;
@@ -52,9 +52,9 @@ class GetPupilFirstLoadProps
      */
     private function getChat(?ShopifyUser $shopifyUser): array
     {
-        $shop = $shopifyUser?->customer?->shop;
+        $shop = GetPupilChatShop::run($shopifyUser);
 
-        if (!$shop || !ShopPermissionsEnum::shopHasChat($shop)) {
+        if (!$shop) {
             return [
                 'enabled' => false,
                 'shop_id' => null,

@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Chat\Widget\EnableShopChatWidget;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
 use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
@@ -86,6 +88,7 @@ class UpdateShop extends OrgAction
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
         $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
         $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
+        $originalChatEnabled             = (bool) Arr::get($shop->settings ?? [], 'chat.enabled', ShopPermissionsEnum::shopHasChat($shop));
 
         /* Read off the shop rather than the payload because the two callers name these
            differently: the shop screen sends them flat and they are nested below, while
@@ -182,6 +185,10 @@ class UpdateShop extends OrgAction
                     $bannedCountriesUpdated = true;
                 }
             }
+        }
+
+        if (Arr::has($modelData, 'chat_enabled')) {
+            data_set($modelData, 'settings.chat.enabled', (bool) Arr::pull($modelData, 'chat_enabled'));
         }
 
         if (Arr::has($modelData, 'staff_chat_crm_user_ids')) {
@@ -574,6 +581,20 @@ class UpdateShop extends OrgAction
         $changes = $shop->getChanges();
         $shop->refresh();
 
+        /*
+         * The toggle is only half of it: the chat permissions are built from this setting, so a
+         * shop switched on without seeding them is one whose conversations no agent can open.
+         * Switching it off drops them again. The key survives, so turning chat back on does not
+         * mean editing every storefront embed; it is the config endpoint that refuses to answer
+         * while chat is off.
+         */
+        $chatEnabled = (bool) Arr::get($shop->settings ?? [], 'chat.enabled', $originalChatEnabled);
+
+        if ($chatEnabled !== $originalChatEnabled) {
+            EnableShopChatWidget::run($shop, $chatEnabled);
+            $shop->refresh();
+        }
+
         $chatSettingsChanged =
             Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel') != $originalViewContactOptionsPanel
             || Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel') != $originalDataContactOptionsPanel
@@ -838,6 +859,7 @@ class UpdateShop extends OrgAction
             'meta_ads_access_token'                                   => ['sometimes', 'nullable', 'string'],
             'meta_ads_campaign_name_prefix'                           => ['sometimes', 'nullable', 'string'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
+            'chat_enabled'                                            => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
             'chat_slack_channels.*'                                   => ['string'],
