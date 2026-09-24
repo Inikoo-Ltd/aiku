@@ -5860,6 +5860,57 @@ test('the chat customer panel says what erasing a customer would keep, and offer
         ->and($erasure['route'])->toBeNull();
 });
 
+test('a claim is prepared for the agent: the order the customer names, and a replacement reason from what they wrote', function () {
+    $customer  = createOwnCustomer($this->shop, 'claim-case');
+    $webUser   = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+    $reference = 'CLM'.random_int(100000, 999999);
+
+    \Illuminate\Support\Facades\DB::table('orders')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ord-'.uniqid(),
+        'reference'       => $reference,
+        'state'           => 'dispatched',
+        'net_amount'      => 100,
+        'org_net_amount'  => 100,
+        'grp_net_amount'  => 100,
+        'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::SETTLED,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => now()->subDays(3),
+        'dispatched_at'   => now()->subDays(2),
+        'created_at'      => now()->subDays(3),
+        'updated_at'      => now()->subDays(2),
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::WAITING,
+        'channel'     => ChatChannelEnum::WEBSITE,
+        'shop_id'     => $this->shop->id,
+        'web_user_id' => $webUser->id,
+        'topic'       => \App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED->value,
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::USER,
+        'message_text'    => "Order $reference arrived and two candles are broken",
+    ]);
+
+    $claim = \App\Actions\Chat\ChatSession\GetChatClaimCase::run($session, $customer);
+
+    expect($claim['is_claim'])->toBeTrue()
+        ->and($claim['order']['reference'])->toBe($reference)
+        ->and($claim['order']['named'])->toBeTrue()
+        ->and($claim['reason'])->toBe('damaged_in_transit')
+        ->and($claim['replacement']['name'])->toBe('grp.models.order.replacement_delivery_note.store');
+});
+
 
 test('an email is found by an order or consignment number in its subject or body', function () {
     \Illuminate\Support\Facades\Http::fake();

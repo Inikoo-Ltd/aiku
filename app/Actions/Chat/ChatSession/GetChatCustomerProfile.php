@@ -51,6 +51,7 @@ class GetChatCustomerProfile
             'profile_url' => $this->customerProfileUrl($customer),
             ...$this->contactAndLastOrders($customer),
             ...$this->previousContact($customer, $chatSession),
+            'claim'       => GetChatClaimCase::run($chatSession, $customer),
 
             'tags'  => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,
