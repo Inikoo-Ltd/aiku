@@ -5783,6 +5783,7 @@ test('an email from a courier is filed in the Couriers folder and in no other li
     \Illuminate\Support\Facades\Http::fake();
 
     expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::isCarrierAddress('ops@gls-spain.es'))->toBeTrue()
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::isCarrierAddress('adelaida@gibcargo.com'))->toBeTrue()
         ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::isCarrierAddress('care@mail.tnt.com'))->toBeTrue()
         ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::isCarrierAddress('buyer@notgls-spain.es'))->toBeFalse()
         ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::isCarrierAddress(null))->toBeFalse();

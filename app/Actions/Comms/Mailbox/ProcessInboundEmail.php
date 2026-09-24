@@ -553,6 +553,7 @@ class ProcessInboundEmail
                 'name'  => $from['name'] ?? $from['address'],
                 'email' => $from['address'],
             ]),
+            'is_carrier' => $session->is_carrier || (!$session->web_user_id && self::isCarrierAddress($from['address'])),
         ]);
 
         return $session;

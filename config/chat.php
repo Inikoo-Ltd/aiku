@@ -27,7 +27,7 @@ return [
 
     'carrier_domains' => [
         'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',
-        'dsv.com', 'fedex.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',
+        'dsv.com', 'fedex.com', 'gibcargo.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',
         'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com',
     ],
 
