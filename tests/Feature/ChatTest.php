@@ -125,6 +125,7 @@ use Inertia\Testing\AssertableInertia;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -2206,6 +2207,30 @@ test('UI Show shop chat dashboard', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Chat/ChatReports');
     });
+});
+
+test('customer service edits the shop out of hours email in chat settings, others may not', function () {
+    actingAs($this->user);
+    $parameters = [$this->organisation->slug, $this->shop->slug];
+
+    get(route('grp.org.shops.show.chat.settings', $parameters).'?tab=out_of_hours')->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Org/Chat/ChatSettings')
+        ->has('tabs.navigation.out_of_hours')
+        ->where('pageHead.actions', [])
+        ->where('outOfHours.update_route.name', 'grp.org.shops.show.chat.settings.out_of_hours_message.update'));
+
+    get(route('grp.org.chat.settings', [$this->organisation->slug]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->missing('tabs.navigation.out_of_hours')
+        ->where('outOfHours', null));
+
+    patch(route('grp.org.shops.show.chat.settings.out_of_hours_message.update', $parameters), ['message' => 'Closed on bank holidays.'])->assertRedirect();
+    expect(data_get($this->shop->fresh()->settings, 'chat.out_of_hours_message'))->toBe('Closed on bank holidays.');
+
+    actingAs(User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]));
+    patch(route('grp.org.shops.show.chat.settings.out_of_hours_message.update', $parameters), ['message' => 'Hijacked'])->assertForbidden();
+    expect(data_get($this->shop->fresh()->settings, 'chat.out_of_hours_message'))->toBe('Closed on bank holidays.');
+
+    \App\Actions\Chat\UpdateShopOutOfHoursMessage::make()->handle($this->shop->fresh(), ['message' => null]);
 });
 
 test('phone calls open from the chat reports, not the top menu, and a new build reloads open tabs', function () {
@@ -5830,6 +5855,7 @@ test('an email out of hours is answered only when a person wrote it, once a day 
     data_set($settings, 'gmail.email', 'care@shop.test');
     data_set($settings, 'gmail.refresh_token', \Illuminate\Support\Facades\Crypt::encryptString('rt'));
     $this->shop->update(['settings' => $settings]);
+    \App\Actions\Chat\UpdateShopOutOfHoursMessage::make()->handle($this->shop, ['message' => "  Urgent emails are answered within 2 hours.\n\nThe Team  "]);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
 
     $reply    = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
@@ -5850,7 +5876,7 @@ test('an email out of hours is answered only when a person wrote it, once a day 
     $sent = $person->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
 
     expect($sent->metadata['auto_submitted'])->toBeTrue()
-        ->and($sent->message_text)->toContain('will reply from 10am on Monday.')
+        ->and($sent->message_text)->toEndWith("will reply from 10am on Monday.\n\nUrgent emails are answered within 2 hours.\n\nThe Team")
         ->and($sent->message_text)->not->toContain('Please tell us how we can help');
 
     \Illuminate\Support\Facades\Http::assertSent(function ($request) {
@@ -5869,6 +5895,9 @@ test('an email out of hours is answered only when a person wrote it, once a day 
         expect($answered($session))->toBeFalse()
             ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->exists())->toBeFalse();
     }
+
+    \App\Actions\Chat\UpdateShopOutOfHoursMessage::make()->handle($this->shop, ['message' => '']);
+    expect(data_get($this->shop->fresh()->settings, 'chat.out_of_hours_message'))->toBeNull();
 
     \Illuminate\Support\Facades\Cache::forget('chat-out-of-hours-email:'.sha1($address));
     outOfHoursTestCleanUp($schedule, [$person, $sameAddress, $outOfOffice, $newsletter, $generated, $noReply]);
@@ -6351,6 +6380,16 @@ test('chat hours come from the work schedule, and the next opening skips closed 
     expect($config['is_online'])->toBeFalse()
         ->and($config['offline_info']['next_opening']['day_of_week'])->toBe(2)
         ->and($config['offline_info']['next_opening']['start'])->toBe('10:00:00');
+
+    $closedLine = fn (bool $saidWhatTheyNeed) => \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make()->text($shop, true, null, $saidWhatTheyNeed);
+
+    expect($closedLine(true))->toBe('Thank you for your message. We are closed at the moment and will reply from 10am on Tuesday.');
+
+    \Illuminate\Support\Carbon::setTestNow($at('2026-09-28 11:00'));
+
+    expect($closedLine(true))->toBe('Thank you for your message. We are closed for Monday bank holiday and will reply from 10am tomorrow.')
+        ->and($closedLine(false))->toEndWith('Please tell us how we can help and we will pick it up first thing.')
+        ->and(__('Thank you for your message. We are closed for :holiday and will reply :when.', ['holiday' => 'Navidad', 'when' => 'mañana'], 'es'))->toStartWith('Gracias');
 
     $holiday->delete();
     outOfHoursTestCleanUp($schedule);

@@ -9,6 +9,7 @@ use App\Actions\Chat\ChatSession\UI\ShowShopChatConversations;
 use App\Actions\Chat\ChatSession\UI\ShowShopChatDashboard;
 use App\Actions\Chat\PhoneCall\UI\ShowOrgChatPhoneCalls;
 use App\Actions\Chat\UI\ShowChatSettings;
+use App\Actions\Chat\UpdateShopOutOfHoursMessage;
 use App\Actions\Chat\Whatsapp\GetWhatsappPhoneNumberStatus;
 use App\Actions\Chat\Whatsapp\GetWhatsappSubscribedApps;
 use App\Actions\Chat\Whatsapp\RegisterWhatsappPhoneNumber;
@@ -36,6 +37,7 @@ Route::get('/dashboard-visitors', [GetChatDashboardVisitors::class, 'inShop'])->
 Route::get('/agents', ShowShopAgents::class)->name('agents.show');
 Route::get('/phone-calls', [ShowOrgChatPhoneCalls::class, 'inShop'])->name('phone_calls.index');
 Route::get('/settings', [ShowChatSettings::class, 'inShop'])->name('settings');
+Route::patch('/settings/out-of-hours-message', UpdateShopOutOfHoursMessage::class)->name('settings.out_of_hours_message.update');
 Route::get('/conversations/export', [ExportChatConversations::class, 'inShop'])->name('conversations.export');
 Route::get('/conversations', ShowShopChatConversations::class)->name('conversations.show');
 Route::get('/conversations/{chatSession}', [ShowOrgChatConversation::class, 'inShop'])->name('conversations.detail');

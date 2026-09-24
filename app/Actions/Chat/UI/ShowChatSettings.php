@@ -8,6 +8,7 @@
 namespace App\Actions\Chat\UI;
 
 use App\Actions\Chat\Agent\UI\IndexAgent;
+use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
 use App\Actions\Chat\WithChatScopeNavigation;
 use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
 use App\Actions\Chat\Whatsapp\Templates\UI\IndexWhatsappMessageTemplates;
@@ -95,10 +96,11 @@ class ShowChatSettings extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => ChatSettingsTabsEnum::navigation(),
+                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigation() : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS]),
                 ],
                 'settingsRoute'  => $this->chatRoute('settings'),
                 'templatesTable' => $isShop ? $this->getShopTemplatesTableProps() : null,
+                'outOfHours'     => $isShop ? $this->getOutOfHoursProps($parent) : null,
 
                 $agentsTab => $this->tab == $agentsTab ? $agents : Inertia::lazy($agents),
 
@@ -128,7 +130,7 @@ class ShowChatSettings extends OrgAction
             ];
         }
 
-        if (!$isShop) {
+        if (!$isShop || $this->tab == ChatSettingsTabsEnum::OUT_OF_HOURS->value) {
             return [];
         }
 
@@ -160,6 +162,21 @@ class ShowChatSettings extends OrgAction
                     'method'     => 'post',
                     'name'       => 'grp.org.shops.show.chat.whatsapp_templates.sync',
                     'parameters' => $shopParameters,
+                ],
+            ],
+        ];
+    }
+
+    private function getOutOfHoursProps(Shop $shop): array
+    {
+        return [
+            'message'      => data_get($shop->settings, 'chat.out_of_hours_message', ''),
+            'opening_line' => SendOutOfHoursReply::make()->text($shop, true, null, true),
+            'update_route' => [
+                'name'       => 'grp.org.shops.show.chat.settings.out_of_hours_message.update',
+                'parameters' => [
+                    'organisation' => $this->organisation->slug,
+                    'shop'         => $shop->slug,
                 ],
             ],
         ];
