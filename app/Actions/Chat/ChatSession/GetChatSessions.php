@@ -166,8 +166,13 @@ class GetChatSessions
                         ->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
                 },
             ])
-            ->withLastMessageTime()
-            ->orderBy('last_message_at', self::oldestFirst($filters) ? 'asc' : 'desc');
+            ->withLastMessageTime();
+
+        if (self::oldestFirst($filters)) {
+            $query->orderByRaw(GetChatReplyPromise::waitingSql('chat_sessions'));
+        }
+
+        $query->orderBy('last_message_at', self::oldestFirst($filters) ? 'asc' : 'desc');
 
 
         if (array_key_exists('allowed_shop_ids', $filters)) {

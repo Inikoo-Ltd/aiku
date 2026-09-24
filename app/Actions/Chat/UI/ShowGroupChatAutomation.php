@@ -11,6 +11,7 @@ namespace App\Actions\Chat\UI;
 use App\Actions\Chat\ChatSession\GetChatAutoSendGate;
 use App\Actions\Chat\ChatSession\GetChatClaimDetails;
 use App\Actions\Chat\ChatSession\SendChatAiAnswer;
+use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
@@ -20,6 +21,7 @@ use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
@@ -141,6 +143,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw("chat_messages.metadata->>'automated' as kind"),
                 'chat_messages.created_at as at',
                 DB::raw('null::integer as draft_id'),
+                'chat_messages.id as message_id',
                 'chat_sessions.id as session_id',
                 'chat_sessions.channel as channel',
                 'chat_sessions.ulid as session_ulid',
@@ -149,7 +152,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw('null::smallint as confidence'),
                 DB::raw('null::varchar as source'),
                 DB::raw('false as put_aside'),
-                DB::raw('false as reversed'),
+                DB::raw("(chat_messages.metadata->>'flagged_wrong_at') is not null as reversed"),
                 ...$common("coalesce(chat_sessions.metadata->>'name', chat_sessions.metadata->>'email_from')"),
             ]);
 
@@ -167,6 +170,7 @@ class ShowGroupChatAutomation extends OrgAction
                     else 'greeting' end as kind"),
                 'meta_chat_messages.created_at as at',
                 DB::raw('null::integer as draft_id'),
+                'meta_chat_messages.id as message_id',
                 'meta_chat_sessions.id as session_id',
                 DB::raw("'whatsapp' as channel"),
                 'meta_chat_sessions.ulid as session_ulid',
@@ -175,7 +179,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw('null::smallint as confidence'),
                 DB::raw('null::varchar as source'),
                 DB::raw('false as put_aside'),
-                DB::raw('false as reversed'),
+                DB::raw("(meta_chat_messages.metadata->>'flagged_wrong_at') is not null as reversed"),
                 ...$common('meta_chat_sessions.phone_number'),
             ]);
 
@@ -186,6 +190,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw("'noise_check' as kind"),
                 DB::raw('coalesce(chat_sessions.noise_checked_at, chat_sessions.updated_at) as at'),
                 DB::raw('null::integer as draft_id'),
+                DB::raw('null::bigint as message_id'),
                 'chat_sessions.id as session_id',
                 'chat_sessions.channel as channel',
                 'chat_sessions.ulid as session_ulid',
@@ -205,6 +210,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw("'noise_check' as kind"),
                 DB::raw('coalesce(meta_chat_sessions.noise_checked_at, meta_chat_sessions.updated_at) as at'),
                 DB::raw('null::integer as draft_id'),
+                DB::raw('null::bigint as message_id'),
                 'meta_chat_sessions.id as session_id',
                 DB::raw("'whatsapp' as channel"),
                 'meta_chat_sessions.ulid as session_ulid',
@@ -225,6 +231,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw("'ai_draft' as kind"),
                 'chat_ai_drafts.created_at as at',
                 'chat_ai_drafts.id as draft_id',
+                DB::raw('null::bigint as message_id'),
                 DB::raw('coalesce(chat_ai_drafts.chat_session_id, chat_ai_drafts.meta_chat_session_id) as session_id'),
                 DB::raw("case when chat_ai_drafts.meta_chat_session_id is not null then 'whatsapp' else chat_sessions.channel end as channel"),
                 DB::raw('coalesce(chat_sessions.ulid, meta_chat_sessions.ulid) as session_ulid'),
@@ -373,6 +380,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'reversed'      => (bool) $row->reversed,
                 'claim'         => $claim,
                 'draft_id'      => $row->draft_id,
+                'message_id'    => $row->message_id,
                 'url'           => match (true) {
                     !$row->session_ulid         => route('grp.org.chat.inbox', [$row->organisation_slug]),
                     $row->channel === 'whatsapp' => route('grp.org.chat.inbox', [$row->organisation_slug, 'channel' => 'whatsapp', 'session' => trim($row->session_ulid)]),
@@ -508,6 +516,14 @@ class ShowGroupChatAutomation extends OrgAction
 
         $byKind = $sent->groupBy('series')->map(fn ($rows) => (int) $rows->sum('total'));
 
+        $wrongByKind = DB::query()
+            ->fromSub($this->activity($group, self::SENT), 'automation')
+            ->where('at', '>=', $since)
+            ->where('reversed', true)
+            ->selectRaw('kind, count(*) as total')
+            ->groupBy('kind')
+            ->pluck('total', 'kind');
+
         $verdicts = DB::query()
             ->fromSub($this->activity($group, self::NOISE_CHECKS), 'automation')
             ->where('at', '>=', $since)
@@ -519,7 +535,12 @@ class ShowGroupChatAutomation extends OrgAction
             'daily'   => $daily,
             'by_kind' => collect(ChatAutomationKindEnum::cases())
                 ->reject(fn (ChatAutomationKindEnum $kind) => $kind === ChatAutomationKindEnum::NOISE_CHECK)
-                ->map(fn (ChatAutomationKindEnum $kind) => ['kind' => $kind->value, 'label' => $kind->label(), 'total' => (int) ($byKind[$kind->value] ?? 0)])
+                ->map(fn (ChatAutomationKindEnum $kind) => [
+                    'kind'  => $kind->value,
+                    'label' => $kind->label(),
+                    'total' => (int) ($byKind[$kind->value] ?? 0),
+                    'wrong' => (int) ($wrongByKind[$kind->value] ?? 0),
+                ])
                 ->values()->all(),
             'verdicts' => $verdicts->map(fn ($row) => [
                 'verdict'  => $row->verdict,
@@ -529,7 +550,114 @@ class ShowGroupChatAutomation extends OrgAction
             'checks'    => (int) $verdicts->sum('total'),
             'put_aside' => (int) $verdicts->sum('put_aside'),
             'overruled' => (int) $verdicts->sum('overruled'),
+            'promises'  => $this->promises($group, $since),
         ];
+    }
+
+    /**
+     * How many times a closed-now or claim-details reply promised an answer once the shop
+     * opened, among those where the deadline has already passed, and how many of them were
+     * kept: an agent spoke in that conversation within the hour after opening.
+     *
+     * @return array{made: int, kept: int}
+     */
+    private function promises(Group $group, Carbon $since): array
+    {
+        $shops = fn ($query, string $table) => $query
+            ->join('shops', 'shops.id', '=', $table.'.shop_id')
+            ->where('shops.group_id', $group->id);
+
+        $chatPromises = DB::table('chat_messages')
+            ->join('chat_sessions', 'chat_sessions.id', '=', 'chat_messages.chat_session_id')
+            ->where('chat_messages.sender_type', 'system')
+            ->where('chat_messages.created_at', '>=', $since)
+            ->whereRaw("chat_messages.metadata->>'automated' in ('out_of_hours', 'claim_details')")
+            ->tap(fn ($query) => $shops($query, 'chat_sessions'))
+            ->select([
+                DB::raw("'chat' as channel"),
+                'chat_messages.chat_session_id as session_id',
+                'chat_messages.created_at as at',
+                'chat_sessions.shop_id as shop_id',
+            ]);
+
+        $metaPromises = DB::table('meta_chat_messages')
+            ->join('meta_chat_sessions', 'meta_chat_sessions.id', '=', 'meta_chat_messages.meta_chat_session_id')
+            ->where('meta_chat_messages.sender_type', 'system')
+            ->where('meta_chat_messages.created_at', '>=', $since)
+            ->whereRaw("coalesce(meta_chat_messages.metadata->>'out_of_hours_replied_at', meta_chat_messages.metadata->>'claim_details_asked_at') is not null")
+            ->tap(fn ($query) => $shops($query, 'meta_chat_sessions'))
+            ->select([
+                DB::raw("'whatsapp' as channel"),
+                'meta_chat_messages.meta_chat_session_id as session_id',
+                'meta_chat_messages.created_at as at',
+                'meta_chat_sessions.shop_id as shop_id',
+            ]);
+
+        $rows = $chatPromises->unionAll($metaPromises)->get();
+
+        $shopsById = Shop::whereIn('id', $rows->pluck('shop_id')->unique())->get()->keyBy('id');
+        $answers   = [
+            'chat'     => $this->agentMessageTimes('chat_messages', 'chat_session_id', $rows->where('channel', 'chat')->pluck('session_id'), $since),
+            'whatsapp' => $this->agentMessageTimes('meta_chat_messages', 'meta_chat_session_id', $rows->where('channel', 'whatsapp')->pluck('session_id'), $since),
+        ];
+        $openings  = [];
+        $made      = 0;
+        $kept      = 0;
+
+        foreach ($rows as $row) {
+            $shop = $shopsById->get($row->shop_id);
+
+            if (!$shop) {
+                continue;
+            }
+
+            $at         = Carbon::parse($row->at);
+            $openingKey = $shop->id.'|'.$at->format('Y-m-d-H');
+            $openings[$openingKey] ??= IsWithinWorkingHours::make()->nextOpening($shop, $at);
+            $opening    = $openings[$openingKey];
+
+            if (!$opening) {
+                continue;
+            }
+
+            $dueBy = $opening['opens']->copy()->addHour();
+
+            if (now()->lt($dueBy)) {
+                continue;
+            }
+
+            $made++;
+
+            $agentReplied = collect($answers[$row->channel][$row->session_id] ?? [])
+                ->contains(fn (Carbon $answeredAt) => $answeredAt->gt($at) && $answeredAt->lte($dueBy));
+
+            if ($agentReplied) {
+                $kept++;
+            }
+        }
+
+        return ['made' => $made, 'kept' => $kept];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, int>  $sessionIds
+     *
+     * @return array<int, array<int, Carbon>>
+     */
+    private function agentMessageTimes(string $table, string $column, \Illuminate\Support\Collection $sessionIds, Carbon $since): array
+    {
+        if ($sessionIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table($table)
+            ->whereIn($column, $sessionIds->unique()->values())
+            ->where('sender_type', 'agent')
+            ->where('created_at', '>=', $since)
+            ->get([$column, 'created_at'])
+            ->groupBy($column)
+            ->map(fn ($messages) => $messages->map(fn ($message) => Carbon::parse($message->created_at))->all())
+            ->all();
     }
 
     public function getBreadcrumbs(): array

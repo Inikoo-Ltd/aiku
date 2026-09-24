@@ -339,6 +339,13 @@ const onOpenSlackSettings = () => {
     chatSettingVisible.value = true
 }
 
+const formatPromiseTime = (iso: string) => {
+    const d = new Date(iso)
+    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+
+    return d.toDateString() === new Date().toDateString() ? time : `${d.toLocaleDateString([], { weekday: "short" })} ${time}`
+}
+
 const mapSession = (s: SessionAPI): Contact => ({
     id: s.id,
     ulid: s.ulid,
@@ -362,6 +369,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     blocking_tickets_count: Number((s as any).blocking_tickets_count ?? 0),
     noise: (s as any).noise ?? null,
     claim: (s as any).claim ?? null,
+    promise: (s as any).promise ?? null,
     customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
@@ -2384,6 +2392,11 @@ onUnmounted(() => {
                                         {{ c.claim.order_reference ? c.claim.order_reference : ctrans("no order number") }}
                                         ·
                                         {{ c.claim.photos ? ctrans(":count photos", { count: c.claim.photos }) : ctrans("no photos") }}
+                                    </span>
+                                    <span v-if="c.promise" v-tooltip="ctrans('Told while we were closed that we would reply when we open. Not answered yet.')"
+                                        class="shrink-0 truncate rounded px-1 font-medium"
+                                        :class="c.promise.overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
+                                        {{ ctrans("Promised :time", { time: formatPromiseTime(c.promise.at) }) }}
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">

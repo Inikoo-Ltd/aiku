@@ -13,6 +13,7 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
+use App\Actions\Chat\ChatSession\GetChatReplyPromise;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Http\Resources\CRM\Livechat\MetaChatSessionListResource;
@@ -133,8 +134,13 @@ class GetMetaChatSessions
                     $q->where('blocks_source', true)
                         ->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value]);
                 },
-            ])
-            ->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) '.(GetChatSessions::oldestFirst($filters) ? 'ASC' : 'DESC'));
+            ]);
+
+        if (GetChatSessions::oldestFirst($filters)) {
+            $query->orderByRaw(GetChatReplyPromise::waitingSql('meta_chat_sessions'));
+        }
+
+        $query->orderByRaw('COALESCE(last_visitor_message_at, last_agent_message_at, created_at) '.(GetChatSessions::oldestFirst($filters) ? 'ASC' : 'DESC'));
 
         $requestedStatuses = (array) ($filters['statuses'] ?? (isset($filters['status']) ? [$filters['status']] : []));
 

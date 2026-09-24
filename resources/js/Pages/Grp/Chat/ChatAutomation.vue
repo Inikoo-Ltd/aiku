@@ -34,6 +34,10 @@ const flag = (draftId: number) => {
     router.post(route("grp.chat.ai.drafts.flag", [draftId]), {}, { preserveScroll: true })
 }
 
+const flagSent = (item: { channel: string; message_id: number }) => {
+    router.post(route("grp.chat.ai.sent.flag", [item.channel === "whatsapp" ? "whatsapp" : "chat", item.message_id]), {}, { preserveScroll: true })
+}
+
 const CHANNEL_ICON: Record<string, object> = {
     website: faGlobe,
     email: faEnvelope,
@@ -68,15 +72,22 @@ const CHANNEL_ICON: Record<string, object> = {
         <template #cell(text)="{ item }">
             <div v-if="item.sends_message" class="max-w-2xl">
                 <p class="whitespace-pre-line text-gray-700">{{ item.text }}</p>
-                <div v-if="item.claim" class="mt-1.5 flex flex-wrap gap-1.5 text-xs">
-                    <span class="rounded-full px-2 py-0.5 ring-1 ring-inset"
+                <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                    <span v-if="item.claim" class="rounded-full px-2 py-0.5 ring-1 ring-inset"
                         :class="item.claim.order_reference ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200'">
                         {{ item.claim.order_reference ? ctrans("Order :reference", { reference: item.claim.order_reference }) : ctrans("No order number yet") }}
                     </span>
-                    <span class="rounded-full px-2 py-0.5 ring-1 ring-inset"
+                    <span v-if="item.claim" class="rounded-full px-2 py-0.5 ring-1 ring-inset"
                         :class="item.claim.photos ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200'">
                         {{ item.claim.photos ? ctrans(":count photos or files", { count: item.claim.photos }) : ctrans("No photos yet") }}
                     </span>
+                    <span v-if="item.reversed" class="rounded-full bg-red-50 px-2 py-0.5 text-red-700 ring-1 ring-inset ring-red-200">
+                        {{ ctrans("Flagged as wrong") }}
+                    </span>
+                    <button v-else type="button" @click="flagSent(item)"
+                        class="rounded-md px-2 py-0.5 text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50">
+                        {{ ctrans("Flag as wrong") }}
+                    </button>
                 </div>
             </div>
             <div v-else-if="item.draft_status" class="max-w-2xl">

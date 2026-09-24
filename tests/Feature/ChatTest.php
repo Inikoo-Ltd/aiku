@@ -8360,3 +8360,125 @@ test('a customer cannot read chat history through the staff side panel endpoint'
         ->getJson(route('grp.api.chats.customer.chat_history', ['customer_id' => $this->customer->id + 1]))
         ->assertForbidden();
 });
+
+test('staff can flag a closed-now reply as wrong, but not an ordinary message', function () {
+    config(['chat.out_of_hours_reply' => true]);
+    Bus::fake([ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    $schedule = outOfHoursTestSchedule($this->shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => now(),
+    ]);
+
+    $reply = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
+    expect($reply->handle($session))->toBeTrue();
+
+    $automated = $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
+
+    $agentMessage = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'message_text'    => 'Just checking in',
+    ]);
+
+    actingAs($this->user);
+
+    $this->post(route('grp.chat.ai.sent.flag', ['chat', $agentMessage->id]))->assertNotFound();
+
+    $this->post(route('grp.chat.ai.sent.flag', ['chat', $automated->id]))->assertRedirect();
+
+    expect(Arr::get($automated->refresh()->metadata, 'flagged_wrong_at'))->not->toBeNull()
+        ->and(Arr::get($automated->metadata, 'flagged_by_user_id'))->toBe($this->user->id);
+
+    $sentRow = collect(get(route('grp.chat.ai.sent'))->assertOk()->viewData('page')['props']['data']['data'])
+        ->firstWhere('message_id', $automated->id);
+    expect($sentRow)->not->toBeNull()->and($sentRow['reversed'])->toBeTrue();
+
+    $dashboard = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['dashboard'];
+    expect(collect($dashboard['by_kind'])->firstWhere('kind', 'out_of_hours')['wrong'])->toBeGreaterThanOrEqual(1);
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
+test('the reply promise says when the shop opens, turns overdue an hour later, and is kept when an agent answers in time', function () {
+    config(['chat.out_of_hours_reply' => true]);
+    Bus::fake([ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+    $schedule = outOfHoursTestSchedule($this->shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+
+    $waiting = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => now(),
+    ]);
+    $keptCase = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => now(),
+    ]);
+
+    $reply = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
+    expect($reply->handle($waiting))->toBeTrue()
+        ->and($reply->handle($keptCase))->toBeTrue();
+
+    $promised = \App\Actions\Chat\ChatSession\GetChatReplyPromise::run($waiting->refresh());
+    expect($promised)->not->toBeNull()->and($promised->format('Y-m-d H:i'))->toBe('2026-09-25 10:00');
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-25 10:30', 'Europe/London'));
+    expect(\App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($waiting)['overdue'])->toBeFalse();
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-25 11:30', 'Europe/London'));
+    expect(\App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($waiting)['overdue'])->toBeTrue();
+
+    $olderPlain = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::WAITING,
+        'channel'                 => ChatChannelEnum::WEBSITE,
+        'shop_id'                 => $this->shop->id,
+        'last_visitor_message_at' => \Illuminate\Support\Carbon::parse('2026-09-20 09:00'),
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $olderPlain->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => 'Asked long before anybody promised anything',
+        'created_at'      => \Illuminate\Support\Carbon::parse('2026-09-20 09:00'),
+    ]);
+
+    $queue = collect(\App\Actions\Chat\ChatSession\GetChatSessions::make()->handle(['statuses' => ['waiting'], 'allowed_shop_ids' => [$this->shop->id]])->items())->pluck('id');
+    expect($queue->search($waiting->id))->toBeLessThan($queue->search($olderPlain->id));
+
+    $waiting->update(['status' => ChatSessionStatusEnum::CLOSED]);
+    expect(\App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($waiting->refresh()))->toBeNull();
+    $waiting->update(['status' => ChatSessionStatusEnum::WAITING]);
+
+    $waiting->update(['last_agent_message_at' => now()]);
+    expect(\App\Actions\Chat\ChatSession\GetChatReplyPromise::run($waiting->refresh()))->toBeNull();
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-25 10:20', 'Europe/London'));
+    ChatMessage::create([
+        'chat_session_id' => $keptCase->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'message_text'    => 'Good morning, here is the update',
+    ]);
+
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-25 12:00', 'Europe/London'));
+    actingAs($this->user);
+    $dashboard = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['dashboard'];
+
+    expect($dashboard['promises']['made'])->toBeGreaterThanOrEqual(2)
+        ->and($dashboard['promises']['kept'])->toBeGreaterThanOrEqual(1);
+
+    outOfHoursTestCleanUp($schedule, [$waiting, $keptCase, $olderPlain]);
+});

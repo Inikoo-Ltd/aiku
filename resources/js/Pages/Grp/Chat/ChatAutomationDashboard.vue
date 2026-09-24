@@ -11,17 +11,18 @@ import Chart from "primevue/chart"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChartLine, faChartPie, faPaperPlane, faRobot, faFilter, faBolt } from "@fal"
+import { faChartLine, faChartPie, faPaperPlane, faRobot, faFilter, faBolt, faClock } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 
 interface Dashboard {
     daily: { date: string, sent: number, drafts: number, noise: number, genuine: number }[]
-    by_kind: { kind: string, label: string, total: number }[]
+    by_kind: { kind: string, label: string, total: number, wrong: number }[]
     verdicts: { verdict: string, label: string, total: number }[]
     checks: number
     put_aside: number
     overruled: number
+    promises: { made: number, kept: number }
 }
 
 const props = defineProps<{
@@ -46,6 +47,7 @@ const cards = computed(() => [
     { label: ctrans("AI draft replies"), value: kindTotal("ai_draft"), note: ctrans(":share sent as written", { share: share(props.draftStats.used) }), icon: faRobot, color: "text-violet-600" },
     { label: ctrans("Noise checks"), value: props.dashboard.checks, note: ctrans(":count overruled by staff", { count: props.dashboard.overruled }), icon: faFilter, color: "text-amber-600" },
     { label: ctrans("Sent without staff"), value: props.draftStats.auto_sent, note: props.autoSend.enabled ? ctrans("Switched on where earned") : ctrans("Switched off"), icon: faBolt, color: "text-emerald-600" },
+    { label: ctrans("Promises kept"), value: `${props.dashboard.promises.kept} / ${props.dashboard.promises.made}`, note: ctrans("Answered within an hour of opening"), icon: faClock, color: "text-sky-600" },
 ])
 
 const dayLabel = (date: string) => new Date(date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short" })
@@ -136,7 +138,12 @@ const colorOf = (index: number) => donutChart.value.datasets[0].backgroundColor[
                     <tbody>
                         <tr v-for="row in dashboard.by_kind" :key="row.kind" class="border-b border-gray-100 last:border-0">
                             <td class="py-1.5 text-gray-700">{{ row.label }}</td>
-                            <td class="py-1.5 text-right font-medium text-gray-900">{{ row.total }}</td>
+                            <td class="py-1.5 text-right">
+                                <span v-if="row.wrong" class="mr-2 rounded-full bg-red-50 px-1.5 py-0.5 text-xs text-red-700 ring-1 ring-inset ring-red-200">
+                                    {{ ctrans(":count wrong", { count: row.wrong }) }}
+                                </span>
+                                <span class="font-medium text-gray-900">{{ row.total }}</span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
