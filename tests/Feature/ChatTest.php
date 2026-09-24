@@ -4513,13 +4513,12 @@ test('a fulfilment shop staffs chat from its own positions', function () {
     expect($clerk->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeTrue()
         ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
 
-    // Supervisor answers chats like the clerk and manages them.
+    // Supervisor manages without being routed.
     $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_SUPERVISOR->value, $fulfilment));
     $this->actingAs($supervisor);
     expect($supervisor->authTo(['fulfilment-chat-m.'.$fulfilment->id]))->toBeTrue()
-        ->and($supervisor->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeTrue()
-        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($supervisor)['agent_shops'])->toContain($fulfilmentShop->id)
+        ->and($supervisor->authTo(['fulfilment-chat.'.$fulfilment->id]))->toBeFalse()
         ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
 
     // Warehouse staff stay out of it.
