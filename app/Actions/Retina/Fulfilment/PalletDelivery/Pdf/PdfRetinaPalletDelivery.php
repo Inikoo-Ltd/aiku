@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Fulfilment\PalletDelivery\Pdf;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Traits\WithExportData;
 use App\Models\Fulfilment\PalletDelivery;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,6 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PdfRetinaPalletDelivery
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use AsAction;
     use WithAttributes;
     use WithExportData;
@@ -52,6 +54,8 @@ class PdfRetinaPalletDelivery
      */
     public function asController(PalletDelivery $palletDelivery, ActionRequest $request): Response
     {
+        abort_unless($this->retinaCustomerOwnsRouteModels($request), 403);
+
         $filename = 'pallet-delivery-' . $palletDelivery->slug . '.pdf';
 
         $pdf = $this->handle($palletDelivery);

@@ -17,6 +17,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetTiktokProducts extends OrgAction
 {
+    use WithRetinaOwnedCustomerSalesChannel;
+
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array|null
     {
         return SearchTiktokProducts::run(

@@ -113,23 +113,25 @@ class SubmitOrder extends OrgAction
             ->get()
             ->each(fn (Transaction $emptyLine) => DeleteTransaction::make()->action($emptyLine));
 
-        $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
-        /** @var Transaction $transaction */
-        if ($transactions->isNotEmpty()) {
-            foreach ($transactions as $transaction) {
-                $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
-                data_set($transactionData, 'submitted_at', $date);
-                data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
-                data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered);
-                data_set($transactionData, 'submitted_gross_amount', $transaction->gross_amount);
-                data_set($transactionData, 'submitted_net_amount', $transaction->net_amount);
-                data_set($transactionData, 'submitted_discount_factor', $transaction->current_discount_factor);
-                data_set($transactionData, 'submitted_offers_data', $transaction->offers_data); // TODO only take needed data later
-                data_set($transactionData, 'has_discount_when_submitted', $transaction->current_discount_factor < 1);
-
-                $transaction->update($transactionData);
-            }
-        }
+        /**
+         * The submitted_* columns freeze each line at the price it was sold at, copied column to
+         * column so the stored value is exact by construction. Transaction has no observers or
+         * auditing, so the per-line model save added nothing but a query per line. A line with no
+         * offer carries offers_data as an empty json array, which the model save never wrote
+         * (an empty array is equivalent to the {} default under the array cast), so the snapshot
+         * keeps {} for anything that is not a json object, as RepairAuroraSubmittedTransactionSnapshots does.
+         */
+        $order->transactions()->where('state', TransactionStateEnum::CREATING)->update([
+            'state'                       => TransactionStateEnum::SUBMITTED,
+            'submitted_at'                => $date,
+            'status'                      => TransactionStatusEnum::PROCESSING,
+            'submitted_quantity_ordered'  => DB::raw('quantity_ordered'),
+            'submitted_gross_amount'      => DB::raw('gross_amount'),
+            'submitted_net_amount'        => DB::raw('net_amount'),
+            'submitted_discount_factor'   => DB::raw('current_discount_factor'),
+            'submitted_offers_data'       => DB::raw("CASE WHEN jsonb_typeof(offers_data::jsonb) = 'object' THEN offers_data::jsonb ELSE '{}'::jsonb END"),
+            'has_discount_when_submitted' => DB::raw('current_discount_factor < 1'),
+        ]);
 
         $this->update($order, $modelData);
 

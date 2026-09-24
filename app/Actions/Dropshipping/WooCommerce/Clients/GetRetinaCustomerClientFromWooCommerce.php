@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\CheckIfProductExistInWoo;
 use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedWooCommerceAddress;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetRetinaCustomerClientFromWooCommerce extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithGeneratedWooCommerceAddress;
 
     /**
