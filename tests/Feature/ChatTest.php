@@ -8951,3 +8951,39 @@ test('the reply promise says when the shop opens, turns overdue an hour later, a
 
     outOfHoursTestCleanUp($schedule, [$waiting, $keptCase, $olderPlain]);
 });
+
+test('a WhatsApp chat started from a Meta ad keeps the ad it came from', function () {
+    Bus::fake();
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '123']])]);
+
+    $referral = [
+        'source_url'    => 'https://fb.me/ad-lavender',
+        'source_id'     => '120210000000000',
+        'source_type'   => 'ad',
+        'headline'      => 'Lavender Oil Gift Set',
+        'body'          => 'Wholesale prices for your shop',
+        'media_type'    => 'image',
+        'image_url'     => 'https://scontent.xx.fbcdn.net/lavender.jpg',
+    ];
+
+    \App\Actions\Chat\Whatsapp\StoreIncomingWhatsappMessage::make()->handle([
+        'metadata' => ['phone_number_id' => '123'],
+        'contacts' => [['profile' => ['name' => 'Zubz']]],
+        'messages' => [[
+            'id'       => 'wamid.ctwa-'.Str::random(8),
+            'from'     => '447500000009',
+            'type'     => 'text',
+            'text'     => ['body' => 'Hello! Can I get more info on this?'],
+            'referral' => $referral,
+        ]],
+    ]);
+
+    $message = \App\Models\Chat\MetaChatMessage::where('meta_message_id', 'like', 'wamid.ctwa-%')->latest('id')->first();
+
+    expect($message->metadata['wa_referral'])->toBe($referral);
+
+    $message->metaChatSession->messages()->forceDelete();
+    $message->metaChatSession->forceDelete();
+});

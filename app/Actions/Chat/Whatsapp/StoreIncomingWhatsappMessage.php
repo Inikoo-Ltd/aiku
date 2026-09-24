@@ -137,6 +137,7 @@ class StoreIncomingWhatsappMessage
                 'profile_name' => $profileName,
                 'wa_payload'   => $type !== 'text' ? $waNode : null,
                 'wa_context'   => Arr::get($message, 'context'),
+                'wa_referral'  => Arr::get($message, 'referral'),
                 'wa_errors'    => Arr::get($message, 'errors'),
             ],
         ]);
