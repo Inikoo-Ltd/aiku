@@ -21,8 +21,10 @@ use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class SyncRolesFromJobPositions
 {
@@ -30,7 +32,8 @@ class SyncRolesFromJobPositions
 
     public function handle(User $user): void
     {
-        $roles = [];
+        $rolesBefore = $user->roles()->pluck('name')->sort()->values()->all();
+        $roles       = [];
 
         if ($user->status) {
             foreach ($user->employees()->wherePivot('status', true)->where('employees.state', '!=', EmployeeStateEnum::LEFT)->get() as $employee) {
@@ -138,6 +141,15 @@ class SyncRolesFromJobPositions
 
 
         $user->refresh();
+
+        $rolesAfter = $user->roles()->pluck('name')->sort()->values()->all();
+        if ($rolesBefore !== $rolesAfter) {
+            $user->auditEvent     = 'roles';
+            $user->isCustomEvent  = true;
+            $user->auditCustomOld = ['removed' => array_values(array_diff($rolesBefore, $rolesAfter))];
+            $user->auditCustomNew = ['added' => array_values(array_diff($rolesAfter, $rolesBefore))];
+            Event::dispatch(new AuditCustom($user));
+        }
 
         // Losing the customer service position takes chat with it: the conversations this
         // person can no longer work go back to their shop's queue rather than staying in a

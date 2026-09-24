@@ -3093,4 +3093,10 @@ test('job positions on an employee record that has left give its user no roles',
     $leftRecord->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING]);
     \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
     expect($user->fresh()->roles()->where('roles.id', $role->id)->exists())->toBeTrue();
+
+    $positionsAudit = $leftRecord->audits()->where('event', 'job_positions')->latest('id')->first();
+    $rolesAudit     = $user->audits()->where('event', 'roles')->latest('id')->first();
+    expect($positionsAudit->new_values)->toHaveKey('Left record position')
+        ->and($positionsAudit->old_values)->toBe([])
+        ->and($rolesAudit->new_values['added'])->toContain($role->name);
 });
