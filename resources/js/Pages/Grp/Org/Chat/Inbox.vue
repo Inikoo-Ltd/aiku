@@ -8,7 +8,6 @@ import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
 import { followPointer } from "@/Composables/followPointer"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue"
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
@@ -1829,8 +1828,36 @@ onUnmounted(() => {
     <Head :title="title" />
 
     <template v-if="!isEmbedded">
-    <PageHeading :data="pageHead">
-        <template #other>
+    <div class="mx-4 my-3 flex flex-wrap items-center gap-3">
+        <template v-if="inboxes.length > 1">
+            <div class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums">
+                <span v-tooltip="ctrans('Customers waiting, every shop')" class="flex items-center gap-1.5">
+                    <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
+                    <span class="font-semibold text-gray-700">{{ totalCustomersWaiting }}</span>
+                </span>
+                <span v-tooltip="ctrans('Guests waiting, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
+                    <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                    <span class="font-semibold text-gray-700">{{ totalGuestsWaiting }}</span>
+                </span>
+                <span v-tooltip="ctrans('Active, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
+                    <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                    <span class="font-semibold text-gray-700">{{ totalActive }}</span>
+                </span>
+            </div>
+            <button type="button" v-tooltip="ctrans('Unclaimed, every shop')"
+                class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
+                @click="openAcrossAllShops(selectUnclaimed, unclaimedView)">
+                <FontAwesomeIcon :icon="faBell" :class="totalUnclaimed ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                <span class="font-semibold text-gray-700">{{ totalUnclaimed }}</span>
+            </button>
+            <button type="button" v-tooltip="ctrans('Spam, every shop')"
+                class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
+                @click="openAcrossAllShops(selectSpam, spamView)">
+                <FontAwesomeIcon :icon="faBan" class="text-gray-400" fixed-width aria-hidden="true" />
+                <span class="font-semibold text-gray-700">{{ totalSpam }}</span>
+            </button>
+        </template>
+        <div class="ml-auto flex items-center gap-1">
             <button v-if="!isReadOnly" type="button" @click="openPhoneCall"
                 v-tooltip="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
                 class="p-2 rounded-lg transition-colors"
@@ -1843,36 +1870,7 @@ onUnmounted(() => {
                 class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
                 <FontAwesomeIcon :icon="faCog" class="text-base" fixed-width />
             </button>
-        </template>
-    </PageHeading>
-
-    <div v-if="inboxes.length > 1" class="mx-4 my-3 flex flex-wrap gap-3">
-        <div class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums">
-            <span v-tooltip="ctrans('Customers waiting, every shop')" class="flex items-center gap-1.5">
-                <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
-                <span class="font-semibold text-gray-700">{{ totalCustomersWaiting }}</span>
-            </span>
-            <span v-tooltip="ctrans('Guests waiting, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                <span class="font-semibold text-gray-700">{{ totalGuestsWaiting }}</span>
-            </span>
-            <span v-tooltip="ctrans('Active, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                <span class="font-semibold text-gray-700">{{ totalActive }}</span>
-            </span>
         </div>
-        <button type="button" v-tooltip="ctrans('Unclaimed, every shop')"
-            class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
-            @click="openAcrossAllShops(selectUnclaimed, unclaimedView)">
-            <FontAwesomeIcon :icon="faBell" :class="totalUnclaimed ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
-            <span class="font-semibold text-gray-700">{{ totalUnclaimed }}</span>
-        </button>
-        <button type="button" v-tooltip="ctrans('Spam, every shop')"
-            class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
-            @click="openAcrossAllShops(selectSpam, spamView)">
-            <FontAwesomeIcon :icon="faBan" class="text-gray-400" fixed-width aria-hidden="true" />
-            <span class="font-semibold text-gray-700">{{ totalSpam }}</span>
-        </button>
     </div>
     </template>
 
