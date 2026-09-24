@@ -2320,6 +2320,133 @@ test('UI Show org chat conversation detail', function () {
     $response->assertOk();
 });
 
+test('a conversation and the links to its messages open only for people who may view chat on its shop', function () {
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+
+    $chatMessage = ChatMessage::create([
+        'chat_session_id' => $chatSession->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'My address is 1 High Street',
+    ]);
+
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $metaChatSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $this->customer->id,
+        'phone_number'    => '+447500000123',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $metaChatMessage = \App\Models\Chat\MetaChatMessage::create([
+        'meta_chat_session_id' => $metaChatSession->id,
+        'meta_channel_id'      => $channel->id,
+        'message_type'         => ChatMessageTypeEnum::TEXT,
+        'sender_type'          => ChatSenderTypeEnum::GUEST,
+        'message_text'         => 'My phone is 07500 000123',
+    ]);
+
+    $detail     = route('grp.org.chat.conversations.detail', [$this->organisation->slug, $chatSession->id]);
+    $shopDetail = route('grp.org.shops.show.chat.conversations.detail', [$this->organisation->slug, $this->shop->slug, $chatSession->id]);
+
+    actingAs(User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]));
+
+    get($detail)->assertForbidden();
+    get($shopDetail)->assertForbidden();
+    get(route('grp.majordomo.redirect_chat_message', $chatMessage->id))->assertForbidden();
+    get(route('grp.majordomo.redirect_whatsapp_message', $metaChatMessage->id))->assertForbidden();
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    actingAs($clerk);
+
+    get($detail)->assertOk();
+    get($shopDetail)->assertOk();
+    get(route('grp.majordomo.redirect_chat_message', $chatMessage->id))->assertRedirect($detail);
+    get(route('grp.majordomo.redirect_whatsapp_message', $metaChatMessage->id))
+        ->assertRedirect(route('grp.org.chat.inbox', [$this->organisation->slug, 'channel' => 'whatsapp', 'session' => $metaChatSession->ulid]));
+
+    $metaChatMessage->forceDelete();
+    $metaChatSession->forceDelete();
+});
+
+test('a conversation is not found under an organisation or shop it does not belong to', function () {
+    actingAs($this->user);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+
+    $otherOrganisation = Organisation::where('code', 'cht2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action(
+            $this->organisation->group,
+            array_merge(Organisation::factory()->definition(), ['code' => 'cht2', 'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP])
+        );
+
+    $otherShop = \App\Models\Catalogue\Shop::where('organisation_id', $this->organisation->id)->where('id', '!=', $this->shop->id)->first()
+        ?? \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
+
+    get(route('grp.org.chat.conversations.detail', [$otherOrganisation->slug, $chatSession->id]))->assertNotFound();
+    get(route('grp.org.shops.show.chat.conversations.detail', [$this->organisation->slug, $otherShop->slug, $chatSession->id]))->assertNotFound();
+});
+
+test('the inbox opens a conversation only for people who may view chat on its shop', function () {
+    setPermissionsTeamId($this->organisation->group_id);
+
+    $chatSession = ChatSession::create([
+        'ulid'             => (string)Str::ulid(),
+        'status'           => ChatSessionStatusEnum::ACTIVE,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+
+    $otherShop = \App\Models\Catalogue\Shop::where('organisation_id', $this->organisation->id)->where('id', '!=', $this->shop->id)->first()
+        ?? \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
+
+    $otherShopClerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $otherShopClerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $otherShop));
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    $inbox       = route('grp.org.chat.inbox.conversation', [$this->organisation->slug, $chatSession->ulid]);
+    $supervision = route('grp.org.chat.supervision.conversation', [$this->organisation->slug, $chatSession->ulid]);
+
+    actingAs($otherShopClerk);
+
+    get($inbox)->assertForbidden();
+    get($supervision)->assertForbidden();
+
+    actingAs($clerk);
+
+    $this->followingRedirects()->get($inbox)->assertOk();
+    get($supervision)->assertOk();
+});
+
 test('UI Show group chat dashboard', function () {
     actingAs($this->user);
 

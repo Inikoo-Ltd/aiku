@@ -53,6 +53,12 @@ class ShowOrgChatInbox extends OrgAction
     {
         $user = $request->user();
 
+        $selectedSessionShop = $this->selectedSession?->shop;
+
+        if ($this->selectedSession && !($selectedSessionShop && $this->userCanViewChatOnShop($user, $selectedSessionShop))) {
+            return false;
+        }
+
         if (isset($this->shop)) {
             return $this->userCanViewChatOnShop($user, $this->shop)
                 || $user->authTo(["accounting.{$this->shop->organisation_id}.view"]);

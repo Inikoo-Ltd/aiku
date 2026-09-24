@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Redirects;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\Chat\MetaChatMessage;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,17 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RedirectMetaChatMessageLink extends OrgAction
 {
+    use WithChatAgentAuthorisation;
+
+    private MetaChatMessage $metaChatMessage;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $shop = $this->metaChatMessage->metaChatSession?->shop;
+
+        return !$shop || $this->userCanViewChatOnShop($request->user(), $shop);
+    }
+
     public function handle(MetaChatMessage $metaChatMessage): RedirectResponse
     {
         $session = $metaChatMessage->metaChatSession;
@@ -34,6 +46,7 @@ class RedirectMetaChatMessageLink extends OrgAction
 
     public function asController(MetaChatMessage $metaChatMessage, ActionRequest $request): RedirectResponse
     {
+        $this->metaChatMessage = $metaChatMessage;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($metaChatMessage);
