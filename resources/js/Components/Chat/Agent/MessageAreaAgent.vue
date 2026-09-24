@@ -498,6 +498,37 @@ const handleRedactAttachment = async ({ id }: { id: number }) => {
     }
 }
 
+const loadingPendingAttachmentIds = new Set<number>()
+
+const handleLoadPendingAttachments = async ({ id }: { id: number }) => {
+    if (!props.session?.ulid || loadingPendingAttachmentIds.has(id)) return
+
+    loadingPendingAttachmentIds.add(id)
+
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const { data } = await axios.post(
+            route("grp.org.chat.agents.messages.pending_attachments", [organisation, props.session.ulid, id]),
+            {},
+            { withCredentials: true }
+        )
+
+        const updated = data?.data
+        const msg: any = messagesLocal.value.find((m) => String(m.id) === String(id))
+        if (msg && updated) {
+            Object.assign(msg, updated)
+        }
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to get the files from Gmail"),
+            type: "error",
+        })
+    } finally {
+        loadingPendingAttachmentIds.delete(id)
+    }
+}
+
 const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 const messagesContainer = ref<HTMLDivElement>()
 
@@ -1427,6 +1458,7 @@ const handleClickOutside = (e: MouseEvent) => {
                             @retract-message="handleRetractMessage"
                             @redact-message="handleRedactMessage"
                             @redact-attachment="handleRedactAttachment"
+                            @load-pending-attachments="handleLoadPendingAttachments"
                             @jump-to-message="jumpToMessage"
                             @open-slack-settings="onOpenSlackSettings" />
                     </div>

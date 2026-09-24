@@ -9,9 +9,14 @@
 namespace App\Actions\Comms\Mailbox;
 
 use App\Actions\Chat\ChatSession\SendChatMessage;
+use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Http\Resources\CRM\Livechat\ChatMessageResource;
+use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,6 +33,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ImportPendingGmailAttachments
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(ChatSession $chatSession): int
     {
@@ -37,35 +43,73 @@ class ImportPendingGmailAttachments
             return 0;
         }
 
-        $imported = 0;
+        return $messages->sum(fn (ChatMessage $message) => $this->importMessage($client, $message));
+    }
 
-        foreach ($messages as $message) {
-            $gmailMessageId = Arr::get($message->metadata, 'gmail_message_id');
+    public function importMessage(GmailClient $client, ChatMessage $message): int
+    {
+        $gmailMessageId = Arr::get($message->metadata, 'gmail_message_id');
 
-            // The pictures came in when the mail did. Downloading everything again would attach
-            // them a second time, so what is already here is left alone.
-            $already = $message->attachedFiles()->pluck('name')->all();
+        // The pictures came in when the mail did. Downloading everything again would attach
+        // them a second time, so what is already here is left alone.
+        $already = $message->attachedFiles()->pluck('name')->all();
 
-            $files = $this->download(
-                $client,
-                $gmailMessageId,
-                $client->getMessage($gmailMessageId),
-                skip: $already
-            );
+        $files = $this->download(
+            $client,
+            $gmailMessageId,
+            $client->getMessage($gmailMessageId),
+            skip: $already
+        );
 
-            if ($files) {
-                SendChatMessage::make()->processMessageAttachments($message, $files);
-            }
-
-            foreach ($files as $file) {
-                @unlink($file->getPathname());
-            }
-
-            $message->update(['metadata' => Arr::except($message->metadata, 'gmail_pending_attachments')]);
-            $imported += count($files);
+        if ($files) {
+            SendChatMessage::make()->processMessageAttachments($message, $files);
         }
 
-        return $imported;
+        foreach ($files as $file) {
+            @unlink($file->getPathname());
+        }
+
+        $message->update(['metadata' => Arr::except($message->metadata, 'gmail_pending_attachments')]);
+
+        return count($files);
+    }
+
+    /**
+     * Waiting for a reply keeps a stranger's files out, but a reply is often exactly what the file
+     * is needed for: a form to fill in, a document to check. The agent can ask for them first.
+     */
+    public function asController(string $organisation, ChatSession $chatSession, ChatMessage $chatMessage): JsonResponse
+    {
+        if (! $this->getAuthorisedChatAgent($chatSession) instanceof ChatAgent) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Only agents can open these files'),
+            ], 403);
+        }
+
+        if ($chatMessage->chat_session_id !== $chatSession->id) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Message does not belong to this chat session'),
+            ], 422);
+        }
+
+        if (Arr::get($chatMessage->metadata, 'gmail_pending_attachments')) {
+            if (! $client = GmailClient::forShop($chatSession->shop)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('The shop mailbox is not connected'),
+                ], 422);
+            }
+
+            $this->importMessage($client, $chatMessage);
+            $chatMessage->refresh();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => (new ChatMessageResource($chatMessage))->resolve(),
+        ]);
     }
 
     /**

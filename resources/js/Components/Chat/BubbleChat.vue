@@ -138,6 +138,7 @@ const emit = defineEmits<{
     (e: "retract-message", payload: { id: number; reason: string }): void
     (e: "redact-message", payload: { id: number; fragment: string }): void
     (e: "redact-attachment", payload: { id: number }): void
+    (e: "load-pending-attachments", payload: { id: number }): void
     (e: "open-slack-settings"): void
     (e: "reply", message: Message): void
     (e: "jump-to-message", id: number): void
@@ -1001,8 +1002,15 @@ watch(selectedLanguage, async (val) => {
                 </div>
             </a>
 
-            <div v-if="message.metadata?.gmail_pending_attachments" class="mb-1 text-xs italic text-gray-500">
-                {{ ctrans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
+            <div v-if="message.metadata?.gmail_pending_attachments" class="mb-1 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                <span class="italic">
+                    {{ ctrans(":count attachment(s) kept in Gmail, they are added here when you reply", { count: message.metadata.gmail_pending_attachments }) }}
+                </span>
+                <button v-if="viewerType === 'agent' && !readonly && message.id" type="button"
+                    class="font-semibold underline hover:text-gray-700"
+                    @click="emit('load-pending-attachments', { id: message.id })">
+                    {{ ctrans("Show attachments") }}
+                </button>
             </div>
 
             <template v-if="attachmentList.length && !(attachmentList.length === 1 && isAudio)">

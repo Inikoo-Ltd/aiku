@@ -3780,41 +3780,7 @@ test('staff see the tasks they raised, own, help on or were sent to their depart
 test('inbound guest gmail attachments wait in gmail until an agent replies, then are all saved on the email chat message', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
 
-    $settings = $this->shop->settings ?? [];
-    $settings['gmail'] = [
-        'email'         => 'care@shop.test',
-        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
-        'history_id'    => '1',
-    ];
-    $this->shop->update(['settings' => $settings]);
-
-    $encode = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
-
-    \Illuminate\Support\Facades\Http::fake([
-        'oauth2.googleapis.com/token'                                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/a1/attachments/att1' => \Illuminate\Support\Facades\Http::response(['data' => $encode('%PDF-1.4 invoice')]),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/a1*'                 => \Illuminate\Support\Facades\Http::response([
-            'id'       => 'a1',
-            'threadId' => 'ta1',
-            'payload'  => [
-                'mimeType' => 'multipart/mixed',
-                'headers'  => [
-                    ['name' => 'From', 'value' => 'Stranger <stranger@example.com>'],
-                    ['name' => 'Subject', 'value' => 'Damaged goods'],
-                ],
-                'parts'    => [
-                    ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('See attached')]],
-                    ['mimeType' => 'application/pdf', 'filename' => 'invoice.pdf', 'body' => ['attachmentId' => 'att1']],
-                    ['mimeType' => 'image/png', 'filename' => 'photo.png', 'body' => ['data' => $encode(base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='))]],
-                    ['mimeType' => 'image/png', 'filename' => 'logo.png', 'headers' => [['name' => 'Content-Disposition', 'value' => 'inline; filename="logo.png"']], 'body' => ['data' => $encode('x')]],
-                ],
-            ],
-        ]),
-        'gmail.googleapis.com/gmail/v1/users/me/labels'                       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
-        'gmail.googleapis.com/*'                                              => \Illuminate\Support\Facades\Http::response([]),
-    ]);
-
-    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'a1');
+    $message = pendingAttachmentsTestInboundGuestEmail($this->shop, 'a1');
 
     // A stranger's pictures come in at once: an email whose images are missing reads as broken,
     // and staff compare this screen against Gmail. Their other files still wait for a reply,
@@ -3844,6 +3810,67 @@ test('inbound guest gmail attachments wait in gmail until an agent replies, then
         ->and($resource['attachments'][0]['is_image'])->toBeTrue()
         ->and($resource['attachments'][1]['file_name'])->toBe('invoice.pdf');
 });
+
+test('an agent can bring a guest email\'s files in from gmail before replying', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    $message = pendingAttachmentsTestInboundGuestEmail($this->shop, 'a2');
+    $session = $message->chatSession;
+
+    actingAs($this->user)
+        ->postJson(route('grp.org.chat.agents.messages.pending_attachments', [$this->organisation->slug, $session->ulid, $message->id]))
+        ->assertOk()
+        ->assertJsonPath('data.attachments.1.file_name', 'invoice.pdf')
+        ->assertJsonMissingPath('data.metadata.gmail_pending_attachments');
+
+    expect($message->fresh()->attachedFiles()->pluck('name')->all())->toBe(['photo.png', 'invoice.pdf'])
+        ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::AGENT)->count())->toBe(0);
+
+    $other = noiseTestEmailSession($this->shop, 'someone@example.com', 'Another conversation', 'Hello');
+
+    actingAs($this->user)
+        ->postJson(route('grp.org.chat.agents.messages.pending_attachments', [$this->organisation->slug, $other->ulid, $message->id]))
+        ->assertStatus(422);
+});
+
+function pendingAttachmentsTestInboundGuestEmail(\App\Models\Catalogue\Shop $shop, string $gmailMessageId): ChatMessage
+{
+    $settings = $shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $shop->update(['settings' => $settings]);
+
+    $encode = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/$gmailMessageId/attachments/att1" => \Illuminate\Support\Facades\Http::response(['data' => $encode('%PDF-1.4 invoice')]),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/$gmailMessageId*"                 => \Illuminate\Support\Facades\Http::response([
+            'id'       => $gmailMessageId,
+            'threadId' => "t$gmailMessageId",
+            'payload'  => [
+                'mimeType' => 'multipart/mixed',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Stranger <stranger@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Damaged goods'],
+                ],
+                'parts'    => [
+                    ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('See attached')]],
+                    ['mimeType' => 'application/pdf', 'filename' => 'invoice.pdf', 'body' => ['attachmentId' => 'att1']],
+                    ['mimeType' => 'image/png', 'filename' => 'photo.png', 'body' => ['data' => $encode(base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='))]],
+                    ['mimeType' => 'image/png', 'filename' => 'logo.png', 'headers' => [['name' => 'Content-Disposition', 'value' => 'inline; filename="logo.png"']], 'body' => ['data' => $encode('x')]],
+                ],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'                       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                                              => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    return \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($shop, $gmailMessageId);
+}
 
 test('chat media older than the retention window moves to the archive database and is still downloadable', function () {
     config()->set(

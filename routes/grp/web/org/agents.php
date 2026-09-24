@@ -40,6 +40,7 @@ use App\Actions\Chat\MetaChatSession\TrashMetaChatSession;
 use App\Actions\Chat\MetaChatSession\UnmarkMetaChatSessionAsSpam;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SendMetaChatMessage;
+use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
 use Illuminate\Support\Facades\Route;
 
 Route::name('agents.')->prefix('agents')->group(function () {
@@ -80,6 +81,7 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/whatsapp/{metaChatSession:ulid}/restore', RestoreMetaChatSession::class)
         ->name('whatsapp.sessions.restore')->withTrashed();
     Route::patch('/messages/{chatSession:ulid}/{chatMessage}/redact', RedactChatMessage::class)->name('messages.redact');
+    Route::post('/messages/{chatSession:ulid}/{chatMessage}/pending-attachments', ImportPendingGmailAttachments::class)->name('messages.pending_attachments');
     Route::delete('/messages/{chatSession:ulid}/{chatMessage}/redact-attachment', [RedactChatMessage::class, 'inAttachment'])->name('messages.redact_attachment');
     Route::delete('/messages/{chatSession:ulid}/{chatMessage}/retract', RetractChatMessage::class)->name('messages.retract');
     Route::post('/messages/{chatMessage}/verify-image', VerifyChatImageMessage::class)->name('messages.verify_image');
