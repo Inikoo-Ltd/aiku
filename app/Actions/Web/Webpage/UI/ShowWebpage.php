@@ -353,6 +353,7 @@ class ShowWebpage extends OrgAction
                 'webpage_url'           => $webpage->getUrl(),
                 'webpage_canonical_url' => $webpage->canonical_url,
                 'redirected_to'         => $webpage->redirectedTo?->redirectTo?->only(['id', 'slug', 'code', 'url']),
+                'closed'                => $this->getClosure($webpage),
                 'lock' => GetWebpageLock::run($webpage, $request->user()),
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
@@ -436,6 +437,27 @@ class ShowWebpage extends OrgAction
                 prefix: WebpageTabsEnum::CHANGELOG->value
             )
         );
+    }
+
+    /**
+     * @return array{closed_at: \Illuminate\Support\Carbon|null, closed_by: string|null}|null
+     */
+    private function getClosure(Webpage $webpage): ?array
+    {
+        if ($webpage->state != WebpageStateEnum::CLOSED) {
+            return null;
+        }
+
+        $closingAudit = $webpage->audits()
+            ->with('user')
+            ->where('new_values->state', WebpageStateEnum::CLOSED->value)
+            ->latest('id')
+            ->first();
+
+        return [
+            'closed_at' => $webpage->closed_at ?? $closingAudit?->created_at,
+            'closed_by' => $closingAudit?->user?->contact_name ?? $closingAudit?->user?->username,
+        ];
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

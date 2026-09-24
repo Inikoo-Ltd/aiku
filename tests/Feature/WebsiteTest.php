@@ -1054,6 +1054,35 @@ test('UI show webpage in shop website', function (Website $website, Webpage $web
     $webpage->update(['state' => $originalState]);
 })->depends('create b2b website', 'create webpage');
 
+test('a webpage set offline shows when it closed and where visitors are redirected', function (Website $website) {
+    $closingWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $targetWebpage  = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $closingWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    $targetWebpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    $closingWebpage = UpdateWebpage::make()->action($closingWebpage, [
+        'state_data' => [
+            'state'               => WebpageStateEnum::CLOSED->value,
+            'redirect_webpage_id' => $targetWebpage->id,
+        ],
+    ]);
+
+    expect($closingWebpage->state)->toBe(WebpageStateEnum::CLOSED)
+        ->and($closingWebpage->closed_at)->not->toBeNull();
+
+    get(
+        route('grp.org.shops.show.web.webpages.show', [
+            $this->organisation->slug,
+            $this->shop->slug,
+            $website->slug,
+            $closingWebpage->slug
+        ])
+    )->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('closed.closed_at', fn ($closedAt) => $closedAt !== null)
+        ->where('redirected_to.code', $targetWebpage->code)
+        ->etc());
+})->depends('create b2b website');
+
 test('a webpage that is not live offers no page speed report', function (Website $website, Webpage $webpage) {
     $this->withoutExceptionHandling();
 
