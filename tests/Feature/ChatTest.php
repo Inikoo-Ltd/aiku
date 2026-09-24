@@ -6026,6 +6026,12 @@ function aiDraftTestModel(\Illuminate\Http\Client\Request $request, string $answ
 {
     $isLanguageDetection = str_contains((string) data_get($request->data(), 'messages.0.content'), 'language detector');
     $detected            = str_contains((string) data_get($request->data(), 'messages.1.content'), 'Hola') ? 'es' : 'en';
+    $isQuestionCheck     = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"asks":');
+
+    if ($isQuestionCheck) {
+        return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['asks' => data_get(json_decode($answer, true), 'topic', 'other')])]]]]);
+    }
+
 
     return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $isLanguageDetection ? $detected : $answer]]]]);
 }
@@ -6279,9 +6285,14 @@ test('a question about an order gets a draft written from that customer\'s order
         'updated_at'      => '2026-09-22',
     ]);
 
+    $asks        = null;
     $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hi, your order $reference was dispatched on 22 September."];
     \Illuminate\Support\Facades\Http::fake([
-        'api.openai.com/*' => function ($request) use (&$modelAnswer) {
+        'api.openai.com/*' => function ($request) use (&$modelAnswer, &$asks) {
+            if ($asks && str_contains((string) data_get($request->data(), 'messages.1.content'), '{"asks":')) {
+                return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['asks' => $asks])]]]]);
+            }
+
             $copiedExample = preg_match('/\{"answerable".*\}/', (string) data_get($request->data(), 'messages.1.content'), $example) ? $example[0] : '';
 
             return aiDraftTestModel($request, $modelAnswer === null ? $copiedExample : json_encode($modelAnswer));
@@ -6362,6 +6373,16 @@ test('a question about an order gets a draft written from that customer\'s order
     $this->travel(1)->minutes();
     $ask($session, 'Can I change the delivery address of my next order?');
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
+
+    // Whether the facts answer it is decided before the model sees them: shown an order, it
+    // answered where the order is when the customer asked for an alternative product.
+    $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hi, your order $reference was dispatched on 22 September."];
+    $asks        = 'other';
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, "Order $reference: can you suggest something similar to the candles that are out of stock?");
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
+    $asks = null;
 
     // A model that copies the example answer in its instructions word for word gives no draft:
     // the placeholder names no order or product aiku looked up, and staff never see "the reply".
