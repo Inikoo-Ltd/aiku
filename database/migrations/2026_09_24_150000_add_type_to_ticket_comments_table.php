@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Helpers\Ticket;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,8 @@ return new class () extends Migration {
 
             DB::table('tickets')->where('id', $ticket->id)->update(['data' => json_encode($data)]);
         });
+
+        Ticket::refreshSearchVectors();
     }
 
     public function down(): void
