@@ -33,8 +33,7 @@ class ExportRetinaPalletReturnPallet extends RetinaAction
 
     public function asController(FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): BinaryFileResponse
     {
-        $this->setRawAttributes($request->all());
-        $this->validateAttributes();
+        $this->initialisation($request);
 
         return $this->handle($fulfilmentCustomer, $request->all());
     }

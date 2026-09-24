@@ -35,6 +35,11 @@ class ShowRetinaStoredItem extends RetinaAction
 {
     use WithRetinaCustomerOwnedRouteModels;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
+
     public function asController(StoredItem $storedItem, ActionRequest $request): StoredItem
     {
         $this->initialisation($request)->withTab(StoredItemTabsEnum::values());

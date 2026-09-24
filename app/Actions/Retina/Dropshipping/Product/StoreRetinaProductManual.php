@@ -25,6 +25,11 @@ class StoreRetinaProductManual extends RetinaAction
     use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
+
     /**
      * @throws \Throwable
      */

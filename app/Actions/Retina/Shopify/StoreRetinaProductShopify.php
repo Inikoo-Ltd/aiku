@@ -29,6 +29,11 @@ class StoreRetinaProductShopify extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
+
     /**
      * @throws \Throwable
      */

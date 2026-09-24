@@ -22,6 +22,11 @@ class FetchRetinaFulfilmentCustomerClientFromShopify extends RetinaAction
     use WithRetinaCustomerOwnedRouteModels;
     use WithGeneratedShopifyAddress;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
+
     /**
      * @throws \Throwable
      */

@@ -26,6 +26,11 @@ class UpdateCustomerOrderTaxCategory extends RetinaAction
 {
     use WithRetinaCustomerOwnedRouteModels;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
+
     public function handle(Order $order): Order
     {
         $taxCategory = null;

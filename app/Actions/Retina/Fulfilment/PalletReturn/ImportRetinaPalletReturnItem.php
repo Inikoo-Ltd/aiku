@@ -23,6 +23,11 @@ class ImportRetinaPalletReturnItem extends RetinaAction
     use WithRetinaCustomerOwnedRouteModels;
     use WithImportModel;
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
+
     public function handle(PalletReturn $palletReturn, $file): Upload
     {
         return ImportPalletReturnItem::run($palletReturn, $file);

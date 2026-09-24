@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\RetinaAction;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithRetinaCustomerOwnedRouteModels
@@ -16,6 +17,14 @@ trait WithRetinaCustomerOwnedRouteModels
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->asAction ?? false) {
+            return true;
+        }
+
+        if ($this instanceof RetinaAction && !parent::authorize($request)) {
+            return false;
+        }
+
         return $this->retinaCustomerOwnsRouteModels($request);
     }
 }
