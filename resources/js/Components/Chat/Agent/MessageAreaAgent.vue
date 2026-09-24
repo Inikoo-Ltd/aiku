@@ -1295,6 +1295,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <template #default="{ changeModel }">
                     <Button
                         type="red"
+                        class="h-7"
                         :label="ctrans('End chat')"
                         @click="changeModel"
                         icon="fal fa-times-circle"
@@ -1346,7 +1347,7 @@ const handleClickOutside = (e: MouseEvent) => {
                  customer writes again next week. -->
             <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
-                class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                class="hidden lg:inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                 @click="markSpam(!(session as any)?.is_spam)">
                 <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" class="text-[11px]" fixed-width />
                 {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Spam") }}
@@ -1364,7 +1365,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </button>
 
             <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
-                class="inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
+                class="hidden lg:inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
                 @click="onViewUserProfile">
                 <FontAwesomeIcon :icon="faUser" class="text-[11px]" fixed-width />
             </button>
@@ -1426,6 +1427,15 @@ const handleClickOutside = (e: MouseEvent) => {
                         </button>
 
                     </template>
+
+                    <div v-if="canReportSpam" class="lg:hidden border-t border-gray-100">
+                        <button type="button" :disabled="isSpamMarking"
+                            class="menu-item text-red-600 disabled:opacity-50"
+                            @click="isMenuOpen = false; markSpam(!(session as any)?.is_spam)">
+                            <FontAwesomeIcon :icon="(session as any)?.is_spam ? faRotateLeft : faBan" fixed-width />
+                            {{ (session as any)?.is_spam ? ctrans("Not spam") : ctrans("Mark as Spam") }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -1684,6 +1694,8 @@ const handleClickOutside = (e: MouseEvent) => {
 .menu-item {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
+    text-align: left;
     gap: 8px;
     padding: 10px 16px;
     width: 100%;
