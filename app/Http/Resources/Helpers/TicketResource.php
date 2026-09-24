@@ -39,7 +39,7 @@ class TicketResource extends JsonResource
             'is_confidential' => (bool) $this->is_confidential,
             'qa_status'      => $this->qa_status?->value,
             'qa_status_label' => $this->qa_status ? TicketQaStatusEnum::labels()[$this->qa_status->value] : null,
-            'qa_status_icon' => $this->qa_status ? TicketQaStatusEnum::stateIcon()[$this->qa_status->value] : null,
+            'qa_status_icon' => $this->qaStatusIcon(),
             'qa_user'        => $this->qaUser?->contact_name ?: $this->qaUser?->username,
             'qa_user_id'     => $this->qa_user_id,
             'qa_requested_at' => $this->qa_requested_at,
@@ -164,6 +164,33 @@ class TicketResource extends JsonResource
     /**
      * @return array<int, array{key: string, label: string}>
      */
+    /**
+     * @return array{tooltip: string, icon: string, class: string, color: string}|null
+     */
+    private function qaStatusIcon(): ?array
+    {
+        if (!$this->qa_status) {
+            return null;
+        }
+
+        $icon = TicketQaStatusEnum::stateIcon()[$this->qa_status->value];
+        $name = $this->qaUser?->contact_name ?: $this->qaUser?->username;
+
+        if ($this->qa_status->isVerdict()) {
+            $icon['tooltip'] = $name
+                ? __(':verdict QA Check | Checked by :name', ['verdict' => $this->qa_status->shortLabel(), 'name' => $name])
+                : __(':verdict QA Check', ['verdict' => $this->qa_status->shortLabel()]);
+
+            return $icon;
+        }
+
+        if ($name) {
+            $icon['tooltip'] = __('QA check requested from :name', ['name' => $name]);
+        }
+
+        return $icon;
+    }
+
     private function reporterRoles(): array
     {
         $reporter = $this->reporter;

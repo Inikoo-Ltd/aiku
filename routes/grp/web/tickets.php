@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Helpers\Ticket\UI\CreateTicket;
+use App\Actions\Helpers\Ticket\UI\IndexQaTickets;
 use App\Actions\Helpers\Ticket\UI\IndexTickets;
 use App\Actions\Helpers\Ticket\UI\ShowTicket;
 use App\Actions\Helpers\Ticket\UI\ShowTicketAttachment;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowTicketsDashboard::class)->name('index');
 Route::get('/list', IndexTickets::class)->name('list');
+Route::get('/qa-list', IndexQaTickets::class)->name('qa_list');
 Route::get('/board', ShowTicketsBoard::class)->name('board');
 Route::get('/reports', ShowTicketsReports::class)->name('reports');
 Route::get('/create', CreateTicket::class)->name('create');
