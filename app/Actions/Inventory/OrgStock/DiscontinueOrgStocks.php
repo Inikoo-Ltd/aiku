@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
@@ -19,6 +20,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -97,6 +99,8 @@ class DiscontinueOrgStocks extends OrgAction
             $this->audit($orgStock, 'state_change', $record);
             $stats['changed']++;
         }
+
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->organisation->group_id));
 
         return $stats;
     }

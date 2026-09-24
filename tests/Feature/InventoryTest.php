@@ -3757,4 +3757,26 @@ describe('discontinue confirm', function () {
             ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::SUSPENDED)
             ->and($orgStock->data)->not->toHaveKey(DiscontinueOrgStocks::SCHEDULED_KEY);
     });
+
+    test('product command control shows the stock in every organisation and a status set shows on the next load', function () {
+        $orgStock = $this->orgStocks[1];
+        $stock    = $orgStock->stock;
+        $row      = fn () => collect($this->get(route('grp.goods.dashboard', ['search' => $stock->code]))
+            ->assertOk()->viewData('page')['props']['rows'])->firstWhere('id', $stock->id);
+
+        $before = $row();
+        expect($before['state'])->toBe('active')
+            ->and($before['organisations'])->toHaveKeys([$this->organisation->code, 'other'])
+            ->and($before['organisations']['other']['condition'])->not->toBe('sell');
+
+        DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'reason'        => 'Running down',
+        ]);
+
+        $after = $row();
+        expect($after['state'])->toBe('discontinuing')
+            ->and($after['organisations']['other']['condition'])->toBe('sell');
+    });
 });

@@ -44,7 +44,7 @@ class GetOrganisationStockCoverBuckets
     /**
      * The supplier product that answers for an org stock: the live link with the best local priority.
      */
-    private function primarySupplierProduct(): Builder
+    public function primarySupplierProduct(): Builder
     {
         return DB::table('org_stock_has_org_supplier_products as link')
             ->join('org_supplier_products as osp', 'osp.id', 'link.org_supplier_product_id')

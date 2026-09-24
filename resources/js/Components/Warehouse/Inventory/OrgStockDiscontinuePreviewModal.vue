@@ -42,6 +42,7 @@ const props = defineProps<{
     orgStockIds: number[]
     previewRoute: routeType
     discontinueRoute?: routeType | null
+    initialState?: string
 }>()
 
 const emits = defineEmits<{ (e: "onClose"): void; (e: "onDone"): void }>()
@@ -128,9 +129,10 @@ const loadPreview = async () => {
 
 watch(() => props.isOpen, (isOpen) => {
     if (isOpen) {
+        form.value.state = props.initialState ?? "discontinuing"
         loadPreview()
     }
-})
+}, { immediate: true })
 
 const references = (block: CountWithReferences) => block.references.join(", ")
 const platformSummary = (byPlatform: Record<string, number>) =>
