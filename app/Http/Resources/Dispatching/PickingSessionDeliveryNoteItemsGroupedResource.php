@@ -8,6 +8,8 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteLeaflets;
+use App\Actions\Dispatching\DeliveryNote\WithDeliveryNotePackaging;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,9 +29,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
 {
+    use WithDeliveryNotePackaging;
+    use WithDeliveryNoteLeaflets;
+
     public function toArray($request): array
     {
         $deliveryNote = DeliveryNote::find($this->delivery_note_id);
+        $packaging    = $this->effectivePackaging($deliveryNote);
 
         return [
             'id'                              => $this->delivery_note_id,
@@ -54,9 +60,15 @@ class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
             'delivery_note_is_premium_dispatch' => $this->delivery_note_is_premium_dispatch,
             'delivery_note_has_extra_packing'   => $this->delivery_note_has_extra_packing,
 
+            'packaging'         => $this->getPackaging($packaging),
+            'packaging_options' => $this->getPackagingOptions($deliveryNote, $packaging?->family_code),
+            'leaflets'          => $this->getLeaflets($deliveryNote),
+            'print_status'      => $this->getPrintStatus($deliveryNote),
+
             'items' => DeliveryNoteItemsStateHandlingResource::collection(
                 IndexDeliveryNoteItemsStateHandling::run($deliveryNote, ignoreParentPagination: true)
             )->resolve()
         ];
     }
+
 }

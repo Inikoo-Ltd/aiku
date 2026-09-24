@@ -50,7 +50,7 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
 
         $sumsByModelType = $order->transactions()->toBase()
             ->selectRaw('model_type, sum(net_amount) as net_amount, sum(gross_amount) as gross_amount, sum(estimated_weight) as estimated_weight, count(*) filter (where quantity_ordered > 0 or quantity_bonus > 0) as number_transactions')
-            ->whereIn('model_type', ['Product', 'Charge', 'Service', 'ShippingZone'])
+            ->whereIn('model_type', ['Product', 'Charge', 'Packaging', 'Leaflet', 'Service', 'ShippingZone'])
             ->groupBy('model_type')
             ->get()
             ->keyBy('model_type');
@@ -59,6 +59,8 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         $itemsGross             = $sumsByModelType->get('Product')?->gross_amount ?: 0;
         $numberItemTransactions = (int)($sumsByModelType->get('Product')?->number_transactions ?? 0);
         $chargesAmount          = $sumsByModelType->get('Charge')?->net_amount ?: 0;
+        $packagingAmount        = $sumsByModelType->get('Packaging')?->net_amount ?: 0;
+        $leafletAmount          = $sumsByModelType->get('Leaflet')?->net_amount ?: 0;
         $servicesAmount         = $sumsByModelType->get('Service')?->net_amount ?: 0;
         $estimatedWeight        = $sumsByModelType->get('Product')?->estimated_weight ?: 0;
 
@@ -85,6 +87,8 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
         data_set($modelData, 'gross_amount', $itemsGross);
         data_set($modelData, 'shipping_amount', $shippingAmount);
         data_set($modelData, 'charges_amount', $chargesAmount);
+        data_set($modelData, 'packaging_amount', $packagingAmount);
+        data_set($modelData, 'leaflet_amount', $leafletAmount);
         data_set($modelData, 'services_amount', $servicesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
@@ -156,6 +160,18 @@ class CalculateOrderTotalAmounts extends OrgAction implements ShouldBeUnique
             if ($collectionChanged) {
                 CalculateCollectionCharges::run($order);
             }
+        }
+
+        if (in_array($order->state, [
+            OrderStateEnum::SUBMITTED,
+            OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::HANDLING_BLOCKED,
+            OrderStateEnum::PICKED,
+            OrderStateEnum::PACKING,
+            OrderStateEnum::PACKED,
+        ])) {
+            UpdateOrderPaymentsStatus::run($order);
         }
     }
 

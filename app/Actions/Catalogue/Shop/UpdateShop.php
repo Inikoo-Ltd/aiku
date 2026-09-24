@@ -47,6 +47,7 @@ use App\Models\Ordering\SalesChannel;
 use Closure;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Website\BreakWebsiteCache;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Support\Facades\Event;
@@ -86,6 +87,8 @@ class UpdateShop extends OrgAction
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
         $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
         $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
+
+        $originalPackagingAndInsertsEnabled = (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false);
 
         /* Read off the shop rather than the payload because the two callers name these
            differently: the shop screen sends them flat and they are nested below, while
@@ -198,6 +201,10 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'staff_chat_crm_backup_user_ids')) {
             data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
+        }
+
+        if (Arr::has($modelData, 'packaging_and_inserts_enabled')) {
+            data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
         }
 
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
@@ -603,6 +610,10 @@ class UpdateShop extends OrgAction
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
+        if ($shop->website && (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false) !== $originalPackagingAndInsertsEnabled) {
+            BreakWebsiteIrisCache::run($shop->website);
+        }
+
         /* Compared by value rather than read off getChanges(), which reports the whole settings
            blob because the column is written as a json merge and so cannot say which key moved.
 
@@ -926,6 +937,7 @@ class UpdateShop extends OrgAction
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
+            'packaging_and_inserts_enabled'                           => ['sometimes', 'boolean'],
             'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'access_id'                                               => ['sometimes', 'nullable', 'string'],

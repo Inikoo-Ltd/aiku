@@ -37,6 +37,11 @@ enum OrderStateEnum: string
         return in_array($this, [self::PICKED, self::PACKING, self::PACKED, self::FINALISED, self::DISPATCHED], true);
     }
 
+    public function acceptsPackagingFallback(): bool
+    {
+        return !in_array($this, [self::PACKING, self::PACKED, self::FINALISED, self::DISPATCHED, self::CANCELLED], true);
+    }
+
     public static function labels(): array
     {
         return [

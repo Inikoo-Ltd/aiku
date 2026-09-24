@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order\UpdateState;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
@@ -69,6 +70,17 @@ class SubmitOrder extends OrgAction
     public function handle(Order $order): Order
     {
         $oldState = $order->state;
+
+
+        $insertsWithoutArtwork = GetOrderInsertsWithoutArtwork::run($order);
+
+        if ($insertsWithoutArtwork) {
+            throw ValidationException::withMessages([
+                'inserts' => __('Upload the artwork for :inserts before placing the order.', [
+                    'inserts' => implode(', ', $insertsWithoutArtwork),
+                ]),
+            ]);
+        }
 
         $modelData = [
             'state'          => OrderStateEnum::SUBMITTED,
