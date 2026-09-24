@@ -3100,3 +3100,32 @@ test('job positions on an employee record that has left give its user no roles',
         ->and($positionsAudit->old_values)->toBe([])
         ->and($rolesAudit->new_values['added'])->toContain($role->name);
 });
+
+test('a worker position is dropped on the shops where the employee is already supervisor of the same department', function () {
+    setPermissionsTeamId($this->group->id);
+    $positionIds = JobPosition::where('organisation_id', $this->organisation->id)
+        ->whereIn('code', ['shk-m', 'shk-c', 'cus-m', 'cus-c', 'hr-m', 'hr-c', 'dist-pik', 'dist-pak'])
+        ->pluck('id', 'code');
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $positionIds['shk-m']    => ['Shop' => [1, 2]],
+        $positionIds['shk-c']    => ['Shop' => [1, 2]],
+        $positionIds['cus-m']    => ['Shop' => [1]],
+        $positionIds['cus-c']    => ['Shop' => [1, 2]],
+        $positionIds['hr-m']     => [],
+        $positionIds['hr-c']     => ['Organisation' => [$this->organisation->id]],
+        $positionIds['dist-pik'] => ['Warehouse' => [1]],
+        $positionIds['dist-pak'] => ['Warehouse' => [1]],
+    ]);
+
+    $scopes = $employee->jobPositions()->get()->mapWithKeys(fn (JobPosition $jobPosition) => [$jobPosition->code => $jobPosition->pivot->scopes]);
+
+    expect($scopes->keys()->sort()->values()->all())->toBe(['cus-c', 'cus-m', 'dist-pak', 'dist-pik', 'hr-m', 'shk-m'])
+        ->and($scopes['cus-c'])->toBe(['Shop' => [2]])
+        ->and($scopes['shk-m'])->toBe(['Shop' => [1, 2]]);
+});

@@ -25,6 +25,7 @@ class SyncEmployeeJobPositions
 
     public function handle(Employee $employee, array $jobPositions): void
     {
+        $jobPositions = DropLowerGradeJobPositionScopes::run($jobPositions);
         $positionsBefore     = $this->positionsForAudit($employee);
         $jobPositionsIds     = array_keys($jobPositions);
         $currentJobPositions = $employee->jobPositions()->pluck('job_positions.id')->all();
