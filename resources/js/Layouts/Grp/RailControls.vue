@@ -19,6 +19,7 @@ import MasterUpdatedList from './MasterUpdatedList.vue';
 import ProductsNeedReviewList from './ProductsNeedReviewList.vue';
 import FaireSkippedList from './FaireSkippedList.vue';
 import TicketBadgeList from './TicketBadgeList.vue';
+import CustomersWaiting from './CustomersWaiting.vue';
 import { computed } from 'vue'
 library.add(faCircle, faLifeRing, faShoppingCart, faCube)
 
@@ -57,6 +58,8 @@ const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + 
         <div v-if="layout.messagingSidebar.show" class="border-t border-[var(--chat-line)]" aria-hidden="true" />
 
         <div :class="layout.messagingSidebar.show ? 'flex flex-col gap-2' : 'contents'">
+
+        <CustomersWaiting />
 
         <div
             v-if="layout.ticket_badges?.queue || (layout.ticket_badges?.mine && (myTicketsCount > 0 || myTicketsUnread > 0))"

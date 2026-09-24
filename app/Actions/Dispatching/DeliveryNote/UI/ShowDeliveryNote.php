@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\GetDeliveryNoteConsumables;
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
@@ -745,6 +746,36 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    /**
+     * @return array{number_boxes: int, missing_message: string|null, pdf_route: array, skip_route: array|null}|null
+     */
+    private function getBoxPackingList(DeliveryNote $deliveryNote): ?array
+    {
+        $boxPackingList = DeliveryNoteBoxPackingList::make();
+
+        if (!$boxPackingList->isRequired($deliveryNote)) {
+            return null;
+        }
+
+        $canSkip = (bool)request()->user()?->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ]);
+
+        return [
+            'number_boxes'    => $boxPackingList->numberBoxes($deliveryNote),
+            'missing_message' => $boxPackingList->missingBoxesMessage($deliveryNote),
+            'pdf_route'       => [
+                'name'       => 'grp.pdfs.packing-lists',
+                'parameters' => ['deliveryNote' => $deliveryNote->slug],
+            ],
+            'skip_route'      => $canSkip ? [
+                'name'       => 'grp.models.delivery_note.box_packing_list.skip',
+                'parameters' => ['deliveryNote' => $deliveryNote->id],
+            ] : null,
+        ];
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight     = ($deliveryNote->estimated_weight ?? 0) / 1000;
@@ -869,6 +900,7 @@ class ShowDeliveryNote extends OrgAction
             'picked_bays'                  => $pickedBays,
             'trolleys'                     => $trolleys,
             'parcels'                      => $deliveryNote->parcels,
+            'box_packing_list'             => $this->getBoxPackingList($deliveryNote),
             'shipments'                    => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
             'shipments_routes'             => [
                 ...$additionalShipmentRoutes,

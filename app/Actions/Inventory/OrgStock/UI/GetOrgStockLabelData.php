@@ -99,7 +99,7 @@ class GetOrgStockLabelData
      * shared value prints; where they disagree the line is left off rather than guessed, because a
      * label naming one country for a box holding goods from two would be wrong rather than partial.
      */
-    private function getSharedTradeUnit($tradeUnits, string $field): ?TradeUnit
+    public function getSharedTradeUnit($tradeUnits, string $field): ?TradeUnit
     {
         $withValue = $tradeUnits->filter(fn (TradeUnit $tradeUnit) => filled($tradeUnit->{$field}));
 

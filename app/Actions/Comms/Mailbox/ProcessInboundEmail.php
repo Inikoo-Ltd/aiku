@@ -12,6 +12,7 @@ use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
+use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -45,6 +46,8 @@ class ProcessInboundEmail
      * stops it being fetched again, so it came back every couple of minutes all day.
      */
     private const int GONE_TTL_DAYS = 7;
+
+    private const array MACHINE_SENDER_DOMAINS = ['luigisbox.com', 'email-abuse.amazonses.com'];
 
     /**
      * The row carrying the gmail id is what stops a message being taken in twice, but it is only
@@ -224,6 +227,8 @@ class ProcessInboundEmail
         if (! $existing && ! $webUser) {
             ClassifyChatSessionNoise::dispatch($session);
         }
+
+        SendOutOfHoursReply::dispatch($session, $message);
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
         $client->fileAway($gmailMessageId, $label, Arr::get($raw, 'labelIds', []));
@@ -455,9 +460,11 @@ class ProcessInboundEmail
     public static function isAutomatedMail(?string $address, ?string $subject): bool
     {
         $localPart = str_replace(['-', '_', '.'], '', strtolower((string) strstr((string) $address, '@', true)));
+        $domain    = strtolower(substr((string) strrchr((string) $address, '@'), 1));
         $subject   = strtolower(trim((string) $subject));
 
         return $localPart === 'mailerdaemon'
+            || collect(self::MACHINE_SENDER_DOMAINS)->contains(fn (string $machineDomain) => $domain === $machineDomain || str_ends_with($domain, '.'.$machineDomain))
             || str_contains($localPart, 'noreply')
             || str_contains($localPart, 'donotreply')
             || str_contains($subject, 'report domain:')

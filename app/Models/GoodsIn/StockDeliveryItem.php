@@ -123,4 +123,9 @@ class StockDeliveryItem extends Model
     {
         return $this->hasMany(Sowing::class);
     }
+
+    public function unitsPerSko(): float
+    {
+        return (float) ($this->orgStock?->packed_in ?: 1);
+    }
 }

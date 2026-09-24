@@ -3243,6 +3243,32 @@ test('creating a master asset queues its effective cost hydration', function (Ma
     );
 })->depends("create master family");
 
+test('changing a master composition queues its effective cost hydration', function (MasterProductCategory $masterFamily) {
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'EFFECTIVE_COST_2',
+        'name'    => 'effective cost 2',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    Queue::fake();
+
+    UpdateMasterAsset::make()->action($masterAsset, [
+        'trade_units' => [
+            ['id' => $tradeUnit->id, 'quantity' => 1],
+        ],
+    ]);
+
+    Queue::assertPushed(
+        \App\Jobs\BoundedUniqueJobDecorator::class,
+        fn ($job) => $job->displayName() === MasterAssetHydrateEffectiveCost::class
+            && $job->getParameters()[0]->id === $masterAsset->id
+    );
+})->depends("create master family");
+
 test('upload and delete sound sample on master asset', function () {
     $masterDepartment = ensureMasterProductCategory();
     $masterFamily     = StoreMasterProductCategory::make()->action($masterDepartment, [

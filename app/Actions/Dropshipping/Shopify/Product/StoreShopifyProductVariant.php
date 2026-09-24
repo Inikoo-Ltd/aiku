@@ -114,11 +114,13 @@ class StoreShopifyProductVariant extends RetinaAction
 
             ];
 
-            if ($product->marketing_weight) {
+            $shippingWeight = $product->gross_weight ?: $product->marketing_weight;
+
+            if ($shippingWeight) {
                 $inventoryItem['measurement'] = [
                     'weight' => [
                         'unit'  => 'GRAMS',
-                        'value' => $product->marketing_weight
+                        'value' => $shippingWeight
 
                     ]
                 ];

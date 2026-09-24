@@ -36,10 +36,10 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        $remaining = (float) $this->stockDeliveryItem->unit_quantity_checked - (float) $this->stockDeliveryItem->unit_quantity_placed;
+        $remaining = ((float) $this->stockDeliveryItem->unit_quantity_checked - (float) $this->stockDeliveryItem->unit_quantity_placed) / $this->stockDeliveryItem->unitsPerSko();
 
-        if ((float) $this->get('quantity') > $remaining) {
-            $validator->errors()->add('quantity', __('You can not place more than the checked quantity (:remaining remaining)', ['remaining' => $remaining]));
+        if ((float) $this->get('quantity') > round($remaining, 4)) {
+            $validator->errors()->add('quantity', __('You can not place more than the checked quantity (:remaining remaining)', ['remaining' => round($remaining, 4)]));
         }
     }
 

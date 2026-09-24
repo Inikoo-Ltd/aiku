@@ -5,6 +5,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { useUploadLimits } from "@/Composables/useUploadLimits"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { useComposerDraft } from "@/Composables/useComposerDraft"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -25,10 +26,12 @@ import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import { useJumpToMessage } from "@/Composables/useJumpToMessage"
 import ChatTimelineEvent from "@/Components/Chat/ChatTimelineEvent.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -200,8 +203,9 @@ const templateOnly = computed(() => canSendNonTemplate.value === false)
 const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
+useComposerDraft(() => props.session?.ulid, newMessage)
 
-const messageInput = ref<HTMLTextAreaElement>()
+const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 const messagesContainer = ref<HTMLDivElement>()
 
 const imageInput = ref<HTMLInputElement>()
@@ -400,17 +404,11 @@ const scrollBottom = () =>
 
 const { jumpToMessage } = useJumpToMessage(messagesContainer)
 
-const autoResize = () => {
-    if (!messageInput.value) return
-    messageInput.value.style.height = "auto"
-    messageInput.value.style.height = Math.min(messageInput.value.scrollHeight, 120) + "px"
-}
-
 const replyingTo = ref<LocalChatMessage | null>(null)
 
 const startReply = (message: LocalChatMessage) => {
     replyingTo.value = message
-    nextTick(() => messageInput.value?.focus())
+    nextTick(() => messageEditor.value?.focus())
 }
 
 const cancelReply = () => {
@@ -426,23 +424,7 @@ const showEmojiPicker = ref(false)
 const emojiPickerContainer = ref<HTMLElement | null>(null)
 
 const pickEmoji = (emoji: string) => {
-    const el = messageInput.value
-
-    if (!el) {
-        newMessage.value += emoji
-        return
-    }
-
-    const start = el.selectionStart ?? newMessage.value.length
-    const end = el.selectionEnd ?? newMessage.value.length
-    newMessage.value = newMessage.value.slice(0, start) + emoji + newMessage.value.slice(end)
-
-    nextTick(() => {
-        el.focus()
-        const pos = start + emoji.length
-        el.setSelectionRange(pos, pos)
-        autoResize()
-    })
+    messageEditor.value?.insertText(emoji)
 }
 
 const handleClickOutsideEmoji = (event: MouseEvent) => {
@@ -636,7 +618,6 @@ const sendMessage = async () => {
     newMessage.value = ""
     removeFile()
     cancelReply()
-    autoResize()
 
     await postMessage(formData, optimisticMessage)
 }
@@ -1160,6 +1141,8 @@ onUnmounted(() => {
                 </button>
             </div>
 
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" :read-only="readOnly" @use="(text) => newMessage = text" />
+
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
                 <div v-if="hasTemplate"
                     class="flex items-center gap-2 mx-3 mt-2 px-2 py-1 rounded-lg bg-green-50 text-green-700 text-[11px]">
@@ -1190,11 +1173,10 @@ onUnmounted(() => {
                     </template>
                 </div>
 
-                <textarea v-if="!hasTemplate" ref="messageInput" v-model="newMessage" @input="autoResize"
-                    @paste="onPasteAttachment"
-                    @keydown.enter.exact.prevent="sendMessage" rows="1" :disabled="templateOnly"
+                <ChatMessageEditor v-if="!hasTemplate" ref="messageEditor" v-model="newMessage"
+                    @paste="onPasteAttachment" @submit="sendMessage" enter-sends :disabled="templateOnly"
                     :placeholder="templateOnly ? ctrans('24h window closed, send a template message') : ctrans('Type message...')"
-                    class="w-full resize-none px-4 pt-3 pb-1 text-sm leading-5 outline-none border-none ring-0 focus:outline-none focus:ring-0 rounded-t-xl bg-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" />
+                    class="px-4 pt-3 pb-1 rounded-t-xl [&_.ProseMirror]:max-h-[120px]" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">
@@ -1229,7 +1211,7 @@ onUnmounted(() => {
                         </button>
                         <template v-if="!hasTemplate && !templateOnly">
                             <div class="mx-1 h-5 w-px bg-gray-200" />
-                            <ChatFormattingToolbar :textarea="messageInput" />
+                            <ChatFormattingToolbar :editor="messageEditor?.editor" />
                         </template>
                     </div>
                     <Button @click="sendMessage" :loading="isSending"

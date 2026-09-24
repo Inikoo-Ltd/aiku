@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact;
 
 use App\Enums\Production\Artefact\ArtefactComplianceStatusEnum;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -16,9 +17,9 @@ class GetArtefactComplianceStatus
 {
     use AsObject;
 
-    public function handle(Artefact $artefact): array
+    public function handle(Artefact|OrgStock $model): array
     {
-        $items = $artefact->complianceItems;
+        $items = $model->complianceItems;
 
         if ($items->isEmpty()) {
             return [

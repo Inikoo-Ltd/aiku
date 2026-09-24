@@ -19,6 +19,7 @@ use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Traits\HasBucketAttachment;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Inventory\OrgStocksResource;
+use Illuminate\Support\Arr;
 
 class GetProductShowcaseInPortfolio
 {
@@ -79,13 +80,18 @@ class GetProductShowcaseInPortfolio
             }
         }
 
+        $orgStocks = array_map(
+            fn (array $orgStock) => Arr::except($orgStock, ['quantity', 'quantity_available']),
+            OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve()
+        );
+
         return [
             'product'             => ProductResourceForRetinaShowcase::make($product),
             'properties'          => $properties,
             'gpsr'                => $gpsr,
             'parts'               => // todo: delete this asap use org_stocks
-                OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-            'org_stocks'               => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+                $orgStocks,
+            'org_stocks'               => $orgStocks,
             'stats'               => $product->stats,
             'images'              => $this->getImagesData($product),
             'brand'               => $product->brand(),

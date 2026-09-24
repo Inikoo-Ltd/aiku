@@ -750,6 +750,11 @@ class Product extends Model implements Auditable, HasMedia
         return $this->belongsTo(Variant::class, 'variant_id');
     }
 
+    public function dropshippingBasePrice(): float
+    {
+        return (float) ($this->rrp > 0 ? $this->rrp : $this->price);
+    }
+
     public function bundle(): MorphOne
     {
         return $this->morphOne(Bundle::class, 'bundleable');

@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\DeliveryNote\DeliveryNoteBoxPackingList;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
 use App\Actions\Dispatching\Packing\StorePacking;
@@ -61,6 +62,10 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
             throw ValidationException::withMessages([
                 'parcels' => __('Enter the dimensions of every parcel before setting as packed'),
             ]);
+        }
+
+        if ($missingBoxesMessage = DeliveryNoteBoxPackingList::make()->missingBoxesMessage($deliveryNote)) {
+            throw ValidationException::withMessages(['boxes' => $missingBoxesMessage]);
         }
 
         $oldState = $deliveryNote->state;

@@ -24,6 +24,7 @@ import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
 import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
+import AlertSounds from '@/Components/Forms/Fields/AlertSounds.vue'
 import OrgThemes from '@/Components/Forms/Fields/OrgThemes.vue'
 import NotificationChannels from '@/Components/Forms/Fields/NotificationChannels.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
@@ -74,6 +75,7 @@ import PricingZoneMode from '@/Components/Forms/Fields/PricingZoneMode.vue'
 import TerritoryZone from '@/Components/Forms/Fields/TerritoryZone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import PreferredShippingModal from '@/Components/Forms/Fields/PreferredShippingModal.vue'
+import BoxPackingListDestinations from '@/Components/Forms/Fields/BoxPackingListDestinations.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
@@ -155,6 +157,7 @@ export const componentsList: { [key: string]: Component } = {
     'select_billing_cycle': SelectBillingCycle,
     'select_printer': SelectPrinter,
     'preferred_shipping': PreferredShippingModal,
+    'box_packing_list_destinations': BoxPackingListDestinations,
 
     'action': Action,
     'mailbox_connect': MailboxConnect,
@@ -167,6 +170,7 @@ export const componentsList: { [key: string]: Component } = {
     'app_login': AppLogin,
     'app_theme': AppTheme,
     'chat_theme': ChatTheme,
+    'alert_sounds': AlertSounds,
     'org_themes': OrgThemes,
     'notification_channels': NotificationChannels,
     'product_parts': ProductParts,

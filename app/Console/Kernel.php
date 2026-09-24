@@ -66,8 +66,9 @@ use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Website\Analytics\RecordVarnishHitRatio;
 use App\Actions\Web\Website\Analytics\RecordVarnishMemoryUsage;
 use App\Actions\Web\Website\PruneWebsiteConversionEvents;
-use App\Actions\Web\Webpage\FetchTopWebpagesPageSpeed;
+use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Website\PruneWebsitePageViews;
+use App\Actions\Web\WebVital\PruneWebVitalSamples;
 use App\Actions\Web\Website\PruneWebsiteVisitors;
 use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Traits\LoggableSchedule;
@@ -936,12 +937,21 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(FetchTopWebpagesPageSpeed::makeJob())->dailyAt('00:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchTopWebpagesPageSpeed',
+                $schedule->job(PruneWebVitalSamples::makeJob())->dailyAt('03:38')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'PruneWebVitalSamples',
                 ),
-                name: 'FetchTopWebpagesPageSpeed',
+                name: 'PruneWebVitalSamples',
                 type: 'job',
-                scheduledAt: '00:00'
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(FetchCruxRecords::makeJob())->weeklyOn(2, '01:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'FetchCruxRecords',
+                ),
+                name: 'FetchCruxRecords',
+                type: 'job',
+                scheduledAt: 'Tuesday 01:00'
             );
 
             $this->logSchedule(

@@ -90,7 +90,6 @@ const isFetchingOutOfStock = ref(false)
 const isNewArrivals = ref(false)
 const isLoadingInitial = ref(false)
 const isLoadingMore = ref(false)
-const renderKey = ref(0)
 
 
 const getRoutes = () => {
@@ -168,7 +167,7 @@ function buildFilters(): Record<string, any> {
 
 
 
-const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
+const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false, freshInStockProducts: any[] | null = null) => {
     if (isLoadMore) {
         isLoadingMore.value = true;
     }
@@ -205,21 +204,28 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
             totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
         }
 
-        if (isLoadMore) {
-            products.value = [...products.value, ...(data?.data ?? [])];
-        } else {
-            products.value = data?.data ?? [];
-            renderKey.value++;
+        const fetchedProducts = data?.data ?? [];
+        const willFetchOutOfStock = !ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value;
+
+        if (freshInStockProducts) {
+            products.value = [...freshInStockProducts, ...fetchedProducts];
+        } else if (isLoadMore) {
+            products.value = [...products.value, ...fetchedProducts];
+        } else if (!willFetchOutOfStock) {
+            products.value = fetchedProducts;
         }
 
-        if (!ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value) {
+        if (willFetchOutOfStock) {
             isFetchingOutOfStock.value = true;
             page.value = 1;
-            await fetchProducts(true, true);
+            await fetchProducts(true, true, isLoadMore ? null : fetchedProducts);
         }
 
     } catch (error) {
         console.log(error);
+        if (freshInStockProducts) {
+            products.value = freshInStockProducts;
+        }
         notify({ title: "Error", text: "Failed to load products.", type: "error" });
     } finally {
         isLoadingInitial.value = false;
@@ -538,7 +544,7 @@ watch(
 
                     <template v-else-if="products.length">
                         <!-- <pre>{{ get(layout, ['family_page'], []) }}</pre> -->
-                        <div v-for="(product, index) in products" :key="`${renderKey}-${product.id}`"
+                        <div v-for="(product, index) in products" :key="product.id"
                             :style="cardStyle"
                             class=" relative rounded flex md:flex-1 justify-center"
                             :class="{ 'max-lg:hidden': isMobileCollapsed && index >= MOBILE_INITIAL_PRODUCTS }">

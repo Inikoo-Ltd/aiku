@@ -25,6 +25,7 @@ use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\StoreTicketFromSlack;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
+use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
 use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -65,6 +66,7 @@ use Minishlink\WebPush\MessageSentReport;
 use Minishlink\WebPush\WebPush;
 use Inertia\Testing\AssertableInertia;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
@@ -348,6 +350,12 @@ test('staff reporter is told of the question by email and slack as their profile
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved', 'question' => 'Fixed the voucher total'])->assertRedirect();
     Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
     expect($ticket->comments()->where('body', 'Fixed the voucher total')->count())->toBe(1);
+
+    app()->detectEnvironment(fn () => 'production');
+    $mail = (new TicketNotification($ticket, 'Subject', ['Line'], 'View'))->toMail($reporter);
+    app()->detectEnvironment(fn () => 'testing');
+    expect($mail->mailer)->toBe('ses')
+        ->and($mail->from)->toBe(['help@aiku.io', 'Aiku Help']);
 });
 
 test('browser channel queues a web push to the reporter devices and prunes expired endpoints', function () {
@@ -1500,6 +1508,89 @@ test('the ticket write tool closes after next deployment and holds the comment u
 
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
         ->and($ticket->comments()->where('body', 'Fixed, live after the deploy')->sole()->author_id)->toBe($this->user->id);
+});
+
+test('a deployment only closes a pending deploy ticket when it includes the fix commit', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Pack weight']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'commit' => 'F194AFF213', 'comment' => 'Live now'])->assertOk();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBe('f194aff213');
+
+    CloseTicketsAfterDeployment::run('910ba60751');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY)
+        ->and($ticket->comments()->count())->toBe(0);
+
+    CloseTicketsAfterDeployment::run('5f525f2033');
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'Live now')->count())->toBe(1)
+        ->and(data_get($ticket->fresh()->data, 'deploy_commit'))->toBeNull();
+});
+
+test('the web ticket form records the fix commit when it sets the ticket to close on deployment', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Commit from the dialog']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    actingAs($this->user);
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now', 'deploy_commit' => 'not a hash'])->assertSessionHasErrors('deploy_commit');
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now', 'deploy_commit' => ' F194AFF213 '])->assertSessionHasNoErrors();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBe('f194aff213')
+        ->and(data_get($ticket->fresh()->data, 'deploy_comment.body'))->toBe('Live now');
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertSessionHasNoErrors();
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now'])->assertSessionHasNoErrors();
+
+    expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBeNull();
+});
+
+test('the held deploy comment can be rewritten while the ticket waits for the deployment', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Edit the held comment']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'comment' => 'First wording'])->assertOk();
+
+    actingAs($this->user);
+    UpdateTicketDeployComment::make()->action($ticket->fresh(), ['body' => '  Second wording  ']);
+
+    expect(data_get($ticket->fresh()->data, 'deploy_comment.body'))->toBe('Second wording')
+        ->and($ticket->comments()->count())->toBe(0);
+
+    CloseTicketsAfterDeployment::run();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->where('body', 'Second wording')->count())->toBe(1)
+        ->and($ticket->comments()->where('body', 'First wording')->count())->toBe(0);
+});
+
+test('clearing the held deploy comment closes the ticket on deployment without posting anything', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Drop the held comment']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'comment' => 'Not wanted after all'])->assertOk();
+
+    actingAs($this->user);
+    UpdateTicketDeployComment::make()->action($ticket->fresh(), ['body' => '']);
+
+    expect(data_get($ticket->fresh()->data, 'deploy_comment'))->toBeNull();
+
+    CloseTicketsAfterDeployment::run();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->count())->toBe(0);
+});
+
+test('the held deploy comment cannot be rewritten once the ticket has left pending deploy', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Too late to edit']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::RESOLVED->value, 'assignee_id' => $this->user->id]);
+
+    actingAs($this->user);
+
+    expect(fn () => UpdateTicketDeployComment::make()->action($ticket->fresh(), ['body' => 'nope']))
+        ->toThrow(HttpException::class);
 });
 
 test('a mentioned user is notified on the channels they chose and the plain comment notice is not doubled', function () {

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\OrgAgent\UI;
 
+use App\Actions\Procurement\PurchaseOrder\WithPurchaseOrderSerialReference;
 use App\Actions\SupplyChain\Supplier\UI\WithSupplierInfo;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Procurement\OrgAgent;
@@ -17,6 +18,7 @@ class GetOrgAgentShowcase
 {
     use AsObject;
     use WithSupplierInfo;
+    use WithPurchaseOrderSerialReference;
 
     public function handle(OrgAgent $orgAgent): array
     {
@@ -34,7 +36,10 @@ class GetOrgAgentShowcase
                 'currency'     => $agent->currency ?? $organisation->currency,
                 'address'      => AddressResource::make($organisation->address)->getArray(),
                 'photo'        => $agent->imageSources(320, 320),
-                'supplierInfo' => $this->supplierInfo($agent),
+                'supplierInfo' => [
+                    ...$this->supplierInfo($agent),
+                    'next_purchase_order_reference' => $this->nextPurchaseOrderReference($orgAgent),
+                ],
             ],
             'stats'       => [
                 [

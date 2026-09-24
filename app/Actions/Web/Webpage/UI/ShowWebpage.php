@@ -17,7 +17,8 @@ use App\Actions\Web\ExternalLink\UI\IndexExternalLinks;
 use App\Actions\Web\HasWorkshopAction;
 use App\Actions\Web\Redirect\UI\IndexRedirects;
 use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
-use App\Actions\Web\Webpage\GetWebpagePageSpeedReport;
+use App\Actions\Web\Website\GetCruxReport;
+use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Webpage\GetWebpagePerformance;
 use App\Actions\Web\Webpage\GetWebpageSeo;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
@@ -271,6 +272,17 @@ class ShowWebpage extends OrgAction
         return $actions;
     }
 
+    /**
+     * @return array{crux: array, visitors: array}
+     */
+    private function realUserSpeed(Webpage $webpage): array
+    {
+        return [
+            'crux'     => GetCruxReport::run($webpage->website, $webpage),
+            'visitors' => GetWebVitalsReport::run($webpage->website, $webpage),
+        ];
+    }
+
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
         $subNavigation = $this->getWebpageNavigation($webpage->website);
@@ -301,13 +313,13 @@ class ShowWebpage extends OrgAction
 
         /**
          * A page kept out of the index is never measured: nobody tunes an advert page for search
-         * results, so its report is not offered and no PageSpeed run is spent on it. What it is
-         * judged on instead is how the visitors it is bought for behave.
+         * results, so its real user speed is not offered. What it is judged on instead is how the
+         * visitors it is bought for behave.
          */
         $pagespeed = match (true) {
             $isHiddenFromSearchEngines => null,
-            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed'),
-            default => Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+            in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => $this->realUserSpeed($webpage), 'pagespeed'),
+            default => Inertia::optional(fn () => $this->realUserSpeed($webpage)),
         };
 
         return Inertia::render(

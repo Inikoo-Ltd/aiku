@@ -75,8 +75,9 @@ class StockDeliveryItemResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
-        $checked = (float) $item->unit_quantity_checked;
-        $placed  = (float) $item->unit_quantity_placed;
+        $checked     = (float) $item->unit_quantity_checked;
+        $placed      = (float) $item->unit_quantity_placed;
+        $unitsPerSko = $item->unitsPerSko();
 
         $isEditable = $item->state !== StockDeliveryItemStateEnum::CANCELLED
             && in_array($item->stockDelivery?->state, [
@@ -95,13 +96,17 @@ class StockDeliveryItemResource extends JsonResource
         return [
             'id'                    => $item->id,
             'slug'                  => $supplierProduct?->slug,
-            'code'                  => $supplierProduct?->code,
-            'name'                  => $supplierProduct?->name,
+            'code'                  => $supplierProduct?->code ?? $item->org_stock_code,
+            'name'                  => $supplierProduct?->name ?? $item->org_stock_name,
             'units_per_pack'        => $supplierProduct?->units_per_pack,
             'units_per_carton'      => $supplierProduct?->units_per_carton,
             'unit_quantity'         => $item->unit_quantity,
             'unit_quantity_checked' => $item->unit_quantity_checked,
             'unit_quantity_placed'  => $item->unit_quantity_placed,
+            'units_per_sko'         => $unitsPerSko,
+            'sko_quantity'          => round((float) $item->unit_quantity / $unitsPerSko, 4),
+            'sko_quantity_checked'  => round($checked / $unitsPerSko, 4),
+            'sko_quantity_placed'   => round($placed / $unitsPerSko, 4),
             'net_amount'            => $item->net_amount,
             'net_currency'          => $supplierProduct?->currency?->code,
             'org_net_amount'        => $item->org_net_amount,
@@ -136,7 +141,7 @@ class StockDeliveryItemResource extends JsonResource
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
-            'placement_remaining'   => max(0, $checked - $placed),
+            'placement_remaining'   => round(max(0, $checked - $placed) / $unitsPerSko, 4),
             'has_available_qty'     => $checked - $placed > 0,
             'is_editable'           => $isEditable,
             'locations'             => $locations,

@@ -81,8 +81,8 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
             'return_within' => ['sometimes', 'integer'],
             'return_description' => ['nullable', 'string'],
 
-            'pricing_type' => ['sometimes', 'string'],
-            'pricing_value' => ['sometimes', 'numeric']
+            'pricing_type' => ['sometimes', Rule::in(['percent', 'fixed'])],
+            'pricing_value' => ['sometimes', 'numeric', 'gt:-100']
         ];
     }
 

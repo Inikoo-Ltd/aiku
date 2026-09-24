@@ -72,6 +72,7 @@ class ChatSessionListResource extends JsonResource
         return [
             'ulid' => $this->ulid,
             'channel' => $this->channel?->value ?? 'website',
+            'customer_language' => ($this->activeUserLanguage ?? $this->userLanguage)?->only(['code', 'name']),
             'status' => $this->status,
             'is_spam' => (bool) $this->is_spam,
             'is_rubbish' => (bool) $this->is_rubbish,
@@ -80,6 +81,7 @@ class ChatSessionListResource extends JsonResource
                 : null,
             'customer_suggestion' => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($this->resource),
             'noise' => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
+            'claim' => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,

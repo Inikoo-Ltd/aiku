@@ -9,7 +9,8 @@ import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref, inject } from "vue"
+import { computed, ref, inject, toRef } from "vue"
+import { useComposerDraft } from "@/Composables/useComposerDraft"
 import type { Component } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
@@ -39,8 +40,9 @@ import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import PureTextarea from "@/Components/Pure/PureTextarea.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
+import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
+import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
@@ -73,6 +75,7 @@ const props = defineProps<{
     can_add_order: boolean
     can_email_customer?: boolean
     emailCustomerRoute?: routeType
+    customer_email?: string | null
     products?: {}
     dispatched_emails?: {}
     api_requests?: {}
@@ -118,14 +121,21 @@ const isOrderModalOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const isEmailModalOpen = ref(false)
-const messageTextarea = ref<HTMLTextAreaElement | null>(null)
+const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 
 const emailForm = useForm({
+    email: props.customer_email ?? '',
     subject: '',
     message: '',
+    attachments: [] as File[],
 })
+const emailDraftKey = (field: string) => () => `customer-email:${props.shop_data.customer_id}:${field}`
+useComposerDraft(emailDraftKey('subject'), toRef(emailForm, 'subject'))
+useComposerDraft(emailDraftKey('message'), toRef(emailForm, 'message'))
 const submitEmail = () => {
-    emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters))
+    emailForm.post(route(props.emailCustomerRoute!.name, props.emailCustomerRoute!.parameters), {
+        onSuccess: () => emailForm.reset('subject', 'message', 'attachments'),
+    })
 }
 
 const orderForm = useForm({
@@ -248,17 +258,24 @@ const layout = inject('layout')
             <h2 class="text-lg font-medium text-gray-900">{{ ctrans('New email to this customer') }}</h2>
             <p class="mt-1 text-sm text-gray-600">{{ ctrans('It opens a conversation in the chat inbox, and their reply comes back to it.') }}</p>
             <div class="mt-4 space-y-3">
-                <PureInput v-model="emailForm.subject" :placeholder="ctrans('Subject')" />
-                <div :ref="(el: any) => (messageTextarea = el?.querySelector('textarea') ?? null)">
-                    <ChatFormattingToolbar :textarea="messageTextarea" allow-underline class="mb-1" />
-                    <PureTextarea v-model="emailForm.message" :rows="8" :placeholder="ctrans('Message')" />
+                <div>
+                    <label class="text-xs font-medium text-gray-600">{{ ctrans('To') }}</label>
+                    <PureInput v-model="emailForm.email" type="email" :placeholder="ctrans('Email address')" />
                 </div>
+                <PureInput v-model="emailForm.subject" :placeholder="ctrans('Subject')" />
+                <div>
+                    <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline class="mb-1" />
+                    <ChatMessageEditor ref="messageEditor" v-model="emailForm.message" :placeholder="ctrans('Message')" allow-underline
+                        class="rounded-md border border-gray-300 px-3 py-2 focus-within:border-gray-500 [&_.ProseMirror]:min-h-40 [&_.ProseMirror]:max-h-80" />
+                </div>
+                <EmailAttachmentPicker v-model="emailForm.attachments" :errors="emailForm.errors" />
+                <p v-if="emailForm.errors.email" class="text-sm text-red-500">{{ emailForm.errors.email }}</p>
                 <p v-if="emailForm.errors.message" class="text-sm text-red-500">{{ emailForm.errors.message }}</p>
                 <p v-if="emailForm.errors.subject" class="text-sm text-red-500">{{ emailForm.errors.subject }}</p>
             </div>
             <div class="mt-4 flex justify-end">
                 <Button :label="ctrans('Send')" style="primary" icon="fal fa-paper-plane" :loading="emailForm.processing"
-                    :disabled="!emailForm.subject || !emailForm.message" @click="submitEmail" />
+                    :disabled="!emailForm.email || !emailForm.subject || !emailForm.message" @click="submitEmail" />
             </div>
         </div>
     </Modal>

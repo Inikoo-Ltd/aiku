@@ -36,6 +36,66 @@
         </tr>
     </table>
 
+    @if($boxes->isNotEmpty())
+        <table class="meta-info">
+            <tr>
+                <td>
+                    <strong>{{ __("Delivery Note") }}:</strong> {{ $deliveryNote->reference }}<br>
+                    <strong>{{ __("Boxes") }}:</strong> {{ $numberBoxes }}
+                </td>
+                <td style="text-align: right;">
+                    <strong>{{ __("Deliver to") }}:</strong><br>
+                    @if($deliveryNote->company_name){{ $deliveryNote->company_name }}<br>@endif
+                    @if($deliveryNote->contact_name){{ $deliveryNote->contact_name }}<br>@endif
+                    {!! nl2br(e($deliveryAddress ?? '')) !!}
+                </td>
+            </tr>
+        </table>
+
+        @foreach($boxes as $box => $rows)
+            @php $parcel = $deliveryNote->parcels[$box - 1] ?? null; @endphp
+            <h3 style="margin: 25px 0 5px 0;">
+                {{ __("Box :box of :boxes", ['box' => $box, 'boxes' => $numberBoxes]) }}
+                @if($parcel)
+                    <span style="font-weight: normal; font-size: 12px; color: #777;">
+                        {{ $parcel['weight'] ?? '' }} kg
+                        @if(!empty($parcel['dimensions']))
+                            · {{ implode('x', $parcel['dimensions']) }} cm
+                        @endif
+                    </span>
+                @endif
+            </h3>
+            <table class="items">
+                <thead>
+                    <tr>
+                        <th width="25%">{{ __("Product Code") }}</th>
+                        <th width="60%">{{ __("Product Name") }}</th>
+                        <th width="15%" class="text-center">{{ __("Quantity") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($rows as $row)
+                        <tr>
+                            <td>{{ $row['item']->orgStock->code ?? '' }}</td>
+                            <td>
+                                {{ $row['item']->orgStock->name ?? '' }}
+                                @if(($row['item']->orgStock->packed_in ?? 1) > 1)
+                                    [Pack of {{ $row['item']->orgStock->packed_in }}]
+                                @endif
+                            </td>
+                            <td class="text-center">{{ (float) $row['quantity'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="2" style="text-align: right;">{{ __("Total in box :box", ['box' => $box]) }}</th>
+                        <th class="text-center">{{ (float) $rows->sum('quantity') }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        @endforeach
+    @else
     <table class="items">
         <thead>
             <tr>
@@ -67,6 +127,7 @@
             </tr>
         </tfoot>
     </table>
+    @endif
 
     <div class="footer">
     </div>

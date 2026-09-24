@@ -2207,7 +2207,7 @@ test('an employee without a remote policy still gets coordinate validation on an
     actingAs($user);
 
     expect(fn () => ValidateClockingMachineQrCode::make()->handle($qrCode->hash, 51.5, -0.12))
-        ->toThrow(Exception::class, 'Your phone reports a location outside the workplace.');
+        ->toThrow(Exception::class, 'This is the Onsite Policy QR Machine ' . $employee->id . ' QR code');
 });
 
 test('a phone without location policy clocks in on a geofenced machine when the handset sends no coordinates', function () {

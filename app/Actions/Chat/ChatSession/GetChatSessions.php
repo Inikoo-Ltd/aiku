@@ -145,6 +145,8 @@ class GetChatSessions
             },
             'webUser',
             'shop',
+            'activeUserLanguage',
+            'userLanguage',
             'assignments.chatAgent.user'
         ])
             ->whereHas('messages')

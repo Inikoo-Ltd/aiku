@@ -9,6 +9,7 @@
 use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\Web\Website;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 
@@ -77,4 +78,27 @@ it('does not track visitors when the live visitors switch is off', function () {
     ])->assertStatus(200);
 
     Queue::assertNotPushed(JobDecorator::class, fn (JobDecorator $job) => $job->decorates(TrackWebsiteVisitorActivity::class));
+});
+
+it('stores the web vitals a visitor browser measured, dropping a webpage of another website', function () {
+    post('https://'.$this->website->domain.'/analytics/web-vitals', [
+        'webpage_id' => 999999999,
+        'device'     => 'phone',
+        'lcp'        => 2345,
+        'cls'        => 0.123,
+        'ttfb'       => 410,
+    ])->assertOk();
+
+    $sample = DB::table('web_vital_samples')->where('website_id', $this->website->id)->sole();
+
+    expect($sample->device)->toBe('phone')
+        ->and($sample->webpage_id)->toBeNull()
+        ->and($sample->lcp)->toBe(2345)
+        ->and((float)$sample->cls)->toBe(0.123)
+        ->and($sample->inp)->toBeNull();
+
+    post('https://'.$this->website->domain.'/analytics/web-vitals', ['device' => 'desktop'])->assertOk();
+    post('https://'.$this->website->domain.'/analytics/web-vitals', ['device' => 'tablet', 'lcp' => 100], ['Accept' => 'application/json'])->assertUnprocessable();
+
+    expect(DB::table('web_vital_samples')->where('website_id', $this->website->id)->count())->toBe(1);
 });

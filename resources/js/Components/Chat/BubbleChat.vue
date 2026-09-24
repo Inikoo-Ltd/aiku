@@ -622,9 +622,18 @@ const isLongText = computed(() =>
         : false
 )
 
-watch(latestTranslation, () => {
-    showTranslation.value = !isLongText.value
+const isOwnAgentMessage = computed(() => props.viewerType === "agent" && props.message.sender_type === "agent")
+
+const translationDirection = computed(() => {
+    const target = latestTranslation.value?.language_code
+    const source = activeMessage.value.original?.language_code
+
+    return source && target && source !== target ? `${source} → ${target}` : latestTranslation.value?.language_name ?? ""
 })
+
+watch(latestTranslation, () => {
+    showTranslation.value = !isOwnAgentMessage.value && !isLongText.value
+}, { immediate: true })
 
 const translateMessage = async () => {
     if (!props.message.id || !selectedLanguageId.value) return
@@ -1108,28 +1117,22 @@ watch(selectedLanguage, async (val) => {
                 class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
                 <div v-if="isTranslating" class="flex items-center gap-1 text-[10px]">
                     <LoadingIcon />
-                    <span>Translating…</span>
+                    <span>{{ ctrans("Translating…") }}</span>
                 </div>
 
-                <template v-else>
-                    <div v-if="showTranslation && !shouldHideTranslationBlock">
+                <template v-else-if="!shouldHideTranslationBlock">
+                    <div v-if="showTranslation">
                         {{ latestTranslation!.translated_text }}
                     </div>
 
-                    <span v-else-if="!shouldHideTranslationBlock" class="cursor-pointer underline text-gray-500"
-                        @click="showTranslation = true">
-                        Show translation
-                    </span>
-
-                    <div v-if="showTranslation && !shouldHideTranslationBlock"
-                        class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
+                    <div class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
                         <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
                             class="w-3 h-3 rounded-sm" loading="lazy" decoding="async" />
                         <FontAwesomeIcon :icon="faLanguage" fixed-width />
-                        <span>{{ latestTranslation!.language_name }}</span>
+                        <span>{{ translationDirection }}</span>
 
-                        <span v-if="isLongText" class="ml-2 cursor-pointer underline" @click="showTranslation = false">
-                            Hide
+                        <span class="ml-2 cursor-pointer underline" @click="showTranslation = !showTranslation">
+                            {{ showTranslation ? ctrans("Hide") : ctrans("Show translation") }}
                         </span>
                     </div>
                 </template>

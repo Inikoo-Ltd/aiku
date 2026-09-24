@@ -185,12 +185,12 @@ class GetGroupNavigation
                         ],
                     ],
                     ...($user->hasGroupAccess() ? [[
-                        'label'   => __('Phone calls'),
-                        'tooltip' => __('Phone calls'),
-                        'icon'    => ['fal', 'fa-phone'],
-                        'root'    => 'grp.chat.phone_calls.',
+                        'label'   => __('AI assist'),
+                        'tooltip' => __('AI assist'),
+                        'icon'    => ['fal', 'fa-robot'],
+                        'root'    => 'grp.chat.ai.',
                         'route'   => [
-                            'name' => 'grp.chat.phone_calls.index',
+                            'name' => 'grp.chat.ai.dashboard',
                         ],
                     ]] : []),
                     [

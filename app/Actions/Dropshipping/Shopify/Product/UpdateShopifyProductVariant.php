@@ -102,8 +102,8 @@ class UpdateShopifyProductVariant extends RetinaAction
                 $price        = $portfolio->customer_price;
                 $comparePrice = $portfolio->customer_price;
             } else {
-                $price        = $product->rrp;
-                $comparePrice = $product->rrp;
+                $price        = $product->dropshippingBasePrice();
+                $comparePrice = $price;
             }
 
             $variables = [

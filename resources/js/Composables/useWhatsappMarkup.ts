@@ -48,3 +48,106 @@ export const formatWhatsappMarkup = (value?: string | null): string => {
 
     return text
 }
+
+const LIST_LINE = /^(• |\d+\. )/
+
+export const markupToEditorHtml = (value?: string | null): string => {
+    const lines = (value ?? "").split(/\r?\n/)
+    let html = ""
+    let index = 0
+
+    while (index < lines.length) {
+        const line = lines[index]
+        const kind = line.startsWith("• ") ? "ul" : /^\d+\. /.test(line) ? "ol" : null
+
+        if (!kind) {
+            html += `<p>${formatWhatsappMarkup(line)}</p>`
+            index++
+            continue
+        }
+
+        html += `<${kind}>`
+        while (index < lines.length && (kind === "ul" ? lines[index].startsWith("• ") : /^\d+\. /.test(lines[index]))) {
+            html += `<li><p>${formatWhatsappMarkup(lines[index].replace(LIST_LINE, ""))}</p></li>`
+            index++
+        }
+        html += `</${kind}>`
+    }
+
+    return html
+}
+
+type EditorNode = {
+    type: string
+    text?: string
+    marks?: { type: string }[]
+    content?: EditorNode[]
+}
+
+const MARKERS: [string, string][] = [
+    ["underline", "__"],
+    ["bold", "*"],
+    ["italic", "_"],
+    ["strike", "~"],
+    ["code", "```"],
+]
+
+const inlineToMarkup = (nodes: EditorNode[] = []): string => {
+    let output = ""
+    let open: string[] = []
+    let pendingSpace = ""
+
+    const moveTo = (wanted: string[]) => {
+        let shared = 0
+        while (shared < open.length && open[shared] === wanted[shared]) shared++
+        for (let i = open.length - 1; i >= shared; i--) output += open[i]
+        output += pendingSpace
+        pendingSpace = ""
+        return shared
+    }
+
+    for (const node of nodes) {
+        if (node.type === "hardBreak") {
+            moveTo([])
+            open = []
+            output += "\n"
+            continue
+        }
+
+        const text = node.text ?? ""
+        const [, lead, core, trail] = text.match(/^(\s*)([\s\S]*?)(\s*)$/) ?? ["", "", text, ""]
+
+        if (!core) {
+            pendingSpace += text
+            continue
+        }
+
+        const names = (node.marks ?? []).map((mark) => mark.type)
+        const wanted = MARKERS.filter(([name]) => names.includes(name)).map(([, marker]) => marker)
+        const shared = moveTo(wanted)
+
+        output += lead
+        wanted.slice(shared).forEach((marker) => (output += marker))
+        output += core
+        open = wanted
+        pendingSpace = trail
+    }
+
+    moveTo([])
+
+    return output
+}
+
+export const editorDocToMarkup = (doc: EditorNode): string =>
+    (doc.content ?? [])
+        .flatMap((block) => {
+            if (block.type === "bulletList" || block.type === "orderedList") {
+                return (block.content ?? []).map((item, position) => {
+                    const prefix = block.type === "bulletList" ? "• " : `${position + 1}. `
+                    return prefix + (item.content ?? []).map((child) => inlineToMarkup(child.content)).join(" ")
+                })
+            }
+
+            return [inlineToMarkup(block.content)]
+        })
+        .join("\n")

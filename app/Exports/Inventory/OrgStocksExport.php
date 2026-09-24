@@ -8,9 +8,10 @@
 
 namespace App\Exports\Inventory;
 
-use App\Models\Goods\Stock;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\Query\Builder;
+use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockFamily;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -18,58 +19,56 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class OrgStocksExport implements FromQuery, WithMapping, ShouldAutoSize, WithHeadings
 {
-    public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Stock|Builder
+    public function __construct(private readonly Organisation|OrgStockFamily $parent)
     {
-        return Stock::query();
     }
 
-    /** @var Stock $row */
+    public function query(): Builder
+    {
+        return OrgStock::query()
+            ->with('orgStockFamily')
+            ->when(
+                $this->parent instanceof OrgStockFamily,
+                fn (Builder $query) => $query->where('org_stock_family_id', $this->parent->id),
+                fn (Builder $query) => $query->where('organisation_id', $this->parent->id)
+            )
+            ->orderBy('code');
+    }
+
+    /** @var OrgStock $row */
     public function map($row): array
     {
         return [
-            $row->id,
-            $row->slug,
-            isset($row->stockFamily) ? $row->stockFamily->name : null,
-            $row->trade_unit_composition->value,
+            $row->code,
+            $row->name,
+            $row->orgStockFamily?->code,
             $row->state->value,
-            $row->sellable,
-            $row->raw_material,
-            $row->barcode,
-            $row->units_per_pack,
-            $row->units_per_carton,
             $row->quantity_in_locations,
-            $row->quantity_status,
-            $row->available_forecast,
-            $row->number_locations,
-            $row->unit_value,
+            $row->quantity_available,
+            $row->sku_value,
             $row->value_in_locations,
-            $row->activated_at,
-            $row->discontinuing_at,
-            $row->discontinued_at,
-            $row->created_at
+            $row->activated_in_organisation_at,
+            $row->discontinuing_in_organisation_at,
+            $row->discontinued_in_organisation_at,
+            $row->created_at,
         ];
     }
 
     public function headings(): array
     {
         return [
-            '#',
-            'Slug',
-            'Stock Name',
-            'Trade Unit Composition',
+            'Code',
+            'Name',
+            'Family',
             'State',
-            'Raw Material',
-            'Barcode',
-            'Units Per Pack',
-            'Units Per Carton',
             'Quantity in Locations',
-            'Quantity Status',
-            'Available Forecast',
-            'Number Locations',
+            'Quantity Available',
+            'SKO Value',
+            'Value in Locations',
             'Activated At',
             'Discontinuing At',
             'Discontinued At',
-            'Created At'
+            'Created At',
         ];
     }
 }

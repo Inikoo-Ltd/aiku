@@ -26,7 +26,7 @@ class ImportTransactionInOrder extends OrgAction
 
     private Shop $parent;
 
-    public function handle(Order $order, $file, array $modelData): Upload
+    public function handle(Order $order, $file, array $modelData, bool $byCustomer = false): Upload
     {
         $upload = StoreUpload::make()->fromFile(
             $order->shop,
@@ -41,7 +41,7 @@ class ImportTransactionInOrder extends OrgAction
 
         ImportUpload::run(
             $file,
-            new TransactionImport($order, $upload)
+            new TransactionImport($order, $upload, $byCustomer)
         );
         $upload->refresh();
         // } else {
@@ -72,7 +72,7 @@ class ImportTransactionInOrder extends OrgAction
         return $this->handle($order, $file, $this->validatedData);
     }
 
-    public function action(Order $order, array $modelData): Upload
+    public function action(Order $order, array $modelData, bool $byCustomer = false): Upload
     {
         $this->parent = $order->shop;
         $this->initialisationFromShop($order->shop, $modelData);
@@ -81,7 +81,7 @@ class ImportTransactionInOrder extends OrgAction
         $file = Arr::get($modelData, 'file');
         Storage::disk('local')->put($this->tmpPath, $file);
 
-        return $this->handle($order, $file, $this->validatedData);
+        return $this->handle($order, $file, $this->validatedData, $byCustomer);
     }
 
     public function runImportForCommand($file, $command): Upload

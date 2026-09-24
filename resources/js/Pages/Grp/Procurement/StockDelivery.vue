@@ -21,6 +21,7 @@ import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.
 import StockDeliveryCostingChecklist from "@/Components/Procurement/StockDeliveryCostingChecklist.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -143,6 +144,8 @@ const props = defineProps<{
 	under_over_delivered?: {}
 	showcase?: {}
 	attachments?: {}
+	notes?: {}
+	note_store_route?: routeType
 	history?: {}
 }>()
 
@@ -159,6 +162,7 @@ const component = computed(() => {
 		under_over_delivered: TableStockDeliveryItems,
 		showcase: ProcurementOrderData,
 		attachments: TableAttachments,
+		notes: TableProcurementNotes,
 		history: TableHistories,
 	}
 
@@ -780,6 +784,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:tab="currentTab"
 		:costing="currentTab === 'items' ? costing : undefined"
 		:detachRoute="attachmentRoutes.detachRoute"
+		:storeRoute="currentTab === 'notes' ? note_store_route : undefined"
 	/>
 
 	<UploadAttachment

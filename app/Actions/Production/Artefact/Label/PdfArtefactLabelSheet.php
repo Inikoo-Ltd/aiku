@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -23,6 +24,7 @@ use Throwable;
 class PdfArtefactLabelSheet extends OrgAction
 {
     use WithArtefactLabelLayout;
+    use WithArtefactLabelAuthorisation;
 
     private const LINE_HEIGHT = 1.1;
 
@@ -51,7 +53,7 @@ class PdfArtefactLabelSheet extends OrgAction
      *
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Artefact $artefact, array $modelData, ?array $artwork): Response
+    public function handle(Artefact|OrgStock $model, array $modelData, ?array $artwork): Response
     {
         $orientation    = $modelData['orientation'];
         $columns        = (int) $modelData['columns'];
@@ -68,7 +70,7 @@ class PdfArtefactLabelSheet extends OrgAction
             abort(422, __('The grid does not fit on the page, reduce the number of labels, the margin or the gap.'));
         }
 
-        $filename = 'labels-'.$artefact->code.'-'.now()->format('Y-m-d').'.pdf';
+        $filename = 'labels-'.$model->code.'-'.now()->format('Y-m-d').'.pdf';
         $cells    = $this->getCells($columns, $rows, $pageMargin, $gap, $labelWidth, $labelHeight);
         $isVector = Arr::get($artwork, 'mime_type') === 'application/pdf';
 
@@ -353,6 +355,10 @@ class PdfArtefactLabelSheet extends OrgAction
             return true;
         }
 
+        if (!isset($this->production)) {
+            return $this->canViewLabels($request);
+        }
+
         return $request->user()->authTo([
             'org-supervisor.'.$this->organisation->id,
             'productions-view.'.$this->organisation->id,
@@ -377,13 +383,27 @@ class PdfArtefactLabelSheet extends OrgAction
     }
 
     /**
+     * @throws \Mpdf\MpdfException
+     */
+    public function inOrgStock(OrgStock $orgStock, ActionRequest $request): Response
+    {
+        $this->initialisation($orgStock->organisation, $request);
+
+        return $this->handle(
+            $orgStock,
+            $this->validatedData,
+            $this->getArtwork($orgStock, $request->file('background_artwork'), $this->validatedData)
+        );
+    }
+
+    /**
      * A freshly uploaded artwork wins, otherwise a saved label prints against the artwork it was
      * designed with, which is the whole reason that file is kept.
      *
      * @param  array<string, mixed>  $modelData
      * @return array{path: string, mime_type: string|null}|null
      */
-    private function getArtwork(Artefact $artefact, ?UploadedFile $uploaded, array $modelData): ?array
+    private function getArtwork(Artefact|OrgStock $model, ?UploadedFile $uploaded, array $modelData): ?array
     {
         if ($uploaded) {
             return [
@@ -393,7 +413,7 @@ class PdfArtefactLabelSheet extends OrgAction
         }
 
         $label = Arr::get($modelData, 'artefact_label_id')
-            ? $artefact->labels()->find(Arr::get($modelData, 'artefact_label_id'))
+            ? $model->labels()->find(Arr::get($modelData, 'artefact_label_id'))
             : null;
 
         if (!$label?->artwork) {

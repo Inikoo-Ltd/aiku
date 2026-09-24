@@ -11,6 +11,7 @@ namespace App\Mcp\Tools;
 use App\Actions\SysAdmin\McpChange\GetMcpChangeSnapshot;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\SysAdmin\McpChange;
+use Illuminate\Support\Str;
 use Laravel\Mcp\Request;
 
 /**
@@ -37,7 +38,7 @@ trait WithMcpChangeLog
                 'user_id'      => $user->id,
                 'type'         => $type,
                 'tool'         => $this->name(),
-                'label'        => $label,
+                'label'        => Str::limit($label, 250),
                 'request_text' => $request->get('request_text'),
                 'before'       => $before,
                 'after'        => $after,

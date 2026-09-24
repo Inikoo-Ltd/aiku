@@ -19,7 +19,7 @@ class CalculateStockDeliveryItemTotalPlaced
             return $stockDeliveryItem;
         }
 
-        $placed    = (float) $stockDeliveryItem->sowings()->where('type', SowingTypeEnum::SOW)->sum('quantity');
+        $placed    = round((float) $stockDeliveryItem->sowings()->where('type', SowingTypeEnum::SOW)->sum('quantity') * $stockDeliveryItem->unitsPerSko(), 4);
         $checked   = (float) $stockDeliveryItem->unit_quantity_checked;
         $isChecked = $stockDeliveryItem->checked_at !== null || $checked > 0;
 

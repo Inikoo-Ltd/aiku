@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStockFamily\UI;
 
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum;
 use App\Models\Inventory\OrgStockFamily;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -15,6 +16,28 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetOrgStockFamilyShowcase
 {
     use AsObject;
+
+    private const BUCKET_ICONS = [
+        'out'    => 'fal fa-times-circle',
+        'w1'     => 'fal fa-skull-crossbones',
+        'w2'     => 'fal fa-skull-crossbones',
+        'w3'     => 'fal fa-exclamation-triangle',
+        'w4'     => 'fal fa-exclamation-triangle',
+        'ok'     => 'fal fa-dot-circle',
+        'excess' => 'fal fa-arrow-alt-circle-up',
+        'dead'   => 'fal fa-arrow-alt-circle-up',
+    ];
+
+    private const BUCKET_CLASSES = [
+        'out'    => 'text-red-700',
+        'w1'     => 'text-red-500',
+        'w2'     => 'text-orange-500',
+        'w3'     => 'text-amber-500',
+        'w4'     => 'text-yellow-500',
+        'ok'     => 'text-green-500',
+        'excess' => 'text-blue-500',
+        'dead'   => 'text-gray-500',
+    ];
 
     public function handle(OrgStockFamily $orgStockFamily): array
     {
@@ -61,38 +84,13 @@ class GetOrgStockFamilyShowcase
                     'class' => 'text-gray-500',
                 ],
             ],
-            'quantity_status' => [
-                [
-                    'label' => __('Ideal'),
-                    'count' => $stats?->number_org_stocks_quantity_status_ideal ?? 0,
-                    'icon'  => 'fal fa-dot-circle',
-                    'class' => 'text-green-500',
-                ],
-                [
-                    'label' => __('Low'),
-                    'count' => $stats?->number_org_stocks_quantity_status_low ?? 0,
-                    'icon'  => 'fal fa-exclamation-triangle',
-                    'class' => 'text-yellow-500',
-                ],
-                [
-                    'label' => __('Critical'),
-                    'count' => $stats?->number_org_stocks_quantity_status_critical ?? 0,
-                    'icon'  => 'fal fa-skull-crossbones',
-                    'class' => 'text-red-500',
-                ],
-                [
-                    'label' => __('Out of stock'),
-                    'count' => $stats?->number_org_stocks_quantity_status_out_of_stock ?? 0,
-                    'icon'  => 'fal fa-times-circle',
-                    'class' => 'text-red-700',
-                ],
-                [
-                    'label' => __('Excess'),
-                    'count' => $stats?->number_org_stocks_quantity_status_excess ?? 0,
-                    'icon'  => 'fal fa-arrow-alt-circle-up',
-                    'class' => 'text-blue-500',
-                ],
-            ],
+            'quantity_status' => collect(GetOrganisationStockCoverBuckets::run($orgStockFamily->organisation, $orgStockFamily))
+                ->map(fn (array $bucket) => [
+                    'label' => $bucket['label'],
+                    'count' => $bucket['count'],
+                    'icon'  => self::BUCKET_ICONS[$bucket['bucket']],
+                    'class' => self::BUCKET_CLASSES[$bucket['bucket']],
+                ])->all(),
         ];
     }
 }

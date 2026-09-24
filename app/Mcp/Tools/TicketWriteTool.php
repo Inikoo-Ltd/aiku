@@ -51,6 +51,7 @@ class TicketWriteTool extends Tool
             'tags.*'      => ['string', 'max:64'],
             'acting_as'   => ['sometimes', 'nullable', 'string'],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
+            'commit'        => ['sometimes', 'string', 'regex:/^[0-9a-f]{7,40}$/i'],
             'attachments'   => ['sometimes', 'array', 'max:5'],
             'attachments.*.name'   => ['required', 'string', 'max:255'],
             'attachments.*.base64' => ['required', 'string', 'max:14000000'],
@@ -134,6 +135,9 @@ class TicketWriteTool extends Tool
         if ($isClosingAfterDeployment && $request->filled('comment')) {
             $changes['question'] = $request->string('comment')->toString();
         }
+        if ($isClosingAfterDeployment && $request->filled('commit')) {
+            $changes['deploy_commit'] = $request->string('commit')->toString();
+        }
 
         if ($changes) {
             $ticket = UpdateTicket::make()->action($ticket, $changes);
@@ -206,7 +210,7 @@ class TicketWriteTool extends Tool
             'comment'     => $schema->string()->description('Comment to add to the ticket, posted as you. With comment_id, the text that replaces that comment'),
             'comment_id'  => $schema->integer()->description('Id of one of your own comments on this ticket: its text is replaced by comment, rather than a new comment being added. Use it to correct something you already posted instead of following it with a correction'),
             'internal'    => $schema->boolean()->description('true = internal comment, visible to the help desk only. Use it for technical notes (ids repaired, commands run, root cause) so the public thread stays readable for the reporter'),
-            'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket'),
+            'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket. Pass commit too'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
             'type'        => $schema->string()->description('New tickets only: help (HELP-n, default) or engineer (INI-n, engineering work such as upgrades, refactors and tech debt)'),
@@ -214,6 +218,7 @@ class TicketWriteTool extends Tool
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),
             'acting_as'   => $schema->string()->description('Username to act as: the comment, assignment or status change is recorded as that user. Help desk supervisors only'),
+            'commit'        => $schema->string()->description('With status pending_deploy: hash of the commit that fixes the ticket. Only a deployment that includes it closes the ticket; without it the next deployment does'),
             'waiting_hours' => $schema->integer()->description('With status waiting: hours before the ticket resurfaces (1-720). Defaults to the ticket kind\'s waiting period'),
             'attachments'   => $schema->array()->description('Up to 5 files to attach to the comment (images, PDF, Word, Excel, CSV, video, archives; 10 MB each), each as {name, base64}')->items(
                 $schema->object(['name' => $schema->string()->description('File name with extension, e.g. proof.png'), 'base64' => $schema->string()->description('Base64-encoded file content')])

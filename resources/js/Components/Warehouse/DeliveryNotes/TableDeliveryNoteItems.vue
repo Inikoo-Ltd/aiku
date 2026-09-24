@@ -16,7 +16,7 @@ import { notify } from "@kyvg/vue3-notification";
 import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject, computed, watch, onUnmounted } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faStopCircle, faFilePdf } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHourglassHalf, faUndo, faBox, faBarcode, faStopCircle, faFilePdf, faPlus, faCut } from "@fal";
 import { faSkull, faWandMagic, faExclamationTriangle } from "@fas";
 import { faSpinnerThird } from "@fad";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -62,6 +62,7 @@ const props = defineProps<{
     total_unit_counts: number
     warehouse?: { slug: string }
     deliveryNote?: { id: number, slug: string }
+    boxPackingList?: { number_boxes: number, missing_message: string | null, pdf_route: routeType } | null
 }>();
 
 const emit = defineEmits<{
@@ -358,59 +359,6 @@ const countStockInAllLocations = (loc?: {}[]) => {
     }
 }
 
-
-// Section: Modal pick from magic place
-const selectedItemToPickMagicPlace = ref(null)
-const isModalEPickMagicPlace = ref(false)
-const onCloseModalPickMagicPlace = () => {
-    isModalEPickMagicPlace.value = false
-
-    setTimeout(() => {
-        selectedItemToPickMagicPlace.value = null
-    }, 300);
-}
-const isLoadingSubmitPickMagicPlace = ref(false)
-const onSubmitPickMagicPlace = () => {
-
-    if (!selectedItemToPickMagicPlace.value) {
-        console.log('No item expiry date selected')
-        return
-    }
-
-    router.post(
-        route('grp.models.delivery_note_item.picking.magic_place', {
-            deliveryNoteItem: selectedItemToPickMagicPlace.value?.id
-        }),
-        {
-            
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                isLoadingSubmitPickMagicPlace.value = true
-            },
-            onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully pick from magic place"),
-                    type: "success"
-                })
-                onCloseModalPickMagicPlace()
-            },
-            onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to pick from magic place. Try again"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmitPickMagicPlace.value = false
-            },
-        }
-    )
-}
 
 const GetQuantityToPickFractional = (item) => {
     if(props.shop_type == 'dropshipping'){
@@ -846,6 +794,58 @@ const warningMsg = computed(() => {
     }
 })
 
+// Section: packing list by box
+interface ItemBox {
+    box: number
+    quantity: number
+}
+
+const boxNumbers = computed(() => Array.from({ length: props.boxPackingList?.number_boxes ?? 1 }, (_, index) => index + 1))
+const canEditBoxes = computed(() => props.isEditable && !['dispatched', 'cancelled'].includes(props.state))
+const boxQuantity = (item: { boxes?: ItemBox[] }, box: number) => Number(item.boxes?.find((row) => row.box === box)?.quantity ?? 0)
+const boxedQuantity = (item: { boxes?: ItemBox[] }) => (item.boxes ?? []).reduce((sum, row) => sum + Number(row.quantity), 0)
+const isFullyBoxed = (item: { boxes?: ItemBox[], quantity_picked: number }) => Math.abs(boxedQuantity(item) - Number(item.quantity_picked)) < 0.001
+const describeBoxes = (item: { boxes?: ItemBox[] }) => (item.boxes ?? []).map((row) => `${row.box}: ${Number(row.quantity)}`).join(' · ')
+
+const savingBoxesFor = ref<number | null>(null)
+const saveBoxes = async (item: { id: number, boxes_update_route: routeType }, boxes: ItemBox[]) => {
+    savingBoxesFor.value = item.id
+    try {
+        await axios.patch(route(item.boxes_update_route.name, item.boxes_update_route.parameters), { boxes })
+        router.reload({
+            only: [props.tab, 'box_stats'].filter(Boolean) as string[],
+            onFinish: () => savingBoxesFor.value = null,
+        })
+        return true
+    } catch (error: any) {
+        savingBoxesFor.value = null
+        notify({
+            title: ctrans('Something went wrong'),
+            text: error?.response?.data?.message ?? '',
+            type: 'error',
+        })
+        return false
+    }
+}
+const putAllInBox = (item: any, box: number) => saveBoxes(item, [{ box, quantity: Number(item.quantity_picked) }])
+
+const splitBoxesItem = ref<any>(null)
+const splitBoxesQuantities = ref<Record<number, number>>({})
+const splitBoxNumbers = computed(() => [...boxNumbers.value, boxNumbers.value.length + 1])
+const splitBoxesTotal = computed(() => Object.values(splitBoxesQuantities.value).reduce((sum, quantity) => sum + Number(quantity || 0), 0))
+const openSplitBoxes = (item: any) => {
+    splitBoxesItem.value = item
+    splitBoxesQuantities.value = Object.fromEntries(splitBoxNumbers.value.map((box) => [box, boxQuantity(item, box)]))
+}
+const onSaveSplitBoxes = async () => {
+    const boxes = Object.entries(splitBoxesQuantities.value)
+        .map(([box, quantity]) => ({ box: Number(box), quantity: Number(quantity || 0) }))
+        .filter((row) => row.quantity > 0)
+
+    if (await saveBoxes(splitBoxesItem.value, boxes)) {
+        splitBoxesItem.value = null
+    }
+}
 </script>
 
 <template>
@@ -1423,29 +1423,6 @@ const warningMsg = computed(() => {
                                 </template>
                             </NumberWithButtonSave>
                             
-                            <!-- Button: Pick from magic place -->
-                            <Button
-                                v-if="!itemValue.is_handled
-                                    && Number(countStockInAllLocations(itemValue.locations)) < itemValue.quantity_to_pick
-                                "
-                                @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
-                                type="warning"
-                                key="4"
-                                v-tooltip="ctrans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
-                                :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                                method="post"
-                            >
-                                <template #label>
-                                    <span class="flex items-center">
-                                        <div>
-                                            <FractionDisplay v-if="GetQuantityToPickFractional(itemValue)" :fractionData="GetQuantityToPickFractional(itemValue)" />
-                                            <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0) }}</span>
-                                        </div>
-                                        <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
-                                    </span>
-                                </template>
-                            </Button>
-
                             <!-- Button: Not Picked || Set as Waiting -->
                             <template v-if="!itemValue.is_handled">
                                 <!-- Button: Set Transaction as Waiting (only on Ecom) -->
@@ -1520,21 +1497,6 @@ const warningMsg = computed(() => {
                     <!-- {{ itemValue.quantity_to_pick }} -->
 
                     <div class="flex gap-x-2 gap-y-1 items-center">
-                        <Button
-                            @click="() => (isModalEPickMagicPlace = true, selectedItemToPickMagicPlace = itemValue)"
-                            type="warning"
-                            key="4"
-                            v-tooltip="ctrans('Pick :numberNotPicked from magic place', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
-                            :size="screenType == 'desktop' ? 'sm' : 'lg'"
-                        >
-                            <template #label>
-                                <span>
-                                    {{ itemValue.quantity_to_pick.toString() || '0' }}
-                                    <FontAwesomeIcon icon="fas fa-wand-magic" class="text-yellow-600" fixed-width aria-hidden="true" />
-                                </span>
-                            </template>
-                        </Button>
-                        
                         <ButtonWithLink
                             type="negative"
                             v-tooltip="ctrans('Set :numberNotPicked as not picked', { numberNotPicked: itemValue.quantity_to_pick || '0'})"
@@ -1589,6 +1551,49 @@ const warningMsg = computed(() => {
                 </Link>
             </div>
 
+        </template>
+
+        <template #cell(boxes)="{ item }">
+            <div v-if="Number(item.quantity_picked) > 0" class="flex flex-wrap items-center gap-1">
+                <template v-if="canEditBoxes">
+                    <button
+                        v-for="box in boxNumbers"
+                        :key="box"
+                        type="button"
+                        :disabled="savingBoxesFor === item.id"
+                        class="h-9 min-w-[2.25rem] px-2 rounded-md border text-sm font-medium tabular-nums transition-colors disabled:opacity-50"
+                        :class="boxQuantity(item, box) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400'"
+                        v-tooltip="ctrans('Put all in box :box', { box })"
+                        @click="putAllInBox(item, box)"
+                    >
+                        {{ box }}
+                    </button>
+                    <button
+                        type="button"
+                        :disabled="savingBoxesFor === item.id"
+                        class="h-9 min-w-[2.25rem] px-2 rounded-md border border-dashed border-gray-300 text-gray-500 hover:border-indigo-400 disabled:opacity-50"
+                        v-tooltip="ctrans('Put all in a new box')"
+                        @click="putAllInBox(item, boxNumbers.length + 1)"
+                    >
+                        <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
+                    </button>
+                    <button
+                        type="button"
+                        :disabled="savingBoxesFor === item.id"
+                        class="h-9 min-w-[2.25rem] px-2 rounded-md border border-gray-300 text-gray-500 hover:border-indigo-400 disabled:opacity-50"
+                        v-tooltip="ctrans('Split between boxes')"
+                        @click="openSplitBoxes(item)"
+                    >
+                        <FontAwesomeIcon :icon="faCut" fixed-width aria-hidden="true" />
+                    </button>
+                </template>
+                <span v-if="item.boxes?.length > 1 || !canEditBoxes" class="text-xs text-gray-500 tabular-nums">
+                    {{ describeBoxes(item) }}
+                </span>
+                <span v-if="!isFullyBoxed(item)" class="text-xs text-red-500 tabular-nums">
+                    {{ item.boxes?.length ? ctrans('Boxed :boxed of :picked', { boxed: boxedQuantity(item), picked: Number(item.quantity_picked) }) : ctrans('Not in a box') }}
+                </span>
+            </div>
         </template>
 
         <template #cell(action)="{ item: item }">
@@ -1732,6 +1737,36 @@ const warningMsg = computed(() => {
     </Dialog>
 
     <!-- Modal: Select batch code -->
+    <Modal :isOpen="!!splitBoxesItem" @onClose="splitBoxesItem = null" width="w-full max-w-md">
+        <div v-if="splitBoxesItem" class="space-y-4">
+            <div class="text-sm font-semibold text-gray-700">
+                {{ ctrans('Split :code between boxes', { code: splitBoxesItem.org_stock_code }) }}
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <label v-for="box in splitBoxNumbers" :key="box" class="flex items-center gap-2 text-sm text-gray-600">
+                    <span class="w-12">{{ ctrans('Box :box', { box }) }}</span>
+                    <input
+                        v-model.number="splitBoxesQuantities[box]"
+                        type="number"
+                        min="0"
+                        class="w-full rounded-md border-gray-300 text-sm tabular-nums"
+                    />
+                </label>
+            </div>
+            <div class="text-sm tabular-nums" :class="Math.abs(splitBoxesTotal - Number(splitBoxesItem.quantity_picked)) < 0.001 ? 'text-gray-500' : 'text-red-500'">
+                {{ ctrans('Boxed :boxed of :picked', { boxed: splitBoxesTotal, picked: Number(splitBoxesItem.quantity_picked) }) }}
+            </div>
+            <Button
+                :label="ctrans('Save')"
+                type="save"
+                full
+                :loading="savingBoxesFor === splitBoxesItem.id"
+                :disabled="splitBoxesTotal > Number(splitBoxesItem.quantity_picked)"
+                @click="onSaveSplitBoxes"
+            />
+        </div>
+    </Modal>
+
     <Modal :isOpen="isModalEditExpiryDate" @onClose="() => onCloseModalExpiryDate()" width="w-full max-w-lg">
         <div class="text-center mb-4">
             <div class="font-semibold text-2xl">{{ ctrans('Batch Code for') }} {{ selectedItemToEditExpiryDate?.org_stock_code }}:</div>
@@ -1777,61 +1812,6 @@ const warningMsg = computed(() => {
                     full
                     :label="ctrans('Save')"
                 />
-            </div>
-        </div>
-    </Modal>
-
-    <!-- Modal: Magic Place -->
-    <Modal :isOpen="isModalEPickMagicPlace" @onClose="() => onCloseModalPickMagicPlace()" width="w-full max-w-lg">
-        <div
-            class="relative text-left sm:w-full sm:max-w-lg py-2">
-
-            <div class="sm:flex sm:items-start">
-                <div
-                    class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-100 sm:mx-0 sm:size-10">
-                    <FontAwesomeIcon
-                        icon="fal fa-exclamation-triangle"
-                        class="text-amber-600"
-                        fixed-width
-                        aria-hidden="true" />
-                </div>
-
-                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <div class="text-base font-semibold">
-                        {{ ctrans("Are you sure want to pick all from magic place?") }}
-                    </div>
-                    <div class="mt-2">
-                        <p class="text-sm text-gray-500">
-                            {{ ctrans("Yes, magic place.") }}
-                        </p>
-                    </div>
-
-                    <div class="mt-5 flex flex-row-reverse gap-2">
-                        <div class="xw-full sm:w-fit">
-                            <Button
-                                @click="() => onSubmitPickMagicPlace()"
-                                type="warning"
-                                key="2"
-                                :loading="isLoadingSubmitPickMagicPlace"
-                                iconRight="fas fa-wand-magic"
-                                full>
-                                <template #label>
-                                    <div class="whitespace-nowrap">
-                                        Yes, pick <FractionDisplay v-if="GetQuantityToPickFractional(selectedItemToPickMagicPlace)" :fractionData="GetQuantityToPickFractional(selectedItemToPickMagicPlace)" />
-                                        <span v-else>{{ locale.number(selectedItemToPickMagicPlace?.quantity_to_pick ?? 0) }}</span>
-                                    </div>
-                                </template>
-                            </Button>
-                        </div>
-                        <Button
-                            type="tertiary"
-                            icon="far fa-arrow-left"
-                            :disabled="isLoadingSubmitPickMagicPlace"
-                            :label="ctrans('Cancel')"
-                            full
-                            @click=" () => (isModalEPickMagicPlace = false)" />
-                    </div>
-                </div>
             </div>
         </div>
     </Modal>

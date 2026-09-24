@@ -29,6 +29,8 @@ class UpdateProfile extends OrgAction
     use WithActionUpdate;
     use WithProfile;
 
+    private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague'];
+
     public function handle(User $user, array $modelData): User
     {
         if (Arr::exists($modelData, 'nickname')) {
@@ -93,6 +95,14 @@ class UpdateProfile extends OrgAction
             if (Arr::exists($modelData, $ticketOrderSetting)) {
                 $modelData['settings'][$ticketOrderSetting] = (bool) Arr::pull($modelData, $ticketOrderSetting);
             }
+        }
+
+        if (Arr::exists($modelData, 'alert_sounds')) {
+            $modelData['settings']['alert_sounds'] = Arr::only(Arr::pull($modelData, 'alert_sounds'), self::ALERT_SOUND_KINDS);
+        }
+
+        if (Arr::exists($modelData, 'alert_preview_seconds')) {
+            $modelData['settings']['alert_preview_seconds'] = (int) Arr::pull($modelData, 'alert_preview_seconds');
         }
 
         $organisationColoursWereSubmitted = Arr::exists($modelData, 'org_themes');
@@ -183,6 +193,9 @@ class UpdateProfile extends OrgAction
             'org_themes.themes.*.colour'          => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
+            'alert_sounds'      => ['sometimes', 'array'],
+            'alert_preview_seconds' => ['sometimes', 'integer', 'between:2,30'],
+            'alert_sounds.*'    => [Rule::in(['chime', 'bells', 'dingdong', 'pop', 'marimba', 'submarine', 'voice', 'bird', 'boing', 'fart', 'silent'])],
             'notifications'     => ['sometimes', 'array'],
             'notifications.*'   => ['array'],
             'notifications.*.*' => [Rule::in(UserNotificationEnum::CHANNELS)],
