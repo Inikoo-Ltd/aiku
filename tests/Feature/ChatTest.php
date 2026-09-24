@@ -5771,7 +5771,12 @@ test('a fact drawer opens only what is on the menu and only for the customer who
         ->and($drawer->handle('order_lines', $this->shop, $customer, $facts))->toBeNull()
         ->and($drawer->handle('order_payment', $this->shop, null, $facts))->toBeNull()
         ->and($drawer->handle('replacements', $this->shop, null, []))->toBeNull()
-        ->and($drawer->handle('alternatives', $this->shop, $customer, []))->toBeNull();
+        ->and($drawer->handle('alternatives', $this->shop, $customer, []))->toBeNull()
+        ->and($drawer->handle('shop_policies', $this->shop, null, []))->toBeNull();
+
+    \App\Actions\Chat\UpdateShopChatPolicies::make()->handle($this->shop, ['policies' => 'Minimum first order: 100 EUR']);
+    expect($drawer->handle('shop_policies', $this->shop->refresh(), null, []))->toBe(['text' => 'Minimum first order: 100 EUR']);
+    \App\Actions\Chat\UpdateShopChatPolicies::make()->handle($this->shop, ['policies' => '']);
 });
 
 test('an email from a courier is filed in the Couriers folder and in no other list', function () {
@@ -5791,6 +5796,38 @@ test('an email from a courier is filed in the Couriers folder and in no other li
     expect($queue(['carrier' => true]))->toContain($courier->id)->not->toContain($stranger->id)
         ->and($queue(['pairs' => ['email:guest']]))->toContain($stranger->id)->not->toContain($courier->id)
         ->and($queue([]))->not->toContain($courier->id);
+});
+
+test('a thanks after we answered closes the conversation quietly, but never a first message, an attachment or an open ticket', function () {
+    config(['chat.close_after_thanks' => true]);
+    \Illuminate\Support\Facades\Http::fake();
+    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+
+    $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Order', 'Perfect, thank you!'), function (ChatSession $session) {
+        $session->update(['last_agent_message_at' => now()->subHour()]);
+    });
+
+    $thanks = $answered('thanks@example.com');
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($thanks);
+
+    expect($thanks->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($thanks->closed_by)->toBe(\App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum::SYSTEM)
+        ->and($thanks->messages()->where('metadata->automated', 'thanks_closed')->exists())->toBeTrue();
+
+    $first = noiseTestEmailSession($this->shop, 'first@example.com', 'Hello', 'Thank you!');
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($first);
+    expect($first->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
+
+    $withPhoto = $answered('photo@example.com');
+    $withPhoto->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->update(['message_type' => ChatMessageTypeEnum::IMAGE]);
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($withPhoto);
+    expect($withPhoto->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
+
+    config(['chat.close_after_thanks' => false]);
+    $switchedOff = $answered('off@example.com');
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($switchedOff);
+    expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
 });
 
 

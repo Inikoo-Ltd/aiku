@@ -23,6 +23,8 @@ return [
 
     'draft_review_model' => env('CHAT_DRAFT_REVIEW_MODEL', 'gpt-6-sol'),
 
+    'close_after_thanks' => (bool) env('CHAT_CLOSE_AFTER_THANKS', true),
+
     'carrier_domains' => [
         'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',
         'dsv.com', 'fedex.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',

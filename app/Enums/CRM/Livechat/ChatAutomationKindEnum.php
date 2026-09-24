@@ -25,6 +25,7 @@ enum ChatAutomationKindEnum: string
     case ASKED_IF_CUSTOMER = 'asked_if_customer';
     case NOISE_CHECK = 'noise_check';
     case AI_DRAFT = 'ai_draft';
+    case THANKS_CLOSED = 'thanks_closed';
 
     public function label(): string
     {
@@ -35,11 +36,12 @@ enum ChatAutomationKindEnum: string
             self::ASKED_IF_CUSTOMER => __('Asked if customer'),
             self::NOISE_CHECK       => __('Noise check'),
             self::AI_DRAFT          => __('AI draft reply'),
+            self::THANKS_CLOSED     => __('Closed after a thanks'),
         };
     }
 
     public function sendsMessage(): bool
     {
-        return !in_array($this, [self::NOISE_CHECK, self::AI_DRAFT], true);
+        return !in_array($this, [self::NOISE_CHECK, self::AI_DRAFT, self::THANKS_CLOSED], true);
     }
 }
