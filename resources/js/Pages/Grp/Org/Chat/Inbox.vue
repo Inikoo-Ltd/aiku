@@ -1989,7 +1989,7 @@ onUnmounted(() => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="kind in KINDS" :key="kind.key">
+                            <tr v-for="kind in KINDS" v-show="kind.key !== 'carrier' || inbox.channels.some((channel) => channel.key === 'email' && channel.available !== false)" :key="kind.key">
                                 <td v-tooltip="kind.label" class="text-[9px] font-bold text-center border-r border-slate-100"
                                     :class="kind.key === 'customer' ? 'text-green-500' : kind.key === 'carrier' ? 'text-amber-600' : 'text-blue-400'">
                                     <FontAwesomeIcon v-if="kind.key === 'customer'" :icon="faUser" class="text-[10px]" fixed-width aria-hidden="true" />
