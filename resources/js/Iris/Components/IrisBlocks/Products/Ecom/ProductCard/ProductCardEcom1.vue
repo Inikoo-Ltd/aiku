@@ -20,6 +20,7 @@ import LinkIris from '@/Iris/Components/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.vue'
 import GoldenProductBadge from '@/Components/CMS/Webpage/Products/GoldenProductBadge.vue'
 import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue'
+import RibbonExpectedBackInStock from '@/Components/Iris/Products/RibbonExpectedBackInStock.vue'
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
 import { routeType } from '@/types/route'
 
@@ -144,7 +145,7 @@ defineExpose({
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class="text-gray-800 isolate h-full">
-            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller"
+            <BestsellerBadge v-if="product?.top_seller && (product.stock > 0 || product.is_coming_soon)" :topSeller="product?.top_seller" :data="bestSeller"
                 :screenType="screenType" />
 
             <!-- Section: Product Image, Add to Cart button, Email out of stock, Favourite -->
@@ -228,6 +229,8 @@ defineExpose({
                 </div>
 
                 <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
+
+                <RibbonExpectedBackInStock v-if="layout?.iris?.is_logged_in" :product="product" />
 
                 <!-- Section: Golden product, Favourite -->
                 <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"

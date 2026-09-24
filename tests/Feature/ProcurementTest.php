@@ -5210,7 +5210,13 @@ test('incoming stock tells the customer when an out of stock product is expected
         ->and($incoming[0]['reference'])->toBe('ETA-DEL-1')
         ->and($incoming[0]['quantity'])->toBe(120.0)
         ->and($incoming[0]['eta'])->toBe($expectedEta)
-        ->and(GetProductIncomingStock::make()->earliestEta($product))->toBe($expectedEta);
+        ->and(GetProductIncomingStock::make()->earliestEta($product))->toBe($expectedEta)
+        ->and(GetProductIncomingStock::make()->earliestEtaByProduct([$product->id]))->toBe([$product->id => $expectedEta]);
+
+    $product->update(['available_quantity' => 0]);
+    $productCards = \App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource::collection(collect([$product->fresh()]))->resolve();
+
+    expect($productCards[0]['expected_back_in_stock_at'])->toBe($expectedEta);
 });
 
 test('a partly delivered purchase order still shows the lines that are not in the delivery', function () {

@@ -8,8 +8,11 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Http\Resources\HasSelfCall;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Pagination\AbstractPaginator;
 use App\Http\Resources\Traits\HasCardWebImages;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Http\Resources\Traits\HasProductOfferPrices;
@@ -50,6 +53,7 @@ use App\Http\Resources\Traits\HasProductOfferPrices;
  * @property mixed $is_golden_product
  * @property mixed $variant_id
  * @property mixed $step_discount_data
+ * @property string|null $expected_back_in_stock_at
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
@@ -57,6 +61,25 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
     use HasPriceMetrics;
     use HasCardWebImages;
     use HasProductOfferPrices;
+
+    public static function collection($resource): AnonymousResourceCollection
+    {
+        $products = collect($resource instanceof AbstractPaginator ? $resource->items() : $resource)
+            ->filter(fn ($product) => is_object($product));
+
+        $outOfStockProductIds = $products
+            ->filter(fn ($product) => $product->available_quantity <= 0)
+            ->pluck('id')
+            ->all();
+
+        $expectedBackInStockAt = GetProductIncomingStock::make()->earliestEtaByProduct($outOfStockProductIds);
+
+        $products->each(function ($product) use ($expectedBackInStockAt) {
+            $product->expected_back_in_stock_at = $expectedBackInStockAt[$product->id] ?? null;
+        });
+
+        return parent::collection($resource);
+    }
 
     public function toArray($request): array
     {
@@ -120,6 +143,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'profit_per_unit'            => $profitPerUnit,
             'price_per_unit'             => $pricePerUnit,
             'available_quantity'         => $this->available_quantity,
+            'expected_back_in_stock_at'  => $this->expected_back_in_stock_at ?? null,
             'is_on_demand'               => $this->is_on_demand,
             'offers_data'                => $this->offers_data, // this comes from transaction.offers_data
 

@@ -33,7 +33,6 @@ import "swiper/css/navigation"
 import { Navigation } from "swiper/modules"
 
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import Product2Image from "@/Components/CMS/Webpage/Product2/Product2Image.vue"
@@ -42,7 +41,7 @@ import Image from "@common/Components/Image.vue"
 
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
-import { useOutOfStockLabel } from "@/Composables/useOutOfStockLabel"
+import ButtonOutOfStock from "@/Components/Iris/Products/ButtonOutOfStock.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
@@ -387,7 +386,7 @@ onMounted(async () => {
                                     {{
                                         product.stock > 0
                                             ? `${ctrans("In stock")}`
-                                            : useOutOfStockLabel(product)
+                                            : ctrans("Out of stock")
                                     }}
                                 </span>
                             </div>
@@ -512,7 +511,7 @@ onMounted(async () => {
                 <div class="flex gap-2 mt-4 mb-4">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <EcomAddToBasketv2 v-if="product.stock > 0" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"  class="button-basket"/>
-                        <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
+                        <ButtonOutOfStock v-else :product="product" />
                     </div>
 
                     <LinkIris v-else :href="urlLoginWithRedirect()"
@@ -731,7 +730,7 @@ onMounted(async () => {
                     {{
                         product.stock > 0
                             ? `${ctrans('In stock')}`
-                            : useOutOfStockLabel(product)
+                            : ctrans("Out of stock")
                     }}
                 </span>
 
@@ -846,7 +845,7 @@ onMounted(async () => {
 
             <!-- ADD TO CART -->
             <EcomAddToBasketv2 v-if="product.stock > 0" ref="_mobileAddToBasket" v-model:product="product" :customerData="customerData" :key="keyCustomer" class="w-full button-basket" />
-            <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
+            <ButtonOutOfStock v-else :product="product" />
 
             <!-- DOWNLOAD -->
             <a :href="marketingMaterialUrl"
