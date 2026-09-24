@@ -4,6 +4,7 @@ import Image from "@common/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import Dialog from "primevue/dialog"
+import { demoteHeadingOne } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
 
 const props = defineProps<{
 	fieldValue: any
@@ -20,7 +21,7 @@ const displayImages = computed(() => {
 })
 
 const cleanedDescription = computed(() => {
-	const html = String(family.value.description_extra ?? "").replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+	const html = demoteHeadingOne(family.value.description_extra)
 
 	if (typeof DOMParser === "undefined") {
 		return html

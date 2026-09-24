@@ -694,9 +694,9 @@ onMounted(async () => {
             <div>
                 <GoldenProductBadge v-if="product.is_golden_product" class="mb-2" />
 
-                <h1 class="product-title !text-xl font-bold leading-snug">
+                <div class="product-title !text-xl font-bold leading-snug">
                     <span v-if="product.units > 1">{{ product.units }}x</span> {{ product.name }}
-                </h1>
+                </div>
 
                 <div class="mt-1 text-xs text-gray-500">
                     {{ ctrans("Product code") }}: <span class="font-medium text-gray-700">{{ product.code }}</span>
