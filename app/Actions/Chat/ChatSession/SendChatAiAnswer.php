@@ -19,15 +19,14 @@ use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
-use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Sends a draft to the customer without a person, when nobody is there to read it and drafts on
  * its topic in its shop have earned it. It always says it is automatic, it never goes out in
- * working hours, and an email only goes to a person, once a day at most. The draft is kept as
- * sent automatically so staff can see it in the morning and flag it if it was wrong, which
- * closes the gate for that topic and shop.
+ * working hours, and an email only goes to a person, once a day at most counting the closed-now
+ * reply. The draft is kept as sent automatically so staff can see it in the morning and flag it
+ * if it was wrong, which closes the gate for that topic and shop.
  */
 class SendChatAiAnswer
 {
@@ -86,14 +85,13 @@ class SendChatAiAnswer
 
         if ($byEmail) {
             $trigger = ChatMessage::find($draft->trigger_message_id);
-            $from    = strtolower(trim((string) data_get($session->metadata, 'email_from')));
 
             // The inbound mail's headers are written just after the message itself; until they
             // are there nothing says it is fit to answer, so it waits for a person.
             if (!$trigger
                 || !data_get($trigger->metadata, 'gmail_message_id')
                 || !SendOutOfHoursReply::isPersonsEmail($session, $trigger)
-                || !Cache::add('chat-ai-answer-email:'.sha1($from), true, now()->addDay())) {
+                || !SendOutOfHoursReply::takeTodaysEmailTo($session)) {
                 return null;
             }
         }

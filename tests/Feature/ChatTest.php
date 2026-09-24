@@ -6125,6 +6125,90 @@ test('a draft goes to the customer without staff only out of hours, only once ea
     outOfHoursTestCleanUp($schedule, [$session]);
 });
 
+test('an email out of hours gets one automatic reply, the AI answer or the closed-now reply, never both', function () {
+    config([
+        'chat.out_of_hours_reply'        => true,
+        'chat.ai_drafts'                 => true,
+        'chat.ai_auto_send.enabled'      => true,
+        'chat.ai_auto_send.min_decided'  => 3,
+        'askbot-laravel.openai_api_key'  => 'test-key',
+    ]);
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+    $schedule = outOfHoursTestSchedule($this->shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
+
+    $customer = createOwnCustomer($this->shop, 'ai-email-once');
+    $webUser  = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+
+    \Illuminate\Support\Facades\DB::table('orders')->insert([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $this->shop->currency_id,
+        'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
+        'slug'            => 'ord-'.uniqid(),
+        'reference'       => 'AEO'.random_int(100000, 999999),
+        'state'           => 'packed',
+        'net_amount'      => 100,
+        'org_net_amount'  => 100,
+        'grp_net_amount'  => 100,
+        'status'          => \App\Enums\Ordering\Order\OrderStatusEnum::CREATING,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => '2026-09-24',
+        'submitted_at'    => '2026-09-24 09:00:00',
+        'created_at'      => '2026-09-24',
+        'updated_at'      => '2026-09-24',
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode([
+            'answerable' => true, 'topic' => 'order_status', 'reply' => 'Your order is packed and waiting for the courier.',
+        ])]]]]),
+        'oauth2.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        '*'                       => \Illuminate\Support\Facades\Http::response(['id' => 'sent-1', 'threadId' => 'th-once']),
+    ]);
+
+    $emailFrom = function () use ($webUser) {
+        $session = noiseTestEmailSession($this->shop->fresh(), 'ai.once.'.Str::lower(Str::random(8)).'@example.com', 'My order', 'Where is my order please?', ['gmail_message_id' => 'in-1']);
+        $session->update(['web_user_id' => $webUser->id]);
+
+        return $session;
+    };
+    $trigger        = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->latest('id')->first();
+    $automaticMails = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->count();
+
+    $answered = $emailFrom();
+    foreach (range(1, 3) as $i) {
+        \App\Models\Chat\ChatAiDraft::create([
+            'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+            'chat_session_id' => $answered->id, 'topic' => 'order_status', 'facts' => [], 'text' => 'earned '.$i,
+            'status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED,
+        ]);
+    }
+
+    // The closed-now email waits, so the AI answer goes instead of it.
+    expect(\App\Actions\Chat\ChatSession\SendOutOfHoursReply::makeJob($answered, $trigger($answered))->delay)->not->toBeNull();
+
+    $draft = \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($answered->refresh());
+    expect($draft->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::AUTO_SENT)
+        ->and(\App\Actions\Chat\ChatSession\SendOutOfHoursReply::make()->handle($answered, $trigger($answered)))->toBeFalse()
+        ->and($automaticMails($answered))->toBe(1);
+
+    // The closed-now email got there first: the draft waits for staff instead of a second email.
+    $closedFirst = $emailFrom();
+    expect(\App\Actions\Chat\ChatSession\SendOutOfHoursReply::make()->handle($closedFirst, $trigger($closedFirst)))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($closedFirst->refresh())->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING)
+        ->and($automaticMails($closedFirst))->toBe(1);
+
+    foreach ([$answered, $closedFirst] as $session) {
+        \Illuminate\Support\Facades\Cache::forget('chat-out-of-hours-email:'.sha1($session->metadata['email_from']));
+        \App\Models\Chat\ChatAiDraft::where('chat_session_id', $session->id)->delete();
+    }
+    outOfHoursTestCleanUp($schedule, [$answered, $closedFirst]);
+});
+
 test('chat hours come from the work schedule, and the next opening skips closed days and bank holidays', function () {
     $schedule = outOfHoursTestSchedule($this->shop);
     $shop = $this->shop->fresh();
