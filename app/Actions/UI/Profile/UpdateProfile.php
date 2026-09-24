@@ -29,7 +29,7 @@ class UpdateProfile extends OrgAction
     use WithActionUpdate;
     use WithProfile;
 
-    private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague'];
+    private const array ALERT_SOUND_KINDS = ['chat', 'whatsapp', 'email', 'colleague', 'waiting'];
 
     public function handle(User $user, array $modelData): User
     {
