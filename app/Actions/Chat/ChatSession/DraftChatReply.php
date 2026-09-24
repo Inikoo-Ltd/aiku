@@ -9,15 +9,19 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Helpers\AI\AskToAi;
+use App\Actions\Helpers\Translations\DetectLanguageWithAI;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Events\BroadcastChatAiDraft;
 use App\Models\Chat\ChatAiDraft;
+use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Language;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -76,9 +80,12 @@ class DraftChatReply implements ShouldBeUnique
             return null;
         }
 
-        $answer = $this->askModel($text, $facts);
+        $language = self::replyLanguage($chatSession, $trigger, $text);
+        $answer   = $language ? $this->askModel($text, $facts, $language->name) : null;
 
-        if (!$answer || !self::isGrounded($answer['topic'], $answer['reply'], $facts)) {
+        if (!$answer
+            || !self::isGrounded($answer['topic'], $answer['reply'], $facts)
+            || DetectLanguageWithAI::run($answer['reply'], $language)?->id !== $language->id) {
             return null;
         }
 
@@ -135,6 +142,20 @@ class DraftChatReply implements ShouldBeUnique
     }
 
     /**
+     * The language of what the customer wrote, named to the model rather than left to it: told to
+     * match the customer, it answered an English customer in Spanish. The message's detected
+     * language when translation has already run, detected here when it has not (WhatsApp chats
+     * never record one on the session), and the chat's language only when detection fails.
+     * The reply is checked against it too, and one in any other language is dropped.
+     */
+    public static function replyLanguage(ChatSession|MetaChatSession $chatSession, ChatMessage|MetaChatMessage $trigger, string $text): ?Language
+    {
+        $chatLanguage = $chatSession->language ?? $chatSession->shop?->language;
+
+        return $trigger->originalLanguage ?? DetectLanguageWithAI::run($text, $chatLanguage) ?? $chatLanguage;
+    }
+
+    /**
      * Order facts only for somebody aiku already knows as this customer: logged in on the
      * website, or a WhatsApp number or email already linked to them. Never a stranger's say-so.
      */
@@ -150,7 +171,7 @@ class DraftChatReply implements ShouldBeUnique
      *
      * @return array{topic: ChatTopicEnum, reply: string}|null
      */
-    private function askModel(string $text, array $facts): ?array
+    private function askModel(string $text, array $facts, string $language): ?array
     {
         $excerpt   = mb_substr($text, 0, 3000);
         $factsJson = json_encode($facts, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -167,7 +188,7 @@ class DraftChatReply implements ShouldBeUnique
         - Use only the facts. Never invent or estimate a date, a quantity, a delivery time or a
           reason. If the facts do not answer what they asked: "answerable": false.
         - Copy order numbers, product codes, tracking numbers and tracking links exactly.
-        - Write in the language the customer wrote in, friendly and short: at most 80 words.
+        - Write in $language, friendly and short: at most 80 words.
           Greet them by name when a name is given. No signature, no promises, no apology for delays.
         - Say "more is on order" only when the facts say so, never when it will arrive.
         - Asked when a product comes back, and that product is in the facts, say it is out of

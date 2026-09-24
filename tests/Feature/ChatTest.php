@@ -5802,6 +5802,18 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
     \Illuminate\Support\Carbon::setTestNow();
 });
 
+/**
+ * The model behind the chat drafts: the language detector reads Spanish from "Hola" and English
+ * from anything else, every other request gets the given answer.
+ */
+function aiDraftTestModel(\Illuminate\Http\Client\Request $request, string $answer): \GuzzleHttp\Promise\PromiseInterface
+{
+    $isLanguageDetection = str_contains((string) data_get($request->data(), 'messages.0.content'), 'language detector');
+    $detected            = str_contains((string) data_get($request->data(), 'messages.1.content'), 'Hola') ? 'es' : 'en';
+
+    return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $isLanguageDetection ? $detected : $answer]]]]);
+}
+
 function outOfHoursTestSchedule(\App\Models\Catalogue\Shop $shop): \App\Models\HumanResources\WorkSchedule
 {
     $tz = \App\Models\Helpers\Timezone::where('name', 'Europe/London')->first();
@@ -6021,7 +6033,7 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
 });
 
 test('a question about an order gets a draft written from that customer\'s order, and what staff do with it is counted', function () {
-    config(['chat.ai_drafts' => true, 'askbot-laravel.openai_api_key' => 'test-key']);
+    config(['chat.ai_drafts' => true, 'askbot-laravel.openai_api_key' => 'test-key', 'auto-translations.default_driver_detect_language' => 'gpt-5-nano', 'auto-translations.drivers.gpt-5-nano.api_key' => 'test-key']);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
 
     $customer  = createOwnCustomer($this->shop, 'ai-draft-orders');
@@ -6056,7 +6068,7 @@ test('a question about an order gets a draft written from that customer\'s order
         'api.openai.com/*' => function ($request) use (&$modelAnswer) {
             $copiedExample = preg_match('/\{"answerable".*\}/', (string) data_get($request->data(), 'messages.1.content'), $example) ? $example[0] : '';
 
-            return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $modelAnswer === null ? $copiedExample : json_encode($modelAnswer)]]]]);
+            return aiDraftTestModel($request, $modelAnswer === null ? $copiedExample : json_encode($modelAnswer));
         },
     ]);
 
@@ -6095,6 +6107,13 @@ test('a question about an order gets a draft written from that customer\'s order
     ]);
     $ask($stranger, "Where is my order $reference please?", ChatSenderTypeEnum::GUEST);
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($stranger))->toBeNull();
+
+    // The model is told the language of what the customer wrote: left to match the customer, it
+    // answered an English customer in Spanish.
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->body(), 'Write in English,'));
+    $spanish = $ask($stranger, 'Hola, ¿dónde está mi pedido?', ChatSenderTypeEnum::GUEST);
+    $spanish->update(['original_language_id' => Language::where('code', 'es')->value('id')]);
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::replyLanguage($stranger, $spanish->refresh(), 'Hola, ¿dónde está mi pedido?')->name)->toBe('Spanish');
 
     actingAs($this->user);
     $shown = $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()->json('data');
@@ -6137,6 +6156,14 @@ test('a question about an order gets a draft written from that customer\'s order
     $ask($session, 'Where is my order now?');
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
 
+    // The reply is checked as well: one that comes back in another language than the customer's
+    // is dropped, whatever the prompt said.
+    $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hola, tu pedido $reference salió el 22 de septiembre."];
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Where is my order now please?');
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
+
     // A draft is kept only when it names what aiku looked up: the first real one answered a
     // stock question about products aiku had no facts on, repeating the customer back as fact.
     $grounded = fn (string $topic, string $reply, array $facts) => \App\Actions\Chat\ChatSession\DraftChatReply::isGrounded(\App\Enums\CRM\Livechat\ChatTopicEnum::from($topic), $reply, $facts);
@@ -6163,6 +6190,8 @@ test('a draft goes to the customer without staff only out of hours, only once ea
         'chat.ai_auto_send.enabled'        => true,
         'chat.ai_auto_send.min_decided'    => 3,
         'askbot-laravel.openai_api_key'    => 'test-key',
+        'auto-translations.default_driver_detect_language' => 'gpt-5-nano',
+        'auto-translations.drivers.gpt-5-nano.api_key' => 'test-key',
     ]);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
     $schedule = outOfHoursTestSchedule($this->shop);
@@ -6194,9 +6223,9 @@ test('a draft goes to the customer without staff only out of hours, only once ea
     ]);
 
     \Illuminate\Support\Facades\Http::fake([
-        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode([
+        'api.openai.com/*' => fn ($request) => aiDraftTestModel($request, json_encode([
             'answerable' => true, 'topic' => 'order_status', 'reply' => "Your order $reference is packed and waiting for the courier.",
-        ])]]]]),
+        ])),
     ]);
 
     $session = ChatSession::create([
@@ -6267,6 +6296,8 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
         'chat.ai_auto_send.enabled'      => true,
         'chat.ai_auto_send.min_decided'  => 3,
         'askbot-laravel.openai_api_key'  => 'test-key',
+        'auto-translations.default_driver_detect_language' => 'gpt-5-nano',
+        'auto-translations.drivers.gpt-5-nano.api_key' => 'test-key',
     ]);
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
     $schedule = outOfHoursTestSchedule($this->shop);
@@ -6299,9 +6330,9 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
     ]);
 
     \Illuminate\Support\Facades\Http::fake([
-        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode([
+        'api.openai.com/*' => fn ($request) => aiDraftTestModel($request, json_encode([
             'answerable' => true, 'topic' => 'order_status', 'reply' => "Your order $reference is packed and waiting for the courier.",
-        ])]]]]),
+        ])),
         'oauth2.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
         '*'                       => \Illuminate\Support\Facades\Http::response(['id' => 'sent-1', 'threadId' => 'th-once']),
     ]);
