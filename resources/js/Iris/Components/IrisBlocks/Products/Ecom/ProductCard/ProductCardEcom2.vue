@@ -69,11 +69,7 @@ const _button_variant = ref(null)
 const currency = layout?.iris?.currency
 const idxSlideLoading = ref(false)
 
-const typeOfLink =
-    typeof window !== 'undefined' &&
-        route()?.current()?.startsWith('iris.')
-        ? 'internal'
-        : 'external'
+const typeOfLink = layout?.app?.name === 'iris' ? 'internal' : 'external'
 
 const toggleFavourite = () =>
     props.product.is_favourite

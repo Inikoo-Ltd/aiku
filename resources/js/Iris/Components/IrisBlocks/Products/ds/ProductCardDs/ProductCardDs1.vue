@@ -101,7 +101,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
 
 const idxSlideLoading = ref(false)
-const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
+const typeOfLink = layout?.app?.name === 'iris' ? 'internal' : 'external'
 
 const images = computed(() => {
     if (!props.product?.web_images) return []

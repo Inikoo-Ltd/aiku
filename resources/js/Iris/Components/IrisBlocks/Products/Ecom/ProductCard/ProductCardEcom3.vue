@@ -109,7 +109,7 @@ const goToLogin = () => {
 
 
 const idxSlideLoading = ref(false)
-const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
+const typeOfLink = layout?.app?.name === 'iris' ? 'internal' : 'external'
 const images = computed(() => {
 
 
@@ -362,11 +362,11 @@ defineExpose({
 
 
         <div class="mt-auto [.iris-logged-in_&]:min-h-[93px] md:[.iris-logged-in_&]:min-h-[102px] lg:[.iris-logged-in_&]:min-h-[112px] 2xl:[.iris-logged-in_&]:min-h-[137px]">
-            <section v-if="isPriceVisible">
+            <section v-if="isPriceVisible" :key="`price-visible-${product?.id}`">
                   <Prices4  :product="product" :currency="currency" :basketButton :hasInBasket
                       :orderQuantity="onOrderStepQuantity"/>
             </section>
-            <section v-else class="text-xs leading-tight space-y-1 [.iris-logged-in_&]:hidden">
+            <section v-else :key="`price-hidden-${product?.id}`" class="text-xs leading-tight space-y-1 [.iris-logged-in_&]:hidden">
 
                 <!-- CODE + RRP + V2-->
                 <div v-if="product.rrp_per_unit > 0" class="flex items-center text-gray-600 text-[10px] 2xl:text-xs py-1 min-w-0">

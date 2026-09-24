@@ -101,7 +101,7 @@ const onClickVariant = (product: ProductResource, event: Event) => {
 
 
 const idxSlideLoading = ref(false)
-const typeOfLink = (typeof window !== 'undefined' && route()?.current()?.startsWith('iris.')) ? 'internal' : 'external'
+const typeOfLink = layout?.app?.name === 'iris' ? 'internal' : 'external'
 const images = computed(() => {
     if (!props.product?.web_images) return []
 
@@ -333,9 +333,9 @@ defineExpose({
 
 
         <div class="mt-auto">
-            <Prices4 v-if="layout?.iris?.is_logged_in" :product="product" :currency="currency" :basketButton :hasInBasket
+            <Prices4 v-if="layout?.iris?.is_logged_in" :key="`price-visible-${product?.id}`" :product="product" :currency="currency" :basketButton :hasInBasket
                 :orderQuantity="onOrderStepQuantity" />
-            <div v-else-if="!hideLogin"  class="mt-2">
+            <div v-else-if="!hideLogin" :key="`price-hidden-${product?.id}`" class="mt-2">
                 <a :href="urlLoginWithRedirect()" class="w-full">
                     <Button :label="ctrans('Login or Register for Wholesale Prices')" class="rounded-none" full
                         :injectStyle="buttonStyleLogin" />
