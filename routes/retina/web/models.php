@@ -39,7 +39,6 @@ use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
-use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
@@ -512,5 +511,3 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::delete('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite')->whereNumber('product');
     Route::post('{product:id}/add-to-basket', StoreRetinaEcomBasketTransaction::class)->name('add-to-basket')->whereNumber('product');
 });
-
-Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
