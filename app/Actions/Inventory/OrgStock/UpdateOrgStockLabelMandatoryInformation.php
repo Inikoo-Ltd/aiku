@@ -14,7 +14,6 @@ use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -36,7 +35,7 @@ class UpdateOrgStockLabelMandatoryInformation extends OrgAction
     {
         return [
             'label_mandatory_information'   => ['present', 'array'],
-            'label_mandatory_information.*' => ['string', Rule::enum(ArtefactLabelInformationEnum::class)],
+            'label_mandatory_information.*' => ArtefactLabelInformationEnum::sourceRule(),
         ];
     }
 

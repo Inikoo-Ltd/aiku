@@ -14,7 +14,6 @@ use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 
 trait WithArtefactLabelLayout
 {
@@ -27,6 +26,8 @@ trait WithArtefactLabelLayout
     private const DEFAULT_BARCODE_WIDTH = 0.6;
 
     private const DEFAULT_BARCODE_HEIGHT = 0.3;
+
+    private const DEFAULT_ICON_SIZE = 0.2;
 
     private const LAYOUT_KEYS = [
         'orientation',
@@ -55,7 +56,7 @@ trait WithArtefactLabelLayout
             'canvas_rotation'    => ['sometimes', 'integer', 'in:0,90,180,270'],
             'is_sheet_artwork'   => ['sometimes', 'boolean'],
             'fields'             => ['sometimes', 'array', 'max:100'],
-            'fields.*.text'      => ['required', 'string', 'max:2000'],
+            'fields.*.text'      => ['required', 'string', 'max:5000'],
             'fields.*.x'         => ['required', 'numeric', 'min:0', 'max:1'],
             'fields.*.y'         => ['required', 'numeric', 'min:0', 'max:1'],
             'fields.*.font_size' => ['required', 'numeric', 'min:3', 'max:72'],
@@ -64,7 +65,10 @@ trait WithArtefactLabelLayout
             'fields.*.bold'      => ['sometimes', 'boolean'],
             'fields.*.rotation'  => ['sometimes', 'integer', 'in:0,90,180,270'],
             'fields.*.length'    => ['sometimes', 'numeric', 'min:0.1', 'max:1000'],
-            'fields.*.source'    => ['sometimes', 'string', Rule::in(ArtefactLabelInformationEnum::placeableValues())],
+            'fields.*.source'    => ['sometimes', ...ArtefactLabelInformationEnum::sourceRule()],
+            'fields.*.box_width' => ['sometimes', 'nullable', 'numeric', 'min:0.02', 'max:1'],
+            'fields.*.height'    => ['sometimes', 'numeric', 'min:0.1', 'max:1000'],
+            'fields.*.icon_size' => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
             'fields.*.barcode_type'       => ['sometimes', 'string', 'in:ean13,code128'],
             'fields.*.barcode_width'      => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
             'fields.*.barcode_height'     => ['sometimes', 'numeric', 'min:0.02', 'max:1'],
@@ -83,7 +87,8 @@ trait WithArtefactLabelLayout
     /**
      * A multipart form sends every value as a string, and a stored "0" reads back as true in the
      * browser, so the layout is typed here before it is written down. The measured text length is
-     * left out because the browser works it out again from the font it is about to print with.
+     * left out because the browser works it out again from the font it is about to print with. The
+     * measured height is kept: a wrapped text printed by an agent has no browser to measure it.
      *
      * @param  array<string, mixed>  $modelData
      * @return array<string, mixed>
@@ -116,6 +121,9 @@ trait WithArtefactLabelLayout
                     'barcode_width'      => (float) Arr::get($field, 'barcode_width', self::DEFAULT_BARCODE_WIDTH),
                     'barcode_height'     => (float) Arr::get($field, 'barcode_height', self::DEFAULT_BARCODE_HEIGHT),
                     'barcode_show_value' => filter_var(Arr::get($field, 'barcode_show_value', true), FILTER_VALIDATE_BOOLEAN),
+                    'box_width'          => Arr::get($field, 'box_width') ? (float) Arr::get($field, 'box_width') : null,
+                    'height'             => Arr::get($field, 'height') ? (float) Arr::get($field, 'height') : null,
+                    'icon_size'          => (float) Arr::get($field, 'icon_size', self::DEFAULT_ICON_SIZE),
                 ],
                 Arr::get($layout, 'fields', [])
             )),

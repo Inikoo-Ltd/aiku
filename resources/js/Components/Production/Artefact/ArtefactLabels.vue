@@ -32,7 +32,8 @@ interface ArtefactLabel {
 interface InformationOption {
     value: string
     label: string
-    is_placeable: boolean
+    is_icon: boolean
+    can_be_typed: boolean
 }
 
 const LABEL_STATE_CLASSES: Record<ArtefactLabel["state"], string> = {

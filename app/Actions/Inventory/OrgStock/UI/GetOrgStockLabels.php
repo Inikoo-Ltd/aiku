@@ -8,9 +8,11 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Production\Artefact\Label\GetArtefactLabelIconSource;
 use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Http\Resources\Production\ArtefactLabelResource;
+use App\Models\Helpers\Language;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\ArtefactLabel;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -48,14 +50,8 @@ class GetOrgStockLabels
                 'parameters' => ['orgStock' => $orgStock->id],
             ],
             'information'           => $information,
-            'information_options'   => array_map(
-                fn (ArtefactLabelInformationEnum $option) => [
-                    'value'        => $option->value,
-                    'label'        => ArtefactLabelInformationEnum::labels()[$option->value],
-                    'is_placeable' => $option->isPlaceable(),
-                ],
-                ArtefactLabelInformationEnum::cases()
-            ),
+            'information_options'   => $this->getInformationOptions($information),
+            'icons'                 => GetArtefactLabelIconSource::make()->forBrowser($this->getIcons($information)),
             'mandatory_information' => $orgStock->label_mandatory_information ?? [],
             'abilities'             => $abilities,
             'labels'                => $labels->map(fn (ArtefactLabel $label) => array_merge(
@@ -67,5 +63,47 @@ class GetOrgStockLabels
                 ]
             ))->all(),
         ]);
+    }
+
+    /**
+     * @param  array<string, string>  $information
+     * @return array<int, array{value: string, label: string, is_icon: bool, can_be_typed: bool}>
+     */
+    private function getInformationOptions(array $information): array
+    {
+        $languageNames = Language::whereIn('code', array_filter(array_map(
+            fn (string $source) => ArtefactLabelInformationEnum::parse($source)[1],
+            array_keys($information)
+        )))->pluck('name', 'code')->all();
+
+        return array_map(
+            function (string $source) use ($languageNames) {
+                [$option, $languageCode] = ArtefactLabelInformationEnum::parse($source);
+
+                return [
+                    'value'        => $source,
+                    'label'        => ArtefactLabelInformationEnum::label($source, $languageNames),
+                    'is_icon'      => $option->isIcon(),
+                    'can_be_typed' => $languageCode !== null,
+                ];
+            },
+            array_keys($information)
+        );
+    }
+
+    /**
+     * @param  array<string, string>  $information
+     * @return array<int, string>
+     */
+    private function getIcons(array $information): array
+    {
+        $icons = [];
+        foreach ($information as $source => $text) {
+            if (ArtefactLabelInformationEnum::parse($source)[0]?->isIcon()) {
+                $icons = array_merge($icons, array_filter(explode(',', $text)));
+            }
+        }
+
+        return array_values(array_unique($icons));
     }
 }

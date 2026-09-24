@@ -14,7 +14,6 @@ use App\Http\Resources\Production\ArtefactLabelResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -38,7 +37,7 @@ class UpdateArtefactLabelOnArtwork extends OrgAction
     {
         return [
             'on_artwork'   => ['present', 'array'],
-            'on_artwork.*' => ['string', Rule::enum(ArtefactLabelInformationEnum::class)],
+            'on_artwork.*' => ArtefactLabelInformationEnum::sourceRule(),
         ];
     }
 

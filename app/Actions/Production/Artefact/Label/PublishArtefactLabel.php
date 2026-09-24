@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Http\Resources\Production\ArtefactLabelResource;
+use App\Models\Helpers\Language;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
@@ -28,10 +29,12 @@ class PublishArtefactLabel extends OrgAction
     public function handle(ArtefactLabel $artefactLabel): ArtefactLabel
     {
         if ($missing = $artefactLabel->missingMandatoryInformation()) {
+            $languageNames = Language::pluck('name', 'code')->all();
+
             throw ValidationException::withMessages([
                 'label' => __('The label is missing mandatory information: :information', [
                     'information' => implode(', ', array_map(
-                        fn (string $information) => ArtefactLabelInformationEnum::labels()[$information] ?? $information,
+                        fn (string $information) => ArtefactLabelInformationEnum::label($information, $languageNames),
                         $missing
                     )),
                 ]),

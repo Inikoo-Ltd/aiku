@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact\Label;
 
 use App\Actions\OrgAction;
+use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use Illuminate\Http\UploadedFile;
@@ -29,6 +30,14 @@ class PdfArtefactLabelSheet extends OrgAction
     private const LINE_HEIGHT = 1.1;
 
     private const TEXT_BOX_HEADROOM = 2.0;
+
+    /**
+     * A wrapped text is given a quarter of a line more than the browser measured, and mPDF shrinks
+     * it to fit the box if its own line breaks still come out longer.
+     */
+    private const WRAPPED_TEXT_HEADROOM = 0.25;
+
+    private const ICON_GAP = 0.15;
 
     private const BARCODE_TYPES = [
         'ean13'   => BarcodeGenerator::TYPE_EAN_13,
@@ -184,7 +193,7 @@ class PdfArtefactLabelSheet extends OrgAction
 
     /**
      * @param  array<int, array<string, mixed>>  $fields
-     * @return array<int, array{text: string, left: float, top: float, width: float, height: float, font_size: float, color: string, background_color: string|null, weight: string, rotation: int, barcode: array{uri: string, width: float, height: float, show_value: bool}|null}>
+     * @return array<int, array{text: string, left: float, top: float, width: float, height: float, font_size: float, color: string, background_color: string|null, weight: string, rotation: int, barcode: array{uri: string, width: float, height: float, show_value: bool}|null, icons: array{sources: array<int, string>, size: float, gap: float, width: float}|null}>
      */
     private function getFields(array $fields, float $labelWidth, float $labelHeight, float $longestPageSide): array
     {
@@ -200,15 +209,35 @@ class PdfArtefactLabelSheet extends OrgAction
             $fontSize   = (float) ($field['font_size'] ?? 8);
             $rotation   = (int) ($field['rotation'] ?? 0);
             $lineHeight = $fontSize * self::LINE_HEIGHT * 25.4 / 72;
-            $isBarcode  = ($field['source'] ?? null) === 'barcode';
-            $barcode    = $isBarcode ? $this->getBarcode($field, $text, $labelWidth, $labelHeight) : null;
-            $textLength = $barcode
-                ? $barcode['width']
-                : (float) ($field['length'] ?? max($labelWidth - (float) $field['x'] * $labelWidth, 1));
-            $boxWidth   = $barcode
-                ? $barcode['width']
-                : min($textLength + self::TEXT_BOX_HEADROOM, $longestPageSide);
-            $blockHeight = $barcode ? $barcode['height'] + ($barcode['show_value'] ? $lineHeight : 0) : $lineHeight;
+            $source     = (string) ($field['source'] ?? '');
+            $isIcon     = (bool) ArtefactLabelInformationEnum::parse($source)[0]?->isIcon();
+            $icons      = $isIcon ? $this->getIcons($field, $text, $labelHeight) : null;
+            $barcode    = $source === 'barcode' ? $this->getBarcode($field, $text, $labelWidth, $labelHeight) : null;
+            $boxWidth   = (float) ($field['box_width'] ?? 0) * $labelWidth;
+
+            if ($isIcon && !$icons) {
+                continue;
+            }
+
+            if ($icons) {
+                $textLength  = $icons['width'];
+                $blockHeight = $icons['size'];
+            } elseif ($barcode) {
+                $textLength  = $barcode['width'];
+                $boxWidth    = $barcode['width'];
+                $blockHeight = $barcode['height'] + ($barcode['show_value'] ? $lineHeight : 0);
+            } elseif ($boxWidth > 0) {
+                $textLength  = $boxWidth;
+                $blockHeight = max((float) ($field['height'] ?? 0), (substr_count($text, "\n") + 1) * $lineHeight) + $lineHeight * self::WRAPPED_TEXT_HEADROOM;
+            } else {
+                $textLength  = (float) ($field['length'] ?? max($labelWidth - (float) $field['x'] * $labelWidth, 1));
+                $boxWidth    = min($textLength + self::TEXT_BOX_HEADROOM, $longestPageSide);
+                $blockHeight = (substr_count($text, "\n") + 1) * $lineHeight;
+            }
+
+            if ($icons) {
+                $boxWidth = $icons['width'] + self::TEXT_BOX_HEADROOM;
+            }
 
             [$left, $top] = $this->getRotatedOrigin(
                 $rotation,
@@ -227,6 +256,7 @@ class PdfArtefactLabelSheet extends OrgAction
                 'height'    => $blockHeight,
                 'font_size' => $fontSize,
                 'barcode'   => $barcode,
+                'icons'     => $icons,
                 'color'     => $field['color'] ?? '#000000',
                 'background_color' => $this->getBackgroundColor($field['background_color'] ?? null),
                 'weight'    => filter_var($field['bold'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 'bold' : 'normal',
@@ -298,6 +328,35 @@ class PdfArtefactLabelSheet extends OrgAction
             'width'      => $width,
             'height'     => $height,
             'show_value' => filter_var($field['barcode_show_value'] ?? true, FILTER_VALIDATE_BOOLEAN),
+        ];
+    }
+
+    /**
+     * The icons sit in a row, each one a square the height the designer gave them. An icon the
+     * product record does not name any more is dropped rather than failing the sheet.
+     *
+     * @param  array<string, mixed>  $field
+     * @return array{sources: array<int, string>, size: float, gap: float, width: float}|null
+     */
+    private function getIcons(array $field, string $text, float $labelHeight): ?array
+    {
+        $sources = array_values(array_filter(array_map(
+            fn (string $icon) => GetArtefactLabelIconSource::run(trim($icon), true),
+            explode(',', $text)
+        )));
+
+        if (!$sources) {
+            return null;
+        }
+
+        $size = max((float) ($field['icon_size'] ?? 0.2) * $labelHeight, 1);
+        $gap  = $size * self::ICON_GAP;
+
+        return [
+            'sources' => $sources,
+            'size'    => $size,
+            'gap'     => $gap,
+            'width'   => count($sources) * $size + (count($sources) - 1) * $gap,
         ];
     }
 

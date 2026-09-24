@@ -3565,6 +3565,71 @@ test('SKO labels are the compliance team\'s: workers draft, supervisors publish,
         ->assertNotFound();
 });
 
+test('compliance labels place icons, wrapped texts and a text per language taken from the product record', function () {
+    \App\Actions\SysAdmin\Group\Seeders\SeedGroupPermissions::run($this->group);
+    $orgStock  = labelTestOrgStock($this->organisation, $this->group);
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $tradeUnit->update([
+        'pictogram_flammable' => true,
+        'label_info'          => [
+            'markets'                  => ['uk'],
+            'languages'                => ['de'],
+            'ce_marking'               => true,
+            'packaging_material_codes' => ['show' => true, 'value' => ['pet_1', 'pap_21']],
+        ],
+    ]);
+    $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+    $information = \App\Actions\Inventory\OrgStock\UI\GetOrgStockLabelInformation::run($orgStock->refresh());
+    expect($information['packaging_materials'])->toBe('pet_1,pap_21')
+        ->and($information['hazard_pictograms'])->toBe('flammable')
+        ->and($information['ce_marking'])->toBe('ce')
+        ->and($information['ukca_marking'])->toBe('')
+        ->and($information['eu_responsible_person'])->toBe('')
+        ->and($information['warnings:de'])->toBe('')
+        ->and($information['directions_for_use:de'])->toBe('');
+
+    $userWithRole = function (string $role) {
+        $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+        $user->syncRoles([$role]);
+
+        return $user->fresh();
+    };
+
+    actingAs($userWithRole('compliance-manager'));
+    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['product_name:de']])
+        ->assertUnprocessable();
+    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['warnings:de', 'packaging_materials']])
+        ->assertOk();
+
+    $layout = [
+        'orientation' => 'portrait',
+        'columns'     => 2,
+        'rows'        => 3,
+        'page_margin' => 8,
+        'gap'         => 3,
+        'fields'      => [
+            ['source' => 'packaging_materials', 'text' => 'pet_1,pap_21', 'x' => 0.05, 'y' => 0.05, 'font_size' => 8, 'color' => '#000000', 'icon_size' => 0.25],
+            ['source' => 'warnings:de', 'text' => "Nicht verschlucken.\nAußer Reichweite von Kindern aufbewahren.", 'x' => 0.05, 'y' => 0.5, 'font_size' => 6, 'color' => '#000000', 'box_width' => 0.8, 'height' => 6.2, 'rotation' => 90],
+        ],
+    ];
+
+    actingAs($userWithRole('compliance-worker'));
+    $labelId = \Pest\Laravel\postJson(route('grp.models.org_stock.labels.store', $orgStock->id), array_merge($layout, ['name' => 'Compliance']))
+        ->assertCreated()
+        ->json('data.id');
+    $label = \App\Models\Production\ArtefactLabel::find($labelId);
+
+    expect($label->layout['fields'][0]['icon_size'])->toBe(0.25)
+        ->and($label->layout['fields'][1]['box_width'])->toBe(0.8)
+        ->and($label->layout['fields'][1]['height'])->toBe(6.2)
+        ->and($label->missingMandatoryInformation())->toBe([]);
+
+    \Pest\Laravel\post(route('grp.models.org_stock.label_sheet', $orgStock->id), $layout)
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
+});
+
 test('breaks belong to the artisan, are capped at their planned length and only their overlap is deducted from a session', function () {
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],

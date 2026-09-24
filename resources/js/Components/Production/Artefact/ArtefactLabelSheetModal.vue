@@ -51,7 +51,8 @@ const props = defineProps<{
         barcode: string
         labels: SavedLabel[]
         information?: Record<string, string>
-        information_options?: { value: string, label: string, is_placeable: boolean }[]
+        information_options?: { value: string, label: string, is_icon: boolean, can_be_typed: boolean }[]
+        icons?: Record<string, string>
         abilities?: { edit: boolean, publish: boolean, set_mandatory: boolean }
     }
 }>()
@@ -79,6 +80,8 @@ interface LabelItem {
     barcodeWidth: number
     barcodeHeight: number
     barcodeShowValue: boolean
+    boxWidth: number | null
+    iconSize: number
 }
 
 type Rotation = 0 | 90 | 180 | 270
@@ -97,6 +100,9 @@ const HIGHLIGHT_ON_LIGHT_TEXT = { backgroundColor: "#111827", boxShadow: "0 0 0 
 const LINE_HEIGHT = 1.1
 const BARCODE_FORMATS: Record<BarcodeType, string> = { ean13: "EAN13", code128: "CODE128" }
 const DEFAULT_BARCODE_SIZE = { width: 0.6, height: 0.3 }
+const DEFAULT_ICON_SIZE = 0.2
+const ICON_GAP = 0.15
+const MIN_BOX_WIDTH = 0.05
 
 /**
  * Under this the modules print too narrow for a hand scanner to separate them, so the panel says so
@@ -203,6 +209,8 @@ const createItem = (source: ItemSource, overrides: Partial<LabelItem> = {}): Lab
         barcodeWidth: DEFAULT_BARCODE_SIZE.width,
         barcodeHeight: DEFAULT_BARCODE_SIZE.height,
         barcodeShowValue: true,
+        boxWidth: null,
+        iconSize: DEFAULT_ICON_SIZE,
         ...overrides,
     }
 }
@@ -220,10 +228,17 @@ const sourceLabels = computed<Record<string, string>>(() => ({
 }))
 
 const productInformationOptions = computed(() =>
-    (props.labelSheet.information_options ?? []).filter(option =>
-        option.is_placeable && !(ITEM_SOURCES as readonly string[]).includes(option.value)
-    )
+    (props.labelSheet.information_options ?? []).filter(option => !(ITEM_SOURCES as readonly string[]).includes(option.value))
 )
+
+const iconSources = computed(() =>
+    new Set((props.labelSheet.information_options ?? []).filter(option => option.is_icon).map(option => option.value))
+)
+
+const isIconItem = (item: LabelItem) => iconSources.value.has(item.source)
+
+const iconUris = (item: LabelItem) =>
+    item.text.split(",").map(icon => props.labelSheet.icons?.[icon.trim()]).filter((uri): uri is string => Boolean(uri))
 
 const productInformationToAdd = ref("")
 
@@ -254,6 +269,8 @@ const duplicateItem = (item: LabelItem) => {
         barcodeWidth: item.barcodeWidth,
         barcodeHeight: item.barcodeHeight,
         barcodeShowValue: item.barcodeShowValue,
+        boxWidth: item.boxWidth,
+        iconSize: item.iconSize,
     })
     items.value.push(copy)
     selectedItemId.value = copy.id
@@ -480,9 +497,18 @@ const barsStyle = (item: LabelItem) => ({
     height: `${item.barcodeHeight * toPx(labelHeight.value)}px`,
 })
 
+const iconStyle = (item: LabelItem, isLast: boolean) => {
+    const size = item.iconSize * toPx(labelHeight.value)
+
+    return { display: "inline-block", width: `${size}px`, height: `${size}px`, marginRight: isLast ? "0" : `${size * ICON_GAP}px` }
+}
+
 const itemStyle = (item: LabelItem) => ({
     left: `${item.x * toPx(labelWidth.value)}px`,
     top: `${item.y * toPx(labelHeight.value)}px`,
+    width: item.boxWidth ? `${item.boxWidth * toPx(labelWidth.value)}px` : undefined,
+    whiteSpace: item.boxWidth ? "pre-wrap" : "pre",
+    overflowWrap: "break-word",
     fontSize: `${fontSizePx(item)}px`,
     lineHeight: String(LINE_HEIGHT),
     color: item.color,
@@ -544,6 +570,12 @@ const textLengthInMillimeters = (item: LabelItem) => {
     const chip = chipElements[item.id]
 
     return chip ? chip.offsetWidth / scale.value : null
+}
+
+const textHeightInMillimeters = (item: LabelItem) => {
+    const chip = chipElements[item.id]
+
+    return chip ? chip.offsetHeight / scale.value : null
 }
 
 const applySheetArtwork = () => {
@@ -684,7 +716,7 @@ const chipElements = reactive<Record<number, HTMLElement | null>>({})
 const editorCell = ref<HTMLElement | null>(null)
 const draggingId = ref<number | null>(null)
 const dragOffset = reactive({ x: 0, y: 0 })
-const resizing = ref<{ id: number; startX: number; startY: number; startLength: number; startFontSize: number; startBarcodeWidth: number; startBarcodeHeight: number } | null>(null)
+const resizing = ref<{ id: number; startX: number; startY: number; startLength: number; startFontSize: number; startBarcodeWidth: number; startBarcodeHeight: number; startBoxWidth: number | null; startIconSize: number } | null>(null)
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
@@ -736,6 +768,8 @@ const startResize = (item: LabelItem, event: PointerEvent) => {
         startFontSize: item.fontSize,
         startBarcodeWidth: item.barcodeWidth,
         startBarcodeHeight: item.barcodeHeight,
+        startBoxWidth: item.boxWidth,
+        startIconSize: item.iconSize,
     }
 
     const handle = event.currentTarget as HTMLElement
@@ -745,7 +779,7 @@ const startResize = (item: LabelItem, event: PointerEvent) => {
 const onResize = (item: LabelItem, event: PointerEvent) => {
     if (resizing.value?.id !== item.id) return
 
-    const { startX, startY, startLength, startFontSize, startBarcodeWidth, startBarcodeHeight } = resizing.value
+    const { startX, startY, startLength, startFontSize, startBarcodeWidth, startBarcodeHeight, startBoxWidth, startIconSize } = resizing.value
 
     if (item.source === "barcode") {
         item.barcodeWidth = clamp(
@@ -764,7 +798,17 @@ const onResize = (item: LabelItem, event: PointerEvent) => {
         270: startY - event.clientY,
     }[item.rotation]
 
+    if (startBoxWidth) {
+        item.boxWidth = clamp(Number((startBoxWidth + alongText / toPx(labelWidth.value)).toFixed(4)), MIN_BOX_WIDTH, 1)
+        return
+    }
+
     const nextLength = Math.max(startLength + alongText, 8)
+
+    if (isIconItem(item)) {
+        item.iconSize = clamp(Number(((startIconSize * nextLength) / startLength).toFixed(4)), 0.02, 1)
+        return
+    }
 
     item.fontSize = clamp(Number(((startFontSize * nextLength) / startLength).toFixed(1)), 3, 72)
 }
@@ -907,9 +951,22 @@ const appendLayout = (formData: FormData) => {
             formData.append(`fields[${index}][barcode_show_value]`, item.barcodeShowValue ? "1" : "0")
         }
 
+        if (item.boxWidth) {
+            formData.append(`fields[${index}][box_width]`, String(item.boxWidth))
+        }
+
+        if (isIconItem(item)) {
+            formData.append(`fields[${index}][icon_size]`, String(item.iconSize))
+        }
+
         const length = textLengthInMillimeters(item)
         if (length) {
             formData.append(`fields[${index}][length]`, length.toFixed(3))
+        }
+
+        const height = textHeightInMillimeters(item)
+        if (height) {
+            formData.append(`fields[${index}][height]`, height.toFixed(3))
         }
     })
 }
@@ -1106,6 +1163,8 @@ const loadLabel = async (label: SavedLabel) => {
                 barcodeWidth: Number(field.barcode_width ?? DEFAULT_BARCODE_SIZE.width),
                 barcodeHeight: Number(field.barcode_height ?? DEFAULT_BARCODE_SIZE.height),
                 barcodeShowValue: field.barcode_show_value === undefined ? true : Boolean(field.barcode_show_value),
+                boxWidth: field.box_width ? Number(field.box_width) : null,
+                iconSize: Number(field.icon_size ?? DEFAULT_ICON_SIZE),
             })
         )
         selectedItemId.value = items.value[0]?.id ?? null
@@ -1482,8 +1541,10 @@ const describeFailure = async (error: any): Promise<string> => {
                                 v-for="option in productInformationOptions"
                                 :key="option.value"
                                 :value="option.value"
-                                :disabled="!labelSheet.information?.[option.value]">
-                                {{ option.label }}{{ labelSheet.information?.[option.value] ? "" : " (" + ctrans("not on the product record") + ")" }}
+                                :disabled="!labelSheet.information?.[option.value] && !option.can_be_typed">
+                                {{ option.label }}{{ labelSheet.information?.[option.value]
+                                    ? ""
+                                    : " (" + (option.can_be_typed ? ctrans("no translation yet, type it in") : ctrans("not on the product record")) + ")" }}
                             </option>
                         </select>
                     </div>
@@ -1547,9 +1608,47 @@ const describeFailure = async (error: any): Promise<string> => {
                     aria-labelledby="artefact-label-selected-text-title">
                     <div id="artefact-label-selected-text-title" class="text-xs text-gray-500 uppercase tracking-wide">{{ sourceLabels[selectedItem.source] }}</div>
 
-                    <input v-model="selectedItem.text" type="text" name="text"
+                    <template v-if="isIconItem(selectedItem)">
+                        <div class="flex flex-wrap gap-1" role="list" :aria-label="ctrans('Icons on the label')">
+                            <img v-for="uri in iconUris(selectedItem)" :key="uri" :src="uri" alt="" role="listitem" class="h-8 w-8 rounded border border-gray-200 bg-white p-0.5" />
+                        </div>
+                        <label class="flex items-center gap-1 text-xs text-gray-500">
+                            {{ ctrans("Height") }}
+                            <input type="number" name="icon_size" min="1" step="0.5"
+                                :value="(selectedItem.iconSize * labelHeight).toFixed(1)"
+                                :aria-label="ctrans('Icon height in millimetres')"
+                                class="w-16 rounded border border-gray-300 px-1.5 py-1 text-sm"
+                                @change="selectedItem.iconSize = Math.min(Math.max(Number(($event.target as HTMLInputElement).value) / labelHeight, 0.02), 1)" />
+                            mm
+                        </label>
+                    </template>
+
+                    <input v-else-if="selectedItem.source === 'barcode'" v-model="selectedItem.text" type="text" name="text"
                         :aria-label="ctrans(':field text content', { field: sourceLabels[selectedItem.source] })"
                         class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
+
+                    <template v-else>
+                        <textarea v-model="selectedItem.text" name="text" rows="3"
+                            :aria-label="ctrans(':field text content', { field: sourceLabels[selectedItem.source] })"
+                            class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-xs text-gray-500">
+                                <input type="checkbox" name="wrap" class="rounded border-gray-300"
+                                    :checked="!!selectedItem.boxWidth"
+                                    @change="selectedItem.boxWidth = ($event.target as HTMLInputElement).checked ? Math.max(1 - selectedItem.x - 0.04, MIN_BOX_WIDTH) : null" />
+                                {{ ctrans("Wrap in a box") }}
+                            </label>
+                            <label v-if="selectedItem.boxWidth" class="flex items-center gap-1 text-xs text-gray-500">
+                                {{ ctrans("Width") }}
+                                <input type="number" name="box_width" min="1" step="0.5"
+                                    :value="(selectedItem.boxWidth * labelWidth).toFixed(1)"
+                                    :aria-label="ctrans('Box width in millimetres')"
+                                    class="w-16 rounded border border-gray-300 px-1.5 py-1 text-sm"
+                                    @change="selectedItem.boxWidth = Math.min(Math.max(Number(($event.target as HTMLInputElement).value) / labelWidth, MIN_BOX_WIDTH), 1)" />
+                                mm
+                            </label>
+                        </div>
+                    </template>
 
                     <template v-if="selectedItem.source === 'barcode'">
                         <div class="flex flex-wrap items-center gap-2">
@@ -1605,64 +1704,66 @@ const describeFailure = async (error: any): Promise<string> => {
                         </div>
                     </template>
 
-                    <div class="flex items-center gap-2">
-                        <label class="flex items-center gap-1 text-xs text-gray-500">
-                            {{ ctrans("Size") }}
-                            <input v-model.number="selectedItem.fontSize" type="number" name="font_size" min="3" max="72" step="0.5"
-                                :aria-label="ctrans('Font size in points')"
-                                class="w-16 rounded border border-gray-300 px-1.5 py-1 text-sm" />
-                        </label>
-                        <label class="flex items-center gap-1 text-xs text-gray-500" :title="ctrans('Text color')">
-                            {{ ctrans("Text") }}
-                            <input v-model="selectedItem.color" type="color" name="color" :aria-label="ctrans('Text color')" class="h-7 w-8 rounded border border-gray-300" />
-                        </label>
-                        <button
-                            type="button"
-                            class="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
-                            :title="ctrans('Pick text color from the screen')"
-                            :aria-label="ctrans('Pick text color from the screen')"
-                            :aria-pressed="pickingColorTarget === 'color'"
-                            :disabled="!!pickingColorTarget"
-                            @click="pickColorFromScreen(selectedItem, 'color')">
-                            <FontAwesomeIcon icon="fal fa-eye-dropper" fixed-width aria-hidden="true" />
-                        </button>
-                        <label class="flex items-center gap-1 text-xs text-gray-500">
-                            <input v-model="selectedItem.bold" type="checkbox" name="bold" class="rounded border-gray-300" />
-                            {{ ctrans("Bold") }}
-                        </label>
-                    </div>
+                    <template v-if="!isIconItem(selectedItem)">
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-xs text-gray-500">
+                                {{ ctrans("Size") }}
+                                <input v-model.number="selectedItem.fontSize" type="number" name="font_size" min="3" max="72" step="0.5"
+                                    :aria-label="ctrans('Font size in points')"
+                                    class="w-16 rounded border border-gray-300 px-1.5 py-1 text-sm" />
+                            </label>
+                            <label class="flex items-center gap-1 text-xs text-gray-500" :title="ctrans('Text color')">
+                                {{ ctrans("Text") }}
+                                <input v-model="selectedItem.color" type="color" name="color" :aria-label="ctrans('Text color')" class="h-7 w-8 rounded border border-gray-300" />
+                            </label>
+                            <button
+                                type="button"
+                                class="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
+                                :title="ctrans('Pick text color from the screen')"
+                                :aria-label="ctrans('Pick text color from the screen')"
+                                :aria-pressed="pickingColorTarget === 'color'"
+                                :disabled="!!pickingColorTarget"
+                                @click="pickColorFromScreen(selectedItem, 'color')">
+                                <FontAwesomeIcon icon="fal fa-eye-dropper" fixed-width aria-hidden="true" />
+                            </button>
+                            <label class="flex items-center gap-1 text-xs text-gray-500">
+                                <input v-model="selectedItem.bold" type="checkbox" name="bold" class="rounded border-gray-300" />
+                                {{ ctrans("Bold") }}
+                            </label>
+                        </div>
 
-                    <div class="flex items-center gap-2">
-                        <label class="flex items-center gap-1 text-xs text-gray-500">
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-xs text-gray-500">
+                                <input
+                                    type="checkbox"
+                                    name="has_background_color"
+                                    class="rounded border-gray-300"
+                                    :aria-label="ctrans('Use a background color behind the text')"
+                                    :checked="!!selectedItem.backgroundColor"
+                                    @change="selectedItem.backgroundColor = ($event.target as HTMLInputElement).checked ? '#ffffff' : null" />
+                                {{ ctrans("Background") }}
+                            </label>
                             <input
-                                type="checkbox"
-                                name="has_background_color"
-                                class="rounded border-gray-300"
-                                :aria-label="ctrans('Use a background color behind the text')"
-                                :checked="!!selectedItem.backgroundColor"
-                                @change="selectedItem.backgroundColor = ($event.target as HTMLInputElement).checked ? '#ffffff' : null" />
-                            {{ ctrans("Background") }}
-                        </label>
-                        <input
-                            v-if="selectedItem.backgroundColor"
-                            v-model="selectedItem.backgroundColor"
-                            type="color"
-                            name="background_color"
-                            class="h-7 w-8 rounded border border-gray-300"
-                            :aria-label="ctrans('Background color')"
-                            :title="ctrans('Background color')" />
-                        <span v-else class="text-xs text-gray-400">{{ ctrans("Transparent") }}</span>
-                        <button
-                            type="button"
-                            class="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
-                            :title="ctrans('Pick background color from the screen')"
-                            :aria-label="ctrans('Pick background color from the screen')"
-                            :aria-pressed="pickingColorTarget === 'backgroundColor'"
-                            :disabled="!!pickingColorTarget"
-                            @click="pickColorFromScreen(selectedItem, 'backgroundColor')">
-                            <FontAwesomeIcon icon="fal fa-eye-dropper" fixed-width aria-hidden="true" />
-                        </button>
-                    </div>
+                                v-if="selectedItem.backgroundColor"
+                                v-model="selectedItem.backgroundColor"
+                                type="color"
+                                name="background_color"
+                                class="h-7 w-8 rounded border border-gray-300"
+                                :aria-label="ctrans('Background color')"
+                                :title="ctrans('Background color')" />
+                            <span v-else class="text-xs text-gray-400">{{ ctrans("Transparent") }}</span>
+                            <button
+                                type="button"
+                                class="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60"
+                                :title="ctrans('Pick background color from the screen')"
+                                :aria-label="ctrans('Pick background color from the screen')"
+                                :aria-pressed="pickingColorTarget === 'backgroundColor'"
+                                :disabled="!!pickingColorTarget"
+                                @click="pickColorFromScreen(selectedItem, 'backgroundColor')">
+                                <FontAwesomeIcon icon="fal fa-eye-dropper" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                    </template>
 
                     <div class="flex items-center gap-2">
                         <span id="artefact-label-text-rotation-title" class="text-xs text-gray-400">{{ ctrans("Rotation") }}</span>
@@ -1841,7 +1942,7 @@ const describeFailure = async (error: any): Promise<string> => {
                                     v-for="item in printableItems"
                                     :key="item.id"
                                     :ref="element => { chipElements[item.id] = element as HTMLElement }"
-                                    class="absolute cursor-move whitespace-nowrap select-none outline outline-1 outline-dashed"
+                                    class="absolute cursor-move select-none outline outline-1 outline-dashed"
                                     :class="item.id === selectedItemId ? 'outline-indigo-500' : 'outline-indigo-300/60'"
                                     :style="itemStyle(item)"
                                     :aria-label="ctrans('Draggable :field text: :text', { field: sourceLabels[item.source], text: item.text })"
@@ -1869,14 +1970,19 @@ const describeFailure = async (error: any): Promise<string> => {
                                         </div>
                                         <div v-if="item.barcodeShowValue" class="text-center">{{ item.text }}</div>
                                     </template>
+                                    <template v-else-if="isIconItem(item)">
+                                        <img v-for="(uri, index) in iconUris(item)" :key="uri" :src="uri" :style="iconStyle(item, index === iconUris(item).length - 1)" draggable="false" alt="" aria-hidden="true" />
+                                    </template>
                                     <template v-else>{{ item.text }}</template>
                                     <span
                                         v-if="item.id === selectedItemId"
                                         class="absolute -bottom-1 -right-1 h-2.5 w-2.5 cursor-nwse-resize rounded-sm border border-white bg-indigo-500"
                                         role="separator"
-                                        :aria-label="item.source === 'barcode'
-                                            ? ctrans('Resize handle, drag to change the size of the bars')
-                                            : ctrans('Resize handle, drag to change the font size')"
+                                        :aria-label="item.source === 'barcode' || isIconItem(item)
+                                            ? ctrans('Resize handle, drag to change the size')
+                                            : item.boxWidth
+                                                ? ctrans('Resize handle, drag to change the width of the box')
+                                                : ctrans('Resize handle, drag to change the font size')"
                                         :aria-valuenow="item.fontSize"
                                         aria-valuemin="3"
                                         aria-valuemax="72"
@@ -1891,7 +1997,7 @@ const describeFailure = async (error: any): Promise<string> => {
                                 <div
                                     v-for="item in printableItems"
                                     :key="item.id"
-                                    class="absolute whitespace-nowrap select-none"
+                                    class="absolute select-none"
                                     :style="itemStyle(item)">
                                     <template v-if="item.source === 'barcode'">
                                         <img
@@ -1902,6 +2008,9 @@ const describeFailure = async (error: any): Promise<string> => {
                                             alt=""
                                             aria-hidden="true" />
                                         <div v-if="item.barcodeShowValue" class="text-center">{{ item.text }}</div>
+                                    </template>
+                                    <template v-else-if="isIconItem(item)">
+                                        <img v-for="(uri, index) in iconUris(item)" :key="uri" :src="uri" :style="iconStyle(item, index === iconUris(item).length - 1)" draggable="false" alt="" aria-hidden="true" />
                                     </template>
                                     <template v-else>{{ item.text }}</template>
                                 </div>

@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
+use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -39,7 +40,7 @@ class GetOrgStockLabelData
             'made_in'         => $this->getMadeIn($orgStock, $tradeUnits),
             'manufactured_by' => $this->getManufacturedBy($tradeUnits),
             'weight'          => $this->getWeight($barcode['weight'] ?? null),
-            'signature'       => $this->getSignature($orgStock),
+            'signature'       => $this->getSignature($orgStock->organisation),
             'has_image'       => $tradeUnits->contains(fn (TradeUnit $tradeUnit) => (bool) $tradeUnit->image_id),
             'image_path'      => $this->getImagePath($tradeUnits),
             'barcode'         => [
@@ -130,10 +131,9 @@ class GetOrgStockLabelData
      * the parts are paired up two to a line and the country keeps one of its own, which turns seven
      * lines into five without touching the order the locale's own formatter chose.
      */
-    private function getSignature(OrgStock $orgStock): ?string
+    public function getSignature(Organisation $organisation): ?string
     {
-        $organisation = $orgStock->organisation;
-        $lines        = [$organisation->name];
+        $lines = [$organisation->name];
 
         if ($organisation->address?->hasAnyLine()) {
             $lines = array_merge($lines, $this->getPairedAddressLines($organisation->address->formatted_address));
