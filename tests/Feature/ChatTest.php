@@ -149,7 +149,9 @@ beforeEach(function () {
     $this->web       = $web;
     $this->warehouse = createWarehouse();
 
-    $customer = Customer::first();
+    // Ordered: an unordered first() returns whichever row Postgres reads first, which moves
+    // after an update, and later tests then compare against a different customer.
+    $customer = Customer::orderBy('id')->first();
 
     if (!$customer) {
         $customer = createCustomer($this->shop);
@@ -7541,7 +7543,7 @@ test('the widget goes offline on a bank holiday even though the week says open',
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-23 09:00', 'Europe/London'));
     expect(GetChatConfig::run($web)['is_online'])->toBeTrue();
 
-    $this->organisation->holidays()->create([
+    $holiday = $this->organisation->holidays()->create([
         'group_id' => $this->organisation->group_id,
         'type'     => \App\Enums\HumanResources\Holiday\HolidayTypeEnum::PUBLIC->value,
         'year'     => 2026,
@@ -7556,6 +7558,11 @@ test('the widget goes offline on a bank holiday even though the week says open',
         ->and($config['offline_info'])->not->toBeNull()
         ->and($shop->workSchedules()->where('is_active', true)->first()->isOpenNow('Europe/London'))->toBeTrue();
 
+    // An always-open schedule left behind makes the shop open for every later test, and the
+    // out-of-hours reply then never fires.
+    $holiday->delete();
+    $schedule->days()->delete();
+    $schedule->delete();
     \Illuminate\Support\Carbon::setTestNow();
 });
 
