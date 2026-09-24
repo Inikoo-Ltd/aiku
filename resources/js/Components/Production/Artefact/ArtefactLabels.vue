@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n"
-import { onMounted, reactive, ref, watch } from "vue"
+import { computed, onMounted, reactive, ref, watch } from "vue"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBarcode, faCalendarAlt, faFilePdf, faHashtag, faImage, faPlus, faTags, faTrashAlt } from "@fal"
+import { faBarcode, faCalendarAlt, faCheck, faExclamationTriangle, faFilePdf, faHashtag, faImage, faInfoCircle, faPlus, faTags, faTrashAlt } from "@fal"
 import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ArtefactLabelSheetModal from "@/Components/Production/Artefact/ArtefactLabelSheetModal.vue"
@@ -14,7 +13,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 
-library.add(faBarcode, faCalendarAlt, faFilePdf, faHashtag, faImage, faPlus, faTags, faTrashAlt)
+library.add(faBarcode, faCalendarAlt, faCheck, faExclamationTriangle, faFilePdf, faHashtag, faImage, faInfoCircle, faPlus, faTags, faTrashAlt)
 
 interface ArtefactLabel {
     id: number
@@ -26,6 +25,15 @@ interface ArtefactLabel {
     pdf_url: string | null
     artwork: { name: string, size: number, mime_type: string, url: string } | null
     updated_at: string | null
+    on_artwork: string[]
+    missing_information: string[]
+}
+
+interface InformationOption {
+    value: string
+    label: string
+    is_icon: boolean
+    can_be_typed: boolean
 }
 
 const LABEL_STATE_CLASSES: Record<ArtefactLabel["state"], string> = {
@@ -41,6 +49,11 @@ interface ArtefactLabelSheet {
     delete_route: { name: string, parameters: any }
     publish_route: { name: string, parameters: any }
     unpublish_route: { name: string, parameters: any }
+    on_artwork_route: { name: string, parameters: any }
+    mandatory_route: { name: string, parameters: any }
+    information_options: InformationOption[]
+    mandatory_information: string[]
+    abilities: { edit: boolean, publish: boolean, set_mandatory: boolean }
     batch_code: string
     expiry_date: string
     barcode: string
@@ -48,18 +61,63 @@ interface ArtefactLabelSheet {
 }
 
 const props = defineProps<{
-    data: ArtefactLabelSheet
+    data: ArtefactLabelSheet | null
 }>()
 
 const PDF_MIME_TYPE = "application/pdf"
 const THUMBNAIL_EDGE = 120
 const POINTS_TO_CENTIMETRES = 2.54 / 72
 
-const SOURCE_BADGES = [
-    { source: "batch_code", icon: "fal fa-hashtag", label: trans("Batch code") },
-    { source: "expiry_date", icon: "fal fa-calendar-alt", label: trans("Expiry date") },
-    { source: "barcode", icon: "fal fa-barcode", label: trans("Barcode") },
-] as const
+const SOURCE_ICONS: Record<string, string> = {
+    batch_code: "fal fa-hashtag",
+    expiry_date: "fal fa-calendar-alt",
+    barcode: "fal fa-barcode",
+}
+
+const informationLabels = computed<Record<string, string>>(() =>
+    Object.fromEntries((props.data?.information_options ?? []).map(option => [option.value, option.label]))
+)
+
+const mandatoryInformation = ref<string[]>([...(props.data?.mandatory_information ?? [])])
+watch(() => props.data?.mandatory_information, value => { mandatoryInformation.value = [...(value ?? [])] })
+const isSavingMandatory = ref(false)
+
+const saveMandatoryInformation = () => {
+    if (!props.data) return
+
+    router.patch(
+        route(props.data.mandatory_route.name, props.data.mandatory_route.parameters),
+        { label_mandatory_information: mandatoryInformation.value },
+        {
+            preserveScroll: true,
+            onStart: () => { isSavingMandatory.value = true },
+            onFinish: () => { isSavingMandatory.value = false },
+            onError: () => notify({ title: ctrans("Something went wrong"), text: ctrans("The mandatory information could not be saved"), type: "error" }),
+        }
+    )
+}
+
+const toggleOnArtwork = async (label: ArtefactLabel, information: string) => {
+    if (!props.data) return
+
+    const onArtwork = label.on_artwork.includes(information)
+        ? label.on_artwork.filter(item => item !== information)
+        : [...label.on_artwork, information]
+
+    try {
+        await axios.post(route(props.data.on_artwork_route.name, { ...props.data.on_artwork_route.parameters, label: label.id }), { on_artwork: onArtwork })
+        router.reload()
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The label could not be updated"),
+            type: "error",
+        })
+    }
+}
+
+const isPlaced = (label: ArtefactLabel, information: string) =>
+    (label.layout.fields ?? []).some((field: Record<string, any>) => (field.source ?? "batch_code") === information)
 
 interface ArtworkPreview {
     thumbnail: string | null
@@ -122,7 +180,7 @@ const loadPdfArtwork = async (url: string) => {
 }
 
 const loadArtworkPreviews = async () => {
-    for (const label of props.data.labels) {
+    for (const label of props.data?.labels ?? []) {
         if (label.artwork?.mime_type === PDF_MIME_TYPE) {
             await loadPdfArtwork(label.artwork.url)
         }
@@ -130,7 +188,7 @@ const loadArtworkPreviews = async () => {
 }
 
 onMounted(loadArtworkPreviews)
-watch(() => props.data.labels, loadArtworkPreviews)
+watch(() => props.data?.labels, loadArtworkPreviews)
 
 const thumbnailOf = (label: ArtefactLabel) => {
     if (!label.artwork) return null
@@ -153,9 +211,13 @@ const artworkSizeOf = (label: ArtefactLabel) => {
 }
 
 const usedSourcesOf = (label: ArtefactLabel) => {
-    const sources = new Set((label.layout.fields ?? []).map((field: Record<string, any>) => field.source ?? "batch_code"))
+    const sources = new Set<string>((label.layout.fields ?? []).map((field: Record<string, any>) => field.source ?? "batch_code"))
 
-    return SOURCE_BADGES.filter(badge => sources.has(badge.source))
+    return [...sources].map(source => ({
+        source,
+        icon: SOURCE_ICONS[source] ?? "fal fa-info-circle",
+        label: informationLabels.value[source] ?? source,
+    }))
 }
 
 const openLabel = (label: ArtefactLabel | null) => {
@@ -167,15 +229,15 @@ const onDeleteLabel = async (label: ArtefactLabel) => {
     deletingLabelId.value = label.id
 
     try {
-        await axios.delete(route(props.data.delete_route.name, {
-            ...props.data.delete_route.parameters,
+        await axios.delete(route(props.data!.delete_route.name, {
+            ...props.data!.delete_route.parameters,
             label: label.id,
         }))
         router.reload()
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
-            text: error?.response?.data?.message ?? trans("The label could not be deleted"),
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The label could not be deleted"),
             type: "error",
         })
     } finally {
@@ -186,11 +248,11 @@ const onDeleteLabel = async (label: ArtefactLabel) => {
 const describeLabel = (label: ArtefactLabel) => {
     const parts = [
         `${label.layout.columns ?? '?'} × ${label.layout.rows ?? '?'}`,
-        label.layout.orientation === 'landscape' ? trans('Horizontal') : trans('Vertical'),
+        label.layout.orientation === 'landscape' ? ctrans('Horizontal') : ctrans('Vertical'),
     ]
 
     if (label.artwork) {
-        parts.push(label.artwork.mime_type === 'application/pdf' ? trans('PDF artwork') : trans('Image artwork'))
+        parts.push(label.artwork.mime_type === 'application/pdf' ? ctrans('PDF artwork') : ctrans('Image artwork'))
     }
 
     if (label.updated_at) {
@@ -202,15 +264,61 @@ const describeLabel = (label: ArtefactLabel) => {
 </script>
 
 <template>
-    <div class="p-4">
+    <div v-if="!data" class="p-4">
+        <div class="rounded border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500" role="status">
+            {{ ctrans('This artefact has no SKO yet. Labels belong to the SKO, so they can be designed once it has one.') }}
+        </div>
+    </div>
+    <div v-else class="p-4 space-y-4">
+        <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" aria-labelledby="label-mandatory-information-title">
+            <h2 id="label-mandatory-information-title" class="text-sm font-semibold">{{ ctrans('Mandatory information') }}</h2>
+            <p class="mt-1 text-xs text-gray-500">
+                {{ ctrans('Every label of this SKO must show these, placed on the label or already printed on the artwork. A label missing any of them cannot be published.') }}
+            </p>
+
+            <fieldset v-if="data.abilities?.set_mandatory" class="mt-3">
+                <legend class="sr-only">{{ ctrans('Mandatory information') }}</legend>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <label
+                        v-for="option in data.information_options"
+                        :key="option.value"
+                        class="flex items-center gap-2 text-sm">
+                        <input v-model="mandatoryInformation" type="checkbox" :value="option.value" class="rounded border-gray-300" />
+                        {{ option.label }}
+                    </label>
+                </div>
+                <div class="mt-3">
+                    <Button
+                        type="primary"
+                        size="xs"
+                        :label="ctrans('Save')"
+                        :loading="isSavingMandatory"
+                        @click="saveMandatoryInformation" />
+                </div>
+            </fieldset>
+
+            <ul v-else-if="data.mandatory_information.length" class="mt-3 flex flex-wrap gap-1.5" :aria-label="ctrans('Mandatory information')">
+                <li
+                    v-for="information in data.mandatory_information"
+                    :key="information"
+                    class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                    {{ informationLabels[information] ?? information }}
+                </li>
+            </ul>
+            <div v-else class="mt-3 text-xs text-gray-500" role="status">
+                {{ ctrans('Nothing set yet. The compliance manager decides what every label of this SKO must show.') }}
+            </div>
+        </section>
+
         <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" aria-labelledby="artefact-labels-title">
             <div class="mb-3 flex items-center justify-between gap-2">
-                <h2 id="artefact-labels-title" class="text-sm font-semibold">{{ trans('Labels') }}</h2>
+                <h2 id="artefact-labels-title" class="text-sm font-semibold">{{ ctrans('Labels') }}</h2>
                 <Button
+                    v-if="data.abilities?.edit !== false"
                     type="tertiary"
                     size="xs"
                     icon="fal fa-plus"
-                    :label="trans('New label')"
+                    :label="ctrans('New label')"
                     :aria-label="ctrans('Design a new label')"
                     aria-haspopup="dialog"
                     :aria-expanded="isOpenLabelSheet && !labelToEdit"
@@ -221,7 +329,7 @@ const describeLabel = (label: ArtefactLabel) => {
                 v-if="!data.labels.length"
                 class="rounded border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500"
                 role="status">
-                {{ trans('No label designed yet. A saved label keeps its artwork, so it can be printed again any time.') }}
+                {{ ctrans('No label designed yet. A saved label keeps its artwork, so it can be printed again any time.') }}
             </div>
 
             <ul v-else class="grid grid-cols-1 md:grid-cols-2 gap-2" :aria-label="ctrans('Saved labels')">
@@ -281,11 +389,39 @@ const describeLabel = (label: ArtefactLabel) => {
                                 <FontAwesomeIcon :icon="badge.icon" fixed-width aria-hidden="true" />
                             </li>
                         </ul>
+                        <ul
+                            v-if="data.mandatory_information.length"
+                            class="mt-2 flex flex-wrap gap-1.5"
+                            :aria-label="ctrans('Mandatory information on this label')"
+                            @click.stop
+                            @keydown.stop>
+                            <li
+                                v-for="information in data.mandatory_information"
+                                :key="information"
+                                class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px]"
+                                :class="label.missing_information.includes(information) ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'">
+                                <FontAwesomeIcon
+                                    :icon="label.missing_information.includes(information) ? 'fal fa-exclamation-triangle' : 'fal fa-check'"
+                                    fixed-width
+                                    aria-hidden="true" />
+                                <span>{{ informationLabels[information] ?? information }}</span>
+                                <label
+                                    v-if="!isPlaced(label, information) && data.abilities?.edit !== false"
+                                    class="ml-1 flex items-center gap-1 text-gray-600">
+                                    <input
+                                        type="checkbox"
+                                        class="h-3 w-3 rounded border-gray-300"
+                                        :checked="label.on_artwork.includes(information)"
+                                        @change="toggleOnArtwork(label, information)" />
+                                    {{ ctrans('on artwork') }}
+                                </label>
+                            </li>
+                        </ul>
                     </div>
-                    <div @click.stop @keydown.stop>
+                    <div v-if="data.abilities?.edit !== false" @click.stop @keydown.stop>
                         <ModalConfirmationDelete
-                            :title="trans('Delete label :name?', { name: label.name })"
-                            :description="trans('The label and its layout will no longer be available to print.')"
+                            :title="ctrans('Delete label :name?', { name: label.name })"
+                            :description="ctrans('The label and its layout will no longer be available to print.')"
                             @onYes="onDeleteLabel(label)">
                             <template #default="{ changeModel }">
                                 <button

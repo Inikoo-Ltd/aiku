@@ -166,7 +166,7 @@ const showDialog = ref(false)
                     :icon="pageHead.iconRight?.icon || pageHead.iconRight"
                     class="align-top"
                     :class="pageHead.iconRight.class"
-                    aria-hidden="true"
+                    fixed-width aria-hidden="true"
                     :color="pageHead.iconRight.color"
                     :rotation="pageHead?.iconRight?.icon_rotation" />
 
@@ -232,7 +232,7 @@ const showDialog = ref(false)
                                :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" fixed-width />
                         <span class="">{{ item.label || "-" }}</span>
                     </component>
                 </div>

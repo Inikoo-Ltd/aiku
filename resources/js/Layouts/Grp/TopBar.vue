@@ -128,7 +128,7 @@ const label = {
 </script>
 
 <template>
-    <Disclosure id="topbar_grp" as="nav" class="fixed top-0 z-[21] w-full bg-gray-50 text-gray-700 transition-all duration-300 ease-in-out" :class="['pr-4', layoutStore.messagingSidebar?.show ? 'md:pr-56' : (layoutStore.messagingSidebar?.micro ? 'md:pr-4' : 'md:pr-12')]" v-slot="{ open }">
+    <Disclosure id="topbar_grp" as="nav" class="fixed top-0 z-[21] w-full md:max-w-[calc(100%_-_var(--chat-pane,0px))] bg-gray-50 text-gray-700 transition-all duration-300 ease-in-out" :class="['pr-4', layoutStore.messagingSidebar?.show ? 'md:pr-56' : (layoutStore.messagingSidebar?.micro ? 'md:pr-4' : 'md:pr-12')]" v-slot="{ open }">
         <ScreenWarning v-if="layoutStore.hasTopBanner" class="relative top-0" />
 
         <div class="px-0">
@@ -150,9 +150,9 @@ const label = {
                     <div v-if="!layoutStore.user?.settings?.hide_logo" class="overflow-hidden relative flex flex-1 items-center justify-center md:justify-start transition-all duration-300 ease-in-out"
                          :class="[layoutStore.leftSidebar.show ? 'md:w-48 md:pr-4' : 'md:w-12']"
                          :style="{
-                            'background-color': layoutStore.app.theme[0],
-                            'color': layoutStore.app.theme[1],
-                            'border-bottom': `1px solid ${layoutStore.app.theme[2]}3F`
+                            'background-color': layoutStore.app.navigation_theme[0],
+                            'color': layoutStore.app.navigation_theme[1],
+                            'border-bottom': `1px solid ${layoutStore.app.navigation_theme[2]}3F`
                         }"
                     >
                         <Transition name="spin-to-down">
@@ -206,7 +206,7 @@ const label = {
                               : layoutStore.group?.label, 44) }}</span>
                                 </Transition>
                             </div>
-                            <FontAwesomeIcon icon="far fa-chevron-down" class="hidden text-xs transition-all duration-200 ease-in-out lg:inline-block" :class="[open ? 'rotate-180' : '']" aria-hidden="true" />
+                            <FontAwesomeIcon icon="far fa-chevron-down" class="hidden text-xs transition-all duration-200 ease-in-out lg:inline-block" :class="[open ? 'rotate-180' : '']" fixed-width aria-hidden="true" />
                             <FontAwesomeIcon icon="fal fa-exchange" class="text-xs lg:hidden" fixed-width aria-hidden="true" />
                         </MenuButton>
 

@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Media;
 
 use App\Actions\Catalogue\Collection\UpdateCollectionWebImages;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryWebImages;
+use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -38,11 +39,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|UnidentifiedReturn $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn $model,
         array $imageData,
         string $scope = 'image',
         string $foreignKeyMedia = 'image_id'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|UnidentifiedReturn {
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);
@@ -52,7 +53,19 @@ class SaveModelImage
         }
 
         data_set($imageData, 'checksum', $checksum);
-        $media = StoreMediaFromFile::run($model, $imageData, 'image');
+
+        /**
+         * A person's own photograph is not stock the rest of the group may pick from: the image
+         * galleries list every media in the group whose collection is `image`, so a staff avatar
+         * kept there is offered to whoever is building a web page. Personal portraits get their
+         * own collection; a shop logo stays where marketing can reach it.
+         */
+        $collection = $model instanceof User
+            || $model instanceof WebUser
+            || $model instanceof Employee
+            || $model instanceof Guest ? 'avatar' : 'image';
+
+        $media = StoreMediaFromFile::run($model, $imageData, $collection);
 
         if ($oldImage && $oldImage->id == $media->id) {
             return $model;

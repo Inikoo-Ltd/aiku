@@ -82,10 +82,9 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
                 'available_quantity',
                 'units',
             ])
-            ->selectRaw("'{$shop->currency->code}'  as currency_code")
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
+            ->selectRaw("'{$shop->currency->code}'  as currency_code");
 
-        return $queryBuilder->allowedSorts([
+        $products = $queryBuilder->allowedSorts([
             'code',
             'name',
             'shop_slug',
@@ -102,6 +101,10 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $products->getCollection()->load('webpage');
+
+        return $products;
     }
 
     public function tableStructure($prefix = null): Closure

@@ -49,7 +49,7 @@ class AcceptShopifyFulfillmentRequest extends OrgAction
 
             list($status, $res) = $this->doPost($shopifyUser, $mutation, $variables);
             if (!$status) {
-                return $res;
+                return [false, $res];
             }
             $body = $res['body']->toArray();
 

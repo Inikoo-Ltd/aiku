@@ -249,10 +249,10 @@ const options = ref([
           <div class="flex items-center gap-2">
             <a v-if="props.modelValue.link.type === 'internal'" :href="props.modelValue.link.workshop" target="_blank"
               rel="noopener">
-              <FontAwesomeIcon :icon="faCompassDrafting" />
+              <FontAwesomeIcon :icon="faCompassDrafting" fixed-width />
             </a>
             <a :href="props.modelValue.link.href" target="_blank" rel="noopener">
-              <FontAwesomeIcon :icon="faExternalLink" />
+              <FontAwesomeIcon :icon="faExternalLink" fixed-width />
             </a>
           </div>
         </div>
@@ -268,7 +268,7 @@ const options = ref([
                   <article class="bg-white rounded-lg shadow-lg" :class="open ? 'ring-1 ring-blue-500' : ''">
                     <DisclosureButton class="flex justify-between items-center w-full p-4 cursor-pointer">
                       <div class="flex items-center gap-3">
-                        <FontAwesomeIcon icon="fas fa-bars" class="drag-handle cursor-move text-gray-400" />
+                        <FontAwesomeIcon icon="fas fa-bars" class="drag-handle cursor-move text-gray-400" fixed-width />
                         <div class="text-md" @click.stop="() => openNameDialog(element, index)" tabindex="0"
                           role="button">
                           <span v-if="element.title" class="font-medium text-gray-800">{{ element.title }}</span>
@@ -277,11 +277,11 @@ const options = ref([
                       </div>
                       <div class="flex items-center gap-3">
                         <FontAwesomeIcon v-if="element.links.length < 8" icon="fas fa-plus-circle"
-                          class="cursor-pointer text-blue-500" @click.stop="() => addLink(index)" />
+                          class="cursor-pointer text-blue-500" @click.stop="() => addLink(index)" fixed-width />
                         <FontAwesomeIcon icon="fas fa-trash-alt" class="cursor-pointer text-red-500"
-                          @click.stop="() => deleteSubNavigation(index)" />
+                          @click.stop="() => deleteSubNavigation(index)" fixed-width />
                         <FontAwesomeIcon :icon="open ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"
-                          class="text-gray-400" />
+                          class="text-gray-400" fixed-width />
                       </div>
                     </DisclosureButton>
 
@@ -291,7 +291,7 @@ const options = ref([
                         <template #item="{ element: link, index: linkIndex }">
                           <div class="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition">
                             <FontAwesomeIcon icon="fas fa-bars"
-                              class="link-drag-handle cursor-move text-gray-400 pr-2" />
+                              class="link-drag-handle cursor-move text-gray-400 pr-2" fixed-width />
                             <IconPicker v-model="link.icon" />
                             <div class="flex justify-between items-center w-full">
                               <div class="text-gray-500 hover:text-gray-600 hover:underline cursor-pointer text-xs"
@@ -301,15 +301,15 @@ const options = ref([
                                 <a v-if="link?.link?.type == 'internal'" :href="link.link.workshop" target="_blank"
                                   rel="noopener">
                                   <FontAwesomeIcon :icon="faCompassDrafting"
-                                    class="text-gray-400 hover:text-gray-600 transition" />
+                                    class="text-gray-400 hover:text-gray-600 transition" fixed-width />
                                 </a>
                                 <a v-if="link?.link?.href" :href="link.link.href" target="_blank" rel="noopener">
                                   <FontAwesomeIcon :icon="faExternalLink"
-                                    class="text-gray-400 hover:text-gray-600 transition" />
+                                    class="text-gray-400 hover:text-gray-600 transition" fixed-width />
                                 </a>
                                 <span @click.stop="() => element.links.splice(linkIndex, 1)"
                                   class="text-red-400 hover:text-red-600 cursor-pointer">
-                                  <FontAwesomeIcon :icon="faTimesCircle" />
+                                  <FontAwesomeIcon :icon="faTimesCircle" fixed-width />
                                 </span>
                               </div>
                             </div>
@@ -350,7 +350,7 @@ const options = ref([
 
     <ConfirmPopup>
       <template #icon>
-        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
       </template>
     </ConfirmPopup>
   </div>

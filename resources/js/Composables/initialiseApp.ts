@@ -10,6 +10,7 @@ import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 import { applyChatTheme } from '@/Composables/useChatThemes'
 import { setComponentDebugInfo } from '@/Composables/useComponentDebugInfo'
+import { buildNavigationTheme } from '@/Composables/useNavigationTheme'
 
 export const initialiseApp = () => {
     const layout = useLayoutStore()
@@ -154,6 +155,11 @@ export const initialiseApp = () => {
         loadLanguageAsync(usePage().props.localeData.language.code)
     }
 
+    // Compared by identity so a colour the user has just picked in their profile is not immediately
+    // overwritten by the props of the page load they picked it on
+    let appliedOrganisationColours: { [key: string]: string } | undefined
+
+
     watchEffect(() => {
         // Aiku
 
@@ -174,6 +180,25 @@ export const initialiseApp = () => {
         if (usePage().props.layout?.app_theme) {
             layout.app.theme = usePage().props.layout?.app_theme
         }
+
+        /*
+         * Kept in the store rather than read straight from the props: layout is a first load only
+         * prop, so after an Inertia visit to another organisation the map is gone and the left
+         * navigation would fall back to the app theme, which is the confusion this is here to end.
+         */
+        const propOrganisationColours = usePage().props.layout?.org_themes as { [key: string]: string } | undefined
+
+        if (propOrganisationColours && propOrganisationColours !== appliedOrganisationColours) {
+            appliedOrganisationColours = propOrganisationColours
+            layout.app.organisation_colours = propOrganisationColours
+        }
+
+        // Left navigation follows the colour the user gave the organisation they are in, so they
+        // can tell at a glance which one that is, and the app theme when they gave it none
+        const currentOrganisation = layout.currentParams?.organisation
+        const organisationColour = currentOrganisation ? layout.app.organisation_colours?.[currentOrganisation] : null
+
+        layout.app.navigation_theme = buildNavigationTheme(organisationColour) ?? layout.app.theme
 
         // Set Chat theme
         if (usePage().props.layout?.chat_theme) {

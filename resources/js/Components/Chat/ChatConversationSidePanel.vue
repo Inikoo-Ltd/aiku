@@ -13,10 +13,15 @@ import MessageHistory from '@/Components/Chat/MessageHistory.vue'
 import TicketQuickLook from '@/Components/Tickets/TicketQuickLook.vue'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Icon from '@/Components/Icon.vue'
-import { faArrowLeft, faLink, faEnvelope, faGlobe, faLock } from '@fal'
+import Modal from '@/Components/Utils/Modal.vue'
+import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
+import SelectQuery from '@/Components/SelectQuery.vue'
+import { notify } from '@kyvg/vue3-notification'
+import { routeType } from '@/types/route'
+import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faLifeRing, faLock)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock)
 
 type SidePanelTab = 'profile' | 'statistics' | 'tickets' | 'timeline' | 'log' | 'history'
 
@@ -40,6 +45,7 @@ interface PanelSession {
     status: string
     priority?: string | null
     assigned_agent?: string | null
+    assigned_agent_id?: number | string | null
     started?: string | null
     ai_summary?: {
         summary?: string
@@ -69,13 +75,16 @@ interface CustomerStats {
 const props = defineProps<{
     session: PanelSession
     initialTab?: SidePanelTab
+    stacked?: boolean
 }>()
 
 const emit = defineEmits<{
     (e: 'close'): void
     (e: 'priority-updated', value: string): void
+    (e: 'agent-assigned', agent: { id: number; name: string }): void
     (e: 'synced', webUser: { id: number; name: string; email: string | null }): void
     (e: 'customer-synced', customer: { id: number; name: string; email: string | null; phone: string | null }): void
+    (e: 'unlinked'): void
 }>()
 
 const PRIORITIES: Array<{ value: string; label: string; color: string; icon: any }> = [
@@ -93,7 +102,51 @@ const currentPriority = computed(() => PRIORITIES.find(p => p.value === effectiv
 const isPriorityOpen = ref(false)
 const isSavingPriority = ref(false)
 
-watch(() => props.session.ulid, () => { pendingPriority.value = null })
+watch(() => props.session.ulid, () => {
+    pendingPriority.value = null
+    pendingAgent.value = null
+    isEditingAgent.value = false
+})
+
+// WhatsApp has no route for handing a conversation to a named agent yet, so there it stays
+// what it was: the name of whoever holds it.
+const canAssignAgent = computed(() => props.session.channel !== 'whatsapp')
+const pendingAgent = ref<{ id: number; name: string } | null>(null)
+const currentAgentName = computed(() => pendingAgent.value?.name ?? props.session.assigned_agent ?? null)
+const currentAgentId = computed(() => pendingAgent.value?.id ?? props.session.assigned_agent_id ?? null)
+const isEditingAgent = ref(false)
+const isAssigningAgent = ref(false)
+
+const assignAgent = async (option: any) => {
+    const agentId = Number(option?.agent_id)
+    if (!agentId || isAssigningAgent.value) return
+    if (String(currentAgentId.value ?? '') === String(agentId)) {
+        isEditingAgent.value = false
+        return
+    }
+
+    isAssigningAgent.value = true
+    try {
+        const organisation = String((route().params as Record<string, any>)?.organisation ?? '')
+        const response = await axios.patch(
+            route('grp.org.chat.agents.assign', [organisation, props.session.ulid]),
+            { agent_id: agentId },
+            { withCredentials: true }
+        )
+        const name = response.data?.data?.assigned_agent_name || option?.label || option?.name || ''
+        pendingAgent.value = { id: agentId, name }
+        isEditingAgent.value = false
+        emit('agent-assigned', { id: agentId, name })
+    } catch (e: any) {
+        notify({
+            title: ctrans('Something went wrong'),
+            text: e.response?.data?.message || e.message,
+            type: 'error',
+        })
+    } finally {
+        isAssigningAgent.value = false
+    }
+}
 
 const updatePriority = async (value: string) => {
     isPriorityOpen.value = false
@@ -129,6 +182,9 @@ interface LastOrder {
     state: string
     total: string
     url: string | null
+    add_items: { products: routeType, save: routeType } | null
+    follow_up: routeType | null
+    payment_link: routeType | null
 }
 
 interface PreviousChat {
@@ -211,6 +267,86 @@ const loadTickets = async () => {
         tickets.value = []
     } finally {
         isLoadingTickets.value = false
+    }
+}
+
+const orderTakingItems = ref<LastOrder | null>(null)
+const isAddingItems = ref(false)
+
+const addItemsToOrder = async (products: { id: number, quantity_selected?: number }[]) => {
+    const order = orderTakingItems.value
+    if (!order?.add_items || isAddingItems.value) return
+    isAddingItems.value = true
+    try {
+        await axios.patch(route(order.add_items.save.name, order.add_items.save.parameters), {
+            products: Object.fromEntries(products.map((product) => [product.id, { quantity_ordered: product.quantity_selected ?? 1 }]))
+        })
+        notify({
+            title: ctrans("Success"),
+            text: ctrans("Items added to order :reference, the warehouse has been notified", { reference: order.reference }),
+            type: "success"
+        })
+        orderTakingItems.value = null
+        profileLoaded.value = false
+        loadCustomerProfile()
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The items could not be added"),
+            type: "error"
+        })
+    } finally {
+        isAddingItems.value = false
+    }
+}
+
+const orderBeingFollowedUp = ref<string | null>(null)
+
+const createFollowUpOrder = async (order: LastOrder) => {
+    if (!order.follow_up || orderBeingFollowedUp.value) return
+    orderBeingFollowedUp.value = order.reference
+    try {
+        const res = await axios.post(route(order.follow_up.name, order.follow_up.parameters))
+        window.open(res.data.url, '_blank', 'noopener')
+        notify({
+            title: ctrans("Success"),
+            text: ctrans("Order :followUp created, the warehouse is told to send it together with :reference", { followUp: res.data.reference, reference: order.reference }),
+            type: "success"
+        })
+        profileLoaded.value = false
+        loadCustomerProfile()
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The follow-up order could not be created"),
+            type: "error"
+        })
+    } finally {
+        orderBeingFollowedUp.value = null
+    }
+}
+
+const orderGettingPaymentLink = ref<string | null>(null)
+
+const createPaymentLink = async (order: LastOrder) => {
+    if (!order.payment_link || orderGettingPaymentLink.value) return
+    orderGettingPaymentLink.value = order.reference
+    try {
+        const res = await axios.post(route(order.payment_link.name, order.payment_link.parameters))
+        await navigator.clipboard.writeText(res.data.url)
+        notify({
+            title: ctrans("Payment link copied"),
+            text: ctrans("Paste it in the chat: :amount :currency for order :reference, the payment lands on the order by itself", { amount: res.data.amount, currency: res.data.currency, reference: order.reference }),
+            type: "success"
+        })
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? ctrans("The payment link could not be created"),
+            type: "error"
+        })
+    } finally {
+        orderGettingPaymentLink.value = null
     }
 }
 
@@ -318,9 +454,13 @@ watch(() => props.initialTab, (tab) => {
     if (tab) activeTab.value = tab
 })
 
+// The watcher below only fires once a tab changes, so a panel opened straight onto one has
+// to fetch for itself: history opened this way listed nothing and said there were no chats.
 onMounted(() => {
     loadCustomerProfile()
     if (props.initialTab === 'tickets') loadTickets()
+    if (props.initialTab === 'history') loadHistory()
+    if (props.initialTab === 'timeline') loadTimeline()
 })
 
 // When a guest gets matched to a registered Aiku customer, refresh the customer data.
@@ -330,6 +470,11 @@ watch(() => props.session.is_guest, (isGuest) => {
 
 const isSyncing = ref(false)
 const syncError = ref<string | null>(null)
+const showCustomerPicker = ref(false)
+const customerQuery = ref('')
+const customerCandidates = ref<Array<{ id: number, name: string, reference: string, email: string }>>([])
+const isSearchingCustomers = ref(false)
+let customerSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isWhatsapp = computed(() => props.session.channel === 'whatsapp')
 
@@ -367,12 +512,14 @@ const syncGuest = async () => {
                 emit('synced', res.data.data.web_user)
             } else {
                 syncError.value = res.data?.message ?? 'No matching Aiku customer for this email'
+                showCustomerPicker.value = true
             }
         }
     } catch (e: any) {
         syncError.value = e?.response?.data?.message ?? (isWhatsapp.value
             ? 'No matching Aiku customer for this phone number'
             : 'No matching Aiku customer for this email')
+        if (!isWhatsapp.value) showCustomerPicker.value = true
     } finally {
         isSyncing.value = false
     }
@@ -383,7 +530,68 @@ const suggestionDismissed = ref(false)
 watch(() => props.session.ulid, () => {
     suggestionDismissed.value = false
     syncError.value = null
+    showCustomerPicker.value = false
+    customerQuery.value = ''
+    customerCandidates.value = []
 })
+
+const searchCustomerCandidates = (query: string) => {
+    customerQuery.value = query
+    if (customerSearchTimeout) clearTimeout(customerSearchTimeout)
+    if (query.trim().length < 2) {
+        customerCandidates.value = []
+        isSearchingCustomers.value = false
+        return
+    }
+    isSearchingCustomers.value = true
+    customerSearchTimeout = setTimeout(async () => {
+        try {
+            const res = await axios.get(
+                `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer-candidates`,
+                { params: { q: query }, withCredentials: true }
+            )
+            customerCandidates.value = res.data ?? []
+        } catch {
+            customerCandidates.value = []
+        } finally {
+            isSearchingCustomers.value = false
+        }
+    }, 300)
+}
+
+const unlinkCustomer = async () => {
+    if (isSyncing.value) return
+    if (!window.confirm(ctrans('Unlink this customer from the conversation?'))) return
+    isSyncing.value = true
+    syncError.value = null
+    try {
+        await axios.delete(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer`, { withCredentials: true })
+        emit('unlinked')
+    } catch (e: any) {
+        syncError.value = e?.response?.data?.message ?? ctrans('Could not unlink this customer')
+    } finally {
+        isSyncing.value = false
+    }
+}
+
+const pickCustomer = async (customerId: number) => {
+    if (isSyncing.value) return
+    isSyncing.value = true
+    syncError.value = null
+    try {
+        const res = await axios.put(
+            `${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer`,
+            { customer_id: customerId },
+            { withCredentials: true }
+        )
+        showCustomerPicker.value = false
+        emit('synced', res.data.data.web_user)
+    } catch (e: any) {
+        syncError.value = e?.response?.data?.message ?? ctrans('Could not match this customer')
+    } finally {
+        isSyncing.value = false
+    }
+}
 
 const answerSuggestion = async (confirmed: boolean) => {
     if (isSyncing.value) return
@@ -424,7 +632,10 @@ const copyChatId = async () => {
 </script>
 
 <template>
-    <div class="w-96 shrink-0 flex flex-col border-l border-gray-200 bg-white overflow-hidden">
+    <!-- It floats over the conversation at every width. Taking a column of its own moved the
+         thread and re-wrapped every message the moment somebody looked at a profile. -->
+    <div class="flex flex-col overflow-hidden border-gray-200 bg-white"
+        :class="stacked ? 'shrink-0' : 'absolute inset-y-0 right-0 z-30 w-96 max-w-[85vw] border-l shadow-2xl'">
         <!-- Tabs -->
         <div class="flex border-b border-gray-100 shrink-0 text-xs pl-2">
             <template v-for="tab in tabs" :key="tab.key">
@@ -437,7 +648,7 @@ const copyChatId = async () => {
                 </button>
             </template>
             <button class="px-3 text-gray-400 hover:text-gray-600" @click="emit('close')" aria-label="Close">
-                <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" />
+                <FontAwesomeIcon :icon="['fal', 'fa-times']" class="text-sm" fixed-width />
             </button>
         </div>
 
@@ -455,9 +666,20 @@ const copyChatId = async () => {
                                 class="inline-flex items-center gap-1 hover:underline"
                                 :style="{ color: themePrimary }">
                                 {{ session.contact_name || '-' }}
-                                <FontAwesomeIcon :icon="['fal', 'fa-external-link-alt']" class="text-[10px]" />
+                                <FontAwesomeIcon :icon="['fal', 'fa-external-link-alt']" class="text-[10px]" fixed-width />
                             </a>
                             <span v-else>{{ session.contact_name || '-' }}</span>
+                        </div>
+                    </div>
+                    <div v-if="!isWhatsapp && !session.is_guest && session.web_user_id" class="grid grid-cols-3 gap-2 items-start">
+                        <div></div>
+                        <div class="col-span-2">
+                            <button type="button" :disabled="isSyncing"
+                                class="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 hover:underline disabled:opacity-60"
+                                @click="unlinkCustomer">
+                                <FontAwesomeIcon :icon="['fal', 'fa-unlink']" class="text-[9px]" fixed-width />
+                                {{ ctrans("Unlink customer") }}
+                            </button>
                         </div>
                     </div>
                     <div v-if="!session.is_guest && customerProfile.email" class="grid grid-cols-3 gap-2 items-start">
@@ -484,7 +706,7 @@ const copyChatId = async () => {
                         <div class="text-gray-500 text-xs">{{ ctrans("Address") }}</div>
                         <div class="col-span-2 text-xs space-y-0.5">
                             <AddressLocation v-if="customerProfile.location" :data="customerProfile.location" class="font-medium text-gray-800" />
-                            <div v-if="customerProfile.address" class="text-[11px] text-gray-500" v-html="customerProfile.address"></div>
+                            <div v-else-if="customerProfile.address" class="text-[11px] text-gray-500" v-html="customerProfile.address"></div>
                         </div>
                     </div>
                     <div v-if="session.is_guest && session.customer_suggestion && !suggestionDismissed"
@@ -518,10 +740,32 @@ const copyChatId = async () => {
                                 class="inline-flex items-center gap-1 text-[11px] font-medium rounded border px-1.5 py-0.5 transition-colors disabled:opacity-60 hover:bg-gray-50"
                                 :style="{ color: themePrimary, borderColor: themePrimary }"
                                 @click="syncGuest">
-                                <FontAwesomeIcon :icon="['fal', 'fa-link']" class="text-[9px]" />
+                                <FontAwesomeIcon :icon="['fal', 'fa-link']" class="text-[9px]" fixed-width />
                                 {{ isSyncing ? 'Matching…' : 'Match to Aiku customer' }}
                             </button>
                             <p v-if="syncError" class="text-[10px] text-amber-600 mt-1">{{ syncError }}</p>
+                            <div v-if="showCustomerPicker && !isWhatsapp" class="mt-1.5 rounded border border-gray-200 p-1.5 space-y-1.5">
+                                <input type="text"
+                                    class="w-full text-xs rounded border border-gray-200 px-1.5 py-1 focus:outline-none"
+                                    :style="{ borderColor: themePrimary }"
+                                    :placeholder="ctrans('Customer name, reference or email')"
+                                    :value="customerQuery"
+                                    @input="searchCustomerCandidates(($event.target as HTMLInputElement).value)" />
+                                <div v-if="isSearchingCustomers" class="text-[11px] text-gray-400">{{ ctrans('Searching…') }}</div>
+                                <template v-else-if="customerQuery.trim().length >= 2">
+                                    <button v-for="candidate in customerCandidates" :key="candidate.id" type="button"
+                                        :disabled="isSyncing"
+                                        class="block w-full text-left text-xs rounded px-1.5 py-1 hover:bg-gray-50 disabled:opacity-60"
+                                        @click="pickCustomer(candidate.id)">
+                                        <span class="font-medium text-gray-800">{{ candidate.name }} ({{ candidate.reference }})</span>
+                                        <span class="block text-[11px] text-gray-400">{{ candidate.email }}</span>
+                                    </button>
+                                    <p v-if="!customerCandidates.length" class="text-[11px] text-gray-400">{{ ctrans('No customers found') }}</p>
+                                </template>
+                                <button type="button" class="text-[11px] text-gray-500 hover:underline" @click="showCustomerPicker = false">
+                                    {{ ctrans('Cancel') }}
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div v-if="session.shop_name" class="grid grid-cols-3 gap-2 items-start">
@@ -533,7 +777,7 @@ const copyChatId = async () => {
                         <div class="col-span-2 flex items-center gap-1">
                             <code class="text-[11px] font-mono text-gray-700 bg-gray-100 rounded px-1.5 py-0.5 truncate">{{ session.ulid }}</code>
                             <button class="shrink-0 text-gray-400 hover:text-gray-600" @click="copyChatId" aria-label="Copy chat ID">
-                                <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" />
+                                <FontAwesomeIcon :icon="isCopied ? ['fal', 'fa-check'] : ['fal', 'fa-copy']" class="text-xs" fixed-width />
                             </button>
                         </div>
                     </div>
@@ -552,15 +796,37 @@ const copyChatId = async () => {
                             class="font-medium hover:underline" :style="{ color: themePrimary }">{{ order.reference }}</a>
                         <span v-else class="font-medium text-gray-800">{{ order.reference }}</span>
                         <span class="text-gray-500">{{ order.state }}</span>
+                        <button v-if="order.add_items" type="button" class="font-medium hover:underline"
+                            :style="{ color: themePrimary }" @click="orderTakingItems = order">
+                            + {{ ctrans("Add items") }}
+                        </button>
+                        <button v-else-if="order.follow_up" type="button" class="font-medium hover:underline disabled:opacity-50"
+                            :style="{ color: themePrimary }" :disabled="orderBeingFollowedUp === order.reference"
+                            v-tooltip="ctrans('Already picked: the extra items go on a new order the warehouse sends in the same parcel')"
+                            @click="createFollowUpOrder(order)">
+                            + {{ ctrans("Follow-up order") }}
+                        </button>
+                        <button v-if="order.payment_link" type="button" class="font-medium hover:underline disabled:opacity-50"
+                            :style="{ color: themePrimary }" :disabled="orderGettingPaymentLink === order.reference"
+                            v-tooltip="ctrans('Create a card payment link for what this order still owes and copy it')"
+                            @click="createPaymentLink(order)">
+                            {{ ctrans("Payment link") }}
+                        </button>
                         <span class="ml-auto text-gray-500">{{ formatStatDate(order.date) }}</span>
                         <span class="w-16 text-right font-medium text-gray-800">{{ customerProfile.stats?.currency_symbol ?? '' }}{{ order.total }}</span>
                     </div>
+                    <Modal :isOpen="!!orderTakingItems" @onClose="orderTakingItems = null" width="w-full max-w-6xl">
+                        <ProductsSelector v-if="orderTakingItems?.add_items"
+                            :headLabel="ctrans('Add products to Order') + ' #' + orderTakingItems.reference"
+                            :routeFetch="orderTakingItems.add_items.products" :isLoadingSubmit="isAddingItems"
+                            withQuantity @submit="addItemsToOrder" />
+                    </Modal>
                 </div>
 
                 <div v-if="customerProfile.previous_chats?.length" class="px-4 py-3 space-y-2">
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                         {{ ctrans("Previous contact") }}
-                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-gray-300" :title="ctrans('Written by AI from the conversation. Open it to check.')" />
+                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-gray-300" :title="ctrans('Written by AI from the conversation. Open it to check.')" fixed-width />
                     </p>
                     <p v-if="customerProfile.chat_topics?.length" class="text-xs text-gray-500">
                         {{ ctrans("Last 12 months:") }}
@@ -574,7 +840,7 @@ const copyChatId = async () => {
                         <span class="flex items-center gap-1.5">
                             <FontAwesomeIcon
                                 :icon="chat.channel === 'whatsapp' ? faWhatsapp : chat.channel === 'email' ? faEnvelope : faGlobe"
-                                class="shrink-0" :class="chat.channel === 'whatsapp' ? 'text-green-500' : 'text-blue-500'" />
+                                class="shrink-0" :class="chat.channel === 'whatsapp' ? 'text-green-500' : 'text-blue-500'" fixed-width />
                             <span class="font-medium text-gray-800 truncate">{{ chat.topic }}</span>
                             <span v-if="chat.status === 'pending'" class="shrink-0 text-amber-600">{{ ctrans("Unresolved") }}</span>
                             <span class="ml-auto shrink-0 text-gray-500">{{ formatStatDate(chat.date) }}</span>
@@ -602,9 +868,9 @@ const copyChatId = async () => {
                                 class="w-full flex items-center gap-2 rounded-md border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50 disabled:opacity-60"
                                 :disabled="isSavingPriority"
                                 @click="isPriorityOpen = !isPriorityOpen">
-                                <FontAwesomeIcon v-if="currentPriority" :icon="currentPriority.icon" class="text-[11px]" :style="{ color: currentPriority.color }" />
+                                <FontAwesomeIcon v-if="currentPriority" :icon="currentPriority.icon" class="text-[11px]" :style="{ color: currentPriority.color }" fixed-width />
                                 <span class="font-medium text-gray-800">{{ currentPriority?.label ?? 'Set priority' }}</span>
-                                <FontAwesomeIcon :icon="faChevronDown" class="ml-auto text-[9px] text-gray-400" />
+                                <FontAwesomeIcon :icon="faChevronDown" class="ml-auto text-[9px] text-gray-400" fixed-width />
                             </button>
                             <div v-if="isPriorityOpen"
                                 class="absolute right-0 z-30 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1">
@@ -612,16 +878,33 @@ const copyChatId = async () => {
                                     class="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-100"
                                     :class="effectivePriority === p.value ? 'font-semibold text-gray-900' : 'text-gray-700'"
                                     @click="updatePriority(p.value)">
-                                    <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" />
+                                    <FontAwesomeIcon :icon="p.icon" class="text-[11px] w-3.5" :style="{ color: p.color }" fixed-width />
                                     <span>{{ p.label }}</span>
                                     <span v-if="effectivePriority === p.value" class="ml-auto text-[11px]" :style="{ color: p.color }">✓</span>
                                 </button>
                             </div>
                         </div>
                     </div>
-                    <div v-if="session.assigned_agent" class="grid grid-cols-3 gap-2 items-center">
-                        <div class="text-gray-500 text-xs">Agent</div>
-                        <div class="col-span-2 text-xs font-medium text-gray-800">{{ session.assigned_agent }}</div>
+                    <div v-if="currentAgentName || canAssignAgent" class="grid grid-cols-3 gap-2 items-center">
+                        <div class="text-gray-500 text-xs">{{ ctrans("Agent") }}</div>
+                        <div v-if="!canAssignAgent" class="col-span-2 text-xs font-medium text-gray-800">{{ currentAgentName }}</div>
+                        <div v-else-if="!isEditingAgent" class="col-span-2">
+                            <button type="button"
+                                class="w-full text-left text-xs font-medium rounded-md border border-gray-200 px-2 py-1 hover:bg-gray-50"
+                                :class="currentAgentName ? 'text-gray-800' : 'text-gray-400'"
+                                @click="isEditingAgent = true">
+                                {{ currentAgentName || ctrans("Assign to an agent") }}
+                            </button>
+                        </div>
+                        <div v-else class="col-span-2">
+                            <SelectQuery :urlRoute="`${baseUrl}/app/api/chats/agents`" :label="'label'"
+                                :valueProp="'agent_id'" :object="true" :searchable="true" :closeOnSelect="true"
+                                :disabled="isAssigningAgent" :onChange="assignAgent" />
+                            <button type="button" class="mt-1 text-[10px] text-gray-500 hover:text-gray-700"
+                                :disabled="isAssigningAgent" @click="isEditingAgent = false">
+                                {{ ctrans("Cancel") }}
+                            </button>
+                        </div>
                     </div>
                     <div v-if="session.started" class="grid grid-cols-3 gap-2 items-center">
                         <div class="text-gray-500 text-xs">Started</div>
@@ -635,7 +918,7 @@ const copyChatId = async () => {
                     <div v-else-if="customerProfile.tags.length" class="flex flex-wrap gap-1.5">
                         <span v-for="tag in customerProfile.tags" :key="tag.id"
                             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium bg-indigo-50 text-indigo-700 border-indigo-200">
-                            <FontAwesomeIcon :icon="['fal', 'fa-tag']" class="text-[9px] opacity-70" />
+                            <FontAwesomeIcon :icon="['fal', 'fa-tag']" class="text-[9px] opacity-70" fixed-width />
                             {{ tag.name }}
                         </span>
                     </div>
@@ -644,7 +927,7 @@ const copyChatId = async () => {
 
                 <div v-if="session.ai_summary?.summary" class="px-4 py-3">
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" />
+                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" fixed-width />
                         AI Summary
                         <span v-if="session.ai_summary.sentiment"
                             class="ml-auto text-[10px] font-medium capitalize px-1.5 py-0.5 rounded-full"
@@ -674,7 +957,7 @@ const copyChatId = async () => {
             <div v-if="activeTab === 'statistics'" class="p-4">
                 <div v-if="isLoadingProfile" class="flex items-center justify-center py-10 text-gray-400 text-xs">Loading...</div>
                 <div v-else-if="!customerProfile.stats" class="flex flex-col items-center justify-center py-10 text-gray-400">
-                    <FontAwesomeIcon :icon="['fal', 'fa-chart-line']" class="text-2xl mb-2 opacity-30" />
+                    <FontAwesomeIcon :icon="['fal', 'fa-chart-line']" class="text-2xl mb-2 opacity-30" fixed-width />
                     <p class="text-xs">No statistics available</p>
                 </div>
                 <div v-else class="space-y-2.5">
@@ -721,7 +1004,7 @@ const copyChatId = async () => {
                     <div class="h-12 bg-gray-100 rounded animate-pulse w-5/6" />
                 </div>
                 <div v-else-if="!tickets.length" class="flex flex-col items-center justify-center py-10 text-gray-400">
-                    <FontAwesomeIcon :icon="['fal', 'fa-life-ring']" class="text-2xl mb-2 opacity-30" />
+                    <FontAwesomeIcon :icon="['fal', 'fa-life-ring']" class="text-2xl mb-2 opacity-30" fixed-width />
                     <p class="text-xs">No tickets yet</p>
                 </div>
                 <ul v-else class="space-y-2">
@@ -739,7 +1022,7 @@ const copyChatId = async () => {
                                         ? ctrans('This was holding the chat open. It is settled, so it no longer does.')
                                         : ctrans('This chat cannot be closed until this ticket is resolved or cancelled.')"
                                     class="text-[11px]"
-                                    :class="isTicketSettled(ticket) ? 'text-gray-300' : 'text-amber-600'" />
+                                    :class="isTicketSettled(ticket) ? 'text-gray-300' : 'text-amber-600'" fixed-width />
                                 <Icon v-if="ticket.priority_icon" :data="ticket.priority_icon" class="ml-auto" />
                             </div>
                             <p class="mt-1 line-clamp-2 text-xs font-medium text-gray-800">{{ ticket.subject }}</p>
@@ -764,7 +1047,7 @@ const copyChatId = async () => {
                 <template v-if="!selectedHistory">
                     <div v-if="!isLoadingHistory && !historySessions.length"
                         class="flex flex-col items-center justify-center py-10 text-gray-400">
-                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-2xl mb-2 opacity-30" />
+                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-2xl mb-2 opacity-30" fixed-width />
                         <p class="text-xs">No previous chats</p>
                     </div>
                     <HistoryChatList v-else :data="historySessions" :loading="isLoadingHistory"

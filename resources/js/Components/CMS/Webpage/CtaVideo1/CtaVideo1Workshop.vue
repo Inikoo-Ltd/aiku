@@ -156,7 +156,7 @@ watch(
 					</template>
 
 					<template v-else>
-						<FontAwesomeIcon :icon="['fas', 'video']" class="text-gray-400 text-6xl" />
+						<FontAwesomeIcon :icon="['fas', 'video']" class="text-gray-400 text-6xl" fixed-width />
 					</template>
 				</div>
 			</div>

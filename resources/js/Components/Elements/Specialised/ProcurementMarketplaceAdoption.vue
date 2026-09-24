@@ -19,8 +19,8 @@ const props = defineProps<{
 </script>
 
 <template>
-    <FontAwesomeIcon v-if="value"  icon="fas fa-check-circle" class="mt-1.5  h-5 w-5 text-green-500" aria-hidden="true"  :title="trans('Adopted')" />
-    <FontAwesomeIcon v-else  icon="fas fa-plus-circle" class="mt-1.5  h-5 w-5 text-indigo-200 hover:text-indigo-500" aria-hidden="true"  :title="trans('Available')"  />
+    <FontAwesomeIcon v-if="value"  icon="fas fa-check-circle" class="mt-1.5  h-5 w-5 text-green-500" fixed-width aria-hidden="true"  :title="trans('Adopted')" />
+    <FontAwesomeIcon v-else  icon="fas fa-plus-circle" class="mt-1.5  h-5 w-5 text-indigo-200 hover:text-indigo-500" fixed-width aria-hidden="true"  :title="trans('Available')"  />
 
 </template>
 

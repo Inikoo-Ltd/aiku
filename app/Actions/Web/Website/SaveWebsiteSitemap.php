@@ -218,6 +218,10 @@ class SaveWebsiteSitemap implements ShouldBeUnique
                 return false;
             }
 
+            if (WebpageSubTypeEnum::fromValue($webpage->sub_type ?? null)?->isHiddenFromSearchEngines()) {
+                continue;
+            }
+
             $groupName = $forcedGroupName;
 
             if (!$groupName) {

@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Ecom\Orders;
 
 use App\Actions\Accounting\Invoice\WithInvoicesExport;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithExportData;
 use App\Actions\Traits\WithProformaInvoicePdf;
 use App\Models\Ordering\Order;
@@ -21,6 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EcomPdfProformaInvoice extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
     use WithInvoicesExport;

@@ -220,7 +220,7 @@ const openModal = () => {
         class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
     >
         <slot name="buttonClick">
-            <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" />
+            <FontAwesomeIcon icon="fal fa-sticky-note" class="text-amber-500 text-xs" fixed-width />
             {{ trans("Add Note") }}
         </slot>
     </button>

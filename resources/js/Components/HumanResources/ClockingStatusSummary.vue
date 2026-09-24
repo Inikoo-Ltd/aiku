@@ -104,7 +104,7 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 					<FontAwesomeIcon
 						:icon="isClockedIn ? faCheck : faTimes"
 						class="text-base sm:text-lg"
-						:class="statusClasses.icon" />
+						:class="statusClasses.icon" fixed-width />
 				</div>
 				<div class="min-w-0">
 					<p class="text-xs sm:text-sm font-medium" :class="statusClasses.text">
@@ -141,7 +141,7 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 				<FontAwesomeIcon
 					:icon="faChevronDown"
 					class="w-3 shrink-0 text-gray-400 transition-transform duration-200"
-					:class="open ? 'rotate-180' : ''" />
+					:class="open ? 'rotate-180' : ''" fixed-width />
 			</DisclosureButton>
 
 			<DisclosurePanel class="mt-2">
@@ -211,12 +211,12 @@ const sessionElapsedSeconds = (session: ClockingSession) => {
 								v-if="session.is_open"
 								:icon="faClock"
 								class="text-amber-500"
-								:title="trans('Ongoing')" />
+								:title="trans('Ongoing')" fixed-width />
 							<template v-else>
 								<FontAwesomeIcon
 									:icon="faCheck"
 									class="text-green-600"
-									:title="trans('Completed')" />
+									:title="trans('Completed')" fixed-width />
 								<span class="text-gray-500">
 									{{ trans("Duration") }}:
 									{{ formatDurationLocal(sessionElapsedSeconds(session) || 0) }}

@@ -123,7 +123,7 @@ function mailshotRoute(mailshot: Mailshot) {
                 <Link v-if="mailshot.state === 'sent' && mailshot.webpage_slug && !mailshot.has_source_reference && mailshot.type !== 'invite'" :href="webpageRoute(mailshot)"
                     v-tooltip="trans('Go to webpage')"
                     class="ml-2 inline-flex items-center px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded hover:bg-slate-200 hover:text-slate-800 transition">
-                    <FontAwesomeIcon :icon="faExternalLink" />
+                    <FontAwesomeIcon :icon="faExternalLink" fixed-width />
                 </Link>
                 <span v-else-if="mailshot.state === 'sent' && !mailshot.has_source_reference && mailshot.type !== 'invite'"
                     v-tooltip="trans('Convert to Page')"
@@ -134,7 +134,7 @@ function mailshotRoute(mailshot: Mailshot) {
                             : 'hover:bg-slate-200 hover:text-slate-800 cursor-pointer'
                     ]"
                     @click="() => { convertToPage(mailshot); }">
-                    <FontAwesomeIcon :icon="convertingMailshotId === mailshot.id ? faSpinnerThird : faFileExport" :spin="convertingMailshotId === mailshot.id" />
+                    <FontAwesomeIcon :icon="convertingMailshotId === mailshot.id ? faSpinnerThird : faFileExport" :spin="convertingMailshotId === mailshot.id" fixed-width />
                 </span>
             </div>
         </template>

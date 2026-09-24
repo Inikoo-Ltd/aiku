@@ -1552,7 +1552,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <Head :title="capitalize(title)" />
     <ConfirmDialog>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" fixed-width />
         </template>
     </ConfirmDialog>
 
@@ -1604,10 +1604,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
 
 
         <template #other>
-            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
-            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat" class="mr-2" />
-            <div v-if="(!props.readonly || isShowProforma) && !is_shop_external" class="flex">
-                <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+            <div v-if="(!props.readonly || isShowProforma) && !is_shop_external && currentTab === 'attachments'" class="flex">
+                <Button @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
             </div>
             <div v-if="is_shop_external && external_shop" class="absolute -top-1 md:top-auto md:bottom-0.5 left-0 md:left-12 text-xxs">
@@ -1618,6 +1616,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     {{ external_shop?.engine_label }}
                 </div>
             </div>
+            <StaffChatContextButtons v-if="staff_chat" :context="staff_chat"/>
+            <StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id"/>
         </template>
 
         <template #button-replacement="{ action }">
@@ -2457,7 +2457,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     class="ml-auto h-6 mr-2 text-purple-400 hover:text-purple-600" @click="openEditAllPercentageModal" aria-label="Edit Percentage"
                                     v-tooltip="ctrans('Apply discount to all products')">
                                     <FontAwesomeIcon :icon="faMoneyCheckEditAlt"
-                                        class="h-4" />
+                                        class="h-4" fixed-width />
                                 </button>
                                 <button
                                     @click="() => {
@@ -2469,11 +2469,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <FontAwesomeLayers class="flex items-center justify-center w-[2rem]">
                                         <FontAwesomeIcon
                                             :icon="faTrash"
-                                            class="!text-lg !w-fit"
+                                            class="!text-lg !w-fit" fixed-width
                                         />
                                         <FontAwesomeIcon
                                             :icon="faPercentage"
-                                            class="text-xs !top-[25%]"
+                                            class="text-xs !top-[25%]" fixed-width
                                         />
                                     </FontAwesomeLayers>
                                 </button>
@@ -2481,7 +2481,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     class="ml-auto h-6 mr-2 text-red-500 hover:text-red-700" @click="restoreAllDiscount" aria-label="Edit Percentage"
                                     v-tooltip="ctrans('Restore original discount to all products')">
                                     <FontAwesomeIcon :icon="falUndo"
-                                        class="h-4" />
+                                        class="h-4" fixed-width />
                                 </button>
                             </template>
                         </dl>
@@ -2726,11 +2726,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                             :minFractionDigits="0" :maxFractionDigits="2"
                                             :inputClass="[
                                                 'w-20 !px-1.5 !py-0 !text-sm !rounded !text-right',
-                                                ['dispatched'].some((item) => item == props.state) ? '!text-gray-500 !border-none' : ''
+                                                ['dispatched', 'finalised', 'cancelled'].includes(props.state) ? '!text-gray-500 !border-none' : ''
                                             ]"
                                             :invalid="get(fieldSummary, ['data', 'shipping_tbc_amount'], null) === null"
                                             :min="0"
-                                            :readonly="['dispatched'].some((item) => item == props.state)"
+                                            :readonly="['dispatched', 'finalised', 'cancelled'].includes(props.state)"
                                         />
                                     </div>
                                 </Transition>

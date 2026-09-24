@@ -30,11 +30,11 @@ const locale = inject("locale", aikuLocaleStructure)
 const loadingTarget = ref<string | null>(null)
 
 const toneClasses = {
-	violet: { icon: "text-violet-600", dot: "bg-violet-500" },
-	emerald: { icon: "text-emerald-600", dot: "bg-emerald-500" },
-	amber: { icon: "text-amber-600", dot: "bg-amber-500" },
-	indigo: { icon: "text-indigo-600", dot: "bg-indigo-500" },
-	sky: { icon: "text-sky-600", dot: "bg-sky-500" },
+	violet: { icon: "text-violet-600", dots: ["bg-violet-300", "bg-violet-500", "bg-violet-700"] },
+	emerald: { icon: "text-emerald-600", dots: ["bg-emerald-300", "bg-emerald-500", "bg-emerald-700"] },
+	amber: { icon: "text-amber-600", dots: ["bg-amber-300", "bg-amber-500", "bg-amber-700"] },
+	indigo: { icon: "text-indigo-600", dots: ["bg-indigo-300", "bg-indigo-500", "bg-indigo-700"] },
+	sky: { icon: "text-sky-600", dots: ["bg-sky-300", "bg-sky-500", "bg-sky-700"] },
 }
 
 const tone = toneClasses[props.card.tone]
@@ -54,14 +54,14 @@ const tone = toneClasses[props.card.tone]
 			<span v-if="card.value !== null" class="font-semibold text-gray-700">{{ locale.number(card.value) }}</span>
 		</Link>
 
-		<template v-for="metric in card.metrics" :key="metric.label">
+		<template v-for="(metric, metricIndex) in card.metrics" :key="metric.label">
 			<Link
 				v-tooltip="metric.label"
 				:href="route(metric.route.name, metric.route.parameters)"
 				class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3 rounded text-gray-500 hover:text-gray-700"
 				@start="loadingTarget = metric.label"
 				@finish="loadingTarget = null">
-				<span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="tone.dot" />
+				<span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="tone.dots[metricIndex % tone.dots.length]" />
 				<LoadingIcon v-if="loadingTarget === metric.label" class="text-xs" />
 				<span v-else class="font-semibold text-gray-700">{{ locale.number(metric.value) }}</span>
 			</Link>

@@ -232,7 +232,7 @@ const contentClass = computed(() =>
               lg:h-[320px]
               lg:w-[340px]
             ">
-            <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
+            <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" fixed-width />
           </div>
 
           <div ref="imageRef" class="flex flex-col gap-[6px]">
@@ -258,7 +258,7 @@ const contentClass = computed(() =>
                 lg:h-[157px]
                 lg:w-[160px]
               ">
-              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
+              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" fixed-width />
             </div>
 
             <!-- IMAGE 3 -->
@@ -283,7 +283,7 @@ const contentClass = computed(() =>
                 lg:h-[157px]
                 lg:w-[160px]
               ">
-              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" />
+              <FontAwesomeIcon :icon="faImage" class="h-14 w-14 text-gray-400" fixed-width />
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Fulfilment\Dropshipping\Client;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class FetchRetinaFulfilmentCustomerClientFromWooCommerce extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithGeneratedShopifyAddress;
 
     /**

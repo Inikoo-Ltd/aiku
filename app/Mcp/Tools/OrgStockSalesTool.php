@@ -9,6 +9,7 @@
 namespace App\Mcp\Tools;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\SysAdmin\Authorisation\OrganisationPermissionsEnum;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -17,7 +18,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Organisation-wide sales per stock item (SKU) over a date range combined with current stock on hand, in organisation currency. Sort by best or worst sales; each row includes quantity and value in warehouse, so it can surface best sellers running low or overstocked slow movers.')]
+#[Description('Organisation-wide sales per stock item (SKU) over a date range combined with current stock on hand, in organisation currency. Sort by best or worst sales; each row includes quantity and value in warehouse, so it can surface best sellers running low or overstocked slow movers. worst only lists active SKUs holding stock, most stock value first among equal sales: use it for discontinue or clearance candidates. Values are in each organisation\'s own currency, so run it per organisation and never add values across organisations.')]
 #[IsReadOnly]
 class OrgStockSalesTool extends AikuOrganisationTool
 {
@@ -41,9 +42,13 @@ class OrgStockSalesTool extends AikuOrganisationTool
             return $this->organisationNotFoundError($request);
         }
 
-        $direction = (string) $request->string('sort', 'best') === 'worst' ? 'asc' : 'desc';
+        $isWorst   = (string) $request->string('sort', 'best') === 'worst';
+        $direction = $isWorst ? 'asc' : 'desc';
 
         $stocks = OrgStock::where('org_stocks.organisation_id', $organisation->id)
+            ->when($isWorst, fn ($query) => $query
+                ->where('org_stocks.state', OrgStockStateEnum::ACTIVE)
+                ->where('org_stocks.quantity_in_locations', '>', 0))
             ->leftJoin('org_stock_time_series', function ($join) {
                 $join->on('org_stock_time_series.org_stock_id', '=', 'org_stocks.id')
                     ->where('org_stock_time_series.frequency', TimeSeriesFrequencyEnum::DAILY->value);
@@ -55,13 +60,15 @@ class OrgStockSalesTool extends AikuOrganisationTool
                         $request->date('to')->endOfDay(),
                     ]);
             })
-            ->groupBy('org_stocks.id', 'org_stocks.code', 'org_stocks.name', 'org_stocks.quantity_in_locations', 'org_stocks.value_in_locations')
-            ->selectRaw('org_stocks.code, org_stocks.name, org_stocks.quantity_in_locations, org_stocks.value_in_locations, coalesce(sum(org_stock_time_series_records.sales_org_currency_external), 0) as sales, coalesce(sum(org_stock_time_series_records.orders), 0) as orders')
+            ->groupBy('org_stocks.id', 'org_stocks.code', 'org_stocks.name', 'org_stocks.state', 'org_stocks.quantity_in_locations', 'org_stocks.value_in_locations')
+            ->selectRaw('org_stocks.code, org_stocks.name, org_stocks.state, org_stocks.quantity_in_locations, org_stocks.value_in_locations, coalesce(sum(org_stock_time_series_records.sales_org_currency_external), 0) as sales, coalesce(sum(org_stock_time_series_records.orders), 0) as orders')
             ->orderBy('sales', $direction)
+            ->orderByDesc('org_stocks.value_in_locations')
             ->limit($request->integer('limit', 15))
             ->get()
             ->map(fn ($stock) => [
                 'code'              => $stock->code,
+                'state'             => $stock->state->value,
                 'name'              => $stock->name,
                 'sales'             => (float) $stock->sales,
                 'orders'            => (int) $stock->orders,
@@ -89,7 +96,7 @@ class OrgStockSalesTool extends AikuOrganisationTool
             'organisation' => $schema->string()->description('Organisation slug or code')->required(),
             'from'         => $schema->string()->description('Start date (Y-m-d)')->required(),
             'to'           => $schema->string()->description('End date (Y-m-d), inclusive')->required(),
-            'sort'         => $schema->string()->description('best (highest sales first, default) or worst (lowest first)'),
+            'sort'         => $schema->string()->description('best (highest sales first, default) or worst (lowest first, active SKUs with stock only, biggest stock value first among equal sales)'),
             'limit'        => $schema->integer()->description('Maximum stock items to return, default 15')->min(1)->max(50),
         ];
     }

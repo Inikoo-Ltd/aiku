@@ -274,10 +274,10 @@ const productRoute = (item) => {
                                 @refund="(form) => onClickQuantity(item.refund_route, item.rowIndex, form)"
                             >
                                 <template #decrementicon v-if="is_tax_only">
-                                    <FontAwesomeIcon :icon="faEmptySet" v-tooltip="trans('Set value to 0')"/>
+                                    <FontAwesomeIcon :icon="faEmptySet" v-tooltip="trans('Set value to 0')" fixed-width/>
                                 </template>
                                 <template #incrementicon v-if="is_tax_only">
-                                    <FontAwesomeIcon :icon="faStarChristmas" v-tooltip="trans('Set value to max amount')"/>
+                                    <FontAwesomeIcon :icon="faStarChristmas" v-tooltip="trans('Set value to max amount')" fixed-width/>
                                 </template>
                             </ActionCell>
 
@@ -287,7 +287,7 @@ const productRoute = (item) => {
                                 @click="DeleteRefund(item.refund_route, item.rowIndex)"
                                 :icon="faTrashAlt"
                                 class="h-7 w-7 cursor-pointer text-red-500"
-                                aria-hidden="true"
+                                fixed-width aria-hidden="true"
                             />
                         </div>
             </template>

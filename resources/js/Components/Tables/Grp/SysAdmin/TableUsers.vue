@@ -61,13 +61,13 @@ function userRoute(user: User) {
         </template>
         
         <template #cell(has_2fa)="{ item: user }">
-            <FontAwesomeIcon v-if="user.has_2fa" :icon="faCheckCircle" class="text-green-500"/>
-            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"/>
+            <FontAwesomeIcon v-if="user.has_2fa" :icon="faCheckCircle" class="text-green-500" fixed-width/>
+            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500" fixed-width/>
         </template>
         
         <template #cell(is_two_factor_required)="{ item: user }">
-            <FontAwesomeIcon v-if="user.is_two_factor_required" :icon="faCheckCircle" class="text-green-500"/>
-            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500"/>
+            <FontAwesomeIcon v-if="user.is_two_factor_required" :icon="faCheckCircle" class="text-green-500" fixed-width/>
+            <FontAwesomeIcon v-else :icon="faTimesCircle" class="text-red-500" fixed-width/>
         </template>
 
         <template #cell(can_use_mcp)="{ item: user }">

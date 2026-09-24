@@ -101,6 +101,9 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
         if ($currentQuantity == 0 && $availableQuantity > 0) {
             $dataToUpdate['back_in_stock_since'] = now();
+            if ($product->status === ProductStatusEnum::COMING_SOON) {
+                $dataToUpdate['first_in_stock_at'] = now();
+            }
         }
 
         if (in_array($product->status, [

@@ -77,6 +77,11 @@ export interface StocksManagementTS {
         cost_current_price_per_unit : number
         cost_current_price_outer : number
     }
+    cover?: {
+        days: number
+        out_at: string | null
+        daily_usage: number | null
+    } | null
     locations: StockLocation[]
     qty_in_location: number
     qty_in_location_fractional?: [number, [number, number]]

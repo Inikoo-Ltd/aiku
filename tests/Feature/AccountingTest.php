@@ -2070,6 +2070,76 @@ test('increase and decrease customer credit', function () {
     expect($customer->balance)->toBe('400.00');
 });
 
+test('accounting clerk without crm edit can decrease customer balance', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    \App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer::make()->action($customer, [
+        'amount' => 220.43,
+        'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::COMPENSATE_CUSTOMER->value,
+        'type'   => CreditTransactionTypeEnum::COMPENSATION->value,
+    ]);
+
+    setPermissionsTeamId($this->group->id);
+    $guest = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    );
+    $user = $guest->getUser();
+    $user->givePermissionTo(\Spatie\Permission\Models\Permission::findByName("accounting.{$this->organisation->id}.edit"));
+    $user->refresh();
+    actingAs($user);
+
+    $response = patch(
+        route('grp.models.credit_transaction.decrease', $customer->id),
+        [
+            'amount' => -220.43,
+            'notes'  => 'Refund of excess payment',
+            'type'   => CreditTransactionTypeEnum::RETURN->value,
+            'reason' => \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::MONEY_BACK->value,
+        ]
+    );
+
+    $response->assertSuccessful();
+    expect((float)$customer->refresh()->balance)->toBe(0.0);
+});
+
+test('only accounting managers set a customer credit line', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    setPermissionsTeamId($this->group->id);
+    $guest = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    );
+    $user = $guest->getUser();
+    $user->givePermissionTo([
+        "accounting.{$this->organisation->id}.edit",
+        "crm.{$this->shop->id}.edit",
+    ]);
+    $user->refresh();
+    actingAs($user);
+
+    patch(route('grp.models.customer.credit_line.update', $customer->id), ['credit_limit' => 500])->assertForbidden();
+    patch(route('grp.models.customer.update', $customer->id), ['credit_limit' => 500])->assertSessionHasErrors('credit_limit');
+    expect((float)$customer->refresh()->credit_limit)->toBe(0.0);
+
+    $user->givePermissionTo("org-supervisor.{$this->organisation->id}.accounting");
+    $user->refresh();
+    actingAs($user);
+
+    patch(route('grp.models.customer.credit_line.update', $customer->id), ['credit_limit' => 500, 'payment_terms_days' => 30], ['X-Inertia' => 'true'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+    patch(route('grp.models.customer.update', $customer->id), ['contact_name' => 'Credit Line Test'], ['X-Inertia' => 'true'])
+        ->assertRedirect();
+    $customer->refresh();
+    expect((float)$customer->credit_limit)->toBe(500.0)
+        ->and($customer->payment_terms_days)->toBe(30)
+        ->and($customer->spendableBalance())->toBe(500.0);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Actions: MIT saved card store + update

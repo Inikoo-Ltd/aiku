@@ -109,6 +109,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         $indexToPortfolioId     = [];
 
         $variantsByProduct = $this->getShopifyVariantsBatch($shopifyUser, self::shopifyIdsToFetch($portfolios));
+        $channelSkus       = $productMap->pluck('code')->merge($portfolios->pluck('sku'))->filter()->map(fn ($sku) => Str::lower($sku))->unique()->values()->all();
 
         foreach ($portfolios as $portfolio) {
             $productData = $productMap->get($portfolio->item_id);
@@ -119,7 +120,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
             $availableQuantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($productData, $customerSalesChannel);
 
-            $shopifyData = self::resolveVariant($portfolio, $productData, $variantsByProduct[$portfolio->platform_product_id] ?? []);
+            $shopifyData = self::resolveVariant($portfolio, $productData, $variantsByProduct[$portfolio->platform_product_id] ?? [], $channelSkus);
 
             if (!$shopifyData) {
                 $portfolio->update(['stock_last_fail_updated_at' => now()]);
@@ -261,11 +262,14 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
      * keeps the id when a merchant deletes or reorders variants, and the first variant of a
      * product is not ours unless its sku says so. The product code is looked for before the sku,
      * because a portfolio can carry the sku of another product whose variant sits on the same listing.
+     * A listing with one variant whose id we stored is still ours when the merchant relabelled its sku
+     * with a text that is not the sku or code of any product on the channel.
      *
      * @param  list<array{variantId: string, inventoryItemId: string|null, sku: string}>  $variants
+     * @param  list<string>  $channelSkus  lowercased codes and skus of every product on the channel
      * @return array{variantId: string, inventoryItemId: string|null, sku: string}|null
      */
-    public static function resolveVariant(Portfolio $portfolio, Product $product, array $variants): ?array
+    public static function resolveVariant(Portfolio $portfolio, Product $product, array $variants, array $channelSkus = []): ?array
     {
         if (empty($variants)) {
             return null;
@@ -289,7 +293,15 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             }
         }
 
-        return count($variants) === 1 && count($unlabelled) === 1 ? $unlabelled[0] : null;
+        if (count($variants) === 1 && count($unlabelled) === 1) {
+            return $unlabelled[0];
+        }
+
+        if (count($variants) === 1 && $variants[0]['variantId'] === $portfolio->platform_product_variant_id && !in_array(Str::lower($variants[0]['sku']), $channelSkus, true)) {
+            return $variants[0];
+        }
+
+        return null;
     }
 
     /**

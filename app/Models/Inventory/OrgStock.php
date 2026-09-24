@@ -18,6 +18,9 @@ use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Production\ArtefactComplianceItem;
+use App\Models\Production\ArtefactLabel;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +35,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use App\Models\Traits\HasSearch;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -113,10 +117,15 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|OrgStock query()
  * @method static Builder<static>|OrgStock withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|OrgStock withoutTrashed()
+ * @property array<array-key, mixed> $label_mandatory_information
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ArtefactLabel> $labels
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, ArtefactComplianceItem> $complianceItems
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Media> $attachments
  * @mixin \Eloquent
  */
-class OrgStock extends Model implements Auditable
+class OrgStock extends Model implements Auditable, HasMedia
 {
+    use HasAttachments;
     use HasFactory;
     use HasHistory;
     use HasSlug;
@@ -137,10 +146,12 @@ class OrgStock extends Model implements Auditable
         'last_fetched_at'                  => 'datetime',
         'quantity_in_locations'            => 'decimal:3',
         'quantity_available'               => 'decimal:3',
+        'label_mandatory_information'      => 'array',
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'                        => '{}',
+        'label_mandatory_information' => '[]',
     ];
 
     protected $guarded = [];
@@ -255,6 +266,16 @@ class OrgStock extends Model implements Auditable
     {
         return $this->belongsToMany(Location::class, 'location_org_stocks')
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
+
+    public function labels(): HasMany
+    {
+        return $this->hasMany(ArtefactLabel::class)->orderBy('name');
+    }
+
+    public function complianceItems(): HasMany
+    {
+        return $this->hasMany(ArtefactComplianceItem::class);
     }
 
     public function batchCodes(): HasMany

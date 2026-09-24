@@ -281,7 +281,7 @@ defineExpose({
                 @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
                 noUndoButton noSaveButton parentClass="w-min" />
               <button class="text-red-500 hover:text-red-700 px-4" @click="() => deleteFormCommited(item)">
-                <FontAwesomeIcon :icon="faTrashAlt" />
+                <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
               </button>
             </div>
           </div>

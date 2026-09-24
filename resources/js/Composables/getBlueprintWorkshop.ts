@@ -224,6 +224,18 @@ export const getHiddenPermissions = (data: PermissionData) => hasPermission(data
 // try to bulid rename fitur
 export const getRenamePermision = (data: PermissionData) => hasPermission(data, 'edit')
 
+export const BLOCKS_WITHOUT_VISIBILITY_OPTIONS = [
+    "login",
+    "register",
+    "register-dashboard",
+    "register-dashboard-2",
+    "forgot-password",
+    "blog-categories",
+]
+
+export const getCopyPermissions = (block: { type: string, web_block: { layout: { data: PermissionData } } }) =>
+    getEditPermissions(block.web_block.layout.data) && !BLOCKS_WITHOUT_VISIBILITY_OPTIONS.includes(block.type)
+
 
 
 export const getBlueprintProduct = (componentName: string, shop_type?: string) => {

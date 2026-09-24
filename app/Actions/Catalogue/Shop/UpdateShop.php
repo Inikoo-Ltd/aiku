@@ -47,6 +47,7 @@ use App\Models\Ordering\SalesChannel;
 use Closure;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Website\BreakWebsiteCache;
+use App\Actions\Web\Website\BreakWebsiteIrisCache;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Support\Facades\Event;
@@ -86,6 +87,8 @@ class UpdateShop extends OrgAction
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
         $originalDataContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.data_contact_options_panel');
         $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
+
+        $originalPackagingAndInsertsEnabled = (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false);
 
         /* Read off the shop rather than the payload because the two callers name these
            differently: the shop screen sends them flat and they are nested below, while
@@ -200,6 +203,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
         }
 
+        if (Arr::has($modelData, 'packaging_and_inserts_enabled')) {
+            data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -295,6 +302,7 @@ class UpdateShop extends OrgAction
                     'meta_ads_ad_account_id' => 'settings.meta_ads.ad_account_id',
                     'meta_ads_access_token' => 'settings.meta_ads.access_token',
                     'meta_ads_campaign_name_prefix' => 'settings.meta_ads.campaign_name_prefix',
+                    'mailbox_sender_name' => 'settings.gmail.sender_name',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
@@ -339,6 +347,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'meta_ads_ad_account_id');
         data_forget($modelData, 'meta_ads_access_token');
         data_forget($modelData, 'meta_ads_campaign_name_prefix');
+        data_forget($modelData, 'mailbox_sender_name');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
@@ -370,6 +379,24 @@ class UpdateShop extends OrgAction
 
             $shop->settings = $settings;
             $shop->saveQuietly();
+        }
+
+        // Zero and blank both mean "no opinion": the shop is left following the group's time
+        // rather than storing a nought that would put every conversation in the queue at once.
+        foreach (['website', 'whatsapp', 'email'] as $chatChannel) {
+            $field = "chat_unclaimed_{$chatChannel}_seconds";
+
+            if (!Arr::exists($modelData, $field)) {
+                continue;
+            }
+
+            $seconds = (int) Arr::pull($modelData, $field);
+
+            data_set($modelData, "settings.chat.unclaimed_after_seconds.$chatChannel", $seconds > 0 ? $seconds : null);
+        }
+
+        if (Arr::exists($modelData, 'chat_email_offline_replies')) {
+            data_set($modelData, 'settings.chat.email_offline_replies', (bool) Arr::pull($modelData, 'chat_email_offline_replies'));
         }
 
         $viewContactOptionsPanel = null;
@@ -581,6 +608,10 @@ class UpdateShop extends OrgAction
 
         if ($shop->website && ($reviewRatingLabelsTouched || Arr::get($shop->settings ?? [], 'reviews') != $originalReviewSettings || $chatSettingsChanged)) {
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
+        }
+
+        if ($shop->website && (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false) !== $originalPackagingAndInsertsEnabled) {
+            BreakWebsiteIrisCache::run($shop->website);
         }
 
         /* Compared by value rather than read off getChanges(), which reports the whole settings
@@ -837,10 +868,15 @@ class UpdateShop extends OrgAction
             'meta_ads_ad_account_id'                                  => ['sometimes', 'nullable', 'string'],
             'meta_ads_access_token'                                   => ['sometimes', 'nullable', 'string'],
             'meta_ads_campaign_name_prefix'                           => ['sometimes', 'nullable', 'string'],
+            'mailbox_sender_name'                                     => ['sometimes', 'nullable', 'string', 'max:128'],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
             'chat_slack_channels.*'                                   => ['string'],
+            'chat_unclaimed_website_seconds'                          => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
+            'chat_unclaimed_whatsapp_seconds'                         => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
+            'chat_unclaimed_email_seconds'                            => ['sometimes', 'nullable', 'integer', 'min:0', 'max:604800'],
+            'chat_email_offline_replies'                              => ['sometimes', 'boolean'],
             'view_contact_options_panel'                              => ['sometimes', 'boolean'],
             'data_contact_options_panel'                              => ['sometimes', 'nullable', 'array'],
             'data_contact_options_panel.*.icon'                       => ['sometimes', 'nullable'],
@@ -901,6 +937,7 @@ class UpdateShop extends OrgAction
             'review_allow_reactions'                                  => ['sometimes', 'boolean'],
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
+            'packaging_and_inserts_enabled'                           => ['sometimes', 'boolean'],
             'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'access_id'                                               => ['sometimes', 'nullable', 'string'],

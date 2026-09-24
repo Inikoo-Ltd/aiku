@@ -32,7 +32,6 @@ class GetIrisTopFamilies
         }
 
         $families = $this->getFamilyList($webpage)
-            ->orderBy('yearly_sales.total_sales', 'desc')
             ->limit(6)
             ->get();
 

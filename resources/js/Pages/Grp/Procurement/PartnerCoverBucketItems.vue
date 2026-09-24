@@ -138,7 +138,7 @@ const amountOf = (item: BucketItem) => quantityFor(item) * Number(item.price ?? 
                                         <template v-if="item.our_days_of_cover !== null">
                                             ·
                                             <span :class="{ 'font-medium text-red-600': item.our_days_of_cover <= 14, 'text-amber-600': item.our_days_of_cover > 14 && item.our_days_of_cover <= 30 }">
-                                                {{ item.our_days_of_cover === 0 ? trans("we run out now") : `${trans("we run out in")} ~${item.our_days_of_cover} ${trans("days")}` }}
+                                                {{ item.our_days_of_cover === 0 ? trans("we run out now") : `${trans("Estimated: Would run out in")} ~${item.our_days_of_cover} ${trans("days")}` }}
                                             </span>
                                         </template>
                                     </div>

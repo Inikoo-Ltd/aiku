@@ -69,7 +69,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
   <div>
     <div v-if="incompleteRow"
         class="mb-3 flex items-start gap-3 rounded border-2 border-red-500 bg-red-50 px-4 py-3 text-red-700">
-        <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl" />
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl" fixed-width />
         <div class="min-w-0">
             <div class="font-semibold">{{ trans("Missing tariff code or country of origin") }}</div>
             <div class="text-sm">
@@ -130,7 +130,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
 
         <template #cell(tariff_code)="{ item }">
             <span v-if="item.is_incomplete" class="inline-flex items-center gap-1.5 font-semibold text-red-600">
-                <FontAwesomeIcon :icon="faExclamationTriangle" />
+                <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
                 {{ trans("Missing") }}
             </span>
             <span v-else>{{ item.tariff_code }}</span>
@@ -154,7 +154,7 @@ const incompleteRow = computed(() => (props.data as any)?.data?.find((row: any) 
 
         <template #cell(dg)="{ item }">
             <span>
-                <FontAwesomeIcon v-if="item.dg" :icon="faSkull" class="text-red-500" :title="trans('Dangerous goods')" />
+                <FontAwesomeIcon v-if="item.dg" :icon="faSkull" class="text-red-500" :title="trans('Dangerous goods')" fixed-width />
             </span>
         </template>
 

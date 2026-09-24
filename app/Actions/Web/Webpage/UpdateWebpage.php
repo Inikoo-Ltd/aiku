@@ -105,6 +105,10 @@ class UpdateWebpage extends OrgAction
 
             if (Arr::has($modelData, 'state_data.state')) {
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
+
+                if (Arr::get($modelData, 'state_data.state') == WebpageStateEnum::CLOSED->value && $webpage->state != WebpageStateEnum::CLOSED) {
+                    data_set($modelData, 'closed_at', now());
+                }
             }
 
             if (Arr::has($modelData, 'state_data.redirect_webpage_id')) {
@@ -148,6 +152,16 @@ class UpdateWebpage extends OrgAction
 
         if (Arr::has($modelData, 'show_price')) {
             data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
+        }
+
+        $subType = Arr::has($modelData, 'sub_type')
+            ? WebpageSubTypeEnum::fromValue(Arr::get($modelData, 'sub_type'))
+            : $webpage->sub_type;
+
+        if ($subType?->isHiddenFromSearchEngines()) {
+            foreach ($subType->searchEngineVisibility() as $field => $isVisible) {
+                data_set($modelData, $field, $isVisible);
+            }
         }
 
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);

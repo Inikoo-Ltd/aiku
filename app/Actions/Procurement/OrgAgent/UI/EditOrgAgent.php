@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\OrgAgent\UI;
 use App\Actions\SupplyChain\Agent\UI\WithAgentEditFields;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\WithPurchaseOrderSerialReference;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditOrgAgent extends OrgAction
 {
     use WithProcurementAuthorisation;
+    use WithPurchaseOrderSerialReference;
     use WithAgentEditFields;
 
     public function handle(OrgAgent $orgAgent): OrgAgent
@@ -76,6 +78,11 @@ class EditOrgAgent extends OrgAction
                 'name'       => 'grp.models.org_agent.update',
                 'parameters' => $orgAgent->id,
             ];
+
+        $blueprint[] = $this->purchaseOrderSerialReferenceSection($orgAgent, [
+            'name'       => 'grp.models.org_agent.update',
+            'parameters' => $orgAgent->id,
+        ]);
 
         return Inertia::render(
             'EditModel',

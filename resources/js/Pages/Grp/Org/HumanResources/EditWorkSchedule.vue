@@ -116,7 +116,7 @@ const submitForm = async () => {
                                 type="checkbox"
                                 :checked="workingHours[day.value]?.s"
                                 @change="toggleWorkingDay(day.value)"
-                                class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                                class="h-4 w-4 text-[--app-accent] rounded focus:ring-blue-500"
                             />
                             <span class="font-medium">{{ day.label }}</span>
                         </div>

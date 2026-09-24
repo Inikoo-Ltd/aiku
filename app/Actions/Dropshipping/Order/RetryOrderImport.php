@@ -11,7 +11,8 @@ namespace App\Actions\Dropshipping\Order;
 use App\Actions\Dropshipping\Allegro\Order\ValidateIncomingAllegroOrder;
 use App\Actions\Dropshipping\Amazon\Orders\StoreOrderFromAmazon;
 use App\Actions\Dropshipping\Ebay\Orders\StoreOrderFromEbay;
-use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
+use App\Actions\Dropshipping\Shopify\Order\ImportShopifyFulfilmentOrder;
+use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Dropshipping\Shopify\Order\GetShopifyFulfilmentOrderFromApi;
 use App\Actions\Dropshipping\Tiktok\Order\ValidateIncomingTiktokOrder;
 use App\Actions\Dropshipping\WooCommerce\Orders\StoreOrderFromWooCommerce;
@@ -22,6 +23,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -35,6 +37,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class RetryOrderImport
 {
     use AsAction;
+    use WithShopifyPortfolioMatching;
 
     /**
      * @return array{status: OrderImportRetryStatusEnum, message: string, order: Order|null, platform_order: array}
@@ -75,6 +78,13 @@ class RetryOrderImport
             );
         }
 
+        if ($platformOrder === [] && $customerSalesChannel->platform->type === PlatformTypeEnum::SHOPIFY) {
+            return $this->result(
+                OrderImportRetryStatusEnum::FAILED,
+                __('The order is in Shopify but has nothing AW can import: it is fulfilled by the store itself, its request to AW was declined or cancelled, it is already fulfilled, or it has more than 30 lines and only the fulfilment request webhook can bring it in.')
+            );
+        }
+
         if (!$platformOrder) {
             return $this->result(
                 OrderImportRetryStatusEnum::NOT_FOUND_ON_PLATFORM,
@@ -108,7 +118,7 @@ class RetryOrderImport
 
         $order = $this->findExistingOrder($customerSalesChannel, $platformOrderId);
 
-        if (!$order) {
+        if (!$order || $order->isDeclinedPlatformRequest()) {
             return $this->result(
                 OrderImportRetryStatusEnum::FAILED,
                 __('The channel returned the order but AW did not create it. The usual cause is that none of its products are in this channel portfolio, or the order is in a state the import skips.'),
@@ -141,7 +151,9 @@ class RetryOrderImport
      * StoreOrderFromAmazon never sets platform_order_id, it keeps the whole Amazon payload in
      * data, so Amazon has to be matched the same way GetRetinaOrdersFromAmazon matches it.
      * WooCommerce stores the order key there while the store is asked by numeric id, which only
-     * lives inside the saved payload.
+     * lives inside the saved payload. Shopify is asked by order id but the order keeps the id of
+     * its fulfilment order, so the Shopify order id is also read from the saved payload, and a
+     * real order of the same Shopify order wins over a declined placeholder.
      */
     private function findExistingOrder(CustomerSalesChannel $customerSalesChannel, string $platformOrderId): ?Order
     {
@@ -160,6 +172,19 @@ class RetryOrderImport
                 ->first();
         }
 
+        if ($customerSalesChannel->platform->type === PlatformTypeEnum::SHOPIFY) {
+            $shopifyOrderGid = str_starts_with($platformOrderId, 'gid://') ? $platformOrderId : 'gid://shopify/Order/'.$platformOrderId;
+
+            return $customerSalesChannel->orders()
+                ->where(function ($query) use ($platformOrderId, $shopifyOrderGid) {
+                    $query->where('platform_order_id', $platformOrderId)
+                        ->orWhereRaw("data->'shopify_data'->'order'->>'id' = ?", [$shopifyOrderGid]);
+                })
+                ->orderByRaw("(state = 'cancelled' and data->>'declined_reason' is not null)")
+                ->orderByDesc('id')
+                ->first();
+        }
+
         return $customerSalesChannel->orders()
             ->where('platform_order_id', $platformOrderId)
             ->first();
@@ -168,7 +193,7 @@ class RetryOrderImport
     /**
      * @throws \Exception
      */
-    private function fetchFromPlatform(CustomerSalesChannel $customerSalesChannel, $user, string $platformOrderId): array
+    private function fetchFromPlatform(CustomerSalesChannel $customerSalesChannel, $user, string $platformOrderId): ?array
     {
         return match ($customerSalesChannel->platform->type) {
             PlatformTypeEnum::SHOPIFY => GetShopifyFulfilmentOrderFromApi::run($user, $platformOrderId),
@@ -202,7 +227,7 @@ class RetryOrderImport
     private function import(CustomerSalesChannel $customerSalesChannel, $user, array $platformOrder): void
     {
         match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::SHOPIFY => CreateFulfilmentOrderFromShopify::run($user, $platformOrder),
+            PlatformTypeEnum::SHOPIFY => ImportShopifyFulfilmentOrder::run($user, $platformOrder),
             PlatformTypeEnum::WOOCOMMERCE => StoreOrderFromWooCommerce::run($user, $platformOrder),
             PlatformTypeEnum::TIKTOK => ValidateIncomingTiktokOrder::run($user, $platformOrder),
             PlatformTypeEnum::AMAZON => StoreOrderFromAmazon::run($user, $platformOrder),
@@ -218,6 +243,12 @@ class RetryOrderImport
      */
     private function getPortfolioMismatch(CustomerSalesChannel $customerSalesChannel, array $platformOrder): ?string
     {
+        if ($customerSalesChannel->platform->type === PlatformTypeEnum::SHOPIFY) {
+            return Arr::get($platformOrder, 'requestStatus') === 'SUBMITTED'
+                ? $this->getShopifyPortfolioMismatch($customerSalesChannel, $platformOrder)
+                : null;
+        }
+
         $lineItemIds = match ($customerSalesChannel->platform->type) {
             PlatformTypeEnum::WOOCOMMERCE => collect(Arr::get($platformOrder, 'line_items', []))
                 ->flatMap(fn ($item) => StoreOrderFromWooCommerce::lineItemPlatformProductIds($item))
@@ -251,6 +282,34 @@ class RetryOrderImport
     }
 
     /**
+     * Importing a Shopify request still waiting for our answer with a line outside the portfolio
+     * declines it, or the unmatched part of it, in the merchant's store, as the webhook does. A retry
+     * is an engineer's check, so it refuses instead, leaves that answer to the customer, and does not
+     * touch the portfolios while checking. An accepted request is only imported, never declined.
+     */
+    private function getShopifyPortfolioMismatch(CustomerSalesChannel $customerSalesChannel, array $platformOrder): ?string
+    {
+        $unmatchedSkus = collect(Arr::get($platformOrder, 'lineItems.edges', []))
+            ->pluck('node')
+            ->reject(fn ($lineItem) => $this->matchShopifyLineItemToPortfolio(
+                $customerSalesChannel,
+                Arr::get($lineItem, 'lineItem.product.id'),
+                Arr::get($lineItem, 'lineItem.variant.id'),
+                Arr::get($lineItem, 'sku'),
+                healPlatformIds: false
+            ))
+            ->map(fn ($lineItem) => Arr::get($lineItem, 'sku') ?: Arr::get($lineItem, 'lineItem.variant.id') ?: Arr::get($lineItem, 'id'));
+
+        if ($unmatchedSkus->isEmpty()) {
+            return null;
+        }
+
+        return __('Not imported: :products are not in this channel portfolio, and importing would decline the order in Shopify. Add them to the portfolio or ask the customer to fix the order in Shopify.', [
+            'products' => $unmatchedSkus->implode(', '),
+        ]);
+    }
+
+    /**
      * @return array{status: OrderImportRetryStatusEnum, message: string, order: Order|null, platform_order: array}
      */
     private function result(OrderImportRetryStatusEnum $status, string $message, ?Order $order = null, array $platformOrder = []): array
@@ -267,6 +326,8 @@ class RetryOrderImport
 
     public function asCommand(Command $command): int
     {
+        Nightwatch::dontSample();
+
         $argument = (string)$command->argument('customerSalesChannel');
 
         $customerSalesChannel = CustomerSalesChannel::where('slug', $argument)

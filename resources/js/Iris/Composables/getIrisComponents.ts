@@ -261,6 +261,15 @@ export const getIrisComponent = (
 	return components(options?.shop_type)[componentName] ?? NotFoundComponent
 }
 
+export const preloadIrisBlocks = (webBlocks: any, shopType?: string): Promise<unknown> =>
+	Promise.all(
+		(Array.isArray(webBlocks) ? webBlocks : Object.values(webBlocks ?? {})).map((webBlock: any) => {
+			const component: any = getIrisComponent(webBlock?.type, { shop_type: shopType })
+
+			return component?.__asyncResolved || typeof component?.__asyncLoader !== "function" ? null : component.__asyncLoader().catch(() => null)
+		})
+	)
+
 export const getProductsRenderDropshippingComponent = (
 	componentName: string,
 	options: Record<string, any> = {}

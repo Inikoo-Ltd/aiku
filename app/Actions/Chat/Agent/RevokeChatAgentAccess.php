@@ -8,18 +8,13 @@
 namespace App\Actions\Chat\Agent;
 
 use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
-use App\Actions\Chat\ChatSession\StoreChatEvent;
-use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Actions\Chat\ChatSession\ReleaseChatSession;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
-use App\Enums\CRM\Livechat\ChatEventTypeEnum;
-use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
-use App\Events\BroadcastChatListEvent;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\SysAdmin\User;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RevokeChatAgentAccess
@@ -192,37 +187,23 @@ class RevokeChatAgentAccess
 
     private function release(ChatAssignment $assignment, ChatAgent $agent): void
     {
-        DB::transaction(function () use ($assignment, $agent) {
+        $chatSession = $assignment->chatSession;
+
+        if (!$chatSession) {
             $assignment->update([
                 'status' => ChatAssignmentStatusEnum::RESOLVED->value,
                 'note'   => 'Released: agent may no longer work chat on this shop',
             ]);
 
-            $chatSession = $assignment->chatSession;
+            return;
+        }
 
-            if (!$chatSession) {
-                return;
-            }
-
-            if ($chatSession->status === ChatSessionStatusEnum::ACTIVE) {
-                $chatSession->update(['status' => ChatSessionStatusEnum::WAITING->value]);
-            }
-
-            StoreChatEvent::make()->handle(
-                chatSession: $chatSession,
-                eventType: ChatEventTypeEnum::RELEASED,
-                actorType: ChatActorTypeEnum::SYSTEM,
-                actorId: null,
-                payload: [
-                    'from_agent_id'   => $agent->id,
-                    'from_agent_name' => $agent->user?->contact_name,
-                    'reason'          => 'permission_revoked',
-                    'timestamp'       => now()->toISOString(),
-                ]
-            );
-
-            BroadcastChatListEvent::dispatch(null, $chatSession);
-        });
+        ReleaseChatSession::make()->handle(
+            $chatSession,
+            $agent,
+            'Released: agent may no longer work chat on this shop',
+            'permission_revoked'
+        );
     }
 
     /**

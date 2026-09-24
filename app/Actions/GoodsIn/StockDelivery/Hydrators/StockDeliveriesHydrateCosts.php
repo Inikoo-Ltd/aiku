@@ -18,6 +18,11 @@ class StockDeliveriesHydrateCosts implements ShouldBeUnique
 {
     use AsAction;
 
+    public function getJobUniqueId(StockDelivery $stockDelivery): string
+    {
+        return $stockDelivery->id;
+    }
+
     public function handle(StockDelivery $stockDelivery): void
     {
         $totals = $stockDelivery->items()

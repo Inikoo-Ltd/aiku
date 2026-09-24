@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div v-if="!pagedTimesheets.length" class="h-full min-h-40 flex flex-col items-center justify-center gap-y-2 text-gray-400">
-                <FontAwesomeIcon icon="fal fa-clock" class="text-2xl" aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-clock" class="text-2xl" fixed-width aria-hidden="true" />
                 <span class="text-sm italic">{{ searchValue ? ctrans('No timesheets match your search') : ctrans('You have no timesheets') }}</span>
             </div>
         </div>
@@ -196,11 +196,11 @@ onBeforeUnmount(() => {
             <div class="flex items-center gap-x-1">
                 <button type="button" @click="goToPage(1)" :disabled="currentPage === 1" :aria-label="ctrans('First page')"
                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                    <FontAwesomeIcon icon="fal fa-chevron-double-left" class="text-xs" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-chevron-double-left" class="text-xs" fixed-width aria-hidden="true" />
                 </button>
                 <button type="button" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" :aria-label="ctrans('Previous page')"
                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                    <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" fixed-width aria-hidden="true" />
                 </button>
 
                 <button v-for="page in visiblePages" :key="page" type="button" @click="goToPage(page)"
@@ -211,11 +211,11 @@ onBeforeUnmount(() => {
 
                 <button type="button" @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" :aria-label="ctrans('Next page')"
                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                    <FontAwesomeIcon icon="fal fa-chevron-right" class="text-xs" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-chevron-right" class="text-xs" fixed-width aria-hidden="true" />
                 </button>
                 <button type="button" @click="goToPage(totalPages)" :disabled="currentPage === totalPages" :aria-label="ctrans('Last page')"
                     class="h-8 w-8 rounded-full flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent">
-                    <FontAwesomeIcon icon="fal fa-chevron-double-right" class="text-xs" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-chevron-double-right" class="text-xs" fixed-width aria-hidden="true" />
                 </button>
             </div>
 

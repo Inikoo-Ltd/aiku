@@ -12,10 +12,15 @@ use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Actions\Chat\ChatSession\GetChatMediaContents;
+use App\Actions\Chat\ChatSession\TranslateChatMessage;
 use App\Models\Chat\ChatMessage;
+use App\Models\Chat\ChatSession;
 use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry\Laravel\Facade as Sentry;
+use Throwable;
 
 class SendChatMessageByGmail
 {
@@ -31,19 +36,33 @@ class SendChatMessageByGmail
 
         $threadId = Arr::get($session->metadata, 'gmail_thread_id');
 
-        if (! $threadId) {
-            return;
-        }
-
         $client = GmailClient::forShop($session->shop);
 
         if (! $client) {
             return;
         }
 
-        $raw = $this->buildRawMessage($session, $chatMessage);
+        $this->translateAgentReply($chatMessage);
+
+        $messageId = $this->newHeaderMessageId($session);
+        $raw       = $this->buildRawMessage($session, $chatMessage, $messageId);
 
         $result = $client->send($raw, $threadId);
+
+        $session->refresh();
+
+        // A conversation we started has no thread until Gmail gives it one. Without it kept here
+        // the customer's reply matches nothing and opens a second conversation beside this one.
+        // The Gmail thread id only groups mail inside our own mailbox. The customer's mail client
+        // threads by these headers, so every mail we send must name the one before it, agent or
+        // customer alike, or three answers in a row land as three separate emails.
+        $session->update([
+            'metadata' => array_merge($session->metadata ?? [], array_filter([
+                'gmail_thread_id'              => $threadId ?: Arr::get($result, 'threadId'),
+                'gmail_last_header_message_id' => $messageId,
+                'gmail_references'             => $this->references($session->metadata ?? [], $messageId),
+            ])),
+        ]);
 
         $chatMessage->update([
             'metadata' => array_merge($chatMessage->metadata ?? [], [
@@ -52,55 +71,123 @@ class SendChatMessageByGmail
         ]);
     }
 
-    private function buildRawMessage($session, ChatMessage $chatMessage): string
+    private function translateAgentReply(ChatMessage $chatMessage): void
+    {
+        if ($chatMessage->sender_type !== ChatSenderTypeEnum::AGENT) {
+            return;
+        }
+
+        try {
+            TranslateChatMessage::run($chatMessage->id);
+        } catch (Throwable $e) {
+            Sentry::captureException($e);
+        }
+
+        $chatMessage->refresh();
+    }
+
+    public static function references(array $metadata, ?string ...$append): array
+    {
+        return array_values(array_unique(array_filter([
+            ...Arr::get($metadata, 'gmail_references', []),
+            Arr::get($metadata, 'gmail_last_header_message_id'),
+            ...$append,
+        ])));
+    }
+
+    /**
+     * Everyone the thread has named except whoever the answer goes to, less those the agent
+     * unticked. Fixed when the agent sends, so a colleague who writes in while the mail waits
+     * in the queue is not copied into an answer nobody chose to send them.
+     *
+     * @param  array<int, string>  $excluded
+     * @return array<int, array{address: string, name: ?string}>
+     */
+    public static function copyRecipients(ChatSession $session, array $excluded = []): array
+    {
+        $metadata  = $session->metadata ?? [];
+        $recipient = strtolower((string) (Arr::get($metadata, 'email_reply_to') ?: Arr::get($metadata, 'email_from')));
+        $excluded  = array_map('strtolower', $excluded);
+
+        return array_values(array_filter(
+            Arr::get($metadata, 'email_participants', []),
+            fn (array $person, string $key) => $key !== $recipient && ! in_array($key, $excluded, true),
+            ARRAY_FILTER_USE_BOTH
+        ));
+    }
+
+    private function newHeaderMessageId($session): string
+    {
+        $domain = Str::after((string) Arr::get($session->shop->settings, 'gmail.email'), '@') ?: 'aiku.io';
+
+        return '<'.Str::ulid().'@'.$domain.'>';
+    }
+
+    private function buildRawMessage($session, ChatMessage $chatMessage, string $messageId): string
     {
         $metadata = $session->metadata ?? [];
 
         $mailboxAddress = Arr::get($session->shop->settings, 'gmail.email');
-        $toAddress      = Arr::get($metadata, 'email_from');
-        $toName         = Arr::get($metadata, 'email_from_name');
+        $toAddress      = Arr::get($metadata, 'email_reply_to') ?: Arr::get($metadata, 'email_from');
+        $toName         = Arr::get($metadata, 'email_reply_to') ? Arr::get($metadata, 'email_reply_to_name') : Arr::get($metadata, 'email_from_name');
         $subject        = Arr::get($metadata, 'email_subject') ?? '';
         $replyToHeader  = Arr::get($metadata, 'gmail_last_header_message_id');
 
-        if (! str_starts_with(trim($subject), 'Re:')) {
+        // Only an answer is prefixed: the first mail of a conversation we started replies to
+        // nothing, and a subject reading "Re:" out of the blue looks like a lost thread.
+        if ($replyToHeader && ! str_starts_with(trim($subject), 'Re:')) {
             $subject = 'Re: '.$subject;
         }
 
-        $to = $toName ? $this->encodeHeader($toName)." <{$toAddress}>" : $toAddress;
+        $to = $this->mailbox($toAddress, $toName);
+
+        // Without a name of our own on the From line the customer's mail client shows whatever
+        // the Google account happens to be called, which is the mailbox owner, not the shop.
+        $senderName = Arr::get($session->shop->settings, 'gmail.sender_name') ?: $session->shop->name;
+        $from       = $senderName ? $this->encodeHeader($senderName)." <{$mailboxAddress}>" : $mailboxAddress;
 
         $headers = [
-            "From: {$mailboxAddress}",
+            "From: {$from}",
             "To: {$to}",
             'Subject: '.$this->encodeHeader($subject),
+            "Message-ID: {$messageId}",
         ];
+
+        $copies = array_map(
+            fn (array $person) => $this->mailbox($person['address'], $person['name']),
+            Arr::get($chatMessage->metadata ?? [], 'email_cc', [])
+        );
+
+        if ($copies) {
+            $headers[] = 'Cc: '.implode(', ', $copies);
+        }
 
         if ($replyToHeader) {
             $headers[] = "In-Reply-To: {$replyToHeader}";
-            $headers[] = "References: {$replyToHeader}";
+            $headers[] = 'References: '.implode(' ', self::references($metadata));
+        }
+
+        // RFC 3834: says it was sent by itself, so the other side's auto-responder does not answer it.
+        if (Arr::get($chatMessage->metadata ?? [], 'auto_submitted')) {
+            $headers[] = 'Auto-Submitted: auto-replied';
+            $headers[] = 'X-Auto-Response-Suppress: All';
         }
 
         $headers[] = 'MIME-Version: 1.0';
 
-        $messageBody = $chatMessage->message_text ?? '';
+        $signature = '';
 
         if ($chatMessage->sender_type === ChatSenderTypeEnum::AGENT && $chatMessage->sender_id) {
-            $agent = ChatAgent::find($chatMessage->sender_id);
-            if ($agent && $agent->signature) {
-                $messageBody .= "\n\n".$agent->signature;
-            }
+            $agent     = ChatAgent::find($chatMessage->sender_id);
+            $signature = $agent?->signature ?: '';
         }
 
-        $textPart = [
-            'Content-Type: text/plain; charset=utf-8',
-            'Content-Transfer-Encoding: base64',
-            '',
-            chunk_split(base64_encode($messageBody)),
-        ];
+        $bodyPart = $this->bodyPart($chatMessage->message_text ?? '', $signature);
 
         $attachments = $chatMessage->attachedFiles();
 
         if ($attachments->isEmpty()) {
-            return implode("\r\n", [...$headers, ...$textPart]);
+            return implode("\r\n", [...$headers, ...$bodyPart]);
         }
 
         $boundary = 'aiku-'.bin2hex(random_bytes(12));
@@ -110,7 +197,7 @@ class SendChatMessageByGmail
             "Content-Type: multipart/mixed; boundary=\"{$boundary}\"",
             '',
             "--{$boundary}",
-            ...$textPart,
+            ...$bodyPart,
         ];
 
         foreach ($attachments as $attachment) {
@@ -130,6 +217,105 @@ class SendChatMessageByGmail
         $lines[] = "--{$boundary}--";
 
         return implode("\r\n", $lines);
+    }
+
+    /**
+     * A mail goes as HTML beside its readable text whenever there is something to show: the
+     * formatting the agent picked, or a signature holding a logo, since HTML in a text/plain
+     * mail is read as its own source. A mail with neither stays plain as it always was.
+     *
+     * @return array<int, string>  the MIME lines for the body, header first
+     */
+    private function bodyPart(string $messageText, string $signature): array
+    {
+        $isHtmlSignature = $signature !== '' && $signature !== strip_tags($signature);
+        $messageHtml     = self::markupToHtml($messageText);
+
+        if (! $isHtmlSignature && $messageHtml === nl2br(e($messageText))) {
+            return $this->textPart(trim($messageText."\n\n".$signature));
+        }
+
+        $signatureHtml = $isHtmlSignature ? $signature : nl2br(e($signature));
+
+        $textPart = $this->textPart(trim($messageText."\n\n".($isHtmlSignature ? $this->htmlToText($signature) : $signature)));
+        $htmlPart = [
+            'Content-Type: text/html; charset=utf-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode($signature === '' ? $messageHtml : $messageHtml.'<br><br>'.$signatureHtml)),
+        ];
+
+        $boundary = 'aiku-alt-'.bin2hex(random_bytes(12));
+
+        return [
+            "Content-Type: multipart/alternative; boundary=\"{$boundary}\"",
+            '',
+            "--{$boundary}",
+            ...$textPart,
+            "--{$boundary}",
+            ...$htmlPart,
+            "--{$boundary}--",
+        ];
+    }
+
+    /**
+     * The same markers the chat bubble renders (formatWhatsappMarkup in useWhatsappMarkup.ts),
+     * so the customer's mail reads as the agent saw it. The text is escaped before any tag is
+     * put back, and a marker only counts where it touches a word, so snake_case and 2*3*4
+     * are left alone.
+     */
+    public static function markupToHtml(string $text): string
+    {
+        $html = preg_replace('/```([\s\S]+?)```/u', '<code style="font-family:monospace">$1</code>', e($text)) ?? e($text);
+
+        foreach (['__' => 'u', '*' => 'strong', '_' => 'em', '~' => 's'] as $marker => $tag) {
+            $m    = preg_quote($marker, '/');
+            $html = preg_replace(
+                "/(^|[^\\w{$m}]){$m}([^\\s{$m}][^{$m}\\n]*[^\\s{$m}]|[^\\s{$m}]){$m}(?![\\w{$m}])/u",
+                "\$1<{$tag}>\$2</{$tag}>",
+                $html
+            ) ?? $html;
+        }
+
+        return nl2br($html);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function textPart(string $body): array
+    {
+        return [
+            'Content-Type: text/plain; charset=utf-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            chunk_split(base64_encode($body)),
+        ];
+    }
+
+    private function htmlToText(string $html): string
+    {
+        $text = preg_replace('/<(br|\/p|\/div|\/tr|\/h[1-6])[^>]*>/i', "\n", $html) ?? $html;
+
+        return trim(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    }
+
+    /**
+     * A name holding a comma, as "Doe, Jane" does, reads as two recipients unless it is quoted.
+     */
+    private function mailbox(string $address, ?string $name): string
+    {
+        if (! $name) {
+            return $address;
+        }
+
+        $name = match (true) {
+            (bool) preg_match('/[^\x20-\x7E]/', $name)    => mb_encode_mimeheader($name, 'UTF-8'),
+            (bool) preg_match('/[()<>@,;:\\\\".\[\]]/', $name) => '"'.addcslashes($name, '"\\').'"',
+            default                                         => $name,
+        };
+
+        return "{$name} <{$address}>";
     }
 
     private function encodeHeader(string $value): string

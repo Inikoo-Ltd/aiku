@@ -11,6 +11,7 @@ namespace App\Actions\Production\Artefact\Label;
 use App\Actions\OrgAction;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Http\Resources\Production\ArtefactLabelResource;
+use App\Models\Inventory\OrgStock;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use Illuminate\Support\Arr;
@@ -19,21 +20,23 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreArtefactLabel extends OrgAction
 {
     use WithArtefactLabelLayout;
+    use WithArtefactLabelAuthorisation;
 
-    public function handle(Artefact $artefact, array $modelData): ArtefactLabel
+    public function handle(OrgStock $orgStock, array $modelData): ArtefactLabel
     {
         $artwork = Arr::pull($modelData, 'artwork');
 
-        $label = $artefact->labels()->create([
-            'group_id'        => $artefact->group_id,
-            'organisation_id' => $artefact->organisation_id,
+        $label = $orgStock->labels()->create([
+            'group_id'        => $orgStock->group_id,
+            'organisation_id' => $orgStock->organisation_id,
+            'artefact_id'     => Artefact::where('org_stock_id', $orgStock->id)->value('id'),
             'name'            => Arr::get($modelData, 'name'),
             'layout'          => $this->packLayout($modelData),
             'state'           => ArtefactLabelStateEnum::RAW,
         ]);
 
         if ($artwork) {
-            $label->update(['artwork_id' => $this->saveArtwork($artefact, $artwork)->id]);
+            $label->update(['artwork_id' => $this->saveArtwork($orgStock, $artwork)->id]);
         }
 
         return $label;
@@ -56,22 +59,30 @@ class StoreArtefactLabel extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
+        return $this->canEditLabels($request);
     }
 
-    public function action(Artefact $artefact, array $modelData): ArtefactLabel
+    public function action(OrgStock $orgStock, array $modelData): ArtefactLabel
     {
         $this->asAction = true;
-        $this->initialisationFromProduction($artefact->production, $modelData);
+        $this->initialisation($orgStock->organisation, $modelData);
 
-        return $this->handle($artefact, $this->validatedData);
+        return $this->handle($orgStock, $this->validatedData);
     }
 
     public function asController(Artefact $artefact, ActionRequest $request): ArtefactLabel
     {
         $this->initialisationFromProduction($artefact->production, $request);
+        abort_unless($artefact->orgStock, 422, __('This artefact has no SKO, so it cannot carry labels yet.'));
 
-        return $this->handle($artefact, $this->validatedData);
+        return $this->handle($artefact->orgStock, $this->validatedData);
+    }
+
+    public function inOrgStock(OrgStock $orgStock, ActionRequest $request): ArtefactLabel
+    {
+        $this->initialisation($orgStock->organisation, $request);
+
+        return $this->handle($orgStock, $this->validatedData);
     }
 
     public function jsonResponse(ArtefactLabel $artefactLabel): ArtefactLabelResource

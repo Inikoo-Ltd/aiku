@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whenIrisLoggedIn } from "@/Composables/irisAuthFlag"
 import { faFilter } from "@fas"
 import { getStyles } from "@/Composables/styles"
 import { ref, onMounted, watch, computed, toRaw, inject } from "vue"
@@ -313,11 +314,11 @@ onMounted(() => {
 		isAscending.value = !sortParam.startsWith("-")
 	}
 
-	if (layout?.iris?.is_logged_in) {
+	whenIrisLoggedIn(layout, () => {
 		firstLoad.value = 1
 		fetchProductHasPortfolio()
-		fetchProducts() // break chace from product dont deleted
-	}
+		fetchProducts()
+	})
 
 	/* debFetchProducts() */
 })
@@ -418,6 +419,8 @@ const placeholder_class = ref(
 const search_class = ref(
 	getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false)
 )
+
+console.log("Layout :", layout)
 </script>
 
 <template>

@@ -232,7 +232,7 @@ watch(aspectRatios, (newRatios) => {
             </ul>
         </div>
         <div v-if="catchError" class="text-red-500">
-            <FontAwesomeIcon icon='fas fa-exclamation' class='' aria-hidden='true' />
+            <FontAwesomeIcon icon='fas fa-exclamation' class='' fixed-width aria-hidden='true' />
             {{ catchError }}
         </div>
     </div>

@@ -69,6 +69,21 @@ class IndexOrders extends OrgAction
                 }
             ],
 
+            'channel' => [
+                'label'    => __('Channel'),
+                'elements' => [
+                    'direct'  => [__('Direct'), null],
+                    'partner' => [__('Partner'), null],
+                ],
+
+                'engine' => function ($query, $elements) {
+                    if (in_array('partner', $elements)) {
+                        $query->where('sales_channels.code', 'intercompany');
+                    } else {
+                        $query->whereRaw("coalesce(sales_channels.code, '') != 'intercompany'");
+                    }
+                }
+            ],
 
         ];
     }
@@ -150,6 +165,7 @@ class IndexOrders extends OrgAction
                 'platforms.type as platform',
                 'sales_channels.type as sales_channel_type',
                 'sales_channels.name as sales_channel_name',
+                'sales_channels.code as sales_channel_code',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column

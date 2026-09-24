@@ -32,6 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_waiting_warehouse
  * @property mixed $quantity_waiting_crm
  * @property mixed $pickings
+ * @property mixed $is_returned_to_location
  * @property mixed $packings_count
  * @property mixed $is_picked
  * @property mixed $is_packed
@@ -141,6 +142,12 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_packed'                          => $packedQuantity,
             'quantity_packed_fractional'               => riseDivisor(divideWithRemainder(findSmallestFactors($packedQuantity ?? 0)), $packedIn),
             'quantity_not_picked'                      => $this->quantity_not_picked,
+            'boxes'                                    => $this->boxes ?? [],
+            'boxes_update_route'                       => [
+                'name'       => 'grp.models.delivery_note_item.boxes.update',
+                'parameters' => ['deliveryNoteItem' => $this->id],
+                'method'     => 'patch',
+            ],
             'org_stock_code'                           => $this->org_stock_code,
             'org_stock_name'                           => $this->org_stock_name,
             'ordered_asset'                            => $this->getOrderedAssetForFractionalQuantity(),
@@ -181,6 +188,7 @@ class DeliveryNoteItemsResource extends JsonResource
                         'location_code'           => $picking->location_code,
                         'warehouse_slug'          => $this->warehouse_slug,
                         'warehouse_code'          => $this->warehouse_code,
+                        'is_returned_to_location' => (bool)$this->is_returned_to_location,
                         'show_batch_code_ui'      => $this->org_stocks_batch_code_count > 0,
                         'batch_code_id'           => $picking->batch_code_id ?? $this->org_stocks_batch_code_id,
                         'batch_code'              => $picking->batch_code ?? $this->org_stocks_batch_code,

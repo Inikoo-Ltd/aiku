@@ -85,7 +85,7 @@ const closeModal = () => {
 				<div :style="{ paddingLeft: `${level * 1.5}rem` }" class="flex items-center">
 					<FontAwesomeIcon
 						icon="fal fa-grip-lines"
-						class="cursor-move text-gray-500 hover:text-gray-700 transition-colors duration-150 mr-2" />
+						class="cursor-move text-gray-500 hover:text-gray-700 transition-colors duration-150 mr-2" fixed-width />
 					<span class="font-semibold text-gray-900">{{ node.name }}</span>
 				</div>
 
@@ -94,14 +94,14 @@ const closeModal = () => {
 						@click="toggle"
 						title="Expand / Collapse"
 						class="p-2 text-gray-600 hover:text-gray-800 focus:outline-none transition-colors duration-150">
-						<FontAwesomeIcon v-if="!isExpanded" icon="fal fa-chevron-right" size="sm" />
-						<FontAwesomeIcon v-else icon="fal fa-chevron-down" size="sm" />
+						<FontAwesomeIcon v-if="!isExpanded" icon="fal fa-chevron-right" size="sm" fixed-width />
+						<FontAwesomeIcon v-else icon="fal fa-chevron-down" size="sm" fixed-width />
 					</button>
 					<button
 						@click="openModal"
 						title="Add New Webpage"
 						class="ml-2 text-blue-500 hover:text-blue-600 focus:outline-none transition-colors duration-150">
-						<FontAwesomeIcon icon="fal fa-plus" size="sm" />
+						<FontAwesomeIcon icon="fal fa-plus" size="sm" fixed-width />
 					</button>
 				</div>
 			</div>

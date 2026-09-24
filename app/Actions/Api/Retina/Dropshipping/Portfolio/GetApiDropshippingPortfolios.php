@@ -60,6 +60,7 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
                 'products.slug as product_slug',
                 'products.code as product_code',
                 'products.name as product_name',
+                'products.marketing_ingredients',
                 'products.available_quantity as available_quantity',
                 'products.gross_weight as gross_weight',
                 'products.price as price',

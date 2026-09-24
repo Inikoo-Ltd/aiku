@@ -227,7 +227,7 @@ const replaceProps = (updatedData) => {
                 v-if="mismatch_trade_unit_with_master"
                 :icon="faWarning"
                 class="text-red-500"
-                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')"
+                v-tooltip="trans('One or more product under this master has mismatched trade units data. Please fix it by modifying the master products trade units')" fixed-width
             />
         </template>
 

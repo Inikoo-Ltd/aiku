@@ -249,7 +249,7 @@ const leadSourceLabel = (source: LeadTime["source"], samples: number) =>
                         {{ locale.currencyFormat(orgAgent.currency, bucket.stock_value) }}
                     </span>
                     <span v-if="shouldNotBeOrdered(bucket)" class="ml-auto text-xs font-medium tabular-nums text-red-600" :title="trans('On the shopping list but not short of stock')">
-                        <FontAwesomeIcon :icon="faExclamationTriangle" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                         {{ bucket.on_list }} {{ trans("on list") }}
                         <button
                             v-if="bucket.bucket !== 'gone'"

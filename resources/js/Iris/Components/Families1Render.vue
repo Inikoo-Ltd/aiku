@@ -29,7 +29,7 @@ defineProps<{
         </template>
         <template v-else>
           <div class="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100">
-            <FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+            <FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
           </div>
         </template>
 

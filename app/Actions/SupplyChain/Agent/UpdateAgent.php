@@ -18,6 +18,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
 use App\Http\Resources\SupplyChain\AgentsResource;
 use App\Models\SupplyChain\Agent;
 use App\Rules\IUnique;
@@ -48,6 +49,7 @@ class UpdateAgent extends OrgAction
         }
 
         $modelData = $this->pullSupplierJsonColumns($modelData);
+        $modelData = $this->pullJourneyStageDays($agent, $modelData);
 
         if (Arr::has($modelData, 'image')) {
             $image = Arr::pull($modelData, 'image');
@@ -99,6 +101,32 @@ class UpdateAgent extends OrgAction
         return $agent;
     }
 
+    /**
+     * @param array<string, mixed> $modelData
+     *
+     * @return array<string, mixed>
+     */
+    private function pullJourneyStageDays(Agent $agent, array $modelData): array
+    {
+        $stageDays = Arr::get($agent->settings, 'journey_stage_days', []);
+        $changed   = false;
+
+        foreach (PurchaseOrderJourneyStageEnum::values() as $stage) {
+            if (!array_key_exists('journey_days_'.$stage, $modelData)) {
+                continue;
+            }
+            $days    = Arr::pull($modelData, 'journey_days_'.$stage);
+            $changed = true;
+            $stageDays[$stage] = $days === null || $days === '' ? null : (int) $days;
+        }
+
+        if ($changed) {
+            $modelData['settings']['journey_stage_days'] = $stageDays;
+        }
+
+        return $modelData;
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -131,6 +159,10 @@ class UpdateAgent extends OrgAction
             'status'       => ['sometimes', 'required', 'boolean'],
             'image'        => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
         ];
+
+        foreach (PurchaseOrderJourneyStageEnum::values() as $stage) {
+            $rules['journey_days_'.$stage] = ['sometimes', 'nullable', 'integer', 'min:0', 'max:730'];
+        }
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules());
 

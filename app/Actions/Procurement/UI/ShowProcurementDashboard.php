@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\UI;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\Procurement\OrgPartner\UI\GetPartnerMiniCart;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Search\GetSearchDemandOpportunities;
@@ -171,6 +172,19 @@ class ShowProcurementDashboard extends OrgAction
         ];
     }
 
+    private function getStockLevels(): array
+    {
+        return collect(GetOrganisationStockCoverBuckets::run($this->organisation))
+            ->reject(fn (array $bucket) => $bucket['bucket'] === 'ok')
+            ->map(fn (array $bucket) => [
+                'bucket' => $bucket['bucket'],
+                'label'  => $bucket['label'],
+                'tone'   => $bucket['tone'],
+                'count'  => $bucket['count'],
+                'route'  => $this->dashboardRoute('grp.org.procurement.stock_cover.index', ['elements[cover]' => $bucket['bucket']]),
+            ])->values()->all();
+    }
+
     private function getShoppingLists(): array
     {
         $withItems = [];
@@ -311,6 +325,7 @@ class ShowProcurementDashboard extends OrgAction
                 'search_demand' => GetSearchDemandOpportunities::run($this->group, $this->organisation),
                 'dashboardCards' => $this->getDashboardCards($numbers),
                 'shoppingLists' => $this->getShoppingLists(),
+                'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP ? $this->getStockLevels() : [],
 
             ]
         );

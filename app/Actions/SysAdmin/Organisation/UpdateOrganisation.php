@@ -145,6 +145,20 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.orders.allow_scan_to_pack', Arr::pull($modelData, 'allow_scan_to_pack'));
         }
 
+        if (Arr::has($modelData, 'box_packing_list')) {
+            data_set($modelData, 'settings.dispatching.box_packing_list', Arr::pull($modelData, 'box_packing_list'));
+        }
+
+        if (Arr::has($modelData, 'box_packing_list_destinations')) {
+            data_set($modelData, 'settings.dispatching.box_packing_list_destinations', collect(Arr::pull($modelData, 'box_packing_list_destinations'))
+                ->map(fn (array $rule) => [
+                    'country_id' => Arr::get($rule, 'country_id'),
+                    'postcode'   => Arr::get($rule, 'postcode') ?: null,
+                ])
+                ->values()
+                ->all());
+        }
+
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -321,6 +335,10 @@ class UpdateOrganisation extends OrgAction
             'preferred_shipping.*.postcode'           => ['sometimes', 'nullable', 'string', 'max:255'],
             'preferred_shipping.*.important'          => ['sometimes', 'boolean'],
             'preferred_shipping.*.trade_scope'        => ['sometimes', Rule::in(['b2b', 'b2c'])],
+            'box_packing_list'                           => ['sometimes', 'boolean'],
+            'box_packing_list_destinations'              => ['sometimes', 'nullable', 'array'],
+            'box_packing_list_destinations.*.country_id' => ['nullable', 'required_without:box_packing_list_destinations.*.postcode', 'integer', Rule::exists('countries', 'id')],
+            'box_packing_list_destinations.*.postcode'   => ['nullable', 'required_without:box_packing_list_destinations.*.country_id', 'string', 'max:255'],
         ];
 
         if (!$this->strict) {

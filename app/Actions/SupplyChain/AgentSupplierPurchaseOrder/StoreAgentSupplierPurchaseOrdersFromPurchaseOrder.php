@@ -67,18 +67,20 @@ class StoreAgentSupplierPurchaseOrdersFromPurchaseOrder extends OrgAction
                 'cost_total' => $transactions->sum('net_amount'),
             ];
 
+            $submittedAt = $agentSupplierPurchaseOrder->submitted_at ?? now();
+
             if (!$agentSupplierPurchaseOrder->state || $agentSupplierPurchaseOrder->state == AgentSupplierPurchaseOrderStateEnum::IN_PROCESS) {
                 $updateData['state']        = AgentSupplierPurchaseOrderStateEnum::SUBMITTED;
-                $updateData['date']         = now();
-                $updateData['submitted_at'] = now();
+                $updateData['date']         = $submittedAt;
+                $updateData['submitted_at'] = $submittedAt;
             }
 
-            if ($agentSupplierPurchaseOrder->estimated_delivery_days === null) {
-                $deliveryDays = $transactions->max('delivery_time');
+            if ($agentSupplierPurchaseOrder->estimated_received_at === null) {
+                $deliveryDays = $agentSupplierPurchaseOrder->estimated_delivery_days ?? $transactions->max('delivery_time');
 
                 if ($deliveryDays !== null) {
                     $updateData['estimated_delivery_days'] = $deliveryDays;
-                    $updateData['estimated_received_at']   = now()->addDays($deliveryDays);
+                    $updateData['estimated_received_at']   = $submittedAt->clone()->addDays($deliveryDays);
                 }
             }
 

@@ -170,7 +170,7 @@ const openDisclosureId = ref<number | null>(null)
                         <div class="text-base font-semibold">{{ trans("Product Specifications & Documentations") }}</div>
                         <FontAwesomeIcon :icon="faChevronDown"
                             class="text-sm text-gray-500 transform transition-transform duration-200"
-                            :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" />
+                            :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" fixed-width />
                     </div>
                     <div v-show="openDisclosureId === 'spec-1'" class="text-sm text-gray-600 whitespace-pre-line py-2":style="getStyles(styleData?.content)" >
                        <ProductSpecDocumentation :product="product" ></ProductSpecDocumentation>
@@ -201,11 +201,11 @@ const openDisclosureId = ref<number | null>(null)
                                 <button @click.stop="confirmDelete(content.id)"
                                     class="text-red-500 hover:text-red-700 transition-opacity text-xs"
                                     title="Delete Content">
-                                    <FontAwesomeIcon :icon="faTrash" />
+                                    <FontAwesomeIcon :icon="faTrash" fixed-width />
                                 </button>
                                 <FontAwesomeIcon :icon="faChevronDown"
                                     class="text-sm text-gray-500 transform transition-transform duration-200"
-                                    :class="{ 'rotate-180': openDisclosureId === content.id }" />
+                                    :class="{ 'rotate-180': openDisclosureId === content.id }" fixed-width />
                             </div>
                         </div>
                         <div v-show="openDisclosureId === content.id" class="text-sm text-gray-600" :style="getStyles(styleData?.content)">
@@ -222,7 +222,7 @@ const openDisclosureId = ref<number | null>(null)
                 <button @click="addFAQ"
                     class="absolute w-full top-0 right-0 opacity-0 group-hover/faq:opacity-100 transition-opacity duration-300 text-sm flex items-center justify-center gap-2 text-indigo-600 hover:text-indigo-800 border border-indigo-600 hover:border-indigo-800 rounded px-3 py-2 bg-white z-10"
                     title="Add FAQ">
-                    <FontAwesomeIcon :icon="faPlus" />
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
                     <span>Add FAQ</span>
                 </button>
 
@@ -235,7 +235,7 @@ const openDisclosureId = ref<number | null>(null)
 
     <ConfirmDialog>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
         </template>
     </ConfirmDialog>
 </template>

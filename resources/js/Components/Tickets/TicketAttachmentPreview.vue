@@ -225,7 +225,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width />
             </button>
             <div v-if="previewState === 'loading'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
-                <FontAwesomeIcon icon="fal fa-spinner" spin class="mr-2" />{{ trans("Loading") }}
+                <FontAwesomeIcon icon="fal fa-spinner" spin class="mr-2" fixed-width />{{ trans("Loading") }}
             </div>
             <div v-else-if="previewState === 'unavailable'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
                 <div class="max-w-md px-6 text-center">

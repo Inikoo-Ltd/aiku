@@ -371,7 +371,7 @@ const submitAddClocking = async (): Promise<void> => {
                         :aria-label="trans('Edit clock in time')"
                         @click="openEditTimeModal(clocking.edit_clock_in_route, trans('Edit clock in time'), clocking.starts_at)"
                     >
-                        <FontAwesomeIcon :icon="faEdit" class="w-3 h-3" />
+                        <FontAwesomeIcon :icon="faEdit" class="w-3 h-3" fixed-width />
                     </button>
                 </div>
             </template>
@@ -386,7 +386,7 @@ const submitAddClocking = async (): Promise<void> => {
                         :aria-label="trans('Edit clock out time')"
                         @click="openEditTimeModal(clocking.edit_clock_out_route, trans('Edit clock out time'), clocking.ends_at)"
                     >
-                        <FontAwesomeIcon :icon="faEdit" class="w-3 h-3" />
+                        <FontAwesomeIcon :icon="faEdit" class="w-3 h-3" fixed-width />
                     </button>
                 </div>
             </template>

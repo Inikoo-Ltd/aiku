@@ -174,7 +174,7 @@ watch(
                 <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
                 <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
             </span>
-            <FontAwesomeIcon :icon="faPhoneVolume" class="text-sm shrink-0" />
+            <FontAwesomeIcon :icon="faPhoneVolume" class="text-sm shrink-0" fixed-width />
             <span class="flex-1 truncate text-left text-sm font-medium">
                 {{ ctrans("You are on a phone call") }}
             </span>
@@ -182,14 +182,14 @@ watch(
 
             <button type="button" @click.stop="openPopup" v-tooltip="ctrans('End the call')"
                 class="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-red-600 transition-colors hover:bg-red-50">
-                <FontAwesomeIcon :icon="faPhoneSlash" class="text-[11px]" />
+                <FontAwesomeIcon :icon="faPhoneSlash" class="text-[11px]" fixed-width />
             </button>
 
             <button type="button" @click.stop="togglePopup"
                 v-tooltip="popupOpen ? ctrans('Hide the call') : ctrans('Open the call')"
                 class="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform hover:bg-white/20"
                 :class="popupOpen ? 'rotate-180' : ''">
-                <FontAwesomeIcon :icon="faChevronDown" class="text-[11px]" />
+                <FontAwesomeIcon :icon="faChevronDown" class="text-[11px]" fixed-width />
             </button>
         </div>
 

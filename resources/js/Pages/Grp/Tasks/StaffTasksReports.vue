@@ -117,7 +117,7 @@ const hours = (value: number | null) => (value === null ? "—" : value < 48 ? `
         ]" :key="table.key" :storageKey="`tasks_reports_${table.key}_collapsed`">
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
-                    <FontAwesomeIcon :icon="table.icon" class="text-indigo-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="table.icon" class="text-[--app-accent]" fixed-width aria-hidden="true" />
                     {{ table.title }}
                 </span>
             </template>

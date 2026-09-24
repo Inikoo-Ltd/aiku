@@ -72,7 +72,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
         >
         
         <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none space-x-1.5">
-            <FontAwesomeIcon icon="far fa-search-minus" class="h-4 w-4" aria-hidden="true"
+            <FontAwesomeIcon icon="far fa-search-minus" class="h-4 w-4" fixed-width aria-hidden="true"
                 :class="[querySearch ? 'text-gray-500' : 'text-gray-400']" 
             />
             <span v-if="isUserMac" class="ring-1 ring-gray-400 bg-gray-100 px-2 leading-none py-0 text-base rounded">⌥</span>
@@ -83,7 +83,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
         <!-- Button: Reset -->
         <div v-if="isVisiting || querySearch" tabindex="0" class="flex absolute inset-y-0 right-2  items-center pointer-events-auto cursor-pointer" @click="() => (querySearch = '', emits('resetSearch', true))">
             <LoadingIcon v-if="isVisiting" class="h-4 w-4 text-gray-400" />
-            <FontAwesomeIcon v-else-if="querySearch" icon="fal fa-times-circle" class="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <FontAwesomeIcon v-else-if="querySearch" icon="fal fa-times-circle" class="h-4 w-4 text-gray-400" fixed-width aria-hidden="true" />
         </div>
     </div>
 </template>

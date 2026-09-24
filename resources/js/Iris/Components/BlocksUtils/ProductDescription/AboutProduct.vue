@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMapMarkerAlt } from "@fas"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { getStyles } from "@/Composables/styles"
-import { hasRichTextContent } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
+import { demoteHeadingOne, hasRichTextContent } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
 
 const props = defineProps<{
 	fieldValue: any
@@ -17,12 +17,9 @@ const containerStyle = computed(() => getStyles(props.fieldValue?.about?.contain
 
 const product = computed(() => props.fieldValue?.product ?? {})
 
-const withoutHeadingOne = (html: unknown) =>
-	String(html ?? "").replace(/<h1[^>]*>.*?<\/h1>/gis, "")
+const description = computed(() => demoteHeadingOne(props.fieldValue?.tabs?.description))
 
-const description = computed(() => withoutHeadingOne(props.fieldValue?.tabs?.description))
-
-const descriptionExtra = computed(() => withoutHeadingOne(product.value?.description_extra))
+const descriptionExtra = computed(() => demoteHeadingOne(product.value?.description_extra))
 
 const hasDescription = computed(() => hasRichTextContent(description.value))
 
@@ -61,7 +58,7 @@ const richTextClass = "text-[13px] md:text-[14px] 2xl:text-[16px] leading-[1.8] 
 					:class="{ 'mt-6': hasDescriptionExtra }">
 					<FontAwesomeIcon
 						:icon="faMapMarkerAlt"
-						class="shrink-0 text-gray-600 transition group-hover:text-gray-800" />
+						class="shrink-0 text-gray-600 transition group-hover:text-gray-800" fixed-width />
 					<div
 						class="text-sm font-medium text-gray-800 underline [&_p]:!mb-0"
 						v-html="appointment?.text" />

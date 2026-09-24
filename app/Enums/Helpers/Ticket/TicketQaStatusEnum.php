@@ -17,6 +17,7 @@ enum TicketQaStatusEnum: string
     case REQUESTED = 'requested';
     case PASSED    = 'passed';
     case FAILED    = 'failed';
+    case SKIPPED   = 'skipped';
 
     public static function labels(): array
     {
@@ -24,6 +25,7 @@ enum TicketQaStatusEnum: string
             'requested' => __('QA check requested'),
             'passed'    => __('QA passed'),
             'failed'    => __('QA failed'),
+            'skipped'   => __('QA skipped'),
         ];
     }
 
@@ -33,7 +35,13 @@ enum TicketQaStatusEnum: string
             self::REQUESTED => __('Requested'),
             self::PASSED    => __('Passed'),
             self::FAILED    => __('Failed'),
+            self::SKIPPED   => __('Skipped'),
         };
+    }
+
+    public function isVerdict(): bool
+    {
+        return in_array($this, [self::PASSED, self::FAILED, self::SKIPPED], true);
     }
 
     public static function stateIcon(): array
@@ -42,6 +50,7 @@ enum TicketQaStatusEnum: string
             'requested' => ['tooltip' => __('QA check requested'), 'icon' => 'fal fa-vial', 'class' => 'text-amber-500', 'color' => 'amber'],
             'passed'    => ['tooltip' => __('QA passed'), 'icon' => 'fal fa-shield-check', 'class' => 'text-green-600', 'color' => 'green'],
             'failed'    => ['tooltip' => __('QA failed'), 'icon' => 'fal fa-shield', 'class' => 'text-red-500', 'color' => 'red'],
+            'skipped'   => ['tooltip' => __('QA skipped'), 'icon' => 'fal fa-forward', 'class' => 'text-gray-500', 'color' => 'gray'],
         ];
     }
 }

@@ -115,7 +115,7 @@ onMounted(async () => {
     <Head :title="title" />
     <PageHeading :data="pageHead">
         <template #other>
-            <button class="flex items-center gap-x-1.5 px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700" @click="dialogOpen = true">
+            <button class="flex items-center gap-x-1.5 px-3 py-1.5 text-sm rounded-md bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong]" @click="dialogOpen = true">
                 <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
                 {{ trans('New task') }}
             </button>
@@ -128,12 +128,12 @@ onMounted(async () => {
                 v-for="option in views"
                 :key="option.key"
                 class="px-3 py-1.5 text-sm rounded-full border"
-                :class="view === option.key ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
+                :class="view === option.key ? 'bg-[--app-accent] text-[--app-accent-text] border-[--app-accent]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'"
                 @click="view = option.key">
                 {{ option.label }}
             </button>
             <label class="ml-auto flex items-center gap-x-1.5 text-xs text-gray-500">
-                <input v-model="showClosed" type="checkbox" class="rounded border-gray-300" />
+                <input v-model="showClosed" type="checkbox" class="rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
                 {{ trans('Show closed') }}
             </label>
         </div>
@@ -148,7 +148,7 @@ onMounted(async () => {
                     <div class="flex items-center gap-x-2">
                         <span class="text-xs text-gray-400 font-mono">{{ task.reference }}</span>
                         <span v-if="task.priority !== 'normal'" class="text-xxs px-1.5 rounded-full" :class="task.priority === 'low' ? 'bg-gray-100 text-gray-500' : 'bg-orange-100 text-orange-700'">{{ task.priority }}</span>
-                        <a v-if="task.model_label" class="text-xxs text-indigo-600">{{ task.model_label }}</a>
+                        <a v-if="task.model_label" class="text-xxs text-[--app-accent]">{{ task.model_label }}</a>
                     </div>
                     <div class="text-sm text-gray-900">{{ task.subject }}</div>
                     <div class="flex flex-wrap items-center gap-x-3 mt-1 text-xs text-gray-500">
@@ -171,14 +171,14 @@ onMounted(async () => {
                     </div>
                 </div>
                 <div class="flex items-center gap-x-1 shrink-0">
-                    <button v-tooltip="trans('Open thread')" class="p-1.5 text-gray-400 hover:text-indigo-600" @click="openThread(task)">
+                    <button v-tooltip="trans('Open thread')" class="p-1.5 text-gray-400 hover:text-[--app-accent]" @click="openThread(task)">
                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                     </button>
                     <button
                         v-if="task.requester?.id !== myId && task.assignee?.id !== myId"
                         v-tooltip="task.is_subscribed ? trans('Stop notifications') : trans('Notify me about this task')"
                         class="p-1.5"
-                        :class="task.is_subscribed ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-600'"
+                        :class="task.is_subscribed ? 'text-[--app-accent]' : 'text-gray-400 hover:text-[--app-accent]'"
                         @click="toggleSubscription(task)">
                         <FontAwesomeIcon :icon="task.is_subscribed ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />
                     </button>
@@ -200,7 +200,7 @@ onMounted(async () => {
     <div v-if="cancelNoteFor" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40" @click.self="cancelNoteFor = null">
         <div class="bg-white rounded-xl p-5 w-full max-w-md space-y-3">
             <h3 class="text-sm font-semibold text-gray-900">{{ trans(`Why can't :reference be done?`, { reference: cancelNoteFor.reference }) }}</h3>
-            <textarea v-model="cancelNote" rows="3" autofocus class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <textarea v-model="cancelNote" rows="3" autofocus class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
             <div class="flex justify-end gap-x-2">
                 <button class="px-3 py-1.5 text-sm text-gray-600" @click="cancelNoteFor = null">{{ trans('Back') }}</button>
                 <button :disabled="!cancelNote.trim()" class="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white disabled:opacity-40" @click="confirmCancel">{{ trans('Confirm') }}</button>

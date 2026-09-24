@@ -125,7 +125,7 @@ const removeRow = (key: number) => {
                 type="button"
                 @click.stop.prevent="removeRow(row._key)"
                 class="mt-1 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors">
-                <FontAwesomeIcon :icon="faTrash" class="h-4 w-4" />
+                <FontAwesomeIcon :icon="faTrash" class="h-4 w-4" fixed-width />
             </button>
         </div>
 
@@ -133,7 +133,7 @@ const removeRow = (key: number) => {
             type="button"
             @click.stop.prevent="addRow"
             class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-            <FontAwesomeIcon :icon="faPlus" class="h-3.5 w-3.5" />
+            <FontAwesomeIcon :icon="faPlus" class="h-3.5 w-3.5" fixed-width />
             {{ fieldData?.addLabel ? trans(fieldData.addLabel) : trans("Add row") }}
         </button>
 

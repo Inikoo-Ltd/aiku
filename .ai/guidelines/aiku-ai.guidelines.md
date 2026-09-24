@@ -71,3 +71,36 @@ The Shopify product/variant actions report failure by return value, not by throw
 one and discarding what it returns turns a rejected push into a 2xx and a "synchronised"
 toast, which is indistinguishable to the user from the feature not existing. Propagate it —
 `ValidationException` for a retina request — or state in the caller why swallowing is right.
+
+## Interactive colour comes from the organisation's theme
+
+Every organisation sets its own theme. A hardcoded `indigo-600` button beside an orange
+breadcrumb and an orange active tab reads as a different application, and the app's default
+accent happens to be indigo, so the mistake is invisible on a default-themed org and obvious
+on every other one.
+
+Buttons, links, focus rings, selected states and accents take the theme, through the CSS
+custom properties `useAppAccent.ts` derives from `theme[4]`:
+
+| instead of | use |
+| --- | --- |
+| `indigo-600`, `indigo-500`, `indigo-400` | `[--app-accent]` |
+| `indigo-700` | `[--app-accent-strong]` |
+| `indigo-800`, `indigo-900` | `[--app-accent-deep]` |
+| `indigo-50`, `indigo-100` | `[--app-accent-soft]` |
+| `indigo-200`, `indigo-300` | `[--app-accent-muted]` |
+
+Written as Tailwind arbitrary values: `bg-[--app-accent] text-[--app-accent-text]
+hover:bg-[--app-accent-strong]`, `focus:ring-[--app-accent]`,
+`border-[--app-accent-muted] bg-[--app-accent-soft]`. `--app-accent-text` is black or white,
+whichever reads on the accent, so never pair the accent with a hardcoded `text-white`.
+`layout.app.theme[...]` and `var(--theme-color-*)` are the same theme by another route, for
+inline styles. Prefer the existing `Button` component and its `type`s over classes by hand.
+
+The exception is colour that carries meaning, which keeps its own: green for done or passed,
+red for failed or destructive, amber for blocked or waiting, and the fixed palettes behind
+stat cards, chart series and legends. There the colour is information, not decoration, and
+theming it would destroy what it says.
+
+When you touch a page, fix the hardcoded interactive colour you find on it rather than
+matching it. `grep -n "indigo-\|blue-600" <file>` is usually the whole audit.

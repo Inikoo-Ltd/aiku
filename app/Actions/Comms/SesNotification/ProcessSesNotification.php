@@ -11,12 +11,16 @@ namespace App\Actions\Comms\SesNotification;
 use App\Actions\Comms\EmailTrackingEvent\PostProcessingEmailTrackingEvent;
 use App\Actions\Comms\EmailTrackingEvent\StoreEmailTrackingEvent;
 use App\Actions\Comms\Outbox\Hydrators\OutboxHydrateDispatchedEmails;
+use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
+use App\Actions\CRM\Prospect\UpdateProspectEmailUnsubscribed;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Utils\IsGoogleIp;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\SesNotification;
+use App\Models\CRM\Customer;
+use App\Models\CRM\Prospect;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -109,10 +113,6 @@ class ProcessSesNotification
                     $data['f'] = Arr::get($sesNotification->data, 'complaint.complaintFeedbackType');
                 }
 
-
-                $additionalData = [
-                    'mask_as_spam' => true
-                ];
 
                 break;
 
@@ -249,6 +249,11 @@ class ProcessSesNotification
         PostProcessingEmailTrackingEvent::dispatch($emailProcessingTrackingEvent->id)->delay(1);
         OutboxHydrateDispatchedEmails::dispatch($dispatchedEmail->outbox_id)->delay(900);
 
+        if ($type === EmailTrackingEventTypeEnum::MARKED_AS_SPAM) {
+            $this->update($dispatchedEmail, ['mask_as_spam' => true]);
+            $this->unsubscribeComplainer($dispatchedEmail);
+        }
+
         return null;
     }
 
@@ -269,6 +274,25 @@ class ProcessSesNotification
             $query->whereNotIn('state', $notFromStates);
         }
         $query->update(['state' => $state]);
+    }
+
+    /**
+     * Somebody who reports our mail as spam is never mailed marketing again: mailing them anyway is
+     * what gets the sending account suspended, and they have told us as clearly as an unsubscribe.
+     */
+    private function unsubscribeComplainer(DispatchedEmail $dispatchedEmail): void
+    {
+        $customerId = DB::table('customer_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->value('customer_id');
+        $customerComms = $customerId ? Customer::find($customerId)?->comms : null;
+        if ($customerComms) {
+            UpdateCustomerComms::run($customerComms, ['is_subscribed_to_newsletter' => false, 'is_subscribed_to_marketing' => false], false);
+        }
+
+        $prospectId = DB::table('prospect_has_dispatched_emails')->where('dispatched_email_id', $dispatchedEmail->id)->value('prospect_id');
+        $prospect   = $prospectId ? Prospect::find($prospectId) : null;
+        if ($prospect) {
+            UpdateProspectEmailUnsubscribed::run($prospect, now());
+        }
     }
 
     public function getDispatchedEmail(string $sesMessageID): ?DispatchedEmail

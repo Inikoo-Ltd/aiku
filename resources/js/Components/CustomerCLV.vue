@@ -250,7 +250,7 @@ const oneYearFromNow = computed(() => {
         <CustomerLifetimeValue :data="data" :currencyCode="currencyCode">
             <template #close>
                 <button @click="isShowDetail = false">
-                    <FontAwesomeIcon :icon="faTimes" />
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
                 </button>
             </template>
         </CustomerLifetimeValue>

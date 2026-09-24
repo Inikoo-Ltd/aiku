@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Tiktok\User\UI;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\TiktokUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -21,12 +22,21 @@ class ShowTiktokUser extends RetinaAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(TiktokUser $tiktokUser): TiktokUser
+    public function handle(TiktokUser $tiktokUser): array
     {
-        return $tiktokUser;
+        return [
+            'data' => [
+                'authorized_shop' => Arr::get($tiktokUser->data, 'authorized_shop', []),
+            ],
+        ];
     }
 
-    public function asController(TiktokUser $tiktokUser, ActionRequest $request): TiktokUser
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->route()->tiktokUser->customer_id === $request->user()?->customer_id;
+    }
+
+    public function asController(TiktokUser $tiktokUser, ActionRequest $request): array
     {
         $this->initialisation($request);
 

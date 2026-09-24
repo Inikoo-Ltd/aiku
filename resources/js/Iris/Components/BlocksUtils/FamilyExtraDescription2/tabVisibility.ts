@@ -15,6 +15,9 @@ export const AROMA_ONLY_TABS: FamilyExtraDescriptionTabKey[] = [
 
 const hasValue = (value: unknown): boolean => String(value ?? "").trim() !== ""
 
+export const demoteHeadingOne = (html: unknown): string =>
+	String(html ?? "").replace(/<(\/?)h1(?=[\s>])/gi, "<$1h2")
+
 export const hasRichTextContent = (html?: string | null): boolean =>
 	hasValue(
 		String(html ?? "")

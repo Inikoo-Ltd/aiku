@@ -11,6 +11,11 @@ use App\Actions\Billables\Charge\UI\EditCharge;
 use App\Actions\Billables\Charge\UI\IndexCharges;
 use App\Actions\Billables\Charge\UI\IndexCustomersInCharge;
 use App\Actions\Billables\Charge\UI\ShowCharge;
+use App\Actions\Billables\Leaflet\UI\CreateLeaflet;
+use App\Actions\Billables\Leaflet\UI\EditLeaflet;
+use App\Actions\Billables\Packaging\UI\CreatePackaging;
+use App\Actions\Billables\Packaging\UI\EditPackaging;
+use App\Actions\Billables\Packaging\UI\ShowPackagings;
 use App\Actions\Billables\Service\UI\CreateShopService;
 use App\Actions\Billables\Service\UI\EditShopService;
 use App\Actions\Billables\Service\UI\IndexShopServices;
@@ -73,6 +78,20 @@ Route::name("charges.")->prefix('charges')
             Route::get('edit', EditCharge::class)->name('edit');
             Route::get('customers', IndexCustomersInCharge::class)->name('show.customers.index');
         });
+    });
+
+
+Route::name("packagings.")->prefix('packagings')
+    ->group(function () {
+        Route::get('', ShowPackagings::class)->name('index');
+        Route::get('create', CreatePackaging::class)->name('create');
+        Route::get('{packaging}/edit', EditPackaging::class)->name('edit');
+    });
+
+Route::name("leaflets.")->prefix('leaflets')
+    ->group(function () {
+        Route::get('create', CreateLeaflet::class)->name('create');
+        Route::get('{leaflet}/edit', EditLeaflet::class)->name('edit');
     });
 
 

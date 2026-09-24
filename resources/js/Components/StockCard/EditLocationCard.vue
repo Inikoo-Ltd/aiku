@@ -75,7 +75,7 @@ const AssociateLocation = () => {
 
             <div class="flex items-center w-1/2 gap-x-4">
                 <!-- Location Icon -->
-                <FontAwesomeIcon class="h-5 w-5 flex-none rounded-full bg-gray-50" :icon="faShoppingBasket" />
+                <FontAwesomeIcon class="h-5 w-5 flex-none rounded-full bg-gray-50" :icon="faShoppingBasket" fixed-width />
 
                 <div class="flex-auto">
                     <div class="text-sm font-semibold leading-6 text-gray-900">
@@ -96,7 +96,7 @@ const AssociateLocation = () => {
                             type="button">
                         <button v-tooltip="'Unlink Location'"
                             class="inline-flex w-full justify-center rounded-md px-4 py-2 text-sm font-medium  hover:bg-red-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
-                            <FontAwesomeIcon :icon="faUnlink" />
+                            <FontAwesomeIcon :icon="faUnlink" fixed-width />
                         </button>
                         </Link>
                     </div>

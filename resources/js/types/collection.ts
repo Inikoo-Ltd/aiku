@@ -25,4 +25,5 @@ export interface Collection {
     webpage_url: string,
     webpage_state: string,
     website_slug: string,
+    not_follow_master_items?: boolean,
 }

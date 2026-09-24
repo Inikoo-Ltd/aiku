@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Ebay\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -61,7 +62,7 @@ class ApplyPricingRuleToEbayPortfolios implements ShouldBeUnique
                         $portfolio->update(['settings' => $portfolioSettings]);
                     }
 
-                    $base = $portfolio->item?->rrp ?? 0;
+                    $base = $portfolio->item instanceof Product ? $portfolio->item->dropshippingBasePrice() : 0;
 
                     $newPrice = $type === 'percent'
                         ? round($base * (1 + $value / 100), 2)

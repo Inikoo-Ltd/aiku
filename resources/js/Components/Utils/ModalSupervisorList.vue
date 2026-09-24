@@ -166,7 +166,7 @@ const onConfirm = () => {
 											class="rounded-md bg-yellow-50 p-4 mb-4 flex items-start space-x-3">
 											<div class="pt-0.5 text-yellow-400">
 												<FontAwesomeIcon
-													icon="fal fa-exclamation-triangle" />
+													icon="fal fa-exclamation-triangle" fixed-width />
 											</div>
 											<p class="text-sm text-yellow-800 font-medium">
 												You do not have the necessary permissions to perform

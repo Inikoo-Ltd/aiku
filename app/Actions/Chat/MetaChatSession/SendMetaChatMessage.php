@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\ChatSession\SettleChatAiDraft;
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappTemplatePayload;
 use App\Actions\Chat\Whatsapp\StoreMetaTrackingEvent;
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
@@ -246,6 +247,8 @@ class SendMetaChatMessage
         }
 
         $metaChatSession->update(['last_agent_message_at' => now()]);
+
+        SettleChatAiDraft::run($metaChatSession, $metaChatMessage);
 
         $metaChatMessage = $metaChatMessage->fresh(['attachment', 'metaChatSession']);
 

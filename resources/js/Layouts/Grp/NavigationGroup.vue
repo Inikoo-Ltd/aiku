@@ -38,11 +38,11 @@ const isPanelOpen = ref(isCurrentRouteActive.value || props.itemKey == layout.or
     <Disclosure >
         <div class="relative isolate ring-1 ring-white/20 rounded transition-all duration-200 ease-in-out mb-1"
             :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
-            :style="{'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55`}"
+            :style="{'box-shadow': `0 0 0 1px ${layout.app.navigation_theme[1]}55`}"
         >
             <!-- Label: Icon shops/warehouses and slug -->
             <DisclosureButton @click="isPanelOpen = !isPanelOpen" class="w-full flex justify-between items-end pt-2 px-2.5 pb-2"
-                :style="{color: layout.app.theme[1] + '99'}"
+                :style="{color: layout.app.navigation_theme[1] + '99'}"
             >
                 <div class="flex gap-x-1.5 items-center">
                     <FontAwesomeIcon v-if="icon" :icon='icon' class='text-xxs' fixed-width aria-hidden='true' />
@@ -56,7 +56,7 @@ const isPanelOpen = ref(isCurrentRouteActive.value || props.itemKey == layout.or
                 <FontAwesomeIcon icon='fal fa-chevron-down' class='transition'
                     :class="[isPanelOpen ? 'rotate-180' : '',
                         layout.leftSidebar.show ? 'justify-self-end text-xs' : 'h-[4px] aspect-square p-[2px] text-white bg-indigo-700 rounded border border-gray-100/50 absolute bottom-0 translate-y-1/2 left-1/2 -translate-x-1/2 text-[4px]'
-                    ]" aria-hidden='true' />
+                    ]" fixed-width aria-hidden='true' />
             </DisclosureButton>
 
             <!-- {{ Object.keys(orgNav[layout.organisationsState?.[layout.currentParams.organisation]?.[generateCurrentString(itemKey)]]) }} -->

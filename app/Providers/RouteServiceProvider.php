@@ -131,6 +131,10 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(6000)->by($request->ip());
         });
 
+        RateLimiter::for('web-vitals', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip());
+        });
+
         /*
          * A catalogue feed reads every image of a category and zips it, so one request is worth
          * thousands of ordinary ones. An unauthenticated scraper walked 84 categories on a loop and

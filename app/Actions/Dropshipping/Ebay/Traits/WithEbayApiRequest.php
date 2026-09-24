@@ -284,7 +284,8 @@ trait WithEbayApiRequest
                 return $candidate;
             }
 
-            $allowedValue = $allowedValues->first(fn (string $value) => strcasecmp($value, $candidate) === 0);
+            $allowedValue = $allowedValues->first(fn (string $value) => strcasecmp($value, $candidate) === 0)
+                ?? $allowedValues->first(fn (string $value) => mb_strlen($value) > 1 && preg_match('/\\b'.preg_quote($value, '/').'\\b/iu', $candidate) === 1);
 
             if ($allowedValue !== null) {
                 return $allowedValue;
@@ -377,12 +378,34 @@ trait WithEbayApiRequest
     }
 
     /**
-     * The item specifics eBay refused to publish the listing without. eBay reports them one at a time and
-     * separates the name from the rest of the sentence with a non-breaking space.
+     * The item specifics eBay refused to publish the listing without, or refused because the category only
+     * takes its own values for them. eBay reports them one at a time and separates the name from the rest
+     * of the sentence with a non-breaking space.
      *
      * @return array<int, string>
      */
     public function parseMissingAspects(mixed $errorResponse): array
+    {
+        return array_values(array_unique(array_merge(
+            $this->matchAspectNames($errorResponse, '/item specific\s+(.+?)\s+is missing/ui'),
+            $this->parseStandardValueAspects($errorResponse)
+        )));
+    }
+
+    /**
+     * The item specifics eBay refused a custom value for: only a value from the category's own list publishes
+     *
+     * @return array<int, string>
+     */
+    public function parseStandardValueAspects(mixed $errorResponse): array
+    {
+        return $this->matchAspectNames($errorResponse, '/no longer support custom values for\s+(.+?)\./ui');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function matchAspectNames(mixed $errorResponse, string $pattern): array
     {
         $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
 
@@ -400,7 +423,7 @@ trait WithEbayApiRequest
         foreach ($messages as $message) {
             $message = str_replace(['\\u00a0', "\u{a0}"], ' ', $message);
 
-            if (preg_match('/item specific\s+(.+?)\s+is missing/ui', $message, $matches)) {
+            if (preg_match($pattern, $message, $matches)) {
                 $missingAspects[] = trim($matches[1]);
             }
         }
@@ -412,17 +435,21 @@ trait WithEbayApiRequest
      * @param  array<string, mixed>  $categoryAspects
      * @param  array<int, string>  $missingAspects
      * @param  array<string, array<int, string>>  $aspects
+     * @param  array<int, string>  $standardValueAspects  names eBay only takes its own values for, whatever the taxonomy says
      * @return array<string, array<int, string>>
      */
-    public function fillMissingAspects(Product $product, $categoryAspects, array $missingAspects, array $aspects): array
+    public function fillMissingAspects(Product $product, $categoryAspects, array $missingAspects, array $aspects, array $standardValueAspects = []): array
     {
         $aspectsByName = $this->aspectsByName($categoryAspects);
 
         foreach ($missingAspects as $aspectName) {
-            $value = $this->pickAspectValue(
-                $aspectsByName[$aspectName] ?? [],
-                $this->aspectCandidates($product, $aspectName, true)
-            );
+            $aspect = $aspectsByName[$aspectName] ?? [];
+
+            if (in_array($aspectName, $standardValueAspects, true)) {
+                data_set($aspect, 'aspectConstraint.aspectMode', 'SELECTION_ONLY');
+            }
+
+            $value = $this->pickAspectValue($aspect, $this->aspectCandidates($product, $aspectName, true));
 
             if ($value === null || ($aspects[$aspectName] ?? null) === [$value]) {
                 continue;

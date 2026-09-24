@@ -9,6 +9,7 @@
 
 namespace App\Actions\Helpers\Tag\UI;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithCustomersSubNavigation;
@@ -32,6 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTags extends OrgAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use WithCustomersSubNavigation;
 
     private Shop $parent;
@@ -64,6 +66,8 @@ class IndexTags extends OrgAction
 
     public function inRetina(Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
+        abort_unless($this->retinaCustomerOwnsRouteModels($request), 403);
+
         $this->parent = $customer->shop;
         $this->forcedScope = TagScopeEnum::USER_CUSTOMER;
         $this->initialisationFromShop($customer->shop, $request);

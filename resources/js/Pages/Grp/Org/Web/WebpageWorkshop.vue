@@ -17,7 +17,12 @@ import { capitalize } from "@/Composables/capitalize";
 import axios from "axios";
 import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans";
+import {
+  useWorkshopShortcuts, formatShortcutCombo,
+  WorkshopShortcut, CopiedWebBlock,
+} from "@/Composables/useWorkshopShortcuts";
+import { getCopyPermissions, getDeletePermissions, getHiddenPermissions } from "@/Composables/getBlueprintWorkshop";
 import { useConfirm } from "primevue/useconfirm";
 import { useLiveUsers } from "@/Stores/active-users";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
@@ -35,6 +40,7 @@ import Dialog from 'primevue/dialog';
 import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
 import CreateTemplateDialog from '@/Components/Workshop/CreateTemplateDialog.vue'
 import ApplyTemplateDialog from '@/Components/Workshop/ApplyTemplateDialog.vue'
+import WorkshopShortcutsDialog from '@/Components/Workshop/WorkshopShortcutsDialog.vue'
 
 import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
@@ -55,7 +61,9 @@ import {
   faRedo,
   faChevronRight,
   faSync,
-  faLayerPlus
+  faLayerPlus,
+  faKeyboard,
+  faPaste
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -78,7 +86,7 @@ const props = defineProps<{
   lock: any
 }>();
 
-console.log('props',props)
+
 provide('isInWorkshop', true);
 const layout = inject('layout', layoutStructure);
 const confirm = useConfirm();
@@ -133,6 +141,8 @@ const isApplyTemplateDialogVisible = ref(false);
 const isApplyingTemplate = ref(false);
 const selectedTemplate = ref<WebLayoutTemplate | null>(null);
 const templateMerge = ref<{ current: any[], incoming: any[] }>({ current: [], incoming: [] });
+const isShortcutsDialogVisible = ref(false);
+const COPIED_BLOCK_STORAGE_KEY = "webpageWorkshop.copiedBlock";
 
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
@@ -200,7 +210,7 @@ const addNewBlock = async ({ block, type }) => {
       onError: error => {
         console.log('sss', error)
         notify({
-          title: trans("Something went wrong"),
+          title: ctrans("Something went wrong"),
           text: error.message,
           type: "error"
         })
@@ -233,16 +243,20 @@ const renameDuplicatedRevealKeys = () => {
   });
 };
 
-const duplicateBlock = async (modelHasWebBlock = Number) => {
+const duplicateBlock = (modelHasWebBlockId: number, position?: number) => {
   if (!props.editable) return;
+  const blocks = data.value.layout.web_blocks;
+  const sourceIndex = blocks.findIndex(block => block.id === modelHasWebBlockId);
+  const targetPosition = position ?? (sourceIndex === -1 ? blocks.length : sourceIndex + 1);
+
   router.post(
     route('grp.models.webpage.web_block.duplicate', {
       webpage: data.value.id,
-      modelHasWebBlock: modelHasWebBlock
+      modelHasWebBlock: modelHasWebBlockId
     }),
-    {},
+    { position: targetPosition },
     {
-      onStart: () => isAddBlockLoading.value = "addBlock" + modelHasWebBlock,
+      onStart: () => isAddBlockLoading.value = "addBlock" + modelHasWebBlockId,
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
@@ -253,10 +267,11 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onSuccess: e => {
         data.value = e.props.webpage;
         renameDuplicatedRevealKeys();
+        openedBlockSideEditor.value = Math.min(targetPosition, data.value.layout.web_blocks.length - 1);
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
-        title: trans("Something went wrong"),
+        title: ctrans("Something went wrong"),
         text: error.message,
         type: "error"
       })
@@ -368,7 +383,7 @@ const debouncedSaveSiteSettings = debounce(block => {
         sendToIframe({ key: 'reload', value: {} })
       },
       onError: error => notify({
-        title: trans("Something went wrong"),
+        title: ctrans("Something went wrong"),
         text: error.message,
         type: "error"
       }),
@@ -428,7 +443,7 @@ const sendOrderBlock = async block => {
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
-        title: trans("Something went wrong"),
+        title: ctrans("Something went wrong"),
         text: error.message,
         type: "error"
       })
@@ -456,7 +471,7 @@ const sendDeleteBlock = async (block: Daum) => {
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
-        title: trans("Something went wrong"),
+        title: ctrans("Something went wrong"),
         text: error.message,
         type: "error"
       })
@@ -482,15 +497,15 @@ const onPublish = async (action: routeType, popover) => {
     if (response.status === 200) {
       comment.value = "";
       notify({
-        title: trans("Published!"),
-        text: trans("Webpage data has been published successfully"),
+        title: ctrans("Published!"),
+        text: ctrans("Webpage data has been published successfully"),
         type: "success"
       });
     }
     popover.close();
   } catch (error) {
     notify({
-      title: trans("Something went wrong"),
+      title: ctrans("Something went wrong"),
       text: error?.response?.data?.message || error.message || "Unknown error occurred",
       type: "error"
     });
@@ -604,14 +619,14 @@ const onCreateTemplate = (payload: {
   ).then(() => {
     isCreateTemplateDialogVisible.value = false;
     notify({
-      title: trans("Success"),
-      text: trans("Template has been created"),
+      title: ctrans("Success"),
+      text: ctrans("Template has been created"),
       type: "success"
     });
     fetchTemplates();
   }).catch(error => {
     notify({
-      title: trans("Something went wrong"),
+      title: ctrans("Something went wrong"),
       text: error?.response?.data?.message || error.message,
       type: "error"
     });
@@ -685,7 +700,7 @@ const applyTemplate = async (template: WebLayoutTemplate) => {
     isApplyTemplateDialogVisible.value = true;
   } catch (error: any) {
     notify({
-      title: trans("Something went wrong"),
+      title: ctrans("Something went wrong"),
       text: error?.response?.data?.message || error.message,
       type: "error"
     });
@@ -701,15 +716,15 @@ const deleteTemplate = async (template: WebLayoutTemplate) => {
     await axios.delete(route(TEMPLATE_DELETE_ROUTE, { template: template.id }));
 
     notify({
-      title: trans("Success"),
-      text: trans("Template has been deleted"),
+      title: ctrans("Success"),
+      text: ctrans("Template has been deleted"),
       type: "success"
     });
 
     await fetchTemplates();
   } catch (error: any) {
     notify({
-      title: trans("Something went wrong"),
+      title: ctrans("Something went wrong"),
       text: error?.response?.data?.message || error.message,
       type: "error"
     });
@@ -757,13 +772,13 @@ const onApplyTemplate = (payload: {
     });
 
     notify({
-      title: trans("Success"),
-      text: trans("Template has been applied"),
+      title: ctrans("Success"),
+      text: ctrans("Template has been applied"),
       type: "success"
     });
   }).catch(error => {
     notify({
-      title: trans("Something went wrong"),
+      title: ctrans("Something went wrong"),
       text: error?.response?.data?.message || error.message,
       type: "error"
     });
@@ -845,6 +860,204 @@ const closeUploadImage = (visible) => {
     imageUploadSetting.value = null
 }
 
+const selectedBlock = computed<Daum | null>(() =>
+  openedBlockSideEditor.value === null
+    ? null
+    : data.value.layout.web_blocks[openedBlockSideEditor.value] ?? null
+);
+
+const getBlockName = (block: Daum) => block.web_block?.layout?.data?.fieldValue?.blocks?.name || block.type;
+
+const readCopiedBlock = (): CopiedWebBlock | null => {
+  try {
+    return JSON.parse(localStorage.getItem(COPIED_BLOCK_STORAGE_KEY) ?? "null");
+  } catch {
+    return null;
+  }
+};
+
+const copiedBlock = ref<CopiedWebBlock | null>(readCopiedBlock());
+
+const copyBlock = (block: Daum) => {
+  if (!getCopyPermissions(block)) {
+    notify({ title: ctrans("This block can't be copied"), type: "warn" });
+    return;
+  }
+
+  copiedBlock.value = { id: block.id, name: getBlockName(block), webpageId: data.value.id };
+  try {
+    localStorage.setItem(COPIED_BLOCK_STORAGE_KEY, JSON.stringify(copiedBlock.value));
+  } catch (error) {
+    console.warn("Unable to share the copied block with other tabs", error);
+  }
+
+  notify({
+    title: ctrans("Block copied"),
+    text: ctrans("Paste :block on this or any other webpage with :keys", {
+      block: copiedBlock.value.name,
+      keys: formatShortcutCombo(["Mod", "V"]),
+    }),
+    type: "success",
+  });
+};
+
+const clearCopiedBlock = () => {
+  copiedBlock.value = null;
+  try {
+    localStorage.removeItem(COPIED_BLOCK_STORAGE_KEY);
+  } catch (error) {
+    console.warn("Unable to clear the copied block", error);
+  }
+};
+
+const pasteBlock = (position?: number) => {
+  if (!props.editable || !copiedBlock.value) return;
+  const insertAfterSelected = openedBlockSideEditor.value === null
+    ? data.value.layout.web_blocks.length
+    : openedBlockSideEditor.value + 1;
+  duplicateBlock(copiedBlock.value.id, position ?? insertAfterSelected);
+};
+
+const onCopiedBlockChangedInOtherTab = (event: StorageEvent) => {
+  if (event.key === COPIED_BLOCK_STORAGE_KEY) copiedBlock.value = readCopiedBlock();
+};
+
+provide('copiedWebBlock', copiedBlock);
+provide('copyWebBlock', copyBlock);
+provide('pasteWebBlock', pasteBlock);
+
+const confirmDeleteSelectedBlock = () => {
+  const block = selectedBlock.value;
+  if (!block) return;
+  confirm.require({
+    group: "workshop-shortcut",
+    header: ctrans("Delete block"),
+    message: ctrans("Delete :block from this webpage?", { block: getBlockName(block) }),
+    rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+    acceptProps: { label: ctrans("Yes, delete"), severity: "danger" },
+    accept: () => sendDeleteBlock(block),
+  });
+};
+
+const moveSelectedBlock = (offset: -1 | 1) => {
+  const blocks = data.value.layout.web_blocks;
+  const from = openedBlockSideEditor.value;
+  if (from === null) return;
+  const to = from + offset;
+  if (to < 0 || to >= blocks.length) return;
+
+  [blocks[from], blocks[to]] = [blocks[to], blocks[from]];
+  openedBlockSideEditor.value = to;
+  sendOrderBlock(Object.fromEntries(blocks.map((block, index) => [block.web_block.id, { position: index }])));
+};
+
+const selectAdjacentBlock = (offset: -1 | 1) => {
+  const lastIndex = data.value.layout.web_blocks.length - 1;
+  openedBlockSideEditor.value = Math.min(Math.max((openedBlockSideEditor.value ?? 0) + offset, 0), lastIndex);
+};
+
+const deselectOrExitFullScreen = () => {
+  if (isFullScreen.value) {
+    exitFullScreen();
+    return;
+  }
+  openedChildSideEditor.value = null;
+  openedBlockSideEditor.value = null;
+};
+
+const hasSelectedBlock = () => selectedBlock.value !== null;
+const canEditSelectedBlock = () => props.editable && hasSelectedBlock();
+
+const shortcuts: WorkshopShortcut[] = [
+  {
+    id: "undo", group: "History", label: "Undo", combos: [["Mod", "Z"]],
+    run: undo, isAvailable: () => props.editable && canUndo.value,
+  },
+  {
+    id: "redo", group: "History", label: "Redo", combos: [["Mod", "Shift", "Z"], ["Mod", "Y"]],
+    run: redo, isAvailable: () => props.editable && canRedo.value,
+  },
+  {
+    id: "copy", group: "Blocks", label: "Copy selected block", combos: [["Mod", "C"]],
+    run: () => copyBlock(selectedBlock.value!), isAvailable: hasSelectedBlock, skipWhenTextSelected: true,
+  },
+  {
+    id: "paste", group: "Blocks", label: "Paste block below the selected one", combos: [["Mod", "V"]],
+    run: () => pasteBlock(), isAvailable: () => props.editable && !!copiedBlock.value,
+  },
+  {
+    id: "duplicate", group: "Blocks", label: "Duplicate selected block", combos: [["Mod", "D"]],
+    run: () => duplicateBlock(selectedBlock.value!.id),
+    isAvailable: () => canEditSelectedBlock() && getCopyPermissions(selectedBlock.value!),
+  },
+  {
+    id: "delete", group: "Blocks", label: "Delete selected block", combos: [["Delete"], ["Backspace"]],
+    run: confirmDeleteSelectedBlock,
+    isAvailable: () => canEditSelectedBlock() && getDeletePermissions(selectedBlock.value!.web_block.layout.data),
+  },
+  {
+    id: "toggle-visibility", group: "Blocks", label: "Hide or show selected block", combos: [["Mod", "Shift", "H"]],
+    run: () => setHideBlock(selectedBlock.value!),
+    isAvailable: () => canEditSelectedBlock() && getHiddenPermissions(selectedBlock.value!.web_block.layout.data),
+  },
+  {
+    id: "move-up", group: "Blocks", label: "Move selected block up", combos: [["Alt", "ArrowUp"]],
+    run: () => moveSelectedBlock(-1), isAvailable: canEditSelectedBlock,
+  },
+  {
+    id: "move-down", group: "Blocks", label: "Move selected block down", combos: [["Alt", "ArrowDown"]],
+    run: () => moveSelectedBlock(1), isAvailable: canEditSelectedBlock,
+  },
+  {
+    id: "select-previous", group: "Selection", label: "Select previous block", combos: [["ArrowUp"]],
+    run: () => selectAdjacentBlock(-1), isAvailable: hasSelectedBlock, allowRepeat: true,
+  },
+  {
+    id: "select-next", group: "Selection", label: "Select next block", combos: [["ArrowDown"]],
+    run: () => selectAdjacentBlock(1), isAvailable: hasSelectedBlock, allowRepeat: true,
+  },
+  {
+    id: "deselect", group: "Selection", label: "Deselect block or exit full screen", combos: [["Escape"]],
+    run: deselectOrExitFullScreen, isAvailable: () => isFullScreen.value || hasSelectedBlock(),
+  },
+  {
+    id: "save", group: "Editor", label: "Save (changes already save automatically)", combos: [["Mod", "S"]],
+    allowWhileTyping: true,
+    run: () => notify({
+      title: ctrans("Changes save automatically"),
+      text: ctrans("Publish when you are ready to put them live."),
+      type: "info",
+    }),
+  },
+  {
+    id: "toggle-panel", group: "Editor", label: "Show or hide editor panel", combos: [["Mod", "\\"]],
+    run: () => isSidebarCollapsed.value = !isSidebarCollapsed.value,
+  },
+  {
+    id: "full-screen", group: "Editor", label: "Full screen", combos: [["F11"]],
+    run: toggleFullScreen, allowWhileTyping: true,
+  },
+  {
+    id: "shortcuts", group: "Editor", label: "Show keyboard shortcuts", combos: [["?"], ["Mod", "/"]],
+    run: () => isShortcutsDialogVisible.value = true,
+  },
+];
+
+const isShortcutBlocked = () =>
+  isModalBlockList.value
+  || isCreateTemplateDialogVisible.value
+  || isApplyTemplateDialogVisible.value
+  || dialogUploadImageVisible.value
+  || isShortcutsDialogVisible.value
+  || !!document.querySelector(".p-dialog-mask, .p-confirmpopup");
+
+const { listenTo: listenForShortcuts } = useWorkshopShortcuts(shortcuts, isShortcutBlocked);
+
+const onIframeLoad = () => {
+  isIframeLoading.value = false;
+  listenForShortcuts(_iframe.value?.contentWindow);
+};
+
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
 watch(currentView, (newValue) => iframeClass.value = setIframeView(newValue));
 watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value: newValue }));
@@ -905,25 +1118,15 @@ onMounted(() => {
     if (!document.fullscreenElement) isFullScreen.value = false;
   };
 
-  const handleFullScreenShortcut = (event: KeyboardEvent) => {
-    if (event.key === 'Escape' && isFullScreen.value && !document.querySelector('.p-dialog-mask')) {
-      exitFullScreen();
-      return;
-    }
-    if (event.key === 'F11') {
-      event.preventDefault();
-      toggleFullScreen();
-    }
-  };
-
   window.addEventListener("message", handleMessage);
   document.addEventListener("fullscreenchange", handleFullScreenChange);
-  window.addEventListener("keydown", handleFullScreenShortcut);
+  window.addEventListener("storage", onCopiedBlockChangedInOtherTab);
+  listenForShortcuts(window);
 
   onUnmounted(() => {
     window.removeEventListener("message", handleMessage);
     document.removeEventListener("fullscreenchange", handleFullScreenChange);
-    window.removeEventListener("keydown", handleFullScreenShortcut);
+    window.removeEventListener("storage", onCopiedBlockChangedInOtherTab);
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   });
 });
@@ -946,7 +1149,7 @@ console.log('props_workshop',props)
     <template #button-publish="{ action }">
       <Button
         v-if="!editable"
-        :label="trans('Publish')"
+        :label="ctrans('Publish')"
         icon="far fa-rocket-launch"
         type="tertiary"
         disabled
@@ -962,7 +1165,7 @@ console.log('props_workshop',props)
     </template>
 
     <template #afterTitle v-if="isSavingBlock">
-      <LoadingIcon v-tooltip="trans('Saving..')" />
+      <LoadingIcon v-tooltip="ctrans('Saving..')" />
     </template>
 
     <template #otherBefore>
@@ -970,8 +1173,8 @@ console.log('props_workshop',props)
     </template>
 
     <template #other>
-      <div class="px-2 cursor-pointer" v-tooltip="trans('Go to website')" @click="openWebsite">
-        <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
+      <div class="px-2 cursor-pointer" v-tooltip="ctrans('Go to website')" @click="openWebsite">
+        <FontAwesomeIcon :icon="faExternalLink" size="xl" fixed-width aria-hidden="true" />
       </div>
     </template>
   </PageHeading>
@@ -979,9 +1182,17 @@ console.log('props_workshop',props)
 
   <ConfirmDialog group="alert-publish">
     <template #icon>
-      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" />
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" fixed-width />
     </template>
   </ConfirmDialog>
+
+  <ConfirmDialog group="workshop-shortcut">
+    <template #icon>
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500" fixed-width />
+    </template>
+  </ConfirmDialog>
+
+  <WorkshopShortcutsDialog v-model:visible="isShortcutsDialogVisible" :shortcuts="shortcuts" />
 
   <div class="flex bg-slate-100" :class="isFullScreen ? 'fixed inset-0 z-[45]' : ''">
     <div class="hidden lg:flex lg:flex-col relative z-[20] bg-white border-r border-slate-200 shadow-sm"
@@ -1020,19 +1231,19 @@ console.log('props_workshop',props)
 
       <!-- Collapsed rail: keeps the panel reachable when hidden -->
       <button type="button" v-show="isSidebarCollapsed" @click="isSidebarCollapsed = false"
-        v-tooltip.right="trans('Show editor panel')"
+        v-tooltip.right="ctrans('Show editor panel')"
         class="flex-1 w-8 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors">
         <FontAwesomeIcon :icon="faLayerGroup" fixed-width />
       </button>
 
       <!-- Toggle Button -->
       <button type="button" @click="isSidebarCollapsed = !isSidebarCollapsed"
-        v-tooltip.right="isSidebarCollapsed ? trans('Show editor panel') : trans('Hide editor panel')"
+        v-tooltip.right="isSidebarCollapsed ? ctrans('Show editor panel') : ctrans('Hide editor panel')"
         class="absolute top-1/2 -translate-y-1/2 right-[-12px] z-10 h-7 w-6 flex items-center justify-center
                bg-white text-slate-500 hover:text-slate-900 rounded-r-md
                shadow-md hover:shadow-lg transition-all duration-200 ease-in-out
                border border-l-0 border-slate-200 hover:border-slate-300">
-        <FontAwesomeIcon :icon="!isSidebarCollapsed ? faChevronLeft : faChevronRight" class="text-xs" />
+        <FontAwesomeIcon :icon="!isSidebarCollapsed ? faChevronLeft : faChevronRight" class="text-xs" fixed-width />
       </button>
     </div>
 
@@ -1049,25 +1260,49 @@ console.log('props_workshop',props)
           </span>
 
           <div class="flex items-center rounded border border-slate-200 overflow-hidden"
-            v-tooltip.bottom="trans('Preview device size')">
+            v-tooltip.bottom="ctrans('Preview device size')">
             <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
           </div>
 
           <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
 
           <!-- Undo -->
-          <button type="button" v-tooltip.bottom="trans('Undo')" :disabled="!editable || !canUndo" @click="undo"
+          <button type="button" v-tooltip.bottom="`${ctrans('Undo')} (${formatShortcutCombo(['Mod', 'Z'])})`" :disabled="!editable || !canUndo" @click="undo"
             class="h-7 w-7 flex items-center justify-center rounded text-slate-500 transition-colors
                    enabled:hover:bg-slate-100 enabled:hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed">
             <FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
           </button>
 
           <!-- Redo -->
-          <button type="button" v-tooltip.bottom="trans('Redo')" :disabled="!editable || !canRedo" @click="redo"
+          <button type="button" v-tooltip.bottom="`${ctrans('Redo')} (${formatShortcutCombo(['Mod', 'Shift', 'Z'])})`" :disabled="!editable || !canRedo" @click="redo"
             class="h-7 w-7 flex items-center justify-center rounded text-slate-500 transition-colors
                    enabled:hover:bg-slate-100 enabled:hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed">
             <FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
           </button>
+
+          <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
+
+          <!-- Keyboard shortcuts -->
+          <button type="button" v-tooltip.bottom="`${ctrans('Keyboard shortcuts')} (?)`"
+            @click="isShortcutsDialogVisible = true"
+            class="h-7 w-7 flex items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+            <FontAwesomeIcon :icon="faKeyboard" fixed-width aria-hidden="true" />
+          </button>
+
+          <!-- Copied block: paste it, or clear it -->
+          <div v-if="copiedBlock && editable"
+            class="ml-1 flex h-7 items-center rounded border border-dashed border-slate-300 text-slate-600">
+            <button type="button" @click="pasteBlock()"
+              v-tooltip.bottom="`${ctrans('Paste below the selected block')} (${formatShortcutCombo(['Mod', 'V'])})`"
+              class="flex h-full items-center gap-1.5 pl-2 pr-1 hover:text-slate-900">
+              <FontAwesomeIcon :icon="faPaste" fixed-width aria-hidden="true" />
+              <span class="max-w-[140px] truncate text-xs">{{ copiedBlock.name }}</span>
+            </button>
+            <button type="button" @click="clearCopiedBlock" v-tooltip.bottom="ctrans('Clear copied block')"
+              class="flex h-full items-center px-1.5 text-slate-400 hover:text-slate-900">
+              <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         <!-- Group: collaboration warning -->
@@ -1076,7 +1311,7 @@ console.log('props_workshop',props)
           class="flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-medium">
           <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
           <span>
-            {{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
+            {{ compUsersEditThisPage.length }} {{ ctrans("users edit this page.") }}
           </span>
         </div>
 
@@ -1086,44 +1321,44 @@ console.log('props_workshop',props)
           <span v-if="isFullScreen && isSavingBlock"
             class="flex items-center gap-1.5 mr-1 text-xs text-slate-400">
             <LoadingIcon />
-            {{ trans('Saving..') }}
+            {{ ctrans('Saving..') }}
           </span>
 
           <!-- Create as template -->
           <template v-if="canUseTemplate && editable">
-            <button type="button" v-tooltip.bottom="trans('Pick the blocks to keep and save this page as a template')"
+            <button type="button" v-tooltip.bottom="ctrans('Pick the blocks to keep and save this page as a template')"
               @click="isCreateTemplateDialogVisible = true"
               class="h-7 flex items-center gap-1.5 px-2 rounded border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
               <FontAwesomeIcon :icon="faLayerPlus" fixed-width />
-              <span class="text-xs font-medium">{{ trans('Create as template') }}</span>
+              <span class="text-xs font-medium">{{ ctrans('Create as template') }}</span>
             </button>
 
             <span class="mx-0.5 h-4 w-px bg-slate-200" aria-hidden="true" />
           </template>
 
           <!-- Reload preview -->
-          <button type="button" v-tooltip.bottom="trans('Reload preview')"
+          <button type="button" v-tooltip.bottom="ctrans('Reload preview')"
             @click="sendToIframe({ key: 'reload', value: {} })"
             class="h-7 w-7 flex items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
             <FontAwesomeIcon :icon="faSync" fixed-width />
           </button>
 
           <!-- Open preview in new tab -->
-          <button type="button" v-tooltip.bottom="trans('Open preview in new tab')" @click="openFullScreenPreview"
+          <button type="button" v-tooltip.bottom="ctrans('Open preview in new tab')" @click="openFullScreenPreview"
             class="h-7 w-7 flex items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
             <FontAwesomeIcon :icon="faEye" fixed-width />
           </button>
 
           <!-- Full screen: expands to a labelled exit button while active -->
           <button type="button" @click="toggleFullScreen"
-            v-tooltip.bottom="isFullScreen ? '' : trans('Full screen (F11)')"
+            v-tooltip.bottom="isFullScreen ? '' : ctrans('Full screen (F11)')"
             class="h-7 flex items-center gap-1.5 rounded transition-colors"
             :class="isFullScreen
               ? 'px-2 bg-slate-900 text-white hover:bg-slate-700'
               : 'w-7 justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900'">
             <FontAwesomeIcon :icon="isFullScreen ? faCompressWide : faExpandWide" fixed-width />
             <template v-if="isFullScreen">
-              <span class="text-xs font-medium">{{ trans('Exit full screen') }}</span>
+              <span class="text-xs font-medium">{{ ctrans('Exit full screen') }}</span>
               <kbd class="px-1 py-px rounded bg-white/20 text-[10px] font-sans leading-none">Esc</kbd>
             </template>
           </button>
@@ -1134,11 +1369,11 @@ console.log('props_workshop',props)
         <div v-if="isIframeLoading"
           class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white">
           <LoadingIcon class="w-16 h-16 text-5xl text-slate-400" />
-          <span class="text-sm text-slate-400">{{ trans("Loading preview…") }}</span>
+          <span class="text-sm text-slate-400">{{ ctrans("Loading preview…") }}</span>
         </div>
         <iframe ref="_iframe" :src="iframeSrc" :title="props.title"
           :class="[iframeClass, isIframeLoading ? 'invisible' : '', 'border-0 bg-white']"
-          @load="isIframeLoading = false" allowfullscreen />
+          @load="onIframeLoad" allowfullscreen />
       </div>
     </div>
   </div>

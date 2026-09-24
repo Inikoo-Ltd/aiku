@@ -62,7 +62,7 @@ const component = computed<Component>(() => {
                     v-tooltip="trans('Go to Master')"
                     class="mr-1 opacity-70 hover:opacity-100"
                 >
-                    <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
+                    <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />
                 </Link>
             </div>
         </template>

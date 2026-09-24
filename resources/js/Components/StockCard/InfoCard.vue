@@ -113,7 +113,7 @@ console.log(props.data)
                     <DisclosureButton class="flex-none rounded-full focus:outline-none"
                         :class="location.notes && 'text-yellow-400'" @click="hideOther(index)"
                         :ref="el => (disclosure[index] = close)">
-                        <FontAwesomeIcon v-tooltip="'Notes'" :icon="location.notes ? fasStickyNote : faStickyNote" />
+                        <FontAwesomeIcon v-tooltip="'Notes'" :icon="location.notes ? fasStickyNote : faStickyNote" fixed-width />
                     </DisclosureButton>
 
                     <div v-if="location.type != 'picking'" class="relative">
@@ -121,7 +121,7 @@ console.log(props.data)
                             <template #button>
                                 <FontAwesomeIcon v-tooltip="location.type"
                                     class="h-5 w-5 flex-none rounded-full bg-gray-50 cursor-pointer"
-                                    :icon="faShoppingBasket" />
+                                    :icon="faShoppingBasket" fixed-width />
                             </template>
                             <template #content="{ close: closed }">
                                 <div class="w-[250px]">
@@ -139,7 +139,7 @@ console.log(props.data)
                         </Popover>
                     </div>
                     <FontAwesomeIcon v-else :class="'text-indigo-500'" v-tooltip="location.type"
-                        class="h-5 w-5 flex-none rounded-full bg-gray-50 cursor-pointer" :icon="faShoppingBasket" />
+                        class="h-5 w-5 flex-none rounded-full bg-gray-50 cursor-pointer" :icon="faShoppingBasket" fixed-width />
 
                     <div class="px-2">
                         <div class="text-sm font-semibold leading-6 text-gray-900">
@@ -175,7 +175,7 @@ console.log(props.data)
                                 <div class="text-sm font-semibold leading-6 text-gray-900">
                                     {{daysAudit(location.audited_at)}}</div>
                             </div>
-                            <FontAwesomeIcon class="h-4 w-4 mt-1 flex-none rounded-full bg-gray-50" :icon="faClock" />
+                            <FontAwesomeIcon class="h-4 w-4 mt-1 flex-none rounded-full bg-gray-50" :icon="faClock" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -197,16 +197,16 @@ console.log(props.data)
                     <template v-if="!loading" #stateIcon>
                         <div v-if="!editNotes" @click="()=>editNotes=true"
                             class="w-8 h-8 flex items-center justify-center text-sm text-white rounded-full bg-indigo-500 cursor-pointer">
-                            <FontAwesomeIcon :icon="faPencil" />
+                            <FontAwesomeIcon :icon="faPencil" fixed-width />
                         </div>
                         <div v-else class="flex gap-3">
                             <div @click="()=>editNotes=false"
                                 class="w-8 h-8 flex items-center justify-center text-sm text-red-500 rounded-full bg-white border border-red-500 cursor-pointer">
-                                <FontAwesomeIcon :icon="faTimes" />
+                                <FontAwesomeIcon :icon="faTimes" fixed-width />
                             </div>
                             <div @click="()=>SendEditLocation(location)"
                                 class="w-8 h-8 flex items-center justify-center text-sm text-white rounded-full bg-indigo-500 cursor-pointer">
-                                <FontAwesomeIcon :icon="faSave" />
+                                <FontAwesomeIcon :icon="faSave" fixed-width />
                             </div>
                         </div>
                     </template>

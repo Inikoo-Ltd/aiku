@@ -130,7 +130,7 @@ const doodleStyle = computed(() => {
 <template>
     <div class="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
         <div class="flex items-center gap-2 bg-[#075E54] px-4 py-2.5 text-white">
-            <FontAwesomeIcon :icon="faWhatsapp" class="text-sm" />
+            <FontAwesomeIcon :icon="faWhatsapp" class="text-sm" fixed-width />
             <span class="text-sm font-semibold">{{ trans("Preview") }}</span>
             <span class="ml-auto text-[11px] opacity-70 truncate max-w-[130px]">{{ businessName }}</span>
         </div>
@@ -146,15 +146,15 @@ const doodleStyle = computed(() => {
                         <div v-if="headerFormat === 'IMAGE'"
                             class="h-36 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
                             <img v-if="mediaPreview" :src="mediaPreview" class="h-full w-full object-cover" />
-                            <FontAwesomeIcon v-else :icon="faImage" class="text-gray-300 text-3xl" />
+                            <FontAwesomeIcon v-else :icon="faImage" class="text-gray-300 text-3xl" fixed-width />
                         </div>
                         <div v-else-if="headerFormat === 'VIDEO'"
                             class="h-36 rounded-md bg-gray-100 flex items-center justify-center">
-                            <FontAwesomeIcon :icon="faVideo" class="text-gray-300 text-3xl" />
+                            <FontAwesomeIcon :icon="faVideo" class="text-gray-300 text-3xl" fixed-width />
                         </div>
                         <div v-else
                             class="h-20 rounded-md bg-gray-100 flex items-center justify-center gap-2 text-gray-400">
-                            <FontAwesomeIcon :icon="faFilePdf" class="text-2xl" />
+                            <FontAwesomeIcon :icon="faFilePdf" class="text-2xl" fixed-width />
                             <span class="text-[11px]">{{ trans("PDF") }}</span>
                         </div>
                     </div>
@@ -194,7 +194,7 @@ const doodleStyle = computed(() => {
                     <div v-if="buttons.length" class="border-t border-[#E9EDEF]">
                         <div v-for="(button, index) in buttons" :key="index"
                             class="flex items-center justify-center gap-1.5 border-b border-[#E9EDEF] last:border-b-0 py-2.5 text-[14px] text-[#0091EA] font-medium">
-                            <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[11px]" />
+                            <FontAwesomeIcon :icon="buttonIcon(button.type)" class="text-[11px]" fixed-width />
                             {{ button.text || trans("Button") }}
                         </div>
                     </div>

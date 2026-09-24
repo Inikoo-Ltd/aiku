@@ -33,6 +33,11 @@ class CallbackRetinaWooCommerceUser extends OrgAction
         StoreTemporaryWooUser::run($customer, $modelData);
     }
 
+    /**
+     * WooCommerce only counts the authorisation as done when this callback answers 200 within its
+     * own timeout, so the store check runs on the queue: a store that drops our connections would
+     * otherwise hold the callback for two connect timeouts, longer than the proxy in front allows.
+     */
     public function handleReAuthorization(WooCommerceUser $wooCommerceUser, array $modelData): void
     {
         $this->update($wooCommerceUser, [
@@ -40,7 +45,7 @@ class CallbackRetinaWooCommerceUser extends OrgAction
             'consumer_secret' => Arr::get($modelData, 'consumer_secret'),
         ]);
 
-        CheckWooChannel::run($wooCommerceUser);
+        CheckWooChannel::dispatch($wooCommerceUser);
     }
 
     public function rules(): array

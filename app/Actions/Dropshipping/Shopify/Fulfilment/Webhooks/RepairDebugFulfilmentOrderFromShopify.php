@@ -13,7 +13,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -43,11 +42,7 @@ class RepairDebugFulfilmentOrderFromShopify extends OrgAction
         }
 
         foreach ($debugWebhooks as $webhook) {
-            DB::transaction(function () use ($shopifyUser, $webhook) {
-                $fulfillmentOrder = $webhook->data;
-
-                CreateFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrder);
-            });
+            CreateFulfilmentOrderFromShopify::run($shopifyUser, $webhook->data);
         }
     }
 }

@@ -167,7 +167,7 @@ resetForm()
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <label class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ trans('Buy quantity') }}
                             <InformationIcon :information="trans('Quantity the customer must buy to trigger the offer')" />:
                         </label>
@@ -179,7 +179,7 @@ resetForm()
 
                     <div class="space-y-2">
                         <label class="font-medium mb-2 flex items-center gap-x-1">
-                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                            <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                             {{ trans('Free quantity') }}
                             <InformationIcon :information="trans('Quantity of the same product given for free')" />:
                         </label>
@@ -193,7 +193,7 @@ resetForm()
                 <!-- Section: Offer Duration -->
                 <div class="space-y-3">
                     <div class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer Duration') }}:
                     </div>
 
@@ -231,7 +231,7 @@ resetForm()
                         <div class="space-y-2">
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
-                                    class="font-light text-xs text-red-400 align-middle" />
+                                    class="font-light text-xs text-red-400 align-middle" fixed-width />
                                 {{ trans('Start Date') }}
                                 <InformationIcon
                                     :information="trans('If start date is empty, will start immediately')" />:

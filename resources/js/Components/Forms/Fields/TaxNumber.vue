@@ -342,7 +342,7 @@ const markAsValid = () => {
                     <FontAwesomeIcon 
                         :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
                         :class="getStatusColor(validationStatus.status, validationStatus.valid)" 
-                        class="text-sm" />
+                        class="text-sm" fixed-width />
 
                     <div class="space-y-2">
                         <p class="text-sm">

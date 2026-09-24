@@ -2,6 +2,8 @@
 import ShowcaseContactCard from "@/Components/ShowcaseContactCard.vue"
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { Link } from "@inertiajs/vue3"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { Agent } from '@/types/Grp/Agent'
 
@@ -20,6 +22,12 @@ const props = defineProps<{
             items: { id: number, quantity: number, org_stock_code: string | null, org_stock_name: string | null }[]
             listRoute: { name: string, parameters: (string | number)[] }
         }
+        customerAccounts: {
+            shop: string
+            reference: string
+            name: string
+            route: { name: string, parameters: string[] }
+        }[]
     }
 
 }>()
@@ -42,6 +50,16 @@ const props = defineProps<{
                 >
                     <FontAwesomeIcon :icon="stat.icon" class="text-gray-400" fixed-width aria-hidden="true" />
                     <span class="font-semibold text-gray-700">{{ useLocaleStore().number(stat.count ?? 0) }}</span>
+                </div>
+            </div>
+
+            <div class="mt-4 max-w-md xl:max-w-lg bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm">
+                <div class="font-semibold text-gray-700 mb-1">{{ ctrans("Customer accounts") }}</div>
+                <div v-if="!data.customerAccounts?.length" class="text-gray-400">{{ ctrans("No customer account in our shops") }}</div>
+                <div v-for="account in data.customerAccounts" :key="account.reference + account.shop" class="flex gap-2 py-0.5">
+                    <span class="text-gray-400 w-32 shrink-0 truncate">{{ account.shop }}</span>
+                    <Link :href="route(account.route.name, account.route.parameters)" class="primaryLink">{{ account.reference }}</Link>
+                    <span class="truncate">{{ account.name }}</span>
                 </div>
             </div>
 

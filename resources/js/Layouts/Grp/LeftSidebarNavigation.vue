@@ -229,10 +229,10 @@ const iconList: { [key: string]: string } = {
 
 <style scoped>
 .navigationFadeTop {
-    background: v-bind("`linear-gradient(to bottom, color-mix(in srgb, ${layout?.app?.theme[0]}, 15% black), transparent)`");
+    background: v-bind("`linear-gradient(to bottom, color-mix(in srgb, ${layout?.app?.navigation_theme[0]}, 15% black), transparent)`");
 }
 
 .navigationFadeBottom {
-    background: v-bind("`linear-gradient(to top, color-mix(in srgb, ${layout?.app?.theme[0]}, 15% black), transparent)`");
+    background: v-bind("`linear-gradient(to top, color-mix(in srgb, ${layout?.app?.navigation_theme[0]}, 15% black), transparent)`");
 }
 </style>

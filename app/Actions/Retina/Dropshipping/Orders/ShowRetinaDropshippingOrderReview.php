@@ -12,6 +12,7 @@ use App\Actions\Ordering\Order\UI\IndexReviewFamiliesInOrder;
 use App\Actions\Ordering\Order\UI\IndexReviewProductsInOrder;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithOrderSummaryPackaging;
 use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Review\ReviewScopeEnum;
 use App\Enums\UI\Ordering\RetinaOrderReviewTabsEnum;
@@ -42,6 +43,7 @@ use App\Http\Resources\CRM\CustomerClientResource;
 class ShowRetinaDropshippingOrderReview extends RetinaAction
 {
     use GetPlatformLogo;
+    use WithOrderSummaryPackaging;
 
     public function handle(Order $order): Order
     {
@@ -438,18 +440,7 @@ class ShowRetinaDropshippingOrderReview extends RetinaAction
                         'price_total' => $order->goods_amount
                     ],
                 ],
-                [
-                    [
-                        'label'       => __('Charges'),
-                        'information' => '',
-                        'price_total' => $order->charges_amount
-                    ],
-                    [
-                        'label'       => __('Shipping'),
-                        'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
-                ],
+                $this->buildChargesSummaryGroup($order),
                 [
                     [
                         'label'       => __('Net'),

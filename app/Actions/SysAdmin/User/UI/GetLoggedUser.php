@@ -43,6 +43,8 @@ class GetLoggedUser
             'settings' => [
                 'app_theme' => Arr::get($user->settings, 'app_theme'),
                 'hide_logo' => Arr::get($user->settings, 'hide_logo', false),
+                'alert_sounds' => Arr::get($user->settings, 'alert_sounds'),
+                'alert_preview_seconds' => Arr::get($user->settings, 'alert_preview_seconds'),
             ]
         ];
     }

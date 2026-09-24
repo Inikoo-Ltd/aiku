@@ -9,6 +9,7 @@ namespace App\Actions\Tasks\UI;
 
 use App\Actions\Traits\WithGroupModuleScope;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -19,6 +20,11 @@ trait WithStaffTasksScope
     protected function initialisationFromTasksScope(ActionRequest $request, ?Organisation $organisation = null, ?Shop $shop = null): static
     {
         return $this->initialisationFromModuleScope($request, $organisation, $shop);
+    }
+
+    protected function tasksParent(): Group|Organisation
+    {
+        return $this->organisation ?? $this->group;
     }
 
     /**

@@ -15,6 +15,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
+import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -150,6 +151,8 @@ const props = defineProps < {
 	items?: {}
 	products?: {}
 	showcase?: {}
+	notes?: {}
+	note_store_route?: routeType
 	history?: {}
 }>()
 
@@ -240,6 +243,21 @@ const costBlocks = computed(() => {
 	}
 
 	return sameCurrency ? [supplierBlock] : [supplierBlock, organisationBlock]
+})
+
+const moneyTable = computed(() => {
+	const [supplierBlock, organisationBlock] = costBlocks.value
+
+	return {
+		title: supplierBlock.title,
+		rateLabel: organisationBlock?.title ?? null,
+		rows: supplierBlock.rows.map((row, index) => ({
+			label: row.label,
+			supplier: row.value,
+			org: organisationBlock?.rows[index]?.value ?? null,
+			isTotal: row.isTotal ?? false,
+		})),
+	}
 })
 
 const currentTab = ref(props.tabs.current)
@@ -496,11 +514,19 @@ const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
 	})
 }
 
+function openSupplierEmail(action: { mailto?: string, pdfUrl: string }) {
+	window.open(action.pdfUrl, '_blank')
+	if (action.mailto) {
+		window.location.href = action.mailto
+	}
+}
+
 const component = computed(() => {
 	const components: Component = {
 		items: TablePurchaseOrderTransactions,
 		products: TablePurchaseOrderTransactions,
 		showcase: ProcurementOrderData,
+		notes: TableProcurementNotes,
 		history: TableHistories,
 	}
 
@@ -534,6 +560,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #button-email-to-supplier="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				:disabled="!action.mailto"
+				@click="() => openSupplierEmail(action)"
+			/>
+		</template>
+
 		<template #button-add-product="{ action }">
 			<Button
 				:style="action.style"
@@ -643,7 +680,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		/>
 	</div>
 
-	<div class="grid grid-cols-2 lg:grid-cols-4 text-gray-500 divide-x divide-gray-300 border-b border-gray-300">
+	<div class="grid grid-cols-2 text-gray-500 divide-x divide-gray-300 border-b border-gray-300" :class="stock_delivery_timelines.length ? 'lg:grid-cols-4' : 'lg:grid-cols-3'">
 	    <!-- First Block -->
 		<BoxStatPallet class="p-4">
 			<div class="flex flex-col gap-4">
@@ -856,7 +893,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</BoxStatPallet>
 
 		<!-- Third Block: stock deliveries -->
-		<BoxStatPallet class="p-4">
+		<BoxStatPallet v-if="stock_delivery_timelines.length" class="p-4">
 			<div class="flex h-8 items-center justify-center text-center">
 				{{ trans("Stock Deliveries") }}
 			</div>
@@ -882,26 +919,21 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</BoxStatPallet>
 
 		<!-- Fourth Block: money -->
-		<BoxStatPallet class="p-4 space-y-3">
-			<div v-for="block in costBlocks" :key="block.key">
-				<div class="flex h-8 items-center justify-center text-center">
-					{{ block.title }}
-				</div>
-
-				<hr class="-mx-4 mb-1 border-t border-gray-300" />
-
-				<div class="mt-2 space-y-1 text-sm">
-					<div
-						v-for="row in block.rows"
-						:key="row.label"
-						class="flex items-center justify-between gap-4"
-						:class="row.isTotal ? 'font-semibold text-gray-700' : ''"
-					>
-						<span>{{ row.label }}</span>
-						<span>{{ row.value }}</span>
-					</div>
-				</div>
+		<BoxStatPallet class="p-4">
+			<div class="flex h-8 items-center justify-center text-center">
+				{{ moneyTable.title }}
 			</div>
+
+			<hr class="-mx-4 mb-1 border-t border-gray-300" />
+
+			<table class="mt-2 w-full text-sm">
+				<tr v-for="row in moneyTable.rows" :key="row.label" :class="row.isTotal ? 'font-semibold text-gray-700' : ''">
+					<td class="py-0.5">{{ row.label }}</td>
+					<td class="py-0.5 text-right tabular-nums">{{ row.supplier }}</td>
+					<td v-if="moneyTable.rateLabel" class="py-0.5 pl-3 text-right tabular-nums text-gray-400">{{ row.org }}</td>
+				</tr>
+			</table>
+			<div v-if="moneyTable.rateLabel" class="mt-1 text-right text-xs text-gray-400">{{ moneyTable.rateLabel }}</div>
 		</BoxStatPallet>
 	</div>
 
@@ -917,6 +949,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:isOrgAgent="isOrgAgent"
 			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
+			:storeRoute="currentTab === 'notes' ? note_store_route : undefined"
 			v-bind="isOrderingLevelTab ? {
 				level: currentLevel,
 				'onUpdate:level': (value: OrderingLevel) => currentLevel = value,
@@ -938,7 +971,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 	<ConfirmDialog group="purchase-order">
 		<template #icon>
-			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" fixed-width />
 		</template>
 	</ConfirmDialog>
 
@@ -946,7 +979,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<template #message="{ message }">
 			<div class="flex w-full flex-col gap-4">
 				<div class="flex items-start gap-3">
-					<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl text-orange-500" />
+					<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl text-orange-500" fixed-width />
 					<span>{{ message.message }}</span>
 				</div>
 

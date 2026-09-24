@@ -46,6 +46,7 @@ class ShowAgentShoppingDashboard extends OrgAction
             ->whereNull('aspo.deleted_at')
             ->whereIn('aspo.state', GetAgentSupplierPerformance::OPEN_STATES)
             ->whereNotIn('aspo.delivery_state', GetAgentSupplierPerformance::CLOSED_DELIVERY_STATES)
+            ->whereRaw("(aspo.data -> 'housekeeping') is null")
             ->selectRaw("aspo.id, aspo.slug, aspo.reference, aspo.state, aspo.delivery_state, aspo.estimated_received_at,
                 sup.code as supplier_code, sup.id as supplier_id,
                 coalesce(aspo.submitted_at, aspo.date, aspo.created_at) as reference_date,

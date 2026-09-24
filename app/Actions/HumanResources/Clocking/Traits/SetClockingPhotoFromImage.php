@@ -28,7 +28,7 @@ class SetClockingPhotoFromImage
     {
         return $this->updateModelImage(
             model: $clocking,
-            collection: 'image',
+            collection: 'clocking_photo',
             field: 'image_id',
             imagePath: $imagePath,
             originalFilename: $originalFilename,

@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle } from "@fal"
 import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { RouteParams } from "@/types/route-params"
 import axios from "axios"
@@ -56,6 +56,7 @@ interface MasterProductPricing {
     sold: number
     customers: number
     sales_ly: string | number | null
+    price_tip: { change: number, reason: string } | null
 }
 
 interface SalesFigures {
@@ -148,6 +149,16 @@ const openEdit = (masterProduct: MasterProductPricing, field: 'master_prices' | 
         [field]: JSON.parse(JSON.stringify(masterProduct[field] ?? {})),
     })
     subscribeCascade(masterProduct.id)
+}
+
+const applyPriceTip = (masterProduct: MasterProductPricing) => {
+    openEdit(masterProduct, 'master_prices')
+    const factor = 1 + masterProduct.price_tip!.change / 100
+    for (const entry of Object.values(editForm.value.master_prices as Record<string, CurrencyValue>)) {
+        if (entry?.value != null) {
+            entry.value = Math.round(Number(entry.value) * factor * 100) / 100
+        }
+    }
 }
 
 const bulkPrefilled = ref(false)
@@ -309,9 +320,9 @@ const salesOverrides = ref<Record<number, SalesFigures>>({})
 const isLoadingSales = ref(false)
 
 const intervalLabels: Record<string, string> = {
-    month: trans('Last month'),
-    quarter: trans('Last quarter'),
-    year: trans('Last 12 months'),
+    month: ctrans('Last month'),
+    quarter: ctrans('Last quarter'),
+    year: ctrans('Last 12 months'),
 }
 
 const salesFor = (masterProduct: MasterProductPricing): SalesFigures =>
@@ -430,7 +441,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 v-if="masterProduct.units_review"
                 :icon="faExclamationTriangle"
                 class="ml-1 text-amber-500"
-                v-tooltip="trans('Units mismatch detected (:bucket) — per-unit prices may be wrong', { bucket: masterProduct.units_review })"
+                v-tooltip="ctrans('Units mismatch detected (:bucket) — per-unit prices may be wrong', { bucket: masterProduct.units_review })"
                 fixed-width
                 aria-hidden="true"
             />
@@ -446,11 +457,11 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 <div class="flex flex-col gap-y-0.5">
                 <span class="font-medium">
                     {{ masterProduct.name }}
-                    <span class="ml-1 text-xs font-normal text-gray-400">{{ trans('In :n shops', { n: `${masterProduct.used_in ?? 0}` }) }}</span>
+                    <span class="ml-1 text-xs font-normal text-gray-400">{{ ctrans('In :n shops', { n: `${masterProduct.used_in ?? 0}` }) }}</span>
                     <span
                         v-if="masterProduct.trade_units_label"
                         class="ml-1 whitespace-nowrap rounded border border-emerald-300 px-1 py-px text-xs font-normal text-emerald-700 tabular-nums"
-                        v-tooltip="trans('Trade units')"
+                        v-tooltip="ctrans('Trade units')"
                     >
                         {{ masterProduct.trade_units_label }}
                         <span class="text-gray-600">| {{ locale.number(masterProduct.units) }} {{ masterProduct.unit }}</span>
@@ -461,7 +472,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                     <button
                         type="button"
                         class="underline decoration-dotted underline-offset-2 hover:text-gray-700"
-                        v-tooltip="trans('Click to change interval')"
+                        v-tooltip="ctrans('Click to change interval')"
                         :disabled="isLoadingSales"
                         @click="cycleInterval"
                     >{{ intervalLabels[salesInterval] }}</button>:
@@ -470,13 +481,13 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                     </template>
                     <template v-else>
                         <span class="font-medium text-gray-700">{{ formatMoney(salesFor(masterProduct).sales ?? 0, masterProduct.currency_code) }}</span>
-                        · {{ locale.number(salesFor(masterProduct).sold ?? 0) }} {{ trans('sold') }}
-                        · {{ locale.number(salesFor(masterProduct).customers ?? 0) }} {{ trans('customers') }}
+                        · {{ locale.number(salesFor(masterProduct).sold ?? 0) }} {{ ctrans('sold') }}
+                        · {{ locale.number(salesFor(masterProduct).customers ?? 0) }} {{ ctrans('customers') }}
                         <span
                             v-if="salesDelta(salesFor(masterProduct)) !== null"
                             class="ml-1 font-medium"
                             :class="salesDelta(salesFor(masterProduct))! >= 0 ? 'text-green-600' : 'text-red-600'"
-                            v-tooltip="trans('vs same period a year earlier')"
+                            v-tooltip="ctrans('vs same period a year earlier')"
                         >
                             {{ salesDelta(salesFor(masterProduct))! >= 0 ? '+' : '' }}{{ salesDelta(salesFor(masterProduct)) }}%
                             {{ salesDelta(salesFor(masterProduct))! >= 0 ? '▲' : '▼' }}
@@ -486,20 +497,20 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
 
                 <span class="text-xs text-gray-500 tabular-nums">
                     <span v-if="masterProduct.orgs_with_stock" v-tooltip="stockByOrgTooltip(masterProduct)">
-                        {{ trans('Stock') }}
+                        {{ ctrans('Stock') }}
                         <span class="font-medium text-gray-700">
                             <template v-if="masterProduct.stock_min === masterProduct.stock_max">{{ locale.number(masterProduct.stock_min ?? 0) }}</template>
                             <template v-else>{{ locale.number(masterProduct.stock_min ?? 0) }}–{{ locale.number(masterProduct.stock_max ?? 0) }}</template>
                         </span>
                     </span>
                     <span v-if="masterProduct.orgs_out_of_stock" class="font-medium text-red-600" v-tooltip="stockByOrgTooltip(masterProduct)">
-                        <template v-if="masterProduct.orgs_with_stock">· </template>{{ trans(':n Org no stock', { n: `${masterProduct.orgs_out_of_stock}` }) }}
+                        <template v-if="masterProduct.orgs_with_stock">· </template>{{ ctrans(':n Org no stock', { n: `${masterProduct.orgs_out_of_stock}` }) }}
                     </span>
                     <template v-if="masterProduct.favourites">
                         · ❤ {{ locale.number(masterProduct.favourites) }}
                     </template>
                     <span v-if="masterProduct.price_rebels" class="text-amber-600">
-                        · {{ masterProduct.price_rebels }} {{ trans('price rebels') }}
+                        · {{ masterProduct.price_rebels }} {{ ctrans('price rebels') }}
                     </span>
                 </span>
                 </div>
@@ -511,7 +522,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 <template v-for="(code, index) in majorCurrencies" :key="code">
                     <span class="flex items-center justify-end gap-x-1.5 self-center">
                         <template v-if="index === 0">
-                            <span v-if="cascadeFor(masterProduct, 'price')" class="whitespace-nowrap text-xs tabular-nums" v-tooltip="cascadeFor(masterProduct, 'price')!.doneAt ? trans('Websites updated at :time', { time: cascadeFor(masterProduct, 'price')!.doneAt! }) : ''" :class="cascadeFor(masterProduct, 'price')!.state === 'done' ? 'text-green-600' : 'text-gray-500'">
+                            <span v-if="cascadeFor(masterProduct, 'price')" class="whitespace-nowrap text-xs tabular-nums" v-tooltip="cascadeFor(masterProduct, 'price')!.doneAt ? ctrans('Websites updated at :time', { time: cascadeFor(masterProduct, 'price')!.doneAt! }) : ''" :class="cascadeFor(masterProduct, 'price')!.state === 'done' ? 'text-green-600' : 'text-gray-500'">
                                 <template v-if="cascadeFor(masterProduct, 'price')!.state !== 'done'">
                                     <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
                                     {{ cascadeFor(masterProduct, 'price')!.done }}/{{ cascadeFor(masterProduct, 'price')!.total }}
@@ -521,20 +532,20 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                             <button
                                 type="button"
                                 class="text-sm text-gray-400 hover:text-indigo-600"
-                                v-tooltip="trans('Edit prices')"
+                                v-tooltip="ctrans('Edit prices')"
                                 @click="openEdit(masterProduct, 'master_prices')"
                             >
                                 <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
                             </button>
                         </template>
                     </span>
-                    <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="trans('Margin vs effective cost')">{{ priceMarginPct(masterProduct, code) ?? '' }}</span>
+                    <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="ctrans('Margin vs effective cost')">{{ priceMarginPct(masterProduct, code) ?? '' }}</span>
                     <span class="tabular-nums text-right">{{ formatMoney(masterProduct.master_prices?.[code]?.value ?? null, code) }}</span>
                 </template>
                 <template v-for="code in independentMinors(masterProduct.master_prices)" :key="code">
                     <span />
-                    <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="trans('Margin vs effective cost')">{{ priceMarginPct(masterProduct, code) ?? '' }}</span>
-                    <span class="tabular-nums text-right text-green-600" v-tooltip="trans('Independent price')">
+                    <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="ctrans('Margin vs effective cost')">{{ priceMarginPct(masterProduct, code) ?? '' }}</span>
+                    <span class="tabular-nums text-right text-green-600" v-tooltip="ctrans('Independent price')">
                         {{ formatMoney(masterProduct.master_prices?.[code]?.value ?? null, code) }}
                     </span>
                 </template>
@@ -544,12 +555,12 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                     class="col-span-3 text-right text-xs text-gray-400 hover:text-gray-600"
                     @click="toggleMinors(`${masterProduct.id}-price`)"
                 >
-                    {{ trans('Minor currencies') }} ({{ derivedMinors(masterProduct.master_prices).length }})
+                    {{ ctrans('Minor currencies') }} ({{ derivedMinors(masterProduct.master_prices).length }})
                 </button>
                 <template v-if="expandedMinors[`${masterProduct.id}-price`]">
                     <template v-for="code in derivedMinors(masterProduct.master_prices)" :key="code">
                         <span />
-                        <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="trans('Margin vs effective cost')">{{ priceMarginPct(masterProduct, code) ?? '' }}</span>
+                        <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="ctrans('Margin vs effective cost')">{{ priceMarginPct(masterProduct, code) ?? '' }}</span>
                         <span class="tabular-nums text-right text-gray-400">
                             {{ formatMoney(masterProduct.master_prices?.[code]?.value ?? null, code) }}
                         </span>
@@ -557,6 +568,17 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 </template>
             </div>
             <span v-else class="tabular-nums">{{ formatMoney(masterProduct.price, masterProduct.currency_code) }}</span>
+            <div v-if="masterProduct.price_tip" class="mt-1 text-right">
+                <button
+                    type="button"
+                    class="rounded border px-1.5 py-px text-xs font-medium tabular-nums"
+                    :class="masterProduct.price_tip.change < 0 ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'"
+                    v-tooltip="`${masterProduct.price_tip.reason}. ${ctrans('Click to review the suggested prices')}`"
+                    @click="applyPriceTip(masterProduct)"
+                >
+                    {{ ctrans('Price tip') }} {{ masterProduct.price_tip.change > 0 ? '+' : '' }}{{ masterProduct.price_tip.change }}%
+                </button>
+            </div>
         </template>
 
         <template #cell(rrp)="{ item: masterProduct }">
@@ -564,7 +586,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 <template v-for="(code, index) in majorCurrencies" :key="code">
                     <span class="flex items-center justify-end gap-x-1.5 self-center">
                         <template v-if="index === 0">
-                            <span v-if="cascadeFor(masterProduct, 'rrp')" class="whitespace-nowrap text-xs tabular-nums" v-tooltip="cascadeFor(masterProduct, 'rrp')!.doneAt ? trans('Websites updated at :time', { time: cascadeFor(masterProduct, 'rrp')!.doneAt! }) : ''" :class="cascadeFor(masterProduct, 'rrp')!.state === 'done' ? 'text-green-600' : 'text-gray-500'">
+                            <span v-if="cascadeFor(masterProduct, 'rrp')" class="whitespace-nowrap text-xs tabular-nums" v-tooltip="cascadeFor(masterProduct, 'rrp')!.doneAt ? ctrans('Websites updated at :time', { time: cascadeFor(masterProduct, 'rrp')!.doneAt! }) : ''" :class="cascadeFor(masterProduct, 'rrp')!.state === 'done' ? 'text-green-600' : 'text-gray-500'">
                                 <template v-if="cascadeFor(masterProduct, 'rrp')!.state !== 'done'">
                                     <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
                                     {{ cascadeFor(masterProduct, 'rrp')!.done }}/{{ cascadeFor(masterProduct, 'rrp')!.total }}
@@ -574,20 +596,20 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                             <button
                                 type="button"
                                 class="text-sm text-gray-400 hover:text-indigo-600"
-                                v-tooltip="trans('Edit RRPs')"
+                                v-tooltip="ctrans('Edit RRPs')"
                                 @click="openEdit(masterProduct, 'master_rrps')"
                             >
                                 <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
                             </button>
                         </template>
                     </span>
-                    <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="trans('Margin vs price')">{{ marginPct(masterProduct, code) ?? '' }}</span>
+                    <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="ctrans('Margin vs price')">{{ marginPct(masterProduct, code) ?? '' }}</span>
                     <span class="tabular-nums text-right">{{ formatRrpPerUnit(masterProduct.master_rrps?.[code]?.value ?? null, code, masterProduct.units) }}</span>
                 </template>
                 <template v-for="code in independentMinors(masterProduct.master_rrps)" :key="code">
                     <span />
-                    <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="trans('Margin vs price')">{{ marginPct(masterProduct, code) ?? '' }}</span>
-                    <span class="tabular-nums text-right text-green-600" v-tooltip="trans('Independent price')">
+                    <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="ctrans('Margin vs price')">{{ marginPct(masterProduct, code) ?? '' }}</span>
+                    <span class="tabular-nums text-right text-green-600" v-tooltip="ctrans('Independent price')">
                         {{ formatRrpPerUnit(masterProduct.master_rrps?.[code]?.value ?? null, code, masterProduct.units) }}
                     </span>
                 </template>
@@ -597,12 +619,12 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                     class="col-span-3 text-right text-xs text-gray-400 hover:text-gray-600"
                     @click="toggleMinors(`${masterProduct.id}-rrp`)"
                 >
-                    {{ trans('Minor currencies') }} ({{ derivedMinors(masterProduct.master_rrps).length }})
+                    {{ ctrans('Minor currencies') }} ({{ derivedMinors(masterProduct.master_rrps).length }})
                 </button>
                 <template v-if="expandedMinors[`${masterProduct.id}-rrp`]">
                     <template v-for="code in derivedMinors(masterProduct.master_rrps)" :key="code">
                         <span />
-                        <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="trans('Margin vs price')">{{ marginPct(masterProduct, code) ?? '' }}</span>
+                        <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="ctrans('Margin vs price')">{{ marginPct(masterProduct, code) ?? '' }}</span>
                         <span class="tabular-nums text-right text-gray-400">
                             {{ formatRrpPerUnit(masterProduct.master_rrps?.[code]?.value ?? null, code, masterProduct.units) }}
                         </span>
@@ -617,17 +639,17 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         <div v-if="editForm">
             <div class="mb-3 text-sm font-medium text-gray-700">
                 <template v-if="bulkMode">
-                    {{ trans('Bulk edit') }} — {{ editingField === 'master_prices' ? `${trans('Price')} / ${trans('Outer')}` : `${trans('RRP')} / ${trans('Unit')}` }}
-                    <span class="ml-1 font-normal text-gray-400">{{ trans(':n products', { n: `${editForm.ids?.length}` }) }}</span>
+                    {{ ctrans('Bulk edit') }} — {{ editingField === 'master_prices' ? `${ctrans('Price')} / ${ctrans('Outer')}` : `${ctrans('RRP')} / ${ctrans('Unit')}` }}
+                    <span class="ml-1 font-normal text-gray-400">{{ ctrans(':n products', { n: `${editForm.ids?.length}` }) }}</span>
                 </template>
                 <template v-else-if="editingProduct">
-                    {{ editingProduct.code }} — {{ editingField === 'master_prices' ? `${trans('Price')} / ${trans('Outer')}` : `${trans('RRP')} / ${trans('Unit')}` }}
+                    {{ editingProduct.code }} — {{ editingField === 'master_prices' ? `${ctrans('Price')} / ${ctrans('Outer')}` : `${ctrans('RRP')} / ${ctrans('Unit')}` }}
                     <span class="ml-1 font-normal text-gray-400">{{ editingProduct.name }}</span>
                 </template>
             </div>
             <div v-if="bulkMode && !bulkPrefilled" class="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700">
-                {{ trans('Only currencies you fill will be applied; independent prices are never overwritten.') }}
-                <template v-if="editingField === 'master_rrps'">{{ trans('RRP is entered per unit and scaled by each product\'s units.') }}</template>
+                {{ ctrans('Only currencies you fill will be applied; independent prices are never overwritten.') }}
+                <template v-if="editingField === 'master_rrps'">{{ ctrans('RRP is entered per unit and scaled by each product\'s units.') }}</template>
             </div>
             <PureMultiplePriceCurrency
                 v-model="editForm[editingField]"

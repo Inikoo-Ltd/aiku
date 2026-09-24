@@ -15,6 +15,7 @@ use App\Http\Resources\Tasks\StaffTaskResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,9 +25,9 @@ class ShowStaffTasksBoard extends OrgAction
 {
     use WithStaffTasksScope;
 
-    public function handle(Group $group, string $interval): array
+    public function handle(Group|Organisation $parent, User $viewer, string $interval): array
     {
-        $tasks = IndexTickets::make()->whereCreatedIn(StaffTask::query()->where('group_id', $group->id), $interval, 'staff_tasks.created_at')
+        $tasks = IndexTickets::make()->whereCreatedIn(StaffTask::query()->within($parent)->visibleTo($viewer), $interval, 'staff_tasks.created_at')
             ->with(['requester.image', 'assignee.image', 'collaborators.image', 'conversation.participants', 'model'])
             ->orderByRaw('due_at asc nulls last, id desc')
             ->get()
@@ -44,21 +45,21 @@ class ShowStaffTasksBoard extends OrgAction
     {
         $this->initialisationFromTasksScope($request);
 
-        return $this->handle($this->group, $this->createdInterval());
+        return $this->handle($this->tasksParent(), $request->user(), $this->createdInterval());
     }
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): array
     {
         $this->initialisationFromTasksScope($request, $organisation);
 
-        return $this->handle($this->group, $this->createdInterval());
+        return $this->handle($this->tasksParent(), $request->user(), $this->createdInterval());
     }
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
     {
         $this->initialisationFromTasksScope($request, $organisation, $shop);
 
-        return $this->handle($this->group, $this->createdInterval());
+        return $this->handle($this->tasksParent(), $request->user(), $this->createdInterval());
     }
 
     private function createdInterval(): string

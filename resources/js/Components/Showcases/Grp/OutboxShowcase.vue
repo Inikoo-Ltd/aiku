@@ -109,7 +109,7 @@ const isLoadingVisit = ref(false)
                         <button
                             @click="previewOpen = true"
                             class="absolute top-2 right-2 bg-gray-300 text-white px-2 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                            <FontAwesomeIcon :icon="faExpand" />
+                            <FontAwesomeIcon :icon="faExpand" fixed-width />
                         </button>
                         <!-- Email Preview Header -->
                         <div class="mb-4 border-b pb-2">

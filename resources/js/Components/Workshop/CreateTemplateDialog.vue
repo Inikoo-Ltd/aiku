@@ -321,7 +321,7 @@ watch(visible, (isVisible) => {
 					<div
 						v-else
 						class="flex flex-col items-center text-center gap-0.5 px-3 py-5 rounded-md border border-dashed border-slate-200 text-slate-500">
-						<FontAwesomeIcon :icon="faBrowser" class="text-2xl mb-1 text-slate-300" />
+						<FontAwesomeIcon :icon="faBrowser" class="text-2xl mb-1 text-slate-300" fixed-width />
 						<template v-if="webBlocks.length">
 							<span class="text-xs font-medium">{{ trans('No shown blocks on this page') }}</span>
 							<button

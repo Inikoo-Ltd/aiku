@@ -50,7 +50,7 @@ const formatDuration = (seconds: number | null) => {
         <template #cell(contact)="{ item: call }">
             <div v-if="call.contact_name || call.contact_type" class="flex items-center gap-2">
                 <FontAwesomeIcon :icon="call.contact_type === 'customer' ? faUser : faUserSecret"
-                    class="text-xs text-gray-400" v-tooltip="call.contact_label" />
+                    class="text-xs text-gray-400" v-tooltip="call.contact_label" fixed-width />
                 <span class="truncate">{{ call.contact_name || call.contact_label }}</span>
             </div>
             <span v-else class="text-gray-400">—</span>

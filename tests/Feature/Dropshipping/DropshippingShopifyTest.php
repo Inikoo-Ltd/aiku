@@ -10,10 +10,12 @@
 
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Dropshipping\Bundle\StoreBundle;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\SyncCustomerSalesChannelPortfolios;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\AdoptShopifyFulfilmentService;
@@ -37,6 +39,7 @@ use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProductVariant;
 use App\Actions\Dropshipping\Shopify\SetShopifyChannelLinksExistingVariants;
 use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
+use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\RepairShopifyPortfolioConnections;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
@@ -49,6 +52,16 @@ use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\Http;
+use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Models\Helpers\Address;
+use App\Models\Ordering\Transaction;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Models\Ordering\Order;
+use App\Actions\CRM\Customer\UpdateCustomerAddress;
+use App\Models\Dropshipping\Platform;
 use Tests\Support\ShopifyFake;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -273,7 +286,12 @@ test('the stock push resolves the variant by sku and never falls back to a sibli
         ->and(BulkUpdateShopifyPortfolio::resolveVariant($borrowsSiblingSku, $product('NMGC-04'), [$variant('1', 'NMGC-01')])['variantId'])->toBe('gid://shopify/ProductVariant/1');
 
     $deletedVariant = new Portfolio(['sku' => 'spbic-12', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/10']);
-    expect(BulkUpdateShopifyPortfolio::resolveVariant($deletedVariant, $product('SPBiC-12'), [$variant('10', 'spbic-10')]))->toBeNull();
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($deletedVariant, $product('SPBiC-12'), [$variant('10', 'spbic-10')], ['spbic-10', 'spbic-12']))->toBeNull();
+
+    $merchantRelabelled = new Portfolio(['sku' => 'aatom-27', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/58846736712028']);
+    expect(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('58846736712028', 'EE-CALM-EVENING-01')], ['aatom-27', 'b-67494-1'])['variantId'])->toBe('gid://shopify/ProductVariant/58846736712028')
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('58846736712028', 'EE-CALM-EVENING-01'), $variant('2', 'x')], ['aatom-27', 'b-67494-1']))->toBeNull()
+        ->and(BulkUpdateShopifyPortfolio::resolveVariant($merchantRelabelled, $product('B-67494-1'), [$variant('99', 'EE-CALM-EVENING-01')], ['aatom-27', 'b-67494-1']))->toBeNull();
 
     $merchantWithoutSkus = new Portfolio(['sku' => 'gel-08', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/dead']);
     expect(BulkUpdateShopifyPortfolio::resolveVariant($merchantWithoutSkus, $product('GEL-08'), [$variant('8', '')])['variantId'])->toBe('gid://shopify/ProductVariant/8')
@@ -383,7 +401,7 @@ test('uploading a product creates it, creates one variant with the right stock a
     $shopifyUser = shopifyProductChannel($this, 'product-upload');
     $channel     = $shopifyUser->customerSalesChannel;
     $channel->update(['max_quantity_advertise' => 5, 'stock_threshold' => 0]);
-    $this->product->update(['available_quantity' => 40]);
+    $this->product->update(['available_quantity' => 40, 'units' => 3, 'marketing_weight' => 430, 'gross_weight' => 1371]);
 
     $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
     $portfolio->update(['customer_price' => 19.5, 'sku' => 'UP-1']);
@@ -412,6 +430,7 @@ test('uploading a product creates it, creates one variant with the right stock a
         ->and($variantCalls[0]['variables']['productId'])->toBe('gid://shopify/Product/7100')
         ->and($variantCalls[0]['variables']['variants'][0]['inventoryItem']['sku'])->toBe($portfolio->sku)
         ->and((float) $variantCalls[0]['variables']['variants'][0]['price'])->toBe(19.5)
+        ->and($variantCalls[0]['variables']['variants'][0]['inventoryItem']['measurement']['weight'])->toBe(['unit' => 'GRAMS', 'value' => 1371])
         ->and($variantCalls[0]['variables']['variants'][0]['inventoryQuantities'])->toBe(['availableQuantity' => 5, 'locationId' => 'gid://shopify/Location/1001'])
         ->and($portfolio->platform_product_id)->toBe('gid://shopify/Product/7100')
         ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8101')
@@ -943,6 +962,302 @@ test('an upload throwing a non-Exception error records it on the portfolio inste
         ->toThrow(Error::class);
 });
 
+test('a retina customer reads the shopify listings of their own channel and never those of another customer', function () {
+    $ownChannel   = shopifyProductChannel($this, 'retina-own-listings')->customerSalesChannel;
+    $otherChannel = shopifyProductChannel($this, 'retina-other-listings')->customerSalesChannel;
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    actingAs(createWebUser($ownChannel->customer), 'retina');
+
+    ShopifyFake::fake([
+        'listProducts' => ShopifyFake::graphql(['products' => ['pageInfo' => ['hasNextPage' => false, 'endCursor' => null], 'edges' => [
+            ['node' => ['id' => 'gid://shopify/Product/7701', 'title' => 'Own Listing', 'handle' => 'own-listing', 'vendor' => 'Vendor', 'variants' => ['edges' => [['node' => ['sku' => 'own-1']]]], 'images' => ['edges' => []]]],
+        ]]]),
+    ]);
+
+    $this->getJson(route('retina.json.dropshipping.customer_sales_channel.shopify_products', $otherChannel->id))->assertForbidden();
+    expect(ShopifyFake::calls('listProducts'))->toBeEmpty();
+
+    $this->getJson(route('retina.json.dropshipping.customer_sales_channel.shopify_products', $ownChannel->id))
+        ->assertOk()
+        ->assertJsonPath('products.0.name', 'Own Listing');
+});
+
+test('retina refuses the portfolio, api dashboard and basket line of another customer and serves the customer own', function () {
+    $ownChannel     = shopifyProductChannel($this, 'retina-own-guard')->customerSalesChannel;
+    $otherChannel   = shopifyProductChannel($this, 'retina-other-guard')->customerSalesChannel;
+    $ownPortfolio   = StorePortfolio::make()->action($ownChannel, $this->product, []);
+    $otherPortfolio = StorePortfolio::make()->action($otherChannel, $this->product, []);
+    $basketLine = fn (Customer $customer) => StoreTransaction::make()->action(
+        StoreOrder::make()->action($customer, ['reference' => 'guard-'.$customer->id, 'date' => date('Y-m-d'), 'customer_id' => $customer->id, 'delivery_address' => new Address(Address::factory()->definition()), 'billing_address' => new Address(Address::factory()->definition())]),
+        $this->product->historicAsset,
+        Transaction::factory()->definition()
+    );
+    $ownLine   = $basketLine($ownChannel->customer);
+    $otherLine = $basketLine($otherChannel->customer);
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    $username = 'guard-'.Str::lower(Str::random(8));
+    actingAs(StoreWebUser::make()->action($ownChannel->customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']), 'retina');
+    MatchPortfolioToCurrentShopifyProduct::mock()->shouldReceive('handle')->once();
+    $manualChannel = fn (Customer $customer) => StoreCustomerSalesChannel::make()->action($customer, Platform::where('type', PlatformTypeEnum::MANUAL)->first(), []);
+
+    $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', $otherPortfolio->id), ['shopify_product_id' => 'gid://shopify/Product/1'])->assertForbidden();
+    $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $otherChannel->slug))->assertForbidden();
+    $this->getJson(route('retina.json.basket_transaction_product_data', $otherLine->id))->assertForbidden();
+    $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($otherChannel->customer)->slug))->assertForbidden();
+
+    $this->postJson(route('retina.models.portfolio.match_to_existing_shopify_product', $ownPortfolio->id), ['shopify_product_id' => 'gid://shopify/Product/1'])->assertSuccessful();
+    $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $ownChannel->slug))->assertOk();
+    $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($ownChannel->customer)->slug))->assertOk();
+    $this->getJson(route('retina.json.basket_transaction_product_data', $ownLine->id))->assertOk()->assertJsonPath('transaction_id', $ownLine->id);
+});
+
+test('retina order, basket, address, login and api token writes act on the customer own records and refuse those of another customer', function () {
+    Queue::fake();
+    $ownChannel   = shopifyProductChannel($this, 'retina-own-tier-one')->customerSalesChannel;
+    $otherChannel = shopifyProductChannel($this, 'retina-other-tier-one')->customerSalesChannel;
+
+    $basket = fn (CustomerSalesChannel $channel, string $suffix) => StoreOrder::make()->action($channel->customer, [
+        'reference'                 => 'tier-one-'.$channel->id.$suffix,
+        'date'                      => date('Y-m-d'),
+        'customer_id'               => $channel->customer_id,
+        'customer_sales_channel_id' => $channel->id,
+        'platform_id'               => $channel->platform_id,
+        'delivery_address'          => new Address(Address::factory()->definition()),
+        'billing_address'           => new Address(Address::factory()->definition()),
+    ]);
+    $webUser = fn (Customer $customer) => StoreWebUser::make()->action($customer, ['username' => 'tier-one-'.$customer->id, 'email' => 'tier-one-'.$customer->id.'@testmail.com', 'password' => 'test']);
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+
+    $ownOrder     = $basket($ownChannel, 'a');
+    $otherOrder   = $basket($otherChannel, 'a');
+    $ownWebUser   = $webUser($ownChannel->customer);
+    $otherWebUser = $webUser($otherChannel->customer);
+    $otherToken   = $otherChannel->createToken('other', ['retina'])->accessToken;
+
+    actingAs($ownWebUser, 'retina');
+    SubmitOrder::mock()->shouldReceive('handle')->once()->andReturnUsing(fn (Order $order) => $order);
+    UpdateCustomerAddress::mock()->shouldReceive('handle')->once()->andReturnUsing(fn (Customer $customer) => $customer);
+
+    $other = $otherChannel->customer;
+    foreach ([
+        $this->patchJson(route('retina.models.order.submit', $otherOrder->id)),
+        $this->patchJson(route('retina.models.order.update', $otherOrder->id), ['customer_notes' => 'hijacked']),
+        $this->patchJson(route('retina.models.order.update_gr_gift', $otherOrder->id), ['gift_id' => null]),
+        $this->postJson(route('retina.models.order.basket.collection.store', $otherOrder->id)),
+        $this->deleteJson(route('retina.models.order.basket.collection.delete', $otherOrder->id)),
+        $this->patchJson(route('retina.dropshipping.customer_sales_channels.basket.vatCheck', [$ownChannel->slug, $otherOrder->slug])),
+        $this->deleteJson(route('retina.models.order.delete_basket', $otherOrder->id)),
+        $this->postJson(route('retina.models.customer_sales_channel.access_token.create', $otherChannel->id)),
+        $this->deleteJson(route('retina.models.access_token.delete', $otherToken->id)),
+        $this->patchJson(route('retina.models.web-users.update', $otherWebUser->id), ['contact_name' => 'Hijacked']),
+        $this->deleteJson(route('retina.models.web-users.delete', $otherWebUser->id)),
+        $this->patchJson(route('retina.models.customer.address.update', $other->id), []),
+        $this->patchJson(route('retina.models.customer.delivery-address.update', $other->id), []),
+        $this->postJson(route('retina.models.customer.delivery-address.store', $other->id), ['delivery_address' => Address::factory()->definition()]),
+    ] as $position => $response) {
+        expect($response->status())->toBeIn($position === 3 ? [403, 422] : [403], 'foreign write '.$position.' returned '.$response->status());
+    }
+
+    expect($otherOrder->fresh())->not->toBeNull()->customer_notes->not->toBe('hijacked')
+        ->and($otherWebUser->fresh())->not->toBeNull()
+        ->and($otherChannel->tokens()->count())->toBe(1);
+
+    $this->patchJson(route('retina.models.order.update', $ownOrder->id), ['customer_notes' => 'leave at the door'])->assertSuccessful();
+    expect($ownOrder->fresh()->customer_notes)->toBe('leave at the door');
+    $this->patchJson(route('retina.models.order.update_gr_gift', $ownOrder->id), ['gift_id' => null])->assertSuccessful();
+    $this->patchJson(route('retina.models.order.submit', $ownOrder->id))->assertSuccessful();
+    $this->patchJson(route('retina.models.customer.address.update', $ownChannel->customer_id), ['address' => Address::factory()->definition()])->assertSuccessful();
+    $this->patchJson(route('retina.models.customer.delivery-address.update', $ownChannel->customer_id), [])->assertSuccessful();
+    $this->patchJson(route('retina.models.web-users.update', $ownWebUser->id), ['contact_name' => 'Own Name'])->assertSuccessful();
+
+    $this->postJson(route('retina.models.customer_sales_channel.access_token.create', $ownChannel->id))->assertSuccessful();
+    $ownToken = $ownChannel->tokens()->first();
+    expect($ownToken)->not->toBeNull();
+    $this->deleteJson(route('retina.models.access_token.delete', $ownToken->id))->assertSuccessful();
+    expect($ownChannel->tokens()->count())->toBe(0);
+
+    $this->delete(route('retina.models.order.delete_basket', $ownOrder->id))->assertRedirect();
+    expect(Order::find($ownOrder->id))->toBeNull();
+});
+
+dataset('retina platform write routes', [
+    ['patch', 'retina.dropshipping.platform.shopify_user.order.sync-cancellation'],
+    ['patch', 'retina.models.customer-client.update'],
+    ['patch', 'retina.models.customer_sales_channel.dismiss_notice'],
+    ['patch', 'retina.models.customer_sales_channel.ebay_update'],
+    ['patch', 'retina.models.customer_sales_channel.shopify_reset'],
+    ['patch', 'retina.models.customer_sales_channel.test_connection'],
+    ['patch', 'retina.models.customer_sales_channel.unsuspend'],
+    ['patch', 'retina.models.customer_sales_channel.update'],
+    ['post', 'retina.dropshipping.platform.wc.check_status'],
+    ['post', 'retina.dropshipping.platform.wc.test_connection'],
+    ['post', 'retina.models.customer_sales_channel.clients.upload'],
+    ['post', 'retina.models.customer_sales_channel.customer.product.store'],
+    ['post', 'retina.models.customer_sales_channel.portfolio.clone_manual'],
+    ['post', 'retina.models.customer_sales_channel.portfolio.store_from_product_category'],
+    ['post', 'retina.models.customer_sales_channel.portfolio_shopify_sync'],
+    ['post', 'retina.models.customer_sales_channel.portfolios.bulk_import'],
+    ['post', 'retina.models.customer_sales_channel.shopify_sync_all_stored_items'],
+    ['post', 'retina.models.customer_sales_channel.sync_all_stored_items'],
+    ['post', 'retina.models.customer_sales_channel.woo_sync_all_stored_items'],
+    ['post', 'retina.models.dropshipping.allegro.batch_all'],
+    ['post', 'retina.models.dropshipping.allegro.batch_upload'],
+    ['post', 'retina.models.dropshipping.bundles.products.calculate'],
+    ['post', 'retina.models.dropshipping.bundles.products.images.generate'],
+    ['post', 'retina.models.dropshipping.bundles.products.images.store'],
+    ['post', 'retina.models.dropshipping.ebay.batch_all'],
+    ['post', 'retina.models.dropshipping.ebay.batch_match'],
+    ['post', 'retina.models.dropshipping.ebay.batch_upload'],
+    ['post', 'retina.models.dropshipping.ebay.publish_drafts'],
+    ['post', 'retina.models.dropshipping.shopify.batch_all_dimensions_update'],
+    ['post', 'retina.models.dropshipping.shopify.batch_all'],
+    ['post', 'retina.models.dropshipping.shopify.batch_match'],
+    ['post', 'retina.models.dropshipping.shopify.batch_upload'],
+    ['post', 'retina.models.dropshipping.shopify_user.product.store'],
+    ['post', 'retina.models.dropshipping.wix.batch_all'],
+    ['post', 'retina.models.dropshipping.wix.batch_upload'],
+    ['post', 'retina.models.dropshipping.woo.batch_all'],
+    ['post', 'retina.models.dropshipping.woo.batch_match'],
+    ['post', 'retina.models.dropshipping.woo.batch_upload'],
+    ['post', 'retina.models.portfolio.match_to_existing_ebay_product'],
+    ['post', 'retina.models.portfolio.match_to_existing_wix_product'],
+    ['post', 'retina.models.portfolio.match_to_existing_woo_product'],
+    ['post', 'retina.models.portfolio.publish_ebay_product'],
+    ['post', 'retina.models.portfolio.store_new_allegro_product'],
+    ['post', 'retina.models.portfolio.store_new_ebay_product'],
+    ['post', 'retina.models.portfolio.store_new_shopify_product'],
+    ['post', 'retina.models.portfolio.store_new_wix_product'],
+    ['post', 'retina.models.portfolio.store_new_woo_product'],
+    ['post', 'retina.models.portfolio.update_new_product.draft'],
+    ['post', 'retina.models.portfolio.update_new_product.publish'],
+]);
+
+test('retina platform write routes refuse the channel, portfolio and client of another customer and let the owner through', function (string $verb, string $routeName) {
+    Queue::fake();
+
+    $fixtures = function (string $name) use ($routeName): array {
+        $channel = shopifyProductChannel($this, $name)->customerSalesChannel;
+
+        return [
+            'customerSalesChannel'       => $channel,
+            'targetCustomerSalesChannel' => $channel,
+            'shopifyUser'                => $channel->user,
+            'portfolio'                  => StorePortfolio::make()->action($channel, $this->product, []),
+            'customerClient'             => StoreCustomerClient::make()->action($channel, CustomerClient::factory()->definition()),
+            'order'                      => StoreOrder::make()->action($channel->customer, [
+                'reference'                 => 'platform-'.$channel->id,
+                'date'                      => date('Y-m-d'),
+                'customer_id'               => $channel->customer_id,
+                'customer_sales_channel_id' => $channel->id,
+                'platform_id'               => $channel->platform_id,
+                'delivery_address'          => new Address(Address::factory()->definition()),
+                'billing_address'           => new Address(Address::factory()->definition()),
+            ]),
+            'product'                    => str_contains($routeName, '.images.')
+                ? StoreBundle::make()->action($channel, ['products' => [['product_id' => $this->product->id, 'quantity' => 1]]])->bundleable
+                : $this->product,
+            'productCategory'            => $this->product->family ?? $this->product->department,
+        ];
+    };
+    $own   = $fixtures('retina-own-'.Str::lower(Str::random(6)));
+    $other = $fixtures('retina-other-'.Str::lower(Str::random(6)));
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    $username = 'platform-'.Str::lower(Str::random(8));
+    actingAs(StoreWebUser::make()->action($own['customerSalesChannel']->customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']), 'retina');
+
+    ShopifyFake::fake([]);
+    $route = app('router')->getRoutes()->getByName($routeName);
+    $url   = fn (array $models) => route($routeName, collect($route->parameterNames())->mapWithKeys(
+        fn (string $parameter) => [$parameter => $models[$parameter]?->getAttribute($route->bindingFieldFor($parameter) ?? $models[$parameter]->getRouteKeyName())]
+    )->all());
+
+    expect($this->json($verb, $url($other))->status())->toBeIn([403, 422], $routeName.' with the ids of another customer');
+
+    $mixed = [...$own, 'portfolio' => $other['portfolio'], 'customerClient' => $other['customerClient'], 'targetCustomerSalesChannel' => $other['customerSalesChannel']];
+    if (array_intersect($route->parameterNames(), ['portfolio', 'customerClient', 'targetCustomerSalesChannel']) && in_array('customerSalesChannel', $route->parameterNames())) {
+        expect($this->json($verb, $url($mixed))->status())->toBeIn([403, 422], $routeName.' with the customer own channel and a foreign second model');
+    }
+
+    if (str_contains($routeName, '.images.')) {
+        expect($this->json($verb, $url([...$own, 'product' => $this->product]))->status())->toBe(403, $routeName.' with the customer own channel and a catalogue product');
+    }
+
+    expect($this->json($verb, $url($own))->status())->not->toBe(403, $routeName.' with the customer own ids');
+
+    ShopifyFake::$stray = [];
+})->with('retina platform write routes');
+
+dataset('retina channel read routes', [
+    ['get', 'retina.dropshipping.customer_sales_channels.basket.show'],
+    ['get', 'retina.dropshipping.customer_sales_channels.client.edit'],
+    ['get', 'retina.dropshipping.customer_sales_channels.client.fetch'],
+    ['get', 'retina.dropshipping.customer_sales_channels.client.show'],
+    ['get', 'retina.dropshipping.customer_sales_channels.client.upload_templates'],
+    ['get', 'retina.dropshipping.customer_sales_channels.client.wc-fetch'],
+    ['get', 'retina.dropshipping.customer_sales_channels.edit'],
+    ['get', 'retina.dropshipping.customer_sales_channels.portfolios.bulk_import_history'],
+    ['get', 'retina.dropshipping.customer_sales_channels.portfolios.show'],
+    ['get', 'retina.dropshipping.customer_sales_channels.reconnect'],
+    ['get', 'retina.dropshipping.customer_sales_channels.redirect'],
+    ['get', 'retina.dropshipping.select_products_for_basket'],
+    ['get', 'retina.ecom.orders.proforma_invoice.download'],
+    ['get', 'retina.json.customer.tags.index'],
+    ['post', 'retina.models.customer.tags.attach'],
+]);
+
+test('retina channel read routes refuse the channel, order, client and customer of another customer and let the owner through', function (string $verb, string $routeName) {
+    Queue::fake();
+
+    $fixtures = function (string $name): array {
+        $channel = shopifyProductChannel($this, $name)->customerSalesChannel;
+
+        return [
+            'customerSalesChannel' => $channel,
+            'customer'             => $channel->customer,
+            'portfolio'            => StorePortfolio::make()->action($channel, $this->product, []),
+            'customerClient'       => StoreCustomerClient::make()->action($channel, CustomerClient::factory()->definition()),
+            'order'                => StoreOrder::make()->action($channel->customer, [
+                'reference'                 => 'read-'.$channel->id,
+                'date'                      => date('Y-m-d'),
+                'customer_id'               => $channel->customer_id,
+                'customer_sales_channel_id' => $channel->id,
+                'platform_id'               => $channel->platform_id,
+                'delivery_address'          => new Address(Address::factory()->definition()),
+                'billing_address'           => new Address(Address::factory()->definition()),
+            ]),
+        ];
+    };
+    $own   = $fixtures('retina-own-'.Str::lower(Str::random(6)));
+    $other = $fixtures('retina-other-'.Str::lower(Str::random(6)));
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    $username = 'reader-'.Str::lower(Str::random(8));
+    $webUser  = StoreWebUser::make()->action($own['customerSalesChannel']->customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']);
+    $webUser->update(['is_root' => true]);
+    actingAs($webUser, 'retina');
+
+    ShopifyFake::fake([]);
+    $route = app('router')->getRoutes()->getByName($routeName);
+    $url   = fn (array $models) => route($routeName, collect($route->parameterNames())->mapWithKeys(
+        fn (string $parameter) => [$parameter => $models[$parameter]->getAttribute($route->bindingFieldFor($parameter) ?? $models[$parameter]->getRouteKeyName())]
+    )->all());
+
+    expect($this->json($verb, $url($other))->getStatusCode())->toBe(403, $routeName.' with the ids of another customer');
+
+    if (count($route->parameterNames()) > 1) {
+        $mixed = [...$other, 'customerSalesChannel' => $own['customerSalesChannel']];
+        expect($this->json($verb, $url($mixed))->getStatusCode())->toBe(403, $routeName.' with the customer own channel and a foreign second model');
+    }
+
+    expect($this->json($verb, $url($own))->getStatusCode())->not->toBe(403, $routeName.' with the customer own ids');
+
+    ShopifyFake::$stray = [];
+})->with('retina channel read routes');
+
 test('repairing a channel re-points portfolios whose product is gone onto the one active listing with the same sku, without writing to shopify', function () {
     Queue::fake();
     $shopifyUser = shopifyProductChannel($this, 'product-repair-connections');
@@ -1179,4 +1494,19 @@ test('the borrowed sku repair gives an unlinked portfolio its own sku back and l
     expect($repair->handle($borrower->refresh()))->toBe(RepairPortfoliosBorrowedSku::REPAIRED)
         ->and($borrower->refresh()->sku)->toBe(Str::lower($this->product->code))
         ->and($repair->borrowedSkuQuery($channel)->count())->toBe(0);
+});
+
+test('a sync of a channel whose portfolios were never uploaded reports it has nothing to send', function () {
+    Queue::fake();
+    $channel = shopifyProductChannel($this, 'product-sync-nothing-to-send')->customerSalesChannel;
+
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeTrue();
+
+    $portfolio->update(['platform_product_id' => 'gid://shopify/Product/7600']);
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeFalse();
+
+    $portfolio->update(['status' => false]);
+    expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeTrue();
 });

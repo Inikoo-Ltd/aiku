@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateRebelCollections;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Collection;
@@ -60,6 +61,10 @@ class DeleteCollection extends OrgAction
         }
 
         ShopHydrateCollections::dispatch($collection->shop);
+
+        if ($collection->masterCollection) {
+            MasterCollectionHydrateRebelCollections::dispatch($collection->masterCollection);
+        }
 
         return $collection;
     }

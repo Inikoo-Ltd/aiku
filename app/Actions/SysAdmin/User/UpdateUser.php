@@ -54,6 +54,8 @@ class UpdateUser extends OrgAction
         $canUseMcp = Arr::exists($modelData, 'can_use_mcp') ? (bool) $modelData['can_use_mcp'] : $user->can_use_mcp;
         if (!$canUseMcp) {
             data_set($modelData, 'can_use_mcp_sql', false);
+            data_set($modelData, 'can_use_mcp_discontinue', false);
+            data_set($modelData, 'can_use_mcp_web', false);
         }
 
         $user = $this->update($user, $modelData, ['profile', 'settings']);
@@ -94,6 +96,8 @@ class UpdateUser extends OrgAction
         $rules = [
             'can_use_mcp'     => ['sometimes', 'boolean'],
             'can_use_mcp_sql' => ['sometimes', 'boolean'],
+            'can_use_mcp_discontinue' => ['sometimes', 'boolean'],
+            'can_use_mcp_web'         => ['sometimes', 'boolean'],
             'username'       => [
                 'sometimes',
                 'required',

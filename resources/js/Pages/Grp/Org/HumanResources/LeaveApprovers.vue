@@ -95,7 +95,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 			<span
 				class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
 				:class="{
-					'bg-indigo-100 text-indigo-800': item.sequence_number === 1,
+					'bg-[--app-accent-soft] text-[--app-accent-deep]': item.sequence_number === 1,
 					'bg-blue-100 text-blue-800': item.sequence_number === 2,
 					'bg-green-100 text-green-800': item.sequence_number === 3,
 					'bg-purple-100 text-purple-800': item.sequence_number > 3,
@@ -192,7 +192,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 					</label>
 					<select
 						v-model.number="form.sequence_number"
-						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-indigo-500">
+						class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-[--app-accent] focus:ring-[--app-accent]">
 						<option :value="1">{{ trans("Level 1") }}</option>
 						<option :value="2">{{ trans("Level 2") }}</option>
 						<option :value="3">{{ trans("Level 3") }}</option>
@@ -213,7 +213,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 				<textarea
 					v-model="form.description"
 					rows="3"
-					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+					class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[--app-accent] focus:ring-[--app-accent]" />
 				<div v-if="form.errors.description" class="mt-1 text-sm text-red-600">
 					{{ form.errors.description }}
 				</div>
@@ -225,7 +225,7 @@ const modalTitle = computed(() => trans("Create Leave Approver"))
 					id="is_active"
 					v-model="form.is_active"
 					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+					class="h-4 w-4 rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
 				<label for="is_active" class="ml-2 block text-sm text-gray-700">
 					{{ trans("Active") }}
 				</label>

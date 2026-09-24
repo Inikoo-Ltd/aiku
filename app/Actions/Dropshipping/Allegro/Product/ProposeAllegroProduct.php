@@ -23,6 +23,13 @@ class ProposeAllegroProduct
     use WithAttributes;
     use WithActionUpdate;
 
+    private const array ATTRIBUTE_UNITS = [
+        'weight' => 'g',
+        'width'  => 'm',
+        'height' => 'm',
+        'depth'  => 'm',
+    ];
+
     /**
      * Propose a new product to the Allegro catalogue.
      * POST /sale/products
@@ -101,7 +108,8 @@ class ProposeAllegroProduct
                 continue;
             }
 
-            $value = $this->resolveProductValue($paramName, $productAttributeMap);
+            $attribute = $this->resolveProductAttribute($paramName) ?? '';
+            $value     = $productAttributeMap[$attribute] ?? null;
 
             $entry = ['id' => $paramId];
 
@@ -140,15 +148,18 @@ class ProposeAllegroProduct
                     break;
                 case 'INTEGER':
                 case 'FLOAT':
-                    $numericValue = is_numeric($value) ? $value : null;
-                    if ($numericValue === null) {
+                    if (!is_numeric($value)) {
                         continue 2;
                     }
-                    $entry['values'] = [(string) $numericValue];
 
-                    if (!empty($restrictions['allowedUnits'])) {
-                        $entry['unit'] = $restrictions['allowedUnits'][0];
+                    $numericValue = (float) $value;
+                    $allegroUnit  = Arr::get($param, 'unit');
+                    if ($allegroUnit && isset(self::ATTRIBUTE_UNITS[$attribute])) {
+                        $numericValue = convertUnits($numericValue, self::ATTRIBUTE_UNITS[$attribute], $allegroUnit === 'kg' ? 'Kg' : $allegroUnit);
                     }
+
+                    $precision       = Str::upper($paramType) === 'INTEGER' ? 0 : Arr::get($restrictions, 'precision', 3);
+                    $entry['values'] = [(string) round($numericValue, $precision)];
                     break;
 
                 case 'STRING':
@@ -174,20 +185,16 @@ class ProposeAllegroProduct
         /** @var Product $product */
         $product = $portfolio->item;
 
-        $w = max(Arr::get($product->marketing_dimensions, 'w', 1), 20);
-        $h = max(Arr::get($product->marketing_dimensions, 'h', 1), 20);
-        $l = max(Arr::get($product->marketing_dimensions, 'l', 1), 80);
-
         return [
             'name'        => $portfolio->customer_product_name ?? null,
             'brand'       => 'Ancient Wisdom',
             'type'        => $product->family?->name ?? null,
             'color'       => $product->color ?? null,
             'size'        => $product->size ?? null,
-            'weight'      => $w,
-            'width'       => $l,
-            'height'      => $h,
-            'depth'       => $product->depth ?? null,
+            'weight'      => $product->gross_weight ?: $product->marketing_weight ?: null,
+            'width'       => Arr::get($product->marketing_dimensions, 'w') ?: null,
+            'height'      => Arr::get($product->marketing_dimensions, 'h') ?: null,
+            'depth'       => Arr::get($product->marketing_dimensions, 'l') ?: null,
             'material'    => 'Mix',
             'model'       => $product->family?->name ?? null,
             'mpn'         => $product->mpn ?? null,         // Manufacturer Part Number
@@ -202,7 +209,7 @@ class ProposeAllegroProduct
         ];
     }
 
-    private function resolveProductValue(string $paramName, array $attributeMap): mixed
+    private function resolveProductAttribute(string $paramName): ?string
     {
         $keywordMap = [
             'brand' => ['brand', 'manufacturer', 'marka', 'producent', 'manufacturer\'s scent name'],
@@ -212,7 +219,7 @@ class ProposeAllegroProduct
             'weight'   => ['weight', 'waga', 'masa'],
             'width'    => ['width', 'szerokosc', 'szerokość'],
             'height'   => ['height', 'wysokosc', 'wysokość'],
-            'depth'    => ['depth', 'glebokosc', 'głębokość', 'length', 'dlugosc'],
+            'depth'    => ['depth', 'glebokosc', 'głębokość', 'length', 'dlugosc', 'długość'],
             'material'   => ['material', 'materiał', 'skład', 'sklad', 'composition', 'ingredients'],
             'model'     => ['model', 'nazwa handlowa', 'trade name'],
             'mpn'      => ['mpn', 'part number', 'numer katalogowy'],
@@ -228,7 +235,7 @@ class ProposeAllegroProduct
 
         foreach ($keywordMap as $attribute => $keywords) {
             if (array_any($keywords, fn ($keyword) => str_contains($paramName, $keyword))) {
-                return $attributeMap[$attribute] ?? null;
+                return $attribute;
             }
         }
 

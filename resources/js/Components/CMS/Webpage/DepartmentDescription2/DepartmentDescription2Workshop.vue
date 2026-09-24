@@ -375,7 +375,7 @@ const responsiveClasses = computed(() => ({
 									<div
 										:class="['w-full flex items-center justify-center bg-gray-100', responsiveClasses.mediaHeight]">
 										<FontAwesomeIcon :icon="faVideoSlash"
-											:class="['text-gray-400', responsiveClasses.iconSize]" />
+											:class="['text-gray-400', responsiveClasses.iconSize]" fixed-width />
 									</div>
 								</template>
 							</div>
@@ -390,7 +390,7 @@ const responsiveClasses = computed(() => ({
 							class="flex items-center justify-between py-5 px-4 text-xl font-bold list-none cursor-pointer">
 							{{ ctrans("Browse By Category:") }}
 
-							<FontAwesomeIcon :icon="faChevronDown" class="w-8 h-8 transition-transform details-arrow" />
+							<FontAwesomeIcon :icon="faChevronDown" class="w-8 h-8 transition-transform details-arrow" fixed-width />
 						</summary>
 
 						<div class="pb-4 px-4 space-y-3">
@@ -421,7 +421,7 @@ const responsiveClasses = computed(() => ({
 
 							<template v-else>
 								<div class="w-full h-full flex items-center justify-center bg-gray-200">
-									<FontAwesomeIcon :icon="faVideoSlash" class="text-5xl text-gray-400" />
+									<FontAwesomeIcon :icon="faVideoSlash" class="text-5xl text-gray-400" fixed-width />
 								</div>
 							</template>
 						</div>
@@ -473,7 +473,7 @@ const responsiveClasses = computed(() => ({
 			<button type="button"
 				class="absolute top-0 right-0 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-red-500 backdrop-blur text-white hover:bg-white/30 transition"
 				@click="videoDialogVisible = false">
-				<FontAwesomeIcon :icon="faTimes" />
+				<FontAwesomeIcon :icon="faTimes" fixed-width />
 			</button>
 
 			<div class="aspect-video overflow-hidden rounded-xl">

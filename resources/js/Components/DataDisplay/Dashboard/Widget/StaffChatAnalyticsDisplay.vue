@@ -43,7 +43,7 @@ const maxPairMessages = computed(() => Math.max(0, ...(props.widget?.top_pairs.m
                 class="text-xs text-indigo-600 hover:underline whitespace-nowrap"
             >
                 {{ ctrans("Per-user & per-conversation stats") }}
-                <FontAwesomeIcon icon="fal fa-arrow-right" aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
             </Link>
         </div>
 

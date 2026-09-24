@@ -11,6 +11,7 @@ use App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithBarcodeChoice;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -32,6 +33,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMasterProductComposition extends OrgAction
 {
     use WithUnitsChangeConfirmation;
+    use WithBarcodeChoice;
     use WithMasterAssetTradeUnits;
     use WithMasterProductSubNavigation;
 
@@ -189,7 +191,9 @@ class EditMasterProductComposition extends OrgAction
             ]
         ];
 
-        return [
+        $barcodeChoice = $this->getBarcodeChoice($masterProduct);
+
+        return array_values(array_filter([
             [
                 'label'  => __('Trade units'),
                 'icon'   => 'fa-light fa-atom',
@@ -244,6 +248,19 @@ class EditMasterProductComposition extends OrgAction
                     'units' => $this->getUnitsField($masterProduct, $this->getUnitsChangeConfirmation($masterProduct)),
                 ]),
             ],
+            $barcodeChoice['hasChoice'] ? [
+                'label'  => __('Barcode'),
+                'icon'   => 'fa-light fa-barcode',
+                'fields' => [
+                    'barcode' => [
+                        'type'         => 'barcode_choice',
+                        'label'        => __('GTIN'),
+                        'value'        => $masterProduct->barcode,
+                        'options'      => $barcodeChoice,
+                        'information'  => __('Several trade units, so no barcode is the product\'s by default. What is chosen here is published as the GTIN of every shop product that follows this master.'),
+                    ],
+                ],
+            ] : null,
             [
                 /* What the customer is sold: the TU—P edge of the triangle, pink on both */
                 'label'  => __('How we sell'),
@@ -310,7 +327,7 @@ class EditMasterProductComposition extends OrgAction
                     ],
                 ]
             ],
-        ];
+        ]));
     }
 
     public function getBreadcrumbs(MasterAsset $masterAsset, string $routeName, array $routeParameters): array

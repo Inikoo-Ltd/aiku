@@ -32,6 +32,7 @@ use Illuminate\Support\Arr;
  * @property mixed $product_state
  * @property mixed $product_status
  * @property mixed $is_for_sale
+ * @property mixed $marketing_ingredients
  */
 class DropshippingApiPortfoliosResource extends JsonResource
 {
@@ -44,6 +45,7 @@ class DropshippingApiPortfoliosResource extends JsonResource
             'code'          => $this->product_code,
             'currency_code' => $this->currency_code,
             'name'          => $this->product_name,
+            'ingredients'   => $this->marketing_ingredients,
             'quantity_left' => $this->available_quantity,
             'weight'        => $this->gross_weight,
             'price'         => $this->price,

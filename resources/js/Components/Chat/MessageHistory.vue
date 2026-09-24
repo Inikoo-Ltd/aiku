@@ -196,7 +196,7 @@ onMounted(async () => {
 			<button class="p-1" @click="emit('back')">
 				<FontAwesomeIcon
 					:icon="faArrowLeft"
-					class="text-gray-500 hover:text-blue-600" />
+					class="text-gray-500 hover:text-blue-600" fixed-width />
 			</button>
 
 			<span class="px-2 py-0.5 text-xs rounded-full" :class="statusClass">
@@ -234,6 +234,7 @@ onMounted(async () => {
 					<BubbleChat
 						:message="message"
 						:viewerType="viewerType"
+						format-markup
 						readonly />
 				</div>
 			</template>
@@ -254,7 +255,7 @@ onMounted(async () => {
 						<FontAwesomeIcon
 							:icon="faStar"
 							class="text-lg"
-							:class="n <= (rating ?? 0) ? 'text-yellow-400' : 'text-gray-300'" />
+							:class="n <= (rating ?? 0) ? 'text-yellow-400' : 'text-gray-300'" fixed-width />
 					</button>
 				</div>
 			</div>

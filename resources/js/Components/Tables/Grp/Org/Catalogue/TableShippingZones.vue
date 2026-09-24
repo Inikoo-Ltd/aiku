@@ -344,7 +344,7 @@ onUnmounted(() => {
 							<div class="space-y-1 text-xs text-gray-800">
 								<!-- TBC Case -->
 								<div v-if="zone.price.type === 'TBC'" class="text-gray-500 italic">
-									<font-awesome-icon icon="fal fa-clock" class="text- mr-1" />
+									<font-awesome-icon icon="fal fa-clock" class="text- mr-1" fixed-width />
 								 	{{ ctrans('Shipping price: TBC') }}
 								</div>
 
