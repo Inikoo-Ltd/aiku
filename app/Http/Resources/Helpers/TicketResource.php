@@ -92,7 +92,6 @@ class TicketResource extends JsonResource
             'waiting_until'  => $this->waiting_until,
             'default_waiting_hours' => $this->defaultWaitingHours(),
             'closed_at'      => $this->closed_at,
-            'deploy_comment' => data_get($this->data, 'deploy_comment.body'),
             'rating'         => $this->rating,
             'rating_comment' => $this->rating_comment,
             'images'         => $this->ticketImageSources(),

@@ -12,9 +12,9 @@ import { ctrans } from "@/Composables/useTrans"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faLifeRing, faToolbox, faUserHeadset, faCircle, faUserCheck, faSpinner, faClock, faCommentDots, faRocket, faCheckCircle, faBan } from "@fal"
+import { faVial, faShieldCheck, faForward, faShield, faLifeRing, faToolbox, faUserHeadset, faCircle, faUserCheck, faSpinner, faClock, faCommentDots, faRocket, faCheckCircle, faBan } from "@fal"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faShield, faCircle, faUserCheck, faSpinner, faClock, faCommentDots, faRocket, faCheckCircle, faBan)
+library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faForward, faShield, faCircle, faUserCheck, faSpinner, faClock, faCommentDots, faRocket, faCheckCircle, faBan)
 
 const props = defineProps<{
     title: string

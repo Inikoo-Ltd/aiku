@@ -7,8 +7,10 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
+use App\Models\Helpers\TicketComment;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -18,9 +20,10 @@ class UpdateTicketDeployComment extends OrgAction
 {
     /**
      * Rewrites the comment held back until the deployment lands. Authorship moves to whoever wrote
-     * the text that will actually be posted, so the reporter sees the right name on it.
+     * the text that will actually be posted, so the reporter sees the right name on it. With no
+     * text and no files left there is nothing to post, so the held comment goes.
      *
-     * @param array{body: string} $modelData
+     * @param array{body: string, images?: array<int, \Illuminate\Http\UploadedFile>, remove_media?: array<int, string>} $modelData
      */
     public function handle(Ticket $ticket, array $modelData): Ticket
     {
@@ -28,27 +31,36 @@ class UpdateTicketDeployComment extends OrgAction
             abort(403, 'This ticket is not waiting for a deployment');
         }
 
-        $body   = trim(Arr::get($modelData, 'body', ''));
-        $author = request()->user();
+        $body    = trim((string) Arr::get($modelData, 'body', ''));
+        $images  = Arr::get($modelData, 'images', []);
+        $author  = request()->user();
+        $comment = $ticket->deployComment()->first();
 
-        $data = $ticket->data ?? [];
+        if (!$comment) {
+            if ($body === '' && $images === []) {
+                return $ticket;
+            }
 
-        if ($body === '') {
-            $ticket->update(['data' => Arr::except($data, 'deploy_comment')]);
-
-            return $ticket;
+            $comment = TicketComment::create([
+                'ticket_id'   => $ticket->id,
+                'author_type' => 'User',
+                'author_id'   => $author instanceof User ? $author->id : null,
+                'body'        => $body,
+                'type'        => TicketCommentTypeEnum::WAITING_FOR_DEPLOYMENT,
+            ]);
+        } else {
+            $comment->update([
+                'body'      => $body,
+                'author_id' => $author instanceof User ? $author->id : $comment->author_id,
+            ]);
         }
 
-        $ticket->update([
-            'data' => array_merge($data, [
-                'deploy_comment' => [
-                    'body'    => $body,
-                    'user_id' => $author instanceof User
-                        ? $author->id
-                        : data_get($data, 'deploy_comment.user_id'),
-                ]
-            ])
-        ]);
+        $comment->media()->whereIn('ulid', Arr::get($modelData, 'remove_media', []))->get()->each->delete();
+        $comment->attachTicketImages($images);
+
+        if ($body === '' && !$comment->media()->exists()) {
+            $comment->delete();
+        }
 
         return $ticket;
     }
@@ -56,8 +68,22 @@ class UpdateTicketDeployComment extends OrgAction
     public function rules(): array
     {
         return [
-            'body' => ['present', 'string', 'max:10000'],
+            'body'           => ['present', 'nullable', 'string', 'max:10000'],
+            'images'         => ['sometimes', 'array', 'max:5'],
+            'images.*'       => Ticket::ticketFileRules(),
+            'remove_media'   => ['sometimes', 'array'],
+            'remove_media.*' => ['string'],
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return Ticket::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return Ticket::ticketFileValidationAttributes($this->get('images', []));
     }
 
     public function authorize(ActionRequest $request): bool

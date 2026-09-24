@@ -1234,6 +1234,120 @@ test('an engineer asks QA to check, QA answers with a verdict and the engineer s
         ->and($ticket->comments()->where('body', 'QA passed')->exists())->toBeTrue();
 });
 
+test('QA gives a verdict without being asked, can only skip a ticket nobody asked about, and needs a new request to change a verdict', function () {
+    Notification::fake();
+    $engineer     = User::factory()->create(['group_id' => $this->group->id]);
+    $collaborator = User::factory()->create(['group_id' => $this->group->id]);
+    $stranger     = User::factory()->create(['group_id' => $this->group->id]);
+    $qa           = User::factory()->create(['group_id' => $this->group->id]);
+    $mentioned    = User::factory()->create(['group_id' => $this->group->id, 'username' => 'qamention'.strtolower(Str::random(6)), 'status' => true]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $collaborator->assignRole('help-desk-clerk');
+    $stranger->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Copy tweak']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+    $ticket->collaborators()->attach($collaborator->id);
+    $update = route('grp.models.ticket.update', $ticket->id);
+
+    actingAs($engineer);
+    patch($update, ['qa_status' => 'skipped', 'qa_note' => 'Nothing to test'])->assertForbidden();
+
+    actingAs($qa);
+    patch($update, ['qa_status' => 'skipped'])->assertSessionHasErrors('qa_note');
+    patch($update, ['qa_status' => 'skipped', 'qa_note' => 'Copy change only'])->assertSessionHasNoErrors();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::SKIPPED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->comments()->latest('id')->value('body'))->toBe('QA skipped: Copy change only');
+
+    patch($update, ['qa_status' => 'passed'])->assertSessionHasErrors('qa_status');
+
+    actingAs($stranger);
+    patch($update, ['qa_status' => 'requested'])->assertForbidden();
+    actingAs($collaborator);
+    patch($update, ['qa_status' => 'requested'])->assertSessionHasNoErrors();
+
+    actingAs($qa);
+    patch($update, ['qa_status' => 'skipped', 'qa_note' => 'Not needed'])->assertSessionHasErrors('qa_status');
+    post($update, [
+        '_method'   => 'patch',
+        'qa_status' => 'failed',
+        'qa_note'   => "Still wrong, @{$mentioned->username} have a look",
+        'images'    => [UploadedFile::fake()->image('still-wrong.png')],
+    ])->assertSessionHasNoErrors();
+
+    $verdict = $ticket->comments()->latest('id')->first();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::FAILED)
+        ->and($verdict->getMedia('ticket_images'))->toHaveCount(1);
+    Notification::assertSentTo($mentioned, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'mentioned you'));
+
+    actingAs($engineer);
+    patch($update, ['qa_status' => 'requested'])->assertSessionHasNoErrors();
+    actingAs($qa);
+    patch($update, ['qa_status' => 'skipped', 'qa_note' => 'Not needed'])->assertSessionHasErrors('qa_status');
+    patch($update, ['qa_status' => 'passed'])->assertSessionHasNoErrors();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED);
+});
+
+test('a done note carries its files and notifies the people it mentions, but not the reporter a second time', function () {
+    Notification::fake();
+    $reporter  = User::factory()->create(['group_id' => $this->group->id]);
+    $mentioned = User::factory()->create(['group_id' => $this->group->id, 'username' => 'donemention'.strtolower(Str::random(6)), 'status' => true]);
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Totals off', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    actingAs($this->user);
+    post(route('grp.models.ticket.update', $ticket->id), [
+        '_method'        => 'patch',
+        'status'         => 'resolved',
+        'status_comment' => "Fixed the rounding, @{$mentioned->username} FYI",
+        'images'         => [UploadedFile::fake()->image('after.png')],
+    ])->assertSessionHasNoErrors();
+
+    $note = $ticket->comments()->where('body', 'like', 'Fixed the rounding%')->sole();
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($note->getMedia('ticket_images'))->toHaveCount(1);
+    Notification::assertSentTo($mentioned, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'mentioned you'));
+    Notification::assertSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'is done'));
+    Notification::assertNotSentTo($reporter, TicketNotification::class, fn ($notification) => str_contains($notification->subject, 'new comment'));
+});
+
+test('the held deploy comment keeps its files out of the thread until the deployment posts it', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Ship with a screenshot']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+
+    actingAs($this->user);
+    post(route('grp.models.ticket.update', $ticket->id), [
+        '_method'  => 'patch',
+        'status'   => 'pending_deploy',
+        'question' => 'Live after the deploy',
+        'images'   => [UploadedFile::fake()->image('fix.png')],
+    ])->assertSessionHasNoErrors();
+
+    $held = $ticket->deployComment()->sole();
+    expect($held->getMedia('ticket_images'))->toHaveCount(1)
+        ->and($ticket->comments()->count())->toBe(0)
+        ->and($ticket->attachmentGalleryFor($this->user))->toBe([]);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.deploy_comment.body', 'Live after the deploy')->has('ticket.deploy_comment.files', 1));
+
+    UpdateTicketDeployComment::make()->action($ticket->fresh(), [
+        'body'         => 'Live after the deploy',
+        'remove_media' => [$held->getFirstMedia('ticket_images')->ulid],
+        'images'       => [UploadedFile::fake()->image('better.png')],
+    ]);
+    expect($held->fresh()->getMedia('ticket_images')->pluck('name')->all())->toBe(['better.png']);
+
+    CloseTicketsAfterDeployment::run();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->deployComment()->exists())->toBeFalse()
+        ->and($ticket->comments()->whereKey($held->id)->exists())->toBeTrue()
+        ->and($ticket->attachmentGalleryFor($this->user))->toHaveCount(1);
+});
+
 test('ticket badges count my tickets and the engineer queue, and engineers hear of new tickets in-app', function () {
     Notification::fake();
     Event::fake([BroadcastTicketBadgeUpdate::class]);
@@ -1500,9 +1614,9 @@ test('the ticket write tool closes after next deployment and holds the comment u
 
     expect($ticket->fresh()->status)->toBe(TicketStatusEnum::PENDING_DEPLOY)
         ->and($ticket->comments()->count())->toBe(0)
-        ->and(data_get($ticket->fresh()->data, 'deploy_comment.user_id'))->toBe($this->user->id);
+        ->and($ticket->deployComment()->sole()->author_id)->toBe($this->user->id);
 
-    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.deploy_comment', 'Fixed, live after the deploy'));
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('ticket.deploy_comment.body', 'Fixed, live after the deploy'));
 
     CloseTicketsAfterDeployment::run();
 
@@ -1539,7 +1653,7 @@ test('the web ticket form records the fix commit when it sets the ticket to clos
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now', 'deploy_commit' => ' F194AFF213 '])->assertSessionHasNoErrors();
 
     expect(data_get($ticket->fresh()->data, 'deploy_commit'))->toBe('f194aff213')
-        ->and(data_get($ticket->fresh()->data, 'deploy_comment.body'))->toBe('Live now');
+        ->and($ticket->deployComment()->sole()->body)->toBe('Live now');
 
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'in_progress'])->assertSessionHasNoErrors();
     patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'pending_deploy', 'question' => 'Live now'])->assertSessionHasNoErrors();
@@ -1556,7 +1670,7 @@ test('the held deploy comment can be rewritten while the ticket waits for the de
     actingAs($this->user);
     UpdateTicketDeployComment::make()->action($ticket->fresh(), ['body' => '  Second wording  ']);
 
-    expect(data_get($ticket->fresh()->data, 'deploy_comment.body'))->toBe('Second wording')
+    expect($ticket->deployComment()->sole()->body)->toBe('Second wording')
         ->and($ticket->comments()->count())->toBe(0);
 
     CloseTicketsAfterDeployment::run();
@@ -1575,7 +1689,7 @@ test('clearing the held deploy comment closes the ticket on deployment without p
     actingAs($this->user);
     UpdateTicketDeployComment::make()->action($ticket->fresh(), ['body' => '']);
 
-    expect(data_get($ticket->fresh()->data, 'deploy_comment'))->toBeNull();
+    expect($ticket->deployComment()->exists())->toBeFalse();
 
     CloseTicketsAfterDeployment::run();
 

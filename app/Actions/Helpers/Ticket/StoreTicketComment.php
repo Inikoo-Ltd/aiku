@@ -22,7 +22,10 @@ use Illuminate\Validation\ValidationException;
 
 class StoreTicketComment extends OrgAction
 {
-    public function handle(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
+    /**
+     * @param bool $isStatusNote the comment was written with a status change, which already notifies the reporter, so it only notifies the people it @mentions
+     */
+    public function handle(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true, bool $isStatusNote = false): TicketComment
     {
         if (Arr::get($modelData, 'is_internal') && !($author instanceof User && $ticket->canWriteEngineeringNotesBy($author))) {
             throw ValidationException::withMessages(['is_internal' => __('Only engineers and collaborators can write engineering notes.')]);
@@ -47,7 +50,11 @@ class StoreTicketComment extends OrgAction
             UpdateTicket::make()->action($ticket, ['status' => $status->value]);
         }
 
-        if ($author instanceof User && $notifyUsers && !$comment->is_internal) {
+        if ($author instanceof User && $notifyUsers && !$comment->is_internal && $isStatusNote) {
+            NotifyTicketUsers::make()->mentioned($ticket, $author, $comment->body);
+        }
+
+        if ($author instanceof User && $notifyUsers && !$comment->is_internal && !$isStatusNote) {
             NotifyTicketUsers::make()->commented($ticket, $author, $comment->body);
         }
 
@@ -100,12 +107,12 @@ class StoreTicketComment extends OrgAction
         return $user instanceof User && $request->route('ticket')->isVisibleTo($user);
     }
 
-    public function action(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true): TicketComment
+    public function action(Ticket $ticket, User|WebUser $author, array $modelData, bool $mirrorToSlack = true, bool $notifyUsers = true, bool $isStatusNote = false): TicketComment
     {
         $this->asAction = true;
         $this->initialisationFromGroup($ticket->group, $modelData);
 
-        return $this->handle($ticket, $author, $this->validatedData, $mirrorToSlack);
+        return $this->handle($ticket, $author, $this->validatedData, $mirrorToSlack, $notifyUsers, $isStatusNote);
     }
 
     public function asController(Ticket $ticket, ActionRequest $request): TicketComment

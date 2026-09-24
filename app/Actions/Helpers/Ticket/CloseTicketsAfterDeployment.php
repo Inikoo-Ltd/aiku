@@ -8,10 +8,12 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\Process\Process;
 
@@ -29,12 +31,18 @@ class CloseTicketsAfterDeployment
                 return;
             }
 
-            $deployComment = data_get($ticket->data, 'deploy_comment');
-            $ticket->update(['data' => Arr::except($ticket->data ?? [], ['deploy_comment', 'deploy_commit'])]);
+            $ticket->update(['data' => Arr::except($ticket->data ?? [], ['deploy_commit'])]);
 
-            $author = User::find(data_get($deployComment, 'user_id'));
-            if ($author && data_get($deployComment, 'body')) {
-                StoreTicketComment::make()->action($ticket, $author, ['body' => $deployComment['body']], notifyUsers: false);
+            $deployComment = $ticket->deployComment()->first();
+            if ($deployComment) {
+                $deployComment->update(['type' => TicketCommentTypeEnum::COMMENT, 'created_at' => now()]);
+                $ticket->touch();
+
+                $author = $deployComment->author;
+                PostTicketSlackThreadReply::run($ticket, ($author?->contact_name ?? $author?->email ?? __('Deployment')).': '.Str::limit($deployComment->body, 2000));
+                if ($author instanceof User) {
+                    NotifyTicketUsers::make()->commented($ticket, $author, $deployComment->body);
+                }
             }
 
             UpdateTicket::make()->action($ticket->refresh(), ['status' => TicketStatusEnum::RESOLVED->value]);
