@@ -696,6 +696,7 @@ test('UI supply chain control', function () {
 
 test('UI supply chain PO journey', function (Supplier $supplier) {
     $this->withoutExceptionHandling();
+    StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $this->stocks[1]->id]));
     $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
 
@@ -723,7 +724,7 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('ribbons.0.reference', $purchaseOrder->reference)
             ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'production')['state'] === 'done'));
-})->depends('create independent supplier');
+})->depends('create independent supplier 2');
 
 test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();
