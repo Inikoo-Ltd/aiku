@@ -95,6 +95,7 @@ class ChatSession extends Model implements Auditable
         'rating' => 'decimal:1',
         'metadata' => 'array',
         'is_spam' => 'boolean',
+        'is_carrier' => 'boolean',
         'spam_at' => 'datetime',
         'is_highlighted' => 'boolean',
         'highlighted_at' => 'datetime',

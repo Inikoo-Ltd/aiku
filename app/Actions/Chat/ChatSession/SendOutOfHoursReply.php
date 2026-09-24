@@ -83,6 +83,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
             || !$shop
             || $chatSession->is_spam
             || $chatSession->is_rubbish
+            || ($chatSession instanceof ChatSession && $chatSession->is_carrier)
             || IsWithinWorkingHours::run($shop, now())
             || $this->lastAgentMessageAt($chatSession)?->gt(now()->subHour())) {
             return false;

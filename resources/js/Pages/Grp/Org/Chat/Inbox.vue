@@ -19,7 +19,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -507,14 +507,18 @@ const selectedChannel = computed(() => (selectedChannels.value.length === 1 ? se
 
 const isChannelOn = (key: string) => selectedChannels.value.includes(key)
 
-type ChatKind = "customer" | "guest"
+type ChatKind = "customer" | "guest" | "carrier"
 
 const KINDS: Array<{ key: ChatKind; initial: string; label: string }> = [
     { key: "customer", initial: "C", label: ctrans("Customers") },
     { key: "guest", initial: "G", label: ctrans("Guests") },
+    { key: "carrier", initial: "", label: ctrans("Couriers") },
 ]
 
 const cellKey = (channelKey: string, kind: ChatKind) => `${channelKey}:${kind}`
+
+const cellAvailable = (channel: { key: string; available?: boolean }, kind: ChatKind) =>
+    channel.available !== false && (kind !== "carrier" || channel.key === "email")
 
 // A colleague's load is not a shop's list, so while one is picked no shop is the open one:
 // every row folds back to its line and nothing reads as selected.
@@ -1987,34 +1991,36 @@ onUnmounted(() => {
                         <tbody>
                             <tr v-for="kind in KINDS" :key="kind.key">
                                 <td v-tooltip="kind.label" class="text-[9px] font-bold text-center border-r border-slate-100"
-                                    :class="kind.key === 'customer' ? 'text-green-500' : 'text-blue-400'">
+                                    :class="kind.key === 'customer' ? 'text-green-500' : kind.key === 'carrier' ? 'text-amber-600' : 'text-blue-400'">
                                     <FontAwesomeIcon v-if="kind.key === 'customer'" :icon="faUser" class="text-[10px]" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon v-else-if="kind.key === 'carrier'" :icon="faTruck" class="text-[10px]" fixed-width aria-hidden="true" />
                                     <template v-else>{{ kind.initial }}</template>
                                 </td>
                                 <td v-for="channel in inbox.channels" :key="channel.key"
                                     class="border border-slate-100">
-                                    <button type="button" :disabled="channel.available === false"
+                                    <button type="button" :disabled="!cellAvailable(channel, kind.key)"
                                         class="w-full flex items-center justify-center gap-1 px-1 py-0.5 leading-5 transition-colors"
-                                        :class="channel.available === false ? 'bg-slate-50/60 cursor-default' : isCellOn(inbox.id, channel.key, kind.key) ? '' : 'hover:bg-slate-100'"
-                                        :style="channel.available !== false && isCellOn(inbox.id, channel.key, kind.key) ? { backgroundColor: selectedCellFill } : {}"
+                                        :class="!cellAvailable(channel, kind.key) ? 'bg-slate-50/60 cursor-default' : isCellOn(inbox.id, channel.key, kind.key) ? '' : 'hover:bg-slate-100'"
+                                        :style="cellAvailable(channel, kind.key) && isCellOn(inbox.id, channel.key, kind.key) ? { backgroundColor: selectedCellFill } : {}"
                                         @click="selectCell(inbox.id, channel.key, kind.key)">
-                                        <span v-if="channel.available === false" class="text-slate-300">&mdash;</span>
+                                        <span v-if="!cellAvailable(channel, kind.key)" class="text-slate-300">&mdash;</span>
                                         <!-- The selected cell is filled, the same way the rest of
                                              the page marks what is selected. A box around it drew
                                              a blob across the rows that were on together. -->
-                                        <span v-if="channel.available !== false" class="font-semibold"
+                                        <span v-if="cellAvailable(channel, kind.key)" class="font-semibold"
                                             :class="isCellOn(inbox.id, channel.key, kind.key) ? '' : 'text-slate-700'"
                                             :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
                                             {{ channel[kind.key].waiting }}
                                         </span>
-                                        <span v-if="channel.available !== false"
+                                        <span v-if="cellAvailable(channel, kind.key)"
                                             :class="isCellOn(inbox.id, channel.key, kind.key) ? 'opacity-50' : 'text-slate-400'"
                                             :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
                                             {{ channel[kind.key].active }}
                                         </span>
                                     </button>
                                 </td>
-                                <td class="border border-slate-100 border-l-slate-200">
+                                <td v-if="kind.key === 'carrier'" class="border border-slate-100 border-l-slate-200" />
+                                <td v-else class="border border-slate-100 border-l-slate-200">
                                     <button type="button" @click="openPhoneCalls(inbox)"
                                         v-tooltip="ctrans('Phone calls on this shop')"
                                         class="w-full flex items-center justify-center px-1 py-0.5 leading-5 transition-colors hover:bg-slate-100">

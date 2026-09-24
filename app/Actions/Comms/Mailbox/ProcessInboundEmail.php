@@ -561,6 +561,17 @@ class ProcessInboundEmail
     /**
      * @param  array{address: ?string, name: ?string}  $from
      */
+    /**
+     * A courier writing about a delivery: its domain, or any subdomain of it, is on the list.
+     */
+    public static function isCarrierAddress(?string $address): bool
+    {
+        $domain = mb_strtolower((string) substr(strrchr((string) $address, '@') ?: '', 1));
+
+        return $domain !== '' && collect(config('chat.carrier_domains', []))
+            ->contains(fn (string $carrier) => $domain === $carrier || str_ends_with($domain, '.'.$carrier));
+    }
+
     private function createSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
     {
         $session = StoreChatSession::run([
@@ -580,6 +591,7 @@ class ProcessInboundEmail
                 'name'            => $from['name'] ?? $from['address'],
                 'email'           => $from['address'],
             ]),
+            'is_carrier' => !$webUser && self::isCarrierAddress($from['address']),
         ]);
 
         return $session;

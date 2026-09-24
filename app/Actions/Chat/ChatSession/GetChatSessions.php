@@ -302,9 +302,11 @@ class GetChatSessions
                     $outer->orWhere(function ($inner) use ($channel, $kind) {
                         $inner->where('channel', $channel);
 
-                        $kind === 'customer'
-                            ? $inner->whereNotNull('web_user_id')
-                            : $inner->whereNull('web_user_id');
+                        match ($kind) {
+                            'carrier'  => $inner->where('is_carrier', true),
+                            'customer' => $inner->where('is_carrier', false)->whereNotNull('web_user_id'),
+                            default    => $inner->where('is_carrier', false)->whereNull('web_user_id'),
+                        };
                     });
                 }
             });

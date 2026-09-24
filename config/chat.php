@@ -23,6 +23,12 @@ return [
 
     'draft_review_model' => env('CHAT_DRAFT_REVIEW_MODEL', 'gpt-6-sol'),
 
+    'carrier_domains' => [
+        'apc-overnight.com', 'courierlogistics.co.uk', 'bensaude.pt', 'cttexpress.com', 'dhl.com', 'dpd.co.uk', 'dpd.com',
+        'dsv.com', 'fedex.com', 'gls-group.eu', 'gls-spain.com', 'gls-spain.es', 'parcelforce.co.uk', 'royalmail.com',
+        'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com',
+    ],
+
     'phone_call' => [
 
         'max_minutes' => (int) env('CHAT_PHONE_CALL_MAX_MINUTES', 60),
