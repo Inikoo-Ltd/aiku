@@ -34,7 +34,7 @@ const isHydrated = ref(false)
 onMounted(() => {
     isHydrated.value = true
 })
-const isPriceVisible = computed(() => isHydrated.value && Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price))
+const isPriceVisible = computed(() => isHydrated.value && Boolean(layout?.iris?.is_logged_in))
 
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
