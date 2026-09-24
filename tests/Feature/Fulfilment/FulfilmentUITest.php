@@ -41,6 +41,7 @@ use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAudit;
 use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAuditFromPallet;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Billables\Rental\RentalStateEnum;
@@ -1981,6 +1982,47 @@ test('UI Index stored items', function () {
                     ->etc()
             );
     });
+});
+
+test('UI Index stored items hides discontinued by default', function () {
+    $this->storedItem->update(['state' => StoredItemStateEnum::DISCONTINUED]);
+    $routeParameters = [$this->organisation->slug, $this->fulfilment->slug, $this->storedItem->fulfilmentCustomer->slug];
+
+    $this->get(route('grp.org.fulfilments.show.crm.customers.show.stored-items.index', $routeParameters))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('queryBuilderProps.stored_items.elementGroups.state.elements.discontinued.1', fn ($count) => $count >= 1)
+                ->where('stored_items.data', fn ($storedItems) => collect($storedItems)->doesntContain('id', $this->storedItem->id))
+        );
+
+    $this->get(route('grp.org.fulfilments.show.crm.customers.show.stored-items.index', [...$routeParameters, 'stored_items_elements' => ['state' => 'discontinued']]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('stored_items.data', fn ($storedItems) => collect($storedItems)->contains('id', $this->storedItem->id))
+        );
+
+    $this->storedItem->update(['state' => StoredItemStateEnum::ACTIVE]);
+});
+
+test('UI Index stored items filters by stock', function () {
+    $originalQuantity = $this->storedItem->total_quantity;
+    $this->storedItem->update(['total_quantity' => 0]);
+    $routeParameters = [$this->organisation->slug, $this->fulfilment->slug, $this->storedItem->fulfilmentCustomer->slug];
+
+    $this->get(route('grp.org.fulfilments.show.crm.customers.show.stored-items.index', [...$routeParameters, 'stored_items_elements' => ['stock' => 'with_stock']]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('queryBuilderProps.stored_items.elementGroups.stock.elements.no_stock.1', fn ($count) => $count >= 1)
+                ->where('stored_items.data', fn ($storedItems) => collect($storedItems)->doesntContain('id', $this->storedItem->id))
+        );
+
+    $this->get(route('grp.org.fulfilments.show.crm.customers.show.stored-items.index', [...$routeParameters, 'stored_items_elements' => ['stock' => 'no_stock']]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('stored_items.data', fn ($storedItems) => collect($storedItems)->contains('id', $this->storedItem->id))
+        );
+
+    $this->storedItem->update(['total_quantity' => $originalQuantity]);
 });
 
 test('UI show stored item', function () {
