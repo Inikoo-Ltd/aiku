@@ -5762,6 +5762,18 @@ test('a long email gets a short summary beside it and a short one is left alone'
         ->and($long->message_text)->toStartWith('Please send order 1234');
 });
 
+test('a fact drawer opens only what is on the menu and only for the customer who is writing', function () {
+    $customer = createOwnCustomer($this->shop, 'fact-drawers');
+    $drawer   = \App\Actions\Chat\ChatSession\OpenChatFactDrawer::make();
+    $facts    = ['order_facts' => ['order' => ['reference' => 'NOT-THEIRS-1']]];
+
+    expect($drawer->handle('delete_everything', $this->shop, $customer, $facts))->toBeNull()
+        ->and($drawer->handle('order_lines', $this->shop, $customer, $facts))->toBeNull()
+        ->and($drawer->handle('order_payment', $this->shop, null, $facts))->toBeNull()
+        ->and($drawer->handle('replacements', $this->shop, null, []))->toBeNull()
+        ->and($drawer->handle('alternatives', $this->shop, $customer, []))->toBeNull();
+});
+
 
 test('an email is found by an order or consignment number in its subject or body', function () {
     \Illuminate\Support\Facades\Http::fake();
