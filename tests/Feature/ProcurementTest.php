@@ -28,6 +28,7 @@ use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
+use App\Actions\GoodsIn\Sowing\DeleteSowing;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
@@ -169,6 +170,7 @@ use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStockStats;
 use App\Models\Inventory\Warehouse;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -5578,4 +5580,31 @@ test('stock put away from a delivery is valued at the line price, then at the la
         ->and((float) $movements[1]->running_lpp_value)->toEqualWithDelta($runningValueAtDeliveryCost / $deliveryCost * $landedCost, 0.02);
 
     $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
+});
+
+test('undoing a put away from a delivery takes the stock out at the value it went in at', function () {
+    $placeFromDelivery = function (string $code, float $netAmount) {
+        $stockDelivery = createStockDeliveryWithItems($this, $code, [10]);
+        $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+        $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+        $stockDeliveryItem = UpdateStockDeliveryItem::make()->action($stockDelivery->items()->first(), ['net_amount' => $netAmount], strict: false);
+        $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 10]);
+
+        return UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id])
+            ->sowings()->first();
+    };
+
+    $sowing   = $placeFromDelivery('PLACE-UNDONE', 50);
+    $purchase = $sowing->orgStockMovement;
+    $placeFromDelivery('PLACE-DEARER', 150);
+
+    DeleteSowing::make()->handle($sowing);
+
+    $reversal = OrgStockMovement::where('org_stock_id', $purchase->org_stock_id)->where('id', '>', $purchase->id)
+        ->where('type', OrgStockMovementTypeEnum::CANCEL_PURCHASE)->first();
+
+    expect((float) $purchase->org_amount)->toBeGreaterThan(0)
+        ->and((float) $reversal->quantity)->toBe(-4.0)
+        ->and((float) $reversal->org_amount)->toBe(-(float) $purchase->org_amount);
 });
