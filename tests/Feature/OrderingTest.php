@@ -3635,6 +3635,40 @@ test('paying with balance sends the order to the warehouse only when the balance
         ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
 });
 
+test('a staff recorded payment sends a submitted order to the warehouse only once it is fully paid', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and((float) $order->total_amount)->toBeGreaterThan(1);
+
+    $bankAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::BANK->value)->first(),
+        [
+            'code' => 'BANK'.mt_rand(1000, 9999),
+            'name' => 'Bank transfer',
+        ]
+    );
+    $payByBank = fn (float $amount) => PayOrder::make()->action($order->refresh(), $bankAccount, [
+        'amount'    => $amount,
+        'reference' => 'BT-'.Str::ulid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $payByBank(1);
+    expect($order->refresh()->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID);
+
+    $payByBank(round((float) $order->total_amount - 1, 2));
+    expect($order->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
 test('a credit line lets the customer order on account down to minus the limit, never beyond', function () {
     $newBasket = function () {
         $modelData = Order::factory()->definition();
