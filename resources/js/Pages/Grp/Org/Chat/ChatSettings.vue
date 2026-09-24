@@ -46,6 +46,10 @@ const props = defineProps<{
         show_opening_line: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
+    policies: {
+        text: string
+        update_route: { name: string; parameters: Record<string, any> }
+    } | null
     agents?: any
     whatsapp_templates?: any
 }>()
@@ -76,6 +80,21 @@ const saveOutOfHours = () => {
     outOfHoursForm.patch(route(props.outOfHours.update_route.name, props.outOfHours.update_route.parameters), {
         preserveScroll: true,
         onSuccess: () => outOfHoursForm.defaults(),
+    })
+}
+
+const policiesForm = useForm({
+    policies: props.policies?.text ?? "",
+})
+
+const savePolicies = () => {
+    if (!props.policies) {
+        return
+    }
+
+    policiesForm.patch(route(props.policies.update_route.name, props.policies.update_route.parameters), {
+        preserveScroll: true,
+        onSuccess: () => policiesForm.defaults(),
     })
 }
 </script>
@@ -122,6 +141,30 @@ const saveOutOfHours = () => {
             :loading="outOfHoursForm.processing"
             :disabled="!outOfHoursForm.isDirty"
             @click="saveOutOfHours" />
+    </div>
+
+    <div v-else-if="currentTab === 'policies' && policies" class="max-w-3xl space-y-5 p-6">
+        <p class="text-sm text-gray-500">
+            {{ ctrans("What AI draft replies may tell customers about this shop. Drafts state only what is written here, so anything left out is answered by an agent. One fact per line works best.") }}
+        </p>
+
+        <div>
+            <label for="chat-policies" class="block text-sm font-medium text-gray-700">{{ ctrans("Facts about the shop") }}</label>
+            <Textarea
+                id="chat-policies"
+                v-model="policiesForm.policies"
+                rows="14"
+                autoResize
+                class="mt-1 w-full font-mono text-sm"
+                :placeholder="ctrans('Minimum first order: …\nWe ship to: …\nOrders placed before … are dispatched the same day\nTo open a trade account: …\nSamples: …')" />
+            <p v-if="policiesForm.errors.policies" class="mt-1 text-sm text-red-600">{{ policiesForm.errors.policies }}</p>
+        </div>
+
+        <Button
+            :label="ctrans('Save')"
+            :loading="policiesForm.processing"
+            :disabled="!policiesForm.isDirty"
+            @click="savePolicies" />
     </div>
 
     <template v-else-if="currentTab === 'whatsapp_templates'">

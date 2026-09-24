@@ -41,6 +41,8 @@ class DraftChatReply implements ShouldBeUnique
 {
     use AsAction;
 
+    private const array DRAFTED_TOPICS = [ChatTopicEnum::ORDER_STATUS, ChatTopicEnum::STOCK_AVAILABILITY, ChatTopicEnum::PRODUCT_QUERY, ChatTopicEnum::OTHER];
+
     public int $jobTimeout = 120;
     public int $jobTries = 1;
 
@@ -76,7 +78,7 @@ class DraftChatReply implements ShouldBeUnique
             'product_facts' => GetChatProductFacts::run($shop, $text) ?: null,
         ]);
 
-        if (!$facts) {
+        if (!$facts && trim((string) data_get($shop->settings, 'chat.policies', '')) === '') {
             return null;
         }
 
@@ -147,6 +149,8 @@ class DraftChatReply implements ShouldBeUnique
             ChatTopicEnum::STOCK_AVAILABILITY => collect($facts['product_facts'] ?? [])->merge(collect($facts['alternatives'] ?? [])->flatten(1))->contains(fn (array $product) => $names($product['code'] ?? null)),
             ChatTopicEnum::ORDER_STATUS       => $names($facts['order_facts']['order']['reference'] ?? null)
                 || collect($facts['replacements'] ?? [])->contains(fn (array $replacement) => $names($replacement['for_order'] ?? null)),
+            ChatTopicEnum::PRODUCT_QUERY      => collect(array_keys($facts['product_details'] ?? []))->contains(fn ($code) => $names((string) $code)),
+            ChatTopicEnum::OTHER              => !empty($facts['shop_policies']),
             default                           => false,
         };
     }
@@ -220,6 +224,10 @@ class DraftChatReply implements ShouldBeUnique
           whether it is paid.
         - "stock_availability" if what they ask now is about products: whether in stock, how
           many we have, whether more is coming, or an in-stock alternative to one that is out.
+        - "product_query" if what they ask now is a product's size, weight, origin or what it
+          is, naming the product or its code.
+        - "shop_info" if what they ask now is about the shop itself: minimum order, countries we
+          ship to, dispatch or delivery times, opening an account, how to order, samples.
         - "other" when the writer is not our customer (a courier, carrier, warehouse, supplier
           or marketplace), when they report missing, damaged or wrong items (the claim checklist
           handles those), or for anything else, or when they also ask for something else: a
@@ -238,7 +246,7 @@ class DraftChatReply implements ShouldBeUnique
         $excerpt
 
         Output JSON only, no code fence:
-        {"asks": "order_status/stock_availability/other", "drawers": []}
+        {"asks": "order_status/stock_availability/product_query/shop_info/other", "drawers": []}
         EOT;
 
         $response = AskToAi::run($prompt, config('chat.summary_model'));
@@ -246,7 +254,11 @@ class DraftChatReply implements ShouldBeUnique
         $data     = is_array($data) ? $data : [];
         $topic    = ChatTopicEnum::tryFrom((string) Arr::get($data, 'asks'));
 
-        if (!in_array($topic, [ChatTopicEnum::ORDER_STATUS, ChatTopicEnum::STOCK_AVAILABILITY], true)) {
+        if (Arr::get($data, 'asks') === 'shop_info') {
+            $topic = ChatTopicEnum::OTHER;
+        }
+
+        if (!in_array($topic, self::DRAFTED_TOPICS, true)) {
             return null;
         }
 
@@ -355,8 +367,9 @@ class DraftChatReply implements ShouldBeUnique
         Facts:
         $factsJson
 
-        Output JSON only, no code fence. "topic" is exactly "order_status" for an order or
-        "stock_availability" for a product:
+        Output JSON only, no code fence. "topic" is exactly "order_status" for an order,
+        "stock_availability" for stock, "product_query" for a product's details, or "other" for
+        the shop's own facts in "shop_policies":
         {"question": "what they ask now", "answerable": true, "topic": "stock_availability", "reply": "the reply"}
         EOT;
 
@@ -372,7 +385,7 @@ class DraftChatReply implements ShouldBeUnique
 
         if (!is_array($data)
             || Arr::get($data, 'answerable') !== true
-            || !in_array($topic, [ChatTopicEnum::ORDER_STATUS, ChatTopicEnum::STOCK_AVAILABILITY], true)
+            || !in_array($topic, self::DRAFTED_TOPICS, true)
             || $reply === '') {
             return null;
         }

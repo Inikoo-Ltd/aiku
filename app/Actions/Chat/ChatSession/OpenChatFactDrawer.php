@@ -18,6 +18,7 @@ use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -37,6 +38,8 @@ class OpenChatFactDrawer
         'incoming_stock'   => 'whether more of a product is on a purchase order to us (never a date)',
         'order_payment'    => 'whether the order is paid',
         'recent_orders'    => 'the customer\'s last 10 orders with their state',
+        'shop_policies'    => 'what the shop tells customers: minimum order, countries we ship to, dispatch times, opening an account, samples',
+        'product_details'  => 'size, weight, country of origin and description of a product',
     ];
 
     /**
@@ -59,6 +62,8 @@ class OpenChatFactDrawer
             ])->all(),
             'order_payment'  => $order ? [$order->reference => $order->pay_status?->value ?? 'unknown'] : null,
             'recent_orders'  => $customer ? $this->recentOrders($customer) : null,
+            'shop_policies'  => ($policies = trim((string) data_get($shop->settings, 'chat.policies', ''))) !== '' ? ['text' => $policies] : null,
+            'product_details' => $products->mapWithKeys(fn (Product $product) => [$product->code => $this->productDetails($product)])->filter()->all(),
             default          => null,
         };
 
@@ -158,6 +163,28 @@ class OpenChatFactDrawer
             ])
             ->filter()
             ->all();
+    }
+
+    /**
+     * The catalogue stores marketing dimensions in metres whatever their "units" says: a box
+     * named 33x25x12cm is 0.33 x 0.25 x 0.12. They are given in centimetres.
+     *
+     * @return array<string, mixed>
+     */
+    private function productDetails(Product $product): array
+    {
+        $dimensions = collect(Arr::only((array) ($product->marketing_dimensions ?? []), ['l', 'w', 'h', 'd']))
+            ->filter(fn ($value) => is_numeric($value) && $value > 0)
+            ->map(fn ($value) => round((float) $value * 100, 1).' cm')
+            ->mapWithKeys(fn (string $value, string $key) => [['l' => 'length', 'w' => 'width', 'h' => 'height', 'd' => 'diameter'][$key] => $value])
+            ->all();
+
+        return array_filter([
+            'dimensions'        => $dimensions ?: null,
+            'weight'            => $product->marketing_weight ? $product->marketing_weight.' g' : null,
+            'country_of_origin' => $product->country_of_origin,
+            'description'       => mb_substr(trim(html_entity_decode(strip_tags((string) $product->description))), 0, 800) ?: null,
+        ]);
     }
 
     /**

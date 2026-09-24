@@ -96,11 +96,18 @@ class ShowChatSettings extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigation() : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS]),
+                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigation() : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::POLICIES]),
                 ],
                 'settingsRoute'  => $this->chatRoute('settings'),
                 'templatesTable' => $isShop ? $this->getShopTemplatesTableProps() : null,
                 'outOfHours'     => $isShop ? $this->getOutOfHoursProps($parent) : null,
+                'policies'       => $isShop ? [
+                    'text'         => data_get($parent->settings, 'chat.policies', ''),
+                    'update_route' => [
+                        'name'       => 'grp.org.shops.show.chat.settings.policies.update',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
+                    ],
+                ] : null,
 
                 $agentsTab => $this->tab == $agentsTab ? $agents : Inertia::lazy($agents),
 
