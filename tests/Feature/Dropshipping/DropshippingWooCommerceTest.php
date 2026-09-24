@@ -19,6 +19,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\Order\RetryOrderImport;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
+use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\CheckTemporaryWooUserApiKeys;
 use App\Actions\Dropshipping\WooCommerce\CheckWooChannel;
@@ -360,6 +361,21 @@ test('authorisation is refused when the store rejects the keys', function () {
 
     expect(fn () => CheckTemporaryWooUserApiKeys::make()->handle($customer))->toThrow(ValidationException::class)
         ->and($customer->wooCommerceUser()->count())->toBe(0);
+});
+
+test('a store whose host refuses our server is told to ask its host, not to check its url', function () {
+    Http::swap(new Factory(app(Dispatcher::class)));
+    Http::fake(['*' => Http::failedConnection("cURL error 7: Failed to connect to shop.example.test port 443 after 98 ms: Couldn't connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for ".WOO_STORE_URL.'/wp-json/wc/v3')]);
+
+    $messages   = [];
+    $storeCheck = Arr::last(AuthorizeRetinaWooCommerceUser::make()->rules()['url']);
+    $storeCheck('url', WOO_STORE_URL, function (string $message) use (&$messages) {
+        $messages[] = $message;
+    });
+
+    expect($messages)->toHaveCount(1)
+        ->and($messages[0])->toContain('blocking our servers')
+        ->and($messages[0])->toContain('65.109.156.60, 65.109.156.41, 65.109.156.59, 157.180.99.45');
 });
 
 test('a forbidden reply or an html page is not a working connection', function () {
