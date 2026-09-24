@@ -66,7 +66,7 @@ return [
 
     'noise' => [
 
-        'auto_put_aside' => (bool) env('CHAT_NOISE_AUTO_PUT_ASIDE', false),
+        'auto_put_aside' => (bool) env('CHAT_NOISE_AUTO_PUT_ASIDE', true),
         'put_aside_confidence' => (int) env('CHAT_NOISE_PUT_ASIDE_CONFIDENCE', 90),
         'hint_confidence' => (int) env('CHAT_NOISE_HINT_CONFIDENCE', 60),
         'min_whatsapp_chars' => 40,

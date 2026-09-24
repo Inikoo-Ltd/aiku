@@ -5552,6 +5552,7 @@ test('an out of office is put aside in any language and whoever owns the mailbox
 });
 
 test('the model only hints until it is allowed to put aside, never touches a customer, and is never asked twice', function () {
+    config(['chat.noise.auto_put_aside' => false]);
     noiseTestFakeModel('spam', 95);
 
     $pitch = noiseTestEmailSession($this->shop, 'sales@kaitk.com', 'Wooden gifts', 'We are a manufacturer of wooden gifts');
@@ -5921,8 +5922,10 @@ test('a question about an order gets a draft written from that customer\'s order
 
     $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hi, your order $reference was dispatched on 22 September."];
     \Illuminate\Support\Facades\Http::fake([
-        'api.openai.com/*' => function () use (&$modelAnswer) {
-            return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode($modelAnswer)]]]]);
+        'api.openai.com/*' => function ($request) use (&$modelAnswer) {
+            $copiedExample = preg_match('/\{"answerable".*\}/', (string) data_get($request->data(), 'messages.1.content'), $example) ? $example[0] : '';
+
+            return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $modelAnswer === null ? $copiedExample : json_encode($modelAnswer)]]]]);
         },
     ]);
 
@@ -5993,6 +5996,14 @@ test('a question about an order gets a draft written from that customer\'s order
     $this->travel(1)->minutes();
     $ask($session, 'Can I change the delivery address of my next order?');
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
+
+    // A model that copies the example answer in its instructions word for word still gives a
+    // draft: the example once held both topics in one string and every real draft was dropped.
+    $modelAnswer = null;
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Where is my order now?');
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->not->toBeNull();
 
     $stats = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['draftStats'];
     expect($stats['used'])->toBeGreaterThanOrEqual(1)->and($stats['superseded'])->toBeGreaterThanOrEqual(1);
