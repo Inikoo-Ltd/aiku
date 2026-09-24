@@ -320,7 +320,7 @@ class ShowWebpage extends OrgAction
         $pagespeed = match (true) {
             $isHiddenFromSearchEngines, $webpage->state != WebpageStateEnum::LIVE => null,
             in_array($this->tab, [WebpageTabsEnum::SHOWCASE->value, WebpageTabsEnum::ANALYTICS->value]) => Inertia::defer(fn () => GetWebpagePageSpeedReport::run($webpage), 'pagespeed'),
-            default => Inertia::optional(fn () => GetWebpagePageSpeedReport::run($webpage)),
+            default => Inertia::optional(fn () => $this->realUserSpeed($webpage)),
         };
 
         return Inertia::render(
