@@ -8,7 +8,9 @@
 
 namespace App\Models\Traits;
 
+use App\Models\Catalogue\Shop;
 use App\Models\HumanResources\JobPosition;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Traits\HasRoles as SpatieHasRoles;
@@ -43,11 +45,40 @@ trait HasRoles
             ? $this->hasAnyPermission($permission)
             : $this->hasPermissionTo($permission);
 
+        $can = $can || $this->authToThroughMasters((array) $permission);
+
         if ($can) {
             Cache::tags('auth-user:'.$this->id)->put($key, true, 3600);
         }
 
         return $can;
+    }
+
+    /**
+     * Masters staff look after every shop hanging from a master shop: they view and edit
+     * its catalogue as the master shop's own permissions allow, and view (never move)
+     * the stock of any organisation.
+     */
+    protected function authToThroughMasters(array $permissions): bool
+    {
+        if (!$this instanceof User) {
+            return false;
+        }
+
+        foreach ($permissions as $permission) {
+            if (preg_match('/^products\.(\d+)(\.view|\.edit)?$/', $permission, $matches)) {
+                $mastersPermission = ($matches[2] ?? null) === '.view' ? 'masters.view' : 'masters.edit';
+
+                if ($this->hasPermissionTo($mastersPermission)
+                    && Shop::where('id', $matches[1])->where('group_id', $this->group_id)->whereNotNull('master_shop_id')->exists()) {
+                    return true;
+                }
+            } elseif (preg_match('/^inventory\.\d+\.view$/', $permission) && $this->hasPermissionTo('masters.view')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -83,6 +114,7 @@ trait HasRoles
     private function flushAuthCache(): void
     {
         Cache::tags('auth-user:'.$this->id)->flush();
+        $this->forgetWildcardPermissionIndex();
     }
 
     public function assignRole(...$roles)

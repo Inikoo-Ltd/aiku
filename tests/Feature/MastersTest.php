@@ -3759,3 +3759,42 @@ test('master collection counts its shop collections that do not follow master it
 
     $this->artisan('hydrate:master_collections')->assertSuccessful();
 });
+
+test('masters staff view and edit the catalogue of shops under a master and view any organisation stock', function () {
+    $masterShop = createFreshMasterShop();
+    DB::table('shops')->where('id', $this->shop->id)->update(['master_shop_id' => $masterShop->id]);
+    $shopWithoutMaster = Shop::where('group_id', $this->group->id)->whereNull('master_shop_id')->first();
+
+    setPermissionsTeamId($this->group->id);
+    $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    expect($user->authTo("products.{$this->shop->id}.view"))->toBeFalse()
+        ->and($user->authTo("inventory.{$this->organisation->id}.view"))->toBeFalse();
+
+    $user->assignRole('masters-viewer');
+    $user->refresh();
+    expect($user->authTo("products.{$this->shop->id}.view"))->toBeTrue()
+        ->and($user->authTo("products.{$this->shop->id}.edit"))->toBeFalse()
+        ->and($user->authTo(["crm.{$this->shop->id}.view", "products.{$this->shop->id}.view"]))->toBeTrue()
+        ->and($user->authTo("inventory.{$this->organisation->id}.view"))->toBeTrue()
+        ->and($user->authTo("inventory.{$this->organisation->id}.edit"))->toBeFalse()
+        ->and($user->authTo("crm.{$this->shop->id}.view"))->toBeFalse();
+
+    \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($user);
+    expect($user->authorisedShops()->where('shops.id', $this->shop->id)->exists())->toBeTrue()
+        ->and($user->authorisedOrganisations()->where('organisations.id', $this->organisation->id)->exists())->toBeTrue()
+        ->and($user->authorisedWarehouses()->where('warehouses.organisation_id', $this->organisation->id)->count())
+        ->toBe($this->organisation->warehouses()->count());
+
+    $user->assignRole('masters-manager');
+    $user->refresh();
+    expect($user->authTo("products.{$this->shop->id}.edit"))->toBeTrue()
+        ->and($user->authTo("products.{$this->shop->id}"))->toBeTrue();
+
+    if ($shopWithoutMaster) {
+        expect($user->authTo("products.{$shopWithoutMaster->id}.view"))->toBeFalse();
+    }
+});

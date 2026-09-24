@@ -87,6 +87,18 @@ class SetUserAuthorisedModels
             }
         }
 
+        if ($user->hasPermissionTo('masters.view')) {
+            $masteredShops = $user->group->shops()->whereNotNull('master_shop_id')->where('type', '!=', ShopTypeEnum::FULFILMENT)->get();
+            foreach ($masteredShops as $shop) {
+                $authorisedShops[$shop->id]                      = ['org_id' => $shop->organisation_id];
+                $authorisedOrganisations[$shop->organisation_id] = ['org_id' => $shop->organisation_id];
+            }
+
+            foreach ($user->group->warehouses()->whereIn('organisation_id', $masteredShops->pluck('organisation_id'))->get() as $warehouse) {
+                $authorisedWarehouses[$warehouse->id] = ['org_id' => $warehouse->organisation_id];
+            }
+        }
+
         $user->authorisedOrganisations()->sync($authorisedOrganisations);
         $user->authorisedShops()->sync($authorisedShops);
         $user->authorisedFulfilments()->sync($authorisedFulfilments);
