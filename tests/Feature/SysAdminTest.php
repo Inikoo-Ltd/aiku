@@ -1521,10 +1521,10 @@ test('UI show goods dashboard group', function () {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Goods/GoodsDashboard')
-            ->has('breadcrumbs', 2)
-            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', 'Goods strategy')->etc())
-            ->has('flatTreeMaps');
+            ->component('Goods/ProductCommandControl')
+            ->where('pageHead.title', 'Product Command & Control')
+            ->has('kpis')
+            ->has('rows');
     });
 });
 
