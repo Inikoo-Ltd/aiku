@@ -4,6 +4,7 @@ import Skeleton from 'primevue/skeleton'
 import Image from '@common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { useLocaleStore } from '@/Stores/locale'
+import { ctrans } from '@/Composables/useTrans'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Image as ImgTS } from '@/types/Image'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
@@ -98,9 +99,13 @@ const formatPrice = (price?: number | string | null): string | null => {
     return locale.currencyFormat(currency?.code, Number(price))
 }
 
-const formatRrp = (rrpPerUnit?: number | null, unit?: string | null): string | null => {
-    if (!rrpPerUnit) return null
-    const rrp = String(locale.currencyFormatRrp(currency?.code, rrpPerUnit))
+const isDropshipping = layout?.retina?.type === 'dropshipping'
+
+const formatRrp = (product: { rrp?: number | null; rrp_per_unit?: number | null; units?: number | string | null; unit?: string | null }): string | null => {
+    const value = isDropshipping ? product.rrp : product.rrp_per_unit
+    if (!value) return null
+    const rrp = String(locale.currencyFormatRrp(currency?.code, value))
+    const unit = isDropshipping && Number(product.units) !== 1 ? ctrans('outer') : product.unit
     return unit ? `${rrp}/${unit}` : rrp
 }
 
@@ -153,8 +158,8 @@ const isOuter = (product: FeaturedProduct): boolean => (Number(product.units) ||
                                 <!-- Section: code and label GR -->
                                 <div class="flex justify-between items-center">
                                     <p class="text-sm font-bold text-slate-700 leading-snug line-clamp-2">
-                                        {{ product.code }} <span v-if="formatRrp(product.rrp_per_unit, product.unit)" class="text-xxs font-semibold text-[#E87928]">
-                                            {{ ctrans('RRP') }}: {{ formatRrp(product.rrp_per_unit, product.unit) }}
+                                        {{ product.code }} <span v-if="formatRrp(product)" class="text-xxs font-semibold text-[#E87928]">
+                                            {{ ctrans('RRP') }}: {{ formatRrp(product) }}
                                         </span>
                                     </p>
                                 </div>

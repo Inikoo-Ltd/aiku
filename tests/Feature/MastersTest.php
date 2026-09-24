@@ -1556,6 +1556,55 @@ test('UI Index Master Products in family has pricing tab', function () {
     );
 });
 
+test('master product RRP is edited per outer in dropshipping and per unit elsewhere', function (ShopTypeEnum $shopType, string $rrpLabel, bool $isDropship) {
+    $masterShop = StoreMasterShop::make()->action(group(), [
+        'type' => $shopType,
+        'code' => 'RRPO-'.uniqid(),
+        'name' => 'RRP Outer Master Shop',
+    ]);
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RRPO-DEP-'.uniqid(),
+        'name' => 'RRP Outer Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RRPO-FAM-'.uniqid(),
+        'name' => 'RRP Outer Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RRPO-AST-'.uniqid(),
+        'name'    => 'RRP Outer Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 4.8,
+        'rrp'     => 9.6,
+        'units'   => 2,
+        'stocks'  => [],
+    ]);
+
+    get(route('grp.masters.master_shops.show.master_products.composition', [
+        'masterShop'    => $masterShop->slug,
+        'masterProduct' => $masterAsset->slug,
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.2.fields.master_rrps.label', $rrpLabel)
+            ->where('formData.blueprint.2.fields.master_rrps.perUnits', fn ($perUnits) => $isDropship ? $perUnits === null : $perUnits == $masterAsset->units)
+            ->etc()
+    );
+
+    get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterShop->slug,
+        $masterFamily->slug,
+        'tab' => 'pricing',
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('pricing.data.0.is_dropship', $isDropship)
+            ->etc()
+    );
+})->with([
+    'dropshipping' => [ShopTypeEnum::DROPSHIPPING, 'RRP / Outer', true],
+    'b2b'          => [ShopTypeEnum::B2B, 'RRP / Unit', false],
+]);
+
 test('UI Show Master Variant has pricing tab listing all variant products', function () {
     $masterShop = createFreshMasterShop();
 

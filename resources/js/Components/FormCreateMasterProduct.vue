@@ -720,6 +720,7 @@ const successEditTradeUnit = (data) => {
                             <MasterRrpCurrencyTable
                                 v-model="form.master_rrps"
                                 :currencies="currencies_data"
+                                :editOn="is_dropship ? 'outer' : 'unit'"
                                 :unitsPerOuter="unitsPerOuter"
                                 :costs="priceByCurrency"
                             />
