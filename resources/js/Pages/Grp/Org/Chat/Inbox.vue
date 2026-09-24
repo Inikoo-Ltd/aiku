@@ -1839,7 +1839,7 @@ onUnmounted(() => {
         </template>
     </PageHeading>
 
-    <div v-if="inboxes.length > 1" class="mx-4 mb-3 flex flex-wrap gap-3">
+    <div v-if="inboxes.length > 1" class="mx-4 my-3 flex flex-wrap gap-3">
         <div class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums">
             <span v-tooltip="ctrans('Customers waiting, every shop')" class="flex items-center gap-1.5">
                 <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
