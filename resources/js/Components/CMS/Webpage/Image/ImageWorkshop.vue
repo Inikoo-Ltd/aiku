@@ -93,7 +93,7 @@ const resolvedGap = computed(() => {
       <Swiper v-if="screenType === 'mobile' && modelValue?.mobile?.type === 'carousel'" :slides-per-view="1"
         :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]"
         class="w-full">
-        <SwiperSlide v-for="(image, index) in modelValue?.value?.images || []" :key="index" class="w-full">
+        data-side-panel="value" <SwiperSlide v-for="(image, index) in modelValue?.value?.images || []" :key="index" class="w-full">
           <component :is="'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
             <Image :src="image.source" :alt="image?.properties?.alt || image?.link_data?.image_alt || image?.alt || `image ${index + 1}`" :imageCover="true" :style="{
@@ -111,7 +111,7 @@ const resolvedGap = computed(() => {
         gap: resolvedGap,
         ...getGridTemplate(getVal(modelValue.value.layout_type))
       }">
-        <div v-for="(image, index) in modelValue?.value?.images || []" :key="index"
+        data-side-panel="value" <div v-for="(image, index) in modelValue?.value?.images || []" :key="index"
           class="group relative hover:bg-white/40 flex flex-col h-full">
           <component :is="'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">

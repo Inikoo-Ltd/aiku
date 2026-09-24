@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { set } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { getStyles } from "@/Composables/styles"
 
@@ -50,7 +50,7 @@ const previewFields = [
 
 			<div
 				class="mt-6 overflow-hidden"
-				:style="getStyles(modelValue?.register?.card?.container?.properties, screenType)">
+				data-side-panel="register-card-container-properties" :style="getStyles(modelValue?.register?.card?.container?.properties, screenType)">
 				<div class="hover-text-input">
 					<Editor
 						:modelValue="modelValue?.register?.description"
@@ -64,7 +64,7 @@ const previewFields = [
 				<div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
 					<div v-for="field in previewFields" :key="field.label" :class="field.span">
 						<label class="block text-sm font-medium text-gray-700">
-							{{ trans(field.label) }}
+							{{ ctrans(field.label) }}
 						</label>
 						<div class="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-400">
 							&nbsp;
@@ -73,20 +73,20 @@ const previewFields = [
 
 					<div class="flex gap-2 sm:col-span-6 text-sm">
 						<input type="checkbox" disabled class="mt-1" />
-						<span>{{ trans("Opt in to our newsletter for updates and offers.") }}</span>
+						<span>{{ ctrans("Opt in to our newsletter for updates and offers.") }}</span>
 					</div>
 
-					<div class="flex gap-2 sm:col-span-6 text-sm">
+					<div data-side-panel="register-terms" class="flex gap-2 sm:col-span-6 text-sm">
 						<input type="checkbox" disabled class="mt-1" />
 						<span class="underline">
-							{{ modelValue?.register?.terms?.text || trans("I agree with the terms and conditions") }}
+							{{ modelValue?.register?.terms?.text || ctrans("I agree with the terms and conditions") }}
 						</span>
 					</div>
 				</div>
 
 				<div
 					class="mt-10 flex w-full items-center justify-center"
-					:style="getStyles(modelValue?.register?.button?.container?.properties, screenType)">
+					data-side-panel="register-button" :style="getStyles(modelValue?.register?.button?.container?.properties, screenType)">
 					{{ modelValue?.register?.button?.text }}
 				</div>
 			</div>

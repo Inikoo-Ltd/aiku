@@ -15,7 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle} from '@fal'
 import { faSparkles } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faInfoCircle, faSparkles)
 
@@ -72,7 +72,7 @@ const isFutureDatePassed = (futureDate: string) => {
 
 <template>
     <!-- Accordion mode -->
-    <AccordionPanel v-if="blueprint.name" :key="accordionKey" :value="blueprint.accordion_key ?? accordionKey">
+    <AccordionPanel v-if="blueprint.name" :key="accordionKey" :value="blueprint.accordion_key ?? accordionKey" :data-side-editor-panel="blueprint.accordion_key ?? accordionKey">
         <AccordionHeader>
             <div class="flex items-center gap-2">
                 <Icon v-if="blueprint.icon" :data="blueprint.icon" />
@@ -85,7 +85,7 @@ const isFutureDatePassed = (futureDate: string) => {
                         class="ml-2 inline bg-yellow-100 border border-yellow-300 text-yellow-600 whitespace-nowrap items-center gap-x-1 rounded select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
                     >
                         <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
-                        {{ trans("New") }}
+                        {{ ctrans("New") }}
                     </div>
                 </div>
             </div>

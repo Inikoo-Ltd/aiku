@@ -6,7 +6,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay, Thumbs, FreeMode } from 'swiper/modules'
@@ -17,7 +17,6 @@ import 'swiper/css/free-mode'
 
 import Family2Render from '@/Iris/Components/Families2Render.vue'
 import { getStyles } from '@/Composables/styles'
-import { sendMessageToParent } from '@/Composables/Workshop'
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
@@ -80,10 +79,6 @@ function scrollLeft() {
 
 function scrollRight() {
   if (swiperInstance.value?.slideNext) swiperInstance.value.slideNext()
-}
-
-function activateBlock() {
-  if (typeof props.indexBlock !== 'undefined') sendMessageToParent('activeBlock', props.indexBlock)
 }
 
 function onArrowKeyLeft(evt: KeyboardEvent) {
@@ -195,7 +190,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
   <div v-if="allItems.length" class="px-4 py-10" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
     ...getStyles(props.modelValue.container?.properties, props.screenType)
-  }" @click="activateBlock">
+  }" data-side-panel="container-properties">
 
     <div class="flex items-center gap-4 w-full">
 
@@ -204,6 +199,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
         class="shrink-0 flex items-center">
         <div class="inline-flex items-center justify-center rounded-3xl border border-gray/10
           h-auto px-3 sm:py-3 text-base font-semibold leading-tight text-center"
+          data-side-panel="button-view_more-properties"
           :style="{
             background: '#ffff',
             ...getStyles(
@@ -214,7 +210,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
           <span class="whitespace-normal break-words text-center" :class="{
             '!text-xs': screenType === 'mobile'
           }">
-            {{ trans('View All') }}
+            {{ ctrans('View All') }}
           </span>
         </div>
       </LinkIris>
@@ -236,7 +232,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
           <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index"
             class="!w-auto flex">
             <div class="h-full flex">
-              <Family2Render class="family-item h-full flex items-center" :data="item" :style="{
+              <Family2Render class="family-item h-full flex items-center" :data="item" data-side-panel="chip-container-properties" :style="{
                 ...getStyles(
                   props.modelValue?.chip?.container?.properties,
                   props.screenType

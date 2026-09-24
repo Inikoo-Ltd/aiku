@@ -4,7 +4,7 @@ import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from "vue"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCube, faLink, faChevronCircleLeft, faChevronCircleRight } from '@fortawesome/free-solid-svg-icons'
 import { faStar, faCircle } from '@fortawesome/free-regular-svg-icons'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, FreeMode } from 'swiper/modules'
@@ -125,13 +125,13 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
             <SwiperSlide v-if="props.modelValue?.show_overview_button" class="flex !w-[220px]">
               <div
                 class="family-item w-full h-full cursor-pointer flex flex-col rounded-xl overflow-hidden border bg-white hover:bg-gray-50 transition-all">
-                <div :style="{
+                <div data-side-panel="button-view_more-properties" :style="{
                   fontWeight: 600,
                   minHeight: maxHeight ? maxHeight + 'px' : undefined,
                   ...getStyles(props.modelValue?.button?.view_more?.properties, props.screenType),
                 }" class="flex-1 flex items-center justify-center bg-gray-100">
                   <span class="text-sm font-semibold">
-                    {{ trans('View All') }}
+                    {{ ctrans('View All') }}
                   </span>
                 </div>
               </div>
@@ -139,7 +139,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
 
             <SwiperSlide v-for="(item, index) in allItems" :key="'item-' + index" class="flex h-auto">
               <div class="w-full h-full flex">
-                <Family3Render class="family-item w-full h-full" :data="item" :style="{
+                <Family3Render class="family-item w-full h-full" :data="item" data-side-panel="card-container-properties" :style="{
                   ...getStyles(props.modelValue?.chip?.container?.properties, props.screenType),
                   fontWeight: 600
                 }" :screenType="props.screenType" />

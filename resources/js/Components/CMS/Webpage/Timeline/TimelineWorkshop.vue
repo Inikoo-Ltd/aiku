@@ -31,7 +31,7 @@ const emits = defineEmits<{
 				class="absolute left-1/2 top-0 transform -translate-x-1/2 h-full w-1 bg-gray-200 rounded-full z-0"></div>
 
 			<div
-				v-for="(step, idx) in modelValue.timeline"
+				data-side-panel="timeline" v-for="(step, idx) in modelValue.timeline"
 				:key="idx"
 				class="mb-16 md:grid md:grid-cols-9 md:items-center relative">
 				<!-- left content… -->

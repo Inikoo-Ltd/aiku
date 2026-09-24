@@ -17,7 +17,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faShieldAlt, faPlus, faTrash, faTriangle } from "@fas"
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faBars } from "@fal"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faWhatsapp)
@@ -497,7 +497,7 @@ const layout = inject("layout", {})
                         </div>
 
                         <div class="flex flex-col items-center gap-y-6 mt-4"
-                             @click="() => sendMessageToParent('panelOpen', 'payments')">
+                             @click="() => sendMessageToParent('panelOpen', 'paymentData-data')">
                             <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
                                 <img :src="payment.image" :alt="payment.alt" class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain" loading="lazy" decoding="async">
                             </div>
@@ -528,13 +528,13 @@ const layout = inject("layout", {})
                         autocomplete="email"
                         required
                         class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
-                        :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
+                        :placeholder="modelValue?.subscribe?.placeholder ?? ctrans('Enter your email')"
                     />
                     <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
                         <button type="submit"
                                 class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
                             <!-- <LoadingIcon v-if="isLoadingSubmit" class="mr-2" /> -->
-                            {{ trans("Subscribe") }}
+                            {{ ctrans("Subscribe") }}
                         </button>
                     </div>
                 </form>
@@ -551,7 +551,7 @@ const layout = inject("layout", {})
                     <a v-for="item of modelValue.socialMedia" target="_blank" :key="item.icon">
                         <font-awesome-icon
                             :icon="item.icon" class="text-2xl"
-                            @click="() => sendMessageToParent('panelOpen', 'social-media')"
+                            @click="() => sendMessageToParent('panelOpen', 'socialMedia')"
                             fixed-width
                         />
                     </a>

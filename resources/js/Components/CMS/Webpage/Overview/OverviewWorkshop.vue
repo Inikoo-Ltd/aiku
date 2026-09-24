@@ -149,7 +149,7 @@ onBeforeUnmount(() => {
 		class="relative  transition-all hidden md:block"
 		:style="getStyles(modelValue.container.properties)">
 		<!-- Render text elements -->
-		<div v-for="(text, index) in modelValue.texts.values" :key="index">
+		<div data-side-panel="texts-values" v-for="(text, index) in modelValue.texts.values" :key="index">
 			<div
 				class="absolute"
 				:class="`text-${index}`"
@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
 
 		<!-- Render image elements -->
 		<div>
-			<div v-for="(image, index) in modelValue.images" :key="index">
+			<div data-side-panel="images" v-for="(image, index) in modelValue.images" :key="index">
 				<div
 					class="absolute"
 					:class="`image-${index}`"
@@ -242,10 +242,10 @@ onBeforeUnmount(() => {
 		</div>
 	</div>
 	<div class="block md:hidden p-6">
-		<div v-for="(image, index) in modelValue.images" :key="index">
+		<div data-side-panel="images" v-for="(image, index) in modelValue.images" :key="index">
 			<Image :src="image.sources" />
 		</div>
-		<div v-for="(text, index) in modelValue.texts.values" :key="index">
+		<div data-side-panel="texts-values" v-for="(text, index) in modelValue.texts.values" :key="index">
 			<div v-html="text.text" />
 		</div>
 	</div>

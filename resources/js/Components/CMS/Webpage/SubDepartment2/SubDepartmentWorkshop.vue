@@ -7,7 +7,8 @@ import { getStyles } from "@/Composables/styles";
 import { routeType } from "@/types/route";
 import FormEditProductCategory from "@/Components/DepartmentAndFamily/FormEditProductCategory.vue";
 import Dialog from "primevue/dialog";
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
+;
 
 const props = defineProps<{
   modelValue: {
@@ -90,7 +91,7 @@ const mergedItems = computed(() => {
         <button
           v-for="item in mergedItems"
           :key="item?.code"
-          :style="getStyles(modelValue?.card?.container?.properties, screenType)"
+          data-side-panel="card-container-properties" :style="getStyles(modelValue?.card?.container?.properties, screenType)"
           class="flex items-center justify-center
                  border border-gray-600 rounded-xl
                  px-4 py-3 text-sm font-medium
@@ -108,7 +109,7 @@ const mergedItems = computed(() => {
     <div v-else class="text-center text-gray-500 py-6">
       <EmptyState
         :data="{
-          title: trans('There is no published sub-department webpages'),
+          title: ctrans('There is no published sub-department webpages'),
           description: 'Please make sure the sub-departments, have published webpage.',
         }"
       />

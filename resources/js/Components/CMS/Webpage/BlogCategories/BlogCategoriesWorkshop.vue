@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { set } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -40,27 +40,27 @@ const textToggle = ["bold", "italic", "underline", "bulletList", "orderedList", 
 
 const placeholderContent: Record<string, { description: string; url: string; icon: string }> = {
 	newsletters: {
-		description: trans("Stories, updates and highlights sent to our subscribers."),
+		description: ctrans("Stories, updates and highlights sent to our subscribers."),
 		url: "/david-aw-news",
 		icon: "fal fa-plane-departure",
 	},
 	product_guides: {
-		description: trans("Step by step guides to get the most out of every range."),
+		description: ctrans("Step by step guides to get the most out of every range."),
 		url: "/product-guides",
 		icon: "fal fa-book-open",
 	},
 	business_tips: {
-		description: trans("Practical advice to help your business grow faster."),
+		description: ctrans("Practical advice to help your business grow faster."),
 		url: "/business-tips",
 		icon: "fal fa-chart-bar",
 	},
 	integrations_guides: {
-		description: trans("Walkthroughs for connecting your shop to the channels you already sell on."),
+		description: ctrans("Walkthroughs for connecting your shop to the channels you already sell on."),
 		url: "/integrations-guides",
 		icon: "fal fa-plug",
 	},
 	dropshipping_guides: {
-		description: trans("How to source, list and fulfil products without holding stock."),
+		description: ctrans("How to source, list and fulfil products without holding stock."),
 		url: "/dropshipping-guides",
 		icon: "fal fa-boxes",
 	},
@@ -69,7 +69,7 @@ const placeholderContent: Record<string, { description: string; url: string; ico
 const placeholderCategories = computed<BlogCategory[]>(() =>
 	getBlogCategoryOptions(getShopType(props.webpageData)).map(category => ({
 		value: category.value,
-		label: trans(category.label),
+		label: ctrans(category.label),
 		count: 0,
 		...placeholderContent[category.value],
 	}))
@@ -208,7 +208,7 @@ const onPreviewClick = (event: MouseEvent) => {
 
 			<div class="grid gap-6" :class="columnClass">
 				<BlogCategoryCardIris
-					v-for="(category, index) in categories"
+					data-side-panel="category_content" v-for="(category, index) in categories"
 					:key="category.value"
 					:category="category"
 					:position="index + 1"
@@ -235,13 +235,13 @@ const onPreviewClick = (event: MouseEvent) => {
 
 			<div v-if="showPanels" class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
 				<div
-					v-if="showExplore"
+					data-side-panel="explore" v-if="showExplore"
 					class="flex flex-col justify-center gap-3 rounded-2xl bg-[color-mix(in_srgb,var(--theme-color-0)_7%,white)] p-8 ring-1 ring-[color-mix(in_srgb,var(--theme-color-0)_18%,white)]">
 					<span class="text-[11px] font-semibold uppercase tracking-widest text-[var(--theme-color-0)]">
-						{{ modelValue?.explore?.eyebrow ?? trans('New here?') }}
+						{{ modelValue?.explore?.eyebrow ?? ctrans('New here?') }}
 					</span>
 					<h2 class="!text-2xl font-bold text-gray-900">
-						{{ modelValue?.explore?.title ?? trans('Start exploring') }}
+						{{ modelValue?.explore?.title ?? ctrans('Start exploring') }}
 					</h2>
 
 					<EditorV2
@@ -254,19 +254,19 @@ const onPreviewClick = (event: MouseEvent) => {
 
 					<span
 						class="mt-2 inline-flex w-fit items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[var(--theme-color-0)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--theme-color-0)_30%,white)]">
-						{{ modelValue?.explore?.label ?? trans('Browse All Blogs') }}
+						{{ modelValue?.explore?.label ?? ctrans('Browse All Blogs') }}
 						<span aria-hidden="true">→</span>
 					</span>
 				</div>
 
 				<div
-					v-if="showNewsletter"
+					data-side-panel="newsletter" v-if="showNewsletter"
 					class="flex flex-col justify-center gap-3 rounded-2xl bg-gray-50 p-8 ring-1 ring-gray-200">
 					<span class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-						{{ modelValue?.newsletter?.eyebrow ?? trans('Stay in the loop') }}
+						{{ modelValue?.newsletter?.eyebrow ?? ctrans('Stay in the loop') }}
 					</span>
 					<h2 class="!text-2xl font-bold text-gray-900">
-						{{ modelValue?.newsletter?.title ?? trans('Get the newsletter') }}
+						{{ modelValue?.newsletter?.title ?? ctrans('Get the newsletter') }}
 					</h2>
 
 					<EditorV2
@@ -282,7 +282,7 @@ const onPreviewClick = (event: MouseEvent) => {
 							<input
 								type="email"
 								disabled
-								:placeholder="trans('Enter your email')"
+								:placeholder="ctrans('Enter your email')"
 								class="w-full rounded-lg border-0 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400" />
 							<FontAwesomeIcon
 								icon="fal fa-envelope"
@@ -294,7 +294,7 @@ const onPreviewClick = (event: MouseEvent) => {
 						<span
 							class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--theme-color-0)] px-4 py-2 text-sm font-semibold text-[var(--theme-color-1)]">
 							<FontAwesomeIcon icon="fal fa-envelope" fixed-width aria-hidden="true" />
-							{{ modelValue?.newsletter?.label ?? trans('Subscribe') }}
+							{{ modelValue?.newsletter?.label ?? ctrans('Subscribe') }}
 						</span>
 					</div>
 				</div>
@@ -309,7 +309,7 @@ const onPreviewClick = (event: MouseEvent) => {
 
 				<div class="grid grid-cols-1 gap-6" :class="blogColumnClass">
 					<BlogCardIris
-						v-for="post in blogs"
+						data-side-panel="card-container-properties" v-for="post in blogs"
 						:key="post.id"
 						:post="post"
 						:cardProperties="modelValue?.card?.container?.properties"
@@ -321,7 +321,7 @@ const onPreviewClick = (event: MouseEvent) => {
 
 				<div v-if="modelValue?.blogs_total > blogs.length" class="mt-8 text-center">
 					<span class="inline-flex items-center gap-2 rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-800">
-						{{ modelValue?.list_load_more_label || trans("Load more blogs") }}
+						{{ modelValue?.list_load_more_label || ctrans("Load more blogs") }}
 					</span>
 				</div>
 			</div>

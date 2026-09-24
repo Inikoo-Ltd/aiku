@@ -374,7 +374,7 @@ const contentClass = computed(() =>
           font-medium
           transition
           hover:bg-gray-50
-        " :style="{
+        " data-side-panel="button" :style="{
           ...getStyles(modelValue?.button?.container?.properties, screenType)
         }">
                 {{ modelValue?.button?.text || ctrans('Learn more') }}

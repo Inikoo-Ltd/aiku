@@ -9,10 +9,8 @@ import Family1Render from "@/Iris/Components/Families1Render.vue"
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { getStyles } from "@/Composables/styles"
-import { sendMessageToParent } from "@/Composables/Workshop"
-import Blueprint from './Blueprint'
 import { routeType } from '@/types/route'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -63,7 +61,6 @@ const selectedSubDepartment = ref<null | {
 const layout: any = inject("layout", {})
 const visibleDrawer = inject('visibleDrawer', undefined)
 
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 
 const allItems = computed(() => [
   ...(props.modelValue?.families || []),
@@ -81,10 +78,6 @@ const responsiveGridClass = computed(() => {
 })
 
 // Activate block for parent communication
-function activateBlock() {
-  sendMessageToParent('activeBlock', props.indexBlock)
-  sendMessageToParent('activeChildBlock', bKeys[0])
-}
 
 </script>
 
@@ -93,20 +86,20 @@ function activateBlock() {
     <div v-if="allItems.length" class="px-4 py-10 mx-[30px]" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(props.modelValue.container?.properties, props.screenType)
-    }" @click="activateBlock">
+    }" data-side-panel="settings">
       <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
 
       <div :class="['grid gap-8', responsiveGridClass]">
         <div>
           <div class="relative w-full bg-white rounded-md shadow-md overflow-hidden">
-            <div class="aspect-[1/1] flex items-center justify-center bg-gray-50 hover:bg-gray-100" :style="{
+            <div class="aspect-[1/1] flex items-center justify-center bg-gray-50 hover:bg-gray-100" data-side-panel="button-view_more-properties" :style="{
               ...getStyles(
                 props.modelValue?.button?.view_more?.properties,
                 props.screenType
               )
             }">
               <span class="text-base font-semibold text-center">
-                {{ trans("View All") }}
+                {{ ctrans("View All") }}
               </span>
             </div>
           </div>

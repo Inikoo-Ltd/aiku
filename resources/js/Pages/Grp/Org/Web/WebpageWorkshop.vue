@@ -99,6 +99,7 @@ const _iframe = ref<IframeHTMLAttributes | null>(null);
 const currentView = ref('desktop');
 const openedBlockSideEditor = ref<number | null>(null);
 const openedChildSideEditor = ref<number | null>(null);
+const childSideEditorFocusRequest = ref(0);
 const isAddBlockLoading = ref<string | null>(null);
 const isLoadingBlock = ref<string | null>(null);
 const isSavingBlock = ref(false);
@@ -166,6 +167,7 @@ provide('revealBlockOptions', revealBlockOptions);
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
 provide('openedChildSideEditor', openedChildSideEditor);
+provide('childSideEditorFocusRequest', childSideEditorFocusRequest);
 provide('isAddBlockLoading', isAddBlockLoading);
 provide('isLoadingBlock', isLoadingBlock);
 provide('isLoadingDeleteBlock', isLoadingDeleteBlock);
@@ -1087,6 +1089,7 @@ onMounted(() => {
       case 'activeChildBlock':
         if (props.editable) selectedTab.value = 2;
         openedChildSideEditor.value = value;
+        childSideEditorFocusRequest.value++;
         return;
       case 'activeChildBlockArray':
         if (props.editable) selectedTab.value = 2;

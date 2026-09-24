@@ -10,9 +10,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 import { getStyles } from "@/Composables/styles"
-import { sendMessageToParent } from "@/Composables/Workshop"
-import Blueprint from "./Blueprint"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
 library.add(
@@ -76,19 +74,13 @@ const responsiveGridClass = computed(() => {
 })
 
 const sortOptions = [
-  { label: trans("New arrivals"), value: "created_at" },
-  { label: trans("Code"), value: "code" },
-  { label: trans("Name"), value: "name" },
+  { label: ctrans("New arrivals"), value: "created_at" },
+  { label: ctrans("Code"), value: "code" },
+  { label: ctrans("Name"), value: "name" },
 ]
 
-const blueprintKeys =
-  Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 
-const activateBlock = () => {
-  sendMessageToParent("activeBlock", props.indexBlock)
-  sendMessageToParent("activeChildBlock", blueprintKeys[0])
-}
 </script>
 
 <template>
@@ -100,10 +92,10 @@ const activateBlock = () => {
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
         ...getStyles(props.modelValue?.container?.properties, props.screenType)
       }"
-      @click="activateBlock"
+      data-side-panel="settings"
     >
       <!-- Title -->
-      <h2 class="text-2xl font-bold mb-6">
+      <h2 class="text-2xl font-bold mb-6" data-side-panel="title">
            <span v-html="modelValue?.title" />
       </h2>
 

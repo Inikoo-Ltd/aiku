@@ -214,7 +214,7 @@ console.log("Family3 Workshop Props:", props)
 
           <!-- BUTTON -->
           <div class="mt-3 text-center md:text-right">
-              <button id="family-3-button" :label="modelValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
+              <button data-side-panel="button" id="family-3-button" :label="modelValue?.button?.text" class="!bg-transparent !shadow-none !border-0 !p-0 !h-auto 
              text-sm md:text-base font-medium
              hover:underline underline-offset-4 mr-5 italic
              transition-all duration-200" >{{ modelValue?.button?.text }}</button>

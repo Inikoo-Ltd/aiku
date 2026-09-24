@@ -87,6 +87,7 @@ import TopFamiliesWorkshop from '@/Components/CMS/Webpage/TopFamilies/Blueprint'
 import { blueprint as BlogListBlueprint } from '@/Components/CMS/Webpage/BlogList/Blueprint';
 import BlogCategoriesBlueprint from '@/Components/CMS/Webpage/BlogCategories/Blueprint';
 import CategoryComparisonBlueprint from '@/Components/CMS/Webpage/CategoryComparison/Blueprint';
+import { getFieldKey } from '@/Composables/SideEditorHelper'
 
 export const getBlueprint = (componentName: string, data?: object, id? : number) => {
 	const components: Record<string, any> = {
@@ -247,4 +248,29 @@ export const getBlueprintProduct = (componentName: string, shop_type?: string) =
 
 	const blueprint = components[componentName]
 	return typeof blueprint === "function" ? blueprint() : blueprint ?? []
+}
+
+export const SIDE_PANEL_ATTRIBUTE = 'data-side-panel'
+const LAYOUT_SIDE_PANEL_KEY = 'container-properties'
+
+export const getSidePanelKeys = (componentName: string, data?: object, id?: number): string[] =>
+    getBlueprint(componentName, data, id)
+        .filter((field: { name?: string, type?: string }) => field.name && field.type !== 'hidden')
+        .map((field: { name: string, key?: string | string[], accordion_key?: string }) => field.accordion_key ?? getFieldKey(field.key, field.name))
+
+export const getDefaultSidePanelKey = (panelKeys: string[]): string | null =>
+    panelKeys.includes(LAYOUT_SIDE_PANEL_KEY) ? LAYOUT_SIDE_PANEL_KEY : panelKeys[0] ?? null
+
+export const getClickedSidePanelKey = (event: MouseEvent, panelKeys: string[]): string | null => {
+    let element = (event.target as HTMLElement | null)?.closest(`[${SIDE_PANEL_ATTRIBUTE}]`)
+
+    while (element) {
+        const panelKey = element.getAttribute(SIDE_PANEL_ATTRIBUTE)
+        if (panelKey && panelKeys.includes(panelKey)) {
+            return panelKey
+        }
+        element = element.parentElement?.closest(`[${SIDE_PANEL_ATTRIBUTE}]`)
+    }
+
+    return null
 }

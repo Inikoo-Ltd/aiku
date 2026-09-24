@@ -2,6 +2,7 @@
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Iris/Composables/getIrisComponents'
 import { sendMessageToParent } from '@/Composables/Workshop';
+import { getClickedSidePanelKey, getDefaultSidePanelKey, getSidePanelKeys } from '@/Composables/getBlueprintWorkshop'
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
 
@@ -39,32 +40,44 @@ const emits = defineEmits<{
     (e: 'update:modelValue', value: string | number): void
 }>()
 
+const openSidePanel = (event: MouseEvent, code: string | undefined, messageKey: 'TopbarPanelOpen' | 'HeaderPanelOpen') => {
+    if (mode == 'iris' || !code) return
+
+    const panelKeys = getSidePanelKeys(code)
+    const sidePanelKey = getClickedSidePanelKey(event, panelKeys) ?? getDefaultSidePanelKey(panelKeys)
+    if (sidePanelKey) sendMessageToParent(messageKey, sidePanelKey)
+}
+
 </script>
 
 <template>
         <!-- Section: TopBars -->
-        <component
-            v-if="data?.topBar?.data?.fieldValue"
-            :is="getComponent(data?.topBar.code)"
-            v-model="data.topBar.data.fieldValue"
-            :loginMode="loginMode"
-            :fieldValue="data.topBar.data.fieldValue"
-            @update:model-value="(e)=>emits('update:modelValue', e)"
-            @setPanelActive="(data : string)=>sendMessageToParent('TopbarPanelOpen',data)"
-        />
+        <div class="contents" @click.capture="(event) => openSidePanel(event, data?.topBar?.code, 'TopbarPanelOpen')">
+            <component
+                v-if="data?.topBar?.data?.fieldValue"
+                :is="getComponent(data?.topBar.code)"
+                v-model="data.topBar.data.fieldValue"
+                :loginMode="loginMode"
+                :fieldValue="data.topBar.data.fieldValue"
+                @update:model-value="(e)=>emits('update:modelValue', e)"
+                @setPanelActive="(data : string)=>sendMessageToParent('TopbarPanelOpen',data)"
+            />
+        </div>
 
         <!-- Section: Header -->
-        <component
-            v-if="data?.header?.code"
-            :is="mode == 'iris' ? getIrisComponent(data?.header?.code) : getComponent(data?.header?.code)"
-            v-model="data.header.data.fieldValue"
-            :loginMode="loginMode"
-            :fieldValue="data.header.data.fieldValue"
-             @update:model-value="(e)=>emits('update:modelValue', e)"
-             @setPanelActive="(data : string)=>sendMessageToParent('HeaderPanelOpen',data)"
-             :screenType="screenType"
-              class="hidden md:block"
-        />
+        <div class="contents" @click.capture="(event) => openSidePanel(event, data?.header?.code, 'HeaderPanelOpen')">
+            <component
+                v-if="data?.header?.code"
+                :is="mode == 'iris' ? getIrisComponent(data?.header?.code) : getComponent(data?.header?.code)"
+                v-model="data.header.data.fieldValue"
+                :loginMode="loginMode"
+                :fieldValue="data.header.data.fieldValue"
+                @update:model-value="(e)=>emits('update:modelValue', e)"
+                @setPanelActive="(data : string)=>sendMessageToParent('HeaderPanelOpen',data)"
+                :screenType="screenType"
+                class="hidden md:block"
+            />
+        </div>
 
         <!-- Section: Menu -->
         <component

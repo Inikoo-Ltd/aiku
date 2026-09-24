@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, provide } from 'vue'
+import { inject, nextTick, onMounted, onUnmounted, provide, ref, Ref, watch } from 'vue'
 
 import Accordion from 'primevue/accordion'
 import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
@@ -78,19 +78,80 @@ const setFormValues = (blueprint = [], data = {}) => {
     return data
 }
 
+const PANEL_TOGGLE_ANIMATION_MS = 250
+const PANEL_HIGHLIGHT_MS = 1200
+
+const layout: any = inject('layout', {})
+const focusRequest = inject<Ref<number> | null>('childSideEditorFocusRequest', null)
+const _sideEditor = ref<HTMLElement | null>(null)
+const openedPanels = ref<Record<number, number | string | null>>({})
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null
+let highlightTimeout: ReturnType<typeof setTimeout> | null = null
+
+const openRequestedPanel = () => {
+    props.blueprint.forEach((_, index) => {
+        openedPanels.value[index] = props.panelOpen
+    })
+}
+
+const highlightPanel = (panel: HTMLElement) => {
+    panel.classList.add('side-editor-panel-focused')
+    if (highlightTimeout) clearTimeout(highlightTimeout)
+    highlightTimeout = setTimeout(() => panel.classList.remove('side-editor-panel-focused'), PANEL_HIGHLIGHT_MS)
+}
+
+const hasRequestedPanel = () => props.panelOpen !== null && props.panelOpen !== undefined
+
+const scrollToRequestedPanel = async () => {
+    if (!focusRequest || !hasRequestedPanel()) return
+
+    await nextTick()
+    if (scrollTimeout) clearTimeout(scrollTimeout)
+    scrollTimeout = setTimeout(() => {
+        const panel = _sideEditor.value?.querySelector<HTMLElement>(
+            `[data-side-editor-panel="${CSS.escape(String(props.panelOpen))}"]`
+        )
+        if (!panel) return
+
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        highlightPanel(panel)
+    }, PANEL_TOGGLE_ANIMATION_MS)
+}
+
+openRequestedPanel()
+
+watch(() => props.block?.id, openRequestedPanel)
+
+watch(() => props.panelOpen, () => {
+    openRequestedPanel()
+    scrollToRequestedPanel()
+})
+
+watch(() => focusRequest?.value, () => {
+    if (!hasRequestedPanel()) return
+    openRequestedPanel()
+    scrollToRequestedPanel()
+})
+
 onMounted(() => {
     if(!modelValue.value){
         emits('update:modelValue', setFormValues(props.blueprint))
     }
+    scrollToRequestedPanel()
+})
+
+onUnmounted(() => {
+    if (scrollTimeout) clearTimeout(scrollTimeout)
+    if (highlightTimeout) clearTimeout(highlightTimeout)
 })
 
 
 </script>
 
 <template>
-    <div class="w-full min-w-0 max-w-full">
+    <div ref="_sideEditor" class="w-full min-w-0 max-w-full">
         <div v-for="(field, index) of blueprint.filter((item) => item.type != 'hidden')" :key="getFieldKey(field.key, index)" class="min-w-0 max-w-full">
-            <Accordion class="w-full min-w-0" :value="panelOpen">
+            <Accordion class="w-full min-w-0" v-model:value="openedPanels[index]">
                 <template #collapseicon>
                     <FontAwesomeIcon :icon="faCaretDown" class="text-white" fixed-width></FontAwesomeIcon>
                 </template>
@@ -113,6 +174,19 @@ onMounted(() => {
 
 
 <style lang="scss" scoped>
+:deep(.side-editor-panel-focused) {
+  animation: side-editor-panel-focus 1.2s ease-out;
+}
+
+@keyframes side-editor-panel-focus {
+  0%, 40% {
+    box-shadow: inset 0 0 0 2px v-bind('layout?.app?.theme?.[4] ?? "#6366f1"');
+  }
+  100% {
+    box-shadow: inset 0 0 0 2px transparent;
+  }
+}
+
 :deep(.p-accordioncontent ) {
   padding: 0px 0px 0px 0px !important;
 }

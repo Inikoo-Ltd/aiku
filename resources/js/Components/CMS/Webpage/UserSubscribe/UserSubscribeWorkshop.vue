@@ -8,7 +8,7 @@ import { faCheck, faEnvelope } from "@fal"
 import { set } from "lodash-es"
 import { ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faCheck, faEnvelope, faCheckCircle)
@@ -94,7 +94,7 @@ const onSubmitSubscribe = async () => {
 
 							<div class="relative w-full">
 								<input
-									type="email"
+									data-side-panel="value-input" type="email"
 									v-model="inputEmail"
 									name="email-address"
 									id="email-address"
@@ -110,7 +110,7 @@ const onSubmitSubscribe = async () => {
 								<button type="submit"
 									XXclass="flex w-full items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
 									class="relative rounded-lg w-full transition-all"
-									:style="getStyles(modelValue?.button?.container?.properties, screenType)"
+									data-side-panel="button" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 								>
 									<Transition name="spin-to-right">
 										<LoadingIcon v-if="isLoadingSubmit" class="mr-2" />
@@ -127,7 +127,7 @@ const onSubmitSubscribe = async () => {
 
 					<div v-else class="mx-auto mt-6 text-center text-green-500 flex flex-col items-center gap-y-2">
 						<FontAwesomeIcon icon="fas fa-check-circle" class="text-4xl" fixed-width aria-hidden="true" />
-						{{ trans("You have successfully subscribed") }}!
+						{{ ctrans("You have successfully subscribed") }}!
 					</div>
 				</Transition>
 			</div>

@@ -38,7 +38,7 @@ watch(
 		:style="getStyles(modelValue?.container?.properties,screenType)"
 	>
 		<ColumnWebppage
-			v-model="modelValue.column_1"
+			data-side-panel="column_1" v-model="modelValue.column_1"
 			@update:modelValue="() => emits('autoSave')"
 			:webpageData="webpageData"
 			:blockData="blockData"
@@ -47,7 +47,7 @@ watch(
 		/>
 	
 		<ColumnWebppage
-			v-model="modelValue.column_2"
+			data-side-panel="column_2" v-model="modelValue.column_2"
 			@update:modelValue="() => emits('autoSave')"
 			:webpageData="webpageData"
 			:blockData="blockData"
@@ -56,7 +56,7 @@ watch(
 		/>
 
 		<ColumnWebppage
-			v-model="modelValue.column_3"
+			data-side-panel="column_3" v-model="modelValue.column_3"
 			@update:modelValue="() => emits('autoSave')"
 			:webpageData="webpageData"
 			:blockData="blockData"
@@ -64,7 +64,7 @@ watch(
 			:key="`col-3-${key}`"
 		/>
 		<ColumnWebppage
-			v-model="modelValue.column_4"
+			data-side-panel="column_4" v-model="modelValue.column_4"
 			@update:modelValue="() => emits('autoSave')"
 			:webpageData="webpageData"
 			:blockData="blockData"

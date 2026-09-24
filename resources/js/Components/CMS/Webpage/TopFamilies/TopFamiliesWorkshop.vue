@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, ref, computed, nextTick, onMounted, watch, onBeforeUnmount } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
 	faCube,
@@ -259,7 +259,7 @@ watch(
 										}"
 										class="flex-1 flex items-center justify-center bg-gray-100">
 										<span class="text-sm font-semibold">
-											{{ trans("View All") }}
+											{{ ctrans("View All") }}
 										</span>
 									</div>
 								</div>
@@ -278,7 +278,7 @@ watch(
 									class="family-item w-full h-full"
 									:data="item"
 									:isLoading="isLoading"
-									:style="{
+									data-side-panel="card-container-properties" :style="{
 										...getStyles(
 											props.modelValue?.card?.container?.properties,
 											props.screenType

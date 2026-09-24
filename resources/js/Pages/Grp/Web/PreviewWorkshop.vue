@@ -10,6 +10,7 @@ import { getIrisComponent } from '@/Iris/Composables/getIrisComponents'
 import { ref, onMounted, provide, onBeforeUnmount, inject, watch, computed } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
 import { sendMessageToParent } from '@/Composables/Workshop'
+import { getClickedSidePanelKey, getDefaultSidePanelKey, getSidePanelKeys } from '@/Composables/getBlueprintWorkshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
 import { router } from '@inertiajs/vue3'
 import "@/../css/Iris/editor.css"
@@ -75,6 +76,17 @@ const showWebpage = (activityItem) => {
 
 const updateData = (newVal) => {
     sendMessageToParent('autosave', newVal)
+}
+
+const isFooterPreview = () =>
+    isPreviewMode.value || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview'
+
+const openFooterSidePanel = (event: MouseEvent) => {
+    if (isFooterPreview() || !props.footer?.data?.code) return
+
+    const panelKeys = getSidePanelKeys(props.footer.data.code)
+    const sidePanelKey = getClickedSidePanelKey(event, panelKeys) ?? getDefaultSidePanelKey(panelKeys)
+    if (sidePanelKey) sendMessageToParent('panelOpen', sidePanelKey)
 }
 
 
@@ -162,9 +174,11 @@ watch(isPreviewLoggedIn, (value) => {
             </div>
 
             <!-- Footer -->
-            <component v-if="footer?.data?.data"
-                :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
-                v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
+            <div class="contents" @click.capture="openFooterSidePanel">
+                <component v-if="footer?.data?.data"
+                    :is="isFooterPreview() ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
+                    v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
+            </div>
         </div>
     </div>
 

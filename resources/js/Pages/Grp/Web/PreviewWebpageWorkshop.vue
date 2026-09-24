@@ -3,13 +3,13 @@ import { ref, onMounted, onBeforeUnmount, provide, shallowRef, watch, toRaw, inj
 import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSendBackward, faBringForward, faTrashAlt } from "@fas"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { getRevealSetting, sendMessageToParent } from "@/Composables/Workshop"
-import { getDeletePermissions } from "@/Composables/getBlueprintWorkshop"
+import { getClickedSidePanelKey, getDefaultSidePanelKey, getDeletePermissions, getEditPermissions, getSidePanelKeys } from "@/Composables/getBlueprintWorkshop"
 import { faTimes } from "@fal"
 import {debounce} from "lodash-es"
 
@@ -75,6 +75,17 @@ const checkScreenType = () => {
 const updateData = (val: any) => {
   if (!props.editable) return
   sendMessageToParent("autosave", val)
+}
+
+const onClickBlock = (event: MouseEvent, block: any, idx: number) => {
+  if ((event.target as HTMLElement | null)?.closest("[data-block-toolbar]")) return
+
+  sendMessageToParent("activeBlock", idx)
+  if (!props.editable || !getEditPermissions(block.web_block.layout.data)) return
+
+  const panelKeys = getSidePanelKeys(block.type, data.value, block.id)
+  const sidePanelKey = getClickedSidePanelKey(event, panelKeys) ?? getDefaultSidePanelKey(panelKeys)
+  if (sidePanelKey) sendMessageToParent("activeChildBlock", sidePanelKey)
 }
 
 const debouncedSetWebpage = debounce((value: any) => {
@@ -170,25 +181,25 @@ watch(filterBlock, updateIrisLayout, { immediate: true })
               class="w-full min-h-[10px] relative"
               :class="{ 'border-4 active-block': activeBlock === idx }"
               :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
-              @click="sendMessageToParent('activeBlock', idx)">
+              @click.capture="(event) => onClickBlock(event, block, idx)">
               <!-- Toolbar Controls -->
-              <div v-if="activeBlock === idx" class="trapezoid-button"
+              <div v-if="activeBlock === idx" data-block-toolbar class="trapezoid-button"
                 :class="{ 'trapezoid-bottom': isActiveBlockNearTop }" @click.stop>
                 <div class="flex" v-if="editable">
-                  <div v-tooltip="trans('Add Block Before')"
+                  <div v-tooltip="ctrans('Add Block Before')"
                     class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition"
                     @click="sendMessageToParent('addBlock', { type: 'before', parentIndex: idx })">
                     <FontAwesomeIcon :icon="faSendBackward" fixed-width />
                   </div>
 
-                  <div v-tooltip="trans('Add Block After')"
+                  <div v-tooltip="ctrans('Add Block After')"
                     class="py-1 px-2 cursor-pointer hover:bg-gray-200 transition md:block hidden"
                     @click="sendMessageToParent('addBlock', { type: 'after', parentIndex: idx })">
                     <FontAwesomeIcon :icon="faBringForward" fixed-width />
                   </div>
 
                   <div v-if="getDeletePermissions(block.web_block.layout.data)"
-                    v-tooltip="trans('Delete')"
+                    v-tooltip="ctrans('Delete')"
                     class="py-1 px-2 cursor-pointer hover:bg-red-100 hover:text-red-600 transition"
                     @click="sendMessageToParent('deleteBlock', block)">
                     <FontAwesomeIcon :icon="faTrashAlt" fixed-width />
@@ -198,7 +209,7 @@ watch(filterBlock, updateIrisLayout, { immediate: true })
 
               <div v-if="getRevealSetting(block)"
                 class="absolute top-0 right-0 z-10 px-2 py-0.5 text-[10px] font-medium bg-indigo-600 text-white rounded-bl"
-                v-tooltip="trans('Hidden on the live page until this link is clicked')">
+                v-tooltip="ctrans('Hidden on the live page until this link is clicked')">
                 #{{ getRevealSetting(block).key }}
               </div>
 
@@ -222,8 +233,8 @@ watch(filterBlock, updateIrisLayout, { immediate: true })
         </div>
 
         <EmptyState v-else :data="{
-          title: trans('Pick First Block For Your Website'),
-          description: trans('Pick block from list'),
+          title: ctrans('Pick First Block For Your Website'),
+          description: ctrans('Pick block from list'),
         }" />
       </div>
     </div>

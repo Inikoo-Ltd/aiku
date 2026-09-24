@@ -42,7 +42,7 @@ const editorToggle = [
 
 			<div
 				class="mt-6 overflow-hidden"
-				:style="getStyles(modelValue?.forgot_password?.card?.container?.properties, screenType)">
+				data-side-panel="forgot_password-card-container-properties" :style="getStyles(modelValue?.forgot_password?.card?.container?.properties, screenType)">
 				<div class="text-sm hover-text-input">
 					<Editor
 						:modelValue="modelValue?.forgot_password?.description"
@@ -53,7 +53,7 @@ const editorToggle = [
 						:toggle="editorToggle" />
 				</div>
 
-				<form class="mt-6 space-y-5" @submit.prevent>
+				<form data-side-panel="forgot_password" class="mt-6 space-y-5" @submit.prevent>
 					<div>
 						<label class="block text-sm font-semibold">
 							{{ modelValue?.forgot_password?.email?.label }}
@@ -67,7 +67,7 @@ const editorToggle = [
 
 					<div
 						class="relative flex w-full items-center justify-center gap-x-2 rounded-sm"
-						:style="getStyles(modelValue?.forgot_password?.button?.container?.properties, screenType)">
+						data-side-panel="forgot_password-button" :style="getStyles(modelValue?.forgot_password?.button?.container?.properties, screenType)">
 						{{ modelValue?.forgot_password?.button?.text }}
 					</div>
 				</form>
@@ -75,7 +75,7 @@ const editorToggle = [
 
 			<div
 				class="mt-6 overflow-hidden"
-				:style="getStyles(modelValue?.forgot_password?.card?.container?.properties, screenType)">
+				data-side-panel="forgot_password-card-container-properties" :style="getStyles(modelValue?.forgot_password?.card?.container?.properties, screenType)">
 				<div class="text-center">
 					<FontAwesomeIcon icon="fal fa-check-circle" class="text-4xl text-green-500" fixed-width aria-hidden="true" />
 				</div>

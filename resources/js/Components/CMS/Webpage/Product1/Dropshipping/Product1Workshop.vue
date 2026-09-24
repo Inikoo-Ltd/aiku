@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, useAttrs, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ProductContents from "@/Components/CMS/Webpage/Product1/ProductContents.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
 import Image from "@common/Components/Image.vue"
@@ -164,8 +164,8 @@ defineOptions({
                             <span>
                                <span>
                                     {{ product?.is_on_demand
-                                    ? trans("Unlimited quantity available")
-                                    : (product.stock > 0 ?  trans("In stock") + ` (${product.stock} ` + trans("available") + `)` : trans("Out Of Stock"))
+                                    ? ctrans("Unlimited quantity available")
+                                    : (product.stock > 0 ?  ctrans("In stock") + ` (${product.stock} ` + ctrans("available") + `)` : ctrans("Out Of Stock"))
                                 }}
                                 </span>
                             </span>
@@ -215,7 +215,7 @@ defineOptions({
 
                 <!-- Button existence on all channels -->
                 <div class="relative flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="product" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"
+                    <ButtonAddPortfolio :product="product" data-side-panel="button-properties" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"
                         :productHasPortfolio="productExistenceInChannels" :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)"
                         />
                     <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
@@ -224,11 +224,11 @@ defineOptions({
                 </div>
 
                 <div class="text-xs font-medium text-gray-800"
-                    :style="getStyles(modelValue?.description?.description_content, screenType)">
+                    data-side-panel="description" :style="getStyles(modelValue?.description?.description_content, screenType)">
                     <div v-html="product.description"></div>
 
                     <div class="text-xs font-normal text-gray-700 my-1" v-if="expanded"
-                        :style="getStyles(modelValue?.description?.description_extra, screenType)">
+                        data-side-panel="description" :style="getStyles(modelValue?.description?.description_extra, screenType)">
                         <div ref="contentRef"
                             class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
                             v-html="product.description_extra"></div>
@@ -236,7 +236,7 @@ defineOptions({
 
                     <button v-if="product.description_extra" @click="toggleExpanded"
                         class="mt-1 text-gray-900 text-xs underline focus:outline-none">
-                        {{ expanded ? trans("Show Less") : trans("Read More") }}
+                        {{ expanded ? ctrans("Show Less") : ctrans("Read More") }}
                     </button>
                 </div>
 
@@ -244,13 +244,13 @@ defineOptions({
                     <ProductContents :product="product" :setting="modelValue.setting"
                         :styleData="modelValue?.information_style" />
                     <InformationSideProduct v-if="modelValue?.information?.length > 0"
-                        :informations="modelValue?.information" :styleData="modelValue?.information_style" />
+                        data-side-panel="information" :informations="modelValue?.information" :styleData="modelValue?.information_style" />
                     <div v-if="modelValue?.paymentData?.length > 0"
                         class="items-center gap-3 border-gray-400 font-bold text-gray-800 xpy-2"
                         :style="getStyles(modelValue?.information_style?.title)">
-                        <h2 class="!text-base font-bold">{{ trans("Secure Payments") }}:</h2>
+                        <h2 class="!text-base font-bold">{{ ctrans("Secure Payments") }}:</h2>
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
-                            <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
+                            <img data-side-panel="paymentData" v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
                                 :src="logo.image" :alt="logo.code" class="h-4 px-1" loading="lazy" decoding="async" />
                         </div>
                     </div>
@@ -291,7 +291,7 @@ defineOptions({
             :buttonStyleLogin="getStyles(modelValue?.buttonLogin?.properties, screenType)" 
             :product="product"
             :productHasPortfolio="productExistenceInChannels" 
-            :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
+            data-side-panel="button-properties" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
         </div>
 
 
@@ -340,11 +340,11 @@ defineOptions({
         <div class="mt-4">
             <ProductContents :product="product" :setting="modelValue.setting"
                 :styleData="modelValue?.information_style" />
-            <InformationSideProduct v-if="modelValue?.information?.length > 0" :informations="modelValue?.information"
+            <InformationSideProduct v-if="modelValue?.information?.length > 0" data-side-panel="information" :informations="modelValue?.information"
                 :styleData="modelValue?.information_style" />
-            <h2 class="!text-sm !font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
+            <h2 class="!text-sm !font-semibold mb-2">{{ ctrans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
-                <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
+                <img data-side-panel="paymentData" v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" loading="lazy" decoding="async" />
             </div>
         </div>

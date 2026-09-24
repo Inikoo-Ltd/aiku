@@ -25,7 +25,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeading, faHeart, faLowVision, faSignIn, faThLarge } from '@fas'
 import { faEye } from '@fad'
 
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import Toggle from '@/Components/Pure/Toggle.vue'
 import LoadingText from '@/Components/Utils/LoadingText.vue'
@@ -136,7 +136,7 @@ const onPublish = async (action: routeType, popover: Function) => {
             },
             onError: (error) => {
                 notify({
-                    title: trans('Something went wrong.'),
+                    title: ctrans('Something went wrong.'),
                     text: error.message,
                     type: 'error',
                 })
@@ -170,7 +170,7 @@ const autoSave = async (data: {}) => {
             },
             onError: (error) => {
                 notify({
-                    title: trans('Something went wrong.'),
+                    title: ctrans('Something went wrong.'),
                     text: error.message,
                     type: 'error',
                 })
@@ -222,6 +222,8 @@ const sendToIframe = (data: any) => {
     _iframe.value?.contentWindow.postMessage(data, '*')
 }
 const panelActive = ref()
+const childSideEditorFocusRequest = ref(0)
+provide('childSideEditorFocusRequest', childSideEditorFocusRequest)
 
 onMounted(() => {
     if (!get(props.data, 'theme.color', false)) {
@@ -237,9 +239,11 @@ onMounted(() => {
         } else if (data.key === 'TopbarPanelOpen') {
             panelActive.value = event.data.value
             selectedTab.value = tabs[0]
+            childSideEditorFocusRequest.value++
         } else if (data.key === 'HeaderPanelOpen') {
             panelActive.value = event.data.value
             selectedTab.value = tabs[1]
+            childSideEditorFocusRequest.value++
         } else if (data.key === 'autosave') {
             if (saveCancelToken.value) saveCancelToken.value()
             usedTemplates.value = data.value
@@ -325,7 +329,7 @@ watch(currentView, (newValue) => {
                     <div class="flex">
                         <ScreenView  @screenView="(e) => {currentView = e}" v-model="currentView" />
                         <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600" title="Desktop view"
-                            v-tooltip="trans('Open preview in new tab')"
+                            v-tooltip="ctrans('Open preview in new tab')"
                             @click="openFullScreenPreview">
                             <FontAwesomeIcon :icon="faEye" class="" fixed-width aria-hidden="true" />
                         </div>
@@ -342,7 +346,7 @@ watch(currentView, (newValue) => {
                 <div v-if="isIframeLoading"
                     class="flex justify-center items-center gap-y-6 flex-col top-0 left-0 w-full h-full z-[1000]">
                     <LoadingIcon class="text-5xl" />
-                    <LoadingText :text="trans('Loading iframe')" class="text-2xl" />
+                    <LoadingText :text="ctrans('Loading iframe')" class="text-2xl" />
                 </div>
 
                 <!-- Workshop Preview -->

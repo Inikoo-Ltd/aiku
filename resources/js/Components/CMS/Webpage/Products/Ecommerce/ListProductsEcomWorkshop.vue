@@ -8,7 +8,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { getStyles } from "@/Composables/styles";
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { getProductsRenderB2bComponent } from "@/Iris/Composables/getIrisComponents";
 import Image from "@common/Components/Image.vue";
 
@@ -66,16 +66,16 @@ const responsiveGridClass = computed(() => {
 const sortOptions = computed(() => {
   const baseOptions = [
     /* { label: "Latest Arrivals", value: "created_at" }, */
-    { label: trans("New arrivals"), value: "created_at" },
-    { label: trans("Product Code"), value: "code" },
-    { label: trans("Name"), value: "name" }
+    { label: ctrans("New arrivals"), value: "created_at" },
+    { label: ctrans("Product Code"), value: "code" },
+    { label: ctrans("Name"), value: "name" }
   ]
   if (layout?.iris?.is_logged_in) {
-    baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
-    baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
+    baseOptions.splice(1, 0, { label: ctrans("Price"), value: "price" })
+    baseOptions.splice(1, 0, { label: ctrans("RRP"), value: "rrp" })
   }
   if (props.modelValue?.sub_type == 'family') {
-    baseOptions.splice(1, 0, { label: trans("Recommended"), value: "recommended" })
+    baseOptions.splice(1, 0, { label: ctrans("Recommended"), value: "recommended" })
   }
   return baseOptions
 })
@@ -112,7 +112,7 @@ watch(
       <main class="flex-1 mt-4">
         <!-- <div class="px-4 xpt-4 mb-2 text-base font-normal">
             <div
-                v-tooltip="trans('This is not work in workshop, try in website.')"
+                v-tooltip="ctrans('This is not work in workshop, try in website.')"
                 xhref="route().has('iris.catalogue.feeds.product_category.download') ? route('iris.catalogue.feeds.product_category.download', { productCategory: props.modelValue.model_slug }) : '#'"
                 xtarget="_blank"
                 class="group hover:underline w-fit">
@@ -124,31 +124,31 @@ watch(
           <div class="flex items-center w-full md:w-1/3 gap-2">
             <template v-if="props.modelValue?.settings?.is_hide_filter">
               <Button v-if="isMobile" :icon="faFilter" class="!p-2 !w-auto" aria-label="Open Filters"
-                :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
+                data-side-panel="filter-button-properties" :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
               <!-- Sidebar Toggle for Desktop -->
               <div v-else class="py-3">
                 <Button :icon="faFilter" class="!p-2 !w-auto" aria-label="Open Filters"
-                  :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
+                  data-side-panel="filter-button-properties" :injectStyle="getStyles(modelValue?.filter?.button?.properties, screenType)" />
               </div>
             </template>
             <div
               class="flex items-center gap-3 p-4 py-2 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
               <span class="font-medium">
-                {{ trans("Showing") }}
+                {{ ctrans("Showing") }}
                 <span :class="['font-semibold', `text-[--theme-color-0]`]">
                   {{ dummyProducts.length }}
                 </span>
-                {{ trans("of") }}
+                {{ ctrans("of") }}
                 <span :class="['font-semibold', `text-[--theme-color-0]`]">
                   {{ dummyProducts.length }}
                 </span>
-                {{ dummyProducts.length === 1 ? trans("product") : trans("products") }}
+                {{ dummyProducts.length === 1 ? ctrans("product") : ctrans("products") }}
               </span>
             </div>
           </div>
 
           <div class="flex space-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
-            <button v-for="option in sortOptions" :key="option.value"
+            <button data-side-panel="search_sort" v-for="option in sortOptions" :key="option.value"
               class="pb-1 px-4 text-xs font-medium whitespace-nowrap flex items-center  border-b-2 gap-1 sort-button"
               :class="[
                 `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
@@ -160,7 +160,7 @@ watch(
 
         <div :class="responsiveGridClass" class="grid gap-6 p-4">
           <div v-for="product in dummyProducts" :key="product.id"
-            :style="getStyles(modelValue?.card_product?.properties, screenType)" class="p-3 relative rounded  bg-white">
+            data-side-panel="card_product-properties" :style="getStyles(modelValue?.card_product?.properties, screenType)" class="p-3 relative rounded  bg-white">
             <component :is="getProductsRenderB2bComponent(code)" :product="product"
               :buttonStyle="getStyles(modelValue?.button?.properties, screenType, false)" :hasInBasket="[]"
               :bestSeller="modelValue.bestseller"
@@ -170,7 +170,7 @@ watch(
           </div>
 
         
-          <div v-for="(card, cardIndex) in (modelValue?.cards ?? []).filter((item: any) => item?.visible)"
+          <div data-side-panel="cards" v-for="(card, cardIndex) in (modelValue?.cards ?? []).filter((item: any) => item?.visible)"
             :key="card.ulid ?? cardIndex" class="relative rounded-2xl overflow-hidden min-h-80">
             <Image v-if="card?.image?.source" :src="card.image.source" :imageCover="true"
               :alt="card?.image?.alt ?? 'card image'"

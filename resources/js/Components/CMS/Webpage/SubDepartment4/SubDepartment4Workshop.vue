@@ -122,7 +122,7 @@ const getItemImage = (item: SubDepartmentItem) => item?.web_images?.main?.galler
         v-for="(item, index) in mergedItems"
         :key="item?.code || index"
         class="relative flex items-start gap-5"
-        :style="getStyles(modelValue?.card?.container?.properties, screenType)"
+        data-side-panel="card-container-properties" :style="getStyles(modelValue?.card?.container?.properties, screenType)"
       >
         <div class="group block w-[38%] max-w-[200px] shrink-0 sm:w-[180px]">
           <div class="relative aspect-square w-full overflow-hidden bg-gray-100">

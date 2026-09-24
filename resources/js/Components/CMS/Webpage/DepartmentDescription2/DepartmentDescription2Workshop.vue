@@ -257,7 +257,7 @@ const responsiveClasses = computed(() => ({
 			<div :class="['grid grid-cols-1', responsiveClasses.gridLayout]">
 				<!-- Sidebar -->
 				<aside v-if="responsiveClasses.sidebarVisible"
-					:class="['border-r border-gray-300', responsiveClasses.sidebarPadding]" :style="{
+					:class="['border-r border-gray-300', responsiveClasses.sidebarPadding]" data-side-panel="sidebar-properties" :style="{
 						...getStyles(modelValue?.sidebar?.properties, screenType),
 					}">
 					<h3 :class="['font-bold mb-6', responsiveClasses.categoryHeadingSize]">
@@ -285,7 +285,7 @@ const responsiveClasses = computed(() => ({
 				</aside>
 
 				<!-- Main Content -->
-				<div ref="_content" class="h-fit" :style="{
+				<div ref="_content" class="h-fit" data-side-panel="description-properties" :style="{
 					...getStyles(modelValue?.description?.properties, screenType),
 				}">
 					<h1>
@@ -303,7 +303,7 @@ const responsiveClasses = computed(() => ({
 					</p>
 
 					<!-- Banner Desktop  -->
-					<div v-if="responsiveClasses.bannerDesktopVisible" class="mt-6 overflow-hidden bg-[#E7E7E7]" :style="{
+					<div v-if="responsiveClasses.bannerDesktopVisible" class="mt-6 overflow-hidden bg-[#E7E7E7]" data-side-panel="cta-properties" :style="{
 						...getStyles(modelValue?.cta?.properties, screenType),
 					}">
 						<div class="grid grid-cols-1 lg:grid-cols-[46%_54%] items-start">
@@ -339,14 +339,14 @@ const responsiveClasses = computed(() => ({
 								</div>
 
 								<div class="flex justify-center mt-5">
-									<button v-if="modelValue.department.showcase_video" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
+									<button v-if="modelValue.department.showcase_video" data-side-panel="button" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 										:class="['bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-md transition', responsiveClasses.buttonPadding]"
 										@click="videoDialogVisible = true">
 										{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("See a video") }}
 									</button>
 
 									<a v-else href="#sub-department">
-										<button :style="getStyles(modelValue?.button?.container?.properties, screenType)"
+										<button data-side-panel="button" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 											:class="['bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-md transition', responsiveClasses.buttonPadding]">
 												{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("Browse All") }}
 										</button>
@@ -383,7 +383,7 @@ const responsiveClasses = computed(() => ({
 					</div>
 
 					<!-- Banner Mobile  -->
-					<details v-if="responsiveClasses.bannerMobileVisible" class="border-y border-gray-300" :style="{
+					<details v-if="responsiveClasses.bannerMobileVisible" class="border-y border-gray-300" data-side-panel="sidebar-properties" :style="{
 						...getStyles(modelValue?.sidebar?.properties, screenType),
 					}">
 						<summary
@@ -402,7 +402,7 @@ const responsiveClasses = computed(() => ({
 					</details>
 
 					<!-- Mobile Only -->
-					<div v-if="responsiveClasses.bannerMobileVisible" class="bg-[#E7E7E7] overflow-hidden" :style="{
+					<div v-if="responsiveClasses.bannerMobileVisible" class="bg-[#E7E7E7] overflow-hidden" data-side-panel="cta-properties" :style="{
 						...getStyles(modelValue?.cta?.properties, screenType),
 					}">
 						<!-- Image -->
@@ -447,13 +447,13 @@ const responsiveClasses = computed(() => ({
 								{{ expanded ? "Read Less" : "Read More" }}
 							</button>
 							<div>
-								<button v-if="modelValue.department.showcase_video" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
+								<button v-if="modelValue.department.showcase_video" data-side-panel="button" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 									class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-md transition"
 									@click="videoDialogVisible = true">
 									{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("See a video") }}
 								</button>
 								<a v-else href="#sub-department">
-									<button :style="getStyles(modelValue?.button?.container?.properties, screenType)"
+									<button data-side-panel="button" :style="getStyles(modelValue?.button?.container?.properties, screenType)"
 										class="mt-6 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 rounded-md transition">
 										{{ modelValue?.button?.text ? modelValue?.button?.text : ctrans("Browse All") }}
 									</button>

@@ -243,7 +243,7 @@ watch(
 			:class="responsiveClasses.containerPadding">
 			<div
 				ref="_content"
-				:style="{ ...getStyles(modelValue?.description?.properties, screenType) }">
+				data-side-panel="description-properties" :style="{ ...getStyles(modelValue?.description?.properties, screenType) }">
 				<h1>
 					<input
 						v-model="name"
@@ -304,12 +304,12 @@ watch(
 
 			<div
 				:class="['mt-8 grid', responsiveClasses.gridLayout]"
-				:style="{ ...getStyles(modelValue?.cta?.properties, screenType) }">
+				data-side-panel="cta-properties" :style="{ ...getStyles(modelValue?.cta?.properties, screenType) }">
 				<!-- Sidebar Desktop -->
 				<aside
 					v-if="responsiveClasses.sidebarVisible"
 					class="flex flex-col border-r border-gray-300 pr-8"
-					:style="{ ...getStyles(modelValue?.sidebar?.properties, screenType) }">
+					data-side-panel="sidebar-properties" :style="{ ...getStyles(modelValue?.sidebar?.properties, screenType) }">
 					<h3 :class="['font-bold mb-5', responsiveClasses.categoryHeadingSize]">
 						{{ ctrans("Browse By Category:") }}
 					</h3>
@@ -348,7 +348,7 @@ watch(
 				<details
 					v-else
 					class="border-y border-gray-300"
-					:style="{ ...getStyles(modelValue?.sidebar?.properties, screenType) }">
+					data-side-panel="sidebar-properties" :style="{ ...getStyles(modelValue?.sidebar?.properties, screenType) }">
 					<summary
 						class="flex items-center justify-between py-5 px-4 text-xl font-bold list-none cursor-pointer">
 						{{ ctrans("Browse By Category:") }}

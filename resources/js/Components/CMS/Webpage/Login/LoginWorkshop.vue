@@ -36,7 +36,7 @@ const editorToggle = [
 						:toggle="editorToggle" />
 				</div>
 
-				<form class="mt-8 space-y-5" @submit.prevent>
+				<form data-side-panel="login" class="mt-8 space-y-5" @submit.prevent>
 					<div>
 						<label class="block text-sm font-semibold">
 							{{ modelValue?.login?.username?.label }}
@@ -73,7 +73,7 @@ const editorToggle = [
 
 					<div
 						class="relative flex w-full items-center justify-center gap-x-2 rounded-sm"
-						:style="getStyles(modelValue?.login?.button?.container?.properties, screenType)">
+						data-side-panel="login-button" :style="getStyles(modelValue?.login?.button?.container?.properties, screenType)">
 						{{ modelValue?.login?.button?.text }}
 					</div>
 
@@ -119,7 +119,7 @@ const editorToggle = [
 				<div class="mt-6 flex justify-center">
 					<div
 						class="inline-flex items-center justify-center rounded-sm"
-						:style="getStyles(modelValue?.register?.button?.container?.properties, screenType)">
+						data-side-panel="register-button" :style="getStyles(modelValue?.register?.button?.container?.properties, screenType)">
 						{{ modelValue?.register?.button?.text }}
 					</div>
 				</div>
@@ -146,7 +146,7 @@ const editorToggle = [
 
 				<div
 					class="mt-2 text-sm hover-text-input"
-					:style="getStyles(modelValue?.register?.benefits?.container?.properties, screenType)">
+					data-side-panel="register-benefits-container-properties" :style="getStyles(modelValue?.register?.benefits?.container?.properties, screenType)">
 					<Editor
 						:modelValue="modelValue?.register?.benefits?.text"
 						@update:modelValue="(e) => {

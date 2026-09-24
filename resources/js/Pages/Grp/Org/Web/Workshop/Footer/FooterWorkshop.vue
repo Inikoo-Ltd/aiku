@@ -15,7 +15,7 @@ import Publish from '@/Components/Publish.vue'
 import ScreenView from "@/Components/ScreenView.vue"
 import Image from "@common/Components/Image.vue"
 import HeaderListModal from '@/Components/CMS/Fields/ListModal.vue'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
 import { setIframeView } from "@/Composables/Workshop"
 import ProgressSpinner from 'primevue/progressspinner';
@@ -123,7 +123,7 @@ const autoSave = async (data: Object) => {
             onError: (error) => {
                 console.log('Error during saving:', error)
                 notify({
-                    title: trans('Something went wrong.'),
+                    title: ctrans('Something went wrong.'),
                     text: error.message,
                     type: 'error',
                 })
@@ -161,6 +161,8 @@ const openWebsite = () => {
 }
 
 const panelOpen = ref()
+const childSideEditorFocusRequest = ref(0)
+provide('childSideEditorFocusRequest', childSideEditorFocusRequest)
 const handleIframeMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return;
     const { data } = event;
@@ -170,6 +172,7 @@ const handleIframeMessage = (event: MessageEvent) => {
         usedTemplates.value = data.value
     } if (data.key === 'panelOpen') {
         panelOpen.value = data.value
+        childSideEditorFocusRequest.value++
     }
 };
 
@@ -218,7 +221,7 @@ console.log(props)
                     <div class="flex items-center gap-2 mb-3">
                     <div class="items-start leading-none flex-shrink-0">
                         <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" />
-                        <span class="capitalize">{{ trans('Status') }} :</span>
+                        <span class="capitalize">{{ ctrans('Status') }} :</span>
                     </div>
                     <div class="flex items-center gap-4 w-full">
                         <div class="flex overflow-hidden border-2 cursor-pointer w-full sm:w-auto"
@@ -273,11 +276,11 @@ console.log(props)
                         <div class="flex">
                             <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
                             <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
-                                v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview">
+                                v-tooltip="ctrans('Open preview in new tab')" @click="openFullScreenPreview">
                                 <FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
                             </div>
                             <div v-if="selectedLang" class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
-                                v-tooltip="trans('open translation')" @click="darwerRight = !darwerRight">
+                                v-tooltip="ctrans('open translation')" @click="darwerRight = !darwerRight">
                                 <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
                             </div>
                         </div>
@@ -285,7 +288,7 @@ console.log(props)
                             <div class="border-r border-gray-300 pr-2">
                               <!--   <select v-model="selectedLang"
                                     class="border border-gray-300 rounded px-2 py-1 text-xs focus:ring focus:ring-indigo-200 focus:border-indigo-400">
-                                    <option :value="null">{{ trans('Master') }}</option>
+                                    <option :value="null">{{ ctrans('Master') }}</option>
                                     <option v-for="lang in langOptions" :key="lang.code" :value="lang.code">
                                         {{ lang.name }}
                                     </option>
