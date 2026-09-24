@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Image from "@common/Components/Image.vue"
-import { defineAsyncComponent, inject, ref, computed } from 'vue'
+import { defineAsyncComponent, inject, ref, computed, onMounted } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ctrans } from '@/Composables/useTrans'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -30,7 +30,11 @@ const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/
 library.add(faStarHalfAlt, faQuestionCircle)
 const locale = useLocaleStore()
 const layout = inject('layout', retinaLayoutStructure)
-const isPriceVisible = computed(() => Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price))
+const isHydrated = ref(false)
+onMounted(() => {
+    isHydrated.value = true
+})
+const isPriceVisible = computed(() => isHydrated.value && Boolean(layout?.iris?.is_logged_in))
 
 const props = withDefaults(defineProps<{
     product: ProductResource  // IrisAuthenticatedProductsInWebpageResource
