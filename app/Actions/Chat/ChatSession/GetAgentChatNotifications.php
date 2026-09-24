@@ -52,13 +52,14 @@ class GetAgentChatNotifications
                 ->count();
 
         if ($shopIds->isEmpty()) {
-            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0];
+            return ['team_unread' => [], 'unclaimed' => $unclaimed, 'spam' => 0, 'carriers' => 0];
         }
 
         return [
             'team_unread' => $this->teamUnreadByShop($agent, $shopIds),
             'unclaimed'   => $unclaimed,
             'spam'        => $this->spamCount($shopIds),
+            'carriers'    => $this->carrierCount($shopIds),
         ];
     }
 
@@ -69,6 +70,23 @@ class GetAgentChatNotifications
      *
      * @param  \Illuminate\Support\Collection<int, int>  $shopIds
      */
+    /**
+     * Courier conversations still open in the shops this agent works: what the Couriers folder
+     * badge promises.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>  $shopIds
+     */
+    private function carrierCount($shopIds): int
+    {
+        return ChatSession::query()
+            ->where('is_carrier', true)
+            ->where('is_spam', false)
+            ->where('is_rubbish', false)
+            ->where('status', '!=', ChatSessionStatusEnum::CLOSED)
+            ->whereIn('shop_id', $shopIds)
+            ->count();
+    }
+
     private function spamCount($shopIds): int
     {
         return ChatSession::query()
@@ -134,7 +152,7 @@ class GetAgentChatNotifications
             return response()->json([
                 'success' => true,
                 'message' => 'User is not a chat agent',
-                'data'    => ['team_unread' => (object) [], 'unclaimed' => 0, 'spam' => 0],
+                'data'    => ['team_unread' => (object) [], 'unclaimed' => 0, 'spam' => 0, 'carriers' => 0],
             ]);
         }
 

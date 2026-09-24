@@ -60,6 +60,7 @@ class GetChatSessions
             'is_spam'         => ['sometimes', 'boolean'],
             'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
+            'carrier'         => ['sometimes', 'boolean'],
             'unclaimed'       => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
@@ -210,6 +211,11 @@ class GetChatSessions
             $query->where('is_rubbish', $isRubbishView);
         }
 
+        // Couriers are answered from their own folder and nowhere else.
+        if (!$isTrashView) {
+            $query->where('is_carrier', !empty($filters['carrier']));
+        }
+
         // Trash view: only soft-deleted sessions, scoped to the agent's shops.
         if ($isTrashView) {
             $query->onlyTrashed();
@@ -302,11 +308,9 @@ class GetChatSessions
                     $outer->orWhere(function ($inner) use ($channel, $kind) {
                         $inner->where('channel', $channel);
 
-                        match ($kind) {
-                            'carrier'  => $inner->where('is_carrier', true),
-                            'customer' => $inner->where('is_carrier', false)->whereNotNull('web_user_id'),
-                            default    => $inner->where('is_carrier', false)->whereNull('web_user_id'),
-                        };
+                        $kind === 'customer'
+                            ? $inner->whereNotNull('web_user_id')
+                            : $inner->whereNull('web_user_id');
                     });
                 }
             });

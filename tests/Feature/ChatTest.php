@@ -5774,7 +5774,7 @@ test('a fact drawer opens only what is on the menu and only for the customer who
         ->and($drawer->handle('alternatives', $this->shop, $customer, []))->toBeNull();
 });
 
-test('an email from a courier is filed in the couriers row, not in the queue of customers and guests', function () {
+test('an email from a courier is filed in the Couriers folder and in no other list', function () {
     \Illuminate\Support\Facades\Http::fake();
 
     expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::isCarrierAddress('ops@gls-spain.es'))->toBeTrue()
@@ -5786,10 +5786,11 @@ test('an email from a courier is filed in the couriers row, not in the queue of 
     $stranger = noiseTestEmailSession($this->shop, 'someone@example.com', 'Hello', 'Do you ship to Israel?');
     $courier->update(['is_carrier' => true]);
 
-    $queue = fn (string $pair) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'statuses' => ['waiting'], 'pairs' => [$pair]])->items())->pluck('id')->all();
+    $queue = fn (array $filters) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'statuses' => ['waiting']] + $filters)->items())->pluck('id')->all();
 
-    expect($queue('email:carrier'))->toContain($courier->id)->not->toContain($stranger->id)
-        ->and($queue('email:guest'))->toContain($stranger->id)->not->toContain($courier->id);
+    expect($queue(['carrier' => true]))->toContain($courier->id)->not->toContain($stranger->id)
+        ->and($queue(['pairs' => ['email:guest']]))->toContain($stranger->id)->not->toContain($courier->id)
+        ->and($queue([]))->not->toContain($courier->id);
 });
 
 

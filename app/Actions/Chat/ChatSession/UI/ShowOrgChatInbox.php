@@ -296,14 +296,13 @@ class ShowOrgChatInbox extends OrgAction
                     'name'     => $name,
                     'customer' => $tally('customer'),
                     'guest'    => $tally('guest'),
-                    'carrier'  => $tally('carrier'),
                 ];
             };
 
             // Every shop shows the same three columns so the rail reads down as one table;
             // a channel nothing arrives on is held open and empty rather than dropped, which
             // used to shift the icons a row out of line from one shop to the next.
-            $hasEmail    = isset($counts["{$shop->id}.email.customer"]) || isset($counts["{$shop->id}.email.guest"]) || isset($counts["{$shop->id}.email.carrier"]);
+            $hasEmail    = isset($counts["{$shop->id}.email.customer"]) || isset($counts["{$shop->id}.email.guest"]);
             $hasWhatsapp = (bool) Arr::get($shop->settings, 'whatsapp.enabled', false);
 
             $channels = [
@@ -428,12 +427,12 @@ class ShowOrgChatInbox extends OrgAction
             // Put aside keeps its status, so it has to be left out by name: the one active
             // email the rail promised was an ignored one the list rightly would not show.
             ->where('is_rubbish', false)
-            ->groupBy('shop_id', 'channel', 'status', DB::raw('web_user_id is not null'), 'is_carrier', 'by_me', 'by_colleague')
+            ->where('is_carrier', false)
+            ->groupBy('shop_id', 'channel', 'status', DB::raw('web_user_id is not null'), 'by_me', 'by_colleague')
             ->get([
                 'shop_id',
                 'channel',
                 'status',
-                'is_carrier',
                 DB::raw('web_user_id is not null as is_customer'),
                 ...$this->holderColumns('chat_assignments', 'chat_session_id', 'chat_sessions', $agentId),
                 DB::raw('count(*) as total'),
@@ -441,7 +440,7 @@ class ShowOrgChatInbox extends OrgAction
 
         foreach ($rows as $row) {
             $channel = $row->channel instanceof ChatChannelEnum ? $row->channel->value : (string) $row->channel;
-            $kind    = $row->is_carrier ? 'carrier' : ($row->is_customer ? 'customer' : 'guest');
+            $kind    = $row->is_customer ? 'customer' : 'guest';
             $key     = "{$row->shop_id}.{$channel}.{$kind}";
 
             $add($key, $row->status->value, (int) $row->total);

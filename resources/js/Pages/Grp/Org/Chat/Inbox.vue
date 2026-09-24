@@ -211,6 +211,8 @@ const highlightView = ref(false)
 // agent works, and no my/team of its own; like every folder it reads the shops picked above.
 const unclaimedView = ref(false)
 const unclaimedCount = ref(0)
+const carrierView = ref(false)
+const carriersCount = ref(0)
 const spamCount = ref(0)
 
 // Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
@@ -222,7 +224,7 @@ const spamRailTooltip = computed(() =>
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
-const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || unclaimedView.value)
+const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || unclaimedView.value)
     && selectedShopIds.value.length !== 1)
 
 // Folders read the shops picked above: somebody covering many shops clears their own backlog,
@@ -506,18 +508,14 @@ const selectedChannel = computed(() => (selectedChannels.value.length === 1 ? se
 
 const isChannelOn = (key: string) => selectedChannels.value.includes(key)
 
-type ChatKind = "customer" | "guest" | "carrier"
+type ChatKind = "customer" | "guest"
 
 const KINDS: Array<{ key: ChatKind; initial: string; label: string }> = [
     { key: "customer", initial: "C", label: ctrans("Customers") },
     { key: "guest", initial: "G", label: ctrans("Guests") },
-    { key: "carrier", initial: "", label: ctrans("Couriers") },
 ]
 
 const cellKey = (channelKey: string, kind: ChatKind) => `${channelKey}:${kind}`
-
-const cellAvailable = (channel: { key: string; available?: boolean }, kind: ChatKind) =>
-    channel.available !== false && (kind !== "carrier" || channel.key === "email")
 
 // A colleague's load is not a shop's list, so while one is picked no shop is the open one:
 // every row folds back to its line and nothing reads as selected.
@@ -564,13 +562,14 @@ const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
 // not the same as wanting both channels from both.
 const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
     const key = cellKey(channelKey, kind)
-    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !unclaimedView.value
+    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !carrierView.value && !unclaimedView.value
     const sameShop = alreadyShowing && (selectedShopId.value === shopId || selectedShopIds.value.length > 1)
 
     if (!sameShop) {
         spamView.value = false
         rubbishView.value = false
         trashView.value = false
+        carrierView.value = false
         highlightView.value = false
         unclaimedView.value = false
         setShop(shopId)
@@ -606,7 +605,9 @@ const buildParams = (page: number) => ({
                     ? { unclaimed: 1 }
                     : highlightView.value
                         ? { highlighted: 1, statuses: selectedStatuses.value }
-                        : { statuses: selectedStatuses.value }),
+                        : carrierView.value
+                            ? { carrier: 1, statuses: selectedStatuses.value }
+                            : { statuses: selectedStatuses.value }),
     ...(isStatusOn("closed") ? { closed_period: closedPeriod.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
@@ -622,7 +623,7 @@ const buildParams = (page: number) => ({
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
 const isMergedView = computed(() =>
-    spamView.value || rubbishView.value || trashView.value || highlightView.value || unclaimedView.value || agentView.value
+    spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || unclaimedView.value || agentView.value
     || selectedShopIds.value.length > 1
 )
 
@@ -1046,6 +1047,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     spamView.value = false
     rubbishView.value = false
     trashView.value = false
+    carrierView.value = false
     highlightView.value = false
     unclaimedView.value = false
     setShop(shopId)
@@ -1076,6 +1078,7 @@ const selectRubbish = () => {
     rubbishView.value = true
     spamView.value = false
     trashView.value = false
+    carrierView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1091,6 +1094,7 @@ const selectSpam = () => {
     spamView.value = true
     rubbishView.value = false
     trashView.value = false
+    carrierView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1106,6 +1110,7 @@ const selectTrash = () => {
     trashView.value = true
     rubbishView.value = false
     spamView.value = false
+    carrierView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1121,6 +1126,7 @@ const selectTrash = () => {
 const selectUnclaimed = () => {
     if (unclaimedView.value) return
     unclaimedView.value = true
+    carrierView.value = false
     highlightView.value = false
     rubbishView.value = false
     spamView.value = false
@@ -1133,9 +1139,26 @@ const selectUnclaimed = () => {
     reloadContacts()
 }
 
+const selectCarriers = () => {
+    if (carrierView.value) return
+    carrierView.value = true
+    highlightView.value = false
+    rubbishView.value = false
+    spamView.value = false
+    trashView.value = false
+    unclaimedView.value = false
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    reloadContacts()
+}
+
 const selectHighlight = () => {
     if (highlightView.value) return
     highlightView.value = true
+    carrierView.value = false
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
@@ -1403,6 +1426,7 @@ const fetchAgentNotifications = async () => {
         })
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
         unclaimedCount.value = data?.data?.unclaimed ?? 0
+        carriersCount.value = data?.data?.carriers ?? 0
         spamCount.value = data?.data?.spam ?? 0
     } catch (e) {
         // silent — badges are non-critical
@@ -1987,38 +2011,36 @@ onUnmounted(() => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="kind in KINDS" v-show="kind.key !== 'carrier' || inbox.channels.some((channel) => channel.key === 'email' && channel.available !== false)" :key="kind.key">
+                            <tr v-for="kind in KINDS" :key="kind.key">
                                 <td v-tooltip="kind.label" class="text-[9px] font-bold text-center border-r border-slate-100"
-                                    :class="kind.key === 'customer' ? 'text-green-500' : kind.key === 'carrier' ? 'text-amber-600' : 'text-blue-400'">
+                                    :class="kind.key === 'customer' ? 'text-green-500' : 'text-blue-400'">
                                     <FontAwesomeIcon v-if="kind.key === 'customer'" :icon="faUser" class="text-[10px]" fixed-width aria-hidden="true" />
-                                    <FontAwesomeIcon v-else-if="kind.key === 'carrier'" :icon="faTruck" class="text-[10px]" fixed-width aria-hidden="true" />
                                     <template v-else>{{ kind.initial }}</template>
                                 </td>
                                 <td v-for="channel in inbox.channels" :key="channel.key"
                                     class="border border-slate-100">
-                                    <button type="button" :disabled="!cellAvailable(channel, kind.key)"
+                                    <button type="button" :disabled="channel.available === false"
                                         class="w-full flex items-center justify-center gap-1 px-1 py-0.5 leading-5 transition-colors"
-                                        :class="!cellAvailable(channel, kind.key) ? 'bg-slate-50/60 cursor-default' : isCellOn(inbox.id, channel.key, kind.key) ? '' : 'hover:bg-slate-100'"
-                                        :style="cellAvailable(channel, kind.key) && isCellOn(inbox.id, channel.key, kind.key) ? { backgroundColor: selectedCellFill } : {}"
+                                        :class="channel.available === false ? 'bg-slate-50/60 cursor-default' : isCellOn(inbox.id, channel.key, kind.key) ? '' : 'hover:bg-slate-100'"
+                                        :style="channel.available !== false && isCellOn(inbox.id, channel.key, kind.key) ? { backgroundColor: selectedCellFill } : {}"
                                         @click="selectCell(inbox.id, channel.key, kind.key)">
-                                        <span v-if="!cellAvailable(channel, kind.key)" class="text-slate-300">&mdash;</span>
+                                        <span v-if="channel.available === false" class="text-slate-300">&mdash;</span>
                                         <!-- The selected cell is filled, the same way the rest of
                                              the page marks what is selected. A box around it drew
                                              a blob across the rows that were on together. -->
-                                        <span v-if="cellAvailable(channel, kind.key)" class="font-semibold"
+                                        <span v-if="channel.available !== false" class="font-semibold"
                                             :class="isCellOn(inbox.id, channel.key, kind.key) ? '' : 'text-slate-700'"
                                             :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
                                             {{ channel[kind.key].waiting }}
                                         </span>
-                                        <span v-if="cellAvailable(channel, kind.key)"
+                                        <span v-if="channel.available !== false"
                                             :class="isCellOn(inbox.id, channel.key, kind.key) ? 'opacity-50' : 'text-slate-400'"
                                             :style="isCellOn(inbox.id, channel.key, kind.key) ? { color: 'var(--theme-color-4)' } : {}">
                                             {{ channel[kind.key].active }}
                                         </span>
                                     </button>
                                 </td>
-                                <td v-if="kind.key === 'carrier'" class="border border-slate-100 border-l-slate-200" />
-                                <td v-else class="border border-slate-100 border-l-slate-200">
+                                <td class="border border-slate-100 border-l-slate-200">
                                     <button type="button" @click="openPhoneCalls(inbox)"
                                         v-tooltip="ctrans('Phone calls on this shop')"
                                         class="w-full flex items-center justify-center px-1 py-0.5 leading-5 transition-colors hover:bg-slate-100">
@@ -2084,7 +2106,7 @@ onUnmounted(() => {
                     @click="railSectionOpen = { ...railSectionOpen, folders: !railSectionOpen.folders }">
                     <FontAwesomeIcon :icon="railSectionOpen.folders ? faAngleDown : faAngleRight" class="text-[10px]" />
                     {{ ctrans("Folders") }}
-                    <span v-if="unclaimedCount" class="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold normal-case text-white">
+                    <span v-if="unclaimedCount" class="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none normal-case tabular-nums text-white">
                         {{ unclaimedCount }}
                     </span>
                 </button>
@@ -2114,8 +2136,23 @@ onUnmounted(() => {
                     </span>
                     <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Unclaimed") }}</span>
                     <span v-if="!railCollapsed && unclaimedCount"
-                        class="text-[10px] font-semibold rounded-full px-1.5 py-0.5 bg-red-500 text-white shrink-0">
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none tabular-nums text-white">
                         {{ unclaimedCount }}
+                    </span>
+                </button>
+                <button type="button" @click="selectCarriers"
+                    v-tooltip="ctrans('Emails from couriers about deliveries')"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        carrierView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="carrierView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faTruck" class="text-sm shrink-0" :class="carrierView ? 'text-gray-600' : ''" fixed-width />
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Couriers") }}</span>
+                    <span v-if="!railCollapsed && carriersCount"
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gray-200 px-1 text-[10px] font-semibold leading-none tabular-nums text-gray-700">
+                        {{ carriersCount }}
                     </span>
                 </button>
             </div>
@@ -2189,7 +2226,7 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : carrierView ? ctrans("Couriers") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
                     <div v-if="agentView" class="text-[11px] text-gray-500">
                         {{ ctrans("Across every shop") }}
@@ -2197,7 +2234,7 @@ onUnmounted(() => {
                     <div v-else-if="unclaimedView" class="text-[11px] text-gray-500 truncate">
                         {{ ctrans(":shops, waiting longer than agreed", { shops: folderScope }) }}
                     </div>
-                    <div v-else-if="spamView || trashView || rubbishView || highlightView" class="text-[11px] text-gray-500 truncate">
+                    <div v-else-if="spamView || trashView || rubbishView || highlightView || carrierView" class="text-[11px] text-gray-500 truncate">
                         {{ folderScope }}
                     </div>
                     <div v-else-if="selectedShopIds.length > 1" class="text-[11px] text-gray-500">
