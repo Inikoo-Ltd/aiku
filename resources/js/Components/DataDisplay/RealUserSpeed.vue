@@ -10,7 +10,7 @@ import Chart from "primevue/chart"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faDesktop, faMobile, faGlobe, faImage, faHandPointer, faArrowsAlt, faPaintBrush, faServer, faSmile, faMeh, faFrown } from "@fal"
+import { faDesktop, faMobile, faGlobe, faImage, faHandPointer, faArrowsAlt, faPaintBrush, faServer, faSmile, faMeh, faFrown, faTachometerAltFast, faPencilRuler } from "@fal"
 
 type FormFactor = "desktop" | "phone" | "all"
 type Metric = "lcp" | "inp" | "cls" | "fcp" | "ttfb"
@@ -37,6 +37,11 @@ const metrics: Array<{ key: Metric; label: string; short: string; good: number; 
 	{ key: "cls", label: ctrans("Cumulative Layout Shift"), short: "CLS", good: 0.1, poor: 0.25, pointStyle: "triangle", icon: faArrowsAlt },
 	{ key: "fcp", label: ctrans("First Contentful Paint"), short: "FCP", good: 1800, poor: 3000, pointStyle: "rectRot", icon: faPaintBrush },
 	{ key: "ttfb", label: ctrans("Time to First Byte"), short: "TTFB", good: 800, poor: 1800, pointStyle: "star", icon: faServer },
+]
+
+const metricGroups = [
+	{ key: "speed", label: ctrans("Speed"), icon: faTachometerAltFast, metrics: ["ttfb", "fcp", "lcp", "inp"].map((key) => metrics.find((metric) => metric.key === key)!) },
+	{ key: "design", label: ctrans("Design"), icon: faPencilRuler, metrics: metrics.filter((metric) => metric.key === "cls") },
 ]
 
 const formFactors: Array<{ key: FormFactor; label: string; icon: typeof faDesktop }> = [
@@ -285,17 +290,25 @@ const chartOptions = computed(() => ({
 		</div>
 
 		<div v-else class="space-y-4 px-6 py-6">
-			<div class="flex flex-wrap gap-2">
-				<span
-					v-for="metric in metrics"
-					:key="metric.key"
-					v-tooltip="`${metric.short}: ${metric.label}`"
-					class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm tabular-nums shadow-sm">
-					<FontAwesomeIcon :icon="metric.icon" :style="{ color: ratingTextColor[ratingOf(metric.key, latest?.[metric.key] ?? null) ?? 'needs_improvement'] }" fixed-width aria-hidden="true" />
-					<span class="font-semibold text-gray-700">{{ display(metric.key, latest?.[metric.key] ?? null) }}</span>
-					<span class="h-1.5 w-1.5 shrink-0 rounded-full" :style="{ backgroundColor: ratingColor[ratingOf(metric.key, latest?.[metric.key] ?? null) ?? 'needs_improvement'] }" aria-hidden="true" />
-					<span class="sr-only">{{ metric.label }}</span>
-				</span>
+			<div class="flex flex-wrap gap-3">
+				<div v-for="group in metricGroups" :key="group.key" class="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-2" :data-metric-group="group.key">
+					<span v-tooltip="group.label" class="px-1 text-gray-400">
+						<FontAwesomeIcon :icon="group.icon" fixed-width aria-hidden="true" />
+						<span class="sr-only">{{ group.label }}</span>
+					</span>
+					<div class="flex flex-wrap gap-2">
+						<span
+							v-for="metric in group.metrics"
+							:key="metric.key"
+							v-tooltip="`${metric.short}: ${metric.label}`"
+							class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm tabular-nums shadow-sm">
+							<FontAwesomeIcon :icon="metric.icon" :style="{ color: ratingTextColor[ratingOf(metric.key, latest?.[metric.key] ?? null) ?? 'needs_improvement'] }" fixed-width aria-hidden="true" />
+							<span class="font-semibold text-gray-700">{{ display(metric.key, latest?.[metric.key] ?? null) }}</span>
+							<span class="h-1.5 w-1.5 shrink-0 rounded-full" :style="{ backgroundColor: ratingColor[ratingOf(metric.key, latest?.[metric.key] ?? null) ?? 'needs_improvement'] }" aria-hidden="true" />
+							<span class="sr-only">{{ metric.label }}</span>
+						</span>
+					</div>
+				</div>
 			</div>
 
 			<div class="h-80 w-full">
