@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Bundle;
 use App\Actions\Catalogue\Product\UploadImagesToProduct;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UploadRetinaBundleProductImages extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
     use SanitizeInputs;
 

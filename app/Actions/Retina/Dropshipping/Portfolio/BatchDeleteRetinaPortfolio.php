@@ -26,12 +26,12 @@ class BatchDeleteRetinaPortfolio extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
-        foreach (Arr::get($modelData, 'portfolios') as $portfolioId) {
-            $portfolio = Portfolio::find($portfolioId);
+        $portfolios = Portfolio::whereIn('id', Arr::get($modelData, 'portfolios'))
+            ->with('customerSalesChannel.platform')
+            ->get();
 
-            if ($portfolio) {
-                DeletePortfolio::run($portfolio);
-            }
+        foreach ($portfolios as $portfolio) {
+            DeletePortfolio::run($portfolio);
         }
     }
 

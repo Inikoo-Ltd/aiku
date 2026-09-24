@@ -9,6 +9,7 @@
 
 namespace App\Actions\Helpers\Tag;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
 use App\Actions\Helpers\Tag\Hydrators\TagHydrateModels;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateTagsFromTradeUnits;
@@ -22,6 +23,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DetachTagFromModel extends OrgAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
+
     public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): void
     {
         try {
@@ -84,6 +87,8 @@ class DetachTagFromModel extends OrgAction
 
     public function inRetina(Customer $customer, Tag $tag, ActionRequest $request): void
     {
+        abort_unless($this->retinaCustomerOwnsRouteModels($request), 403);
+
         try {
             $this->initialisationFromShop($customer->shop, $request);
             $this->handle($customer, $tag);

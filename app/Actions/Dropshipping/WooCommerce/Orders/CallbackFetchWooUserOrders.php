@@ -8,15 +8,25 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Orders;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\ActionRequest;
 
 class CallbackFetchWooUserOrders extends OrgAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
+
     public function handle(WooCommerceUser $wooCommerceUser): void
     {
         FetchWooUserOrders::dispatch($wooCommerceUser);
+    }
+
+    public function inRetina(WooCommerceUser $wooCommerceUser, ActionRequest $request): void
+    {
+        abort_unless($this->retinaCustomerOwnsRouteModels($request), 403);
+
+        $this->asController($wooCommerceUser, $request);
     }
 
     public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request): void

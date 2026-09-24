@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Fulfilment\PalletReturn;
 
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Fulfilment\Pallet\ImportPalletReturnItem;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithImportModel;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ImportRetinaPalletReturnItem extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithImportModel;
 
     public function handle(PalletReturn $palletReturn, $file): Upload
@@ -31,11 +33,6 @@ class ImportRetinaPalletReturnItem extends RetinaAction
         return [
             'file'             => ['required', 'file', 'mimes:xlsx,csv,xls,txt'],
         ];
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     public function asController(PalletReturn $palletReturn, ActionRequest $request): Upload

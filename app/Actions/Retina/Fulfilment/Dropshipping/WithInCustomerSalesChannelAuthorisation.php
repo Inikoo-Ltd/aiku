@@ -12,7 +12,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 trait WithInCustomerSalesChannelAuthorisation
 {
-    public function authorise(ActionRequest $request): bool
+    public function authorize(ActionRequest $request): bool
     {
         $customerSalesChannel = $request->route('customerSalesChannel');
         if ($customerSalesChannel->customer_id == $this->customer->id) {

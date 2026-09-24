@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaPortfoliosFromProductCategory extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     /**
@@ -39,11 +41,6 @@ class StoreRetinaPortfoliosFromProductCategory extends RetinaAction
         DB::transaction(function () use ($customerSalesChannel, $data) {
             StoreMultiplePortfolios::run($customerSalesChannel, $data);
         });
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     /**
