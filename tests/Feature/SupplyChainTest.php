@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Helpers\Redirects\RedirectSupplierLink;
+use App\Models\SysAdmin\User;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductShowcase;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
@@ -545,6 +547,21 @@ test('majordomo redirect supplier link', function () {
 
     $this->get(route('grp.majordomo.redirect_supplier', [$agentSupplier->id]))
         ->assertRedirect(route('grp.supply-chain.agents.show.suppliers.show', [$agent->slug, $agentSupplier->slug]));
+});
+
+test('majordomo redirect supplier link sends users without supply chain access to their organisation procurement', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+
+    $procurementUser = Mockery::mock(User::class)->makePartial();
+    $procurementUser->shouldReceive('authTo')->with('supply-chain.view')->andReturnFalse();
+    $procurementUser->shouldReceive('authTo')->andReturnUsing(fn (string $permission) => $permission === "procurement.{$this->organisation->id}.view");
+
+    expect(RedirectSupplierLink::run($supplier, $procurementUser)->getTargetUrl())
+        ->toBe(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug]));
 });
 
 test('majordomo redirect supplier product link', function () {
