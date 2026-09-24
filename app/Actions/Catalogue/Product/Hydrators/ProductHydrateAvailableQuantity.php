@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
-use App\Actions\Catalogue\Shop\NotifyShopStockArrivals;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -138,9 +137,6 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         $cameBackInStock = ($currentQuantity ?? 0) == 0 && $availableQuantity > 0;
         if ($wentOutOfStock || $cameBackInStock) {
             SyncBasketLinesWithProductStock::dispatch($product);
-        }
-        if ($cameBackInStock && $product->is_for_sale) {
-            NotifyShopStockArrivals::dispatch($product->shop)->delay(now()->addMinutes(NotifyShopStockArrivals::GATHER_MINUTES));
         }
 
         return $product;

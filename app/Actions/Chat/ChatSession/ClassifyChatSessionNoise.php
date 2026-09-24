@@ -38,7 +38,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * views an agent uses and comes back with the same one click, and a conversation is checked a
  * single time. After that, and after anything a person decided, it is never touched again.
  *
- * Rules that cannot be wrong come first and always put aside. The model only sees what the
+ * Rules that cannot be wrong come first and always put aside, except the one that knows a
+ * colleague, which keeps them in the queue. The model only sees what the
  * rules could not decide, and puts aside only what it is at least put_aside_confidence sure of,
  * never on website chat and never a machine's notification the rules let through: a marketplace
  * order, a customs form or a payment notice looks automated and still needs somebody. Anything
@@ -293,20 +294,20 @@ class ClassifyChatSessionNoise
             return ['verdict' => ChatNoiseVerdictEnum::AUTOMATED_NOTIFICATION, 'note' => 'Sent by a machine: '.$from];
         }
 
-        if (self::isStaffEmail($from)) {
-            return ['verdict' => ChatNoiseVerdictEnum::NOT_FOR_US, 'note' => 'One of our own staff: '.$from];
-        }
-
         if (Arr::get($headers, 'list_unsubscribe') || strtolower((string) Arr::get($headers, 'precedence')) === 'list') {
             return ['verdict' => ChatNoiseVerdictEnum::MARKETING, 'note' => 'Sent to a mailing list'];
+        }
+
+        if (self::isStaffEmail($from)) {
+            return ['verdict' => ChatNoiseVerdictEnum::GENUINE, 'note' => 'One of our own staff: '.$from];
         }
 
         return null;
     }
 
     /**
-     * A colleague writing to a shop's mailbox, typically a stock list sent round every shop,
-     * is never a customer waiting for an answer.
+     * A colleague writing to a shop's mailbox is somebody asking customer service for something:
+     * it stays in the queue without asking the model, and never gets an automatic reply.
      */
     public static function isStaffEmail(string $from): bool
     {

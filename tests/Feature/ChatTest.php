@@ -5106,7 +5106,7 @@ test('ignoring a conversation records why, and undoing it puts the conversation 
     $session->forceDelete();
 });
 
-test('mail from one of our own shops or staff never becomes a chat session', function () {
+test('mail from one of our own shops or a staff buying account never becomes a chat session, a colleague writing from work does', function () {
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
     $this->shop->update(['settings' => $settings]);
@@ -5137,7 +5137,6 @@ test('mail from one of our own shops or staff never becomes a chat session', fun
     \Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
         'gmail.googleapis.com/gmail/v1/users/me/messages/o1*' => $gmailMessage('o1', 'AW Artisan <hola@awartisan.es>'),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/o2*' => $gmailMessage('o2', 'David Hardy <David@AncientWisdom.biz>'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/o3*' => $gmailMessage('o3', 'Staff Buyer <buyer.staff@example.com>'),
         'gmail.googleapis.com/gmail/v1/users/me/labels'       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered']]]),
         'gmail.googleapis.com/*'                              => \Illuminate\Support\Facades\Http::response([]),
@@ -5145,12 +5144,13 @@ test('mail from one of our own shops or staff never becomes a chat session', fun
 
     $sessionsBefore = ChatSession::count();
 
-    foreach (['o1', 'o2', 'o3'] as $id) {
+    foreach (['o1', 'o3'] as $id) {
         expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, $id))->toBeNull();
         \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), "messages/$id/modify") && $request['addLabelIds'] === ['LF']);
     }
 
-    expect(ChatSession::count())->toBe($sessionsBefore);
+    expect(ChatSession::count())->toBe($sessionsBefore)
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::ourOwnAddresses())->not->toHaveKey('david@ancientwisdom.biz');
 });
 
 test('the sweep marks email conversations already imported from our own addresses as rubbish', function () {
@@ -5486,7 +5486,7 @@ test('machine mail from a stranger is put aside by rule without asking the model
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($dmarc)['automatic'])->toBeTrue();
 });
 
-test('a colleague emailing a shop mailbox is put aside as one of our own staff', function () {
+test('a colleague emailing a shop mailbox stays in the queue without asking the model', function () {
     \Illuminate\Support\Facades\Http::fake();
 
     $this->user->update(['email' => 'goods.in@staff-test.example']);
@@ -5497,10 +5497,11 @@ test('a colleague emailing a shop mailbox is put aside as one of our own staff',
 
     \Illuminate\Support\Facades\Http::assertNothingSent();
 
-    expect($colleague->is_rubbish)->toBeTrue()
-        ->and($colleague->rubbish_reason)->toBe('not_for_us')
+    expect($colleague->is_rubbish)->toBeFalse()
+        ->and($colleague->noise_verdict)->toBe('genuine')
         ->and($colleague->noise_source)->toBe('rule')
-        ->and($colleague->noise_note)->toContain('One of our own staff');
+        ->and($colleague->noise_note)->toContain('One of our own staff')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($colleague))->toBeNull();
 });
 
 test('the waiting queue is worked oldest first and the bins are still newest first', function () {

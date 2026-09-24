@@ -54,7 +54,7 @@ class ClassifyIdleChatSessionsNoise
                         }
 
                         $rule = ClassifyChatSessionNoise::make()->verdictByRules($chatSession);
-                        if ($rule) {
+                        if ($rule && $rule['verdict']->isNoise()) {
                             $found++;
                             $who = $chatSession instanceof MetaChatSession ? $chatSession->phone_number : data_get($chatSession->metadata, 'email_from');
                             $command?->line("$chatSession->ulid $who -> {$rule['verdict']->value} ({$rule['note']})");

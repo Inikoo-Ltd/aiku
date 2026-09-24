@@ -12,70 +12,77 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\User;
 use App\Notifications\ShopStockArrivalsNotification;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Tells a shop's customer service what has just become sellable, so nobody has to email a
- * "new / back in stock" list round the shops. A booked in delivery brings products back one by
- * one, so the first one opens a short wait and everything that arrives meanwhile goes out as one
- * notification per person, split into products never sold before and products back from out of
- * stock, the ones with customers waiting on a reminder first.
+ * Tells customer service what has just become sellable, so nobody has to email a "new / back in
+ * stock" list round the shops. Runs every hour: each person gets one notification covering every
+ * shop they look after, products never sold before apart from products back from out of stock,
+ * the ones with customers waiting on a reminder first. One per shop buried the bell of anybody
+ * looking after forty shops.
  */
-class NotifyShopStockArrivals implements ShouldBeUnique
+class NotifyShopStockArrivals
 {
     use AsAction;
 
-    public const int GATHER_MINUTES = 30;
+    public const string SENT_MARKER = 'shop-stock-arrivals-sent';
 
     public string $jobQueue = 'default';
 
-    public function getJobUniqueId(Shop $shop): string
+    public function handle(): int
     {
-        return (string) $shop->id;
-    }
+        $until = now();
+        // ponytail: the marker lives in the cache; if it is lost the next run only looks back an hour.
+        $since = Carbon::parse(Cache::get(self::SENT_MARKER, $until->copy()->subHour()));
 
-    public function handle(Shop $shop): int
-    {
-        if (!$shop->is_aiku || $shop->state !== ShopStateEnum::OPEN) {
-            return 0;
-        }
-
-        $until  = now();
-        $marker = 'shop-stock-arrivals-sent:'.$shop->id;
-        // ponytail: the marker lives in the cache; if it is lost the next notification repeats up to a day of arrivals.
-        $since = Carbon::parse(Cache::get($marker, $until->copy()->subDay()));
-
-        $arrivals = $this->arrivals($shop, $since, $until);
-        Cache::forever($marker, $until->toIso8601String());
+        $arrivals = $this->arrivals($since, $until);
+        Cache::forever(self::SENT_MARKER, $until->toIso8601String());
 
         if ($arrivals->isEmpty()) {
             return 0;
         }
 
-        $recipients = $this->customerServiceUsers($shop);
-        if ($recipients->isEmpty()) {
-            return 0;
+        $shops    = Shop::whereIn('id', $arrivals->pluck('shop_id')->unique())->get()->keyBy('id');
+        $notified = 0;
+
+        foreach ($this->customerServiceShops($shops->keys()) as $userId => $shopIds) {
+            $user = User::where('id', $userId)->where('status', true)->first();
+            if (!$user) {
+                continue;
+            }
+
+            $theirArrivals = $arrivals->whereIn('shop_id', $shopIds);
+
+            [$new, $back] = $theirArrivals->partition(fn (Product $product) => $product->first_in_stock_at && Carbon::parse($product->first_in_stock_at)->gte($since));
+
+            $newCodes  = $new->pluck('code')->unique()->values()->all();
+            $backCodes = $back->pluck('code')->unique()->diff($newCodes)->values()->all();
+
+            $theirShops = $theirArrivals->groupBy('shop_id')
+                ->sortByDesc(fn (Collection $products) => [$products->sum('waiting_customers'), $products->count()])
+                ->keys()
+                ->map(fn (int $shopId) => $shops[$shopId]);
+
+            $user->notify(new ShopStockArrivalsNotification($theirShops->first(), $theirShops->pluck('code')->all(), $newCodes, $backCodes, (int) $back->sum('waiting_customers')));
+            $notified++;
         }
 
-        [$new, $back] = $arrivals->partition(fn (Product $product) => $product->first_in_stock_at && Carbon::parse($product->first_in_stock_at)->gte($since));
-
-        Notification::send($recipients, new ShopStockArrivalsNotification($shop, $new->pluck('code')->all(), $back->pluck('code')->all(), (int) $back->sum('waiting_customers')));
-
-        return $recipients->count();
+        return $notified;
     }
 
     /**
      * @return Collection<int, Product>
      */
-    private function arrivals(Shop $shop, Carbon $since, Carbon $until): Collection
+    private function arrivals(Carbon $since, Carbon $until): Collection
     {
-        return Product::where('shop_id', $shop->id)
+        $openShopIds = Shop::where('is_aiku', true)->where('state', ShopStateEnum::OPEN)->pluck('id');
+
+        return Product::whereIn('shop_id', $openShopIds)
             ->where('is_for_sale', true)
             ->where('available_quantity', '>', 0)
             ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
@@ -84,24 +91,28 @@ class NotifyShopStockArrivals implements ShouldBeUnique
             ->withCount(['backInStockReminders as waiting_customers'])
             ->orderByDesc('waiting_customers')
             ->orderBy('code')
-            ->get(['id', 'code', 'first_in_stock_at']);
+            ->get(['id', 'shop_id', 'code', 'first_in_stock_at']);
     }
 
     /**
-     * Whoever works or supervises the shop's chat, which is exactly its customer service.
+     * Whoever works or supervises a shop's chat, which is exactly its customer service.
      *
-     * @return Collection<int, User>
+     * @param  Collection<int, int>  $shopIds
+     *
+     * @return Collection<int, array<int, int>> user id to the shops they look after
      */
-    private function customerServiceUsers(Shop $shop): Collection
+    private function customerServiceShops(Collection $shopIds): Collection
     {
-        $userIds = DB::table('model_has_roles')
+        $permissions = $shopIds->flatMap(fn (int $shopId) => ['chat.'.$shopId, 'chat-m.'.$shopId]);
+
+        return DB::table('model_has_roles')
             ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
             ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
             ->where('model_has_roles.model_type', 'User')
-            ->whereIn('permissions.name', ['chat.'.$shop->id, 'chat-m.'.$shop->id])
+            ->whereIn('permissions.name', $permissions)
             ->distinct()
-            ->pluck('model_has_roles.model_id');
-
-        return User::whereIn('id', $userIds)->where('status', true)->get();
+            ->get(['model_has_roles.model_id', 'permissions.name'])
+            ->groupBy('model_id')
+            ->map(fn (Collection $rows) => $rows->map(fn ($row) => (int) Str::afterLast($row->name, '.'))->unique()->values()->all());
     }
 }

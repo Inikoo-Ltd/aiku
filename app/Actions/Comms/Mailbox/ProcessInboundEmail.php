@@ -21,7 +21,6 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\HumanResources\Employee;
 use App\Models\CRM\Customer;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
@@ -408,8 +407,8 @@ class ProcessInboundEmail
      * is on: neither is a customer waiting for an answer, so they never open a conversation. Matched
      * on the address rather than the domain, since customers do buy from us on our own domains.
      *
-     * Staff accounts count here whichever way they reach us: a shop mailbox, an employee's work
-     * address, or the account they order on with is_staff set, including the web users under it.
+     * The accounts staff order on count here, with the web users under them. A colleague writing
+     * from their own address does not: that is somebody asking customer service for something.
      */
     private function isOneOfOurs(?string $address): bool
     {
@@ -425,10 +424,6 @@ class ProcessInboundEmail
     {
         return Cache::remember('chat.our_own_email_addresses', 300, function () {
             $ours = [];
-
-            foreach (Employee::whereNotNull('work_email')->pluck('work_email') as $email) {
-                $ours[strtolower($email)] = ChatIgnoreReasonEnum::NOT_FOR_US;
-            }
 
             foreach (Customer::where('is_staff', true)->whereNotNull('email')->pluck('email') as $email) {
                 $ours[strtolower($email)] = ChatIgnoreReasonEnum::NOT_FOR_US;

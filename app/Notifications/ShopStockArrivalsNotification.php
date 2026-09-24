@@ -7,22 +7,23 @@
 namespace App\Notifications;
 
 use App\Models\Catalogue\Shop;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class ShopStockArrivalsNotification extends Notification implements ShouldQueue
+class ShopStockArrivalsNotification extends Notification
 {
-    use Queueable;
-
     private const int CODES_SHOWN = 25;
 
+    private const int SHOPS_SHOWN = 3;
+
     /**
+     * @param  Shop  $shop  the shop the notification opens, the one with the most customers waiting
+     * @param  array<int, string>  $shopCodes
      * @param  array<int, string>  $newCodes
      * @param  array<int, string>  $backCodes
      */
     public function __construct(
         public Shop $shop,
+        public array $shopCodes,
         public array $newCodes,
         public array $backCodes,
         public int $waitingCustomers
@@ -48,7 +49,7 @@ class ShopStockArrivalsNotification extends Notification implements ShouldQueue
         }
 
         return [
-            'title' => __(':count in stock · :shop', ['count' => count($this->newCodes) + count($this->backCodes), 'shop' => $this->shop->code]),
+            'title' => __(':count in stock · :shop', ['count' => count($this->newCodes) + count($this->backCodes), 'shop' => $this->shopList()]),
             'body'  => implode("\n", $lines),
             'type'  => 'stock_arrivals',
             'slug'  => $this->shop->slug,
@@ -60,6 +61,14 @@ class ShopStockArrivalsNotification extends Notification implements ShouldQueue
                 ],
             ],
         ];
+    }
+
+    private function shopList(): string
+    {
+        $shown = implode(', ', array_slice($this->shopCodes, 0, self::SHOPS_SHOWN));
+        $more  = count($this->shopCodes) - self::SHOPS_SHOWN;
+
+        return $more > 0 ? $shown.' +'.$more : $shown;
     }
 
     /**
