@@ -11,11 +11,14 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteOrderAddressCollection extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(Order $order): Order
     {
         $order = UpdateOrder::run($order, [

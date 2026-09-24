@@ -15,13 +15,14 @@ import { useTicketStatusActions } from "@/Composables/useTicketStatusActions"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
+import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faSearch, faTasks, faCommentDots } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faForward, faRocket, faUserPlus, faCheckSquare, faSquare, faBooks, faDatabase, faSearch, faTasks, faCommentDots } from "@fal"
 
-library.add(faBooks, faDatabase, faSearch, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
+library.add(faBooks, faDatabase, faSearch, faTasks, faUserPlus, faCheckSquare, faSquare, faRocket, faVial, faShieldCheck, faShield, faForward, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -37,11 +38,13 @@ const props = defineProps<{
         modules: Option<string>[]
         collaborators?: (Option<number> & { avatar?: Record<string, string> | null })[]
         developers?: { username: string; name: string }[]
+        mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     }
     can_manage: boolean
     can_assign: boolean
     can_flag_confidential: boolean
     can_qa: boolean
+    can_request_qa: boolean
     is_reporter: boolean
     can_change_kind_module: boolean
     can_update?: boolean
@@ -138,23 +141,34 @@ const runStatusAction = (status: string) => {
 }
 
 const isQaVerdictOpen = ref(false)
-const qaVerdict = ref<"passed" | "failed">("passed")
+type QaVerdict = "passed" | "failed" | "skipped"
+
+const qaVerdict = ref<QaVerdict>("passed")
 const qaNote = ref("")
+const qaImages = ref<File[]>([])
+const qaError = ref("")
 const isSendingVerdict = ref(false)
 
-const openQaVerdict = (verdict: "passed" | "failed") => {
+const openQaVerdict = (verdict: QaVerdict) => {
     qaVerdict.value = verdict
     qaNote.value = ""
+    qaImages.value = []
+    qaError.value = ""
     isQaVerdictOpen.value = true
 }
 
 const sendQaVerdict = () => {
-    router.patch(
+    router.post(
         route(props.routes.update.name, props.routes.update.parameters),
-        { qa_status: qaVerdict.value, qa_note: qaNote.value },
+        { _method: "patch", qa_status: qaVerdict.value, qa_note: qaNote.value, images: qaImages.value },
         {
             preserveScroll: true,
-            onStart: () => (isSendingVerdict.value = true),
+            forceFormData: true,
+            onStart: () => {
+                isSendingVerdict.value = true
+                qaError.value = ""
+            },
+            onError: (errors) => (qaError.value = Object.values(errors)[0] ?? ""),
             onFinish: () => (isSendingVerdict.value = false),
             onSuccess: () => {
                 isQaVerdictOpen.value = false
@@ -166,7 +180,16 @@ const sendQaVerdict = () => {
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
 const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
-const canAskQa = computed(() => props.can_contribute && (["in_progress", "waiting", "pending_deploy"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
+const canGiveQaVerdict = computed(() => props.can_qa && (!props.ticket.qa_status || props.ticket.qa_status === "requested"))
+const canSkipQa = computed(() => canGiveQaVerdict.value && !props.ticket.qa_requested_at)
+
+const qaVerdictCopy = computed(() => ({
+    passed: { header: ctrans("QA passed"), prompt: ctrans("What did you check?"), placeholder: ctrans("e.g. tried it on the SK shop with three orders, all fine"), label: ctrans("Pass"), icon: "fal fa-shield-check", type: "primary" },
+    failed: { header: ctrans("QA failed"), prompt: ctrans("What is still wrong?"), placeholder: ctrans("e.g. the total is still wrong when the order has a voucher"), label: ctrans("Fail"), icon: "fal fa-shield", type: "negative" },
+    skipped: { header: ctrans("QA skipped"), prompt: ctrans("Why does this not need a QA check?"), placeholder: ctrans("e.g. copy change only, nothing to test"), label: ctrans("Skip"), icon: "fal fa-forward", type: "secondary" },
+}[qaVerdict.value]))
+
+const canAskQa = computed(() => props.can_request_qa && (["in_progress", "waiting", "pending_deploy"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
 
 // Asking for a check is a question, and a question with nothing said about what changed makes
 // QA guess. The note is optional, since sometimes the ticket already says it.
@@ -257,13 +280,22 @@ const update = (field: string, value: unknown, action: string = field) => {
 
 const isEditingDeployComment = ref(false)
 const deployCommentDraft = ref("")
+const deployCommentImages = ref<File[]>([])
+const deployCommentRemovedFiles = ref<string[]>([])
+const deployCommentError = ref("")
+
+type DeployCommentFile = { ulid: string; name: string; url: string; is_image: boolean }
+const keptDeployCommentFiles = computed<DeployCommentFile[]>(() => (props.ticket.deploy_comment?.files ?? []).filter((file: DeployCommentFile) => !deployCommentRemovedFiles.value.includes(file.ulid)))
 
 const canEditDeployComment = computed(
     () => props.can_contribute && props.ticket.status === "pending_deploy" && !!props.routes.deploy_comment
 )
 
 const startEditDeployComment = () => {
-    deployCommentDraft.value = props.ticket.deploy_comment ?? ""
+    deployCommentDraft.value = props.ticket.deploy_comment?.body ?? ""
+    deployCommentImages.value = []
+    deployCommentRemovedFiles.value = []
+    deployCommentError.value = ""
     isEditingDeployComment.value = true
 }
 
@@ -275,12 +307,17 @@ const cancelEditDeployComment = () => {
 const saveDeployComment = () => {
     if (isBusy.value || !props.routes.deploy_comment) return
 
-    router.patch(
+    router.post(
         route(props.routes.deploy_comment.name, props.routes.deploy_comment.parameters),
-        { body: deployCommentDraft.value },
+        { _method: "patch", body: deployCommentDraft.value, images: deployCommentImages.value, remove_media: deployCommentRemovedFiles.value },
         {
             preserveScroll: true,
-            onStart: () => (pendingAction.value = "deploy_comment"),
+            forceFormData: true,
+            onStart: () => {
+                pendingAction.value = "deploy_comment"
+                deployCommentError.value = ""
+            },
+            onError: (errors) => (deployCommentError.value = Object.values(errors)[0] ?? ""),
             onFinish: () => (pendingAction.value = null),
             onSuccess: () => {
                 isEditingDeployComment.value = false
@@ -362,7 +399,7 @@ const saveDeployComment = () => {
                     </div>
                 </Popover>
             </div>
-            <div v-if="can_manage || is_reporter || ticket.qa_status || canAskQa" class="space-y-2">
+            <div v-if="can_manage || is_reporter || can_qa || ticket.qa_status || canAskQa" class="space-y-2">
                 <div v-if="can_manage || is_reporter">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Status") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
@@ -386,19 +423,21 @@ const saveDeployComment = () => {
                         </button>
                 </div>
                 </div>
-                <div v-if="ticket.qa_status || canAskQa">
+                <div v-if="can_qa || ticket.qa_status || canAskQa">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("QA") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
                         <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
                             <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
                             {{ ticket.qa_status_label }}
                         </span>
-                        <template v-if="can_qa && ticket.qa_status === 'requested'">
+                        <button v-if="canAskQa" v-tooltip="ticket.qa_status ? ctrans('Ask QA to check again') : ctrans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
+                        <button v-if="can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
+                        <span v-if="canGiveQaVerdict && (canAskQa || (can_request_qa && ticket.qa_status === 'requested'))" class="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
+                        <template v-if="canGiveQaVerdict">
                             <button v-tooltip="ctrans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
                             <button v-tooltip="ctrans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>
+                            <button v-if="canSkipQa" v-tooltip="ctrans('QA skipped')" type="button" class="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('skipped')"><FontAwesomeIcon icon="fal fa-forward" fixed-width /></button>
                         </template>
-                        <button v-if="canAskQa" v-tooltip="ticket.qa_status ? ctrans('Ask QA to check again') : ctrans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
-                        <button v-if="can_contribute && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
                 </div>
                 </div>
                 <div v-if="ticket.status === 'pending_deploy' && (ticket.deploy_comment || canEditDeployComment)" class="mt-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
@@ -410,12 +449,18 @@ const saveDeployComment = () => {
                     </div>
 
                     <template v-if="isEditingDeployComment">
-                        <textarea
-                            v-model="deployCommentDraft"
-                            rows="4"
-                            class="w-full rounded-md border border-green-300 bg-white px-2 py-1 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            :placeholder="ctrans('Leave empty to post nothing when the deployment lands')" />
+                        <TicketComposer v-model:body="deployCommentDraft" v-model:images="deployCommentImages" :rows="4" :mentionable="options.mentionable" :placeholder="ctrans('Leave empty to post nothing when the deployment lands')" />
+                        <div v-if="keptDeployCommentFiles.length" class="mt-2 flex flex-wrap gap-1.5">
+                            <span v-for="file in keptDeployCommentFiles" :key="file.ulid" class="inline-flex max-w-full items-center gap-1 rounded border border-green-200 bg-white px-1.5 py-0.5 text-xs text-gray-600">
+                                <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                                <span class="truncate">{{ file.name }}</span>
+                                <button v-tooltip="ctrans('Remove')" type="button" class="text-gray-400 hover:text-red-500" @click="deployCommentRemovedFiles.push(file.ulid)">
+                                    <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                                </button>
+                            </span>
+                        </div>
                         <div class="mt-1 text-xs text-gray-400">{{ ctrans("(markdown works: **bold**, lists, links)") }}</div>
+                        <p v-if="deployCommentError" class="mt-1 text-xs text-red-600">{{ deployCommentError }}</p>
                         <div class="mt-2 flex justify-end gap-2">
                             <button type="button" class="rounded-md px-2 py-1 text-xs text-gray-500 hover:text-gray-700" @click="cancelEditDeployComment">
                                 {{ ctrans("Cancel") }}
@@ -427,7 +472,18 @@ const saveDeployComment = () => {
                         </div>
                     </template>
 
-                    <TicketBody v-else-if="ticket.deploy_comment" :text="ticket.deploy_comment" />
+                    <template v-else-if="ticket.deploy_comment">
+                        <TicketBody v-if="ticket.deploy_comment.body" :text="ticket.deploy_comment.body" />
+                        <div v-if="ticket.deploy_comment.files.length" class="mt-2 flex flex-wrap gap-1.5">
+                            <a v-for="file in ticket.deploy_comment.files" :key="file.ulid" :href="file.url" target="_blank" rel="noopener" class="block" :title="file.name">
+                                <img v-if="file.is_image" :src="file.url" :alt="file.name" class="h-12 w-12 rounded border border-green-200 object-cover" />
+                                <span v-else class="inline-flex max-w-[10rem] items-center gap-1 rounded border border-green-200 bg-white px-1.5 py-0.5 text-xs text-gray-600">
+                                    <FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                                    <span class="truncate">{{ file.name }}</span>
+                                </span>
+                            </a>
+                        </div>
+                    </template>
                     <div v-else class="text-xs italic text-gray-500">{{ ctrans("Nothing will be posted when the deployment lands.") }}</div>
                 </div>
             </div>
@@ -547,15 +603,16 @@ const saveDeployComment = () => {
         </div>
     </Dialog>
 
-    <Dialog v-model:visible="isQaVerdictOpen" modal :header="qaVerdict === 'passed' ? ctrans('QA passed') : ctrans('QA failed')" :style="{ width: '32rem' }">
+    <Dialog v-model:visible="isQaVerdictOpen" modal :header="qaVerdictCopy.header" :style="{ width: '32rem' }">
         <div class="space-y-4 text-sm">
             <div>
-                <p class="text-xs text-gray-500 mb-1">{{ qaVerdict === 'passed' ? ctrans("What did you check?") : ctrans("What is still wrong?") }}</p>
-                <textarea v-model="qaNote" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="qaVerdict === 'passed' ? ctrans('e.g. tried it on the SK shop with three orders, all fine') : ctrans('e.g. the total is still wrong when the order has a voucher')" />
+                <p class="text-xs text-gray-500 mb-1">{{ qaVerdictCopy.prompt }}</p>
+                <TicketComposer v-model:body="qaNote" v-model:images="qaImages" :mentionable="options.mentionable" :placeholder="qaVerdictCopy.placeholder" />
+                <p v-if="qaError" class="mt-1 text-xs text-red-600">{{ qaError }}</p>
             </div>
             <div class="flex justify-end gap-2">
                 <Button type="tertiary" :label="ctrans('Cancel')" @click="isQaVerdictOpen = false" />
-                <Button :type="qaVerdict === 'passed' ? 'primary' : 'negative'" :label="qaVerdict === 'passed' ? ctrans('Pass') : ctrans('Fail')" :icon="qaVerdict === 'passed' ? 'fal fa-shield-check' : 'fal fa-shield'" :loading="isSendingVerdict" :disabled="qaVerdict === 'failed' && !qaNote.trim()" @click="sendQaVerdict" />
+                <Button :type="qaVerdictCopy.type" :label="qaVerdictCopy.label" :icon="qaVerdictCopy.icon" :loading="isSendingVerdict" :disabled="qaVerdict !== 'passed' && !qaNote.trim()" @click="sendQaVerdict" />
             </div>
         </div>
     </Dialog>
@@ -566,6 +623,7 @@ const saveDeployComment = () => {
         :update-route="routes.update"
         :can-wait-for-deployment="can_update && ticket.status !== 'pending_deploy'"
         :closes-conversation="ticket.closes_source"
+        :mentionable="options.mentionable"
         @updated="emit('updated')" />
     </div>
 </template>

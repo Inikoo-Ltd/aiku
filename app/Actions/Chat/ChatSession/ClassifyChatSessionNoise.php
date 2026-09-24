@@ -39,10 +39,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * single time. After that, and after anything a person decided, it is never touched again.
  *
  * Rules that cannot be wrong come first and always put aside. The model only sees what the
- * rules could not decide, and until chat.noise.auto_put_aside is switched on it only leaves a
- * hint for the agent. The one rule the model may overrule is the supplier country on WhatsApp:
- * put aside by default, but a first message that says something gets read, because a real
- * buyer there is rare, not impossible. A bare "Hello" from anywhere else is left unchecked
+ * rules could not decide, and puts aside only what it is at least put_aside_confidence sure of,
+ * never on website chat and never a machine's notification the rules let through: a marketplace
+ * order, a customs form or a payment notice looks automated and still needs somebody. Anything
+ * else only leaves a hint for the agent. The one rule the model
+ * may overrule is the supplier country on WhatsApp: put aside by default, but a first message
+ * that says something gets read, because a real buyer there is rare, not impossible. A bare "Hello" from anywhere else is left unchecked
  * until there is something to read.
  */
 class ClassifyChatSessionNoise
@@ -135,6 +137,7 @@ class ClassifyChatSessionNoise
 
         $putAside = config('chat.noise.auto_put_aside')
             && !self::isWebsite($chatSession)
+            && $answer['verdict'] !== ChatNoiseVerdictEnum::AUTOMATED_NOTIFICATION
             && $answer['confidence'] >= (int) config('chat.noise.put_aside_confidence');
 
         return $this->record($chatSession, $answer['verdict'], self::SOURCE_AI, $answer['confidence'], $answer['note'], $putAside);

@@ -12,7 +12,9 @@ import {
   faTabletAlt,
   faMobileAlt,
   faGlobe, faLink, faSearch, faFragile,
-  faExternalLink
+  faExternalLink,
+  faPowerOff,
+  faArrowRight
 } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -24,6 +26,7 @@ import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWeb
 import RealUserSpeed from '@/Components/DataDisplay/RealUserSpeed.vue'
 import WebpageSeo from '@/Components/DataDisplay/WebpageSeo.vue'
 import WebpageEngagement from '@/Components/DataDisplay/WebpageEngagement.vue'
+import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
@@ -53,10 +56,30 @@ const props = defineProps<{
     code?: string
     url?: string
   },
+  closed?: {
+    closed_at: string | null
+    closed_by: string | null
+  } | null,
   pagespeed?: any,
   engagement?: any,
   seo?: any
 }>()
+
+const isClosed = computed(() => props.data?.state === 'closed')
+
+const closedDescription = computed(() => {
+  const closedAt = props.closed?.closed_at
+  const closedBy = props.closed?.closed_by
+
+  if (closedAt && closedBy) {
+    return ctrans('Set offline on :date by :name', { date: useFormatTime(closedAt, { formatTime: 'hm' }), name: closedBy })
+  }
+  if (closedAt) {
+    return ctrans('Set offline on :date', { date: useFormatTime(closedAt, { formatTime: 'hm' }) })
+  }
+
+  return ctrans('When this webpage was set offline was not recorded')
+})
 
 const detailBesidePreview = computed(() => (props.data?.is_hidden_from_search_engines ?? false) || props.data?.state !== 'live')
 
@@ -91,6 +114,32 @@ const visitRedirect = () => {
 </script>
 
 <template>
+  <div v-if="isClosed" class="px-4 sm:px-6 lg:px-8 py-6">
+    <div class="flex flex-col items-center   border-gray-200 bg-white px-6 py-16 text-center">
+      <div class="flex h-28 w-28 items-center justify-center rounded-full bg-red-50 ring-8 ring-red-50/50">
+        <FontAwesomeIcon :icon="faPowerOff" class="text-6xl text-red-500" fixed-width aria-hidden="true" />
+      </div>
+
+      <h2 class="mt-6 text-2xl font-semibold text-gray-900">{{ ctrans('This webpage is offline') }}</h2>
+      <p class="mt-2 text-sm text-gray-500">{{ closedDescription }}</p>
+
+      <div class="mt-8 w-full max-w-lg rounded-lg border border-gray-200 bg-gray-50 px-5 py-4 text-left">
+        <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Visitors are redirected to') }}</div>
+        <template v-if="redirected_to">
+          <div class="mt-2 flex items-center justify-between gap-4">
+            <div class="min-w-0">
+              <div class="truncate font-semibold text-gray-900">{{ redirected_to.code }}</div>
+              <div class="truncate text-sm text-gray-500">../{{ redirected_to.url }}</div>
+            </div>
+            <Button type="secondary" size="xs" :label="ctrans('View page')" :iconRight="faArrowRight" @click="visitRedirect" />
+          </div>
+        </template>
+        <div v-else class="mt-2 text-sm text-gray-500">{{ ctrans('No redirect is set for this webpage') }}</div>
+      </div>
+    </div>
+  </div>
+
+  <template v-else>
   <Message v-if="redirected_to" :severity="'error'" class="!bg-red-100">
     <div class="px-2 font-normal hover:underline cursor-pointer grid" @click="visitRedirect">
       <span class="!no-underline">
@@ -168,10 +217,6 @@ const visitRedirect = () => {
                 </div>
               </template>
             </BrowserView>
-
-            <div v-if="data?.state === 'closed'" class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
-              <img src="/assets/offline_stamp.webp" class="-rotate-[12deg] w-1/2" />
-            </div>
           </div>
         </div>
 
@@ -195,6 +240,7 @@ const visitRedirect = () => {
 
     <WebpageSeo v-if="!redirected_to && !detailBesidePreview" :seo="seo" />
   </div>
+  </template>
 </template>
 
 <style scoped>

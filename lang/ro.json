@@ -6258,8 +6258,6 @@
     "Th": "Joi",
     "Thank you for applying!": "Mulțumim pentru aplicare!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Vă mulțumim pentru mesaj. În acest moment suntem închiși și vă vom răspunde imediat ce revenim.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Vă mulțumim pentru mesaj. În acest moment suntem închiși și vă vom răspunde de la ora :time, :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Vă mulțumim pentru mesaj. În acest moment suntem închiși și vă vom răspunde de la ora :time, :day. Spuneți-ne cum vă putem ajuta și ne vom ocupa imediat ce deschidem.",
     "The AI service has run out of credit, please contact IT Leader to fix the issue.": "Serviciul AI a rămas fără credit. Vă rugăm să contactați responsabilul IT pentru remedierea problemei.",
     "The Administrator ask you to reset password": "Administratorul vă cere să resetați parola",
     "The OpenAI service is currently unreachable, please try again later.": "Serviciul OpenAI este momentan inaccesibil, vă rugăm să încercați din nou mai târziu.",
@@ -8077,5 +8075,10 @@
     "workshop": "atelier",
     "your order number": "numărul comenzii",
     "{0} items selected": "{0} articole selectate",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Vă mulțumim pentru mesaj. În acest moment suntem închiși și vă vom răspunde :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Vă mulțumim pentru mesaj. În acest moment suntem închiși și vă vom răspunde :when. Spuneți-ne cum vă putem ajuta și ne vom ocupa imediat ce deschidem.",
+    "from :time today": "astăzi de la ora :time",
+    "from :time tomorrow": "mâine de la ora :time",
+    "from :time on :day": "de la ora :time, :day"
 }

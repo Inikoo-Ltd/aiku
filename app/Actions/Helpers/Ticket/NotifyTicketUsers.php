@@ -67,23 +67,7 @@ class NotifyTicketUsers
     public function commented(Ticket $ticket, User $author, string $body): void
     {
         $authorName = $author->contact_name ?: $author->username;
-        $mentioned  = $this->mentionedUsers($ticket, $body);
-
-        foreach ($mentioned as $user) {
-            $this->handle(
-                $ticket,
-                $author,
-                $user,
-                __(':author mentioned you on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
-                [
-                    __(':author mentioned you on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
-                    Str::limit($body, 2000),
-                ],
-                __('Open the ticket'),
-                UserNotificationEnum::TICKET_MENTION,
-                reason: 'mention'
-            );
-        }
+        $mentioned  = $this->mentioned($ticket, $author, $body);
 
         if ($this->mentionsCustomer($ticket, $body)) {
             $this->notifyCustomer(
@@ -117,6 +101,36 @@ class NotifyTicketUsers
             UserNotificationEnum::TICKET_COMMENT,
             reason: 'comment'
         );
+    }
+
+    /**
+     * Tells each staff member @mentioned in a comment. Notes written with a status change or a
+     * QA verdict get only this, as the change itself already has its own notification.
+     *
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    public function mentioned(Ticket $ticket, User $author, string $body): \Illuminate\Support\Collection
+    {
+        $authorName = $author->contact_name ?: $author->username;
+        $mentioned  = $this->mentionedUsers($ticket, $body);
+
+        foreach ($mentioned as $user) {
+            $this->handle(
+                $ticket,
+                $author,
+                $user,
+                __(':author mentioned you on :reference', ['author' => $authorName, 'reference' => $ticket->reference]),
+                [
+                    __(':author mentioned you on :reference (:subject):', ['author' => $authorName, 'reference' => $ticket->reference, 'subject' => $ticket->subject]),
+                    Str::limit($body, 2000),
+                ],
+                __('Open the ticket'),
+                UserNotificationEnum::TICKET_MENTION,
+                reason: 'mention'
+            );
+        }
+
+        return $mentioned;
     }
 
     public function mentionsCustomer(Ticket $ticket, string $body): bool

@@ -58,7 +58,7 @@ const CHANNEL_ICON: Record<string, object> = {
         </template>
 
         <template #cell(contact)="{ item }">
-            <Link :href="item.url" class="inline-flex items-center gap-1.5 hover:underline">
+            <Link :href="item.url" class="inline-flex items-center gap-1.5 text-indigo-600 hover:underline" v-tooltip="ctrans('Open the conversation to read it or take over')">
                 <FontAwesomeIcon v-if="CHANNEL_ICON[item.channel]" :icon="CHANNEL_ICON[item.channel]"
                     class="text-xs text-gray-400" v-tooltip="capitalize(item.channel)" fixed-width />
                 <span class="truncate max-w-56">{{ item.contact || ctrans("Open conversation") }}</span>

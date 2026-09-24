@@ -345,7 +345,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             );
         }
 
-        $deliveryNotes     = $order->deliveryNotes;
+        $deliveryNotes     = $order->deliveryNotes->loadMissing('shipments.shipper');
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
@@ -361,7 +361,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     'id'        => $deliveryNote->id,
                     'reference' => $deliveryNote->reference,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
+                    'shipments' => RetinaShipmentsResource::collection($deliveryNote->shipments)->resolve(),
                     'routes'    => [
                         'download' => $routeDownload,
                     ],

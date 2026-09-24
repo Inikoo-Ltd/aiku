@@ -11,6 +11,7 @@ import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle } from "@fal"
@@ -28,6 +29,7 @@ const props = defineProps<{
     updateRoute: { name: string; parameters: Record<string, unknown> }
     canWaitForDeployment?: boolean
     closesConversation?: boolean
+    mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
 }>()
 
 // Settling this ticket sends what is typed here to a customer, so it is said before they type
@@ -41,6 +43,8 @@ const emit = defineEmits<{
 const visible = defineModel<boolean>("visible", { default: false })
 
 const statusNote = ref("")
+const statusNoteImages = ref<File[]>([])
+const statusNoteError = ref("")
 const deployCommit = ref("")
 const deployCommitError = ref("")
 const isSendingStatusNote = ref(false)
@@ -48,24 +52,35 @@ const isSendingStatusNote = ref(false)
 watch(visible, (isVisible) => {
     if (isVisible) {
         statusNote.value = ""
+        statusNoteImages.value = []
+        statusNoteError.value = ""
         deployCommit.value = ""
         deployCommitError.value = ""
     }
 })
 
 const sendStatusNote = (isWaitingForDeployment = false) => {
-    router.patch(
+    router.post(
         route(props.updateRoute.name, props.updateRoute.parameters),
-        isWaitingForDeployment
-            ? { status: "pending_deploy", question: statusNote.value, deploy_commit: deployCommit.value.trim() || null }
-            : { status: props.status, status_comment: statusNote.value },
+        {
+            _method: "patch",
+            ...(isWaitingForDeployment
+                ? { status: "pending_deploy", question: statusNote.value, deploy_commit: deployCommit.value.trim() || null }
+                : { status: props.status, status_comment: statusNote.value }),
+            images: statusNoteImages.value,
+        },
         {
             preserveScroll: true,
+            forceFormData: true,
             onStart: () => {
                 isSendingStatusNote.value = true
                 deployCommitError.value = ""
+                statusNoteError.value = ""
             },
-            onError: (errors) => (deployCommitError.value = errors.deploy_commit ?? ""),
+            onError: (errors) => {
+                deployCommitError.value = errors.deploy_commit ?? ""
+                statusNoteError.value = Object.entries(errors).find(([key]) => key.startsWith("images"))?.[1] ?? ""
+            },
             onFinish: () => (isSendingStatusNote.value = false),
             onSuccess: () => {
                 visible.value = false
@@ -81,7 +96,8 @@ const sendStatusNote = (isWaitingForDeployment = false) => {
         <div class="space-y-4 text-sm">
             <div>
                 <p class="mb-1 text-xs text-gray-500">{{ copy[status].question }}</p>
-                <textarea v-model="statusNote" rows="5" class="w-full rounded border-gray-300 text-sm" :placeholder="copy[status].placeholder" />
+                <TicketComposer v-model:body="statusNote" v-model:images="statusNoteImages" :mentionable="mentionable" :placeholder="copy[status].placeholder" />
+                <p v-if="statusNoteError" class="mt-1 text-xs text-red-600">{{ statusNoteError }}</p>
                 <p class="mt-1 text-xs text-gray-400">{{ ctrans("This is published as a comment on the ticket.") }}</p>
                 <p v-if="goesToTheCustomer" class="mt-2 flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0 text-amber-500" fixed-width aria-hidden="true" />

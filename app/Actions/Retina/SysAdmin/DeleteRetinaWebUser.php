@@ -12,6 +12,7 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DeleteRetinaWebUser extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     public function handle(WebUser $webUser): void

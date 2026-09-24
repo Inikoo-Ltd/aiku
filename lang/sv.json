@@ -6400,8 +6400,6 @@
     "Th": "To",
     "Thank you for applying!": "Tack för att du ansökte!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Tack för ditt meddelande. Vi har stängt just nu och svarar så snart vi är tillbaka.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Tack för ditt meddelande. Vi har stängt just nu och svarar från kl. :time på :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Tack för ditt meddelande. Vi har stängt just nu och svarar från kl. :time på :day. Berätta hur vi kan hjälpa till så tar vi hand om det så fort vi öppnar.",
     "The Administrator ask you to reset password": "Administratören ber dig att återställa lösenordet",
     "The OpenAI service is currently unreachable, please try again later.": "OpenAI-tjänsten är för närvarande inte tillgänglig, försök igen senare.",
     "The agent will be restored and become active again.": "Agenten kommer att återställas och bli aktiv igen.",
@@ -8246,5 +8244,10 @@
     "workshop": "verkstad",
     "your order number": "ditt ordernummer",
     "{0} items selected": "{0} objekt valda",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Tack för ditt meddelande. Vi har stängt just nu och svarar :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Tack för ditt meddelande. Vi har stängt just nu och svarar :when. Berätta hur vi kan hjälpa till så tar vi hand om det så fort vi öppnar.",
+    "from :time today": "i dag från kl. :time",
+    "from :time tomorrow": "i morgon från kl. :time",
+    "from :time on :day": "från kl. :time på :day"
 }

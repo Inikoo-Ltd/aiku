@@ -10,11 +10,14 @@ namespace App\Actions\Retina\Fulfilment\FulfilmentTransaction;
 
 use App\Actions\Fulfilment\FulfilmentTransaction\UpdateFulfilmentTransaction;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Fulfilment\FulfilmentTransaction;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaFulfilmentTransaction extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(FulfilmentTransaction $fulfilmentTransaction, array $modelData): FulfilmentTransaction
     {
         return UpdateFulfilmentTransaction::run($fulfilmentTransaction, $modelData);

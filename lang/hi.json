@@ -7421,8 +7421,6 @@
     "Text highlight": "पाठ हाइलाइट",
     "Th": "थ",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "आपके संदेश के लिए धन्यवाद। हम इस समय बंद हैं और वापस आते ही जवाब देंगे।",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "आपके संदेश के लिए धन्यवाद। हम इस समय बंद हैं और :day को :time से जवाब देंगे।",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "आपके संदेश के लिए धन्यवाद। हम इस समय बंद हैं और :day को :time से जवाब देंगे। बताइए हम आपकी कैसे मदद कर सकते हैं, हम खुलते ही इस पर काम करेंगे।",
     "Thanks": "धन्यवाद",
     "Theme": "थीम",
     "Theme color": "थीम रंग",
@@ -9474,5 +9472,10 @@
     "{1} Saving updates 1 shop product and translates it with AI into that shop language.|[2,*] Saving updates all :count shop products and translates them with AI into each shop language.": "{1} 1 दुकान उत्पाद को अपडेट करना 保存 कर रहा है और इसे एआई का उपयोग करके उस दुकान की भाषा में अनुवादित करता है।|[2,*] :count दुकान उत्पादों को अपडेट करना 保存 कर रहा है और उन्हें एआई का उपयोग करके प्रत्येक दुकान की भाषा में अनुवादित करता है।",
     "{1} This will change what 1 open order means|[2,*] This will change what :count open orders mean": "{1} यह 1 खुले आदेश का अर्थ बदल देगा|[2,*] यह :count खुले आदेश का अर्थ बदल देगा",
     "Δ 1Y": "Δ 1Y",
-    "— that is :time for you": "— वह :time आपके लिए है"
+    "— that is :time for you": "— वह :time आपके लिए है",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "आपके संदेश के लिए धन्यवाद। हम इस समय बंद हैं और :when जवाब देंगे।",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "आपके संदेश के लिए धन्यवाद। हम इस समय बंद हैं और :when जवाब देंगे। बताइए हम आपकी कैसे मदद कर सकते हैं, हम खुलते ही इस पर काम करेंगे।",
+    "from :time today": "आज :time से",
+    "from :time tomorrow": "कल :time से",
+    "from :time on :day": ":day को :time से"
 }

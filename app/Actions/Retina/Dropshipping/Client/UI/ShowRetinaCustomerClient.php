@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Client\UI;
 
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Actions\CRM\Customer\UI\GetCustomerClientShowcase;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Actions\WithActionButtons;
@@ -23,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowRetinaCustomerClient extends RetinaAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
     use WithActionButtons;
 
     public function handle(CustomerClient $customerClient): CustomerClient
@@ -33,7 +35,7 @@ class ShowRetinaCustomerClient extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        return $request->user()->is_root && $this->retinaCustomerOwnsRouteModels($request);
     }
 
 

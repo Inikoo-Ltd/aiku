@@ -176,7 +176,7 @@ trait IsOrder
                 $clientRoute
             );
         }
-        $deliveryNotes     = $order->deliveryNotes;
+        $deliveryNotes     = $order->deliveryNotes->loadMissing('shipments.shipper');
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
@@ -209,7 +209,7 @@ trait IsOrder
                         ]
                     ],
                     'shipper_directive'            => $this->getShipperDirective($deliveryNote),
-                    'shipments'                    => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null,
+                    'shipments'                    => ShipmentsResource::collection($deliveryNote->shipments)->resolve(),
                     'shipments_routes'             => [
                         'submit_route' => [
                             'name'       => 'grp.models.delivery_note.shipment.store',

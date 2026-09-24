@@ -12,12 +12,14 @@ use App\Actions\Chat\EndTicketConversation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusGroupEnum;
 use App\Models\Helpers\Ticket;
+use App\Models\Helpers\TicketComment;
 use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\RedirectResponse;
@@ -37,13 +39,21 @@ class UpdateTicket extends OrgAction
         $statusComment = trim((string) Arr::pull($modelData, 'status_comment', ''));
         $waitingHours = Arr::pull($modelData, 'waiting_hours');
         $deployCommit = strtolower(trim((string) Arr::pull($modelData, 'deploy_commit', '')));
+        $images = Arr::pull($modelData, 'images', []);
 
         $asker = auth()->user();
         if ($question !== '' && $asker instanceof User) {
             if (Arr::get($modelData, 'status') === TicketStatusEnum::PENDING_DEPLOY->value) {
-                data_set($modelData, 'data', array_merge($ticket->data ?? [], ['deploy_comment' => ['body' => $question, 'user_id' => $asker->id]]));
+                TicketComment::where('ticket_id', $ticket->id)->where('type', TicketCommentTypeEnum::WAITING_FOR_DEPLOYMENT)->get()->each->delete();
+                TicketComment::create([
+                    'ticket_id'   => $ticket->id,
+                    'author_type' => 'User',
+                    'author_id'   => $asker->id,
+                    'body'        => $question,
+                    'type'        => TicketCommentTypeEnum::WAITING_FOR_DEPLOYMENT,
+                ])->attachTicketImages($images);
             } else {
-                StoreTicketComment::make()->action($ticket, $asker, ['body' => $question], notifyUsers: false);
+                StoreTicketComment::make()->action($ticket, $asker, ['body' => $question, 'images' => $images], isStatusNote: true);
             }
         }
 
@@ -53,7 +63,7 @@ class UpdateTicket extends OrgAction
         }
 
         if ($statusComment !== '' && $asker instanceof User) {
-            StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment], notifyUsers: Arr::get($modelData, 'status') === TicketStatusEnum::ANSWERED->value);
+            StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment, 'images' => $images], isStatusNote: Arr::get($modelData, 'status') !== TicketStatusEnum::ANSWERED->value);
         }
 
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
@@ -90,15 +100,16 @@ class UpdateTicket extends OrgAction
         }
 
         /* Whatever was said when the QA status changed, from either side: the assignee's note
-           when asking for a check, and QA's own when passing or failing. One field rather than
-           two, because the comment it posts is labelled with the status - "QA check requested:
-           ..." against the assignee's name, "QA failed: ..." against QA's - so who said what is
-           never in doubt. Only passed and failed need QA rights; asking is open to whoever can
-           contribute, which authorize() below relies on. */
+           when asking for a check, and QA's own when passing, failing or skipping. One field rather
+           than two, because the comment it posts is labelled with the status - "QA check
+           requested: ..." against the assignee's name, "QA failed: ..." against QA's - so who said
+           what is never in doubt. A verdict needs no request first. authorize() below keeps
+           verdicts to QA and asking (or withdrawing) to the assignee, collaborators
+           or whoever can assign. */
         $qaNote = trim((string) Arr::pull($modelData, 'qa_note', ''));
         if (Arr::exists($modelData, 'qa_status')) {
             $qaStatus = Arr::get($modelData, 'qa_status') ? TicketQaStatusEnum::from(Arr::get($modelData, 'qa_status')) : null;
-            $isVerdict = in_array($qaStatus, [TicketQaStatusEnum::PASSED, TicketQaStatusEnum::FAILED], true);
+            $isVerdict = (bool) $qaStatus?->isVerdict();
             data_set($modelData, 'qa_requested_at', $qaStatus === TicketQaStatusEnum::REQUESTED ? now() : ($qaStatus ? $ticket->qa_requested_at : null));
             data_set($modelData, 'qa_checked_at', $isVerdict ? now() : null);
             data_set($modelData, 'qa_user_id', match (true) {
@@ -116,7 +127,8 @@ class UpdateTicket extends OrgAction
                 'author_type' => 'User',
                 'author_id'   => $asker->id,
                 'body'        => $qaNote !== '' ? $verdict.': '.$qaNote : $verdict,
-            ]);
+            ])->attachTicketImages($images);
+            NotifyTicketUsers::make()->mentioned($ticket, $asker, $qaNote);
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' · '.$verdict);
         }
 
@@ -197,11 +209,26 @@ class UpdateTicket extends OrgAction
             'is_confidential' => ['sometimes', 'boolean'],
             'question'      => ['sometimes', 'nullable', 'string', 'max:10000'],
             'status_comment' => ['sometimes', 'nullable', 'string', 'max:10000'],
-            'qa_status'     => ['sometimes', 'nullable', Rule::enum(TicketQaStatusEnum::class)],
-            'qa_note'       => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'qa_status'     => [
+                'sometimes',
+                'nullable',
+                Rule::enum(TicketQaStatusEnum::class),
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if ($value === TicketQaStatusEnum::SKIPPED->value && $this->updatingTicket?->qa_requested_at !== null) {
+                        $fail(__('QA was asked to check this ticket, so it cannot be skipped.'));
+                    }
+
+                    if (TicketQaStatusEnum::tryFrom((string) $value)?->isVerdict() && $this->updatingTicket?->qa_status?->isVerdict()) {
+                        $fail(__('This ticket already has a QA verdict. Ask QA to check it again first.'));
+                    }
+                },
+            ],
+            'qa_note'       => ['nullable', 'string', 'max:10000', 'required_if:qa_status,'.TicketQaStatusEnum::FAILED->value.','.TicketQaStatusEnum::SKIPPED->value],
             'qa_user_id'    => ['sometimes', 'nullable', Rule::in(GetTicketBadgeData::qaUsers($this->group->id)->pluck('id'))],
             'waiting_hours' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:720'],
             'deploy_commit' => ['sometimes', 'nullable', 'string', 'regex:/^[0-9a-f]{7,40}$/i'],
+            'images'        => ['sometimes', 'array', 'max:5'],
+            'images.*'      => Ticket::ticketFileRules(),
             'tags.*'        => ['string', 'max:64'],
         ];
     }
@@ -218,26 +245,26 @@ class UpdateTicket extends OrgAction
             return false;
         }
 
-        $fields = array_keys($request->all());
+        $fields = array_keys($request->except('_method'));
 
         if ($request->has('qa_status')) {
-            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id']) !== []) {
+            if (array_diff($fields, ['qa_status', 'qa_note', 'qa_user_id', 'images']) !== []) {
                 return false;
             }
 
-            $isVerdict = in_array($request->input('qa_status'), [TicketQaStatusEnum::PASSED->value, TicketQaStatusEnum::FAILED->value], true);
+            $isVerdict = (bool) TicketQaStatusEnum::tryFrom((string) $request->input('qa_status'))?->isVerdict();
 
-            return $isVerdict ? Ticket::canCheckQa($user) : $ticket->canContributeBy($user);
+            return $isVerdict ? Ticket::canGiveQaVerdict($user) : $ticket->canRequestQaBy($user);
         }
 
         // The reporter's own cancel and reopen are additions to who could already do it: whoever
         // holds the ticket keeps every status of it, or the assignee is shown a Cancel button
         // that answers 403.
-        if ($request->input('status') === TicketStatusEnum::CANCELLED->value && array_diff($fields, ['status', 'status_comment']) === []) {
+        if ($request->input('status') === TicketStatusEnum::CANCELLED->value && array_diff($fields, ['status', 'status_comment', 'images']) === []) {
             return $ticket->canBeCancelledByReporter($user) || $ticket->canBeUpdatedBy($user);
         }
 
-        if ($request->input('status') === TicketStatusEnum::ANSWERED->value && $request->filled('status_comment') && array_diff($fields, ['status', 'status_comment']) === []) {
+        if ($request->input('status') === TicketStatusEnum::ANSWERED->value && $request->filled('status_comment') && array_diff($fields, ['status', 'status_comment', 'images']) === []) {
             return $ticket->canBeReopenedByReporter($user) || $ticket->canBeUpdatedBy($user);
         }
 
@@ -268,6 +295,16 @@ class UpdateTicket extends OrgAction
      * Whatever happened is written on the ticket, because "the customer was told" and "we tried"
      * are different things and the next person reading the ticket needs to know which it was.
      */
+    public function getValidationMessages(): array
+    {
+        return Ticket::ticketFileValidationMessages();
+    }
+
+    public function getValidationAttributes(): array
+    {
+        return Ticket::ticketFileValidationAttributes($this->get('images', []));
+    }
+
     private function tellTheCustomer(Ticket $ticket, string $note, ?User $actor): void
     {
         $outcome = EndTicketConversation::make()->handle($ticket, $note, $actor);

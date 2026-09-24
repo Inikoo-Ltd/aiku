@@ -355,7 +355,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::patch('sync-portfolios-manually', SyncRetinaCustomerSalesChannelPortfolioManually::class)->name('sync_portfolios_manual');
     Route::post('fetch-orders', FetchRetinaCustomerSalesChannelOrders::class)->name('fetch_orders');
     Route::patch('test-connection', TestConnectionWooCommerceUser::class)->name('test_connection');
-    Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
+    Route::patch('reset-shopify', [ResetShopifyChannel::class, 'inRetina'])->name('shopify_reset');
     Route::post('sync-shopify-portfolio', CheckShopifyPortfolios::class)->name('portfolio_shopify_sync');
 
     Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
@@ -420,7 +420,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings()->whereNumber('wooCommerceUser');
     Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings()->whereNumber('wooCommerceUser');
     Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings()->whereNumber('wooCommerceUser');
-    Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentEbay::class)->name('woo.single_upload')->withoutScopedBindings()->whereNumber(['wooCommerceUser', 'portfolio']);
+    Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', [StoreNewProductToCurrentEbay::class, 'inRetina'])->name('woo.single_upload')->withoutScopedBindings()->whereNumber(['wooCommerceUser', 'portfolio']);
 
     Route::post('{customerSalesChannel:id}/tiktok-batch-upload', CreateRetinaNewBulkPortfoliosToTiktok::class)->name('tiktok.batch_upload')->withoutScopedBindings()->whereNumber('customerSalesChannel');
     Route::post('{customerSalesChannel:id}/tiktok-batch-all', CreateRetinaNewAllPortfoliosToTiktok::class)->name('tiktok.batch_all')->withoutScopedBindings()->whereNumber('customerSalesChannel');
@@ -447,7 +447,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('woocommerce/tmp-user', StoreTemporaryWooUser::class)->name('woocommerce.tmp_user.store')->withoutScopedBindings();
     Route::get('woocommerce/tmp-user-keys', CheckTemporaryWooUserApiKeys::class)->name('woocommerce.tmp_user_keys_check')->withoutScopedBindings();
 
-    Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', CallbackFetchWooUserOrders::class)->name('woocommerce.orders.catch')->withoutScopedBindings()->whereNumber('wooCommerceUser');
+    Route::get('woocommerce/{wooCommerceUser:id}/catch-orders', [CallbackFetchWooUserOrders::class, 'inRetina'])->name('woocommerce.orders.catch')->withoutScopedBindings()->whereNumber('wooCommerceUser');
     Route::get('ebay/{ebayUser:id}/catch-orders', FetchEbayUserOrders::class)->name('ebay.orders.catch')->withoutScopedBindings()->whereNumber('ebayUser');
     Route::get('amazon/{amazonUser:id}/catch-orders', GetRetinaOrdersFromAmazon::class)->name('amazon.orders.catch')->withoutScopedBindings()->whereNumber('amazonUser');
     Route::get('magento/{magentoUser:id}/catch-orders', GetRetinaOrdersFromMagento::class)->name('magento.orders.catch')->withoutScopedBindings()->whereNumber('magentoUser');

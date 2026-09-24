@@ -26,9 +26,9 @@ import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faShield, faRocket, faUsers, faLink, faLifeRing, faToolbox, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown, faComment, faComments, faEnvelope, faCommentDots } from "@fal"
+import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faForward, faShield, faRocket, faUsers, faLink, faLifeRing, faToolbox, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown, faComment, faComments, faEnvelope, faCommentDots } from "@fal"
 
-library.add(faWhatsapp, faComment, faComments, faEnvelope, faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faToolbox, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
+library.add(faWhatsapp, faComment, faComments, faEnvelope, faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faToolbox, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faForward, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
 
 const isLinkCopied = ref(false)
 const copyTicketLink = async () => {
@@ -48,6 +48,7 @@ const props = defineProps<{
     can_assign: boolean
     can_flag_confidential: boolean
     can_qa: boolean
+    can_request_qa: boolean
     is_reporter: boolean
     can_comment_internally: boolean
     can_change_kind_module: boolean
@@ -77,7 +78,7 @@ const props = defineProps<{
     }
 }>()
 
-useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can_assign", "can_flag_confidential", "can_qa", "is_reporter", "can_cancel_as_reporter", "can_reopen_as_reporter", "can_comment_internally", "can_change_kind_module", "can_update", "can_contribute", "can_manage_collaborators", "can_preview_attachments", "attachment_gallery"], props.ticket.reference)
+useLiveTickets(["ticket", "comments", "timeline", "can_rate", "can_manage", "can_assign", "can_flag_confidential", "can_qa", "can_request_qa", "is_reporter", "can_cancel_as_reporter", "can_reopen_as_reporter", "can_comment_internally", "can_change_kind_module", "can_update", "can_contribute", "can_manage_collaborators", "can_preview_attachments", "attachment_gallery"], props.ticket.reference)
 
 const saveTicketOrderSetting = (setting: "ticket_comments_newest_first" | "ticket_history_newest_first", isNewestFirst: boolean) => {
     axios.patch(route("grp.models.profile.update"), { [setting]: isNewestFirst })
@@ -160,7 +161,7 @@ const update = (field: string, value: unknown) => {
         </div>
         <div class="space-y-4 self-start lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto">
         <TicketControlPanel :ticket="ticket" storage-key="ticket_controls_open">
-            <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
+            <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :can_request_qa="can_request_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ ctrans("Commits") }}</p>
                 <ul class="space-y-1 text-xs">

@@ -12,6 +12,7 @@ namespace App\Actions\Retina\Fulfilment\Dropshipping\Client\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -21,6 +22,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(CustomerClient $customerClient, ActionRequest $request): Response
     {
         return Inertia::render(

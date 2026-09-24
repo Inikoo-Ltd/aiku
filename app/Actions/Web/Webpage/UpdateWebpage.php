@@ -105,6 +105,10 @@ class UpdateWebpage extends OrgAction
 
             if (Arr::has($modelData, 'state_data.state')) {
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
+
+                if (Arr::get($modelData, 'state_data.state') == WebpageStateEnum::CLOSED->value && $webpage->state != WebpageStateEnum::CLOSED) {
+                    data_set($modelData, 'closed_at', now());
+                }
             }
 
             if (Arr::has($modelData, 'state_data.redirect_webpage_id')) {

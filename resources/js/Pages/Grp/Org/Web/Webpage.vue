@@ -53,6 +53,7 @@ const props = defineProps<{
     seo?: any
     webpage_canonical_url?: string
     redirected_to?: {}
+    closed?: { closed_at: string | null, closed_by: string | null } | null
     lock: any
 }>()
 
@@ -106,5 +107,5 @@ onUnmounted(() => {
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <WebpageLockBanner v-if="lock" :lock="lock" />
-    <component :is="component" :tab="currentTab" :data="props[currentTab]" :pagespeed="pagespeed" :engagement="engagement" :seo="seo" :redirected_to="redirected_to" :editable="lock?.can_edit ?? true"></component>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]" :pagespeed="pagespeed" :engagement="engagement" :seo="seo" :redirected_to="redirected_to" :closed="closed" :editable="lock?.can_edit ?? true"></component>
 </template>

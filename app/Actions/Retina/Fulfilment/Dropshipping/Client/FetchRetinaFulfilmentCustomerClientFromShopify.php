@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Fulfilment\Dropshipping\Client;
 
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Retina\Dropshipping\Client\StoreRetinaClientFromPlatformUser;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\RetinaAction;
@@ -18,7 +19,13 @@ use Lorisleiva\Actions\ActionRequest;
 
 class FetchRetinaFulfilmentCustomerClientFromShopify extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithGeneratedShopifyAddress;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
+    }
 
     /**
      * @throws \Throwable
@@ -42,11 +49,6 @@ class FetchRetinaFulfilmentCustomerClientFromShopify extends RetinaAction
                 StoreRetinaClientFromPlatformUser::run($shopifyUser, $attributes, $customer, $existsClient);
             }
         }
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     /**

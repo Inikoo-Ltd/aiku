@@ -5552,6 +5552,7 @@ test('an out of office is put aside in any language and whoever owns the mailbox
 });
 
 test('the model only hints until it is allowed to put aside, never touches a customer, and is never asked twice', function () {
+    config(['chat.noise.auto_put_aside' => false]);
     noiseTestFakeModel('spam', 95);
 
     $pitch = noiseTestEmailSession($this->shop, 'sales@kaitk.com', 'Wooden gifts', 'We are a manufacturer of wooden gifts');
@@ -5575,6 +5576,10 @@ test('the model only hints until it is allowed to put aside, never touches a cus
     $customer->update(['web_user_id' => $webUser->id]);
     $customer = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($customer)->refresh();
 
+    noiseTestFakeModel('automated_notification', 95);
+    $marketplaceOrder = noiseTestEmailSession($this->shop, 'service@marketplace.example', 'You have 1 order', 'Accept it in your portal');
+    $marketplaceOrder = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($marketplaceOrder)->refresh();
+
     noiseTestFakeModel('nonsense', 99);
     $odd = noiseTestEmailSession($this->shop, 'someone@example.com', 'Question', 'Do you ship to Norway?');
     $odd = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($odd)->refresh();
@@ -5583,6 +5588,8 @@ test('the model only hints until it is allowed to put aside, never touches a cus
         ->and($second->spammed_by_agent_id)->toBeNull()
         ->and($customer->noise_checked_at)->toBeNull()
         ->and($customer->is_spam)->toBeFalse()
+        ->and($marketplaceOrder->noise_verdict)->toBe('automated_notification')
+        ->and($marketplaceOrder->is_rubbish)->toBeFalse()
         ->and($odd->noise_verdict)->toBe('genuine')
         ->and($odd->is_spam)->toBeFalse();
 });
@@ -5677,7 +5684,7 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
 function outOfHoursTestSchedule(\App\Models\Catalogue\Shop $shop): \App\Models\HumanResources\WorkSchedule
 {
     $tz = \App\Models\Helpers\Timezone::where('name', 'Europe/London')->first();
-    $shop->update(['timezone_id' => $tz->id]);
+    $shop->update(['timezone_id' => $tz->id, 'language_id' => \App\Models\Helpers\Language::where('code', 'en')->value('id')]);
 
     $schedule = \App\Models\HumanResources\WorkSchedule::create([
         'name'             => 'Chat hours',
@@ -5747,7 +5754,8 @@ test('an email out of hours is answered only when a person wrote it, once a day 
     $sent = $person->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
 
     expect($sent->metadata['auto_submitted'])->toBeTrue()
-        ->and($sent->message_text)->toContain('Monday 28 September');
+        ->and($sent->message_text)->toContain('will reply from 10am on Monday.')
+        ->and($sent->message_text)->not->toContain('Please tell us how we can help');
 
     \Illuminate\Support\Facades\Http::assertSent(function ($request) {
         $raw = base64_decode(strtr((string) ($request->data()['raw'] ?? ''), '-_', '+/'));
@@ -5788,7 +5796,7 @@ test('website chat out of hours is answered in the conversation, but not after t
 
     expect($reply->handle($live))->toBeTrue()
         ->and($reply->handle($live))->toBeFalse()
-        ->and($live->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole()->message_text)->toContain('10:00 on Friday 25 September');
+        ->and($live->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole()->message_text)->toContain('will reply from 10am tomorrow.');
 
     $viaForm = StoreOfflineMessage::make()->handle($this->shop->fresh(), [
         'message'     => 'Nobody was on, please write back',
@@ -5840,8 +5848,9 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
     $session = noiseTestWhatsappSession($this->shop->fresh(), '+447500000004', 'Hello');
     $reply   = \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make();
 
-    // A bare hello is not read by the model: it just gets the closed-now reply.
-    expect($reply->handle($session))->toBeTrue();
+    // A bare hello is not read by the model: it just gets the closed-now reply, asking what they need.
+    expect($reply->handle($session))->toBeTrue()
+        ->and($session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole()->message_text)->toContain('Please tell us how we can help');
     \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => str_contains($request->url(), 'openai'));
 
     $session->messages()->create([
@@ -5875,6 +5884,7 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
         ->firstWhere('contact', '+447500000004');
 
     expect($row['claim'])->toBe(['order_reference' => $order->reference, 'photos' => 1])
+        ->and($row['url'])->toBe(route('grp.org.chat.inbox', [$this->organisation->slug, 'channel' => 'whatsapp', 'session' => $session->ulid]))
         ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($session->refresh()))->toBe(['order_reference' => $order->reference, 'photos' => 1]);
 
     // Once an agent has answered, the inbox stops showing it: the case is being handled.
@@ -5918,8 +5928,10 @@ test('a question about an order gets a draft written from that customer\'s order
 
     $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hi, your order $reference was dispatched on 22 September."];
     \Illuminate\Support\Facades\Http::fake([
-        'api.openai.com/*' => function () use (&$modelAnswer) {
-            return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode($modelAnswer)]]]]);
+        'api.openai.com/*' => function ($request) use (&$modelAnswer) {
+            $copiedExample = preg_match('/\{"answerable".*\}/', (string) data_get($request->data(), 'messages.1.content'), $example) ? $example[0] : '';
+
+            return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $modelAnswer === null ? $copiedExample : json_encode($modelAnswer)]]]]);
         },
     ]);
 
@@ -5990,6 +6002,14 @@ test('a question about an order gets a draft written from that customer\'s order
     $this->travel(1)->minutes();
     $ask($session, 'Can I change the delivery address of my next order?');
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
+
+    // A model that copies the example answer in its instructions word for word still gives a
+    // draft: the example once held both topics in one string and every real draft was dropped.
+    $modelAnswer = null;
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Where is my order now?');
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->not->toBeNull();
 
     $stats = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['draftStats'];
     expect($stats['used'])->toBeGreaterThanOrEqual(1)->and($stats['superseded'])->toBeGreaterThanOrEqual(1);
@@ -6161,7 +6181,7 @@ test('a WhatsApp message out of hours is answered once per wait with when the sh
 
     $closed = $session->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole();
 
-    expect($closed->message_text)->toContain('10:00 on Monday 28 September')
+    expect($closed->message_text)->toContain('will reply from 10am on Monday.')
         ->and($session->refresh()->last_agent_message_at)->toBeNull();
 
     // An agent answers just before closing: still taken to be there half an hour later.

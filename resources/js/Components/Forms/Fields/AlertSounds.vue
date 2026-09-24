@@ -40,7 +40,7 @@ const choose = (kind: AlertSoundKind, sound: AlertSound) => {
             <span class="w-40 shrink-0 text-sm text-gray-700">{{ kind.label }}</span>
             <select
                 :value="chosen(kind.key)"
-                class="flex-1 rounded-md border-gray-300 py-1.5 text-sm focus:border-gray-500 focus:ring-0"
+                class="w-48 xw-fit rounded-md border-gray-300 py-1.5 text-sm focus:border-gray-500 focus:ring-0"
                 @change="choose(kind.key, ($event.target as HTMLSelectElement).value as AlertSound)">
                 <option v-for="sound in ALERT_SOUNDS" :key="sound" :value="sound">{{ labels[sound] }}</option>
             </select>

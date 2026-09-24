@@ -151,6 +151,9 @@ class DraftChatReply implements ShouldBeUnique
         - Write in the language the customer wrote in, friendly and short: at most 80 words.
           Greet them by name when a name is given. No signature, no promises, no apology for delays.
         - Say "more is on order" only when the facts say so, never when it will arrive.
+        - Asked when a product comes back, the facts answer it: say it is out of stock and that
+          there is no date yet. That is "answerable": true. Add that more is on order only when
+          the product's facts have "more_on_order".
 
         Customer wrote:
         $excerpt
@@ -158,8 +161,9 @@ class DraftChatReply implements ShouldBeUnique
         Facts:
         $factsJson
 
-        Output JSON only, no code fence:
-        {"answerable": true, "topic": "order_status or stock_availability", "reply": "the reply"}
+        Output JSON only, no code fence. "topic" is exactly "order_status" for an order or
+        "stock_availability" for a product:
+        {"answerable": true, "topic": "stock_availability", "reply": "the reply"}
         EOT;
 
         $response = AskToAi::run($prompt, config('chat.summary_model'));

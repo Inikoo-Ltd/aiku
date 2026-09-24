@@ -8275,8 +8275,6 @@
     "Thank you for applying!": "Grazie per la tua candidatura!",
     "Thank you for your hard work :name!, Well done!": "Grazie per il tuo duro lavoro, :name! Ottimo lavoro!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Grazie per il tuo messaggio. Al momento siamo chiusi e ti risponderemo appena torniamo.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Grazie per il tuo messaggio. Al momento siamo chiusi e ti risponderemo dalle :time di :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Grazie per il tuo messaggio. Al momento siamo chiusi e ti risponderemo dalle :time di :day. Dicci come possiamo aiutarti e ce ne occuperemo appena riapriamo.",
     "Thanks": "Grazie",
     "That time has already passed, pick a later one": "Quell'orario è già passato, selezionane uno successivo",
     "The Administrator ask you to reset password": "L'amministratore ti chiede di reimpostare la password",
@@ -10628,5 +10626,10 @@
     "{1} Saving updates 1 shop product and translates it with AI into that shop language.|[2,*] Saving updates all :count shop products and translates them with AI into each shop language.": "{1} Il salvataggio aggiorna 1 prodotto del negozio e lo traduce con l'AI nella lingua del negozio. |[2,*] Il salvataggio aggiorna tutti i :count prodotti dei negozi e li traduce con l'AI nella lingua di ciascun negozio.",
     "{1} This will change what 1 open order means|[2,*] This will change what :count open orders mean": "{1} Questo cambierà il significato di 1 ordine aperto|[2,*] Questo cambierà il significato di :count ordini aperti",
     "Δ 1Y": "Δ 1Y",
-    "— that is :time for you": "— ovvero :time per te"
+    "— that is :time for you": "— ovvero :time per te",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Grazie per il tuo messaggio. Al momento siamo chiusi e ti risponderemo :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Grazie per il tuo messaggio. Al momento siamo chiusi e ti risponderemo :when. Dicci come possiamo aiutarti e ce ne occuperemo appena riapriamo.",
+    "from :time today": "oggi dalle :time",
+    "from :time tomorrow": "domani dalle :time",
+    "from :time on :day": ":day dalle :time"
 }

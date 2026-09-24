@@ -5770,8 +5770,6 @@
     "Th": "Ème",
     "Thank you for applying!": "Merci d'avoir postulé !",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Merci pour votre message. Nous sommes actuellement fermés et vous répondrons dès notre retour.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Merci pour votre message. Nous sommes actuellement fermés et vous répondrons à partir de :time le :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Merci pour votre message. Nous sommes actuellement fermés et vous répondrons à partir de :time le :day. Dites-nous comment nous pouvons vous aider et nous nous en occuperons dès l'ouverture.",
     "The Administrator ask you to reset password": "L'administrateur vous demande de réinitialiser le mot de passe",
     "The OpenAI service is currently unreachable, please try again later.": "Le service OpenAI est actuellement indisponible, veuillez réessayer plus tard.",
     "The announcement should": "L'annonce devrait",
@@ -7468,5 +7466,10 @@
     "workshop": "atelier",
     "your order number": "votre numéro de commande",
     "{0} items selected": "{0} éléments sélectionnés",
-    "Δ 1Y": "Δ 1Y"
+    "Δ 1Y": "Δ 1Y",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Merci pour votre message. Nous sommes actuellement fermés et vous répondrons :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Merci pour votre message. Nous sommes actuellement fermés et vous répondrons :when. Dites-nous comment nous pouvons vous aider et nous nous en occuperons dès l'ouverture.",
+    "from :time today": "aujourd'hui à partir de :time",
+    "from :time tomorrow": "demain à partir de :time",
+    "from :time on :day": ":day à partir de :time"
 }

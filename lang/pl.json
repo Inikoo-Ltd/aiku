@@ -8305,8 +8305,6 @@
     "Thank you for applying!": "Dziękujemy za zgłoszenie!",
     "Thank you for your hard work :name!, Well done!": "Dziękuję za Twoją ciężką pracę :name! Dobra robota!",
     "Thank you for your message. We are closed at the moment and will reply as soon as we are back.": "Dziękujemy za wiadomość. W tej chwili jesteśmy zamknięci i odpowiemy, gdy tylko wrócimy.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day.": "Dziękujemy za wiadomość. W tej chwili jesteśmy zamknięci i odpowiemy od :time w dniu :day.",
-    "Thank you for your message. We are closed at the moment and will reply from :time on :day. Please tell us how we can help and we will pick it up first thing.": "Dziękujemy za wiadomość. W tej chwili jesteśmy zamknięci i odpowiemy od :time w dniu :day. Napisz nam, w czym możemy pomóc, a zajmiemy się tym zaraz po otwarciu.",
     "Thanks": "Dzięki",
     "That time has already passed, pick a later one": "Ten czas już minął, wybierz późniejszy",
     "The Administrator ask you to reset password": "Administrator prosi o zresetowanie hasła",
@@ -10660,5 +10658,10 @@
     "{1} Saving updates 1 shop product and translates it with AI into that shop language.|[2,*] Saving updates all :count shop products and translates them with AI into each shop language.": "{1} Zapisanie aktualizacji 1 produktu w sklepie i przetłumaczenie go za pomocą sztucznej inteligencji na język sklepu.|[2,*] Zapisanie aktualizacji wszystkich :count produktów w sklepie i przetłumaczenie ich za pomocą sztucznej inteligencji na każdy język sklepu.",
     "{1} This will change what 1 open order means|[2,*] This will change what :count open orders mean": "{1} To zmieni znaczenie 1 otwartego zamówienia|[2,*] To zmieni znaczenie :count otwartych zamówień",
     "Δ 1Y": "Δ 1Y",
-    "— that is :time for you": "— to jest :time dla ciebie"
+    "— that is :time for you": "— to jest :time dla ciebie",
+    "Thank you for your message. We are closed at the moment and will reply :when.": "Dziękujemy za wiadomość. W tej chwili jesteśmy zamknięci i odpowiemy :when.",
+    "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Dziękujemy za wiadomość. W tej chwili jesteśmy zamknięci i odpowiemy :when. Napisz nam, w czym możemy pomóc, a zajmiemy się tym zaraz po otwarciu.",
+    "from :time today": "dziś od :time",
+    "from :time tomorrow": "jutro od :time",
+    "from :time on :day": "od :time w dniu :day"
 }

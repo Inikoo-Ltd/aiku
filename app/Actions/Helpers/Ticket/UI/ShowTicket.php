@@ -19,6 +19,7 @@ use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use App\Models\Catalogue\Shop;
@@ -184,12 +185,33 @@ class ShowTicket extends OrgAction
     /**
      * @return array<string, mixed>
      */
+    /**
+     * The comment waiting for the next deployment, for the side panel to show and edit.
+     *
+     * @return array{body: string, files: array<int, array{ulid: string, name: string, url: string, is_image: bool}>}|null
+     */
+    private function deployCommentFor(Ticket $ticket): ?array
+    {
+        $comment = $ticket->status === TicketStatusEnum::PENDING_DEPLOY ? $ticket->deployComment()->first() : null;
+
+        return $comment ? [
+            'body'  => $comment->body,
+            'files' => $comment->media()->whereIn('collection_name', ['ticket_images', 'ticket_attachments'])->orderBy('id')->get()
+                ->map(fn (Media $media) => [
+                    'ulid'     => $media->ulid,
+                    'name'     => $media->name,
+                    'url'      => route('grp.tickets.attachments.show', ['ticket' => $ticket->reference, 'media' => $media->ulid]),
+                    'is_image' => $media->collection_name === 'ticket_images',
+                ])->all(),
+        ] : null;
+    }
+
     public function controlProps(Ticket $ticket): array
     {
         $user = request()->user();
 
         return [
-            'ticket'  => TicketResource::make($ticket)->toArray(request()),
+            'ticket'  => array_merge(TicketResource::make($ticket)->toArray(request()), ['deploy_comment' => $this->deployCommentFor($ticket)]),
             'options' => [
                 'statuses'   => collect(TicketStatusEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
                 'priorities' => collect(ChatPriorityEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values(),
@@ -227,7 +249,8 @@ class ShowTicket extends OrgAction
             'can_manage'             => Ticket::canBeManagedBy($user),
             'can_assign'             => $ticket->canChangeAssigneeBy($user),
             'can_flag_confidential'  => Ticket::canBeAssignedBy($user),
-            'can_qa'                 => Ticket::canCheckQa($user),
+            'can_qa'                 => Ticket::canGiveQaVerdict($user),
+            'can_request_qa'         => $ticket->canRequestQaBy($user),
             'is_reporter'            => $ticket->isReportedBy($user),
             'can_cancel_as_reporter' => $ticket->canBeCancelledByReporter($user),
             'can_reopen_as_reporter' => $ticket->canBeReopenedByReporter($user),

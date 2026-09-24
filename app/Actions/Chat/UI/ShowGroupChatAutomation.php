@@ -169,7 +169,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw('null::integer as draft_id'),
                 'meta_chat_sessions.id as session_id',
                 DB::raw("'whatsapp' as channel"),
-                DB::raw('null::char(26) as session_ulid'),
+                'meta_chat_sessions.ulid as session_ulid',
                 'meta_chat_messages.message_text as text',
                 DB::raw('null::varchar as verdict'),
                 DB::raw('null::smallint as confidence'),
@@ -207,7 +207,7 @@ class ShowGroupChatAutomation extends OrgAction
                 DB::raw('null::integer as draft_id'),
                 'meta_chat_sessions.id as session_id',
                 DB::raw("'whatsapp' as channel"),
-                DB::raw('null::char(26) as session_ulid'),
+                'meta_chat_sessions.ulid as session_ulid',
                 'meta_chat_sessions.noise_note as text',
                 'meta_chat_sessions.noise_verdict as verdict',
                 'meta_chat_sessions.noise_confidence as confidence',
@@ -227,7 +227,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'chat_ai_drafts.id as draft_id',
                 DB::raw('coalesce(chat_ai_drafts.chat_session_id, chat_ai_drafts.meta_chat_session_id) as session_id'),
                 DB::raw("case when chat_ai_drafts.meta_chat_session_id is not null then 'whatsapp' else chat_sessions.channel end as channel"),
-                'chat_sessions.ulid as session_ulid',
+                DB::raw('coalesce(chat_sessions.ulid, meta_chat_sessions.ulid) as session_ulid'),
                 'chat_ai_drafts.text as text',
                 'chat_ai_drafts.status as verdict',
                 DB::raw('null::smallint as confidence'),
@@ -373,9 +373,11 @@ class ShowGroupChatAutomation extends OrgAction
                 'reversed'      => (bool) $row->reversed,
                 'claim'         => $claim,
                 'draft_id'      => $row->draft_id,
-                'url'           => $row->session_ulid
-                    ? route('grp.org.chat.inbox.conversation', [$row->organisation_slug, trim($row->session_ulid)])
-                    : route('grp.org.chat.inbox', [$row->organisation_slug]),
+                'url'           => match (true) {
+                    !$row->session_ulid         => route('grp.org.chat.inbox', [$row->organisation_slug]),
+                    $row->channel === 'whatsapp' => route('grp.org.chat.inbox', [$row->organisation_slug, 'channel' => 'whatsapp', 'session' => trim($row->session_ulid)]),
+                    default                     => route('grp.org.chat.inbox.conversation', [$row->organisation_slug, trim($row->session_ulid)]),
+                },
             ];
         });
 
