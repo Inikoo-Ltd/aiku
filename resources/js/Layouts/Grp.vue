@@ -429,15 +429,15 @@ const safeTheme = computed(() => {
 .navigationActive {
     @apply rounded py-2 font-semibold transition-all duration-0 ease-out;
     box-shadow: v-bind(
-        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.theme[2]}, 20% white)`"
+        "`0 0 0 1px color-mix(in srgb, ${layout?.app?.navigation_theme[2]}, 20% white)`"
     ) !important;
-    background-color: v-bind("layout?.app?.theme[2]");
-    color: v-bind("layout?.app?.theme[3]");
+    background-color: v-bind("layout?.app?.navigation_theme[2]");
+    color: v-bind("layout?.app?.navigation_theme[3]");
 }
 
 .navigation {
     @apply hover:bg-gray-300/40 py-2 rounded font-semibold transition-all duration-0 ease-out;
-    color: v-bind("layout?.app?.theme[1]");
+    color: v-bind("layout?.app?.navigation_theme[1]");
 }
 
 .subNavActive {

@@ -56,9 +56,9 @@ const numberFor = (nav: Navigation): number | null => {
 <template>
     <div class="flex flex-col relative isolate border border-white/20 rounded"
         :class="layout.leftSidebar.show ? 'px-1' : 'px-0'"
-        xstyle="{ 'box-shadow': `0 0 0 1px ${layout.app.theme[1]}55` }">
+        xstyle="{ 'box-shadow': `0 0 0 1px ${layout.app.navigation_theme[1]}55` }">
         <div class="w-full flex items-center pt-2 pl-2.5 pr-0.5 pb-2 gap-x-1.5"
-            :style="{ color: layout.app.theme[1] + '99' }">
+            :style="{ color: layout.app.navigation_theme[1] + '99' }">
             <FontAwesomeIcon :icon="icon" class='text-xxs' fixed-width aria-hidden='true' />
             <Transition name="slide-to-left">
                 <div v-if="layout.leftSidebar.show" class="flex items-center gap-x-1.5">

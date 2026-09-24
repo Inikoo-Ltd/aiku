@@ -95,6 +95,16 @@ class UpdateProfile extends OrgAction
             }
         }
 
+        $organisationColoursWereSubmitted = Arr::exists($modelData, 'org_themes');
+
+        if ($organisationColoursWereSubmitted) {
+            $orgThemes                           = Arr::pull($modelData, 'org_themes');
+            $modelData['settings']['org_themes'] = [
+                'enabled' => (bool) Arr::get($orgThemes, 'enabled', false),
+                'themes'  => $this->sanitiseOrganisationThemes($user, Arr::get($orgThemes, 'themes', [])),
+            ];
+        }
+
         if (Arr::exists($modelData, 'chat_theme')) {
             $chatTheme                           = Arr::pull($modelData, 'chat_theme');
             $modelData['settings']['chat_theme'] = $chatTheme;
@@ -130,6 +140,14 @@ class UpdateProfile extends OrgAction
         }
 
         /*
+         * The organisation colours travel in the first load only layout props, so without asking for
+         * those props again the left navigation would keep the old colours until a full page load.
+         */
+        if ($organisationColoursWereSubmitted) {
+            Session::put('reloadLayout', '1');
+        }
+
+        /*
          * Deliberately keyed on the language being submitted rather than on it changing: when
          * cached props hold the wrong language, picking the language the account is already set
          * to is a user's only way out, and gating this on a change made that a silent no-op.
@@ -158,6 +176,11 @@ class UpdateProfile extends OrgAction
             'language_id'       => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'         => ['sometimes', 'required'],
             'chat_theme'        => ['sometimes', 'nullable', Rule::in(['light', 'sky', 'blush', 'sand', 'mint', 'dracula', 'nord', 'gruvbox', 'monokai', 'onedark', 'solarized'])],
+            'org_themes'                          => ['sometimes', 'array'],
+            'org_themes.enabled'                  => ['sometimes', 'boolean'],
+            'org_themes.themes'                   => ['sometimes', 'array'],
+            'org_themes.themes.*.organisation_id' => ['required', 'integer'],
+            'org_themes.themes.*.colour'          => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
             'notifications'     => ['sometimes', 'array'],
@@ -184,6 +207,36 @@ class UpdateProfile extends OrgAction
             'ticket_history_newest_first'         => ['sometimes', 'boolean'],
             'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
+    }
+
+
+    /**
+     * Drops organisations the user can no longer reach, so a colour left behind by a revoked
+     * access cannot travel with the settings.
+     *
+     * @param  array<int, array{organisation_id: int, colour: string}>  $themes
+     * @return array<int, array{organisation_id: int, colour: string}>
+     */
+    protected function sanitiseOrganisationThemes(User $user, array $themes): array
+    {
+        $authorisedOrganisationIds = $user->authorisedOrganisations()->pluck('organisations.id')->all();
+
+        $sanitised = [];
+        foreach ($themes as $organisationTheme) {
+            $organisationId = (int) Arr::get($organisationTheme, 'organisation_id');
+            $colour         = Arr::get($organisationTheme, 'colour');
+
+            if (!in_array($organisationId, $authorisedOrganisationIds) || !is_string($colour) || !preg_match('/^#[0-9A-Fa-f]{6}$/', $colour)) {
+                continue;
+            }
+
+            $sanitised[$organisationId] = [
+                'organisation_id' => $organisationId,
+                'colour'          => strtolower($colour),
+            ];
+        }
+
+        return array_values($sanitised);
     }
 
 

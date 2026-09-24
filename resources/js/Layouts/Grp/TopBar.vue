@@ -150,9 +150,9 @@ const label = {
                     <div v-if="!layoutStore.user?.settings?.hide_logo" class="overflow-hidden relative flex flex-1 items-center justify-center md:justify-start transition-all duration-300 ease-in-out"
                          :class="[layoutStore.leftSidebar.show ? 'md:w-48 md:pr-4' : 'md:w-12']"
                          :style="{
-                            'background-color': layoutStore.app.theme[0],
-                            'color': layoutStore.app.theme[1],
-                            'border-bottom': `1px solid ${layoutStore.app.theme[2]}3F`
+                            'background-color': layoutStore.app.navigation_theme[0],
+                            'color': layoutStore.app.navigation_theme[1],
+                            'border-bottom': `1px solid ${layoutStore.app.navigation_theme[2]}3F`
                         }"
                     >
                         <Transition name="spin-to-down">

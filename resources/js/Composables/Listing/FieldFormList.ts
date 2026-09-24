@@ -24,6 +24,7 @@ import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
 import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
+import OrgThemes from '@/Components/Forms/Fields/OrgThemes.vue'
 import NotificationChannels from '@/Components/Forms/Fields/NotificationChannels.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import MailboxConnect from '@/Components/Forms/Fields/MailboxConnect.vue'
@@ -166,6 +167,7 @@ export const componentsList: { [key: string]: Component } = {
     'app_login': AppLogin,
     'app_theme': AppTheme,
     'chat_theme': ChatTheme,
+    'org_themes': OrgThemes,
     'notification_channels': NotificationChannels,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,

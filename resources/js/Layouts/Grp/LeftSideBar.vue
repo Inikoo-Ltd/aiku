@@ -128,8 +128,8 @@ const onLogoutAuth = () => {
         class="fixed top-0 md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
         :style="{
 			paddingBottom: navigationPaddingBottom,
-			'background-color': layout.app.theme[0],
-			color: layout.app.theme[2],
+			'background-color': layout.app.navigation_theme[0],
+			color: layout.app.navigation_theme[2],
 		}"
         :class="[
 			layout.leftSidebar.show ? 'w-8/12 md:w-48' : 'w-8/12 md:w-12',
@@ -142,8 +142,8 @@ const onLogoutAuth = () => {
             class="hidden absolute z-10 right-0 top-2/4 -translate-y-full translate-x-1/2 w-8 lg:w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
             :title="layout.leftSidebar.show ? 'Collapse the bar' : 'Expand the bar'"
             :style="{
-				'background-color': `color-mix(in srgb, ${layout.app.theme[0]} 85%, black)`,
-				color: layout.app.theme[1],
+				'background-color': `color-mix(in srgb, ${layout.app.navigation_theme[0]} 85%, black)`,
+				color: layout.app.navigation_theme[1],
 			}">
             <div
                 class="flex items-center justify-center transition-all duration-300 ease-in-out"

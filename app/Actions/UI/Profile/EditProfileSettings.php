@@ -61,6 +61,16 @@ class EditProfileSettings
             $printers = [];
         }
 
+        $organisations = $user->authorisedOrganisations()
+            ->orderBy('organisations.name')
+            ->get(['organisations.id', 'organisations.slug', 'organisations.code', 'organisations.name'])
+            ->map(fn ($organisation) => [
+                'id'    => $organisation->id,
+                'slug'  => $organisation->slug,
+                'code'  => $organisation->code,
+                'label' => $organisation->name,
+            ])->all();
+
         return [
             "title"       => __("Preferences"),
             "pageHead"    => [
@@ -83,6 +93,19 @@ class EditProfileSettings
                                 "type"  => "app_theme",
                                 "label" => __("Theme color"),
                                 "value" => Arr::get($user->settings, 'app_theme'),
+                            ],
+                            "org_themes" => [
+                                "type"        => "org_themes",
+                                "label"       => __("Colour per organisation"),
+                                "information" => __("Give each organisation its own colour for the left navigation, so you can tell at a glance which one you are working in"),
+                                "full"        => true,
+                                "options"     => [
+                                    "organisations" => $organisations,
+                                ],
+                                "value"       => [
+                                    "enabled" => (bool) Arr::get($user->settings, 'org_themes.enabled', false),
+                                    "themes"  => array_values(Arr::get($user->settings, 'org_themes.themes') ?: []),
+                                ],
                             ],
                             "chat_theme" => [
                                 "type"  => "chat_theme",

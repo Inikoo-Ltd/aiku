@@ -18,6 +18,8 @@ export const layoutStructure = {
         name: "",  // For styling navigation depend on which App
         color: null as unknown | Colors,  // Styling layout color
         theme: useColorTheme[0] as string[],  // For styling app color
+        navigation_theme: useColorTheme[0] as string[],  // Left navigation color, can be set per organisation
+        organisation_colours: {} as { [key: string]: string },  // Left navigation color per organisation slug, sent on first load only
         url: null as string | null, // For url on logo top left
         environment: null as string | null, // 'local' | 'staging'
         last_deployment_at: null as string | null, // created_at of the latest app deployment
