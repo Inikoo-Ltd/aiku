@@ -350,7 +350,10 @@ class Product extends Model implements Auditable, HasMedia
                 'description_extra',
                 'state',
                 'is_for_sale',
+                'is_in_website',
                 'is_on_demand',
+                'barcode',
+                'web_images',
                 'created_at'
             ]);
     }
