@@ -5830,6 +5830,24 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
 });
 
+test('an agent unsubscribes a customer from every newsletter and reminder in one click, and when is kept', function () {
+    $customer = createOwnCustomer($this->shop, 'unsubscribe-all');
+    $comms    = $customer->comms ?? $customer->comms()->create([]);
+    $comms->update(['is_subscribed_to_newsletter' => true, 'is_subscribed_to_marketing' => true, 'is_subscribed_to_abandoned_cart' => true]);
+
+    actingAs($this->user);
+    $this->postJson(route('grp.models.customer.unsubscribe_marketing', ['customer' => $customer->id]))
+        ->assertOk()
+        ->assertJsonPath('subscriptions.channels.newsletter.subscribed', false)
+        ->assertJsonPath('subscriptions.channels.marketing.subscribed', false)
+        ->assertJsonPath('subscriptions.channels.newsletter.unsubscribed_at', now()->toDateString());
+
+    $comms->refresh();
+    expect($comms->is_subscribed_to_abandoned_cart)->toBeFalse()
+        ->and($comms->newsletter_unsubscribed_at)->not->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\OpenChatFactDrawer::make()->handle('subscriptions', $this->shop, $customer, [])['channels']['marketing']['subscribed'])->toBeFalse();
+});
+
 
 test('an email is found by an order or consignment number in its subject or body', function () {
     \Illuminate\Support\Facades\Http::fake();

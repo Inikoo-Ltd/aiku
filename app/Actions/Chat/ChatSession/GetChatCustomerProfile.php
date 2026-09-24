@@ -21,6 +21,7 @@ use App\Actions\Helpers\Address\GetFormattedAddress;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\Chat\MetaChatSession;
+use App\Actions\CRM\CustomerComms\GetCustomerSubscriptions;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -90,6 +91,10 @@ class GetChatCustomerProfile
             'phone'        => $customer->phone,
             'location'     => is_array($location) && Arr::get($location, 0) ? array_values($location) : null,
             'address'      => $customer->address ? GetFormattedAddress::run($customer->address) : null,
+            'subscriptions' => [
+                ...GetCustomerSubscriptions::run($customer),
+                'unsubscribe' => ['name' => 'grp.models.customer.unsubscribe_marketing', 'parameters' => ['customer' => $customer->id]],
+            ],
             'last_orders'  => $customer->orders()
                 ->where('state', '!=', OrderStateEnum::CREATING)
                 ->latest('date')

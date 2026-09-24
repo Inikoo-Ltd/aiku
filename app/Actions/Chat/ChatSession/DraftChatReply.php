@@ -150,7 +150,7 @@ class DraftChatReply implements ShouldBeUnique
             ChatTopicEnum::ORDER_STATUS       => $names($facts['order_facts']['order']['reference'] ?? null)
                 || collect($facts['replacements'] ?? [])->contains(fn (array $replacement) => $names($replacement['for_order'] ?? null)),
             ChatTopicEnum::PRODUCT_QUERY      => collect(array_keys($facts['product_details'] ?? []))->contains(fn ($code) => $names((string) $code)),
-            ChatTopicEnum::OTHER              => !empty($facts['shop_policies']),
+            ChatTopicEnum::OTHER              => !empty($facts['shop_policies']) || !empty($facts['subscriptions']),
             default                           => false,
         };
     }
@@ -228,6 +228,8 @@ class DraftChatReply implements ShouldBeUnique
           is, naming the product or its code.
         - "shop_info" if what they ask now is about the shop itself: minimum order, countries we
           ship to, dispatch or delivery times, opening an account, how to order, samples.
+        - "subscription" if what they ask now is to stop receiving our newsletters or marketing,
+          or why they still get them.
         - "other" when the writer is not our customer (a courier, carrier, warehouse, supplier
           or marketplace), when they report missing, damaged or wrong items (the claim checklist
           handles those), or for anything else, or when they also ask for something else: a
@@ -246,7 +248,7 @@ class DraftChatReply implements ShouldBeUnique
         $excerpt
 
         Output JSON only, no code fence:
-        {"asks": "order_status/stock_availability/product_query/shop_info/other", "drawers": []}
+        {"asks": "order_status/stock_availability/product_query/shop_info/subscription/other", "drawers": []}
         EOT;
 
         $response = AskToAi::run($prompt, config('chat.summary_model'));
@@ -254,7 +256,7 @@ class DraftChatReply implements ShouldBeUnique
         $data     = is_array($data) ? $data : [];
         $topic    = ChatTopicEnum::tryFrom((string) Arr::get($data, 'asks'));
 
-        if (Arr::get($data, 'asks') === 'shop_info') {
+        if (in_array(Arr::get($data, 'asks'), ['shop_info', 'subscription'], true)) {
             $topic = ChatTopicEnum::OTHER;
         }
 
@@ -340,6 +342,9 @@ class DraftChatReply implements ShouldBeUnique
           account), reports a website or search problem, asks for a swap, a change or a price,
           answers a question we asked, or only thanks us or sends a link.
         - An alternative may be offered only from "alternatives" in the facts, naming its code.
+        - About subscriptions, say only what "subscriptions" shows: what they are subscribed to,
+          when they unsubscribed, what was sent since. Never say we have unsubscribed them unless
+          the facts show them unsubscribed from everything.
         - "sold_in_packs_of" means available_now counts packs: never call them pieces or boxes.
         - Tracking for a replacement, a resend or a second parcel is only answerable when the
           facts show that shipment; the tracking of the original parcel is not an answer.

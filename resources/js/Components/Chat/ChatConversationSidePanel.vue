@@ -208,6 +208,12 @@ interface CustomerProfile {
     last_orders?: LastOrder[]
     previous_chats?: PreviousChat[]
     chat_topics?: { topic: string, label: string, count: number }[]
+    subscriptions?: {
+        channels: Record<string, { subscribed: boolean, unsubscribed_at: string | null }>
+        unsubscribed_in_an_email_at: string | null
+        marketing_emails_last_30_days: { sent_at: string, outbox: string }[]
+        unsubscribe: { name: string, parameters: Record<string, any> } | null
+    }
 }
 
 const emptyCustomerProfile = (): CustomerProfile => ({ tags: [], stats: null, email: null, profile_url: null })
@@ -327,6 +333,50 @@ const createFollowUpOrder = async (order: LastOrder) => {
 }
 
 const orderGettingPaymentLink = ref<string | null>(null)
+
+const CHANNEL_LABELS: Record<string, string> = {
+    newsletter: ctrans("Newsletter"),
+    marketing: ctrans("Marketing"),
+    abandoned_cart: ctrans("Abandoned basket"),
+    reorder_reminder: ctrans("Reorder reminder"),
+    basket_low_stock: ctrans("Low stock in basket"),
+    basket_reminder: ctrans("Basket reminder"),
+    price_change_notification: ctrans("Price changes"),
+    gold_reward_reminder: ctrans("Gold reward reminder"),
+    whatsapp_newsletter: ctrans("WhatsApp newsletter"),
+}
+
+const subscribedChannels = computed(() => Object.entries(customerProfile.value.subscriptions?.channels ?? {})
+    .filter(([, channel]) => channel.subscribed)
+    .map(([key]) => CHANNEL_LABELS[key] ?? key))
+
+const lastUnsubscribedAt = computed(() => {
+    const subscriptions = customerProfile.value.subscriptions
+    const dates = [
+        ...Object.values(subscriptions?.channels ?? {}).map((channel) => channel.unsubscribed_at),
+        subscriptions?.unsubscribed_in_an_email_at,
+    ].filter(Boolean) as string[]
+
+    return dates.sort().pop() ?? null
+})
+
+const isUnsubscribing = ref(false)
+
+const unsubscribeFromMarketing = async () => {
+    const unsubscribe = customerProfile.value.subscriptions?.unsubscribe
+    if (!unsubscribe || isUnsubscribing.value) return
+    if (!window.confirm(ctrans("Unsubscribe this customer from every newsletter, marketing email and reminder? Emails about their orders keep coming."))) return
+    isUnsubscribing.value = true
+    try {
+        const res = await axios.post(route(unsubscribe.name, unsubscribe.parameters))
+        customerProfile.value.subscriptions = { ...res.data.subscriptions, unsubscribe }
+        notify({ title: ctrans("Unsubscribed"), text: ctrans("They will get no more newsletters, marketing or reminders"), type: "success" })
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("Could not unsubscribe"), type: "error" })
+    } finally {
+        isUnsubscribing.value = false
+    }
+}
 
 const createPaymentLink = async (order: LastOrder) => {
     if (!order.payment_link || orderGettingPaymentLink.value) return
@@ -821,6 +871,22 @@ const copyChatId = async () => {
                             :routeFetch="orderTakingItems.add_items.products" :isLoadingSubmit="isAddingItems"
                             withQuantity @submit="addItemsToOrder" />
                     </Modal>
+                </div>
+
+                <div v-if="!session.is_guest && customerProfile.subscriptions" class="px-4 py-3 space-y-1.5 text-xs">
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{{ ctrans("Emails we send them") }}</p>
+                    <p v-if="!subscribedChannels.length" class="font-medium text-gray-800">{{ ctrans("Unsubscribed from everything") }}</p>
+                    <p v-else class="text-gray-700">{{ ctrans("Subscribed to") }}: {{ subscribedChannels.join(", ") }}</p>
+                    <p v-if="lastUnsubscribedAt" class="text-gray-500">{{ ctrans("Last unsubscribed") }}: {{ formatStatDate(lastUnsubscribedAt) }}</p>
+                    <p class="text-gray-500"
+                        :class="!subscribedChannels.length && customerProfile.subscriptions.marketing_emails_last_30_days.length ? 'text-red-600 font-medium' : ''">
+                        {{ ctrans("Marketing emails in the last 30 days") }}: {{ customerProfile.subscriptions.marketing_emails_last_30_days.length }}<template v-if="customerProfile.subscriptions.marketing_emails_last_30_days.length">, {{ ctrans("last on") }} {{ formatStatDate(customerProfile.subscriptions.marketing_emails_last_30_days[0].sent_at) }}</template>
+                    </p>
+                    <button v-if="subscribedChannels.length && customerProfile.subscriptions.unsubscribe" type="button"
+                        class="font-medium hover:underline disabled:opacity-50" :style="{ color: themePrimary }"
+                        :disabled="isUnsubscribing" @click="unsubscribeFromMarketing">
+                        {{ isUnsubscribing ? ctrans("Unsubscribing…") : ctrans("Unsubscribe from everything") }}
+                    </button>
                 </div>
 
                 <div v-if="customerProfile.previous_chats?.length" class="px-4 py-3 space-y-2">

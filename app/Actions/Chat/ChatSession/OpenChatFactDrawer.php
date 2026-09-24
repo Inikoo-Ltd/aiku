@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
+use App\Actions\CRM\CustomerComms\GetCustomerSubscriptions;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -40,6 +41,7 @@ class OpenChatFactDrawer
         'recent_orders'    => 'the customer\'s last 10 orders with their state',
         'shop_policies'    => 'what the shop tells customers: minimum order, countries we ship to, dispatch times, opening an account, samples',
         'product_details'  => 'size, weight, country of origin and description of a product',
+        'subscriptions'    => 'which newsletters and marketing emails the customer is subscribed to, when they unsubscribed, and the marketing emails sent to them in the last 30 days',
     ];
 
     /**
@@ -63,6 +65,7 @@ class OpenChatFactDrawer
             'order_payment'  => $order ? [$order->reference => $order->pay_status?->value ?? 'unknown'] : null,
             'recent_orders'  => $customer ? $this->recentOrders($customer) : null,
             'shop_policies'  => ($policies = trim((string) data_get($shop->settings, 'chat.policies', ''))) !== '' ? ['text' => $policies] : null,
+            'subscriptions'  => $customer ? GetCustomerSubscriptions::run($customer) : null,
             'product_details' => $products->mapWithKeys(fn (Product $product) => [$product->code => $this->productDetails($product)])->filter()->all(),
             default          => null,
         };
