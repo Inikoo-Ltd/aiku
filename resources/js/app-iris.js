@@ -8,7 +8,7 @@ import "./bootstrap_iris";
 import "../css/app.css";
 
 import { createSSRApp, h } from "vue";
-import { createInertiaApp } from "@inertiajs/vue3";
+import { createInertiaApp, router } from "@inertiajs/vue3";
 import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { i18nVue, loadLanguageAsync } from "laravel-vue-i18n";
 import Notifications from "@kyvg/vue3-notification";
@@ -42,6 +42,12 @@ const MyPreset = definePreset(Aura, {
   }
 });
 
+let nextPageBlocks = null;
+
+router.on("beforeUpdate", (event) => {
+  nextPageBlocks = { webBlocks: event.detail.page.props.web_blocks, shopType: event.detail.page.props.retina?.type };
+});
+
 const irisLocale = normalizeLocale(document.documentElement.lang);
 const irisLocaleMessages = loadLocaleMessages(irisLocale);
 
@@ -69,6 +75,13 @@ createInertiaApp(
 
         page.default.layout =
             page.default.layout || IrisLayout
+
+        if (nextPageBlocks?.webBlocks) {
+            const { webBlocks, shopType } = nextPageBlocks
+            nextPageBlocks = null
+            const { preloadIrisBlocks } = await import("@/Iris/Composables/getIrisComponents")
+            await preloadIrisBlocks(webBlocks, shopType)
+        }
 
         return page
     },
