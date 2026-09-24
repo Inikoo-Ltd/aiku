@@ -6591,6 +6591,54 @@ test('a ticket marked as blocking holds the chat open until it is settled', func
         ->toBe(ChatSessionStatusEnum::CLOSED);
 });
 
+test('a task asked of a colleague from a chat labels it in the inbox and holds it open until done', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Please can I request the 51st amendment forms for rose geranium',
+        'is_read'         => true,
+    ]);
+
+    $task = \App\Actions\Chat\ChatSession\StoreStaffTaskFromChatSession::make()->handle($session, $this->user, [
+        'subject'     => 'Awaiting amendment forms from Aromatics',
+        'assignee_id' => $this->user->id,
+    ]);
+
+    expect($task->model_type)->toBe('ChatSession')
+        ->and($task->model_id)->toBe($session->id)
+        ->and($task->description)->toContain($session->ulid);
+
+    $listed = collect(GetChatSessions::make()->handle(['ulid' => $session->ulid])->items())->firstWhere('id', $session->id);
+    expect(\App\Http\Resources\CRM\Livechat\ChatSessionListResource::make($listed)->resolve()['open_tasks'])
+        ->toHaveCount(1)
+        ->sequence(fn ($openTask) => $openTask->reference->toBe($task->reference)->subject->toBe('Awaiting amendment forms from Aromatics'));
+
+    $agent = ChatAgent::create([
+        'user_id'              => User::factory()->create(['group_id' => $this->organisation->group_id])->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    expect(fn () => CloseChatSession::make()->handle($session, $agent->id))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, $task->reference);
+
+    $task->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);
+
+    expect(CloseChatSession::make()->handle($session->fresh(), $agent->id)->status)->toBe(ChatSessionStatusEnum::CLOSED);
+});
+
 test('a ticket raised from a chat does not block it unless it was marked as blocking', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),

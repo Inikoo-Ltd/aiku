@@ -117,7 +117,8 @@ class GetMetaChatSessions
             },
             'customer',
             'shop',
-            'assignments.chatAgent.user'
+            'assignments.chatAgent.user',
+            'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ])
             ->withCount([
                 'messages as unread_count' => function ($q) {

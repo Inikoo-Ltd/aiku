@@ -252,6 +252,7 @@ class ShowOrgChatInbox extends OrgAction
             'webUser',
             'shop',
             'assignments.chatAgent.user',
+            'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ]);
 
         return (new ChatSessionListResource($this->selectedSession))->resolve();

@@ -367,6 +367,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     can_dispose: (s as any).can_dispose,
     open_tickets_count: Number((s as any).open_tickets_count ?? 0),
     blocking_tickets_count: Number((s as any).blocking_tickets_count ?? 0),
+    open_tasks: (s as any).open_tasks ?? [],
     noise: (s as any).noise ?? null,
     claim: (s as any).claim ?? null,
     promise: (s as any).promise ?? null,
@@ -1476,6 +1477,7 @@ const openChat = (c: Contact) => {
         can_dispose: (c as any).can_dispose,
         open_tickets_count: (c as any).open_tickets_count ?? 0,
         blocking_tickets_count: (c as any).blocking_tickets_count ?? 0,
+        open_tasks: c.open_tasks ?? [],
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
@@ -2393,6 +2395,11 @@ onUnmounted(() => {
                                         ·
                                         {{ c.claim.photos ? ctrans(":count photos", { count: c.claim.photos }) : ctrans("no photos") }}
                                     </span>
+                                    <span v-for="task in c.open_tasks" :key="task.reference"
+                                        v-tooltip="ctrans(':reference for :who', { reference: task.reference, who: task.who })"
+                                        class="shrink-0 max-w-full truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        {{ ctrans("Waiting") }}: {{ task.subject }}
+                                    </span>
                                     <span v-if="c.promise" v-tooltip="ctrans('Told while we were closed that we would reply when we open. Not answered yet.')"
                                         class="shrink-0 truncate rounded px-1 font-medium"
                                         :class="c.promise.overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
@@ -2461,6 +2468,7 @@ onUnmounted(() => {
                     @assign-self-success="onAssignSelfSuccess"
                     @close-session="closeSession"
                     @spam-success="onSpamFromThread"
+                    @task-created="reloadContactsSoon"
                     @view-profile="showProfilePanel" />
                 <MessageAreaAgent v-else class="flex-1 min-h-0" :messages="messages" :session="selectedSession"
                     :read-only="isReadOnly" :ignore-reasons="ignoreReasons" :show-shop="crossShopView"
@@ -2472,6 +2480,7 @@ onUnmounted(() => {
                     @open-slack-settings="onOpenSlackSettings"
                     @spam-success="onSpamFromThread"
                     @view-tickets="showTicketsPanel"
+                    @task-created="reloadContactsSoon"
                     @restore-success="onRestoreFromThread" />
 
                 <template v-if="isEmbedded && panelSession && sidePanelVisible">

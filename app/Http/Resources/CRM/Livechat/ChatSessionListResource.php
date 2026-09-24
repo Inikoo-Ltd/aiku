@@ -7,6 +7,7 @@ use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Chat\ChatMessage;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -152,6 +153,12 @@ class ChatSessionListResource extends JsonResource
 
             'open_tickets_count'     => (int) ($this->open_tickets_count ?? 0),
             'blocking_tickets_count' => (int) ($this->blocking_tickets_count ?? 0),
+            'open_tasks'             => $this->relationLoaded('staffTasks') ? $this->staffTasks->map(fn (StaffTask $task) => [
+                'reference' => $task->reference,
+                'subject'   => $task->subject,
+                'who'       => $task->assignee?->chatName() ?? StaffTask::departmentLabel((string) $task->department),
+                'url'       => route('grp.tasks.index', ['task' => $task->reference]),
+            ])->values()->all() : [],
 
             'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
 

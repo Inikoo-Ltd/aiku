@@ -128,6 +128,7 @@ export interface Contact {
 	can_dispose?: boolean
 	open_tickets_count?: number
 	blocking_tickets_count?: number
+	open_tasks?: { reference: string; subject: string; who: string; url: string }[]
 	customer_suggestion?: { label: string; basis: string | null; customer: { name: string | null; email: string | null; reference: string | null } | null; hint: string | null } | null
 	noise?: { label: string; note: string | null; source: string | null; automatic: boolean } | null
 	promise?: { at: string; overdue: boolean } | null

@@ -147,7 +147,8 @@ class GetChatSessions
             'shop',
             'activeUserLanguage',
             'userLanguage',
-            'assignments.chatAgent.user'
+            'assignments.chatAgent.user',
+            'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ])
             ->whereHas('messages')
             ->withCount([
