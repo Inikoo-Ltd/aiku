@@ -5576,6 +5576,10 @@ test('the model only hints until it is allowed to put aside, never touches a cus
     $customer->update(['web_user_id' => $webUser->id]);
     $customer = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($customer)->refresh();
 
+    noiseTestFakeModel('automated_notification', 95);
+    $marketplaceOrder = noiseTestEmailSession($this->shop, 'service@marketplace.example', 'You have 1 order', 'Accept it in your portal');
+    $marketplaceOrder = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($marketplaceOrder)->refresh();
+
     noiseTestFakeModel('nonsense', 99);
     $odd = noiseTestEmailSession($this->shop, 'someone@example.com', 'Question', 'Do you ship to Norway?');
     $odd = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($odd)->refresh();
@@ -5584,6 +5588,8 @@ test('the model only hints until it is allowed to put aside, never touches a cus
         ->and($second->spammed_by_agent_id)->toBeNull()
         ->and($customer->noise_checked_at)->toBeNull()
         ->and($customer->is_spam)->toBeFalse()
+        ->and($marketplaceOrder->noise_verdict)->toBe('automated_notification')
+        ->and($marketplaceOrder->is_rubbish)->toBeFalse()
         ->and($odd->noise_verdict)->toBe('genuine')
         ->and($odd->is_spam)->toBeFalse();
 });
