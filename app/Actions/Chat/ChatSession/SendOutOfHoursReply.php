@@ -270,7 +270,8 @@ class SendOutOfHoursReply implements ShouldBeUnique
     /**
      * On a public holiday HR has loaded, the first line names it. By email the shop's own out
      * of hours words, set in its chat settings, close the first reply of a wait: what the
-     * fixed lines cannot know, like how fast urgent mail is answered in the day.
+     * fixed lines cannot know, like how fast urgent mail is answered in the day. A shop whose
+     * words already say when it opens may leave the first line out, never with no words.
      *
      * @param  array<int, string>|null  $claimLines
      */
@@ -281,9 +282,11 @@ class SendOutOfHoursReply implements ShouldBeUnique
         $when   = $next ? ['when' => $this->whenWeOpen($next['opens'], $shop->timezoneName(), $locale)] : null;
         $toldUs = $claimLines !== null || $saidWhatTheyNeed;
 
+        $shopMessage = $byEmail ? trim((string) data_get($shop->settings, 'chat.out_of_hours_message')) : '';
+
         $parts = [];
 
-        if ($closedLine) {
+        if ($closedLine && ($shopMessage === '' || data_get($shop->settings, 'chat.out_of_hours_opening_line') !== false)) {
             $holiday = trim((string) IsWithinWorkingHours::make()->publicHoliday($shop, now($shop->timezoneName()))?->label);
 
             $parts[] = match (true) {
@@ -299,9 +302,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
             $parts[] = __('So we can sort this out as soon as we open, please send us:', [], $locale)."\n- ".implode("\n- ", $claimLines);
         }
 
-        $shopMessage = trim((string) data_get($shop->settings, 'chat.out_of_hours_message'));
-
-        if ($closedLine && $byEmail && $shopMessage !== '') {
+        if ($closedLine && $shopMessage !== '') {
             $parts[] = $shopMessage;
         }
 

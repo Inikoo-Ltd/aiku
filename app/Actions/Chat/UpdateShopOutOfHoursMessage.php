@@ -17,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * The shop's own words at the end of the email sent while it is closed. Customer service
  * writes them, so whoever may work the shop's chat may change them; empty removes them.
+ * They may also leave out the line saying when we open again, when their words say it.
  */
 class UpdateShopOutOfHoursMessage extends OrgAction
 {
@@ -30,7 +31,8 @@ class UpdateShopOutOfHoursMessage extends OrgAction
     public function rules(): array
     {
         return [
-            'message' => ['present', 'nullable', 'string', 'max:2000'],
+            'message'      => ['present', 'nullable', 'string', 'max:2000'],
+            'opening_line' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -43,6 +45,14 @@ class UpdateShopOutOfHoursMessage extends OrgAction
             data_forget($settings, 'chat.out_of_hours_message');
         } else {
             data_set($settings, 'chat.out_of_hours_message', $message);
+        }
+
+        if (array_key_exists('opening_line', $modelData)) {
+            if ($modelData['opening_line']) {
+                data_forget($settings, 'chat.out_of_hours_opening_line');
+            } else {
+                data_set($settings, 'chat.out_of_hours_opening_line', false);
+            }
         }
 
         $shop->update(['settings' => $settings]);

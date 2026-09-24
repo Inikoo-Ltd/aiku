@@ -7,6 +7,7 @@
 import { Head, Link, useForm } from "@inertiajs/vue3"
 import { computed } from "vue"
 import Textarea from "primevue/textarea"
+import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -42,6 +43,7 @@ const props = defineProps<{
     outOfHours: {
         message: string
         opening_line: string
+        show_opening_line: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
     agents?: any
@@ -55,11 +57,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, [
 const shopTemplatesRoute = (shop: { organisation_slug: string; slug: string }) =>
     route("grp.org.shops.show.chat.settings", [shop.organisation_slug, shop.slug]) + "?tab=whatsapp_templates"
 
-const outOfHoursForm = useForm({ message: props.outOfHours?.message ?? "" })
+const outOfHoursForm = useForm({
+    message: props.outOfHours?.message ?? "",
+    opening_line: props.outOfHours?.show_opening_line ?? true,
+})
 
-const outOfHoursPreview = computed(() =>
-    [props.outOfHours?.opening_line, outOfHoursForm.message.trim()].filter(Boolean).join("\n\n")
-)
+const outOfHoursPreview = computed(() => {
+    const message = outOfHoursForm.message.trim()
+
+    return [outOfHoursForm.opening_line || !message ? props.outOfHours?.opening_line : null, message].filter(Boolean).join("\n\n")
+})
 
 const saveOutOfHours = () => {
     if (!props.outOfHours) {
@@ -98,6 +105,11 @@ const saveOutOfHours = () => {
                 class="mt-1 w-full"
                 :placeholder="ctrans('For example our office hours, and how fast urgent emails are answered')" />
             <p v-if="outOfHoursForm.errors.message" class="mt-1 text-sm text-red-600">{{ outOfHoursForm.errors.message }}</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <Checkbox v-model="outOfHoursForm.opening_line" inputId="out-of-hours-opening-line" binary />
+            <label for="out-of-hours-opening-line" class="text-sm text-gray-700">{{ ctrans("Start with the line saying when we open again") }}</label>
         </div>
 
         <div>

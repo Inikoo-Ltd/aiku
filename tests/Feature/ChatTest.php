@@ -2228,11 +2228,25 @@ test('customer service edits the shop out of hours email in chat settings, other
     patch(route('grp.org.shops.show.chat.settings.out_of_hours_message.update', $parameters), ['message' => 'Closed on bank holidays.'])->assertRedirect();
     expect(data_get($this->shop->fresh()->settings, 'chat.out_of_hours_message'))->toBe('Closed on bank holidays.');
 
+    $email = fn () => \App\Actions\Chat\ChatSession\SendOutOfHoursReply::make()->text($this->shop->fresh(), true, null, true, true);
+
+    expect($email())->toStartWith('Thank you for your message.')->toEndWith("\n\nClosed on bank holidays.");
+
+    patch(route('grp.org.shops.show.chat.settings.out_of_hours_message.update', $parameters), ['message' => 'Closed on bank holidays.', 'opening_line' => false])->assertRedirect();
+    get(route('grp.org.shops.show.chat.settings', $parameters).'?tab=out_of_hours')->assertInertia(fn (AssertableInertia $page) => $page->where('outOfHours.show_opening_line', false));
+    expect($email())->toBe('Closed on bank holidays.')
+        ->and(\App\Actions\Chat\ChatSession\SendOutOfHoursReply::make()->text($this->shop->fresh(), true, null, true))->toStartWith('Thank you for your message.');
+
+    \App\Actions\Chat\UpdateShopOutOfHoursMessage::make()->handle($this->shop->fresh(), ['message' => '']);
+    expect($email())->toStartWith('Thank you for your message.');
+    \App\Actions\Chat\UpdateShopOutOfHoursMessage::make()->handle($this->shop->fresh(), ['message' => 'Closed on bank holidays.']);
+
     actingAs(User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]));
     patch(route('grp.org.shops.show.chat.settings.out_of_hours_message.update', $parameters), ['message' => 'Hijacked'])->assertForbidden();
     expect(data_get($this->shop->fresh()->settings, 'chat.out_of_hours_message'))->toBe('Closed on bank holidays.');
 
-    \App\Actions\Chat\UpdateShopOutOfHoursMessage::make()->handle($this->shop->fresh(), ['message' => null]);
+    \App\Actions\Chat\UpdateShopOutOfHoursMessage::make()->handle($this->shop->fresh(), ['message' => null, 'opening_line' => true]);
+    expect(data_get($this->shop->fresh()->settings, 'chat.out_of_hours_opening_line'))->toBeNull();
 });
 
 test('phone calls open from the chat reports, not the top menu, and a new build reloads open tabs', function () {

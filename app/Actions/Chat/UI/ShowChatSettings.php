@@ -172,6 +172,7 @@ class ShowChatSettings extends OrgAction
         return [
             'message'      => data_get($shop->settings, 'chat.out_of_hours_message', ''),
             'opening_line' => SendOutOfHoursReply::make()->text($shop, true, null, true),
+            'show_opening_line' => data_get($shop->settings, 'chat.out_of_hours_opening_line') !== false,
             'update_route' => [
                 'name'       => 'grp.org.shops.show.chat.settings.out_of_hours_message.update',
                 'parameters' => [
