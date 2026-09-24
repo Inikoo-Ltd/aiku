@@ -21,6 +21,8 @@ return [
 
     'urgent_model' => env('CHAT_URGENT_MODEL', 'gpt-4o'),
 
+    'draft_review_model' => env('CHAT_DRAFT_REVIEW_MODEL', 'gpt-6-sol'),
+
     'phone_call' => [
 
         'max_minutes' => (int) env('CHAT_PHONE_CALL_MAX_MINUTES', 60),

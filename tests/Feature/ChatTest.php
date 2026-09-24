@@ -6027,6 +6027,11 @@ function aiDraftTestModel(\Illuminate\Http\Client\Request $request, string $answ
     $isLanguageDetection = str_contains((string) data_get($request->data(), 'messages.0.content'), 'language detector');
     $detected            = str_contains((string) data_get($request->data(), 'messages.1.content'), 'Hola') ? 'es' : 'en';
     $isQuestionCheck     = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"asks":');
+    $isReview            = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"objection":');
+
+    if ($isReview) {
+        return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['objection' => '', 'send' => true])]]]]);
+    }
 
     if ($isQuestionCheck) {
         return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['asks' => data_get(json_decode($answer, true), 'topic', 'other')])]]]]);
@@ -6286,9 +6291,14 @@ test('a question about an order gets a draft written from that customer\'s order
     ]);
 
     $asks        = null;
+    $objection   = null;
     $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hi, your order $reference was dispatched on 22 September."];
     \Illuminate\Support\Facades\Http::fake([
-        'api.openai.com/*' => function ($request) use (&$modelAnswer, &$asks) {
+        'api.openai.com/*' => function ($request) use (&$modelAnswer, &$asks, &$objection) {
+            if ($objection !== null && str_contains((string) data_get($request->data(), 'messages.1.content'), '{"objection":')) {
+                return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['objection' => $objection, 'send' => false])]]]]);
+            }
+
             if ($asks && str_contains((string) data_get($request->data(), 'messages.1.content'), '{"asks":')) {
                 return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['asks' => $asks])]]]]);
             }
@@ -6383,6 +6393,15 @@ test('a question about an order gets a draft written from that customer\'s order
     $ask($session, "Order $reference: can you suggest something similar to the candles that are out of stock?");
     expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
     $asks = null;
+
+    // A second model reviews every draft looking for a reason not to send it; one objection and
+    // there is no draft, however good the first model thought it was.
+    $objection   = 'It gives the status but the customer asks when it ships.';
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Where is my order please?');
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull();
+    $objection = null;
 
     // A model that copies the example answer in its instructions word for word gives no draft:
     // the placeholder names no order or product aiku looked up, and staff never see "the reply".
