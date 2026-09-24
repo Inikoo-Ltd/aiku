@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { whenIrisLoggedIn } from "@/Composables/irisAuthFlag"
 import { faFilter } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { getStyles } from "@/Composables/styles"
-import { ref, onMounted, onBeforeUnmount, watch, computed, toRaw, inject, defineAsyncComponent } from "vue"
+import { ref, onMounted, onBeforeUnmount, watch, computed, toRaw, inject, defineAsyncComponent, nextTick } from "vue"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -318,23 +319,18 @@ onMounted(() => {
 		isAscending.value = !sortParam.startsWith("-")
 	}
 
-    if (layout?.iris?.is_logged_in) {
+    whenIrisLoggedIn(layout, () => {
         firstLoad.value = 1
-        fetchProducts(); // break chace from product dont deleted
-        /* fetchHasInBasket(); */
-    } else {
-        if (orderByFromUrl) {
-            firstLoad.value = 1
-            fetchProducts()
-        }
+        fetchProducts()
+    })
 
-        setTimeout(() => {   // Needed, to handle, after login phase
-            if (layout?.iris?.is_logged_in) {
+    if (orderByFromUrl) {
+        nextTick(() => {
+            if (!layout?.iris?.is_logged_in) {
                 firstLoad.value = 1
                 fetchProducts()
-                /* fetchHasInBasket() */
             }
-        }, 400)
+        })
     }
 })
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whenIrisLoggedIn } from "@/Composables/irisAuthFlag"
 import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
 import { faGameConsoleHandheld } from "@far"
@@ -343,9 +344,7 @@ onMounted(() => {
     showPrice: Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price),
   })
 
-  if (layout?.iris?.is_logged_in) {
-      fetchData()
-    }
+  whenIrisLoggedIn(layout, fetchData)
 
   getAllProductFromVariant()
 })
