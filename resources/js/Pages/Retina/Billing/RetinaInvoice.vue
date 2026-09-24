@@ -15,7 +15,7 @@ import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { FieldOrderSummary } from "@/types/Pallet"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faBuilding, faMoneyBillAlt, faIdCard, faReceipt } from "@fal"
+import { faIdCardAlt, faMapMarkedAlt, faPhone, faChartLine, faCreditCard, faCube, faFolder, faPercent, faCalendarAlt, faDollarSign, faMapMarkerAlt, faPencil, faBuilding, faMoneyBillAlt, faIdCard, faReceipt, faExpandArrows } from "@fal"
 import { faClock, faFileExcel, faFileInvoice, faFilePdf } from "@fas"
 import { faCheck, faIdCard as farIdCard } from "@far"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -26,7 +26,7 @@ import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import type { Component } from "vue"
 
-library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt, faFileExcel, faReceipt)
+library.add(faCheck, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faBuilding, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faMoneyBillAlt, faFileExcel, faReceipt, faExpandArrows)
 
 
 const props = defineProps<{

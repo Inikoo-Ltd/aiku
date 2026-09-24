@@ -42,7 +42,7 @@ const detailHistory = ref<any>(null);
 const isStaffApp = !String(route().current() ?? '').startsWith('retina.');
 
 defineProps<{
-    data: object,
+    data?: object,
     tab?: string
 }>()
 
@@ -160,7 +160,7 @@ const getTradeUnitHistory = (oldData, newData) => {
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5" :name="tab">
+    <Table v-if="data" :resource="data" class="mt-5" :name="tab">
         <template #cell(datetime)="{ item: history }">
             <span class="whitespace-nowrap">
                 <FontAwesomeIcon
