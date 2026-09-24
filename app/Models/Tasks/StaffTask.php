@@ -11,6 +11,8 @@ namespace App\Models\Tasks;
 use App\Models\Chat\StaffConversation;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Builder;
@@ -113,6 +115,40 @@ class StaffTask extends Model implements Auditable
     public function scopeOpen(Builder $query): Builder
     {
         return $query->whereIn('status', [StaffTaskStatusEnum::TODO, StaffTaskStatusEnum::IN_PROGRESS]);
+    }
+
+    /**
+     * An organisation's tasks are the ones its staff raised, own or help on, so a task between two countries shows in both.
+     */
+    public function scopeWithin(Builder $query, Group|Organisation $parent): Builder
+    {
+        if ($parent instanceof Group) {
+            return $query->where('staff_tasks.group_id', $parent->id);
+        }
+
+        $staffIds = DB::table('user_has_models')->where('model_type', 'Employee')->where('organisation_id', $parent->id)->select('user_id');
+
+        return $query->where('staff_tasks.group_id', $parent->group_id)
+            ->where(fn (Builder $task) => $task
+                ->whereIn('staff_tasks.requester_id', $staffIds)
+                ->orWhereIn('staff_tasks.assignee_id', $staffIds)
+                ->orWhereIn('staff_tasks.id', DB::table('staff_task_collaborators')->whereIn('user_id', $staffIds)->select('staff_task_id')));
+    }
+
+    /**
+     * Supervisors, engineers and QA see every task, everyone else what they raised, own, help on or was sent to their department.
+     */
+    public function scopeVisibleTo(Builder $query, User $viewer): Builder
+    {
+        if (self::isSupervisor($viewer) || !self::canBeAssigned($viewer)) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $task) => $task
+            ->where('staff_tasks.requester_id', $viewer->id)
+            ->orWhere('staff_tasks.assignee_id', $viewer->id)
+            ->orWhereIn('staff_tasks.id', DB::table('staff_task_collaborators')->where('user_id', $viewer->id)->select('staff_task_id'))
+            ->orWhereIn('staff_tasks.department', self::departmentsOf($viewer)));
     }
 
     public static function departmentLabel(string $department): string

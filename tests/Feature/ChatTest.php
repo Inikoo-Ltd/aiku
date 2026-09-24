@@ -3710,11 +3710,71 @@ test('staff task reports share a task between its assignee and collaborators', f
 
     $task = \App\Actions\Tasks\StoreStaffTask::run($requester, ['subject' => 'Three person job', 'assignee_id' => $people[0]->id, 'collaborator_ids' => [$people[1]->id, $people[2]->id]]);
 
-    $rows = collect(\App\Actions\Tasks\UI\ShowStaffTasksReports::make()->handle($this->organisation->group, '1w')['by_assignee'])->keyBy('name');
+    $rows = collect(\App\Actions\Tasks\UI\ShowStaffTasksReports::make()->handle($this->organisation->group, $requester, '1w')['by_assignee'])->keyBy('name');
 
     foreach ($people as $person) {
         expect($rows[$person->contact_name ?: $person->username]['created'])->toBe(0.33);
     }
+});
+
+test('an organisation holds the tasks its staff raised, own or help on, and no one else\'s', function () {
+    $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $insider      = $newColleague();
+    $outsider     = $newColleague();
+
+    $employee = Employee::factory()->create(['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id]);
+    \Illuminate\Support\Facades\DB::table('user_has_models')->insert(['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id, 'user_id' => $insider->id, 'model_type' => 'Employee', 'model_id' => $employee->id]);
+
+    $raised  = \App\Actions\Tasks\StoreStaffTask::run($insider, ['subject' => 'Raised by our staff', 'assignee_id' => $outsider->id]);
+    $owned   = \App\Actions\Tasks\StoreStaffTask::run($outsider, ['subject' => 'Owned by our staff', 'assignee_id' => $insider->id]);
+    $helped  = \App\Actions\Tasks\StoreStaffTask::run($outsider, ['subject' => 'Helped by our staff', 'assignee_id' => $outsider->id, 'collaborator_ids' => [$insider->id]]);
+    $foreign = \App\Actions\Tasks\StoreStaffTask::run($outsider, ['subject' => 'Not ours', 'assignee_id' => $outsider->id]);
+
+    $otherOrganisation = (new \App\Models\SysAdmin\Organisation())->forceFill(['id' => 0, 'group_id' => $this->organisation->group_id]);
+    $tasksIn           = fn ($parent) => \App\Models\Tasks\StaffTask::query()->within($parent)->whereIn('id', [$raised->id, $owned->id, $helped->id, $foreign->id])->orderBy('id')->pluck('id')->all();
+
+    expect($tasksIn($this->organisation))->toBe([$raised->id, $owned->id, $helped->id])
+        ->and($tasksIn($this->organisation->group))->toBe([$raised->id, $owned->id, $helped->id, $foreign->id])
+        ->and($tasksIn($otherOrganisation))->toBe([]);
+
+    actingAs($this->user);
+    get(route('grp.org.tasks.list_all', $this->organisation->slug))->assertOk();
+    get(route('grp.org.tasks.board', $this->organisation->slug))->assertOk();
+    get(route('grp.org.tasks.reports', $this->organisation->slug))->assertOk();
+});
+
+test('staff see the tasks they raised, own, help on or were sent to their department, supervisors and engineers see them all', function () {
+    $groupId       = $this->organisation->group_id;
+    $newColleague  = fn (array $positions = []) => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => $positions]))->getUser();
+    $givePosition  = fn (\App\Models\SysAdmin\User $user, ?int $jobPositionId) => \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert(['user_id' => $user->id, 'job_position_id' => $jobPositionId, 'group_id' => $groupId, 'scopes' => '{}']);
+    $viewer        = $newColleague();
+    $stranger      = $newColleague();
+    $supervisor    = $newColleague();
+    $engineer      = $newColleague([['slug' => 'gp-hd', 'scopes' => []]]);
+
+    $givePosition($viewer, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('department', 'warehouse')->where('code', 'not like', '%-m')->value('id'));
+    $givePosition($supervisor, \Illuminate\Support\Facades\DB::table('job_positions')->where('group_id', $groupId)->where('code', 'like', '%-m')->where('department', '!=', \App\Models\Tasks\StaffTask::EXCLUDED_DEPARTMENT)->value('id'));
+    $otherDepartment = collect(\App\Models\Tasks\StaffTask::departments($groupId))->pluck('value')->first(fn (string $department) => $department !== 'warehouse');
+
+    $tasks = collect([
+        \App\Actions\Tasks\StoreStaffTask::run($viewer, ['subject' => 'Raised', 'assignee_id' => $stranger->id]),
+        \App\Actions\Tasks\StoreStaffTask::run($stranger, ['subject' => 'Owned', 'assignee_id' => $viewer->id]),
+        \App\Actions\Tasks\StoreStaffTask::run($stranger, ['subject' => 'Helped', 'assignee_id' => $stranger->id, 'collaborator_ids' => [$viewer->id]]),
+        \App\Actions\Tasks\StoreStaffTask::run($stranger, ['subject' => 'To my department', 'department' => 'warehouse']),
+        \App\Actions\Tasks\StoreStaffTask::run($stranger, ['subject' => 'To another department', 'department' => $otherDepartment]),
+        \App\Actions\Tasks\StoreStaffTask::run($stranger, ['subject' => 'Between others', 'assignee_id' => $stranger->id]),
+    ]);
+    $taskIds = $tasks->pluck('id');
+
+    $visibleTo = fn (\App\Models\SysAdmin\User $user) => \App\Models\Tasks\StaffTask::query()->within($this->organisation->group)->visibleTo($user)->whereIn('id', $taskIds)->orderBy('id')->pluck('id')->all();
+
+    expect($visibleTo($viewer))->toBe($taskIds->take(4)->all())
+        ->and($visibleTo($supervisor))->toBe($taskIds->all())
+        ->and($visibleTo($engineer))->toBe($taskIds->all());
+
+    $board = collect(\App\Actions\Tasks\UI\ShowStaffTasksBoard::make()->handle($this->organisation->group, $viewer, 'all'))->flatMap(fn (array $column) => array_column($column['tasks'], 'reference'));
+    expect($board)->toContain($tasks->first()->reference)
+        ->not->toContain($tasks->last()->reference);
 });
 
 test('inbound guest gmail attachments wait in gmail until an agent replies, then are all saved on the email chat message', function () {
