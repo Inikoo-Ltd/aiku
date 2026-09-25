@@ -51,10 +51,10 @@ class StorePartnerStockDeliveryFromDeliveryNote
             strict: false
         );
 
-        $orderNetAmount     = (float) $order->net_amount;
-        $totalUnitsRequired = (float) $deliveryNote->deliveryNoteItems()->sum('quantity_required');
+        $deliveryNoteItems          = $deliveryNote->deliveryNoteItems()->with('transaction')->get();
+        $unitsRequiredByTransaction = $deliveryNoteItems->groupBy('transaction_id')->map->sum('quantity_required');
 
-        foreach ($deliveryNote->deliveryNoteItems as $deliveryNoteItem) {
+        foreach ($deliveryNoteItems as $deliveryNoteItem) {
             $buyerOrgStock = OrgStock::where('organisation_id', $buyerOrganisation->id)
                 ->where('stock_id', $deliveryNoteItem->orgStock?->stock_id)
                 ->first();
@@ -67,10 +67,10 @@ class StorePartnerStockDeliveryFromDeliveryNote
                 continue;
             }
 
-            $unitQuantity = (float) $deliveryNoteItem->quantity_required;
-            // ponytail: pro-rate order value by units, per-line pricing if transfer pricing ever diverges
-            $netAmount = $totalUnitsRequired > 0
-                ? round($orderNetAmount * $unitQuantity / $totalUnitsRequired, 2)
+            $unitQuantity     = (float) $deliveryNoteItem->quantity_required;
+            $transactionUnits = (float) $unitsRequiredByTransaction->get($deliveryNoteItem->transaction_id, 0);
+            $netAmount        = $transactionUnits > 0
+                ? round((float) $deliveryNoteItem->transaction?->net_amount * $unitQuantity / $transactionUnits, 2)
                 : 0;
 
             StoreStockDeliveryItem::make()->action(

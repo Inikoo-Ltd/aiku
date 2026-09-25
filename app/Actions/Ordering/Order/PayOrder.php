@@ -12,8 +12,11 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Payment;
@@ -23,6 +26,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
+use Sentry;
 
 class PayOrder extends OrgAction
 {
@@ -55,7 +59,24 @@ class PayOrder extends OrgAction
             ProcessInvoicePaidNotification::dispatch($invoice->id);
         }
 
+        $this->sendPaidOrderToWarehouse($order);
+
         return $payment;
+    }
+
+    private function sendPaidOrderToWarehouse(Order $order): void
+    {
+        $order->refresh();
+
+        if ($order->state != OrderStateEnum::SUBMITTED || $order->pay_status != OrderPayStatusEnum::PAID) {
+            return;
+        }
+
+        try {
+            SendOrderToWarehouse::make()->action($order, []);
+        } catch (\Throwable $e) {
+            Sentry::captureException($e);
+        }
     }
 
     public function rules(): array

@@ -310,7 +310,7 @@ class ShowProduct extends OrgAction
                     ]
                 ],
             ]);
-        } elseif (!$product->is_minion_variant && !$isExternalShop && !$this->getRetirementDecision($product) && !$this->isUrlHeldByReplacement($product)) {
+        } elseif (!$product->is_minion_variant && !$isExternalShop && !$product->isExclusive() && !$this->getRetirementDecision($product) && !$this->isUrlHeldByReplacement($product)) {
             $actions[] =
                 [
                     'type'  => 'button',
@@ -457,6 +457,17 @@ class ShowProduct extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $isExternalShop ? ProductInExternalTabsEnum::navigation() : ProductTabsEnum::navigation()
                 ],
+                'exclusive_customers'  => $product->exclusiveCustomers()
+                    ->orderBy('customers.name')
+                    ->get(['customers.name', 'customers.reference', 'customers.slug'])
+                    ->map(fn ($customer) => [
+                        'name'      => $customer->name,
+                        'reference' => $customer->reference,
+                        'route'     => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show',
+                            'parameters' => [$product->organisation->slug, $product->shop->slug, $customer->slug],
+                        ],
+                    ])->all(),
                 'product_id'           => $product->id,
                 'product_units'        => (int)$product->units,
                 'product_unit'         => $product->unit,

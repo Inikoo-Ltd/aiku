@@ -7972,6 +7972,8 @@
     "Δ 1Y": "Δ 1Y",
     "Thank you for your message. We are closed at the moment and will reply :when.": "Bedankt voor je bericht. We zijn op dit moment gesloten en antwoorden :when.",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Bedankt voor je bericht. We zijn op dit moment gesloten en antwoorden :when. Laat ons weten waarmee we kunnen helpen, dan pakken we het meteen bij opening op.",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "Bedankt voor je bericht. We zijn vandaag gesloten (:holiday) en antwoorden :when.",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Bedankt voor je bericht. We zijn vandaag gesloten (:holiday) en antwoorden :when. Laat ons weten waarmee we kunnen helpen, dan pakken we het meteen bij opening op.",
     "from :time today": "vandaag vanaf :time",
     "from :time tomorrow": "morgen vanaf :time",
     "from :time on :day": "vanaf :time op :day"

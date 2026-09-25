@@ -17,6 +17,7 @@ use App\Actions\Billables\Service\Search\ReindexServicesSearch;
 use App\Actions\Billables\ShippingZone\Search\ReindexShippingZonesSearch;
 use App\Actions\Billables\ShippingZoneSchema\Search\ReindexShippingZoneSchemasSearch;
 use App\Actions\Chat\ChatMessage\Search\ReindexChatMessagesSearch;
+use App\Actions\Chat\MetaChatMessage\Search\ReindexMetaChatMessagesSearch;
 use App\Actions\Comms\Mailshot\Search\ReindexMailshotsSearch;
 use App\Actions\Discounts\Offer\Search\ReindexOffersSearch;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignsSearch;
@@ -223,6 +224,7 @@ class ReindexSearch extends HydrateModel
             $command->warn('Resetting search indexes');
         }
         ReindexChatMessagesSearch::run(reset: $command->option('reset'));
+        ReindexMetaChatMessagesSearch::run(reset: $command->option('reset'));
     }
 
     protected function reindexTradeUnits(Command $command): void

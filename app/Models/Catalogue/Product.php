@@ -258,6 +258,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|Product onlyTrashed()
  * @method static Builder<static>|Product query()
  * @method static Builder<static>|Product visibleToCustomer(?int $customerId)
+ * @method static Builder<static>|Product offeredToPartners()
  * @method static Builder<static>|Product sellableToCustomer(?int $customerId)
  * @method static Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
@@ -349,7 +350,10 @@ class Product extends Model implements Auditable, HasMedia
                 'description_extra',
                 'state',
                 'is_for_sale',
+                'is_in_website',
                 'is_on_demand',
+                'barcode',
+                'web_images',
                 'created_at'
             ]);
     }
@@ -614,6 +618,28 @@ class Product extends Model implements Auditable, HasMedia
                 });
             }
         });
+    }
+
+    /**
+     * Products staff may put on an order for one of the group's partner companies: everything
+     * active that is not private, plus the ranges private to the partner companies. Another
+     * customer's private label is never offered to them.
+     */
+    public function scopeOfferedToPartners(Builder $query): Builder
+    {
+        return $query->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+            ->where(function (Builder $query) {
+                $query->whereNotExists(function ($sub) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id');
+                })->orWhereExists(function ($sub) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                        ->whereIn('product_has_exclusive_customers.customer_id', function ($partners) {
+                            $partners->from('org_partners')->whereNotNull('customer_id')->select('customer_id');
+                        });
+                });
+            });
     }
 
     /**

@@ -103,6 +103,7 @@ class GetProductShowcase
         return [
             'product'                      => ProductResource::make($product),
             'is_external'                  => $product->shop->type == ShopTypeEnum::EXTERNAL,
+            'is_dropship'                  => $product->shop->type == ShopTypeEnum::DROPSHIPPING,
             'properties'                   => $properties,
             'gpsr'                         => $gpsr,
             'label_info'                   => [

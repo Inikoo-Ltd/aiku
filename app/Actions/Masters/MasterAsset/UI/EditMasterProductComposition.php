@@ -159,6 +159,7 @@ class EditMasterProductComposition extends OrgAction
         });
 
         $currenciesRate = GetMasterShopCurrenciesRate::run($masterProduct->masterShop);
+        $isDropshipping = $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING;
 
         $costs = null;
         if ($masterProduct->effective_cost !== null) {
@@ -213,7 +214,7 @@ class EditMasterProductComposition extends OrgAction
                         'full'         => true,
                         'noSaveButton' => true,
                         'use_confirm'  => true,
-                        'is_dropship'  => $masterProduct->masterShop->type == ShopTypeEnum::DROPSHIPPING,
+                        'is_dropship'  => $isDropshipping,
                         'tabs' => array_values(array_filter([
                             $masterProduct->masterFamily ? [
                                 'label'      => __('To do'),
@@ -313,7 +314,7 @@ class EditMasterProductComposition extends OrgAction
                     ],
                     'master_rrps' => [
                         'type'              => 'multiple_price_currency',
-                        'label'             => __('RRP').' / '.__('Unit'),
+                        'label'             => __('RRP').' / '.($isDropshipping ? __('Outer') : __('Unit')),
                         'required'          => true,
                         'currencies'        => $currenciesRate,
                         'value'             => $masterProduct->master_rrps,
@@ -321,7 +322,7 @@ class EditMasterProductComposition extends OrgAction
                         'unitsReview'       => $unitsReview,
                         'updateRoute'       => $pricesUpdateRoute,
                         'noSaveButton'      => true,
-                        'perUnits'          => (float) $masterProduct->units,
+                        'perUnits'          => $isDropshipping ? null : (float) $masterProduct->units,
                         'counterpartRecord' => $masterProduct->master_prices,
                         'type_input'        => 'rrp'
                     ],

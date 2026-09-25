@@ -52,9 +52,10 @@ class DeleteSowing extends OrgAction
                 $orgStock,
                 $location,
                 [
-                    'quantity' => -$sowing->quantity,
-                    'type'     => $type,
-                    'user_id'  => $user?->id,
+                    'quantity'   => -$sowing->quantity,
+                    'org_amount' => -$sowing->orgStockMovement->org_amount,
+                    'type'       => $type,
+                    'user_id'    => $user?->id,
                 ],
                 $sowing
             );

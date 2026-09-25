@@ -2660,6 +2660,48 @@ test('UI goods out pallet return show pages', function () {
     ]))->assertOk();
 });
 
+test('a claim is refunded to the customer balance in one call, the claimed share of each invoiced line', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $order    = $deliveryNote->orders()->first();
+    $customer = $order->customer;
+
+    $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($order, \App\Models\Accounting\Invoice::factory()->definition());
+    \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $item->transaction, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => (float) $item->quantity_required,
+        'gross_amount'    => 60,
+        'net_amount'      => 60,
+    ]);
+    $balanceBefore = (float) $customer->fresh()->balance;
+
+    $claimed = (float) $item->quantity_required / 3;
+
+    post(route('grp.models.order.claim_refund_to_balance', [$order->id]), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => $claimed]],
+    ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('amount', fn ($amount) => $amount > 0);
+
+    $refund = $invoice->refresh()->refunds()->latest('id')->first();
+
+    expect($refund->in_process)->toBeFalse()
+        ->and((float) $refund->net_amount)->toBe(-20.0)
+        ->and((float) $refund->payment_amount)->toBe((float) $refund->total_amount)
+        ->and(round((float) $customer->fresh()->balance - $balanceBefore, 2))->toBe(round(abs((float) $refund->total_amount), 2));
+
+    post(route('grp.models.order.claim_refund_to_balance', [$order->id]), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => (float) $item->quantity_required]],
+    ], ['Accept' => 'application/json'])->assertOk();
+
+    expect(round((float) $invoice->refresh()->refunds()->sum('net_amount'), 2))->toBe(-60.0);
+
+    $refundsBefore = $invoice->refunds()->count();
+    post(route('grp.models.order.claim_refund_to_balance', [$order->id]), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => (float) $item->quantity_required]],
+    ], ['Accept' => 'application/json'])->assertUnprocessable();
+
+    expect($invoice->refunds()->count())->toBe($refundsBefore);
+});
+
 test('carrier api failure branches', function () {
     Config::set('app.sandbox.shipper_apc_token', 'x');
     Config::set('app.sandbox.shipper_itd_token', 'x');

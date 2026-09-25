@@ -994,7 +994,7 @@ test('exclusive products and bundles advertise real stock on sales channels', fu
         ['reference' => 'test_exclusive_stock']
     );
 
-    UpdateProduct::make()->action($this->product, ['exclusive_for_customer_id' => $this->customer->id]);
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => [$this->customer->id]]);
     $this->product->update(['available_quantity' => 64]);
     $product = $this->product->refresh();
 

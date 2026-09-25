@@ -82,7 +82,8 @@ import {
     faNotEqual,
     faCamera,
     faStamp,
-    faChevronDown
+    faChevronDown,
+    faGem
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -94,6 +95,7 @@ import Message from 'primevue/message';
 
 library.add(
     faChevronDown,
+    faGem,
     faTemperatureLow,
     faNotEqual,
     faMusic,
@@ -227,7 +229,10 @@ const props = defineProps<{
     }
 }>()
 
-const paramsSection = route().params['section'] || 0
+const firstSectionWithVisibleFields = Object.keys(props.formData?.blueprint ?? {}).find(
+    (sectionKey) => !Object.values(props.formData.blueprint[sectionKey].fields || {}).every((field: any) => field.hidden)
+)
+const paramsSection = route().params['section'] || firstSectionWithVisibleFields || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
 const currentTab = ref<string | number>(

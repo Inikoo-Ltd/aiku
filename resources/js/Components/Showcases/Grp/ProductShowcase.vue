@@ -51,6 +51,7 @@ const props = defineProps<{
 			data: ProductResource
 		}
         is_external: boolean
+        is_dropship?: boolean
 		stats: {
 			amount: number | null
 			amount_ly: number | null
@@ -336,7 +337,7 @@ const getTooltips = () => {
 			</div>
 
 			<!-- Section: Price -->
-			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" />
+			<ProductPriceGrp :product="data?.product?.data" :currency_code="data.product.data?.currency_code" :perOuter="data.is_dropship" />
 			<!-- <div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 			</div> -->

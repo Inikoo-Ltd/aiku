@@ -8078,6 +8078,8 @@
     "Δ 1Y": "Δ 1Y",
     "Thank you for your message. We are closed at the moment and will reply :when.": "Vă mulțumim pentru mesaj. În acest moment suntem închiși și vă vom răspunde :when.",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Vă mulțumim pentru mesaj. În acest moment suntem închiși și vă vom răspunde :when. Spuneți-ne cum vă putem ajuta și ne vom ocupa imediat ce deschidem.",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "Vă mulțumim pentru mesaj. Astăzi suntem închiși (:holiday) și vă vom răspunde :when.",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Vă mulțumim pentru mesaj. Astăzi suntem închiși (:holiday) și vă vom răspunde :when. Spuneți-ne cum vă putem ajuta și ne vom ocupa imediat ce deschidem.",
     "from :time today": "astăzi de la ora :time",
     "from :time tomorrow": "mâine de la ora :time",
     "from :time on :day": "de la ora :time, :day"

@@ -123,7 +123,7 @@ const getValueColumn4Transleted = (value: string) => {
                     :style="getStyles(unset(modelValue?.logo?.properties, 'dimension.height'))"
                 />
             </div> -->
-            <div v-if="modelValue?.logo?.source" class="shrink-0 mx-auto md:mx-0" :style="logoBoxStyles">                
+            <div v-if="modelValue?.logo?.source" class="shrink-0 mx-auto md:mx-0" :style="{...logoBoxStyles, width: 'auto'}">                
                 <span class="block w-full h-full pt-3">
                     <Image
                         :style="{ ...logoStyles, width: '100%', height: '100%', objectFit: 'contain' }"

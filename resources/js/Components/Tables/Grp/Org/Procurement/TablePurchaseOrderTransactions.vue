@@ -21,6 +21,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBox, faPallet, faStopCircle, faTrashAlt, faHandHoldingBox, faPeopleArrows } from '@fal'
 import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
+import Popover from 'primevue/popover'
 import { useConfirm } from 'primevue/useconfirm'
 
 library.add(faBox, faPallet, faStopCircle, faExclamationCircle, faTrashAlt, faSpinner, faHandHoldingBox, faMinusCircle, faPeopleArrows)
@@ -254,6 +255,22 @@ async function onCancelItem(item: any) {
     }
 }
 
+const imagePreviewPopover = ref()
+const imagePreview = ref<any>(null)
+
+function showImagePreview(event: MouseEvent, item: any) {
+    if (!item.image_preview) {
+        return
+    }
+
+    imagePreview.value = item.image_preview
+    imagePreviewPopover.value?.show(event, event.currentTarget)
+}
+
+function hideImagePreview() {
+    imagePreviewPopover.value?.hide()
+}
+
 function supplierProductRoute(item: { slug?: string }) {
     if (!item.slug) {
         return ''
@@ -314,10 +331,18 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     >
                         {{ item.code }}
                     </Link>
+                    <Link
+                        v-else-if="orgStockRoute(item)"
+                        v-tooltip="ctrans('SKU code')"
+                        :href="orgStockRoute(item)"
+                        class="primaryLink"
+                    >
+                        {{ item.code }}
+                    </Link>
                     <span v-else>{{ item.code }}</span>
 
                     <Link
-                        v-if="orgStockRoute(item)"
+                        v-if="supplierProductRoute(item) && orgStockRoute(item)"
                         v-tooltip="ctrans('Part reference is same as supplier product code')"
                         :href="orgStockRoute(item)"
                         class="text-gray-400 hover:text-gray-600"
@@ -345,8 +370,13 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(image_thumbnail)="{ item }">
-            <div class="h-12 w-12 flex-none overflow-hidden rounded border border-gray-100">
-                <Image :src="item['image_thumbnail']" imageCover class="h-12 w-12" />
+            <div
+                class="h-20 w-20 flex-none overflow-hidden rounded border border-gray-100"
+                :class="{ 'cursor-zoom-in': item.image_preview }"
+                @mouseenter="showImagePreview($event, item)"
+                @mouseleave="hideImagePreview"
+            >
+                <Image :src="item['image_thumbnail']" imageCover class="h-20 w-20" />
             </div>
         </template>
 
@@ -524,4 +554,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
     </Table>
 
     <ConfirmPopup />
+
+    <Popover ref="imagePreviewPopover" class="pointer-events-none">
+        <Image v-if="imagePreview" :src="imagePreview" class="flex h-80 w-80 items-center justify-center [&>img]:max-h-full [&>img]:max-w-full" />
+    </Popover>
 </template>

@@ -30,6 +30,7 @@ use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\UpdateChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\VerifyChatImageMessage;
 use App\Actions\Chat\ChatSession\StoreTicketFromChatSession;
+use App\Actions\Chat\ChatSession\StoreStaffTaskFromChatSession;
 use App\Actions\Chat\MetaChatSession\AssignMetaChatToAgent;
 use App\Actions\Chat\Whatsapp\Calls\AnswerWhatsappCall;
 use App\Actions\Chat\Whatsapp\Calls\EndWhatsappCall;
@@ -111,6 +112,9 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::post('/sessions/{chatSession:ulid}/ticket', StoreTicketFromChatSession::class)->name('sessions.ticket');
     Route::post('/whatsapp/{metaChatSession:ulid}/ticket', [StoreTicketFromChatSession::class, 'inMetaChatSession'])
         ->name('whatsapp.sessions.ticket');
+    Route::post('/sessions/{chatSession:ulid}/task', StoreStaffTaskFromChatSession::class)->name('sessions.task');
+    Route::post('/whatsapp/{metaChatSession:ulid}/task', [StoreStaffTaskFromChatSession::class, 'inMetaChatSession'])
+        ->name('whatsapp.sessions.task');
     Route::name('sessions.slack.')->prefix('sessions/{chatSession:ulid}/slack')->group(function () {
         Route::get('/', GetChatSessionSlackSettings::class)->name('show');
         Route::put('/', UpdateChatSessionSlackSettings::class)->name('update');

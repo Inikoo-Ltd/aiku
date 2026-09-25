@@ -14,6 +14,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Models\Helpers\Currency;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\Traits\HasBucketImages;
 use App\Actions\Goods\TradeUnit\GetLabelInfoLanguages;
 use App\Enums\Goods\TradeUnit\TradeUnitLabelPresenceEnum;
@@ -103,6 +104,7 @@ class GetMasterProductShowcase
                 ->keys()
                 ->values(),
             'pricingCosts'        => $this->getPricingCosts($masterAsset),
+            'is_dropship'         => $masterAsset->masterShop?->type == ShopTypeEnum::DROPSHIPPING,
             'masterProduct'       => MasterProductResource::make($masterAsset)->resolve(),
             'properties'          => $properties,
             'trade_units'         => $dataTradeUnits,

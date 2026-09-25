@@ -6253,6 +6253,8 @@
     "Δ 1Y": "Δ1Y",
     "Thank you for your message. We are closed at the moment and will reply :when.": "Ďakujeme za vašu správu. Momentálne máme zatvorené a odpovieme vám :when.",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Ďakujeme za vašu správu. Momentálne máme zatvorené a odpovieme vám :when. Napíšte nám, s čím vám môžeme pomôcť, a hneď po otvorení sa tomu budeme venovať.",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "Ďakujeme za vašu správu. Dnes máme zatvorené (:holiday) a odpovieme vám :when.",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Ďakujeme za vašu správu. Dnes máme zatvorené (:holiday) a odpovieme vám :when. Napíšte nám, s čím vám môžeme pomôcť, a hneď po otvorení sa tomu budeme venovať.",
     "from :time today": "dnes od :time",
     "from :time tomorrow": "zajtra od :time",
     "from :time on :day": "od :time v :day",

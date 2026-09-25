@@ -24,7 +24,7 @@ class PdfPurchaseOrder extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder): string
     {
-        $purchaseOrder->loadMissing(['organisation.address', 'currency', 'parent', 'purchaseOrderTransactions.supplierProduct.currency']);
+        $purchaseOrder->loadMissing(['organisation.address', 'currency', 'parent', 'purchaseOrderTransactions.supplierProduct.currency', 'purchaseOrderTransactions.orgStock']);
 
         $counterparty = match (true) {
             $purchaseOrder->parent instanceof OrgSupplier => $purchaseOrder->parent->supplier,

@@ -33,6 +33,7 @@ class GetMetaChatCustomerProfile
             'profile_url' => $this->customerProfileUrl($customer),
             ...GetChatCustomerProfile::make()->contactAndLastOrders($customer),
             ...GetChatCustomerProfile::make()->previousContact($customer, $metaChatSession),
+            'claim'       => \App\Actions\Chat\ChatSession\GetChatClaimCase::run($metaChatSession, $customer),
 
             'tags' => $customer->tags->map(fn ($tag) => [
                 'id'   => $tag->id,

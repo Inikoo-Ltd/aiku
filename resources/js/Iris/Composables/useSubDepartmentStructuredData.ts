@@ -1,4 +1,5 @@
 import {
+    CATEGORY_ITEM_LIST_SCRIPT_KEY,
     getEntityImageUrls,
     injectStructuredDataScript,
     isFilledValue,
@@ -183,8 +184,6 @@ export const buildSubDepartmentStructuredData = (
         )
     }
 
-    console.log('pfldpslpf', structuredData)
-
     return structuredData
 }
 
@@ -195,7 +194,7 @@ export const useSubDepartmentStructuredData = () => {
         const structuredData = buildSubDepartmentStructuredData(options)
         if (!structuredData) return null
 
-        return injectStructuredDataScript(structuredData)
+        return injectStructuredDataScript(structuredData, CATEGORY_ITEM_LIST_SCRIPT_KEY)
     }
 
     return {

@@ -973,12 +973,6 @@ parameters:
 			path: app/Actions/Catalogue/Variant/UpdateVariant.php
 
 		-
-			message: '#^Result of method App\\Actions\\Chat\\Agent\\AssignChatAgentToScope\:\:handle\(\) \(void\) is used\.$#'
-			identifier: method.void
-			count: 1
-			path: app/Actions/Chat/Agent/AssignChatAgentToScope.php
-
-		-
 			message: '#^Relation ''webUser'' is not found in App\\Models\\Chat\\ChatSession model\.$#'
 			identifier: larastan.relationExistence
 			count: 1

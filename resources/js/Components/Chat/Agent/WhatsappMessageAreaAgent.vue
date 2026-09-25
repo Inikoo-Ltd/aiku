@@ -21,6 +21,7 @@ import {
     faLifeRing,
     faEye,
     faBan,
+    faListCheck,
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -40,6 +41,7 @@ const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/Em
 import { notify } from "@kyvg/vue3-notification"
 import WhatsappTemplatePicker from "@/Components/Chat/WhatsappTemplatePicker.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
+import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import WhatsappCallBar from "@/Components/Chat/WhatsappCallBar.vue"
 import { useWhatsappCall } from "@/Composables/useWhatsappCall"
 
@@ -97,7 +99,7 @@ const lastMessageStamp = computed(() => {
     return { time: formatChatTime(stamp), age: formatChatAge(stamp) }
 })
 
-const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success"])
+const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success", "task-created"])
 
 const isSpamMarking = ref(false)
 
@@ -126,6 +128,24 @@ const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 
 const isTicketModalOpen = ref(false)
+
+type ChatOpenTask = { reference: string; subject: string; who: string; url: string }
+
+const isTaskDialogOpen = ref(false)
+
+const openTasks = computed<ChatOpenTask[]>(() => (props.session as any)?.open_tasks ?? [])
+
+const onTaskCreated = (task: any) => {
+    const session = props.session as any
+    if (!session) return
+    session.open_tasks = [...(session.open_tasks ?? []), {
+        reference: task.reference,
+        subject: task.subject,
+        who: task.assignee?.name ?? task.department_label,
+        url: route("grp.tasks.index", { task: task.reference }),
+    }]
+    emit("task-created")
+}
 
 const chatSession = computed(() => props.session)
 const isClosed = computed(() => chatSession.value?.status === "closed")
@@ -965,6 +985,13 @@ onUnmounted(() => {
                 </div>
             </div>
 
+            <a v-for="task in openTasks" :key="task.reference" :href="task.url" target="_blank"
+                v-tooltip="ctrans(':reference for :who. The chat cannot be closed until it is done or cancelled.', { reference: task.reference, who: task.who })"
+                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-7 px-2.5 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                <FontAwesomeIcon :icon="faListCheck" class="shrink-0 text-[11px]" fixed-width />
+                <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
+            </a>
+
             <button v-if="canReportSpam" type="button" :disabled="isSpamMarking"
                 v-tooltip="ctrans('Blocks this sender. Everything they send from now on goes to spam.')"
                 class="inline-flex items-center gap-1.5 shrink-0 h-7 px-2.5 text-[11px] font-medium rounded-md border border-red-200 text-red-600 transition hover:bg-red-50 disabled:opacity-50"
@@ -1225,6 +1252,10 @@ onUnmounted(() => {
                             class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" v-tooltip="ctrans('Create ticket from this chat')" :aria-label="ctrans('Create ticket from this chat')">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-sm" fixed-width />
                         </button>
+                        <button @click="isTaskDialogOpen = true"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-gray-500 hover:text-amber-600 transition-colors" v-tooltip="ctrans('Ask a colleague (task)')" :aria-label="ctrans('Ask a colleague (task)')">
+                            <FontAwesomeIcon :icon="faListCheck" class="text-sm" fixed-width />
+                        </button>
                         <template v-if="!hasTemplate && !templateOnly">
                             <div class="mx-1 h-5 w-px bg-gray-200" />
                             <ChatFormattingToolbar :editor="messageEditor?.editor" />
@@ -1253,6 +1284,12 @@ onUnmounted(() => {
             :organisation="organisationSlug"
             channel="whatsapp"
             @close="isTicketModalOpen = false" />
+
+        <StaffTaskDialog
+            :is-open="isTaskDialogOpen"
+            :store-url="session?.ulid ? route('grp.org.chat.agents.whatsapp.sessions.task', [organisationSlug, session.ulid]) : undefined"
+            @created="onTaskCreated"
+            @close="isTaskDialogOpen = false" />
 
         <!-- Nothing here takes the pointer, so the drag keeps reaching the pane underneath and
              the drop still lands. -->

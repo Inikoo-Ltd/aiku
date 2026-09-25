@@ -10,7 +10,6 @@ namespace App\Actions\Chat\Agent\UI;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
-use App\Actions\Helpers\Shop\UI\GetShopOptions;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatAgentSpecializationEnum;
 use App\Models\SysAdmin\Organisation;
@@ -91,16 +90,6 @@ class CreateAgent extends OrgAction
                                     'mode'        => 'single',
                                     'searchable'  => true,
                                     'key'         => 'organisation_select'
-                                ],
-
-                                'shop_id' => [
-                                    'type'     => 'multiselect-tags',
-                                    'placeholder' => __('Select shops'),
-                                    'label'       => __('Shop'),
-                                    'options'     => GetShopOptions::run($organisation->slug),
-                                    'required'    => false,
-                                    'labelProp' => 'label',
-                                    'valueProp' => 'value',
                                 ],
 
                                 'language_id' => [

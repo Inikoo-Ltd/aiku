@@ -8,7 +8,7 @@
 import { computed, ref } from "vue"
 import type { Component } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import ConfirmDialog from "primevue/confirmdialog"
 import { useConfirm } from "primevue/useconfirm"
@@ -81,6 +81,7 @@ const props = defineProps<{
 	box_stats: {
 		first_block: {
 			orderer: {
+				id?: number
 				slug?: string
 				type?: string
 				name?: string
@@ -177,33 +178,35 @@ const metrics = computed(() => {
 			key: "weight",
 			isUnknown: weight === null,
 			showMark: weight === null || is_weight_partial,
-			text: weight === null ? trans("Unknown weight") : `${locale.number(weight)}Kg`,
-			tooltip: weight === null ? trans("No item has weight data") : trans("Some items have unknown weight"),
+			text: weight === null ? ctrans("Unknown weight") : `${locale.number(weight)}Kg`,
+			tooltip: weight === null ? ctrans("No item has weight data") : ctrans("Some items have unknown weight"),
 		},
 		{
 			key: "volume",
 			isUnknown: volume === null,
 			showMark: volume === null || is_volume_partial,
-			text: volume === null ? trans("Unknown CBM") : `${locale.number(volume)} m³`,
-			tooltip: volume === null ? trans("No item has CBM data") : trans("Some items have unknown CBM"),
+			text: volume === null ? ctrans("Unknown CBM") : `${locale.number(volume)} m³`,
+			tooltip: volume === null ? ctrans("No item has CBM data") : ctrans("Some items have unknown CBM"),
 		},
 	]
 })
 
 const ordererRoute = computed<string>(() => {
 	const orderer = props.box_stats.first_block.orderer
-	const slug = orderer.slug
+	const routeKey = orderer.slug ?? orderer.id
 	const type = orderer.type
 
-	if (!slug || !type) return ""
+	if (!routeKey || !type) return ""
 
 	const organisation = route().params["organisation"]
 
 	switch (type) {
 		case "Agent":
-			return route("grp.org.procurement.org_agents.show", [organisation, slug])
+			return route("grp.org.procurement.org_agents.show", [organisation, routeKey])
 		case "Supplier":
-			return route("grp.org.procurement.org_suppliers.show", [organisation, slug])
+			return route("grp.org.procurement.org_suppliers.show", [organisation, routeKey])
+		case "Partner":
+			return route("grp.org.procurement.org_partners.show", [organisation, routeKey])
 		default:
 			return ""
 	}
@@ -225,11 +228,11 @@ const costRows = computed(() => {
 	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
 
 	return [
-		{ key: "items", label: trans("Items"), amount: Number(items) || 0, alwaysShown: true },
-		{ key: "extra", label: trans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
-		{ key: "shipping", label: trans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
-		{ key: "duties", label: trans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
-		{ key: "tax", label: trans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
+		{ key: "items", label: ctrans("Items"), amount: Number(items) || 0, alwaysShown: true },
+		{ key: "extra", label: ctrans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
+		{ key: "shipping", label: ctrans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
+		{ key: "duties", label: ctrans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
+		{ key: "tax", label: ctrans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
 	].filter(row => row.alwaysShown || row.amount !== 0)
 })
 
@@ -240,10 +243,10 @@ const costBlocks = computed(() => {
 
 	const supplierBlock = {
 		key: "supplier",
-		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
+		title: `${ctrans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
 		rows: [
 			...costRows.value.map(row => ({ label: row.label, value: money(currency, row.amount) })),
-			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
+			{ label: ctrans("Total"), value: money(currency, Number(total)), isTotal: true },
 		],
 	}
 
@@ -258,7 +261,7 @@ const costBlocks = computed(() => {
 
 	const orderPerOrg = rate ? 1 / rate : null
 	const rateLabel = sameCurrency
-		? `${trans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
+		? `${ctrans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
 		: orderPerOrg === null
 			? ""
 			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
@@ -270,7 +273,7 @@ const costBlocks = computed(() => {
 			title: rateLabel,
 			rows: [
 				...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
-				{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
+				{ label: ctrans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
 			],
 		},
 	]
@@ -290,19 +293,19 @@ const confirmDispatchStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
 		message: props.costing.agent_invoice_missing
-			? trans("The agent invoice has not been received yet. Are you sure you want to mark this stock delivery as dispatched?")
-			: trans("Are you sure you want to mark this stock delivery as dispatched?"),
-		header: trans("Dispatch Stock Delivery"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Mark as Dispatched"), severity: "primary" },
+			? ctrans("The agent invoice has not been received yet. Are you sure you want to mark this stock delivery as dispatched?")
+			: ctrans("Are you sure you want to mark this stock delivery as dispatched?"),
+		header: ctrans("Dispatch Stock Delivery"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Mark as Dispatched"), severity: "primary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { dispatchLoading.value = true },
 				onFinish: () => { dispatchLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to dispatch stock delivery"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to dispatch stock delivery"),
 						type: "error",
 					})
 				},
@@ -314,18 +317,18 @@ const confirmDispatchStockDelivery = (action: any) => {
 const confirmUndispatchStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to unmark this stock delivery as dispatched? It will be reverted to its previous state."),
-		header: trans("Unmark as Dispatched"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Unmark as Dispatched"), severity: "primary" },
+		message: ctrans("Are you sure you want to unmark this stock delivery as dispatched? It will be reverted to its previous state."),
+		header: ctrans("Unmark as Dispatched"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Unmark as Dispatched"), severity: "primary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { undispatchLoading.value = true },
 				onFinish: () => { undispatchLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to unmark stock delivery as dispatched"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to unmark stock delivery as dispatched"),
 						type: "error",
 					})
 				},
@@ -337,18 +340,18 @@ const confirmUndispatchStockDelivery = (action: any) => {
 const confirmReceiveStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to mark this stock delivery as received? This can not be reverted."),
-		header: trans("Receive Stock Delivery"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Mark as Received"), severity: "primary" },
+		message: ctrans("Are you sure you want to mark this stock delivery as received? This can not be reverted."),
+		header: ctrans("Receive Stock Delivery"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Mark as Received"), severity: "primary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { receiveLoading.value = true },
 				onFinish: () => { receiveLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to receive stock delivery"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to receive stock delivery"),
 						type: "error",
 					})
 				},
@@ -360,18 +363,18 @@ const confirmReceiveStockDelivery = (action: any) => {
 const confirmUnreceiveStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to unmark this stock delivery as received? It will be reverted to its previous state."),
-		header: trans("Unmark as Received"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Unmark as Received"), severity: "primary" },
+		message: ctrans("Are you sure you want to unmark this stock delivery as received? It will be reverted to its previous state."),
+		header: ctrans("Unmark as Received"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Unmark as Received"), severity: "primary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { unreceiveLoading.value = true },
 				onFinish: () => { unreceiveLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to unmark stock delivery as received"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to unmark stock delivery as received"),
 						type: "error",
 					})
 				},
@@ -383,18 +386,18 @@ const confirmUnreceiveStockDelivery = (action: any) => {
 const confirmCancelStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to cancel this stock delivery? Its items will be emptied and the purchase order will allow a new delivery."),
-		header: trans("Cancel Stock Delivery"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Cancel Stock Delivery"), severity: "danger" },
+		message: ctrans("Are you sure you want to cancel this stock delivery? Its items will be emptied and the purchase order will allow a new delivery."),
+		header: ctrans("Cancel Stock Delivery"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Cancel Stock Delivery"), severity: "danger" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { cancelLoading.value = true },
 				onFinish: () => { cancelLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to cancel stock delivery"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to cancel stock delivery"),
 						type: "error",
 					})
 				},
@@ -408,18 +411,18 @@ const startCostingLoading = ref(false)
 const confirmStartStockDeliveryCosting = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to place this stock delivery? This is its final state."),
-		header: trans("Place stock delivery"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Place"), severity: "primary" },
+		message: ctrans("Are you sure you want to place this stock delivery? This is its final state."),
+		header: ctrans("Place stock delivery"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Place"), severity: "primary" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { startCostingLoading.value = true },
 				onFinish: () => { startCostingLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to start checking the costs"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to start checking the costs"),
 						type: "error",
 					})
 				},
@@ -431,18 +434,18 @@ const confirmStartStockDeliveryCosting = (action: any) => {
 const confirmDeleteStockDelivery = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
-		message: trans("Are you sure you want to delete this stock delivery? The purchase order will be reverted to before this delivery."),
-		header: trans("Delete Stock Delivery"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Delete"), severity: "danger" },
+		message: ctrans("Are you sure you want to delete this stock delivery? The purchase order will be reverted to before this delivery."),
+		header: ctrans("Delete Stock Delivery"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Delete"), severity: "danger" },
 		accept: () => {
 			router.delete(route(action.route.name, action.route.parameters), {
 				onStart: () => { deleteLoading.value = true },
 				onFinish: () => { deleteLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to delete stock delivery"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to delete stock delivery"),
 						type: "error",
 					})
 				},
@@ -569,7 +572,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 				<div v-if="box_stats.first_block.orderer.name" class="flex items-center gap-2">
 					<dt>
 						<FontAwesomeIcon
-							v-tooltip="trans(box_stats.first_block.orderer.type ?? '')"
+							v-tooltip="ctrans(box_stats.first_block.orderer.type ?? '')"
 							icon="fal fa-hand-holding-box"
 							aria-hidden="true"
 							fixed-width
@@ -588,7 +591,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 					<div class="flex items-center gap-2">
 						<dt>
 							<FontAwesomeIcon
-								v-tooltip="trans('Incoterm')"
+								v-tooltip="ctrans('Incoterm')"
 								icon="fas fa-share"
 								aria-hidden="true"
 								fixed-width
@@ -597,14 +600,14 @@ const confirmDeleteStockDelivery = (action: any) => {
 						<dd v-if="box_stats.first_block.delivery.incoterm">{{ box_stats.first_block.delivery.incoterm }}</dd>
 						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
 							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
-							<span>{{ trans("Incoterm not set") }}</span>
+							<span>{{ ctrans("Incoterm not set") }}</span>
 						</dd>
 					</div>
 
 					<div class="flex items-center gap-2">
 						<dt>
 							<FontAwesomeIcon
-								v-tooltip="trans('Port of export')"
+								v-tooltip="ctrans('Port of export')"
 								icon="fas fa-arrow-circle-right"
 								aria-hidden="true"
 								fixed-width
@@ -613,14 +616,14 @@ const confirmDeleteStockDelivery = (action: any) => {
 						<dd v-if="box_stats.first_block.delivery.port_of_export">{{ box_stats.first_block.delivery.port_of_export }}</dd>
 						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
 							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
-							<span>{{ trans("Port of export not set") }}</span>
+							<span>{{ ctrans("Port of export not set") }}</span>
 						</dd>
 					</div>
 
 					<div class="flex items-center gap-2">
 						<dt>
 							<FontAwesomeIcon
-								v-tooltip="trans('Port of import')"
+								v-tooltip="ctrans('Port of import')"
 								icon="fas fa-arrow-circle-left"
 								aria-hidden="true"
 								fixed-width
@@ -629,18 +632,18 @@ const confirmDeleteStockDelivery = (action: any) => {
 						<dd v-if="box_stats.first_block.delivery.port_of_import">{{ box_stats.first_block.delivery.port_of_import }}</dd>
 						<dd v-else class="flex items-center gap-1 text-red-500 text-sm italic">
 							<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
-							<span>{{ trans("Port of import not set") }}</span>
+							<span>{{ ctrans("Port of import not set") }}</span>
 						</dd>
 					</div>
 				</div>
 
 				<!-- Deliver to -->
 				<div class="pt-2 text-sm">
-					<div class="text-gray-400">{{ trans("Deliver to") }}:</div>
+					<div class="text-gray-400">{{ ctrans("Deliver to") }}:</div>
 					<div v-if="box_stats.first_block.delivery.delivery_address" class="text-xs whitespace-pre-line">{{ box_stats.first_block.delivery.delivery_address }}</div>
 					<div v-else class="flex items-center gap-1 text-red-500 text-xs italic">
 						<FontAwesomeIcon icon="fas fa-exclamation-circle" aria-hidden="true" fixed-width />
-						<span>{{ trans("Delivery address not set") }}</span>
+						<span>{{ ctrans("Delivery address not set") }}</span>
 					</div>
 				</div>
 			</div>
@@ -650,7 +653,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		<BoxStatPallet class="p-4">
 			<div class="flex justify-center items-center gap-2">
 				<FontAwesomeIcon
-					v-tooltip="trans('Stock Delivery')"
+					v-tooltip="ctrans('Stock Delivery')"
 					icon="fal fa-people-arrows"
 					class="text-gray-400"
 					fixed-width
@@ -665,15 +668,15 @@ const confirmDeleteStockDelivery = (action: any) => {
 			<template v-if="false">
 				<div class="space-y-1 text-sm">
 					<div class="flex items-center justify-between gap-4">
-						<span>{{ trans("Production time") }}</span>
+						<span>{{ ctrans("Production time") }}</span>
 						<span :class="box_stats.second_block.production_time ? '' : 'italic text-gray-400'">
-							{{ box_stats.second_block.production_time ?? trans("Unknown") }}
+							{{ box_stats.second_block.production_time ?? ctrans("Unknown") }}
 						</span>
 					</div>
 					<div class="flex items-center justify-between gap-4">
-						<span>{{ trans("Delivery time") }}</span>
+						<span>{{ ctrans("Delivery time") }}</span>
 						<span :class="box_stats.second_block.delivery_time ? '' : 'italic text-gray-400'">
-							{{ box_stats.second_block.delivery_time ?? trans("Unknown") }}
+							{{ box_stats.second_block.delivery_time ?? ctrans("Unknown") }}
 						</span>
 					</div>
 				</div>
@@ -683,17 +686,17 @@ const confirmDeleteStockDelivery = (action: any) => {
 
 			<div class="flex justify-center gap-4">
 				<div class="flex items-center gap-1">
-					<FontAwesomeIcon v-tooltip="trans('Items')" icon="fas fa-bars" aria-hidden="true" fixed-width />
+					<FontAwesomeIcon v-tooltip="ctrans('Items')" icon="fas fa-bars" aria-hidden="true" fixed-width />
 					<span>{{ box_stats.second_block.total_items }}</span>
 				</div>
 
 				<div class="flex items-center gap-1">
-					<FontAwesomeIcon v-tooltip="trans('Received & checked items')" icon="fas fa-box-check" aria-hidden="true" fixed-width />
+					<FontAwesomeIcon v-tooltip="ctrans('Received & checked items')" icon="fas fa-box-check" aria-hidden="true" fixed-width />
 					<span>{{ box_stats.second_block.total_received_checked_items }}</span>
 				</div>
 
 				<div class="flex items-center gap-1">
-					<FontAwesomeIcon v-tooltip="trans('Placed items')" icon="fas fa-inventory" aria-hidden="true" fixed-width />
+					<FontAwesomeIcon v-tooltip="ctrans('Placed items')" icon="fas fa-inventory" aria-hidden="true" fixed-width />
 					<span>{{ box_stats.second_block.total_placed_items }}</span>
 				</div>
 			</div>
@@ -723,7 +726,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 					:class="box_stats.second_block.total_under_delivered_items ? 'text-orange-500' : ''"
 				>
 					<FontAwesomeIcon
-						v-tooltip="trans('Items under delivered')"
+						v-tooltip="ctrans('Items under delivered')"
 						icon="fal fa-box-open"
 						aria-hidden="true"
 						fixed-width
@@ -736,7 +739,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 					:class="box_stats.second_block.total_over_delivered_items ? 'text-orange-500' : ''"
 				>
 					<FontAwesomeIcon
-						v-tooltip="trans('Items over delivered')"
+						v-tooltip="ctrans('Items over delivered')"
 						icon="fas fa-box-full"
 						aria-hidden="true"
 						fixed-width
