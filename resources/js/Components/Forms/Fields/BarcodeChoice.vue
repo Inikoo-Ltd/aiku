@@ -11,6 +11,7 @@ const props = defineProps<{
     fieldName: string
     options: {
         options: { value: string; code: string; name: string; proposed: boolean }[]
+        withoutBarcode?: { code: string; name: string }[]
         hasChoice: boolean
     }
     fieldData?: {
@@ -64,6 +65,16 @@ const setOther = (value: string) => {
                 {{ ctrans("suggested") }}
             </span>
         </label>
+
+        <div
+            v-for="tradeUnit in options.withoutBarcode ?? []"
+            :key="tradeUnit.code"
+            class="flex items-center gap-x-3 px-2 py-1.5 text-gray-400">
+            <input type="radio" disabled />
+            <span class="font-mono text-xs w-28 shrink-0">{{ tradeUnit.code }}</span>
+            <span class="text-sm flex-1 truncate">{{ tradeUnit.name }}</span>
+            <span class="text-xs whitespace-nowrap">{{ ctrans("No barcode on this trade unit") }}</span>
+        </div>
 
         <label
             class="flex items-center gap-x-3 px-2 py-1.5 rounded cursor-pointer hover:bg-gray-50"

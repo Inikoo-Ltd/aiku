@@ -118,6 +118,10 @@ beforeEach(function () {
         ])
     );
     $this->product->updateQuietly(['master_product_id' => $this->masterAsset->id]);
+
+    Product::where('shop_id', $this->shop->id)
+        ->whereIn('barcode', [$this->lampBarcode, $this->fittingBarcode, $this->bundleBarcode])
+        ->update(['barcode' => null]);
 });
 
 test('the composition view offers every member barcode labelled with its trade unit', function () {
@@ -254,4 +258,40 @@ test('a person choosing no barcode keeps the hydrator away from that listing', f
 
     expect($this->product->refresh()->barcode)->toBeNull()
         ->and($this->product->independent_barcode)->toBeTrue();
+});
+
+test('a trade unit without a barcode is still listed so staff see why it cannot be picked', function () {
+    $cap = StoreTradeUnit::make()->action(group(), array_merge(TradeUnit::factory()->definition(), [
+        'code'    => 'Cap-'.substr(uniqid(), -6),
+        'name'    => 'Bottle cap',
+        'barcode' => $this->bundleBarcode,
+    ]));
+    $cap->updateQuietly(['barcode' => null]);
+
+    UpdateMasterAsset::make()->action($this->masterAsset, [
+        'trade_units' => [
+            ['id' => $this->lamp->id, 'quantity' => 1],
+            ['id' => $cap->id, 'quantity' => 1],
+        ],
+    ]);
+
+    $barcodeField = collect(EditMasterProductComposition::make()->getBlueprint($this->masterAsset->refresh()))
+        ->firstWhere('label', __('Barcode'))['fields']['barcode'];
+
+    expect(collect($barcodeField['options']['withoutBarcode'])->pluck('code')->all())->toBe([$cap->code]);
+});
+
+test('a master barcode already on another listing in one of its shops is refused', function () {
+    $other = StoreProduct::make()->action(
+        $this->product->family,
+        array_merge(Product::factory()->definition(), [
+            'code'  => 'BCP'.substr(uniqid(), -8),
+            'price' => 10,
+        ])
+    );
+    $other->updateQuietly(['barcode' => $this->lampBarcode]);
+
+    expect(fn () => UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->lampBarcode]))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and($this->product->refresh()->barcode)->not->toBe($this->lampBarcode);
 });

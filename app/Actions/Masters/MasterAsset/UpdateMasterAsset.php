@@ -33,7 +33,9 @@ use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
@@ -537,6 +539,35 @@ class UpdateMasterAsset extends OrgAction
     {
         if ($this->strict) {
             $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
+
+        $this->validateBarcodeNotOnOtherListings($validator, Arr::get($validator->getData(), 'barcode'));
+    }
+
+    /**
+     * The master's barcode is written to its products in every shop, so it gets the same
+     * one listing per shop rule UpdateProduct applies: WooCommerce and Wix refuse a GTIN
+     * already on another listing, and marketplaces merge the two items.
+     */
+    private function validateBarcodeNotOnOtherListings(Validator $validator, ?string $barcode): void
+    {
+        if (blank($barcode) || $barcode === $this->masterAsset->barcode) {
+            return;
+        }
+
+        $listings = Product::where('barcode', $barcode)
+            ->whereIn('shop_id', $this->masterAsset->products()->select('products.shop_id'))
+            ->where(fn ($query) => $query->whereNull('master_product_id')->orWhere('master_product_id', '<>', $this->masterAsset->id))
+            ->where('is_main', true)
+            ->whereNull('exclusive_for_customer_id')
+            ->where('state', '<>', ProductStateEnum::DISCONTINUED->value)
+            ->with('shop:id,code')
+            ->limit(5)
+            ->get()
+            ->map(fn (Product $product) => $product->code.' ('.$product->shop->code.')');
+
+        if ($listings->isNotEmpty()) {
+            $validator->errors()->add('barcode', __('This barcode is already on :listings. A shop accepts a barcode on one listing only, so this product needs its own barcode.', ['listings' => $listings->implode(', ')]));
         }
     }
 
