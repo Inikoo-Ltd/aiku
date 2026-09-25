@@ -52,7 +52,10 @@ class StoreShopifyUser extends RetinaAction
 
         return DB::transaction(function () use ($customer, $platform, $modelData) {
             /** @var ShopifyUser $shopifyUser */
-            $shopifyUser = ShopifyUser::whereNull('customer_id')->where('name', Arr::get($modelData, 'name'))->first();
+            $shopifyUser = ShopifyUser::where('name', Arr::get($modelData, 'name'))
+                ->where(fn ($query) => $query->whereNull('customer_id')->orWhere('customer_id', $customer->id))
+                ->orderByRaw('customer_id is null')
+                ->first();
 
 
             if ($shopifyUser) {
@@ -137,6 +140,7 @@ class StoreShopifyUser extends RetinaAction
 
         if (ShopifyUser::where('name', $this->get('name').'.'.$myShopifyDomain)
             ->whereNotNull('customer_id')
+            ->where('customer_id', '!=', $this->customer?->id)
             ->exists()) {
             $validator->errors()->add('name', __('Shopify shop :shop already exists, please use other name', ['shop' => $this->get('name')]));
         }
@@ -183,7 +187,31 @@ class StoreShopifyUser extends RetinaAction
         $nameInput = trim($nameInput);
 
 
-        $this->set('name', $nameInput);
+        $this->set('name', $this->permanentHandle($nameInput));
+    }
+
+    /**
+     * Customers type the store name they chose, but Shopify installs the app for the store's
+     * permanent handle (e.g. hekqes-nt). The token then lands on a new row nobody owns and the
+     * channel waits forever, so the handle is asked for before anything is stored.
+     */
+    public function permanentHandle(string $name): string
+    {
+        if ($name === '' || !preg_match('/^[a-zA-Z0-9-]+$/', $name)) {
+            return $name;
+        }
+
+        try {
+            $domain = Http::timeout(10)->withOptions(['allow_redirects' => false])->get('https://'.$name.'.'.config('shopify-app.my_shopify_domain').'/meta.json')->json('myshopify_domain');
+        } catch (\Throwable) {
+            return $name;
+        }
+
+        if (!is_string($domain) || !preg_match('/^([a-z0-9-]+)\.myshopify\.com$/', $domain, $matches)) {
+            return $name;
+        }
+
+        return $matches[1];
     }
 
     /**

@@ -190,6 +190,37 @@ test('bulk portfolio upload dispatches one job per portfolio', function (Portfol
     StoreNewProductToCurrentShopify::assertPushed();
 })->depends('add product to customer portfolio');
 
+test('a shopify store typed by its name is connected under its permanent handle, on the row the install is written to', function () {
+    \Illuminate\Support\Facades\Http::fake([
+        'mabrajoyas.myshopify.com/meta.json'  => \Illuminate\Support\Facades\Http::response(['myshopify_domain' => 'hekqes-nt.myshopify.com', 'name' => 'Mabrajoyas']),
+        'unreachable.myshopify.com/meta.json' => \Illuminate\Support\Facades\Http::response('', 404),
+    ]);
+
+    expect(StoreShopifyUser::make()->permanentHandle('mabrajoyas'))->toBe('hekqes-nt')
+        ->and(StoreShopifyUser::make()->permanentHandle('unreachable'))->toBe('unreachable');
+
+    $customer = createCustomer($this->shop);
+    $waiting  = \App\Models\Dropshipping\ShopifyUser::create([
+        'group_id'        => $customer->group_id,
+        'organisation_id' => $customer->organisation_id,
+        'platform_id'     => \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY->value)->first()->id,
+        'name'            => 'hekqes-nt.myshopify.com',
+        'username'        => 'abcd',
+        'password'        => 'shpat_installed_token',
+    ]);
+
+    $shopifyUser = StoreShopifyUser::make()->handle($customer, ['name' => StoreShopifyUser::make()->permanentHandle('mabrajoyas')]);
+
+    expect($shopifyUser->id)->toBe($waiting->id)
+        ->and($shopifyUser->customer_id)->toBe($customer->id)
+        ->and($shopifyUser->customerSalesChannel->reference)->toBe('hekqes-nt');
+
+    $retry = StoreShopifyUser::make()->handle($customer, ['name' => 'hekqes-nt']);
+
+    expect($retry->id)->toBe($waiting->id)
+        ->and($customer->customerSalesChannels()->where('reference', 'hekqes-nt')->count())->toBe(1);
+});
+
 test('reconnecting a shopify store reopens its closed channel with the portfolio instead of creating another', function () {
     $customer = createCustomer($this->shop);
 

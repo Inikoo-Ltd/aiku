@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\External\Shopify;
 
+use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -107,7 +108,7 @@ class StoreShopifyUserExternalShop extends OrgAction
         $nameInput = trim($nameInput);
 
 
-        $this->set('name', $nameInput);
+        $this->set('name', StoreShopifyUser::make()->permanentHandle($nameInput));
     }
 
     /**
