@@ -127,7 +127,7 @@ class UpdateTicket extends OrgAction
             data_set($modelData, 'qa_requested_at', $qaStatus === TicketQaStatusEnum::REQUESTED ? now() : ($qaStatus ? $ticket->qa_requested_at : null));
             data_set($modelData, 'qa_checked_at', $isVerdict ? now() : null);
             data_set($modelData, 'qa_user_id', match (true) {
-                $isVerdict && $asker instanceof User => $asker->id,
+                ($isVerdict || $qaStatus === TicketQaStatusEnum::CHECKING) && $asker instanceof User => $asker->id,
                 $qaStatus === TicketQaStatusEnum::REQUESTED => Arr::get($modelData, 'qa_user_id'),
                 default => null,
             });
@@ -235,8 +235,18 @@ class UpdateTicket extends OrgAction
                         $fail(__('QA was asked to check this ticket, so it cannot be skipped.'));
                     }
 
-                    if (TicketQaStatusEnum::tryFrom((string) $value)?->isVerdict() && $this->updatingTicket?->qa_status?->isVerdict()) {
+                    $qaStatus = TicketQaStatusEnum::tryFrom((string) $value);
+                    $current  = $this->updatingTicket;
+                    $user     = request()->user();
+
+                    if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->qa_status?->isVerdict()) {
                         $fail(__('This ticket already has a QA verdict. Ask QA to check it again first.'));
+
+                        return;
+                    }
+
+                    if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->isQaHeldByAnotherThan($user)) {
+                        $fail(__('This check is with another checker.'));
                     }
                 },
             ],
@@ -269,9 +279,11 @@ class UpdateTicket extends OrgAction
                 return false;
             }
 
-            $isVerdict = (bool) TicketQaStatusEnum::tryFrom((string) $request->input('qa_status'))?->isVerdict();
+            $qaStatus = TicketQaStatusEnum::tryFrom((string) $request->input('qa_status'));
 
-            return $isVerdict ? Ticket::canGiveQaVerdict($user) : $ticket->canRequestQaBy($user);
+            return $qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING
+                ? Ticket::canGiveQaVerdict($user)
+                : $ticket->canRequestQaBy($user);
         }
 
         // The reporter's own cancel and reopen are additions to who could already do it: whoever

@@ -6,12 +6,12 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount } from "vue"
-import { marked } from "marked"
+import { Marked } from "marked"
 import Image from "@/Common/Components/Image.vue"
 import TicketAttachmentPreview, { isPreviewableAttachment, reasonFileIsUnavailable, type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { faPaperclip, faTimes, faChevronLeft, faChevronRight, faExternalLink, faImage } from "@fal"
 
@@ -39,8 +39,10 @@ const previewFileIndex = ref<number | null>(null)
 
 const escapeHtml = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 
+const markdownWithRawHtmlShownAsText = new Marked({ renderer: { html: ({ text }) => escapeHtml(text) } })
+
 const html = computed(() => {
-    const rendered = marked.parse(escapeHtml(props.text ?? ""), { breaks: true, gfm: true, async: false }) as string
+    const rendered = markdownWithRawHtmlShownAsText.parse(props.text ?? "", { breaks: true, gfm: true, async: false }) as string
     return highlightMentions(rendered.replace(/<a /g, '<a target="_blank" rel="noopener" '))
 })
 
@@ -121,7 +123,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <div class="absolute inset-x-0 top-0 flex items-center justify-between gap-4 px-4 py-3 text-white">
                     <span class="truncate text-sm">{{ images[previewIndex].name }}</span>
                     <div class="flex shrink-0 items-center gap-4">
-                        <a :href="images[previewIndex].original" target="_blank" rel="noopener" v-tooltip="trans('Open in new tab')" class="text-2xl text-white/80 hover:text-white">
+                        <a :href="images[previewIndex].original" target="_blank" rel="noopener" v-tooltip="ctrans('Open in new tab')" class="text-2xl text-white/80 hover:text-white">
                             <FontAwesomeIcon icon="fal fa-external-link" fixed-width />
                         </a>
                         <button type="button" class="text-3xl text-white/80 hover:text-white" @click="closePreview">
@@ -135,7 +137,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <img v-if="!unavailableImageUrls.includes(images[previewIndex].original)" :src="images[previewIndex].original" alt="" class="max-h-[90vh] max-w-[85vw] rounded object-contain" @error="markImageUnavailable(images[previewIndex].original)" />
                 <div v-else class="flex h-[60vh] w-[85vw] max-w-3xl items-center justify-center rounded bg-white text-sm text-gray-500">
                     <div class="max-w-md px-6 text-center">
-                        <p class="font-medium text-gray-700">{{ trans("Preview for this file is unavailable") }}</p>
+                        <p class="font-medium text-gray-700">{{ ctrans("Preview for this file is unavailable") }}</p>
                         <p v-if="unavailableImageReasons[images[previewIndex].original]" class="mt-1 text-gray-500">{{ unavailableImageReasons[images[previewIndex].original] }}</p>
                     </div>
                 </div>

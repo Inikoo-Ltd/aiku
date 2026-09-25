@@ -6,7 +6,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import TicketAttachmentPreview, { isArchiveAttachment, type TicketAttachment } from "@/Components/Tickets/TicketAttachmentPreview.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPaperclip, faTimes, faFilePdf, faFileWord, faFileExcel, faFileCsv, faFileVideo, faFileZipper } from "@fortawesome/free-solid-svg-icons"
 
@@ -41,7 +42,17 @@ const attachmentIcons = {
 
 type AttachmentExtension = keyof typeof attachmentIcons
 
-const previews = ref<{ url: string; name: string; attachment: (typeof attachmentIcons)[AttachmentExtension] | null }[]>([])
+const previews = ref<{ url: string; name: string; mime: string; attachment: (typeof attachmentIcons)[AttachmentExtension] | null }[]>([])
+const previewIndex = ref<number | null>(null)
+
+const viewableFiles = computed<TicketAttachment[]>(() => previews.value.filter((preview) => !isArchiveAttachment(preview)))
+
+const isViewable = (preview: { name: string; mime: string }) => !isArchiveAttachment(preview)
+
+const openPreview = (url: string) => {
+    const index = viewableFiles.value.findIndex((file) => file.url === url)
+    previewIndex.value = index === -1 ? null : index
+}
 const isDragging = ref(false)
 
 const attachmentExtensionOf = (file: File): AttachmentExtension | null => {
@@ -57,7 +68,7 @@ watch(
         previews.value.forEach((preview) => URL.revokeObjectURL(preview.url))
         previews.value = images.map((file) => {
             const extension = attachmentExtensionOf(file)
-            return { url: URL.createObjectURL(file), name: file.name, attachment: extension ? attachmentIcons[extension] : null }
+            return { url: URL.createObjectURL(file), name: file.name, mime: file.type, attachment: extension ? attachmentIcons[extension] : null }
         })
     },
     { immediate: true }
@@ -184,7 +195,7 @@ const onPick = (event: Event) => {
                 :value="body"
                 :rows="rows ?? 5"
                 class="w-full border-0 rounded-t-md text-sm focus:ring-0 resize-y"
-                :placeholder="placeholder ?? trans('Describe it. Paste a screenshot or drop images here, links are fine.')"
+                :placeholder="placeholder ?? ctrans('Describe it. Paste a screenshot or drop images here, links are fine.')"
                 @input="onInput"
                 @keydown="onKeydown"
                 @click="detectMention"
@@ -202,28 +213,37 @@ const onPick = (event: Event) => {
                 >
                     <span class="font-medium">@{{ user.username }}</span>
                     <span v-if="user.name" class="truncate text-gray-500">{{ user.name }}</span>
-                    <span v-if="user.is_customer" class="ml-auto shrink-0 rounded bg-blue-50 px-1.5 text-[10px] font-medium text-blue-700">{{ trans("Customer") }}</span>
+                    <span v-if="user.is_customer" class="ml-auto shrink-0 rounded bg-blue-50 px-1.5 text-[10px] font-medium text-blue-700">{{ ctrans("Customer") }}</span>
                 </li>
             </ul>
         </div>
         <div class="flex items-center gap-2 px-2 py-1.5 border-t border-gray-200">
-            <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5" :title="trans('Attach images, videos, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
-                <FontAwesomeIcon :icon="faPaperclip" fixed-width /> {{ trans("Attach") }}
+            <button type="button" class="text-gray-500 hover:text-gray-800 text-sm flex items-center gap-1.5" :title="ctrans('Attach images, videos, PDF, Word, Excel or CSV')" @click="fileInput?.click()">
+                <FontAwesomeIcon :icon="faPaperclip" fixed-width /> {{ ctrans("Attach") }}
             </button>
-            <span class="text-xs text-gray-400">{{ trans("or paste / drop") }}</span>
+            <span class="text-xs text-gray-400">{{ ctrans("or paste / drop") }}</span>
             <input ref="fileInput" type="file" accept="image/*,.mp4,.webm,.mov,.pdf,.docx,.xls,.xlsx,.csv,.zip,.rar,.7z" multiple class="hidden" @change="onPick" />
             <div v-if="previews.length" class="ml-auto flex gap-1.5">
                 <div v-for="(preview, index) in previews" :key="preview.url" class="relative">
-                    <div v-if="preview.attachment" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center" :class="preview.attachment.class" :title="preview.name">
-                        <FontAwesomeIcon :icon="preview.attachment.icon" class="text-lg" fixed-width />
-                        <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ preview.name }}</span>
-                    </div>
-                    <img v-else :src="preview.url" alt="" class="h-12 w-12 rounded object-cover border border-gray-200" />
-                    <button type="button" class="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-gray-700 text-white text-[10px] flex items-center justify-center" @click="removeImage(index)">
+                    <component
+                        :is="isViewable(preview) ? 'button' : 'div'"
+                        :type="isViewable(preview) ? 'button' : undefined"
+                        class="block rounded"
+                        :class="isViewable(preview) && 'cursor-zoom-in transition hover:opacity-80'"
+                        :title="isViewable(preview) ? ctrans('View :name', { name: preview.name }) : ctrans(':name can be opened once it is posted', { name: preview.name })"
+                        @click="isViewable(preview) && openPreview(preview.url)">
+                        <div v-if="preview.attachment" class="h-12 w-12 rounded border border-gray-200 bg-gray-50 flex flex-col items-center justify-center" :class="preview.attachment.class">
+                            <FontAwesomeIcon :icon="preview.attachment.icon" class="text-lg" fixed-width />
+                            <span class="w-full truncate px-0.5 text-center text-[9px] text-gray-500">{{ preview.name }}</span>
+                        </div>
+                        <img v-else :src="preview.url" alt="" class="h-12 w-12 rounded object-cover border border-gray-200" />
+                    </component>
+                    <button type="button" class="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-gray-700 text-white text-[10px] flex items-center justify-center" :aria-label="ctrans('Remove :name', { name: preview.name })" @click.stop="removeImage(index)">
                         <FontAwesomeIcon :icon="faTimes" fixed-width />
                     </button>
                 </div>
             </div>
         </div>
+        <TicketAttachmentPreview v-model:index="previewIndex" :files="viewableFiles" />
     </div>
 </template>

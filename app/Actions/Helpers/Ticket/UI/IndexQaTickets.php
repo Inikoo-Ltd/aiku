@@ -10,6 +10,7 @@
 namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Arr;
@@ -64,6 +65,34 @@ class IndexQaTickets extends IndexTickets
         ];
     }
 
+    /* A ticket with a checker on it - asked of them, claimed by them, or already given their
+       verdict - is theirs, and stays out of every other checker's list. Choosing Everyone in
+       the QA assignee filter is the one way to see the whole team's work. */
+    protected function restrictRows($queryBuilder, ?string $prefix): void
+    {
+        $checkerFilter = explode(',', (string) request()->input(($prefix ? $prefix.'_' : '').'elements.qa_checker', ''));
+
+        if (in_array('everyone', $checkerFilter, true)) {
+            return;
+        }
+
+        $user = request()->user();
+
+        $queryBuilder->where(fn ($query) => $query
+            ->whereNull('tickets.qa_user_id')
+            ->orWhere('tickets.qa_user_id', $user->id));
+    }
+
+    protected function combinesKindAndModule(): bool
+    {
+        return true;
+    }
+
+    protected function showsCreatedColumn(): bool
+    {
+        return false;
+    }
+
     protected function pinToTop($queryBuilder): void
     {
         $queryBuilder->orderByRaw("CASE WHEN tickets.qa_status = ? THEN 0 ELSE 1 END", [TicketQaStatusEnum::REQUESTED->value]);
@@ -71,12 +100,16 @@ class IndexQaTickets extends IndexTickets
 
     protected function elementGroupDefault(string $key): ?string
     {
-        return $key === 'qa_status' ? 'none' : parent::elementGroupDefault($key);
+        return match ($key) {
+            'qa_status' => 'none',
+            'status'    => TicketStatusEnum::RESOLVED->value.','.TicketStatusEnum::PENDING_DEPLOY->value,
+            default     => parent::elementGroupDefault($key),
+        };
     }
 
     protected function listTip(): ?string
     {
-        return __("By default, we're only showing Tickets that have no QA verdict. Use the filter to check everything.");
+        return __("By default, we're only showing Done and Waiting for deployment tickets that have no QA verdict. Use the filters to check everything.");
     }
 
     protected function listTipTitle(): ?string

@@ -6,7 +6,7 @@
 -->
 
 <script lang="ts">
-import { trans as translate } from "laravel-vue-i18n"
+import { ctrans as translate } from "@/Composables/useTrans"
 
 export const reasonForResponse = async (response: Response) => {
     if (response.status === 401 || response.status === 419) return translate("Your session has expired. Reload the page and try again.")
@@ -21,6 +21,8 @@ export const reasonForResponse = async (response: Response) => {
 }
 
 export const reasonFileIsUnavailable = async (url: string) => {
+    if (url.startsWith("blob:")) return translate("This file could not be displayed. It may be damaged or in a format your browser cannot show.")
+
     try {
         const response = await fetch(url, { method: "HEAD" })
         return response.ok ? translate("This file could not be displayed. It may be damaged or in a format your browser cannot show.") : await reasonForResponse(response)
@@ -50,7 +52,7 @@ export const isPreviewableAttachment = (file: TicketAttachment) => isImageAttach
 
 <script setup lang="ts">
 import { computed, nextTick, ref, shallowRef, watch, onBeforeUnmount } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useModalFocusTrap } from "@/Composables/useModalFocusTrap"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -84,7 +86,7 @@ const markUnavailable = (reason: string) => {
     previewState.value = "unavailable"
 }
 
-const markUndisplayable = () => markUnavailable(trans("This file could not be displayed. It may be damaged or in a format your browser cannot show."))
+const markUndisplayable = () => markUnavailable(ctrans("This file could not be displayed. It may be damaged or in a format your browser cannot show."))
 const wordContainer = ref<HTMLElement | null>(null)
 const sheetNames = ref<string[]>([])
 const activeSheet = ref("")
@@ -119,8 +121,10 @@ const loadPreview = async (file: TicketAttachment) => {
 
     try {
         if (isImageAttachment(file) || isPdfAttachment(file) || isVideoAttachment(file)) {
-            const response = await fetch(url, { method: "HEAD" })
-            if (!response.ok) throw new PreviewUnavailable(await reasonForResponse(response))
+            if (!url.startsWith("blob:")) {
+                const response = await fetch(url, { method: "HEAD" })
+                if (!response.ok) throw new PreviewUnavailable(await reasonForResponse(response))
+            }
             if (isStillCurrent(url)) previewState.value = "ready"
             return
         }
@@ -163,8 +167,8 @@ const loadPreview = async (file: TicketAttachment) => {
     } catch (error) {
         if (!isStillCurrent(url)) return
         if (error instanceof PreviewUnavailable) markUnavailable(error.reason)
-        else if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) markUnavailable(trans("Could not reach the server. Check your connection and try again."))
-        else markUnavailable(trans("This file could not be read. It may be damaged or in an unsupported format."))
+        else if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) markUnavailable(ctrans("Could not reach the server. Check your connection and try again."))
+        else markUnavailable(ctrans("This file could not be read. It may be damaged or in an unsupported format."))
     }
 }
 
@@ -213,7 +217,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <span class="truncate text-sm">{{ currentFile.name }}</span>
                 <div class="flex shrink-0 items-center gap-4">
                     <span v-if="files.length > 1" class="text-sm text-white/80">{{ (index ?? 0) + 1 }} / {{ files.length }}</span>
-                    <a :href="currentFile.url" target="_blank" rel="noopener" v-tooltip="trans('Open in new tab')" class="text-2xl text-white/80 hover:text-white">
+                    <a :href="currentFile.url" target="_blank" rel="noopener" v-tooltip="ctrans('Open in new tab')" class="text-2xl text-white/80 hover:text-white">
                         <FontAwesomeIcon icon="fal fa-external-link" fixed-width />
                     </a>
                     <button type="button" class="text-3xl text-white/80 hover:text-white" @click="close">
@@ -225,11 +229,11 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width />
             </button>
             <div v-if="previewState === 'loading'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
-                <FontAwesomeIcon icon="fal fa-spinner" spin class="mr-2" fixed-width />{{ trans("Loading") }}
+                <FontAwesomeIcon icon="fal fa-spinner" spin class="mr-2" fixed-width />{{ ctrans("Loading") }}
             </div>
             <div v-else-if="previewState === 'unavailable'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
                 <div class="max-w-md px-6 text-center">
-                    <p class="font-medium text-gray-700">{{ trans("Preview for this file is unavailable") }}</p>
+                    <p class="font-medium text-gray-700">{{ ctrans("Preview for this file is unavailable") }}</p>
                     <p v-if="unavailableReason" class="mt-1 text-gray-500">{{ unavailableReason }}</p>
                 </div>
             </div>
@@ -239,9 +243,9 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
             <div v-else-if="isWordAttachment(currentFile)" ref="wordContainer" :key="currentFile.url" class="h-[85vh] w-full max-w-5xl overflow-auto rounded bg-gray-100" />
             <div v-else-if="isArchiveAttachment(currentFile)" :key="currentFile.url" class="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded bg-white">
                 <div class="flex shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-500">
-                    <span class="tabular-nums">{{ trans(":count files", { count: String(zipFileCount) }) }} · {{ formatSize(zipTotalSize) }}</span>
+                    <span class="tabular-nums">{{ ctrans(":count files", { count: String(zipFileCount) }) }} · {{ formatSize(zipTotalSize) }}</span>
                     <a :href="currentFile.url" :download="currentFile.name" class="inline-flex items-center gap-1.5 rounded-md bg-[--app-accent] px-3 py-1.5 text-xs font-medium text-[--app-accent-text] transition duration-200 hover:bg-[--app-accent-deep] focus:!bg-[--app-accent-deep]">
-                        <FontAwesomeIcon icon="fal fa-download" fixed-width />{{ trans("Download") }}
+                        <FontAwesomeIcon icon="fal fa-download" fixed-width />{{ ctrans("Download") }}
                     </a>
                 </div>
                 <ul class="flex-1 overflow-auto py-1 text-sm text-gray-700">
@@ -254,10 +258,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                         <span class="min-w-0 flex-1 truncate" :title="entry.name">{{ baseNameOf(entry.name) }}</span>
                         <span v-if="!entry.is_directory" class="shrink-0 text-xs tabular-nums text-gray-400">{{ formatSize(entry.size) }}</span>
                     </li>
-                    <li v-if="!sortedZipEntries.length" class="px-4 py-6 text-center text-gray-400">{{ trans("This archive is empty") }}</li>
+                    <li v-if="!sortedZipEntries.length" class="px-4 py-6 text-center text-gray-400">{{ ctrans("This archive is empty") }}</li>
                 </ul>
                 <p v-if="zipContents && zipContents.total > zipContents.entries.length" class="shrink-0 border-t border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-500">
-                    {{ trans("Showing the first :count of :total entries", { count: String(zipContents.entries.length), total: String(zipContents.total) }) }}
+                    {{ ctrans("Showing the first :count of :total entries", { count: String(zipContents.entries.length), total: String(zipContents.total) }) }}
                 </p>
             </div>
             <div v-else class="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded bg-white">

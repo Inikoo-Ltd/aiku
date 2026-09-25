@@ -232,6 +232,10 @@ class NotifyTicketUsers
             return;
         }
 
+        if ($ticket->qa_status === TicketQaStatusEnum::CHECKING) {
+            return;
+        }
+
         if ($ticket->qa_status) {
             $verdict  = TicketQaStatusEnum::labels()[$ticket->qa_status->value];
             $assignee = $ticket->assignee()->first();
