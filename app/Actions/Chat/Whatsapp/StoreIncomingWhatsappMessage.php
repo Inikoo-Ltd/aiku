@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Whatsapp;
 use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\DraftChatReply;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SetMetaChatMessageReaction;
@@ -137,6 +138,7 @@ class StoreIncomingWhatsappMessage
                 'profile_name' => $profileName,
                 'wa_payload'   => $type !== 'text' ? $waNode : null,
                 'wa_context'   => Arr::get($message, 'context'),
+                'wa_referral'  => Arr::get($message, 'referral'),
                 'wa_errors'    => Arr::get($message, 'errors'),
             ],
         ]);
@@ -158,6 +160,7 @@ class StoreIncomingWhatsappMessage
         }
 
         SendOutOfHoursReply::dispatch($metaChatSession);
+        FlagUrgentChatRequest::dispatch($metaChatSession);
 
         if (config('chat.ai_drafts')) {
             DraftChatReply::dispatch($metaChatSession);

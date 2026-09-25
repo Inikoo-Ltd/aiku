@@ -131,7 +131,7 @@ const product = ref(props.product)
 const layout = inject("layout", {})
 const webpage_id = inject<number | null>("webpage_id", null)
 const isPriceVisible = computed(() =>
-    Boolean(layout?.iris?.is_logged_in || layout?.iris?.show_price)
+    Boolean(layout?.iris?.is_logged_in)
 )
 const expanded = ref(false)
 const keyCustomer = ref(ulid())

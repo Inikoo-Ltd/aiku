@@ -15,7 +15,9 @@ use App\Actions\SysAdmin\User\SyncRolesFromJobPositions;
 use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\JobPosition;
+use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\Concerns\AsObject;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class SyncEmployeeJobPositions
 {
@@ -23,6 +25,8 @@ class SyncEmployeeJobPositions
 
     public function handle(Employee $employee, array $jobPositions): void
     {
+        $jobPositions = DropLowerGradeJobPositionScopes::run($jobPositions);
+        $positionsBefore     = $this->positionsForAudit($employee);
         $jobPositionsIds     = array_keys($jobPositions);
         $currentJobPositions = $employee->jobPositions()->pluck('job_positions.id')->all();
 
@@ -54,6 +58,15 @@ class SyncEmployeeJobPositions
         }
 
 
+        $positionsAfter = $this->positionsForAudit($employee);
+        if ($positionsBefore != $positionsAfter) {
+            $employee->auditEvent     = 'job_positions';
+            $employee->isCustomEvent  = true;
+            $employee->auditCustomOld = $positionsBefore;
+            $employee->auditCustomNew = $positionsAfter;
+            Event::dispatch(new AuditCustom($employee));
+        }
+
         foreach ($employee->users as $user) {
             SyncRolesFromJobPositions::run($user);
         }
@@ -75,5 +88,13 @@ class SyncEmployeeJobPositions
             CleanUserCaches::run($user);
             BreakUserUiProps::dispatch($user);
         }
+    }
+
+    private function positionsForAudit(Employee $employee): array
+    {
+        return $employee->jobPositions()->get()
+            ->mapWithKeys(fn (JobPosition $jobPosition) => [$jobPosition->name => $jobPosition->pivot->scopes])
+            ->sortKeys()
+            ->all();
     }
 }

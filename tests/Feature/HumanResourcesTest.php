@@ -3065,3 +3065,67 @@ test('a staff avatar is not offered in the group image gallery', function () {
                 ->all()
         )->not->toContain($employee->image_id);
 });
+
+test('job positions on an employee record that has left give its user no roles', function () {
+    setPermissionsTeamId($this->group->id);
+
+    $jobPosition = StoreJobPosition::make()->action($this->organisation, [
+        'code'  => 'LFT'.rand(1000, 9999),
+        'name'  => 'Left record position',
+        'scope' => \App\Enums\HumanResources\JobPosition\JobPositionScopeEnum::ORGANISATION,
+    ]);
+    $role = \App\Models\SysAdmin\Role::where('name', RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_CLERK->value, $this->organisation))->first();
+    $jobPosition->roles()->attach($role->id);
+
+    $user = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+
+    $leftRecord = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+        'state'           => \App\Enums\HumanResources\Employee\EmployeeStateEnum::LEFT,
+    ]);
+    SyncEmployeeJobPositions::make()->handle($leftRecord, [$jobPosition->id => []]);
+    $user->employees()->attach($leftRecord->id, ['status' => true, 'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    expect($user->fresh()->roles()->where('roles.id', $role->id)->exists())->toBeFalse();
+
+    $leftRecord->update(['state' => \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    expect($user->fresh()->roles()->where('roles.id', $role->id)->exists())->toBeTrue();
+
+    $positionsAudit = $leftRecord->audits()->where('event', 'job_positions')->latest('id')->first();
+    $rolesAudit     = $user->audits()->where('event', 'roles')->latest('id')->first();
+    expect($positionsAudit->new_values)->toHaveKey('Left record position')
+        ->and($positionsAudit->old_values)->toBe([])
+        ->and($rolesAudit->new_values['added'])->toContain($role->name);
+});
+
+test('a worker position is dropped on the shops where the employee is already supervisor of the same department', function () {
+    setPermissionsTeamId($this->group->id);
+    $positionIds = JobPosition::where('organisation_id', $this->organisation->id)
+        ->whereIn('code', ['shk-m', 'shk-c', 'cus-m', 'cus-c', 'hr-m', 'hr-c', 'dist-pik', 'dist-pak'])
+        ->pluck('id', 'code');
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $this->organisation->id,
+        'group_id'        => $this->group->id,
+    ]);
+
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $positionIds['shk-m']    => ['Shop' => [1, 2]],
+        $positionIds['shk-c']    => ['Shop' => [1, 2]],
+        $positionIds['cus-m']    => ['Shop' => [1]],
+        $positionIds['cus-c']    => ['Shop' => [1, 2]],
+        $positionIds['hr-m']     => [],
+        $positionIds['hr-c']     => ['Organisation' => [$this->organisation->id]],
+        $positionIds['dist-pik'] => ['Warehouse' => [1]],
+        $positionIds['dist-pak'] => ['Warehouse' => [1]],
+    ]);
+
+    $scopes = $employee->jobPositions()->get()->mapWithKeys(fn (JobPosition $jobPosition) => [$jobPosition->code => $jobPosition->pivot->scopes]);
+
+    expect($scopes->keys()->sort()->values()->all())->toBe(['cus-c', 'cus-m', 'dist-pak', 'dist-pik', 'hr-m', 'shk-m'])
+        ->and($scopes['cus-c'])->toBe(['Shop' => [2]])
+        ->and($scopes['shk-m'])->toBe(['Shop' => [1, 2]]);
+});

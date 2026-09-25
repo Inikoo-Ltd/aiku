@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Helpers\Redirects\RedirectSupplierLink;
+use App\Models\SysAdmin\User;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductShowcase;
 use App\Actions\Procurement\OrgAgent\StoreOrgAgent;
@@ -547,6 +549,21 @@ test('majordomo redirect supplier link', function () {
         ->assertRedirect(route('grp.supply-chain.agents.show.suppliers.show', [$agent->slug, $agentSupplier->slug]));
 });
 
+test('majordomo redirect supplier link sends users without supply chain access to their organisation procurement', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+
+    $procurementUser = Mockery::mock(User::class)->makePartial();
+    $procurementUser->shouldReceive('authTo')->with('supply-chain.view')->andReturnFalse();
+    $procurementUser->shouldReceive('authTo')->andReturnUsing(fn (string $permission) => $permission === "procurement.{$this->organisation->id}.view");
+
+    expect(RedirectSupplierLink::run($supplier, $procurementUser)->getTargetUrl())
+        ->toBe(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug]));
+});
+
 test('majordomo redirect supplier product link', function () {
     $freeSupplier = StoreSupplier::make()->action(
         parent: $this->group,
@@ -696,6 +713,7 @@ test('UI supply chain control', function () {
 
 test('UI supply chain PO journey', function (Supplier $supplier) {
     $this->withoutExceptionHandling();
+    StoreSupplierProduct::make()->action($supplier, array_merge(SupplierProduct::factory()->definition(), ['stock_id' => $this->stocks[1]->id]));
     $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
 
@@ -723,7 +741,7 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('ribbons.0.reference', $purchaseOrder->reference)
             ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'production')['state'] === 'done'));
-})->depends('create independent supplier');
+})->depends('create independent supplier 2');
 
 test('UI create suppliers product in supplier', function () {
     $this->withoutExceptionHandling();

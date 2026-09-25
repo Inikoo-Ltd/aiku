@@ -12,12 +12,14 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
@@ -81,6 +83,7 @@ class EditCustomer extends OrgAction
 
         $contact    = [
             'title'  => __('Contact information'),
+            'icon'   => 'fal fa-address-book',
             'label'  => __('Contact'),
             'fields' => [
                 'contact_name'             => [
@@ -156,6 +159,7 @@ class EditCustomer extends OrgAction
 
         $identification = [
             'title'  => __('Id/Fiscal Name'),
+            'icon'   => 'fal fa-id-card',
             'label'  => __('Id/Fiscal name'),
             'fields' => [
                 'fiscal_name'             => [
@@ -178,6 +182,7 @@ class EditCustomer extends OrgAction
 
         $accounting = [
             'title'  => __('Accounting'),
+            'icon'   => 'fal fa-file-invoice',
             'label'  => __('Accounting'),
             'fields' => [
 
@@ -200,6 +205,7 @@ class EditCustomer extends OrgAction
         ];
         $creditLine = [
             'title'  => __('Credit line'),
+            'icon'   => 'fal fa-money-bill',
             'label'  => __('Credit line'),
             'fields' => [
                 'credit_limit'       => [
@@ -222,6 +228,7 @@ class EditCustomer extends OrgAction
 
         $tags       = [
             'title'  => __('Tags'),
+            'icon'   => 'fal fa-tags',
             'label'  => __('Tags'),
             'fields' => [
                 'tags' => [
@@ -278,6 +285,7 @@ class EditCustomer extends OrgAction
 
         $vip = [
             'title'  => __('VIP'),
+            'icon'   => 'fal fa-medal',
             'label'  => __('VIP'),
             'fields' => [
                 'is_vip'   => [
@@ -290,6 +298,7 @@ class EditCustomer extends OrgAction
 
         $staff = [
             'title'  => __('Staff'),
+            'icon'   => 'fal fa-user-tag',
             'label'  => __('Staff'),
             'fields' => [
                 'as_employee_id' => [
@@ -315,6 +324,7 @@ class EditCustomer extends OrgAction
             $blueprint = [
                 [
                     'title'  => __('Tax number'),
+                    'icon'   => 'fal fa-fingerprint',
                     'label'  => __('Tax number'),
                     'fields' => Arr::only($contact['fields'], ['tax_number']),
                 ]
@@ -327,6 +337,28 @@ class EditCustomer extends OrgAction
             $blueprint = [$creditLine];
         } elseif ($canGrantCredit) {
             $blueprint[] = $creditLine;
+        }
+
+        if (!$isExternal && AnonymiseCustomer::canBeAnonymisedBy($request->user(), $customer)) {
+            $blueprint[] = [
+                'title'  => __('Delete'),
+                'label'  => __('Delete'),
+                'icon'   => 'fal fa-trash-alt',
+                'fields' => [
+                    'delete_customer' => [
+                        'type'      => 'delete_customer',
+                        'label'     => __('Delete customer'),
+                        'noSaveButton' => true,
+                        'reference' => AnonymiseCustomer::confirmationText($customer),
+                        'orders'    => $customer->orders()->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])->count(),
+                        'invoices'  => $customer->invoices()->count(),
+                        'route'     => [
+                            'name'       => 'grp.models.customer.anonymise',
+                            'parameters' => ['customer' => $customer->id],
+                        ],
+                    ],
+                ],
+            ];
         }
 
         return Inertia::render(

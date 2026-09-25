@@ -7231,6 +7231,8 @@
     "Δ 1Y": "Δ1Y",
     "Thank you for your message. We are closed at the moment and will reply :when.": "Köszönjük üzenetét. Jelenleg zárva vagyunk, és :when válaszolunk.",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Köszönjük üzenetét. Jelenleg zárva vagyunk, és :when válaszolunk. Írja meg, miben segíthetünk, és nyitáskor elsőként foglalkozunk vele.",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "Köszönjük üzenetét. Ma zárva vagyunk (:holiday), és :when válaszolunk.",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Köszönjük üzenetét. Ma zárva vagyunk (:holiday), és :when válaszolunk. Írja meg, miben segíthetünk, és nyitáskor elsőként foglalkozunk vele.",
     "from :time today": "ma :time órától",
     "from :time tomorrow": "holnap :time órától",
     "from :time on :day": ":day :time órától"

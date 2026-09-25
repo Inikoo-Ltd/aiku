@@ -46,6 +46,7 @@ use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateState\ReleaseOrderFromGate;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SendUnpaidOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -119,6 +120,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledIn
         Route::patch('submitted', SubmitOrder::class)->name('submitted');
         Route::patch('cancelled', CancelOrder::class)->name('cancelled');
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
+        Route::patch('in-warehouse-unpaid', SendUnpaidOrderToWarehouse::class)->name('in-warehouse-unpaid');
         Route::patch('release-from-gate', ReleaseOrderFromGate::class)->name('release_from_gate');
         Route::patch('finalise', FinaliseOrder::class)->name('finalise');
         Route::patch('dispatched', DispatchOrder::class)->name('dispatched');

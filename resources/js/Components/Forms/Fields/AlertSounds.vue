@@ -20,6 +20,7 @@ const kinds: { key: AlertSoundKind, label: string }[] = [
     { key: 'whatsapp', label: ctrans('WhatsApp') },
     { key: 'email', label: ctrans('Email') },
     { key: 'colleague', label: ctrans('Colleague messages') },
+    { key: 'waiting', label: ctrans('Customer still waiting') },
 ]
 
 const labels = alertSoundLabels()

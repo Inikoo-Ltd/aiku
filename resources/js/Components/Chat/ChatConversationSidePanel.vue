@@ -208,6 +208,18 @@ interface CustomerProfile {
     last_orders?: LastOrder[]
     previous_chats?: PreviousChat[]
     chat_topics?: { topic: string, label: string, count: number }[]
+    subscriptions?: {
+        channels: Record<string, { subscribed: boolean, unsubscribed_at: string | null }>
+        unsubscribed_in_an_email_at: string | null
+        marketing_emails_last_30_days: { sent_at: string, outbox: string }[]
+        unsubscribe: { name: string, parameters: Record<string, any> } | null
+    }
+    erasure?: {
+        orders: number
+        invoices: number
+        confirmation: string
+        route: { name: string, parameters: Record<string, any> } | null
+    }
 }
 
 const emptyCustomerProfile = (): CustomerProfile => ({ tags: [], stats: null, email: null, profile_url: null })
@@ -327,6 +339,79 @@ const createFollowUpOrder = async (order: LastOrder) => {
 }
 
 const orderGettingPaymentLink = ref<string | null>(null)
+
+const CHANNEL_LABELS: Record<string, string> = {
+    newsletter: ctrans("Newsletter"),
+    marketing: ctrans("Marketing"),
+    abandoned_cart: ctrans("Abandoned basket"),
+    reorder_reminder: ctrans("Reorder reminder"),
+    basket_low_stock: ctrans("Low stock in basket"),
+    basket_reminder: ctrans("Basket reminder"),
+    price_change_notification: ctrans("Price changes"),
+    gold_reward_reminder: ctrans("Gold reward reminder"),
+    whatsapp_newsletter: ctrans("WhatsApp newsletter"),
+}
+
+const subscribedChannels = computed(() => Object.entries(customerProfile.value.subscriptions?.channels ?? {})
+    .filter(([, channel]) => channel.subscribed)
+    .map(([key]) => CHANNEL_LABELS[key] ?? key))
+
+const lastUnsubscribedAt = computed(() => {
+    const subscriptions = customerProfile.value.subscriptions
+    const dates = [
+        ...Object.values(subscriptions?.channels ?? {}).map((channel) => channel.unsubscribed_at),
+        subscriptions?.unsubscribed_in_an_email_at,
+    ].filter(Boolean) as string[]
+
+    return dates.sort().pop() ?? null
+})
+
+const erasureOpen = ref(false)
+const erasureReason = ref("")
+const erasureConfirmation = ref("")
+const isErasing = ref(false)
+
+const openErasure = () => {
+    erasureOpen.value = !erasureOpen.value
+    erasureReason.value ||= ctrans("Asked to have their data deleted, in chat conversation :ulid", { ulid: props.session?.ulid ?? "" })
+}
+
+const eraseCustomer = async () => {
+    const erasure = customerProfile.value.erasure
+    if (!erasure?.route || isErasing.value || erasureConfirmation.value !== erasure.confirmation) return
+    isErasing.value = true
+    try {
+        await axios.post(route(erasure.route.name, erasure.route.parameters), {
+            reason: erasureReason.value,
+            reference: erasureConfirmation.value,
+        })
+        notify({ title: ctrans("Personal data erased"), text: ctrans("Their name, contact details, addresses and conversations are gone; orders and invoices stay, without them"), type: "success" })
+        erasureOpen.value = false
+        customerProfile.value = emptyCustomerProfile()
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("Their data could not be erased"), type: "error" })
+    } finally {
+        isErasing.value = false
+    }
+}
+
+const isUnsubscribing = ref(false)
+
+const unsubscribeFromMarketing = async () => {
+    const unsubscribe = customerProfile.value.subscriptions?.unsubscribe
+    if (!unsubscribe || isUnsubscribing.value) return
+    if (!window.confirm(ctrans("Unsubscribe this customer from every newsletter, marketing email and reminder? Emails about their orders keep coming."))) return
+    isUnsubscribing.value = true
+    try {
+        const res = await axios.post(route(unsubscribe.name, unsubscribe.parameters))
+        customerProfile.value.subscriptions = { ...res.data.subscriptions, unsubscribe }
+        notify({ title: ctrans("Unsubscribed"), text: ctrans("They will get no more newsletters, marketing or reminders"), type: "success" })
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("Could not unsubscribe"), type: "error" })
+    } finally {
+        isUnsubscribing.value = false
+    }
+}
 
 const createPaymentLink = async (order: LastOrder) => {
     if (!order.payment_link || orderGettingPaymentLink.value) return
@@ -821,6 +906,52 @@ const copyChatId = async () => {
                             :routeFetch="orderTakingItems.add_items.products" :isLoadingSubmit="isAddingItems"
                             withQuantity @submit="addItemsToOrder" />
                     </Modal>
+                </div>
+
+                <div v-if="!session.is_guest && customerProfile.subscriptions" class="px-4 py-3 space-y-1.5 text-xs">
+                    <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{{ ctrans("Emails we send them") }}</p>
+                    <p v-if="!subscribedChannels.length" class="font-medium text-gray-800">{{ ctrans("Unsubscribed from everything") }}</p>
+                    <p v-else class="text-gray-700">{{ ctrans("Subscribed to") }}: {{ subscribedChannels.join(", ") }}</p>
+                    <p v-if="lastUnsubscribedAt" class="text-gray-500">{{ ctrans("Last unsubscribed") }}: {{ formatStatDate(lastUnsubscribedAt) }}</p>
+                    <p class="text-gray-500"
+                        :class="!subscribedChannels.length && customerProfile.subscriptions.marketing_emails_last_30_days.length ? 'text-red-600 font-medium' : ''">
+                        {{ ctrans("Marketing emails in the last 30 days") }}: {{ customerProfile.subscriptions.marketing_emails_last_30_days.length }}<template v-if="customerProfile.subscriptions.marketing_emails_last_30_days.length">, {{ ctrans("last on") }} {{ formatStatDate(customerProfile.subscriptions.marketing_emails_last_30_days[0].sent_at) }}</template>
+                    </p>
+                    <button v-if="subscribedChannels.length && customerProfile.subscriptions.unsubscribe" type="button"
+                        class="font-medium hover:underline disabled:opacity-50" :style="{ color: themePrimary }"
+                        :disabled="isUnsubscribing" @click="unsubscribeFromMarketing">
+                        {{ isUnsubscribing ? ctrans("Unsubscribing…") : ctrans("Unsubscribe from everything") }}
+                    </button>
+                </div>
+
+                <div v-if="!session.is_guest && customerProfile.erasure" class="px-4 py-3 space-y-2 text-xs">
+                    <button type="button" class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider hover:text-red-600" @click="openErasure">
+                        {{ ctrans("Erase their data (GDPR)") }}
+                    </button>
+                    <template v-if="erasureOpen">
+                        <p v-if="customerProfile.erasure.orders || customerProfile.erasure.invoices" class="rounded bg-amber-50 p-2 text-amber-800">
+                            {{ ctrans(":orders orders and :invoices invoices. They stay, as the law requires, but no longer say who the customer was.", { orders: String(customerProfile.erasure.orders), invoices: String(customerProfile.erasure.invoices) }) }}
+                        </p>
+                        <p class="text-gray-600">{{ ctrans("Erases their name, contact details, addresses, web logins and conversations, and unsubscribes them from everything. It cannot be undone.") }}</p>
+                        <p v-if="!customerProfile.erasure.route" class="text-gray-500">
+                            {{ customerProfile.erasure.orders || customerProfile.erasure.invoices
+                                ? ctrans("A customer with orders can only be erased by a CRM supervisor: ask one to open this conversation.")
+                                : ctrans("Erasing needs permission to edit customers: ask a CRM supervisor.") }}
+                        </p>
+                        <template v-else>
+                            <textarea v-model="erasureReason" rows="2" class="w-full rounded border-gray-300 text-xs" :placeholder="ctrans('Why')" />
+                            <label class="block text-gray-600">
+                                {{ ctrans("Type :text to confirm", { text: customerProfile.erasure.confirmation }) }}
+                                <input v-model="erasureConfirmation" type="text" class="mt-1 w-full rounded border-gray-300 text-xs" />
+                            </label>
+                            <button type="button"
+                                class="rounded bg-red-600 px-2 py-1 font-medium text-white disabled:opacity-40"
+                                :disabled="isErasing || !erasureReason.trim() || erasureConfirmation !== customerProfile.erasure.confirmation"
+                                @click="eraseCustomer">
+                                {{ isErasing ? ctrans("Erasing…") : ctrans("Erase their data") }}
+                            </button>
+                        </template>
+                    </template>
                 </div>
 
                 <div v-if="customerProfile.previous_chats?.length" class="px-4 py-3 space-y-2">

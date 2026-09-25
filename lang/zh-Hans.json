@@ -4801,6 +4801,8 @@
     "Δ 1Y": "Δ 1Y",
     "Thank you for your message. We are closed at the moment and will reply :when.": "感谢您的留言。我们目前不在营业时间，将于:when回复。",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "感谢您的留言。我们目前不在营业时间，将于:when回复。请告诉我们需要什么帮助，我们开门后会第一时间处理。",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "感谢您的留言。今天是:holiday，我们不营业，将于:when回复。",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "感谢您的留言。今天是:holiday，我们不营业，将于:when回复。请告诉我们需要什么帮助，我们开门后会第一时间处理。",
     "from :time today": "今天:time起",
     "from :time tomorrow": "明天:time起",
     "from :time on :day": ":day :time起"

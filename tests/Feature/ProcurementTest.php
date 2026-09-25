@@ -27,6 +27,8 @@ use App\Models\SysAdmin\User;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
+use App\Actions\GoodsIn\Sowing\DeleteSowing;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
@@ -34,6 +36,7 @@ use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateToReceived;
+use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsChecked;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemAsPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
@@ -165,6 +168,9 @@ use App\Actions\Procurement\OrgPartner\UI\ShowPartnerBrowse;
 use Illuminate\Support\Facades\Cache;
 use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockMovement;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\OrgStockStats;
 use App\Models\Inventory\Warehouse;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -2597,6 +2603,30 @@ test('stock delivery item places all the remaining checked quantity in one locat
         ->and($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKED_IN);
 });
 
+test('placed stock delivery item can have more checked and booked in while the delivery is booking in', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'BOOK-MORE', [10, 5]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->orderBy('id')->skip(1)->first(), ['unit_quantity_checked' => 5]);
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->orderBy('id')->first(), ['unit_quantity_checked' => 10]);
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => $locationOrgStock->id]);
+
+    expect($stockDelivery->fresh()->state)->toBe(StockDeliveryStateEnum::BOOKING_IN);
+
+    $resource = StockDeliveryItemResource::make($stockDeliveryItem)->toArray(request());
+    expect($resource['checkedRoute'])->not->toBeNull()
+        ->and(collect($resource['locations'])->pluck('location_code'))->toContain($locationOrgStock->location->code);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 12]);
+    expect($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::CHECKED);
+
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => $locationOrgStock->id]);
+    expect((float) $stockDeliveryItem->unit_quantity_placed)->toBe(12.0)
+        ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED);
+});
+
 test('stock delivery item is booked in to a location the org stock did not have and gets associated to it', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-NEW-LOCATION', [10]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
@@ -3159,6 +3189,34 @@ describe('stock delivery costing checklist', function () {
             ->and($stockDelivery->costs()->where('type', 'shipping')->first()->received_at)->not->toBeNull()
             ->and($stockDelivery->costs()->where('type', 'duty')->first()->is_na)->toBeTrue();
     });
+
+    test('partner delivery costs itself from its line values when booked in', function () {
+        $orgStock      = OrgStock::where('organisation_id', $this->orgPartner->organisation_id)->first();
+        $stockDelivery = StoreStockDelivery::make()->action($this->orgPartner, [
+            'reference' => 'PARTNER-COSTING-'.StockDelivery::count(),
+            'date'      => date('Y-m-d'),
+            'state'     => StockDeliveryStateEnum::CHECKED,
+        ], strict: false);
+        $item = StoreStockDeliveryItem::make()->action($stockDelivery, null, $orgStock, [
+            'unit_quantity'        => 72,
+            'unit_quantity_placed' => 72,
+            'state'                => StockDeliveryItemStateEnum::PLACED,
+        ], strict: false);
+
+        $item = UpdateStockDeliveryItem::make()->action($item, ['net_amount' => 134.64], strict: false);
+
+        expect((float) $item->net_amount)->toBe(134.64)
+            ->and((float) $item->org_net_amount)->toEqualWithDelta(134.64 * ($item->org_exchange ?? 1), 0.01);
+
+        UpdateStockDeliveryStateFromGoodsIn::run($stockDelivery->refresh());
+
+        $stockDelivery->refresh();
+        expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::PLACED)
+            ->and($stockDelivery->is_costed)->toBeTrue()
+            ->and((float) $stockDelivery->cost_items)->toBe(134.64)
+            ->and((float) $item->refresh()->cost_items)->toBe(134.64)
+            ->and($item->is_costed)->toBeTrue();
+    });
 });
 
 describe('supplier deposits', function () {
@@ -3609,7 +3667,8 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::CONFIRMED)
             ->and($stockDelivery->delivery_note_id)->toBe($order->deliveryNotes()->first()->id)
             ->and($stockDelivery->items()->count())->toBe(1)
-            ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
+            ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id)
+            ->and((float) $stockDelivery->items()->first()->net_amount)->toBe((float) $order->deliveryNotes()->first()->deliveryNoteItems()->first()->transaction->net_amount);
     });
 
     test('send partner order to warehouse rejects non-creating order', function () {
@@ -5497,4 +5556,79 @@ test('stock delivery pdf is forbidden without procurement permission', function 
 
     $this->get(route('grp.org.procurement.stock_deliveries.pdf', [$this->organisation->slug, $this->stockDelivery->slug]))
         ->assertForbidden();
+});
+
+test('stock put away from a delivery is valued at the line price, then at the landed cost once the delivery is costed', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-VALUED', [72]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = UpdateStockDeliveryItem::make()->action($stockDelivery->items()->first(), ['net_amount' => 360], strict: false);
+    $packedIn          = $stockDeliveryItem->orgStock->packed_in;
+    $stockDeliveryItem->orgStock->update(['packed_in' => 6]);
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem->fresh(), ['sko_quantity_checked' => 12]);
+
+    $locationOrgStock  = createLocationOrgStockFor($this, $stockDeliveryItem);
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_org_stock_id' => $locationOrgStock->id]);
+    $stockDeliveryItem = SetStockDeliveryItemAsPlaced::make()->action($stockDeliveryItem, ['location_org_stock_id' => $locationOrgStock->id]);
+
+    $movementIds  = $stockDeliveryItem->sowings()->orderBy('id')->pluck('org_stock_movement_id');
+    $movements    = OrgStockMovement::whereIn('id', $movementIds)->orderBy('id')->get();
+    $deliveryCost = $stockDeliveryItem->org_net_amount / 12;
+
+    expect($deliveryCost)->toBeGreaterThan(0)
+        ->and($movements)->toHaveCount(2)
+        ->and((float) $movements[0]->cost_per_sku)->toEqualWithDelta($deliveryCost, 0.000001)
+        ->and((float) $movements[0]->org_amount)->toEqualWithDelta(4 * $deliveryCost, 0.001)
+        ->and((float) $movements[1]->org_amount)->toEqualWithDelta(8 * $deliveryCost, 0.001)
+        ->and($movements[1]->cost_status)->toBe(OrgStockMovementCostStatusEnum::DELIVERY);
+
+    $runningValueAtDeliveryCost = (float) $movements[1]->running_lpp_value;
+    expect($runningValueAtDeliveryCost)->toBeGreaterThan(0);
+
+    $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'amount' => $stockDeliveryItem->net_amount, 'received_at' => now()]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::SHIPPING->value, 'amount' => 120, 'received_at' => now()]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_na' => true]);
+
+    $stockDeliveryItem = $stockDeliveryItem->fresh();
+    $landedCost        = $stockDeliveryItem->cost_total * ($stockDeliveryItem->org_exchange ?? 1) / 12;
+    $movements         = OrgStockMovement::whereIn('id', $movementIds)->orderBy('id')->get();
+
+    expect($stockDelivery->fresh()->is_costed)->toBeTrue()
+        ->and((float) $stockDeliveryItem->cost_total)->toEqualWithDelta($stockDeliveryItem->net_amount + 120, 0.01)
+        ->and((float) $movements[0]->cost_per_sku)->toEqualWithDelta($landedCost, 0.000001)
+        ->and((float) $movements[0]->org_amount)->toEqualWithDelta(4 * $landedCost, 0.001)
+        ->and((float) $movements[1]->org_amount)->toEqualWithDelta(8 * $landedCost, 0.001)
+        ->and($movements[1]->cost_status)->toBe(OrgStockMovementCostStatusEnum::COSTED)
+        ->and((float) $movements[1]->running_lpp_value)->toEqualWithDelta($runningValueAtDeliveryCost / $deliveryCost * $landedCost, 0.02);
+
+    $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
+});
+
+test('undoing a put away from a delivery takes the stock out at the value it went in at', function () {
+    $placeFromDelivery = function (string $code, float $netAmount) {
+        $stockDelivery = createStockDeliveryWithItems($this, $code, [10]);
+        $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+        $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+        $stockDeliveryItem = UpdateStockDeliveryItem::make()->action($stockDelivery->items()->first(), ['net_amount' => $netAmount], strict: false);
+        $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem, ['unit_quantity_checked' => 10]);
+
+        return UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, ['quantity' => 4, 'location_org_stock_id' => createLocationOrgStockFor($this, $stockDeliveryItem)->id])
+            ->sowings()->first();
+    };
+
+    $sowing   = $placeFromDelivery('PLACE-UNDONE', 50);
+    $purchase = $sowing->orgStockMovement;
+    $placeFromDelivery('PLACE-DEARER', 150);
+
+    DeleteSowing::make()->handle($sowing);
+
+    $reversal = OrgStockMovement::where('org_stock_id', $purchase->org_stock_id)->where('id', '>', $purchase->id)
+        ->where('type', OrgStockMovementTypeEnum::CANCEL_PURCHASE)->first();
+
+    expect((float) $purchase->org_amount)->toBeGreaterThan(0)
+        ->and((float) $reversal->quantity)->toBe(-4.0)
+        ->and((float) $reversal->org_amount)->toBe(-(float) $purchase->org_amount);
 });

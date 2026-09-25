@@ -7469,6 +7469,8 @@
     "Δ 1Y": "Δ 1Y",
     "Thank you for your message. We are closed at the moment and will reply :when.": "Merci pour votre message. Nous sommes actuellement fermés et vous répondrons :when.",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Merci pour votre message. Nous sommes actuellement fermés et vous répondrons :when. Dites-nous comment nous pouvons vous aider et nous nous en occuperons dès l'ouverture.",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "Merci pour votre message. Nous sommes fermés aujourd'hui (:holiday) et vous répondrons :when.",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Merci pour votre message. Nous sommes fermés aujourd'hui (:holiday) et vous répondrons :when. Dites-nous comment nous pouvons vous aider et nous nous en occuperons dès l'ouverture.",
     "from :time today": "aujourd'hui à partir de :time",
     "from :time tomorrow": "demain à partir de :time",
     "from :time on :day": ":day à partir de :time"

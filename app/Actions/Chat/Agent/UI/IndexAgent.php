@@ -8,18 +8,22 @@
 
 namespace App\Actions\Chat\Agent\UI;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Http\Resources\CRM\Livechat\ChatAgentResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
-use App\Models\Chat\ShopHasChatAgent;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Query\Builder as QueryBuilderContract;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,6 +32,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexAgent extends OrgAction
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -48,23 +53,12 @@ class IndexAgent extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $shopIds = $parent instanceof Shop ? [$parent->id] : $parent->shops()->pluck('shops.id')->all();
+
         $query = QueryBuilder::for(ChatAgent::class)
+            ->withTrashed()
             ->join('users', 'chat_agents.user_id', '=', 'users.id')
-            ->leftJoin('shop_has_chat_agents as shca', function ($join) use ($parent) {
-                $join->on('shca.chat_agent_id', '=', 'chat_agents.id');
-                if ($parent instanceof Organisation) {
-                    $join->where('shca.organisation_id', $parent->id);
-                } elseif ($parent instanceof Shop) {
-                    $join->where('shca.shop_id', $parent->id);
-                }
-            })
-            ->leftJoin('shops', function ($join) {
-                $join->on('shops.id', '=', 'shca.shop_id')
-                     ->whereNull('shca.deleted_at');
-            })
-            ->leftJoin('organisations', 'organisations.id', '=', 'shca.organisation_id')
-            ->whereNotNull('shca.id')
-            ->without('user')
+            ->whereIn('chat_agents.user_id', $this->workingUserIdsQuery($shopIds))
             ->select([
                 'chat_agents.id',
                 'chat_agents.user_id',
@@ -78,17 +72,10 @@ class IndexAgent extends OrgAction
                 'chat_agents.auto_accept',
                 'chat_agents.specialization',
                 'chat_agents.created_at',
-                'organisations.slug as organisation_slug',
-                DB::raw("COALESCE(STRING_AGG(DISTINCT shops.code, ', '), '—') as shops"),
-                DB::raw("SUM(CASE WHEN shca.deleted_at IS NULL THEN 1 ELSE 0 END) as active_shca_count"),
-            ])
-            ->groupBy([
-                'chat_agents.id',
-                'users.contact_name',
-                'organisations.slug',
+                'chat_agents.deleted_at',
             ]);
 
-        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+        foreach ($this->getElementGroups($shopIds) as $key => $elementGroup) {
             $query->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -98,33 +85,77 @@ class IndexAgent extends OrgAction
             );
         }
 
-        return $query
+        $agents = $query
             ->allowedSorts(['is_online', 'is_available', 'current_chat_count', 'max_concurrent_chats', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $this->hydrateShopsAndOrganisation($agents->getCollection(), $parent);
+
+        return $agents;
     }
 
-    private function getElementGroups(Group|Organisation|Shop $parent): array
+    /**
+     * @param  array<int, int>  $shopIds
+     */
+    private function workingUserIdsQuery(array $shopIds): QueryBuilderContract
     {
-        $activeCount = ShopHasChatAgent::whereNull('deleted_at')
-            ->when($parent instanceof Organisation, fn ($q) => $q->where('organisation_id', $parent->id))
-            ->when($parent instanceof Shop, fn ($q) => $q->where('shop_id', $parent->id))
-            ->distinct('chat_agent_id')
-            ->count('chat_agent_id');
+        $permissionNames = collect($shopIds)->flatMap(fn ($shopId) => ["chat.{$shopId}"]);
 
-        $deletedCount = ShopHasChatAgent::onlyTrashed()
-            ->when($parent instanceof Organisation, fn ($q) => $q->where('organisation_id', $parent->id))
-            ->when($parent instanceof Shop, fn ($q) => $q->where('shop_id', $parent->id))
-            ->whereNotIn('chat_agent_id', function ($sub) use ($parent) {
-                $sub->select('chat_agent_id')
-                    ->from('shop_has_chat_agents')
-                    ->whereNull('deleted_at')
-                    ->when($parent instanceof Organisation, fn ($q) => $q->where('organisation_id', $parent->id))
-                    ->when($parent instanceof Shop, fn ($q) => $q->where('shop_id', $parent->id));
-            })
-            ->distinct('chat_agent_id')
-            ->count('chat_agent_id');
+        $fulfilmentIds = Fulfilment::whereIn('shop_id', $shopIds)->pluck('id');
+        $permissionNames = $permissionNames->merge(
+            $fulfilmentIds->flatMap(fn ($fulfilmentId) => ["fulfilment-chat.{$fulfilmentId}"])
+        );
+
+        return DB::table('model_has_roles')
+            ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
+            ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+            ->where('model_has_roles.model_type', 'User')
+            ->whereIn('permissions.name', $permissionNames->all())
+            ->select('model_has_roles.model_id');
+    }
+
+    /**
+     * The shops column and the organisation each agent is edited under are no longer stored
+     * on an assignment row: they are read back from the same job-position permissions that
+     * grant the access in the first place.
+     */
+    private function hydrateShopsAndOrganisation(Collection $agents, Group|Organisation|Shop $parent): void
+    {
+        if ($agents->isEmpty()) {
+            return;
+        }
+
+        $organisationSlug = match (true) {
+            $parent instanceof Organisation => $parent->slug,
+            $parent instanceof Shop         => $parent->organisation->slug,
+            default                         => null,
+        };
+
+        $users = User::whereIn('id', $agents->pluck('user_id'))->get()->keyBy('id');
+
+        foreach ($agents as $agent) {
+            $user          = $users->get($agent->user_id);
+            $workedShopIds = $user ? $this->workableShopIdsFor($user) : [];
+            $workedShops   = Shop::whereIn('id', $workedShopIds)->get(['id', 'code', 'organisation_id']);
+
+            $agent->shops             = $workedShops->isNotEmpty() ? $workedShops->pluck('code')->implode(', ') : '—';
+            $agent->organisation_slug = $organisationSlug ?? $workedShops->first()?->organisation?->slug;
+        }
+    }
+
+    /**
+     * @param  array<int, int>  $shopIds
+     */
+    private function getElementGroups(array $shopIds): array
+    {
+        $activeCount = ChatAgent::whereIn('user_id', $this->workingUserIdsQuery($shopIds))
+            ->count();
+
+        $deletedCount = ChatAgent::onlyTrashed()
+            ->whereIn('user_id', $this->workingUserIdsQuery($shopIds))
+            ->count();
 
         return [
             'state' => [
@@ -136,9 +167,9 @@ class IndexAgent extends OrgAction
                 ],
                 'engine' => function ($query, $elements) {
                     if (\in_array('active', $elements) && !\in_array('deleted', $elements)) {
-                        $query->havingRaw('SUM(CASE WHEN shca.deleted_at IS NULL THEN 1 ELSE 0 END) > 0');
+                        $query->whereNull('chat_agents.deleted_at');
                     } elseif (\in_array('deleted', $elements) && !\in_array('active', $elements)) {
-                        $query->havingRaw('SUM(CASE WHEN shca.deleted_at IS NULL THEN 1 ELSE 0 END) = 0');
+                        $query->whereNotNull('chat_agents.deleted_at');
                     }
                 },
             ],
@@ -167,7 +198,9 @@ class IndexAgent extends OrgAction
                 ->defaultSort('name');
 
             if ($parent) {
-                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $shopIds = $parent instanceof Shop ? [$parent->id] : $parent->shops()->pluck('shops.id')->all();
+
+                foreach ($this->getElementGroups($shopIds) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
                         label: $elementGroup['label'],

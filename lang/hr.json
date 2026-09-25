@@ -7215,6 +7215,8 @@
     "Δ 1Y": "Δ 1Y",
     "Thank you for your message. We are closed at the moment and will reply :when.": "Hvala na poruci. Trenutačno ne radimo i odgovorit ćemo vam :when.",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Hvala na poruci. Trenutačno ne radimo i odgovorit ćemo vam :when. Recite nam kako vam možemo pomoći i time ćemo se pozabaviti čim otvorimo.",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "Hvala na poruci. Danas ne radimo (:holiday) i odgovorit ćemo vam :when.",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Hvala na poruci. Danas ne radimo (:holiday) i odgovorit ćemo vam :when. Recite nam kako vam možemo pomoći i time ćemo se pozabaviti čim otvorimo.",
     "from :time today": "danas od :time",
     "from :time tomorrow": "sutra od :time",
     "from :time on :day": "od :time, :day"

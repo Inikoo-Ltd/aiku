@@ -13,6 +13,8 @@ use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
+use App\Actions\Chat\ChatSession\SummarizeLongEmail;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIgnoreReasonEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -228,6 +230,11 @@ class ProcessInboundEmail
         }
 
         SendOutOfHoursReply::dispatch($session, $message);
+        FlagUrgentChatRequest::dispatch($session);
+
+        if (! $isAutoReply) {
+            SummarizeLongEmail::dispatch($message);
+        }
 
         $label = $webUser ? 'aiku/imported' : 'aiku/unmatched';
         $client->fileAway($gmailMessageId, $label, Arr::get($raw, 'labelIds', []));
@@ -546,6 +553,7 @@ class ProcessInboundEmail
                 'name'  => $from['name'] ?? $from['address'],
                 'email' => $from['address'],
             ]),
+            'is_carrier' => $session->is_carrier || (!$session->web_user_id && self::isCarrierAddress($from['address'])),
         ]);
 
         return $session;
@@ -554,6 +562,17 @@ class ProcessInboundEmail
     /**
      * @param  array{address: ?string, name: ?string}  $from
      */
+    /**
+     * A courier writing about a delivery: its domain, or any subdomain of it, is on the list.
+     */
+    public static function isCarrierAddress(?string $address): bool
+    {
+        $domain = mb_strtolower((string) substr(strrchr((string) $address, '@') ?: '', 1));
+
+        return $domain !== '' && collect(config('chat.carrier_domains', []))
+            ->contains(fn (string $carrier) => $domain === $carrier || str_ends_with($domain, '.'.$carrier));
+    }
+
     private function createSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
     {
         $session = StoreChatSession::run([
@@ -573,6 +592,7 @@ class ProcessInboundEmail
                 'name'            => $from['name'] ?? $from['address'],
                 'email'           => $from['address'],
             ]),
+            'is_carrier' => !$webUser && self::isCarrierAddress($from['address']),
         ]);
 
         return $session;

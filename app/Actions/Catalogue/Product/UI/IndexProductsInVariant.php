@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\OrgAction;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
@@ -79,7 +80,9 @@ class IndexProductsInVariant extends OrgAction
 
     public function tableStructure(Variant $variant, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($prefix, $variant) {
+            $isDropshipping = $variant->shop->type == ShopTypeEnum::DROPSHIPPING;
+
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -99,7 +102,7 @@ class IndexProductsInVariant extends OrgAction
                 ->column(key: 'is_variant_leader', label: ['fal', 'fa-star-half-alt'], type: 'icon')
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price/outer'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'rrp_per_unit', label: __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: $isDropshipping ? 'rrp' : 'rrp_per_unit', label: $isDropshipping ? __('RRP/outer') : __('RRP/unit'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }

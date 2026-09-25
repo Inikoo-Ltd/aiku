@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession\UI;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatScopeNavigation;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
@@ -29,6 +30,14 @@ class ShowOrgChatConversation extends OrgAction
     use AsAction;
     use WithInertia;
     use WithChatScopeNavigation;
+    use WithChatAgentAuthorisation;
+
+    private ChatSession $chatSession;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->userCanViewChatOnShop($request->user(), $this->chatSession->shop);
+    }
 
     public function handle(ChatSession $chatSession): ChatSession
     {
@@ -37,6 +46,8 @@ class ShowOrgChatConversation extends OrgAction
 
     public function asController(Organisation $organisation, ChatSession $chatSession, ActionRequest $request): ChatSession
     {
+        abort_unless($chatSession->shop?->organisation_id === $organisation->id, 404);
+        $this->chatSession = $chatSession;
         $this->initialisation($organisation, $request);
 
         return $this->handle($chatSession);
@@ -44,6 +55,8 @@ class ShowOrgChatConversation extends OrgAction
 
     public function inShop(Organisation $organisation, Shop $shop, ChatSession $chatSession, ActionRequest $request): ChatSession
     {
+        abort_unless($chatSession->shop_id === $shop->id, 404);
+        $this->chatSession = $chatSession;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($chatSession);
@@ -51,6 +64,8 @@ class ShowOrgChatConversation extends OrgAction
 
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ChatSession $chatSession, ActionRequest $request): ChatSession
     {
+        abort_unless($chatSession->shop_id === $fulfilment->shop_id, 404);
+        $this->chatSession = $chatSession;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($chatSession);

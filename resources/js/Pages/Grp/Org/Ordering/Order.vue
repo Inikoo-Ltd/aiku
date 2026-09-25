@@ -602,6 +602,45 @@ const onSubmitCancelOrder = () => {
     )
 }
 
+const sendUnpaidLoading = ref(false)
+const isModalSendUnpaid = ref(false)
+const sendUnpaidAction = ref<any>(null)
+const sendUnpaidReason = ref('')
+
+const openSendUnpaidModal = (action) => {
+    sendUnpaidAction.value = action
+    sendUnpaidReason.value = ''
+    isModalSendUnpaid.value = true
+}
+
+const onSubmitSendUnpaid = () => {
+    const action = sendUnpaidAction.value
+    if (!action) return
+
+    router[action.route.method](
+        route(action.route.name, action.route.parameters),
+        { reason: sendUnpaidReason.value },
+        {
+            onStart: () => {
+                sendUnpaidLoading.value = true
+            },
+            onFinish: () => {
+                sendUnpaidLoading.value = false
+            },
+            onSuccess: () => {
+                isModalSendUnpaid.value = false
+            },
+            onError: (errors) => {
+                notify({
+                    title: ctrans("Error"),
+                    text: Object.values(errors ?? {})[0] as string || ctrans("Failed to send the order to the warehouse"),
+                    type: "error",
+                })
+            }
+        }
+    )
+}
+
 const invoiceOnlyLoading = ref(false)
 const confirmInvoiceOnly = (action) => {
     confirm.require({
@@ -1586,6 +1625,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     :tooltip="action.tooltip" />
             </div>
             <div class="relative" v-else>
+            </div>
+        </template>
+
+        <template #button-send-unpaid-to-warehouse="{ action }">
+            <div class="relative">
+                <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="sendUnpaidLoading"
+                    @click="() => openSendUnpaidModal(action)" :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip" />
             </div>
         </template>
 
@@ -3011,6 +3058,35 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 <Button type="tertiary" :label="ctrans('No')" @click="isModalCancelOrder = false" />
                 <Button :label="ctrans('Yes, cancel order')" :disabled="!cancelOrderData.cancellation_reason"
                     :loading="cancelLoading" @click="onSubmitCancelOrder" />
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalSendUnpaid" @onClose="isModalSendUnpaid = false" width="w-[600px]">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ ctrans("Send to warehouse unpaid") }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ ctrans("The order is not fully paid. Your name and the reason are saved in the order's internal notes.") }}
+                </p>
+            </div>
+
+            <div class="mt-7">
+                <label class="block text-sm font-medium leading-6">
+                    <span class="text-red-500">*</span> {{ ctrans("Reason") }}
+                </label>
+                <div class="mt-1">
+                    <PureTextarea v-model="sendUnpaidReason" rows="3" full
+                        :placeholder="ctrans('e.g. customer on payment terms, bank transfer confirmed by phone')" />
+                </div>
+            </div>
+
+            <div class="mt-6 mb-4 flex justify-end gap-x-2">
+                <Button type="tertiary" :label="ctrans('No')" @click="isModalSendUnpaid = false" />
+                <Button :label="ctrans('Send to warehouse')" :disabled="!sendUnpaidReason.trim()"
+                    :loading="sendUnpaidLoading" @click="onSubmitSendUnpaid" />
             </div>
         </div>
     </Modal>

@@ -32,6 +32,7 @@ use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisBasketTransactionsInCollection;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
+use App\Actions\Catalogue\Product\SyncProductExclusiveCustomers;
 use App\Actions\Catalogue\ShippingCountry\DeleteShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
@@ -75,6 +76,7 @@ use App\Actions\Billables\Service\StoreService;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SendUnpaidOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Purge\HydratePurges;
@@ -398,6 +400,14 @@ test('order products picker offers not for sale products to partners only', func
     expect($order->isPartnerOrder())->toBeTrue()
         ->and($offered())->toContain($this->product->id);
 
+    $outsideCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => [$outsideCustomer->id]]);
+    expect($offered())->not->toContain($this->product->id);
+
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => [$order->customer_id]]);
+    expect($offered())->toContain($this->product->id);
+
+    SyncProductExclusiveCustomers::make()->action($this->product, ['customer_ids' => []]);
     $orgPartner->delete();
     $this->product->update(['is_for_sale' => true]);
 
@@ -3626,6 +3636,63 @@ test('paying with balance sends the order to the warehouse only when the balance
         ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
 });
 
+test('a staff recorded payment sends a submitted order to the warehouse only once it is fully paid', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and((float) $order->total_amount)->toBeGreaterThan(1);
+
+    $bankAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::BANK->value)->first(),
+        [
+            'code' => 'BANK'.mt_rand(1000, 9999),
+            'name' => 'Bank transfer',
+        ]
+    );
+    $payByBank = fn (float $amount) => PayOrder::make()->action($order->refresh(), $bankAccount, [
+        'amount'    => $amount,
+        'reference' => 'BT-'.Str::ulid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
+
+    $payByBank(1);
+    expect($order->refresh()->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::UNPAID);
+
+    $payByBank(round((float) $order->total_amount - 1, 2));
+    expect($order->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+});
+
+test('an accounting supervisor can send an unpaid order to the warehouse, leaving who and why in the internal notes', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order = SubmitOrder::make()->action($order->refresh());
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($order->pay_status)->not->toBe(OrderPayStatusEnum::PAID);
+
+    expect(fn () => SendUnpaidOrderToWarehouse::make()->action($order, $this->user, ['reason' => '']))
+        ->toThrow(ValidationException::class);
+
+    SendUnpaidOrderToWarehouse::make()->action($order, $this->user, ['reason' => 'Customer on 30 day terms']);
+    $order->refresh();
+    expect($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->internal_notes)->toContain('Customer on 30 day terms')
+        ->and($order->internal_notes)->toContain($this->user->contact_name ?: $this->user->username);
+
+    expect(fn () => SendUnpaidOrderToWarehouse::make()->action($order, $this->user, ['reason' => 'again']))
+        ->toThrow(ValidationException::class);
+});
+
 test('a credit line lets the customer order on account down to minus the limit, never beyond', function () {
     $newBasket = function () {
         $modelData = Order::factory()->definition();
@@ -3821,7 +3888,7 @@ test('a held order goes to the warehouse once its address is put on it', functio
     $order->refresh();
     $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
     $order->unsetRelation('billingAddress');
-    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    payHeldOrder($order);
 
     expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull()
         ->and($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
@@ -3914,9 +3981,26 @@ function orderForAFreshCustomerWithNoBillingAddress(\App\Models\Catalogue\Shop $
     }
 
     $order->billingAddress->update(['address_line_1' => '', 'address_line_2' => '', 'locality' => '', 'postal_code' => '', 'administrative_area' => '']);
-    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    payHeldOrder($order);
 
     return $order->refresh();
+}
+
+/** Paid for real, because every totals recalculation reads pay_status from the payments; twice the total so a new address changing the tax keeps it paid */
+function payHeldOrder(Order $order): void
+{
+    $paymentAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $order->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'HLD'.fake()->unique()->numberBetween(10000, 99999), 'name' => 'Held order cash']
+    );
+
+    PayOrder::make()->action($order, $paymentAccount, [
+        'amount'    => round($order->refresh()->total_amount * 2, 2),
+        'reference' => 'HELD-'.uniqid(),
+        'status'    => PaymentStatusEnum::SUCCESS,
+        'state'     => PaymentStateEnum::COMPLETED,
+    ]);
 }
 
 test('a customer who pays with no address is never refused, the order is held instead', function () {

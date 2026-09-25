@@ -53,6 +53,12 @@ class ShowOrgChatInbox extends OrgAction
     {
         $user = $request->user();
 
+        $selectedSessionShop = $this->selectedSession?->shop;
+
+        if ($this->selectedSession && !($selectedSessionShop && $this->userCanViewChatOnShop($user, $selectedSessionShop))) {
+            return false;
+        }
+
         if (isset($this->shop)) {
             return $this->userCanViewChatOnShop($user, $this->shop)
                 || $user->authTo(["accounting.{$this->shop->organisation_id}.view"]);
@@ -252,6 +258,7 @@ class ShowOrgChatInbox extends OrgAction
             'webUser',
             'shop',
             'assignments.chatAgent.user',
+            'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ]);
 
         return (new ChatSessionListResource($this->selectedSession))->resolve();
@@ -420,6 +427,7 @@ class ShowOrgChatInbox extends OrgAction
             // Put aside keeps its status, so it has to be left out by name: the one active
             // email the rail promised was an ignored one the list rightly would not show.
             ->where('is_rubbish', false)
+            ->where('is_carrier', false)
             ->groupBy('shop_id', 'channel', 'status', DB::raw('web_user_id is not null'), 'by_me', 'by_colleague')
             ->get([
                 'shop_id',

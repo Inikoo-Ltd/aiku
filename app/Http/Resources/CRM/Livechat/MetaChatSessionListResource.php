@@ -11,6 +11,7 @@ use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Actions\Helpers\Country\GetCountryCodeFromPhone;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -155,6 +156,12 @@ class MetaChatSessionListResource extends JsonResource
 
             'open_tickets_count'     => (int) ($this->open_tickets_count ?? 0),
             'blocking_tickets_count' => (int) ($this->blocking_tickets_count ?? 0),
+            'open_tasks'             => $this->relationLoaded('staffTasks') ? $this->staffTasks->map(fn (StaffTask $task) => [
+                'reference' => $task->reference,
+                'subject'   => $task->subject,
+                'who'       => $task->assignee?->chatName() ?? StaffTask::departmentLabel((string) $task->department),
+                'url'       => route('grp.tasks.index', ['task' => $task->reference]),
+            ])->values()->all() : [],
 
             'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
 
@@ -169,6 +176,7 @@ class MetaChatSessionListResource extends JsonResource
             'noise'          => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
             'claim'          => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'promise'        => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
+            'urgent'         => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
 
             'unread_count' => (int) ($this->unread_count ?? 0),

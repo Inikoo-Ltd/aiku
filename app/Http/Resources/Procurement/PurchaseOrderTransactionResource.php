@@ -43,7 +43,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             'quantity_ordered'     => $transaction->quantity_ordered,
 
             'net_amount'           => $transaction->net_amount,
-            'net_currency'         => $supplierProduct?->currency?->code,
+            'net_currency'         => $transaction->purchaseOrder?->currency?->code ?? $supplierProduct?->currency?->code,
             'org_net_amount'       => $transaction->org_net_amount,
             'org_currency'         => $transaction->organisation?->currency?->code,
             'org_exchange'         => $transaction->org_exchange,

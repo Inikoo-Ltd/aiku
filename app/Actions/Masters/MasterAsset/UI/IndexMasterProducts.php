@@ -260,6 +260,14 @@ class IndexMasterProducts extends OrgAction
                    and model_has_trade_units.model_id = master_assets.id",
                 'trade_units_label'
             );
+            $queryBuilder->selectSub(
+                "select max(model_has_trade_units.trade_unit_id)
+                 from model_has_trade_units
+                 where model_has_trade_units.model_type = 'MasterAsset'
+                   and model_has_trade_units.model_id = master_assets.id
+                 having count(*) = 1",
+                'single_trade_unit_id'
+            );
         }
 
         // PARENT FILTER ONLY

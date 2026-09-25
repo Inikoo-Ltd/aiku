@@ -419,6 +419,8 @@ const placeholder_class = ref(
 const search_class = ref(
 	getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false)
 )
+
+
 </script>
 
 <template>
