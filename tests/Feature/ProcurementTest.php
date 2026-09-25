@@ -952,6 +952,44 @@ test('purchase order page has an edit button to change its reference', function 
             )));
 });
 
+test('purchase order needs a product available in both the supplier product and the org supplier product', function () {
+    $supplier        = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier     = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'UNAV',
+        'name'             => 'Availability switches',
+        'cost'             => 200,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+    $orgSupplierProduct = $supplierProduct->orgSupplierProducts()->where('org_supplier_id', $orgSupplier->id)->sole();
+
+    UpdateOrgSupplierProduct::make()->action($orgSupplierProduct, ['is_available' => false]);
+    expect(fn () => StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition()))
+        ->toThrow(ValidationException::class);
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => false]);
+    UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => true]);
+    expect($orgSupplierProduct->refresh()->is_available)->toBeFalse();
+
+    UpdateOrgSupplierProduct::make()->action($orgSupplierProduct, ['is_available' => true]);
+    UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => false]);
+    expect($orgSupplierProduct->refresh()->is_available)->toBeTrue()
+        ->and(fn () => StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition()))
+        ->toThrow(ValidationException::class);
+
+    UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => true]);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    expect($purchaseOrder)->toBeInstanceOf(PurchaseOrder::class);
+
+    DeletePurchaseOrder::make()->action($purchaseOrder);
+});
+
 test('delete purchase order', function () {
     $supplier    = StoreSupplier::make()->action(
         parent: $this->group,

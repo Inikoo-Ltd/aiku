@@ -24,6 +24,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -154,7 +155,11 @@ class StorePurchaseOrder extends OrgAction
             return;
         }
 
-        if ($this->parent->orgSupplierProducts()->where('is_available', true)->doesntExist()) {
+        if ($this->parent->orgSupplierProducts()
+            ->where('state', OrgSupplierProductStateEnum::ACTIVE)
+            ->where('is_available', true)
+            ->whereHas('supplierProduct', fn ($query) => $query->where('is_available', true))
+            ->doesntExist()) {
             $message = $this->parent instanceof OrgAgent
                 ? __("Agent don't have any product")
                 : __("Supplier don't have any product");
