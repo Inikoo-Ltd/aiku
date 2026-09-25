@@ -156,6 +156,9 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Currency;
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
+use Illuminate\Support\Carbon;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Location;
@@ -5738,4 +5741,78 @@ test('a fetched delivery linked to its purchase order by their shared aurora lin
     expect($incoming)->toHaveCount(1)
         ->and($incoming[0]['type'])->toBe('stock_delivery')
         ->and($incoming[0]['quantity'])->toBe(80.0);
+});
+
+test('procurement exchange rates keep their precision, the ones four decimals rounded away are derived again with their amounts, aurora own rates stay', function () {
+    $rupiah = Currency::where('code', 'IDR')->firstOrFail();
+    $rupee  = Currency::where('code', 'INR')->firstOrFail();
+    $euro   = Currency::where('code', 'EUR')->firstOrFail();
+    $date   = '2019-03-14';
+
+    foreach (['IDR' => 18500.1234, 'INR' => 93.1234, 'USD' => 1.3187, 'EUR' => 1.1654] as $code => $exchange) {
+        DB::table('currency_exchanges')->upsert(
+            ['currency_id' => Currency::where('code', $code)->value('id'), 'date' => $date, 'exchange' => $exchange, 'source' => 'M', 'created_at' => now(), 'updated_at' => now()],
+            ['currency_id', 'date'],
+            ['exchange']
+        );
+    }
+
+    $orgRate = GetHistoricCurrencyExchange::run($rupiah, $this->organisation->currency, Carbon::parse($date));
+    $grpRate = GetHistoricCurrencyExchange::run($rupiah, $this->organisation->group->currency, Carbon::parse($date));
+    $rupeeRate = GetHistoricCurrencyExchange::run($rupee, $this->organisation->group->currency, Carbon::parse($date));
+
+    $supplier        = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    $orgSupplier     = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'RUPIAH-01',
+        'name'             => 'Rupiah priced',
+        'cost'             => 100,
+        'stock_id'         => $this->orgStocks[0]->stock_id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, ['reference' => 'RUPIAH-PO', 'date' => $date, 'currency_id' => $rupiah->id]);
+    $transaction   = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], ['quantity_ordered' => 10]);
+
+    expect($orgRate)->toBeLessThan(0.0001)
+        ->and(round($rupeeRate, 4))->toBe(0.0142)
+        ->and((float) $purchaseOrder->org_exchange)->toEqualWithDelta($orgRate, 1e-10);
+
+    $stockDelivery = createStockDeliveryWithItems($this, 'RUPIAH-DEL', [10]);
+    $deliveryItem  = $stockDelivery->items()->first();
+    $euroDelivery  = createStockDeliveryWithItems($this, 'EURO-DEL', [10]);
+    $rupeeDelivery = createStockDeliveryWithItems($this, 'RUPEE-DEL', [10]);
+    $rupeeItem     = $rupeeDelivery->items()->first();
+
+    $purchaseOrder->updateQuietly(['org_exchange' => 0.0001, 'grp_exchange' => 0]);
+    $euroDelivery->updateQuietly(['currency_id' => $euro->id, 'date' => $date, 'org_exchange' => 1.2, 'grp_exchange' => 0]);
+    $transaction->updateQuietly(['net_amount' => 1000000, 'org_exchange' => 0.0001, 'org_net_amount' => 100, 'grp_exchange' => 0, 'grp_net_amount' => 0]);
+    $stockDelivery->updateQuietly(['currency_id' => $rupiah->id, 'date' => $date, 'org_exchange' => 0, 'grp_exchange' => 0.0001]);
+    $deliveryItem->updateQuietly(['net_amount' => 2000000, 'org_exchange' => 0, 'org_net_amount' => 0, 'grp_exchange' => 0.0001, 'grp_net_amount' => 200]);
+    $rupeeDelivery->updateQuietly(['currency_id' => $rupee->id, 'date' => $date, 'org_exchange' => 0.0150, 'grp_exchange' => 0.0142]);
+    $rupeeItem->updateQuietly(['net_amount' => 1000, 'org_exchange' => 0.0150, 'org_net_amount' => 15, 'grp_exchange' => 0.0142, 'grp_net_amount' => 14.20]);
+
+    (require database_path('migrations/2026_09_25_120100_backfill_procurement_exchanges_lost_to_rounding.php'))->up();
+
+    $purchaseOrder->refresh();
+    $transaction->refresh();
+    $stockDelivery->refresh();
+    $deliveryItem->refresh();
+
+    expect((float) $purchaseOrder->org_exchange)->toEqualWithDelta($orgRate, 1e-10)
+        ->and((float) $purchaseOrder->grp_exchange)->toEqualWithDelta($grpRate, 1e-10)
+        ->and((float) $transaction->org_exchange)->toEqualWithDelta($orgRate, 1e-10)
+        ->and((float) $transaction->org_net_amount)->toEqualWithDelta(1000000 * $orgRate, 0.01)
+        ->and((float) $transaction->grp_net_amount)->toEqualWithDelta(1000000 * $grpRate, 0.01)
+        ->and((float) $stockDelivery->org_exchange)->toEqualWithDelta($orgRate, 1e-10)
+        ->and((float) $stockDelivery->grp_exchange)->toEqualWithDelta($grpRate, 1e-10)
+        ->and((float) $deliveryItem->org_net_amount)->toEqualWithDelta(2000000 * $orgRate, 0.01)
+        ->and((float) $deliveryItem->grp_net_amount)->toEqualWithDelta(2000000 * $grpRate, 0.01)
+        ->and((float) $euroDelivery->fresh()->org_exchange)->toBe(1.2)
+        ->and((float) $euroDelivery->fresh()->grp_exchange)->toBe(0.0)
+        ->and((float) $rupeeDelivery->fresh()->org_exchange)->toBe(0.015)
+        ->and((float) $rupeeDelivery->fresh()->grp_exchange)->toEqualWithDelta($rupeeRate, 1e-10)
+        ->and((float) $rupeeItem->fresh()->org_net_amount)->toBe(15.0)
+        ->and((float) $rupeeItem->fresh()->grp_net_amount)->toEqualWithDelta(1000 * $rupeeRate, 0.01);
 });
