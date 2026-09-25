@@ -44,6 +44,7 @@ use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\DevOps\MonitorNightowlIngest;
 use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
 use App\Actions\DevOps\MonitorOrdersInLimbo;
+use App\Actions\DevOps\MonitorStockLocationIntegrity;
 use App\Actions\DevOps\MonitorQueueBacklogs;
 use App\Actions\DevOps\MonitorRetinaApiInflow;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
@@ -242,6 +243,15 @@ class Kernel extends ConsoleKernel
                 name: 'MonitorOrdersInLimbo',
                 type: 'job',
                 scheduledAt: '07:30'
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorStockLocationIntegrity::makeJob())->dailyAt('05:00')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorStockLocationIntegrity',
+                ),
+                name: 'MonitorStockLocationIntegrity',
+                type: 'job',
+                scheduledAt: '05:00'
             );
 
             $this->logSchedule(

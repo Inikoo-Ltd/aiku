@@ -1423,6 +1423,37 @@ test('stock parked in a goods out location stops being available', function () {
     expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
 });
 
+test('stock location integrity monitor reports a location that no longer matches its movements', function () {
+    \Illuminate\Support\Facades\Http::fake();
+    config(['services.discord.webhook_url' => 'https://discord.test/webhook']);
+    $wasAikuStockControl = $this->organisation->is_aiku_stock_control;
+    $this->organisation->update(['is_aiku_stock_control' => true]);
+
+    $warehouse = createWarehouse();
+    $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $orgStock  = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+    $slot      = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::PICKING]);
+
+    AuditLocationOrgStock::run($slot, ['quantity' => 10]);
+    StoreOrgStockMovement::make()->action($orgStock, $location, ['quantity' => -3, 'type' => OrgStockMovementTypeEnum::PICKED]);
+    expect((float)$slot->refresh()->quantity)->toBe(7.0);
+
+    $slot->timestamps = false;
+    $slot->forceFill(['updated_at' => now()->subHour()])->save();
+
+    $label = fn () => collect(\App\Actions\DevOps\MonitorStockLocationIntegrity::run(2))
+        ->first(fn (string $issue) => str_contains($issue, "$orgStock->code @ $location->code"));
+
+    expect($label())->toBeNull();
+
+    DB::table('location_org_stocks')->where('id', $slot->id)->update(['quantity' => 5]);
+
+    expect($label())->toContain('location 5, movements 7');
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request['content'], 'Stock leaking from locations'));
+
+    $this->organisation->update(['is_aiku_stock_control' => $wasAikuStockControl]);
+});
+
 test('an emptied slot stays listed on a shelf but not in a goods out bay', function () {
     $warehouse = createWarehouse();
     $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
