@@ -4844,3 +4844,32 @@ test('a return cannot be put back without a location, so no stock goes missing (
 
     expect($returnItem->sowings()->count())->toBe(0);
 });
+
+test('an open pack goes back into stock as the packets that came back (HELP-3449)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+    $returnItem->update(['total_expected_qty' => 2]);
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+
+    actingAs($this->user);
+
+    $this->patchJson(route('grp.models.return_delivery_note_item.upsert_returned', $returnItem->id), [
+        'quantity'              => 23 / 12,
+        'location_org_stock_id' => $locationOrgStock->id,
+    ])->assertSessionHasNoErrors();
+
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNING]);
+    request()->setUserResolver(fn () => $this->user);
+    \App\Actions\GoodsIn\ReturnDeliveryNote\SetReturnedReturnDeliveryNote::make()->handle($returnDeliveryNote->refresh());
+
+    $returnItem->refresh();
+
+    expect(round((float) $returnItem->total_item_returned * 12))->toBe(23.0)
+        ->and(round((float) $returnItem->total_item_not_returned * 12))->toBe(1.0)
+        ->and(round((float) $returnItem->sowings()->first()->orgStockMovement->quantity * 12))->toBe(23.0);
+});
