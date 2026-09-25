@@ -23,6 +23,7 @@ import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialo
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketQaTarget from "@/Components/Tickets/TicketQaTarget.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faVial, faShieldCheck, faShield, faForward, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faToolbox, faUserHeadset, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle } from "@fal"
@@ -81,6 +82,8 @@ const qaBadgeClasses: Record<string, string> = {
     amber: "bg-amber-100 text-amber-700",
     red: "bg-red-100 text-red-700",
 }
+
+const showQaTarget = (item: { qa_status?: string | null; qa_user?: string | null }) => item.qa_status === "requested" || Boolean(item.qa_user)
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 
@@ -252,8 +255,11 @@ watch(
                 <span v-if="item.search_snippet" class="block w-56 truncate md:w-auto text-xs text-gray-500 [&_mark]:rounded [&_mark]:bg-yellow-200 [&_mark]:px-0.5" v-html="item.search_snippet" />
             </template>
             <template #cell(qa_status)="{ item }">
-                <span v-if="item.qa_status_icon" v-tooltip="item.qa_status_icon.tooltip" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-sm font-medium" :class="qaBadgeClasses[item.qa_status_icon.color]">
-                    <FontAwesomeIcon :icon="item.qa_status_icon.icon" fixed-width />{{ item.qa_status_label }}
+                <span v-if="item.qa_status_icon" v-tooltip="item.qa_status_icon.tooltip" class="relative inline-flex items-center">
+                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md py-0.5 pl-2 text-sm font-medium" :class="[qaBadgeClasses[item.qa_status_icon.color], showQaTarget(item) ? 'pr-5' : 'pr-2']">
+                        <FontAwesomeIcon :icon="item.qa_status_icon.icon" fixed-width />{{ item.qa_status_label }}
+                    </span>
+                    <TicketQaTarget v-if="showQaTarget(item)" class="-ml-3" :name="item.qa_user" :avatar="item.qa_user_avatar" size="sm" />
                 </span>
                 <span v-else class="text-gray-300">-</span>
             </template>
