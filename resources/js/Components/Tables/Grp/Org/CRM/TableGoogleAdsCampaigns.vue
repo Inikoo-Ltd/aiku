@@ -9,6 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
 import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBan,
@@ -19,10 +20,11 @@ import {
     faEye,
     faFlagCheckered,
     faHandPointer,
+    faPaperPlane,
     faPause,
-    faPlay,
     faQuestionCircle,
     faSackDollar,
+    faSeedling,
     faShoppingCart,
     faSignalStream,
     faTrash,
@@ -42,8 +44,9 @@ library.add(
     faSackDollar,
     faShoppingCart,
     faUserPlus,
-    faPlay,
+    faPaperPlane,
     faPause,
+    faSeedling,
     faBan,
     faClock,
     faFlagCheckered,
@@ -108,6 +111,12 @@ const cellSlot = (key: string) => `cell(${key})`
 
             <template #cell(channel_type)="{ item }">
                 <div class="text-gray-600">{{ campaignTypeLabel(item.channel_type) ?? "—" }}</div>
+            </template>
+
+            <template #cell(started_at)="{ item }">
+                <div class="whitespace-nowrap text-gray-600">
+                    {{ item.started_at ? useFormatTime(item.started_at, { formatTime: "aiku" }) : "—" }}
+                </div>
             </template>
 
             <template v-for="(cell, key) in metricCells" :key="key" #[cellSlot(key)]="{ item }">
