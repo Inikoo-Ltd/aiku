@@ -24,6 +24,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -139,6 +140,15 @@ class UpdateOrgStock extends OrgAction
         }
 
         return $rule->ignore($this->orgStock->id);
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation));
     }
 
     public function rules(): array

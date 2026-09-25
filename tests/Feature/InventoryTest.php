@@ -389,6 +389,36 @@ test('update org stock', function (OrgStock $orgStock) {
     return $orgStock;
 })->depends('create org stock');
 
+test('update org stock route needs stock edit permission', function (OrgStock $orgStock) {
+    $warehouse = $this->organisation->warehouses()->first() ?? createWarehouse();
+    $user      = $this->guest->getUser();
+
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $reset         = function (array $roles) use ($user) {
+        setPermissionsTeamId($user->group_id);
+        $user->syncRoles($roles);
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+    };
+    $url     = route('grp.org.warehouses.show.inventory.org_stocks.update', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]);
+    $showUrl = route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]);
+
+    $reset([RolesEnum::getRoleName('warehouse-viewer', $warehouse)]);
+    expect($this->get($showUrl)->assertOk()->viewData('page')['props']['showcase']['barcode_update_route'])->toBeNull();
+    $this->patchJson($url, ['name' => 'Renamed by viewer', 'state' => OrgStockStateEnum::DISCONTINUED->value])->assertForbidden();
+    expect($orgStock->refresh()->name)->not->toBe('Renamed by viewer')
+        ->and($orgStock->state)->toBe(OrgStockStateEnum::ACTIVE);
+
+    $reset([RolesEnum::getRoleName('stock-controller', $warehouse)]);
+    expect($this->get($showUrl)->assertOk()->viewData('page')['props']['showcase']['barcode_update_route']['name'])->toBe('grp.org.warehouses.show.inventory.org_stocks.update');
+    $this->patchJson($url, ['name' => 'Renamed by stock controller'])->assertOk();
+    expect($orgStock->refresh()->name)->toBe('Renamed by stock controller');
+
+    $reset($originalRoles);
+})->depends('update org stock');
+
 test('create org stock family', function () {
     $stockFamily = StoreStockFamily::make()->action(
         $this->group,

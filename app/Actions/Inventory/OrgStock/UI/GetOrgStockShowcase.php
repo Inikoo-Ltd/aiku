@@ -23,6 +23,7 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use Illuminate\Support\Facades\DB;
 
 class GetOrgStockShowcase
@@ -50,7 +51,7 @@ class GetOrgStockShowcase
                 'currency_code'      => $orgStock->organisation->currency->code,
                 'sales_data'         => GetOrgStockTimeSeriesData::run($orgStock),
                 'barcodes'           => GetOrgStockBarcodes::run($orgStock),
-                'barcode_update_route' => [
+                'barcode_update_route' => request()->user()?->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($warehouse->organisation)) ? [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.update',
                     'parameters' => [
                         'organisation' => $warehouse->organisation->slug,
@@ -58,7 +59,7 @@ class GetOrgStockShowcase
                         'orgStock'     => $orgStock->slug,
                     ],
                     'method'     => 'patch',
-                ],
+                ] : null,
                 'label_route'        => [
                     'name'       => 'grp.org.warehouses.show.inventory.org_stocks.label',
                     'parameters' => [
