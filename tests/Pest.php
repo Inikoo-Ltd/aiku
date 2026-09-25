@@ -593,3 +593,36 @@ function createWebUser(Customer $customer): WebUser
 
     return $webUser;
 }
+
+function createAttachedMedia(string $modelType, int $modelId, string $scope): \App\Models\Helpers\Media
+{
+    $media = \App\Models\Helpers\Media::create([
+        'group_id'              => test()->organisation->group_id,
+        'ulid'                  => (string) \Illuminate\Support\Str::ulid(),
+        'uuid'                  => (string) \Illuminate\Support\Str::uuid(),
+        'name'                  => $scope,
+        'file_name'             => $scope.'.txt',
+        'mime_type'             => 'text/plain',
+        'disk'                  => 'local',
+        'collection_name'       => 'attachment',
+        'size'                  => 4,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    @mkdir(dirname($media->getPath()), 0777, true);
+    file_put_contents($media->getPath(), 'data');
+
+    \Illuminate\Support\Facades\DB::table('model_has_attachments')->insert([
+        'group_id'   => $media->group_id,
+        'model_type' => $modelType,
+        'model_id'   => $modelId,
+        'media_id'   => $media->id,
+        'scope'      => $scope,
+        'data'       => '{}',
+    ]);
+
+    return $media;
+}

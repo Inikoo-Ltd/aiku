@@ -3200,3 +3200,41 @@ test('an admin holds no other position below them, so a customer service positio
     expect($roles)->toContain('group-admin', "org-admin-$organisation->id", "shop-admin-$shop->id")
         ->not->toContain("customer-service-supervisor-$shop->id");
 });
+
+test('staff attachment downloads need permission on what the file is attached to', function () {
+    Storage::fake('local');
+    setPermissionsTeamId($this->group->id);
+    $customer = createCustomer(createShop()[2]);
+
+    $employee   = Employee::factory()->create(['organisation_id' => $this->organisation->id, 'group_id' => $this->group->id]);
+    $employeeCv = createAttachedMedia('Employee', $employee->id, 'CV');
+    $customerNote = createAttachedMedia('Customer', $customer->id, 'CustomerNote');
+    $productSds   = createAttachedMedia('Product', 1, 'sds');
+
+    $hrClerk = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $hrClerk->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_CLERK->value, $this->organisation));
+    $colleague = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $ownUser   = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $ownUser->employees()->attach($employee->id, ['status' => true, 'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    $download = fn (User $user, $media) => $this->actingAs($user)->get(route('grp.media.download', $media->ulid));
+
+    $download($hrClerk, $employeeCv)->assertOk();
+    $download($ownUser, $employeeCv)->assertOk();
+    $download($colleague, $employeeCv)->assertNotFound();
+    $download($hrClerk, $customerNote)->assertNotFound();
+    $download($colleague, $productSds)->assertOk();
+
+    $warehouse = createWarehouse();
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    $supplier    = \App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, \App\Models\SupplyChain\Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $warehouse->organisation_id)->first();
+    $stockDelivery = \App\Actions\GoodsIn\StockDelivery\StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'INI021-'.rand(1000, 9999), 'date' => date('Y-m-d')]);
+    $deliveryPaperwork = createAttachedMedia('StockDelivery', $stockDelivery->id, 'Delivery Paperwork');
+
+    $goodsIn = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $goodsIn->givePermissionTo("incoming.$warehouse->id.view");
+
+    $download($goodsIn, $deliveryPaperwork)->assertOk();
+    $download($colleague, $deliveryPaperwork)->assertNotFound();
+});

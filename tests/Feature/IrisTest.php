@@ -33,44 +33,10 @@ use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Media;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
-
-function createAttachedMedia(string $modelType, int $modelId, string $scope): Media
-{
-    $media = Media::create([
-        'group_id'              => test()->organisation->group_id,
-        'ulid'                  => (string) Str::ulid(),
-        'uuid'                  => (string) Str::uuid(),
-        'name'                  => $scope,
-        'file_name'             => $scope.'.txt',
-        'mime_type'             => 'text/plain',
-        'disk'                  => 'local',
-        'collection_name'       => 'attachment',
-        'size'                  => 4,
-        'manipulations'         => [],
-        'custom_properties'     => [],
-        'generated_conversions' => [],
-        'responsive_images'     => [],
-    ]);
-
-    @mkdir(dirname($media->getPath()), 0777, true);
-    file_put_contents($media->getPath(), 'data');
-
-    DB::table('model_has_attachments')->insert([
-        'group_id'   => $media->group_id,
-        'model_type' => $modelType,
-        'model_id'   => $modelId,
-        'media_id'   => $media->id,
-        'scope'      => $scope,
-        'data'       => '{}',
-    ]);
-
-    return $media;
-}
 
 beforeEach(function () {
     loadDB();
