@@ -31,7 +31,7 @@ class LeaveApprovedNotification extends Notification implements ShouldQueue
             ->where('status', LeaveStatusEnum::PENDING)
             ->sum('duration_days');
 
-        return (new MailMessage())
+        $message = (new MailMessage())
             ->subject(__("APPROVED: ':type' for :name", [
                 'type' => $leave->leaveType?->name ?? ucfirst($leave->type),
                 'name' => $leave->employee_name,
@@ -43,5 +43,11 @@ class LeaveApprovedNotification extends Notification implements ShouldQueue
                 'balance'          => $this->balance,
                 'pendingLeaveDays' => (float) $pendingLeaveDays,
             ]);
+
+        if (app()->isProduction()) {
+            $message->mailer('ses')->from($leave->organisation->email ?: 'help@aiku.io', $leave->organisation->name);
+        }
+
+        return $message;
     }
 }
