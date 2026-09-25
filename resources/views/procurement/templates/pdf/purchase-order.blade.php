@@ -101,8 +101,8 @@
         @php($lineCurrency = $product?->currency?->code ?? $purchaseOrder->currency->code)
         <tr>
             <td>{{ $index + 1 }}</td>
-            <td>{{ $product?->code }}</td>
-            <td>{{ $product?->name }}</td>
+            <td>{{ $product?->code ?? $line->orgStock?->code }}</td>
+            <td>{{ $product?->name ?? $line->orgStock?->name }}</td>
             <td class="right">{{ $unitsPerCarton ? $quantity($unitsPerCarton) : '' }}</td>
             <td class="right">{{ $unitsPerCarton ? $quantity((float)$line->quantity_ordered / $unitsPerCarton) : '' }}</td>
             <td class="right">{{ $quantity($line->quantity_ordered) }}</td>

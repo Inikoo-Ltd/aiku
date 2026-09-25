@@ -21,10 +21,12 @@ import {
     faExclamationCircle,
     faCircle,
     faShare,
+    faListCheck,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import TicketModal from "@/Components/Chat/Agent/TicketModal.vue"
+import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import SlackShareModal from "@/Components/Chat/Agent/SlackShareModal.vue"
 import ForwardToColleagueModal from "@/Components/Chat/Agent/ForwardToColleagueModal.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
@@ -113,6 +115,7 @@ const emit = defineEmits([
     "spam-success",
     "restore-success",
     "view-tickets",
+    "task-created",
 ])
 
 const layout: any = inject("layout", {})
@@ -155,6 +158,28 @@ const isTicketModalOpen = ref(false)
 const openTicketModal = () => {
     isMenuOpen.value = false
     isTicketModalOpen.value = true
+}
+
+type ChatOpenTask = { reference: string; subject: string; who: string; url: string }
+
+const isTaskDialogOpen = ref(false)
+const openTaskDialog = () => {
+    isMenuOpen.value = false
+    isTaskDialogOpen.value = true
+}
+
+const openTasks = computed<ChatOpenTask[]>(() => (props.session as any)?.open_tasks ?? [])
+
+const onTaskCreated = (task: any) => {
+    const session = props.session as any
+    if (!session) return
+    session.open_tasks = [...(session.open_tasks ?? []), {
+        reference: task.reference,
+        subject: task.subject,
+        who: task.assignee?.name ?? task.department_label,
+        url: route("grp.tasks.index", { task: task.reference }),
+    }]
+    emit("task-created")
 }
 
 // Putting a conversation down again. Opening one takes it, and an agent who cannot answer it —
@@ -1364,6 +1389,13 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ openTicketsCount }}
             </button>
 
+            <a v-for="task in openTasks" :key="task.reference" :href="task.url" target="_blank"
+                v-tooltip="ctrans(':reference for :who. The chat cannot be closed until it is done or cancelled.', { reference: task.reference, who: task.who })"
+                class="inline-flex items-center gap-1.5 min-w-0 max-w-[14rem] shrink h-7 px-2.5 text-[11px] font-medium rounded-md border border-amber-300 bg-amber-50 text-amber-700 transition hover:bg-amber-100">
+                <FontAwesomeIcon :icon="faListCheck" class="shrink-0 text-[11px]" fixed-width />
+                <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
+            </a>
+
             <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
                 class="hidden lg:inline-flex items-center justify-center shrink-0 h-7 w-7 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
                 @click="onViewUserProfile">
@@ -1411,6 +1443,10 @@ const handleClickOutside = (e: MouseEvent) => {
                         <button class="menu-item disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canDispose"
                             v-tooltip="canDispose ? undefined : heldByAnotherAgent" @click="openTicketModal">
                             <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width /> {{ ctrans("Create Ticket") }}
+                        </button>
+
+                        <button v-if="session?.ulid" class="menu-item" @click="openTaskDialog">
+                            <FontAwesomeIcon :icon="faListCheck" class="text-amber-600" fixed-width /> {{ ctrans("Ask a colleague (task)") }}
                         </button>
 
                         <button v-if="canRelease" class="menu-item" :disabled="isReleasing" @click="releaseChat">
@@ -1658,6 +1694,13 @@ const handleClickOutside = (e: MouseEvent) => {
             :organisation="currentOrganisation"
             @created="onTicketCreated"
             @close="isTicketModalOpen = false"
+        />
+
+        <StaffTaskDialog
+            :is-open="isTaskDialogOpen"
+            :store-url="session?.ulid ? route('grp.org.chat.agents.sessions.task', [currentOrganisation, session.ulid]) : undefined"
+            @created="onTaskCreated"
+            @close="isTaskDialogOpen = false"
         />
 
         <ForwardToColleagueModal

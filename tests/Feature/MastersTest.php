@@ -1556,6 +1556,55 @@ test('UI Index Master Products in family has pricing tab', function () {
     );
 });
 
+test('master product RRP is edited per outer in dropshipping and per unit elsewhere', function (ShopTypeEnum $shopType, string $rrpLabel, bool $isDropship) {
+    $masterShop = StoreMasterShop::make()->action(group(), [
+        'type' => $shopType,
+        'code' => 'RRPO-'.uniqid(),
+        'name' => 'RRP Outer Master Shop',
+    ]);
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RRPO-DEP-'.uniqid(),
+        'name' => 'RRP Outer Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RRPO-FAM-'.uniqid(),
+        'name' => 'RRP Outer Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RRPO-AST-'.uniqid(),
+        'name'    => 'RRP Outer Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 4.8,
+        'rrp'     => 9.6,
+        'units'   => 2,
+        'stocks'  => [],
+    ]);
+
+    get(route('grp.masters.master_shops.show.master_products.composition', [
+        'masterShop'    => $masterShop->slug,
+        'masterProduct' => $masterAsset->slug,
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.2.fields.master_rrps.label', $rrpLabel)
+            ->where('formData.blueprint.2.fields.master_rrps.perUnits', fn ($perUnits) => $isDropship ? $perUnits === null : $perUnits == $masterAsset->units)
+            ->etc()
+    );
+
+    get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterShop->slug,
+        $masterFamily->slug,
+        'tab' => 'pricing',
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('pricing.data.0.is_dropship', $isDropship)
+            ->etc()
+    );
+})->with([
+    'dropshipping' => [ShopTypeEnum::DROPSHIPPING, 'RRP / Outer', true],
+    'b2b'          => [ShopTypeEnum::B2B, 'RRP / Unit', false],
+]);
+
 test('UI Show Master Variant has pricing tab listing all variant products', function () {
     $masterShop = createFreshMasterShop();
 
@@ -1941,7 +1990,7 @@ test('CheckMasterAssetTradeUnitOrgStockExistence returns true when no trade unit
     expect($isValid)->toBeTrue();
 });
 
-test('UpdateBulkMasterProduct updates rrp and price for multiple master products', function () {
+test('UpdateBulkMasterProduct updates rrp, price and unit label for multiple master products', function () {
     $masterShop      = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
         'code' => 'UBP-DEPT-'.uniqid(),
@@ -1972,15 +2021,49 @@ test('UpdateBulkMasterProduct updates rrp and price for multiple master products
 
     UpdateBulkMasterProduct::make()->handle([
         'products' => [
-            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12],
-            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22],
+            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12, 'unit' => 'ball'],
+            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22, 'unit' => 'ball'],
         ],
     ]);
 
     expect((int)$masterAssetOne->refresh()->price)->toBe(12)
         ->and((int)$masterAssetOne->rrp)->toBe(15)
         ->and((int)$masterAssetTwo->refresh()->price)->toBe(22)
-        ->and((int)$masterAssetTwo->rrp)->toBe(25);
+        ->and((int)$masterAssetTwo->rrp)->toBe(25)
+        ->and($masterAssetOne->unit)->toBe('ball')
+        ->and($masterAssetTwo->unit)->toBe('ball');
+});
+
+test('bulk trade unit quantity sets units through the master update and reports no open orders', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'BTQ-DEPT-'.uniqid(),
+        'name' => 'Bulk Quantity Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'BTQ-FAM-'.uniqid(),
+        'name' => 'Bulk Quantity Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BTQ-AST-'.uniqid(),
+        'name'    => 'Bulk Quantity Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'unit'    => 'piece',
+        'stocks'  => [],
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    UpdateMasterAsset::make()->action($masterAsset, ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 10]]]);
+
+    expect((float) $masterAsset->refresh()->units)->toBe(10.0)
+        ->and((float) $masterAsset->price)->toBe(10.0)
+        ->and($masterAsset->unit)->toBe('piece');
+
+    getJson(route('grp.json.master_assets.open_orders_affected_by_units_change', ['ids' => [$masterAsset->id]]))
+        ->assertSuccessful()
+        ->assertExactJson([(string) $masterAsset->id => 0]);
 });
 
 test('UpdateMultipleMasterProductsFamily moves master assets to a new family', function () {
@@ -2786,6 +2869,76 @@ test('master product creation data refuses a trade unit quantity of zero instead
     post(route('grp.models.master_product_category.product_creation_data', [$masterFamily->id]), [
         'trade_units' => [['id' => $tradeUnit->id, 'quantity' => 0]],
     ])->assertSessionHasErrors('trade_units.0.quantity');
+});
+
+test('master product creation suggests price and RRP from the master shop ratios, editable per master shop', function (ShopTypeEnum $type, float $defaultCostPriceRatio, float $defaultRrpPriceRatio) {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['type' => $type]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RRPDEP-'.uniqid(),
+        'name' => 'RRP ratio dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RRPFAM-'.uniqid(),
+        'name' => 'RRP ratio family',
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    $creationData = fn () => \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily->refresh(),
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    expect(data_get($creationData(), 'rrp_price_ratio'))->toBe($defaultRrpPriceRatio)
+        ->and($masterShop->costPriceRatio())->toBe($defaultCostPriceRatio);
+
+    $masterShop = UpdateMasterShop::make()->action($masterShop, ['cost_price_ratio' => 2.8, 'rrp_price_ratio' => 1.9]);
+
+    expect($masterShop->costPriceRatio())->toBe(2.8)
+        ->and(data_get($creationData(), 'rrp_price_ratio'))->toBe(1.9);
+})->with([
+    'wholesale'    => [ShopTypeEnum::B2B, 2.0, 2.4],
+    'dropshipping' => [ShopTypeEnum::DROPSHIPPING, 3.5, 2.0],
+]);
+
+test('master product creation prices a new product at cost times the price ratio and its RRP at price times the RRP ratio', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => ['GBP' => ['is_major' => true]]]);
+    $masterShop = UpdateMasterShop::make()->action($masterShop, ['cost_price_ratio' => 3, 'rrp_price_ratio' => 2]);
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => Currency::where('code', 'GBP')->firstOrFail()->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CPRDEP-'.uniqid(),
+        'name' => 'Cost price ratio dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CPRFAM-'.uniqid(),
+        'name' => 'Cost price ratio family',
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $stock     = \App\Actions\Goods\Stock\StoreStock::make()->action(group(), \App\Models\Goods\Stock::factory()->definition());
+    $stock     = \App\Actions\Goods\Stock\UpdateStock::make()->action($stock, ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]);
+    $orgStock  = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['lpp_per_sku' => 10, 'packed_in' => 1]);
+    $tradeUnit->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+
+    $data = \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily,
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    $cost = data_get($data, 'avg_org_cost');
+
+    expect($cost)->toBeGreaterThan(0)
+        ->and(data_get($data, 'master_prices.GBP.value'))->toEqual(round($cost * 3, 2))
+        ->and(data_get($data, 'master_rrps.GBP.value'))->toEqual(round($cost * 3 * 2, 2));
 });
 
 test('minor currency recalculation includes variant master assets', function () {
@@ -3709,4 +3862,43 @@ test('master collection counts its shop collections that do not follow master it
     expect($otherMasterCollection->stats()->first()->total_collections_rebel_content)->toBe(0);
 
     $this->artisan('hydrate:master_collections')->assertSuccessful();
+});
+
+test('masters staff view and edit the catalogue of shops under a master and view any organisation stock', function () {
+    $masterShop = createFreshMasterShop();
+    DB::table('shops')->where('id', $this->shop->id)->update(['master_shop_id' => $masterShop->id]);
+    $shopWithoutMaster = Shop::where('group_id', $this->group->id)->whereNull('master_shop_id')->first();
+
+    setPermissionsTeamId($this->group->id);
+    $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    expect($user->authTo("products.{$this->shop->id}.view"))->toBeFalse()
+        ->and($user->authTo("inventory.{$this->organisation->id}.view"))->toBeFalse();
+
+    $user->assignRole('masters-viewer');
+    $user->refresh();
+    expect($user->authTo("products.{$this->shop->id}.view"))->toBeTrue()
+        ->and($user->authTo("products.{$this->shop->id}.edit"))->toBeFalse()
+        ->and($user->authTo(["crm.{$this->shop->id}.view", "products.{$this->shop->id}.view"]))->toBeTrue()
+        ->and($user->authTo("inventory.{$this->organisation->id}.view"))->toBeTrue()
+        ->and($user->authTo("inventory.{$this->organisation->id}.edit"))->toBeFalse()
+        ->and($user->authTo("crm.{$this->shop->id}.view"))->toBeFalse();
+
+    \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($user);
+    expect($user->authorisedShops()->where('shops.id', $this->shop->id)->exists())->toBeTrue()
+        ->and($user->authorisedOrganisations()->where('organisations.id', $this->organisation->id)->exists())->toBeTrue()
+        ->and($user->authorisedWarehouses()->where('warehouses.organisation_id', $this->organisation->id)->count())
+        ->toBe($this->organisation->warehouses()->count());
+
+    $user->assignRole('masters-manager');
+    $user->refresh();
+    expect($user->authTo("products.{$this->shop->id}.edit"))->toBeTrue()
+        ->and($user->authTo("products.{$this->shop->id}"))->toBeTrue();
+
+    if ($shopWithoutMaster) {
+        expect($user->authTo("products.{$shopWithoutMaster->id}.view"))->toBeFalse();
+    }
 });

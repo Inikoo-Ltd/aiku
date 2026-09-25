@@ -133,6 +133,7 @@ use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
+use App\Actions\Masters\MasterAsset\Json\GetMasterAssetsOpenOrdersAffectedByUnitsChange;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
@@ -370,6 +371,7 @@ Route::get('product/{product:id}/trade-units/recommended', [GetRecommendedTradeU
 Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::class)->name('master-family.all-master-family')->withoutScopedBindings();
 
 Route::get('get-pick-fractional', GetPickFractional::class)->name('product.get-pick-fractional')->withoutScopedBindings();
+Route::get('master-assets/open-orders-affected-by-units-change', GetMasterAssetsOpenOrdersAffectedByUnitsChange::class)->name('master_assets.open_orders_affected_by_units_change');
 
 Route::post('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
 Route::post('master-product-category/{masterProductCategory:id}/pricing-sales', GetMasterProductsPricingSales::class)->name('master_product_category.pricing_sales')->withoutScopedBindings();

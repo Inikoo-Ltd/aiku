@@ -35,13 +35,12 @@ That single rule is why a bestseller sitting at zero shows a large suggested ord
 Not every item has the same quality of evidence behind it, and it helps to know which case you are looking at.
 
 - **Its own recent history.** The normal case, and the one to trust. Steady sellers get a trend-following estimate; slow, lumpy items — the ones that go out three at a time every few weeks — are measured differently, on how big the occasional order is and how long the quiet gaps run, which is the honest way to describe them.
-- **Its own longer history.** Not enough recent movement, but the item has a past. Reasonable, a little slower to react.
-- **The same item in a sister organisation.** You have never really sold it; somewhere else in the group has. aiku borrows their rate and halves it, because a different market is a hint, not a measurement. Treat it as a starting point.
-- **The family it belongs to.** The weakest case: a brand new line with no history anywhere, estimated from its neighbours and heavily discounted. This is a placeholder for your judgement, not a substitute for it.
+- **The same item in a sister organisation.** Nothing sold here in the last three months; somewhere else in the group has sold it. aiku borrows their rate and halves it, because a different market is a hint, not a measurement. Treat it as a starting point.
+- **The family it belongs to.** The weakest case: usually a brand new line with no recent sales anywhere, estimated from its neighbours and heavily discounted. This is a placeholder for your judgement, not a substitute for it.
 
-There is also a seasonal adjustment: aiku compares the same quarter last year against that year's average and nudges the rate up or down, within limits, so a Christmas item is not bought on its August rate. The limits matter — one freak quarter can't run away with the number.
+If none of these has anything to go on, there is no estimate: no run-out day and no suggestion. The item's own older history is not used — an item that sold well last year but not in the last three months is not assumed to pick up where it left off. When that was tried, it asked for too much.
 
-The empty-days rule applies here too, and it has to. Last Christmas is only evidence about Christmas if you had the item to sell; a quarter you spent mostly out of stock says nothing about the season, only about the supply. So each quarter is measured per day the item was actually available, and any quarter you were empty for more than half of is dropped from the comparison entirely. If that leaves fewer than four usable quarters, aiku makes no seasonal adjustment at all rather than a confident one built on four thin ones.
+**There is no seasonal adjustment.** The rate is what the item sold over its recent in-stock days, so a Christmas item in August is forecast on its August rate. Correcting each item for its season was tried and made the numbers worse: most items do not sell enough for their own seasons to show reliably. So ahead of a peak you know is coming — the run-up to Q4, a summer line, a trade show — raise the order by hand. The suggestion will not do it for you.
 
 ## Why a number can look wrong (and often is)
 
@@ -50,6 +49,7 @@ The forecast reads history. Anything that happened outside the history, it canno
 - **A one-off bulk order.** One customer clearing you out looks exactly like sudden popularity. Overrule it.
 - **A line you are discontinuing.** History says it sells; your plan says stop. The system does not know your plan.
 - **A promotion, a catalogue photo, a marketplace listing going live.** Demand about to change for a reason that has not happened yet.
+- **A known peak, such as Q4.** There is no seasonal adjustment, so the suggestion is sized on the quiet months before it. Order up by hand, early enough for the lead time.
 - **A brand new product.** See the family case above — that number is a guess wearing a confident face.
 - **Something that hasn't moved at all but is worth money.** It lands in **Dead stock** on the dashboard, and it wants a decision from a person, not a reorder.
 

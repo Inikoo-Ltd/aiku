@@ -8,6 +8,7 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasImage;
+use App\Models\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,6 +44,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  */
 class MetaChatMessage extends Model implements HasMedia
 {
+    use HasSearch;
     use HasFactory;
     use SoftDeletes;
     use HasImage;
@@ -117,5 +119,25 @@ class MetaChatMessage extends Model implements HasMedia
         $user = $this->senderAgent?->user;
 
         return $user?->contact_name ?: $user?->username;
+    }
+
+    public function toSearchableArray(): array
+    {
+        $shop = $this->metaChatSession?->shop;
+
+        return [
+            'id'              => (string)$this->id,
+            'group_id'        => $shop?->group_id,
+            'organisation_id' => $shop?->organisation_id,
+            'shop_id'         => $shop?->id,
+            'message'         => (string)$this->message_text,
+            'sender_type'     => $this->sender_type->value,
+            'created_at'      => $this->created_at?->timestamp ?? 0,
+        ];
+    }
+
+    public function typesenseSearchParameters(): array
+    {
+        return ['infix' => 'fallback'];
     }
 }

@@ -8,7 +8,6 @@ import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
 import { followPointer } from "@/Composables/followPointer"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
 import MessageAreaAgent from "@/Components/Chat/Agent/MessageAreaAgent.vue"
 import WhatsappMessageAreaAgent from "@/Components/Chat/Agent/WhatsappMessageAreaAgent.vue"
 import ChatConversationSidePanel from "@/Components/Chat/ChatConversationSidePanel.vue"
@@ -19,7 +18,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck } from "@fal"
 import { faEllipsisVertical, faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -212,6 +211,8 @@ const highlightView = ref(false)
 // agent works, and no my/team of its own; like every folder it reads the shops picked above.
 const unclaimedView = ref(false)
 const unclaimedCount = ref(0)
+const carrierView = ref(false)
+const carriersCount = ref(0)
 const spamCount = ref(0)
 
 // Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
@@ -223,7 +224,7 @@ const spamRailTooltip = computed(() =>
 
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
-const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || unclaimedView.value)
+const crossShopView = computed(() => (trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || unclaimedView.value)
     && selectedShopIds.value.length !== 1)
 
 // Folders read the shops picked above: somebody covering many shops clears their own backlog,
@@ -367,9 +368,11 @@ const mapSession = (s: SessionAPI): Contact => ({
     can_dispose: (s as any).can_dispose,
     open_tickets_count: Number((s as any).open_tickets_count ?? 0),
     blocking_tickets_count: Number((s as any).blocking_tickets_count ?? 0),
+    open_tasks: (s as any).open_tasks ?? [],
     noise: (s as any).noise ?? null,
     claim: (s as any).claim ?? null,
     promise: (s as any).promise ?? null,
+    urgent: (s as any).urgent ?? null,
     customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
     webUser: s.web_user ?? (s as any).customer,
@@ -559,13 +562,14 @@ const isCellOn = (shopId: number, channelKey: string, kind: ChatKind) =>
 // not the same as wanting both channels from both.
 const selectCell = (shopId: number, channelKey: string, kind: ChatKind) => {
     const key = cellKey(channelKey, kind)
-    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !unclaimedView.value
+    const alreadyShowing = selectedShopIds.value.includes(shopId) && !agentView.value && !spamView.value && !trashView.value && !highlightView.value && !carrierView.value && !unclaimedView.value
     const sameShop = alreadyShowing && (selectedShopId.value === shopId || selectedShopIds.value.length > 1)
 
     if (!sameShop) {
         spamView.value = false
         rubbishView.value = false
         trashView.value = false
+        carrierView.value = false
         highlightView.value = false
         unclaimedView.value = false
         setShop(shopId)
@@ -601,7 +605,9 @@ const buildParams = (page: number) => ({
                     ? { unclaimed: 1 }
                     : highlightView.value
                         ? { highlighted: 1, statuses: selectedStatuses.value }
-                        : { statuses: selectedStatuses.value }),
+                        : carrierView.value
+                            ? { carrier: 1, statuses: selectedStatuses.value }
+                            : { statuses: selectedStatuses.value }),
     ...(isStatusOn("closed") ? { closed_period: closedPeriod.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
@@ -617,7 +623,7 @@ const buildParams = (page: number) => ({
 // Spam, trash and highlight are cross-channel clean-up views, so they read from the
 // merged endpoint instead of whichever channel happens to be selected.
 const isMergedView = computed(() =>
-    spamView.value || rubbishView.value || trashView.value || highlightView.value || unclaimedView.value || agentView.value
+    spamView.value || rubbishView.value || trashView.value || highlightView.value || carrierView.value || unclaimedView.value || agentView.value
     || selectedShopIds.value.length > 1
 )
 
@@ -1041,6 +1047,7 @@ const selectChannel = (shopId: number, channelKey: string) => {
     spamView.value = false
     rubbishView.value = false
     trashView.value = false
+    carrierView.value = false
     highlightView.value = false
     unclaimedView.value = false
     setShop(shopId)
@@ -1071,6 +1078,7 @@ const selectRubbish = () => {
     rubbishView.value = true
     spamView.value = false
     trashView.value = false
+    carrierView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1086,6 +1094,7 @@ const selectSpam = () => {
     spamView.value = true
     rubbishView.value = false
     trashView.value = false
+    carrierView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1101,6 +1110,7 @@ const selectTrash = () => {
     trashView.value = true
     rubbishView.value = false
     spamView.value = false
+    carrierView.value = false
     highlightView.value = false
     unclaimedView.value = false
     selectedCells.value = []
@@ -1116,6 +1126,7 @@ const selectTrash = () => {
 const selectUnclaimed = () => {
     if (unclaimedView.value) return
     unclaimedView.value = true
+    carrierView.value = false
     highlightView.value = false
     rubbishView.value = false
     spamView.value = false
@@ -1128,9 +1139,26 @@ const selectUnclaimed = () => {
     reloadContacts()
 }
 
+const selectCarriers = () => {
+    if (carrierView.value) return
+    carrierView.value = true
+    highlightView.value = false
+    rubbishView.value = false
+    spamView.value = false
+    trashView.value = false
+    unclaimedView.value = false
+    selectedCells.value = []
+    selectedSession.value = null
+    messages.value = []
+    newChatVisible.value = false
+    clearAgentFilter()
+    reloadContacts()
+}
+
 const selectHighlight = () => {
     if (highlightView.value) return
     highlightView.value = true
+    carrierView.value = false
     rubbishView.value = false
     spamView.value = false
     trashView.value = false
@@ -1398,6 +1426,7 @@ const fetchAgentNotifications = async () => {
         })
         teamUnreadByShop.value = data?.data?.team_unread ?? {}
         unclaimedCount.value = data?.data?.unclaimed ?? 0
+        carriersCount.value = data?.data?.carriers ?? 0
         spamCount.value = data?.data?.spam ?? 0
     } catch (e) {
         // silent — badges are non-critical
@@ -1476,6 +1505,7 @@ const openChat = (c: Contact) => {
         can_dispose: (c as any).can_dispose,
         open_tickets_count: (c as any).open_tickets_count ?? 0,
         blocking_tickets_count: (c as any).blocking_tickets_count ?? 0,
+        open_tasks: c.open_tasks ?? [],
     } as SessionAPI
     messages.value = c.messages ?? []
     updateUrl(String(c.ulid))
@@ -1822,8 +1852,36 @@ onUnmounted(() => {
     <Head :title="title" />
 
     <template v-if="!isEmbedded">
-    <PageHeading :data="pageHead">
-        <template #other>
+    <div class="mx-4 my-3 flex flex-wrap items-center gap-3">
+        <template v-if="inboxes.length > 1">
+            <div class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums">
+                <span v-tooltip="ctrans('Customers waiting, every shop')" class="flex items-center gap-1.5">
+                    <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
+                    <span class="font-semibold text-gray-700">{{ totalCustomersWaiting }}</span>
+                </span>
+                <span v-tooltip="ctrans('Guests waiting, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
+                    <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                    <span class="font-semibold text-gray-700">{{ totalGuestsWaiting }}</span>
+                </span>
+                <span v-tooltip="ctrans('Active, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
+                    <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                    <span class="font-semibold text-gray-700">{{ totalActive }}</span>
+                </span>
+            </div>
+            <button type="button" v-tooltip="ctrans('Unclaimed, every shop')"
+                class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
+                @click="openAcrossAllShops(selectUnclaimed, unclaimedView)">
+                <FontAwesomeIcon :icon="faBell" :class="totalUnclaimed ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                <span class="font-semibold text-gray-700">{{ totalUnclaimed }}</span>
+            </button>
+            <button type="button" v-tooltip="ctrans('Spam, every shop')"
+                class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
+                @click="openAcrossAllShops(selectSpam, spamView)">
+                <FontAwesomeIcon :icon="faBan" class="text-gray-400" fixed-width aria-hidden="true" />
+                <span class="font-semibold text-gray-700">{{ totalSpam }}</span>
+            </button>
+        </template>
+        <div class="ml-auto flex items-center gap-1">
             <button v-if="!isReadOnly" type="button" @click="openPhoneCall"
                 v-tooltip="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
                 class="p-2 rounded-lg transition-colors"
@@ -1836,36 +1894,7 @@ onUnmounted(() => {
                 class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
                 <FontAwesomeIcon :icon="faCog" class="text-base" fixed-width />
             </button>
-        </template>
-    </PageHeading>
-
-    <div v-if="inboxes.length > 1" class="mx-4 my-3 flex flex-wrap gap-3">
-        <div class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums">
-            <span v-tooltip="ctrans('Customers waiting, every shop')" class="flex items-center gap-1.5">
-                <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
-                <span class="font-semibold text-gray-700">{{ totalCustomersWaiting }}</span>
-            </span>
-            <span v-tooltip="ctrans('Guests waiting, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                <span class="font-semibold text-gray-700">{{ totalGuestsWaiting }}</span>
-            </span>
-            <span v-tooltip="ctrans('Active, every shop')" class="flex items-center gap-1.5 border-l border-gray-200 pl-3 ml-3">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                <span class="font-semibold text-gray-700">{{ totalActive }}</span>
-            </span>
         </div>
-        <button type="button" v-tooltip="ctrans('Unclaimed, every shop')"
-            class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
-            @click="openAcrossAllShops(selectUnclaimed, unclaimedView)">
-            <FontAwesomeIcon :icon="faBell" :class="totalUnclaimed ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
-            <span class="font-semibold text-gray-700">{{ totalUnclaimed }}</span>
-        </button>
-        <button type="button" v-tooltip="ctrans('Spam, every shop')"
-            class="inline-flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm tabular-nums gap-1.5 hover:bg-gray-50"
-            @click="openAcrossAllShops(selectSpam, spamView)">
-            <FontAwesomeIcon :icon="faBan" class="text-gray-400" fixed-width aria-hidden="true" />
-            <span class="font-semibold text-gray-700">{{ totalSpam }}</span>
-        </button>
     </div>
     </template>
 
@@ -2077,7 +2106,7 @@ onUnmounted(() => {
                     @click="railSectionOpen = { ...railSectionOpen, folders: !railSectionOpen.folders }">
                     <FontAwesomeIcon :icon="railSectionOpen.folders ? faAngleDown : faAngleRight" class="text-[10px]" />
                     {{ ctrans("Folders") }}
-                    <span v-if="unclaimedCount" class="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold normal-case text-white">
+                    <span v-if="unclaimedCount" class="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none normal-case tabular-nums text-white">
                         {{ unclaimedCount }}
                     </span>
                 </button>
@@ -2107,8 +2136,23 @@ onUnmounted(() => {
                     </span>
                     <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Unclaimed") }}</span>
                     <span v-if="!railCollapsed && unclaimedCount"
-                        class="text-[10px] font-semibold rounded-full px-1.5 py-0.5 bg-red-500 text-white shrink-0">
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none tabular-nums text-white">
                         {{ unclaimedCount }}
+                    </span>
+                </button>
+                <button type="button" @click="selectCarriers"
+                    v-tooltip="ctrans('Emails from couriers about deliveries')"
+                    class="w-full flex items-center text-sm transition-colors"
+                    :class="[
+                        railCollapsed ? 'justify-center py-2.5' : 'gap-2.5 px-3 py-2',
+                        carrierView ? 'font-medium text-gray-800' : 'text-gray-600 hover:bg-gray-100',
+                    ]"
+                    :style="carrierView ? selectedItemStyle : {}">
+                    <FontAwesomeIcon :icon="faTruck" class="text-sm shrink-0" :class="carrierView ? 'text-gray-600' : ''" fixed-width />
+                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Couriers") }}</span>
+                    <span v-if="!railCollapsed && carriersCount"
+                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gray-200 px-1 text-[10px] font-semibold leading-none tabular-nums text-gray-700">
+                        {{ carriersCount }}
                     </span>
                 </button>
             </div>
@@ -2182,7 +2226,7 @@ onUnmounted(() => {
             <div class="px-3 py-2.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-1.5">
-                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Highlighted") : carrierView ? ctrans("Couriers") : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
                     </div>
                     <div v-if="agentView" class="text-[11px] text-gray-500">
                         {{ ctrans("Across every shop") }}
@@ -2190,7 +2234,7 @@ onUnmounted(() => {
                     <div v-else-if="unclaimedView" class="text-[11px] text-gray-500 truncate">
                         {{ ctrans(":shops, waiting longer than agreed", { shops: folderScope }) }}
                     </div>
-                    <div v-else-if="spamView || trashView || rubbishView || highlightView" class="text-[11px] text-gray-500 truncate">
+                    <div v-else-if="spamView || trashView || rubbishView || highlightView || carrierView" class="text-[11px] text-gray-500 truncate">
                         {{ folderScope }}
                     </div>
                     <div v-else-if="selectedShopIds.length > 1" class="text-[11px] text-gray-500">
@@ -2393,6 +2437,15 @@ onUnmounted(() => {
                                         ·
                                         {{ c.claim.photos ? ctrans(":count photos", { count: c.claim.photos }) : ctrans("no photos") }}
                                     </span>
+                                    <span v-for="task in c.open_tasks" :key="task.reference"
+                                        v-tooltip="ctrans(':reference for :who', { reference: task.reference, who: task.who })"
+                                        class="shrink-0 max-w-full truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
+                                        {{ ctrans("Waiting") }}: {{ task.subject }}
+                                    </span>
+                                    <span v-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
+                                        class="shrink-0 truncate rounded bg-red-600 px-1 font-semibold text-white">
+                                        {{ c.urgent === 'cancel_order' ? ctrans("Cancel order") : ctrans("Change address") }}
+                                    </span>
                                     <span v-if="c.promise" v-tooltip="ctrans('Told while we were closed that we would reply when we open. Not answered yet.')"
                                         class="shrink-0 truncate rounded px-1 font-medium"
                                         :class="c.promise.overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'">
@@ -2461,6 +2514,7 @@ onUnmounted(() => {
                     @assign-self-success="onAssignSelfSuccess"
                     @close-session="closeSession"
                     @spam-success="onSpamFromThread"
+                    @task-created="reloadContactsSoon"
                     @view-profile="showProfilePanel" />
                 <MessageAreaAgent v-else class="flex-1 min-h-0" :messages="messages" :session="selectedSession"
                     :read-only="isReadOnly" :ignore-reasons="ignoreReasons" :show-shop="crossShopView"
@@ -2472,6 +2526,7 @@ onUnmounted(() => {
                     @open-slack-settings="onOpenSlackSettings"
                     @spam-success="onSpamFromThread"
                     @view-tickets="showTicketsPanel"
+                    @task-created="reloadContactsSoon"
                     @restore-success="onRestoreFromThread" />
 
                 <template v-if="isEmbedded && panelSession && sidePanelVisible">

@@ -285,6 +285,16 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ],
                         ],
+                        [
+                            'label'   => __('Bulk emails'),
+                            'tooltip' => __('Bulk emails'),
+                            'icon'    => ['fal', 'fa-mail-bulk'],
+                            'root'    => 'grp.org.hr.bulk_emails.',
+                            'route'   => [
+                                'name'       => 'grp.org.hr.bulk_emails.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                        ],
                     ],
                 ],
             ];

@@ -14,12 +14,17 @@ interface CurrencyPrice {
     independent: boolean
 }
 
-defineProps<{
+withDefaults(defineProps<{
     modelValue: Record<string, CurrencyPrice> | null
     currencies: Record<string, CurrencyRate>
     unitsPerOuter?: number
     costs?: Record<string, number | null>
-}>();
+    editOn?: 'outer' | 'unit'
+    autoMultiplier?: number
+}>(), {
+    editOn: 'unit',
+    autoMultiplier: 2.4,
+});
 
 defineEmits<{
     (e: 'update:modelValue', value: Record<string, CurrencyPrice>): void
@@ -34,11 +39,11 @@ defineEmits<{
         :costs="costs"
         label="RRP"
         color="purple"
-        edit-on="unit"
+        :edit-on="editOn"
         margin-label="Margin"
         :always-independent-currency-codes="[]"
         auto-from-cost
-        :auto-multiplier="2.4"
+        :auto-multiplier="autoMultiplier"
         @update:model-value="$emit('update:modelValue', $event)"
     />
 </template>

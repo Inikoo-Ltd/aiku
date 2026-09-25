@@ -43,12 +43,14 @@ class EvaluateStockDeliveryCosting
             ->sum(fn (StockDeliveryCost $cost) => (float) $cost->amount);
         DistributeStockDeliveryExtraCost::distribute($stockDelivery, 'cost_extra', $extraAmount);
 
-        $stockDelivery->update(['is_costed' => $this->isCosted($costs)]);
+        $stockDelivery->update(['is_costed' => $stockDelivery->parent_type === 'OrgPartner' || $this->isCosted($costs)]);
 
         if ($stockDelivery->is_costed) {
             $stockDelivery->items()
                 ->where('state', '!=', StockDeliveryItemStateEnum::CANCELLED)
                 ->update(['is_costed' => true]);
+
+            RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
         }
 
         StockDeliveriesHydrateCosts::run($stockDelivery);

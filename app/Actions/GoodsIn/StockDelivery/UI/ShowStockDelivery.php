@@ -26,6 +26,7 @@ use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
+use App\Http\Resources\Procurement\OrgPartnerResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Http\Resources\Procurement\StockDeliveryItemCostResource;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
@@ -423,6 +424,8 @@ class ShowStockDelivery extends OrgAction
             $orderer = OrgAgentResource::make($stockDelivery->parent)->toArray($request);
         } elseif ($stockDelivery->parent instanceof OrgSupplier) {
             $orderer = OrgSupplierResource::make($stockDelivery->parent)->toArray($request);
+        } elseif ($stockDelivery->parent instanceof OrgPartner) {
+            $orderer = OrgPartnerResource::make($stockDelivery->parent)->toArray($request);
         }
 
         $weightAndVolume = $this->getStockDeliveryWeightAndVolume($stockDelivery);
@@ -598,6 +601,7 @@ class ShowStockDelivery extends OrgAction
 
         return [
             'is_costed'                  => $stockDelivery->is_costed,
+            'is_partner'                 => $stockDelivery->parent_type === 'OrgPartner',
             'can_edit'                   => $this->canEdit,
             'currency'                   => $stockDelivery->currency?->code,
             'checklist'                  => $checklist,

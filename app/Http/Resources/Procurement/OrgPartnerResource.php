@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Models\Procurement\OrgPartner;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class OrgPartnerResource extends JsonResource
@@ -18,10 +19,11 @@ class OrgPartnerResource extends JsonResource
         $orgPartner = $this;
 
         return [
-            'code'                     => $orgPartner->partner->code,
-            'name'                     => $orgPartner->partner->name,
-            'email'                    => $orgPartner->partner->email
-
+            'id'    => $orgPartner->id,
+            'code'  => $orgPartner->partner->code,
+            'type'  => 'Partner',
+            'name'  => $orgPartner->partner->name,
+            'email' => $orgPartner->partner->email,
         ];
     }
 }

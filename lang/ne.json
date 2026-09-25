@@ -4788,6 +4788,8 @@
     "Δ 1Y": "यो तपाईंका लागि 16f4b9d2638a74f4a3f62f15 हो",
     "Thank you for your message. We are closed at the moment and will reply :when.": "तपाईंको सन्देशका लागि धन्यवाद। हामी अहिले बन्द छौं र :when जवाफ दिनेछौं।",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "तपाईंको सन्देशका लागि धन्यवाद। हामी अहिले बन्द छौं र :when जवाफ दिनेछौं। हामीले कसरी मद्दत गर्न सक्छौं भन्नुहोस्, खुल्नेबित्तिकै हामी यसमा काम गर्नेछौं।",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "तपाईंको सन्देशका लागि धन्यवाद। आज हामी बन्द छौं (:holiday) र :when जवाफ दिनेछौं।",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "तपाईंको सन्देशका लागि धन्यवाद। आज हामी बन्द छौं (:holiday) र :when जवाफ दिनेछौं। हामीले कसरी मद्दत गर्न सक्छौं भन्नुहोस्, खुल्नेबित्तिकै हामी यसमा काम गर्नेछौं।",
     "from :time today": "आज :time बजेदेखि",
     "from :time tomorrow": "भोलि :time बजेदेखि",
     "from :time on :day": ":day :time बजेदेखि"

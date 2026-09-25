@@ -19,6 +19,7 @@ use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatNoiseVerdictEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
@@ -82,6 +83,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
             || !$shop
             || $chatSession->is_spam
             || $chatSession->is_rubbish
+            || ($chatSession instanceof ChatSession && $chatSession->is_carrier)
             || IsWithinWorkingHours::run($shop, now())
             || $this->lastAgentMessageAt($chatSession)?->gt(now()->subHour())) {
             return false;
@@ -108,7 +110,7 @@ class SendOutOfHoursReply implements ShouldBeUnique
         }
 
         $kind = $claimLines === null ? ChatAutomationKindEnum::OUT_OF_HOURS : ChatAutomationKindEnum::CLAIM_DETAILS;
-        $text = $this->text($chatSession, !$replied, $claimLines, $this->hasSaidWhatTheyNeed($chatSession, $details['text']));
+        $text = $this->text($shop, !$replied, $claimLines, $this->hasSaidWhatTheyNeed($chatSession, $details['text']), $byEmail);
 
         $chatSession->update([
             'metadata' => array_merge($chatSession->metadata ?? [], array_filter([
@@ -267,27 +269,42 @@ class SendOutOfHoursReply implements ShouldBeUnique
     }
 
     /**
+     * On a public holiday HR has loaded, the first line names it. By email the shop's own out
+     * of hours words, set in its chat settings, close the first reply of a wait: what the
+     * fixed lines cannot know, like how fast urgent mail is answered in the day. A shop whose
+     * words already say when it opens may leave the first line out, never with no words.
+     *
      * @param  array<int, string>|null  $claimLines
      */
-    private function text(ChatSession|MetaChatSession $chatSession, bool $closedLine, ?array $claimLines, bool $saidWhatTheyNeed): string
+    public function text(Shop $shop, bool $closedLine, ?array $claimLines, bool $saidWhatTheyNeed, bool $byEmail = false): string
     {
-        $shop   = $chatSession->shop;
         $locale = $shop->language?->code;
         $next   = IsWithinWorkingHours::make()->nextOpening($shop, now());
         $when   = $next ? ['when' => $this->whenWeOpen($next['opens'], $shop->timezoneName(), $locale)] : null;
+        $toldUs = $claimLines !== null || $saidWhatTheyNeed;
+
+        $shopMessage = $byEmail ? trim((string) data_get($shop->settings, 'chat.out_of_hours_message')) : '';
 
         $parts = [];
 
-        if ($closedLine) {
+        if ($closedLine && ($shopMessage === '' || data_get($shop->settings, 'chat.out_of_hours_opening_line') !== false)) {
+            $holiday = trim((string) IsWithinWorkingHours::make()->publicHoliday($shop, now($shop->timezoneName()))?->label);
+
             $parts[] = match (true) {
-                !$when            => __('Thank you for your message. We are closed at the moment and will reply as soon as we are back.', [], $locale),
-                $claimLines !== null || $saidWhatTheyNeed => __('Thank you for your message. We are closed at the moment and will reply :when.', $when, $locale),
-                default           => __('Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.', $when, $locale),
+                !$when                        => __('Thank you for your message. We are closed at the moment and will reply as soon as we are back.', [], $locale),
+                $holiday !== '' && $toldUs    => __('Thank you for your message. We are closed for :holiday and will reply :when.', $when + ['holiday' => $holiday], $locale),
+                $holiday !== ''               => __('Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.', $when + ['holiday' => $holiday], $locale),
+                $toldUs                       => __('Thank you for your message. We are closed at the moment and will reply :when.', $when, $locale),
+                default                       => __('Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.', $when, $locale),
             };
         }
 
         if ($claimLines !== null) {
             $parts[] = __('So we can sort this out as soon as we open, please send us:', [], $locale)."\n- ".implode("\n- ", $claimLines);
+        }
+
+        if ($closedLine && $shopMessage !== '') {
+            $parts[] = $shopMessage;
         }
 
         return implode("\n\n", $parts);

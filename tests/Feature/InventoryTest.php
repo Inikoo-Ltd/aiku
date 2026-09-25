@@ -43,6 +43,7 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProducts;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
@@ -2978,6 +2979,54 @@ describe('packing change guard', function () {
         ]);
         expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(12.0);
     });
+
+    test('group composition change asks the same question for every stocked warehouse and converts its counts', function () {
+        $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+        $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+        $stock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+
+        $warehouse        = createWarehouse();
+        $location         = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 20]);
+        $locationOrgStock->updateQuietly(['audited_at' => now()]);
+
+        $level = collect(\App\Actions\Goods\Stock\UI\EditStockComposition::make()->getStockLevels($stock))
+            ->firstWhere('warehouse', $warehouse->name);
+        expect($level['quantity'])->toBe(20.0)
+            ->and($level['packing'])->toBe([$tradeUnit->id => 1.0]);
+
+        $payload = ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 10]]];
+
+        expect(fn () => UpdateStock::make()->handle($stock, $payload))->toThrow(ValidationException::class)
+            ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(1.0);
+
+        UpdateStock::make()->handle($stock->refresh(), array_merge($payload, ['stock_strategy' => 'convert']));
+
+        $level = collect(\App\Actions\Goods\Stock\UI\EditStockComposition::make()->getStockLevels($stock->refresh()))
+            ->firstWhere('warehouse', $warehouse->name);
+
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(10.0)
+            ->and((float) $locationOrgStock->refresh()->quantity)->toBe(2.0)
+            ->and($locationOrgStock->audited_at)->not->toBeNull()
+            ->and(OrgStockMovement::where('org_stock_id', $orgStock->id)->where('reason', 'uom')->exists())->toBeTrue()
+            ->and($level['quantity'])->toBe(2.0)
+            ->and($level['packing'])->toBe([$tradeUnit->id => 10.0])
+            ->and(\App\Models\Tasks\StaffTask::where('model_type', 'OrgStock')->where('model_id', $orgStock->id)->exists())->toBeFalse();
+
+        \App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits::run($orgStock, [$tradeUnit->id => ['quantity' => 5]], 'keep', $this->user->id);
+
+        $recountTask = \App\Models\Tasks\StaffTask::where('model_type', 'OrgStock')->where('model_id', $orgStock->id)->sole();
+
+        expect((float) $locationOrgStock->refresh()->quantity)->toBe(2.0)
+            ->and($locationOrgStock->audited_at)->toBeNull()
+            ->and($recountTask->department)->toBe('warehouse')
+            ->and($recountTask->requester_id)->toBe($this->user->id)
+            ->and($recountTask->subject)->toContain($warehouse->name)
+            ->and($recountTask->description)->toContain($location->code.': 2');
+    });
 });
 
 test('stock history archiver keeps a monthly snapshot and the readers read the archived days back', function () {
@@ -3778,5 +3827,42 @@ describe('discontinue confirm', function () {
         $after = $row();
         expect($after['state'])->toBe('discontinuing')
             ->and($after['organisations']['other']['condition'])->toBe('sell');
+    });
+});
+
+describe('out of stock forecast', function () {
+    beforeEach(function () {
+        list(, , $this->shop) = createShop();
+
+        $this->warehouse = createWarehouse();
+        $this->customer  = createCustomer($this->shop);
+
+        list($this->tradeUnit, $this->product) = createProduct($this->shop);
+    });
+
+    test('dispatches from delivery notes made in aiku feed the forecast although they carry no date', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $deliveryNoteItem->update(['quantity_dispatched' => 10]);
+
+        OrgStockHydrateOutOfStockForecast::run($deliveryNoteItem->orgStock);
+        $stats = $deliveryNoteItem->orgStock->stats->refresh();
+
+        expect($deliveryNoteItem->refresh()->date)->toBeNull()
+            ->and($stats->forecast_source)->toBe('croston')
+            ->and((float) $stats->predicted_daily_usage)->toBeGreaterThan(0.0);
+    });
+
+    test('dispatches from the coming quarter last year do not revive the forecast of an item that stopped selling', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $deliveryNoteItem->update(['quantity_dispatched' => 30]);
+        DB::table('delivery_note_items')->where('id', $deliveryNoteItem->id)
+            ->update(['created_at' => now()->subYear()->addDays(20)]);
+
+        OrgStockHydrateOutOfStockForecast::run($deliveryNoteItem->orgStock);
+        $stats = $deliveryNoteItem->orgStock->stats->refresh();
+
+        expect($stats->forecast_source)->toBeNull()
+            ->and($stats->predicted_daily_usage)->toBeNull()
+            ->and($stats->recommended_order_quantity)->toBeNull();
     });
 });

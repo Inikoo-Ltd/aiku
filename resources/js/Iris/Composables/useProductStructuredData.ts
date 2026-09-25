@@ -12,6 +12,7 @@ import {
     type StructuredDataNode,
     type StructuredDataValue,
 } from "@/Iris/Composables/useStructuredData"
+import { isEligibleForProductSnippet } from "@/Iris/Composables/productSnippetEligibility"
 
 type ProductStructuredDataWebpageData = {
     seo_data?: {
@@ -176,6 +177,8 @@ export const buildProductNode = ({
             worstRating: 1,
         }
     }
+
+    if (!isEligibleForProductSnippet(productNode)) return null
 
     const variantDimensions = Array.isArray(variant?.data?.variants)
         ? variant.data.variants

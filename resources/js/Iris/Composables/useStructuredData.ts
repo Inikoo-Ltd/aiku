@@ -1,4 +1,5 @@
 import { expandGallery } from "@/Common/Composables/useCompactImage"
+import { isEligibleForProductSnippet } from "@/Iris/Composables/productSnippetEligibility"
 
 export type StructuredDataNode = Record<string, any>
 export type StructuredDataValue = StructuredDataNode | StructuredDataNode[]
@@ -162,7 +163,9 @@ export const generateProductsStructureFromProductsList = ({
                 }
             }
 
-            variants.push(variant)
+            if (isEligibleForProductSnippet(variant)) {
+                variants.push(variant)
+            }
         }
     }
 

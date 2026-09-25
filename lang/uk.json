@@ -5783,6 +5783,8 @@
     "Δ 1Y": "Δ 1Y",
     "Thank you for your message. We are closed at the moment and will reply :when.": "Дякуємо за ваше повідомлення. Зараз ми зачинені й відповімо :when.",
     "Thank you for your message. We are closed at the moment and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Дякуємо за ваше повідомлення. Зараз ми зачинені й відповімо :when. Напишіть, чим ми можемо допомогти, і ми займемося цим одразу після відкриття.",
+    "Thank you for your message. We are closed for :holiday and will reply :when.": "Дякуємо за ваше повідомлення. Сьогодні ми зачинені (:holiday) і відповімо :when.",
+    "Thank you for your message. We are closed for :holiday and will reply :when. Please tell us how we can help and we will pick it up first thing.": "Дякуємо за ваше повідомлення. Сьогодні ми зачинені (:holiday) і відповімо :when. Напишіть, чим ми можемо допомогти, і ми займемося цим одразу після відкриття.",
     "from :time today": "сьогодні з :time",
     "from :time tomorrow": "завтра з :time",
     "from :time on :day": "з :time, :day"

@@ -1660,6 +1660,36 @@ test('refund pdf lines include shipping and charge refunds', function () {
         ->and($refundLineTypes)->toContain('Charge');
 });
 
+test('refunding a line already refunded in full totals the refund at zero and refuses to finalise it', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    $customer    = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+    $invoice     = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $transaction = StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 2,
+        'gross_amount'    => 200,
+        'net_amount'      => 200,
+    ]);
+
+    $firstRefund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($firstRefund, $transaction, ['net_amount' => 200]);
+    \App\Actions\Accounting\Invoice\UI\FinaliseRefund::make()->action($firstRefund->refresh(), []);
+
+    $secondRefund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($secondRefund, $transaction->refresh(), ['net_amount' => 200]);
+    $secondRefund->refresh();
+
+    expect($secondRefund->invoiceTransactions()->count())->toBe(0)
+        ->and((float) $secondRefund->net_amount)->toBe(0.0)
+        ->and((float) $secondRefund->total_amount)->toBe(0.0);
+
+    \Pest\Laravel\post(route('grp.models.refund.finalise', [$secondRefund]))
+        ->assertSessionHasErrors('message');
+    expect($secondRefund->refresh()->in_process)->toBeTrue();
+});
+
 test('Delete Refund', function (Invoice $refund) {
     $this->withoutExceptionHandling();
     $customer = $refund->customer;

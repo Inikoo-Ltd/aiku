@@ -36,13 +36,12 @@ Práve toto jedno pravidlo je dôvod, prečo bestseller, ktorý sedí na nule, u
 Nie každá položka má za sebou dôkazy rovnakej kvality a pomáha vedieť, s ktorým prípadom máte do činenia.
 
 - **Vlastná nedávna história.** Bežný prípad a ten, ktorému treba veriť. Stabilné predajcovia dostávajú odhad sledujúci trend; pomalé, nárazové položky — tie, čo odchádzajú po troch kusoch raz za pár týždňov — sa merajú inak, podľa toho, aká veľká býva príležitostná objednávka a ako dlho trvajú tiché medzery, čo je o nich najúprimnejší spôsob rozprávania.
-- **Vlastná dlhšia história.** Nedostatok nedávneho pohybu, ale položka má minulosť. Rozumný odhad, o niečo pomalší reagovať.
-- **Rovnaká položka v sesterskej organizácii.** Vy ste ju v podstate nikdy nepredávali; niekde inde v skupine áno. aiku si požičia ich rýchlosť a zníži ju na polovicu, pretože iný trh je náznak, nie meranie. Berte to ako východiskový bod.
-- **Rodina, do ktorej patrí.** Najslabší prípad: úplne nový produkt bez akejkoľvek histórie, odhadnutý podľa susedov a poriadne znížený. Toto je zástupka za váš úsudok, nie jeho náhrada.
+- **Rovnaká položka v sesterskej organizácii.** Tu sa za posledné tri mesiace nepredala; niekde inde v skupine áno. aiku si požičia ich rýchlosť a zníži ju na polovicu, pretože iný trh je náznak, nie meranie. Berte to ako východiskový bod.
+- **Rodina, do ktorej patrí.** Najslabší prípad: zvyčajne úplne nový produkt bez nedávneho predaja kdekoľvek, odhadnutý podľa susedov a poriadne znížený. Toto je zástupka za váš úsudok, nie jeho náhrada.
 
-Existuje aj sezónna úprava: aiku porovnáva rovnaký štvrťrok minulého roka s priemerom toho roka a v rámci limitov posúva rýchlosť nahor alebo nadol, takže vianočná položka sa nenakupuje podľa augustovej rýchlosti. Na limitoch záleží — jeden výnimočný štvrťrok nemôže číslo strhnúť so sebou.
+Ak ani jeden z týchto zdrojov nemá z čoho vychádzať, odhad nie je žiadny: ani deň vypredania, ani navrhované množstvo. Staršia história samotnej položky sa nepoužíva — pri položke, ktorá sa minulý rok dobre predávala, ale za posledné tri mesiace nie, sa nepredpokladá, že bude pokračovať tam, kde prestala. Keď sa to skúšalo, objednávalo sa priveľa.
 
-Pravidlo prázdnych dní platí aj tu, a musí. Minulé Vianoce sú dôkazom o Vianociach len vtedy, ak ste položku vtedy mali na predaj; štvrťrok, ktorý ste väčšinou strávili vypredaní, nehovorí nič o sezóne, len o zásobovaní. Preto sa každý štvrťrok meria za deň, keď bola položka skutočne dostupná, a každý štvrťrok, počas ktorého ste boli vypredaní viac ako polovicu času, sa z porovnania úplne vynechá. Ak tým zostane menej ako štyri použiteľné štvrťroky, aiku sezónnu úpravu vôbec nespraví, radšej než by ju sebavedomo postavilo na štyroch chatrných.
+**Sezónna úprava neexistuje.** Rýchlosť je to, čo sa z položky predalo za jej nedávne dni na sklade, takže vianočná položka sa v auguste predpovedá podľa augustovej rýchlosti. Sezónna korekcia pre každú položku zvlášť sa skúšala a čísla zhoršila: väčšina položiek sa nepredáva dosť na to, aby sa ich vlastné sezóny spoľahlivo ukázali. Preto pred špičkou, o ktorej viete, že príde — pred Q4, pri letnom sortimente, pred veľtrhom — zvýšte objednávku ručne. Návrh to za vás neurobí.
 
 ## Prečo číslo môže vyzerať zle (a často aj je)
 
@@ -51,6 +50,7 @@ Predpoveď číta históriu. Čokoľvek sa stalo mimo histórie, nemôže vedie�
 - **Jednorazová hromadná objednávka.** Jeden zákazník, ktorý vás vyprázdnil, vyzerá presne ako náhla obľúbenosť. Prebite to.
 - **Položka, ktorú vyraďujete.** História hovorí, že sa predáva; váš plán hovorí, že končí. Systém váš plán nepozná.
 - **Akcia, katalógová fotka, spustenie ponuky na marketplace.** Dopyt sa chystá zmeniť z dôvodu, ktorý sa ešte nestal.
+- **Známa špička, napríklad Q4.** Sezónna úprava neexistuje, takže návrh je vypočítaný z pokojných mesiacov pred ňou. Objednajte viac ručne a dosť skoro na dodaciu lehotu.
 - **Úplne nový produkt.** Pozrite si prípad rodiny vyššie — to číslo je odhad s presvedčivou tvárou.
 - **Niečo, čo sa vôbec nepohlo, ale má hodnotu.** To skončí v **Dead stock** na paneli a potrebuje rozhodnutie od človeka, nie ďalšiu objednávku.
 

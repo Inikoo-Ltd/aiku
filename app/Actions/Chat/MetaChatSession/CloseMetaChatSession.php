@@ -43,11 +43,11 @@ class CloseMetaChatSession
         array $additionalData = []
     ): MetaChatSession {
         if ($actorType === ChatActorTypeEnum::AGENT) {
-            $blockingTickets = $this->unresolvedBlockingTickets($metaChatSession);
+            $blockers = $this->unresolvedBlockers($metaChatSession);
 
-            if ($blockingTickets->isNotEmpty()) {
+            if ($blockers->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    'message' => $this->blockingTicketsMessage($blockingTickets),
+                    'message' => $this->blockersMessage($blockers),
                 ]);
             }
         }

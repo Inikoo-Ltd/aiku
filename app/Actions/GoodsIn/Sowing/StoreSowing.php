@@ -79,14 +79,20 @@ class StoreSowing extends OrgAction
         $sowing->refresh();
 
         if ($sowType === SowingTypeEnum::SOW && $locationOrgStock) {
-            $orgStockMovement = StoreOrgStockMovement::run(
+            $movementData = [
+                'quantity' => $sowing->quantity,
+                'type'     => $orgStockMovement,
+                'user_id'  => $this->user?->id,
+            ];
+
+            if ($parent instanceof StockDeliveryItem && $cost = $parent->orgStockMovementCost()) {
+                $movementData += $cost + ['org_amount' => round($cost['cost_per_sku'] * $sowing->quantity, 3)];
+            }
+
+            StoreOrgStockMovement::run(
                 $locationOrgStock->orgStock,
                 $locationOrgStock->location,
-                [
-                    'quantity' => $sowing->quantity,
-                    'type'     => $orgStockMovement,
-                    'user_id'          => $this->user?->id,
-                ],
+                $movementData,
                 $sowing
             );
         }

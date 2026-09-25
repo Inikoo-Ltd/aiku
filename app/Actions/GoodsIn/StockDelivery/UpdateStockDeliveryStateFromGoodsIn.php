@@ -75,6 +75,10 @@ class UpdateStockDeliveryStateFromGoodsIn
 
         $this->runStockDeliveryHydrators($stockDelivery);
 
+        if ($newState === StockDeliveryStateEnum::BOOKED_IN && $stockDelivery->parent_type === 'OrgPartner') {
+            return StartStockDeliveryCosting::make()->action($stockDelivery);
+        }
+
         return $stockDelivery;
     }
 

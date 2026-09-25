@@ -9,6 +9,7 @@ import {
     faSpinnerThird, faUserHardHat, faComments, faClipboardList, faTruckLoading,
     faPeopleArrows, faBoxes, faFileInvoice, faUsers, faFlaskPotion, faVial, faConveyorBelt, faLifeRing,
 } from '@fal'
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { Link } from '@inertiajs/vue3'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
@@ -23,6 +24,7 @@ library.add(
     faFolderTree, faAlbumCollection, faCopyright, faTags, faBarcode, faEnvelope, faPhone,
     faSpinnerThird, faUserHardHat, faComments, faClipboardList, faTruckLoading,
     faPeopleArrows, faBoxes, faFileInvoice, faUsers, faFlaskPotion, faVial, faConveyorBelt, faLifeRing,
+    faWhatsapp,
 )
 
 type ResultItem = {
@@ -77,6 +79,7 @@ const SECTIONS: Record<string, SectionConfig> = {
     barcodes: { label: 'Barcodes', icon: 'fal fa-barcode', redirectRoute: 'grp.majordomo.redirect_barcode' },
     employees: { label: 'Employees', icon: 'fal fa-user-hard-hat', redirectRoute: 'grp.majordomo.redirect_employee' },
     chat_messages: { label: 'Chat Messages', icon: 'fal fa-comments', redirectRoute: 'grp.majordomo.redirect_chat_message' },
+    whatsapp_messages: { label: 'WhatsApp', icon: 'fab fa-whatsapp', redirectRoute: 'grp.majordomo.redirect_whatsapp_message' },
     tickets: { label: 'Tickets', icon: 'fal fa-life-ring' },
     purchase_orders: { label: 'Purchase Orders', icon: 'fal fa-clipboard-list', redirectRoute: 'grp.majordomo.redirect_purchase_order' },
     stock_deliveries: { label: 'Stock Deliveries', icon: 'fal fa-truck-loading', redirectRoute: 'grp.majordomo.redirect_stock_delivery' },

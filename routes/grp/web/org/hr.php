@@ -76,6 +76,8 @@ use App\Actions\HumanResources\Overtime\ApproveOvertimeRequest;
 use App\Actions\HumanResources\Overtime\RejectOvertimeRequest;
 use App\Actions\HumanResources\Overtime\StoreOvertimeRequest;
 use App\Actions\HumanResources\Overtime\UI\DashboardOvertime;
+use App\Actions\HumanResources\EmployeeBulkEmail\SendEmployeeBulkEmail;
+use App\Actions\HumanResources\EmployeeBulkEmail\UI\IndexEmployeeBulkEmails;
 use App\Actions\HumanResources\Holiday\UI\IndexHolidays;
 use App\Actions\HumanResources\Holiday\StoreHoliday;
 use App\Actions\HumanResources\Holiday\UpdateHoliday;
@@ -91,6 +93,8 @@ Route::get('/', ShowHumanResourcesDashboard::class)->name('dashboard');
 Route::get('/org-chart', ShowOrgChart::class)->name('org_chart');
 Route::get('/staff-chat', [IndexStaffChatAnalytics::class, 'inOrganisation'])->name('staff_chat.index');
 Route::get('/staff-chat/{staffConversation}', ShowStaffChatConversation::class)->name('staff_chat.show');
+Route::get('/bulk-emails', IndexEmployeeBulkEmails::class)->name('bulk_emails.index');
+Route::post('/bulk-emails', SendEmployeeBulkEmail::class)->name('bulk_emails.store');
 
 Route::prefix('employees')->as('employees.')->group(function () {
     Route::get('', IndexEmployees::class)->name('index');

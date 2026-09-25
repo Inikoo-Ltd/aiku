@@ -345,17 +345,33 @@ class EditProduct extends OrgAction
                             'description' => __('A price of zero means customers can order it at no charge. Only gifts and samples should be free.'),
                         ],
                     ],
-                    'rrp_per_unit' => [
-                        'type'     => 'input_number',
-                        'label'    => __('RRP') . '/' . __('unit'),
-                        'required' => true,
-                        'bind'     => [
-                            'minFractionDigits' => 0,
-                            'maxFractionDigits' => 2,
-                        ],
-                        'value'    => $product->units > 0 ? ($product->rrp / trimDecimalZeros($product->units)) : $product->rrp,
-                        'min'      => 0.01
-                    ],
+                    ...($product->shop->type == ShopTypeEnum::DROPSHIPPING
+                        ? [
+                            'rrp' => [
+                                'type'     => 'input_number',
+                                'label'    => __('RRP') . '/' . __('Outer'),
+                                'required' => true,
+                                'bind'     => [
+                                    'minFractionDigits' => 0,
+                                    'maxFractionDigits' => 2,
+                                ],
+                                'value'    => $product->rrp,
+                                'min'      => 0.01
+                            ],
+                        ]
+                        : [
+                            'rrp_per_unit' => [
+                                'type'     => 'input_number',
+                                'label'    => __('RRP') . '/' . __('unit'),
+                                'required' => true,
+                                'bind'     => [
+                                    'minFractionDigits' => 0,
+                                    'maxFractionDigits' => 2,
+                                ],
+                                'value'    => $product->units > 0 ? ($product->rrp / trimDecimalZeros($product->units)) : $product->rrp,
+                                'min'      => 0.01
+                            ],
+                        ]),
                 ]
             );
         }
