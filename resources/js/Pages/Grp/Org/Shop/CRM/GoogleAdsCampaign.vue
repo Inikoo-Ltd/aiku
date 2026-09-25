@@ -11,6 +11,7 @@ import { computed, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
+import { faPause, faPaperPlane } from "@fal"
 import DateIntervalTabs from "@/Components/Navigation/DateIntervalTabs.vue"
 import GoogleAdsCampaignTrend from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsCampaignTrend.vue"
 import GoogleAdsCampaignControls from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsCampaignControls.vue"
@@ -21,7 +22,8 @@ import GoogleAdsSearchTerms from "@/Components/DataDisplay/Dashboard/Widget/Goog
 import GoogleAdsAddKeyword from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAddKeyword.vue"
 import ConfirmDialog from "primevue/confirmdialog"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
-import GoogleAdsCampaignTimeline from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsCampaignTimeline.vue"
+import Timeline from "@/Components/Utils/Timeline.vue"
+import type { Timeline as TimelineStep } from "@/types/Timeline"
 import GoogleAdsAdCreative from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsAdCreative.vue"
 import GoogleAdsDailyTable from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsDailyTable.vue"
 import GoogleAdsKeywordsTable from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsKeywordsTable.vue"
@@ -37,9 +39,9 @@ import { impressionShareLabel } from "@/Composables/googleAdsFormat"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
-library.add(faGoogle)
+library.add(faGoogle, faPause, faPaperPlane)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -70,10 +72,7 @@ const props = defineProps<{
     period_label: string
     state: {
         current: string
-        label: string
-        description: string
-        last_error: string | null
-        timeline: { key: string; label: string; tooltip: string; icon: string; timestamp: string | null }[]
+        timeline: TimelineStep[]
     }
     custom_range: { from: string; to: string } | null
     compare: boolean
@@ -214,11 +213,11 @@ const structureWindowLabel = computed(() => {
     if (!props.structure_window) return null
 
     return (
-        trans("Figures for") +
+        ctrans("Figures for") +
         " " +
         useFormatTime(props.structure_window.from, { formatTime: "mdy" }) +
         " " +
-        trans("to") +
+        ctrans("to") +
         " " +
         useFormatTime(props.structure_window.to, { formatTime: "mdy" })
     )
@@ -275,19 +274,19 @@ const impressionShareRows = computed(() => {
 
     return [
         {
-            label: trans("Anywhere on the results page"),
+            label: ctrans("Anywhere on the results page"),
             received: share.search_impression_share,
             lostRank: share.search_rank_lost_impression_share,
             lostBudget: share.search_budget_lost_impression_share,
         },
         {
-            label: trans("Above the organic results"),
+            label: ctrans("Above the organic results"),
             received: share.search_top_impression_share,
             lostRank: share.search_rank_lost_top_impression_share,
             lostBudget: share.search_budget_lost_top_impression_share,
         },
         {
-            label: trans("In the first position"),
+            label: ctrans("In the first position"),
             received: share.search_absolute_top_impression_share,
             lostRank: share.search_rank_lost_absolute_top_impression_share,
             lostBudget: share.search_budget_lost_absolute_top_impression_share,
@@ -326,11 +325,15 @@ const notServingReasons = computed(() =>
     <ConfirmDialog />
     <PageHeading :data="pageHead" />
 
+    <div class="border-b border-gray-200 px-4 pb-2">
+        <Timeline :options="state.timeline" :state="state.current" :slidesPerView="3" />
+    </div>
+
     <div class="px-4 py-4">
         <DateIntervalTabs
             :options="periods"
             :selected="period"
-            :label="trans('Period')"
+            :label="ctrans('Period')"
             :custom-range="custom_range"
             :compare="compare"
             :comparison-label="comparison_label"
@@ -338,24 +341,17 @@ const notServingReasons = computed(() =>
     </div>
 
     <div class="grid grid-cols-1 gap-4 px-4 pb-6 lg:grid-cols-3">
-        <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
-            <h2 class="text-sm font-medium text-gray-800">{{ trans("Where this campaign stands") }}</h2>
-            <div class="mt-4">
-                <GoogleAdsCampaignTimeline :state="state" />
-            </div>
-        </section>
-
         <!-- Identity: the settings that decide what the figures below were ever going to look like. -->
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Campaign") }}
-                <HelpTip :text="trans('How Google is set to run this campaign: whether it is serving and why not if it is not, the campaign type, the bidding strategy, the daily budget and the start date. Pausing, resuming and budget changes below are written to Google straight away.')" />
+                {{ ctrans("Campaign") }}
+                <HelpTip :text="ctrans('How Google is set to run this campaign: whether it is serving and why not if it is not, the campaign type, the bidding strategy, the daily budget and the start date. Pausing, resuming and budget changes below are written to Google straight away.')" />
             </h2>
             <p class="mt-1 text-xs text-gray-500">{{ campaign.reference }}</p>
 
             <dl class="mt-5 space-y-3 text-xs">
                 <div class="flex justify-between gap-3">
-                    <dt class="text-gray-500">{{ trans("Status") }}</dt>
+                    <dt class="text-gray-500">{{ ctrans("Status") }}</dt>
                     <dd class="text-right">
                         <span :class="campaign.primary_status === 'ELIGIBLE' ? 'text-[#006300]' : 'text-gray-700'">
                             {{ capitalize(enumLabel(campaign.primary_status ?? campaign.status) ?? "—") }}
@@ -366,27 +362,27 @@ const notServingReasons = computed(() =>
                     </dd>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <dt class="text-gray-500">{{ trans("Campaign type") }}</dt>
+                    <dt class="text-gray-500">{{ ctrans("Campaign type") }}</dt>
                     <dd class="text-gray-700">{{ campaignTypeLabel(campaign.channel_type) ?? "—" }}</dd>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <dt class="text-gray-500">{{ trans("Bidding") }}</dt>
+                    <dt class="text-gray-500">{{ ctrans("Bidding") }}</dt>
                     <dd class="capitalize text-gray-700">{{ enumLabel(campaign.bidding_strategy_type) ?? "—" }}</dd>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <dt class="text-gray-500">{{ trans("Daily budget") }}</dt>
+                    <dt class="text-gray-500">{{ ctrans("Daily budget") }}</dt>
                     <dd class="tabular-nums text-gray-700">
                         {{ campaign.budget_amount !== null ? money(campaign.budget_amount) : "—" }}
                     </dd>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <dt class="text-gray-500">{{ trans("Running since") }}</dt>
+                    <dt class="text-gray-500">{{ ctrans("Running since") }}</dt>
                     <dd class="text-gray-700">
                         {{ campaign.start_date ? useFormatTime(campaign.start_date, { formatTime: "mdy" }) : "—" }}
                     </dd>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <dt class="text-gray-500">{{ trans("Read from Google") }}</dt>
+                    <dt class="text-gray-500">{{ ctrans("Read from Google") }}</dt>
                     <dd class="text-gray-700">
                         {{ campaign.fetched_at ? useFormatTime(campaign.fetched_at, { formatTime: "short-datetime" }) : "—" }}
                     </dd>
@@ -406,92 +402,92 @@ const notServingReasons = computed(() =>
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-2">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 class="text-sm font-medium text-gray-800">
-                    {{ trans("Reported by Google") }}
+                    {{ ctrans("Reported by Google") }}
                     <span class="font-normal text-gray-500">· {{ period_label }}</span>
-                    <HelpTip :text="trans('Google\'s own totals for the period chosen above, in the ad account\'s currency and under Google\'s attribution. Conversions are whatever the account\'s conversion actions recorded. ROAS is conversion value divided by cost.')" />
+                    <HelpTip :text="ctrans('Google\'s own totals for the period chosen above, in the ad account\'s currency and under Google\'s attribution. Conversions are whatever the account\'s conversion actions recorded. ROAS is conversion value divided by cost.')" />
                 </h2>
                 <span class="text-xs text-gray-500">
-                    {{ trans("Google's attribution, in") }} {{ campaign.currency }}
+                    {{ ctrans("Google's attribution, in") }} {{ campaign.currency }}
                 </span>
             </div>
 
             <div v-if="google.days" class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Impressions") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Impressions") }}</div>
                     <GoogleAdsMetric :value="google.impressions" kind="count" size="lg" :previous="previous('impressions')" />
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Clicks") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Clicks") }}</div>
                     <GoogleAdsMetric :value="google.clicks" kind="count" size="lg" :previous="previous('clicks')" />
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("CTR") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("CTR") }}</div>
                     <GoogleAdsMetric :value="google.ctr" kind="percent" size="lg" :previous="previous('ctr')" />
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Avg. CPC") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Avg. CPC") }}</div>
                     <GoogleAdsMetric :value="google.avg_cpc" kind="money" :currency="campaign.currency" size="lg" better="down" :previous="previous('avg_cpc')" />
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Cost") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Cost") }}</div>
                     <GoogleAdsMetric :value="google.cost" kind="money" :currency="campaign.currency" size="lg" better="none" :previous="previous('cost')" />
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Conversions") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Conversions") }}</div>
                     <GoogleAdsMetric :value="google.conversions" kind="count" size="lg" :previous="previous('conversions')" />
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Cost per conversion") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Cost per conversion") }}</div>
                     <GoogleAdsMetric :value="google.cost_per_conversion" kind="money" :currency="campaign.currency" size="lg" better="down" :previous="previous('cost_per_conversion')" />
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("ROAS") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("ROAS") }}</div>
                     <GoogleAdsMetric :value="google.roas" kind="roas" size="lg" :previous="previous('roas')" />
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("All conversions") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("All conversions") }}</div>
                     <GoogleAdsMetric :value="google.all_conversions" kind="count" size="lg" :previous="previous('all_conversions')" />
-                    <div class="text-xs text-gray-500">{{ trans("worth") }} {{ money(google.all_conversions_value) }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("worth") }} {{ money(google.all_conversions_value) }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Purchases") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Purchases") }}</div>
                     <GoogleAdsMetric :value="google.purchases" kind="count" size="lg" :previous="previous('purchases')" />
                     <div v-if="google.purchases !== null" class="text-xs text-gray-500">
-                        {{ moneyOrDash(google.cost_per_purchase) }} {{ trans("each") }} · {{ percent(google.purchase_rate, 2) }} {{ trans("of clicks") }}
+                        {{ moneyOrDash(google.cost_per_purchase) }} {{ ctrans("each") }} · {{ percent(google.purchase_rate, 2) }} {{ ctrans("of clicks") }}
                     </div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Registrations") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Registrations") }}</div>
                     <GoogleAdsMetric :value="google.registrations" kind="count" size="lg" :previous="previous('registrations')" />
                     <div v-if="google.registrations !== null" class="text-xs text-gray-500">
-                        {{ moneyOrDash(google.cost_per_registration) }} {{ trans("each") }} · {{ percent(google.registration_rate, 2) }} {{ trans("of clicks") }}
+                        {{ moneyOrDash(google.cost_per_registration) }} {{ ctrans("each") }} · {{ percent(google.registration_rate, 2) }} {{ ctrans("of clicks") }}
                     </div>
                 </div>
             </div>
 
             <p v-else class="mt-5 text-xs text-gray-500">
-                {{ trans("Google reported nothing for this campaign in this period. Try a longer one, or check that the nightly fetch has run.") }}
+                {{ ctrans("Google reported nothing for this campaign in this period. Try a longer one, or check that the nightly fetch has run.") }}
             </p>
 
             <div v-if="google.roas === 0 && google.cost > 0" class="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                {{ trans("This campaign spent money but Google recorded no conversion value, which usually means the conversion actions in this account have no value attached.") }}
+                {{ ctrans("This campaign spent money but Google recorded no conversion value, which usually means the conversion actions in this account have no value attached.") }}
             </div>
 
             <div v-if="google.days" class="mt-5">
                 <h3 class="text-xs font-medium text-gray-700">
-                    {{ trans("By conversion action") }}
-                    <HelpTip :text="trans('Which conversion actions in the account recorded these conversions, under the names Google uses. Conversions counts primary actions only; All conv. counts secondary ones too, such as a GA4 import of the same sales. Purchases and registrations above are the primary actions in the Purchase and Sign-up categories, so a sale recorded twice is counted once.')" />
+                    {{ ctrans("By conversion action") }}
+                    <HelpTip :text="ctrans('Which conversion actions in the account recorded these conversions, under the names Google uses. Conversions counts primary actions only; All conv. counts secondary ones too, such as a GA4 import of the same sales. Purchases and registrations above are the primary actions in the Purchase and Sign-up categories, so a sale recorded twice is counted once.')" />
                 </h3>
 
                 <div v-if="conversions_by_action.length" class="mt-2 overflow-x-auto">
                     <table class="w-full min-w-[32rem] text-xs">
                         <thead>
                             <tr class="border-b border-gray-100 text-gray-500">
-                                <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Action") }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ trans("Category") }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Conversions") }}</th>
-                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("All conv.") }}</th>
-                                <th scope="col" class="py-1.5 pl-2 text-right font-normal">{{ trans("Value") }}</th>
+                                <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ ctrans("Action") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-left font-normal">{{ ctrans("Category") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ ctrans("Conversions") }}</th>
+                                <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ ctrans("All conv.") }}</th>
+                                <th scope="col" class="py-1.5 pl-2 text-right font-normal">{{ ctrans("Value") }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -510,8 +506,8 @@ const notServingReasons = computed(() =>
                 </div>
 
                 <p v-else class="mt-2 text-xs text-gray-500">
-                    <template v-if="google.has_breakdown">{{ trans("No conversion action recorded anything in this period.") }}</template>
-                    <template v-else>{{ trans("The split by conversion action has not been read for these days yet. The nightly fetch records it from now on; to fill earlier days, run the Google Ads fetch with more days.") }}</template>
+                    <template v-if="google.has_breakdown">{{ ctrans("No conversion action recorded anything in this period.") }}</template>
+                    <template v-else>{{ ctrans("The split by conversion action has not been read for these days yet. The nightly fetch records it from now on; to fill earlier days, run the Google Ads fetch with more days.") }}</template>
                 </p>
             </div>
         </section>
@@ -519,21 +515,21 @@ const notServingReasons = computed(() =>
         <section v-if="impression_share" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 class="text-sm font-medium text-gray-800">
-                    {{ trans("Share of Google Search impressions") }}
+                    {{ ctrans("Share of Google Search impressions") }}
                     <span class="font-normal text-gray-500">· {{ period_label }}</span>
-                    <HelpTip :text="trans('How often the ads were shown out of the times Google judged them eligible to show on Google Search, and why the rest were missed: Ad Rank is bid times quality, budget is the daily cap. Google reports anything under 10% as 9.99% and anything over 90% as 90.01%, so those read as under 10% and over 90% here.')" />
+                    <HelpTip :text="ctrans('How often the ads were shown out of the times Google judged them eligible to show on Google Search, and why the rest were missed: Ad Rank is bid times quality, budget is the daily cap. Google reports anything under 10% as 9.99% and anything over 90% as 90.01%, so those read as under 10% and over 90% here.')" />
                 </h2>
-                <span class="text-xs text-gray-500">{{ trans("Weighted by eligible impressions, not averaged by day") }}</span>
+                <span class="text-xs text-gray-500">{{ ctrans("Weighted by eligible impressions, not averaged by day") }}</span>
             </div>
 
             <div class="mt-4 overflow-x-auto">
                 <table class="w-full max-w-2xl min-w-[28rem] text-xs">
                     <thead>
                         <tr class="border-b border-gray-100 text-gray-500">
-                            <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ trans("Where") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Received") }}</th>
-                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ trans("Lost to Ad Rank") }}</th>
-                            <th scope="col" class="py-1.5 pl-2 text-right font-normal">{{ trans("Lost to budget") }}</th>
+                            <th scope="col" class="py-1.5 pr-2 text-left font-normal">{{ ctrans("Where") }}</th>
+                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ ctrans("Received") }}</th>
+                            <th scope="col" class="px-2 py-1.5 text-right font-normal">{{ ctrans("Lost to Ad Rank") }}</th>
+                            <th scope="col" class="py-1.5 pl-2 text-right font-normal">{{ ctrans("Lost to budget") }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -552,37 +548,37 @@ const notServingReasons = computed(() =>
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 class="text-sm font-medium text-gray-800">
-                    {{ trans("Attributed by Aiku") }}
-                    <HelpTip :text="trans('Customers and orders Aiku traced back to a click on this campaign, with their revenue in the shop\'s currency. Counted since attribution started recording, not for the period above, so it will not match Google\'s figures.')" />
+                    {{ ctrans("Attributed by Aiku") }}
+                    <HelpTip :text="ctrans('Customers and orders Aiku traced back to a click on this campaign, with their revenue in the shop\'s currency. Counted since attribution started recording, not for the period above, so it will not match Google\'s figures.')" />
                 </h2>
                 <span class="text-xs text-gray-500">
-                    {{ trans("Since attribution started recording, not the period above, in") }} {{ campaign.shop_currency }}
+                    {{ ctrans("Since attribution started recording, not the period above, in") }} {{ campaign.shop_currency }}
                 </span>
             </div>
 
             <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-5">
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Customers") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Customers") }}</div>
                     <div class="text-lg tabular-nums text-gray-900">{{ share(attribution.customers) }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Orders") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Orders") }}</div>
                     <div class="text-lg tabular-nums text-gray-900">{{ share(attribution.purchases) }}</div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Revenue") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Revenue") }}</div>
                     <div class="text-lg tabular-nums text-[#006300]">
                         {{ money(attribution.revenue, campaign.shop_currency) }}
                     </div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("Spend") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("Spend") }}</div>
                     <div class="text-lg tabular-nums text-gray-900">
                         {{ money(attribution.cost, campaign.shop_currency) }}
                     </div>
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500">{{ trans("ROAS") }}</div>
+                    <div class="text-xs text-gray-500">{{ ctrans("ROAS") }}</div>
                     <div class="text-lg tabular-nums" :class="roasClass(attribution.roas)">
                         {{ attribution.roas !== null ? attribution.roas.toFixed(2) + "×" : "—" }}
                     </div>
@@ -592,9 +588,9 @@ const notServingReasons = computed(() =>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Is the spend still buying clicks?") }}
+                {{ ctrans("Is the spend still buying clicks?") }}
                 <span class="font-normal text-gray-500">· {{ period_label }}</span>
-                <HelpTip :text="trans('Daily cost and daily clicks on one chart, each with its own axis. When the cost line climbs while the clicks line flattens, the campaign is paying more for the same traffic.')" />
+                <HelpTip :text="ctrans('Daily cost and daily clicks on one chart, each with its own axis. When the cost line climbs while the clicks line flattens, the campaign is paying more for the same traffic.')" />
             </h2>
             <div class="mt-4">
                 <GoogleAdsCampaignTrend :daily="daily" :currency="campaign.currency" />
@@ -603,9 +599,9 @@ const notServingReasons = computed(() =>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Day by day") }}
+                {{ ctrans("Day by day") }}
                 <span v-if="daily.length" class="font-normal text-gray-500">· {{ daily.length }}</span>
-                <HelpTip :text="trans('One row per day Google reported, newest first until you sort by another column. Cost is what Google billed in the account\'s currency. Spend is the same money converted to the shop\'s currency at that day\'s rate, which is the figure the marketing dashboard uses.')" />
+                <HelpTip :text="ctrans('One row per day Google reported, newest first until you sort by another column. Cost is what Google billed in the account\'s currency. Spend is the same money converted to the shop\'s currency at that day\'s rate, which is the figure the marketing dashboard uses.')" />
             </h2>
 
             <GoogleAdsDailyTable
@@ -615,33 +611,33 @@ const notServingReasons = computed(() =>
                 :shop-currency="campaign.shop_currency" />
 
             <p v-else class="mt-3 text-xs text-gray-500">
-                {{ trans("No days recorded in this period. Try a longer one, or check that the nightly fetch has run.") }}
+                {{ ctrans("No days recorded in this period. Try a longer one, or check that the nightly fetch has run.") }}
             </p>
         </section>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Ads") }}
+                {{ ctrans("Ads") }}
                 <span v-if="adCount" class="font-normal text-gray-500">· {{ adCount }}</span>
-                <HelpTip :text="trans('Ad groups and their ads as Google returned them, with Google\'s strength rating and review status for each ad. Pause or resume an ad group or an ad, add headlines, or copy an ad into a variant to test against it.')" />
+                <HelpTip :text="ctrans('Ad groups and their ads as Google returned them, with Google\'s strength rating and review status for each ad. Pause or resume an ad group or an ad, add headlines, or copy an ad into a variant to test against it.')" />
             </h2>
 
             <!-- Says plainly why there is no button to write an ad here, because a section that offers
                  pausing and copying but not creating otherwise reads as unfinished rather than decided. -->
             <p class="mt-1 max-w-3xl text-xs text-gray-600">
-                {{ trans("You can pause an ad here, add headlines to it, and copy it into a variant to test. Writing a brand new ad from scratch is done in Google Ads, because that is where you get its strength scored as you type, headlines pinned to positions, and a preview of how it looks before it runs. Aiku would give you text boxes and no feedback.") }}
+                {{ ctrans("You can pause an ad here, add headlines to it, and copy it into a variant to test. Writing a brand new ad from scratch is done in Google Ads, because that is where you get its strength scored as you type, headlines pinned to positions, and a preview of how it looks before it runs. Aiku would give you text boxes and no feedback.") }}
                 <span v-if="adsNeedingVariants" class="mt-1 block text-[#a15c00]">
-                    {{ trans(":count ad group(s) here run a single ad, so Google has nothing to rotate it against.", { count: String(adsNeedingVariants) }) }}
+                    {{ ctrans(":count ad group(s) here run a single ad, so Google has nothing to rotate it against.", { count: String(adsNeedingVariants) }) }}
                 </span>
             </p>
 
             <div v-if="adCount && adGroupsWithAds.length > 1" class="mt-3">
-                <label for="gads-ad-group-filter" class="sr-only">{{ trans("Search ad groups") }}</label>
+                <label for="gads-ad-group-filter" class="sr-only">{{ ctrans("Search ad groups") }}</label>
                 <input
                     id="gads-ad-group-filter"
                     v-model="adGroupFilter"
                     type="search"
-                    :placeholder="trans('Search ad groups')"
+                    :placeholder="ctrans('Search ad groups')"
                     class="w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-72" />
             </div>
 
@@ -657,7 +653,7 @@ const notServingReasons = computed(() =>
                             type="ad_group"
                             :ad-group-id="String(group.id)"
                             :status="group.status"
-                            :label="trans('ad group')"
+                            :label="ctrans('ad group')"
                             :update-route="element_route" />
                     </div>
                     <div
@@ -668,7 +664,7 @@ const notServingReasons = computed(() =>
                             <span class="flex flex-wrap items-center gap-2">
                                 <span class="capitalize text-gray-500">{{ enumLabel(ad.type) }} · {{ enumLabel(ad.status) }}</span>
                                 <span class="rounded px-1.5 py-0.5 text-[11px] capitalize" :class="strengthClass(ad.strength)">
-                                    {{ ad.strength ? enumLabel(ad.strength) : trans("not rated yet") }}
+                                    {{ ad.strength ? enumLabel(ad.strength) : ctrans("not rated yet") }}
                                 </span>
                                 <span
                                     v-if="ad.approval_status && ad.approval_status !== 'APPROVED'"
@@ -681,7 +677,7 @@ const notServingReasons = computed(() =>
                                 :ad-group-id="String(group.id)"
                                 :element-id="String(ad.id)"
                                 :status="ad.status"
-                                :label="trans('ad')"
+                                :label="ctrans('ad')"
                                 :update-route="element_route" />
                         </div>
                         <p v-if="ad.name" class="mt-1 text-gray-500">{{ ad.name }}</p>
@@ -704,7 +700,7 @@ const notServingReasons = computed(() =>
                 </div>
 
                 <p v-if="!pagedAdGroups.length" class="py-4 text-center text-xs text-gray-500">
-                    {{ trans("No ad group matches that search.") }}
+                    {{ ctrans("No ad group matches that search.") }}
                 </p>
 
                 <GoogleAdsPager
@@ -716,25 +712,25 @@ const notServingReasons = computed(() =>
                     :page-count="adGroupPager.pageCount.value"
                     :per-page="adGroupPager.perPage.value"
                     :per-page-options="adGroupPager.perPageOptions"
-                    :unit="trans('ad groups')"
+                    :unit="ctrans('ad groups')"
                     @update:page="adGroupPager.page.value = $event"
                     @update:per-page="((adGroupPager.perPage.value = $event), adGroupPager.toFirstPage())" />
             </div>
 
             <p v-else-if="asset_groups.length" class="mt-3 text-xs text-gray-500">
-                {{ trans("Performance Max campaigns have no ad groups or ads of their own. Google assembles the ads from the asset groups shown further down.") }}
+                {{ ctrans("Performance Max campaigns have no ad groups or ads of their own. Google assembles the ads from the asset groups shown further down.") }}
             </p>
 
             <p v-else class="mt-3 text-xs text-gray-500">
-                {{ trans("No ads read for this campaign yet. They appear after the nightly fetch has run.") }}
+                {{ ctrans("No ads read for this campaign yet. They appear after the nightly fetch has run.") }}
             </p>
         </section>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Keywords") }}
+                {{ ctrans("Keywords") }}
                 <span v-if="keywordCount" class="font-normal text-gray-500">· {{ keywordCount }}</span>
-                <HelpTip :text="trans('The searches this campaign bids on, by ad group, with match type, status and Google\'s quality score from 1 to 10. The figures are for the window the nightly fetch read, named under the table, not for the period chosen at the top. Pausing a keyword stops bids on it without deleting it. Only Search campaigns have keywords.')" />
+                <HelpTip :text="ctrans('The searches this campaign bids on, by ad group, with match type, status and Google\'s quality score from 1 to 10. The figures are for the window the nightly fetch read, named under the table, not for the period chosen at the top. Pausing a keyword stops bids on it without deleting it. Only Search campaigns have keywords.')" />
             </h2>
 
             <GoogleAdsKeywordsTable
@@ -745,15 +741,15 @@ const notServingReasons = computed(() =>
                 :window-label="structureWindowLabel" />
 
             <p v-else-if="isSearch" class="mt-3 text-xs text-gray-500">
-                {{ trans("No keywords read for this campaign yet.") }}
+                {{ ctrans("No keywords read for this campaign yet.") }}
             </p>
 
             <p v-else class="mt-3 text-xs text-gray-500">
-                {{ trans("No keywords. Only Search campaigns bid on keywords; this one chooses audiences and placements instead, shown under Targeting.") }}
+                {{ ctrans("No keywords. Only Search campaigns bid on keywords; this one chooses audiences and placements instead, shown under Targeting.") }}
             </p>
 
             <div v-if="groupsWithNegatives.length" class="mt-4 space-y-1 text-xs">
-                <p class="text-gray-500">{{ trans("Excluded within an ad group, on top of the campaign's own exclusions") }}</p>
+                <p class="text-gray-500">{{ ctrans("Excluded within an ad group, on top of the campaign's own exclusions") }}</p>
                 <div v-for="group in groupsWithNegatives" :key="'neg' + group.id" class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <span class="text-gray-700">{{ group.name ?? group.id }}:</span>
                     <span
@@ -769,8 +765,8 @@ const notServingReasons = computed(() =>
 
         <section v-if="hasTargeting" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Targeting") }}
-                <HelpTip :text="trans('Who each ad group is aimed at and where its ads may appear, as set in Google Ads: audiences, demographics, topics, placements and channels. Struck-through entries are excluded. Changing targeting is done in Google Ads.')" />
+                {{ ctrans("Targeting") }}
+                <HelpTip :text="ctrans('Who each ad group is aimed at and where its ads may appear, as set in Google Ads: audiences, demographics, topics, placements and channels. Struck-through entries are excluded. Changing targeting is done in Google Ads.')" />
             </h2>
 
             <div class="mt-3">
@@ -780,9 +776,9 @@ const notServingReasons = computed(() =>
 
         <section v-if="asset_groups.length" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Asset groups") }}
+                {{ ctrans("Asset groups") }}
                 <span class="font-normal text-gray-500">· {{ asset_groups.length }}</span>
-                <HelpTip :text="trans('The creative Google builds this campaign\'s ads from, one group per theme. Search themes and audience signals are hints that steer Google\'s targeting; they do not restrict it, which is why they are shown but cannot be edited here. Struck-through assets are not currently eligible to run. Figures are for the window the nightly fetch read.')" />
+                <HelpTip :text="ctrans('The creative Google builds this campaign\'s ads from, one group per theme. Search themes and audience signals are hints that steer Google\'s targeting; they do not restrict it, which is why they are shown but cannot be edited here. Struck-through assets are not currently eligible to run. Figures are for the window the nightly fetch read.')" />
             </h2>
 
             <div class="mt-3">
@@ -792,9 +788,9 @@ const notServingReasons = computed(() =>
 
         <section v-if="exclusions.length" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Campaign exclusions") }}
+                {{ ctrans("Campaign exclusions") }}
                 <span class="font-normal text-gray-500">· {{ exclusions.length }}</span>
-                <HelpTip :text="trans('Places and audiences this whole campaign never shows on: blocked websites and apps, YouTube channels, topics, audience lists and content categories. Excluded search terms have their own panel below. Changing these is done in Google Ads.')" />
+                <HelpTip :text="ctrans('Places and audiences this whole campaign never shows on: blocked websites and apps, YouTube channels, topics, audience lists and content categories. Excluded search terms have their own panel below. Changing these is done in Google Ads.')" />
             </h2>
 
             <dl class="mt-3 space-y-1.5 text-xs">

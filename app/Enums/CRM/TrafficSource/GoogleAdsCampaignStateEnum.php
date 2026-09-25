@@ -47,18 +47,6 @@ enum GoogleAdsCampaignStateEnum: string
         ];
     }
 
-    /**
-     * What each state means for the person reading it, rather than what it is called.
-     */
-    public static function descriptions(): array
-    {
-        return [
-            self::IN_PROCESS->value        => __('Only in Aiku. Nothing has been sent to Google and nothing can spend.'),
-            self::PUBLISHED_PAUSED->value  => __('Google has the campaign and is holding it. It will not show or spend until it is switched on.'),
-            self::PUBLISHED_SERVING->value => __('Google is showing these ads and the budget is being spent.'),
-        ];
-    }
-
     /** The column holding when this state was reached, which is what the timeline is drawn from. */
     public function timestampColumn(): string
     {

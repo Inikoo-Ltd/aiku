@@ -23,6 +23,7 @@ use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Models\CRM\TrafficSourceCampaignMetric;
 use Illuminate\Support\Arr;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -290,31 +291,29 @@ class ShowGoogleAdsCampaign extends OrgAction
     }
 
     /**
-     * The state strip: where the campaign is now, and the three points it passes through, each with
-     * the moment it happened where that has happened. The ones still ahead carry no timestamp, which
-     * is what the page draws as the part not yet reached.
+     * The state timeline: the three points a campaign passes through, each with the moment it
+     * happened where that has happened.
      *
-     * @return array{current: string, label: string, description: string, last_error: string|null, timeline: array<int, array>}
+     * @return array{current: string, timeline: array<int, array{key: string, label: string, icon: string, timestamp: string|null}>}
      */
     private function stateProps(TrafficSourceCampaign $campaign): array
     {
-        $labels       = GoogleAdsCampaignStateEnum::labels();
-        $descriptions = GoogleAdsCampaignStateEnum::descriptions();
-        $icons        = GoogleAdsCampaignStateEnum::stateIcon();
+        $labels = GoogleAdsCampaignStateEnum::labels();
+        $icons  = GoogleAdsCampaignStateEnum::stateIcon();
 
         return [
-            'current'     => $campaign->state->value,
-            'label'       => $labels[$campaign->state->value],
-            'description' => $descriptions[$campaign->state->value],
-            'last_error'  => $campaign->last_error,
-            'timeline'    => collect(GoogleAdsCampaignStateEnum::cases())
-                ->map(fn (GoogleAdsCampaignStateEnum $state) => [
-                    'key'       => $state->value,
-                    'label'     => $labels[$state->value],
-                    'tooltip'   => $descriptions[$state->value],
-                    'icon'      => $icons[$state->value]['icon'],
-                    'timestamp' => $campaign->{$state->timestampColumn()},
-                ])
+            'current'  => $campaign->state->value,
+            'timeline' => collect(GoogleAdsCampaignStateEnum::cases())
+                ->map(function (GoogleAdsCampaignStateEnum $state) use ($campaign, $labels, $icons) {
+                    $reachedAt = $campaign->{$state->timestampColumn()};
+
+                    return [
+                        'key'       => $state->value,
+                        'label'     => $labels[$state->value],
+                        'icon'      => $icons[$state->value]['icon'],
+                        'timestamp' => $reachedAt ? Carbon::parse($reachedAt)->toIso8601String() : null,
+                    ];
+                })
                 ->all(),
         ];
     }
