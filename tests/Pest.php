@@ -63,7 +63,10 @@ $seedFaker = function (): void {
     fake('en_GB')->seed($seed);
 };
 
-uses(TestCase::class)->beforeEach($seedFaker)->in('Feature');
+uses(TestCase::class)->beforeEach(function () use ($seedFaker): void {
+    $seedFaker->call($this);
+    $this->withoutVite();
+})->in('Feature');
 uses(TestCase::class)->beforeEach($seedFaker)->in('Unit');
 uses(TestCase::class)->group('integration')->beforeEach($seedFaker)->in('Integration');
 uses(TestCase::class)->group('browser')->beforeEach($seedFaker)->in('Browser');
