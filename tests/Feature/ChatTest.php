@@ -5914,7 +5914,11 @@ test('a supervisor moves a conversation to Couriers, which adds the sender domai
     expect(data_get($group->fresh()->settings, 'chat.carrier_domains'))->toContain('parcels-move.example', 'gls-spain.es')
         ->and($courier->fresh()->is_carrier)->toBeTrue()
         ->and($sibling->fresh()->is_carrier)->toBeTrue()
-        ->and($other->fresh()->is_carrier)->toBeFalse();
+        ->and($other->fresh()->is_carrier)->toBeFalse()
+        ->and($sibling->chatEvents()->where('event_type', 'moved_to_couriers')->first()?->payload)->toMatchArray(['domain' => 'parcels-move.example', 'moved_by_name' => $this->user->contact_name])
+        ->and((new \App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($courier->chatEvents()->where('event_type', 'moved_to_couriers')->first()))->resolve()['description'])
+        ->toBe($this->user->contact_name.' moved the chat to Couriers and added parcels-move.example to the courier list')
+        ->and(\App\Enums\CRM\Livechat\ChatEventTypeEnum::timelineTypes())->toContain('moved_to_couriers');
 
     $move($courier)->assertUnprocessable();
     $move($gmail)->assertUnprocessable();

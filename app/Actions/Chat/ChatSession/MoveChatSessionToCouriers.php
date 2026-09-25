@@ -11,10 +11,13 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Chat\UpdateGroupChatCarrierDomains;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
+use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
+use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -35,7 +38,7 @@ class MoveChatSessionToCouriers
     /**
      * @return int the conversations filed
      */
-    public function handle(ChatSession $chatSession): int
+    public function handle(ChatSession $chatSession, ?ChatAgent $agent = null): int
     {
         $domain = self::senderDomain($chatSession);
         $group  = $chatSession->shop->group;
@@ -56,7 +59,23 @@ class MoveChatSessionToCouriers
             })
             ->get();
 
-        DB::transaction(fn () => ChatSession::whereIn('id', $sessions->pluck('id'))->update(['is_carrier' => true]));
+        DB::transaction(function () use ($sessions, $agent, $domain) {
+            ChatSession::whereIn('id', $sessions->pluck('id'))->update(['is_carrier' => true]);
+
+            foreach ($sessions as $session) {
+                StoreChatEvent::make()->handle(
+                    chatSession: $session,
+                    eventType: ChatEventTypeEnum::MOVED_TO_COURIERS,
+                    actorType: $agent ? ChatActorTypeEnum::AGENT : ChatActorTypeEnum::SYSTEM,
+                    actorId: $agent?->id,
+                    payload: array_filter([
+                        'domain'        => $domain,
+                        'moved_by_id'   => $agent?->id,
+                        'moved_by_name' => $agent?->user?->contact_name,
+                    ], fn ($value) => $value !== null)
+                );
+            }
+        });
 
         $sessions->each(fn (ChatSession $session) => BroadcastChatListEvent::dispatch(null, $session));
 
@@ -106,7 +125,7 @@ class MoveChatSessionToCouriers
             ]);
         }
 
-        $filed = $this->handle($chatSession);
+        $filed = $this->handle($chatSession, $this->chatAgentProfileFor($request->user()));
 
         return response()->json([
             'success' => true,
