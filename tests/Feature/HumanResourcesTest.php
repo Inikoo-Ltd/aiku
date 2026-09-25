@@ -3129,3 +3129,36 @@ test('a worker position is dropped on the shops where the employee is already su
         ->and($scopes['cus-c'])->toBe(['Shop' => [2]])
         ->and($scopes['shk-m'])->toBe(['Shop' => [1, 2]]);
 });
+
+test('pickers handle returns in goods in without seeing stock deliveries', function () {
+    $warehouse = createWarehouse();
+    setPermissionsTeamId($warehouse->group_id);
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($warehouse->organisation);
+
+    $picker          = JobPosition::where('organisation_id', $warehouse->organisation_id)->where('code', 'dist-pik')->firstOrFail();
+    $returnsRoleName = RolesEnum::getRoleName(RolesEnum::RETURNS_CLERK->value, $warehouse);
+
+    expect($picker->name)->toBe('Picker/Returns')
+        ->and($picker->roles()->pluck('name')->all())->toContain($returnsRoleName);
+
+    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
+    $user->assignRole($returnsRoleName);
+
+    $goodsIn  = \App\Actions\UI\Grp\Layout\GetWarehouseNavigation::run($warehouse, $user->fresh())['incoming'];
+    $sections = collect($goodsIn['topMenu']['subSections'])->filter()->pluck('label')->values()->all();
+
+    expect($user->hasPermissionTo("incoming.$warehouse->id.view"))->toBeFalse()
+        ->and($goodsIn['route']['name'])->toBe('grp.org.warehouses.show.incoming.return_delivery_notes.state.received')
+        ->and($sections)->toBe(['Returns']);
+
+    $this->withoutVite();
+    $returnsRoute        = route('grp.org.warehouses.show.incoming.return_delivery_notes.index', [$warehouse->organisation->slug, $warehouse->slug]);
+    $stockDeliveriesRoute = route('grp.org.warehouses.show.incoming.stock_deliveries.index', [$warehouse->organisation->slug, $warehouse->slug]);
+
+    $this->actingAs($user)->get($returnsRoute)->assertOk();
+    $this->actingAs($user)->get($stockDeliveriesRoute)->assertForbidden();
+
+    $userWithoutReturns = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
+    $this->actingAs($userWithoutReturns)->get($returnsRoute)->assertForbidden();
+});

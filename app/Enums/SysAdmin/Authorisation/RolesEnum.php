@@ -62,6 +62,7 @@ enum RolesEnum: string
 
 
     case GOODS_IN_CLERK = 'goods-in-clerk';
+    case RETURNS_CLERK = 'returns-clerk';
     case GOODS_IN_SUPERVISOR = 'goods-in-supervisor';
 
     case ACCOUNTING_CLERK = 'accounting-clerk';
@@ -187,6 +188,7 @@ enum RolesEnum: string
             RolesEnum::MANUFACTURING_PRODUCT_DEVELOPER => __('Production product developer'),
             RolesEnum::GOODS_IN_SUPERVISOR => __('Goods in supervisor'),
             RolesEnum::GOODS_IN_CLERK => __('Goods in clerk'),
+            RolesEnum::RETURNS_CLERK => __('Returns clerk'),
             RolesEnum::SHOP_PPC => __('Shop PPC'),
         };
     }
@@ -299,6 +301,10 @@ enum RolesEnum: string
                 WarehousePermissionsEnum::LOCATIONS_VIEW,
                 WarehousePermissionsEnum::INCOMING,
                 OrganisationPermissionsEnum::INVENTORY_VIEW
+            ],
+            RolesEnum::RETURNS_CLERK => [
+                WarehousePermissionsEnum::LOCATIONS_VIEW,
+                WarehousePermissionsEnum::RETURNS,
             ],
             RolesEnum::GOODS_IN_SUPERVISOR => [
                 WarehousePermissionsEnum::LOCATIONS_VIEW,
@@ -601,6 +607,7 @@ enum RolesEnum: string
             RolesEnum::DISPATCH_SUPERVISOR,
             RolesEnum::GOODS_IN_CLERK,
             RolesEnum::GOODS_IN_SUPERVISOR,
+            RolesEnum::RETURNS_CLERK,
             RolesEnum::STOCK_CONTROLLER => 'Warehouse',
 
             RolesEnum::MANUFACTURING_ADMIN,

@@ -8,11 +8,13 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote\Traits;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithReturnDeliveryNoteController
 {
+    use WithReturnsAuthorisation;
     public function asController(ReturnDeliveryNote $returnDeliveryNote, ActionRequest $request): ReturnDeliveryNote
     {
         $this->initialisationFromWarehouse($returnDeliveryNote->warehouse, $request);

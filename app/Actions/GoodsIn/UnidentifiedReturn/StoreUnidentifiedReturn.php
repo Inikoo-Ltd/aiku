@@ -8,9 +8,9 @@
 
 namespace App\Actions\GoodsIn\UnidentifiedReturn;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\Inventory\WithWarehouseEditAuthorisation;
 use App\Models\GoodsIn\UnidentifiedReturn;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreUnidentifiedReturn extends OrgAction
 {
-    use WithWarehouseEditAuthorisation;
+    use WithReturnsAuthorisation;
 
     public function handle(Warehouse $warehouse, array $modelData): UnidentifiedReturn
     {

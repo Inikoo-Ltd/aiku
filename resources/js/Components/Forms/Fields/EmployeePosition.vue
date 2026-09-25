@@ -5,7 +5,7 @@ import { faAd, faBullhorn, faCashRegister, faChessQueen, faCube, faStore, faInfo
 import { faBoxUsd, faHelmetBattle, faExclamationCircle, faCheckCircle as fasCheckCircle, faCrown as fasCrown } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { get, set } from "lodash-es"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { useForm } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
@@ -136,13 +136,13 @@ const onSubmitNewForm = () => {
             {
                 preserveScroll: true,
                 onSuccess: () => notify({
-                    title: trans("Success"),
-                    text: trans("Successfully update the permissions"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully update the permissions"),
                     type: "success"
                 }),
                 onError: () => notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update the permissions"),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update the permissions"),
                     type: "error"
                 })
             }
@@ -166,12 +166,12 @@ const productionsLength = optionsList.productions?.length
 const optionsJob = reactive<optionsJob>({
     org_admin: {
         key: "org_admin",
-        department: trans("Org admin"),
+        department: ctrans("Org admin"),
         icon: "fal fa-crown",
         subDepartment: [
             {
                 slug: "org-admin",
-                label: trans("Organisation Administrator"),
+                label: ctrans("Organisation Administrator"),
                 number_employees: props.options.positions.data.find(position => position.slug == "org-admin")?.number_employees || 0
             }
         ]
@@ -180,19 +180,19 @@ const optionsJob = reactive<optionsJob>({
 
     hr: {
         key: "hr",
-        department: trans("Human Resources"),
+        department: ctrans("Human Resources"),
         icon: "fal fa-user-hard-hat",
         subDepartment: [
             {
                 slug: "hr-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 number_employees: props.options.positions.data.find(position => position.slug == "hr-m")?.number_employees || 0
             },
             {
                 slug: "hr-c",
                 grade: "clerk",
-                label: trans("Worker"),
+                label: ctrans("Worker"),
                 number_employees: props.options.positions.data.find(position => position.slug == "hr-c")?.number_employees || 0
             }
         ]
@@ -201,19 +201,19 @@ const optionsJob = reactive<optionsJob>({
 
     acc: {
         key: "acc",
-        department: trans("Accounting"),
+        department: ctrans("Accounting"),
         icon: "fal fa-abacus",
         subDepartment: [
             {
                 slug: "acc-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 number_employees: props.options.positions.data.find(position => position.slug == "acc-m")?.number_employees || 0
             },
             {
                 slug: "acc-c",
                 grade: "clerk",
-                label: trans("Worker"),
+                label: ctrans("Worker"),
                 number_employees: props.options.positions.data.find(position => position.slug == "acc-c")?.number_employees || 0
             }
         ]
@@ -222,13 +222,13 @@ const optionsJob = reactive<optionsJob>({
 
     shop_admin: {
         key: "shop_admin",
-        department: trans("Shop admin"),
+        department: ctrans("Shop admin"),
         icon: "fal fa-chess-queen",
         scope: "shop",
         subDepartment: [
             {
                 slug: "shop-admin",
-                label: trans("Shop Administrator"),
+                label: ctrans("Shop Administrator"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "shop_admin")?.number_employees || 0
             }
@@ -238,7 +238,7 @@ const optionsJob = reactive<optionsJob>({
     },
     shk: {
         key: "shk",
-        department: trans("Shopkeeping"),
+        department: ctrans("Shopkeeping"),
         icon: "fal fa-cash-register",
         departmentRightIcons: ["fal fa-cube", "fal fa-globe"],
         scope: "shop",
@@ -246,14 +246,14 @@ const optionsJob = reactive<optionsJob>({
             {
                 slug: "shk-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "web-m")?.number_employees || 0
             },
             {
                 slug: "shk-c",
                 grade: "clerk",
-                label: trans("Worker"),
+                label: ctrans("Worker"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "web-c")?.number_employees || 0
             }
@@ -266,21 +266,21 @@ const optionsJob = reactive<optionsJob>({
 
     mrk: {
         key: "mrk",
-        department: trans("Marketing"),
+        department: ctrans("Marketing"),
         icon: "fal fa-bullhorn",
         scope: "shop",
         subDepartment: [
             {
                 slug: "mrk-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "mrk-m")?.number_employees || 0
             },
             {
                 slug: "mrk-c",
                 grade: "clerk",
-                label: trans("Worker"),
+                label: ctrans("Worker"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "mrk-c")?.number_employees || 0
             }
@@ -292,14 +292,14 @@ const optionsJob = reactive<optionsJob>({
     },
     shop_ppc: {
         key: "ppc",
-        department: trans("PPC"),
+        department: ctrans("PPC"),
         icon: "fal fa-ad",
         scope: "shop",
         subDepartment: [
             {
                 slug: "ppc-shop",
                 grade: "clerk",
-                label: trans("PPC"),
+                label: ctrans("PPC"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "shop-ppc")?.number_employees || 0
             }
@@ -309,7 +309,7 @@ const optionsJob = reactive<optionsJob>({
 
     cus: {
         key: "cus",
-        department: trans("Customer Service"),
+        department: ctrans("Customer Service"),
         departmentRightIcons: ["fal fa-user", "fal fa-route"],
         icon: "fal fa-user",
         scope: "shop",
@@ -317,21 +317,21 @@ const optionsJob = reactive<optionsJob>({
             {
                 slug: "cus-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "cus-m")?.number_employees || 0
             },
             {
                 slug: "cus-c",
                 grade: "clerk",
-                label: trans("Worker"),
+                label: ctrans("Worker"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "cus-c")?.number_employees || 0
             },
             {
                 slug: "cus-v",
                 grade: "staff",
-                label: trans("Viewer"),
+                label: ctrans("Viewer"),
                 optionsType: ["shops"],
                 number_employees: props.options.positions.data.find(position => position.slug == "cus-v")?.number_employees || 0
             }
@@ -344,13 +344,13 @@ const optionsJob = reactive<optionsJob>({
 
     buy: {
         key: "buy",
-        department: trans("Buyer"),
+        department: ctrans("Buyer"),
         icon: "fal fa-box-usd",
         subDepartment: [
             {
                 slug: "buy",
                 grade: "buyer",
-                label: trans("Buyer"),
+                label: ctrans("Buyer"),
                 number_employees: props.options.positions.data.find(position => position.slug == "buy")?.number_employees || 0
             }
         ]
@@ -359,20 +359,20 @@ const optionsJob = reactive<optionsJob>({
 
     wah: {
         key: "wah",
-        department: trans("Warehouse"),
+        department: ctrans("Warehouse"),
         icon: "fal fa-inventory",
         subDepartment: [
             {
                 slug: "wah-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ["warehouses"],
                 number_employees: props.options.positions.data.find(position => position.slug == "wah-m")?.number_employees || 0
             },
             {
                 slug: "wah-sc",
                 grade: "clerk",
-                label: trans("Stock Controller"),
+                label: ctrans("Stock Controller"),
                 optionsType: ["warehouses"],
                 number_employees: props.options.positions.data.find(position => position.slug == "wah-sc")?.number_employees || 0
             }
@@ -383,34 +383,34 @@ const optionsJob = reactive<optionsJob>({
 
     dist: {
         key: "dist",
-        department: trans("Goods out"),
+        department: ctrans("Goods out"),
         icon: "fal fa-arrow-from-left",
         subDepartment: [
             {
                 slug: "dist-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ["warehouses"],
                 number_employees: props.options.positions.data.find(position => position.slug == "dist-m")?.number_employees || 0
             },
             {
                 slug: "dist-pik",
                 grade: "clerk",
-                label: trans("Picker"),
+                label: ctrans("Picker/Returns"),
                 optionsType: ["warehouses"],
                 number_employees: props.options.positions.data.find(position => position.slug == "dist-pik")?.number_employees || 0
             },
             {
                 slug: "dist-excp-pick",
                 grade: "clerk",
-                label: trans("Replenisher"),
+                label: ctrans("Replenisher"),
                 optionsType: ["warehouses"],
                 number_employees: props.options.positions.data.find(position => position.slug == "dist-excp-pick")?.number_employees || 0
             },
             {
                 slug: "dist-pak",
                 grade: "clerk",
-                label: trans("Packer"),
+                label: ctrans("Packer"),
                 optionsType: ["warehouses"],
                 number_employees: props.options.positions.data.find(position => position.slug == "dist-pak")?.number_employees || 0
             }
@@ -421,34 +421,34 @@ const optionsJob = reactive<optionsJob>({
 
     prod: {
         key: "prod",
-        department: trans("Production"),
+        department: ctrans("Production"),
         icon: "fal fa-industry",
         subDepartment: [
             {
                 slug: "prod-m",
                 grade: "manager",
-                label: trans("Floor supervisor"),
+                label: ctrans("Floor supervisor"),
                 optionsType: ["productions"],
                 number_employees: props.options.positions.data.find(position => position.slug == "prod-m")?.number_employees || 0
             },
             {
                 slug: "prod-p",
                 grade: "clerk",
-                label: trans("Mix preparer"),
+                label: ctrans("Mix preparer"),
                 optionsType: ["productions"],
                 number_employees: props.options.positions.data.find(position => position.slug == "prod-p")?.number_employees || 0
             },
             {
                 slug: "prod-d",
                 grade: "clerk",
-                label: trans("Foreman"),
+                label: ctrans("Foreman"),
                 optionsType: ["productions"],
                 number_employees: props.options.positions.data.find(position => position.slug == "prod-d")?.number_employees || 0
             },
             {
                 slug: "prod-c",
                 grade: "clerk",
-                label: trans("Operative"),
+                label: ctrans("Operative"),
                 optionsType: ["productions"],
                 number_employees: props.options.positions.data.find(position => position.slug == "prod-c")?.number_employees || 0
             }
@@ -459,13 +459,13 @@ const optionsJob = reactive<optionsJob>({
 
     ful: {
         key: "ful",
-        department: trans("Fulfilment"),
+        department: ctrans("Fulfilment"),
         icon: "fal fa-hand-holding-box",
         subDepartment: [
             {
                 slug: "ful-m",
                 grade: "manager",
-                label: trans("Supervisor"),
+                label: ctrans("Supervisor"),
                 optionsType: ["fulfilments", "warehouses"],
                 isHide: (warehousesLength < 1 || fulfilmentsLength < 1),
                 number_employees: props.options.positions.data.find(position => position.slug == "cus-m")?.number_employees || 0
@@ -473,7 +473,7 @@ const optionsJob = reactive<optionsJob>({
             {
                 slug: "ful-wc",
                 grade: "clerk",
-                label: trans("Warehouse Clerk"),
+                label: ctrans("Warehouse Clerk"),
                 optionsType: ["warehouses"],
                 isHide: warehousesLength < 1,
                 number_employees: props.options.positions.data.find(position => position.slug == "ful-wc")?.number_employees || 0
@@ -481,7 +481,7 @@ const optionsJob = reactive<optionsJob>({
             {
                 slug: "ful-c",
                 grade: "clerk",
-                label: trans("Office Clerk"),
+                label: ctrans("Office Clerk"),
                 optionsType: ["fulfilments"],
                 isHide: fulfilmentsLength < 1,
                 number_employees: props.options.positions.data.find(position => position.slug == "ful-c")?.number_employees || 0
@@ -728,7 +728,7 @@ const isSomeShopCheckedInSameGrade = (subDepartmentSlug: string) => {
                                             <button @click.prevent="() => openFineTune = openFineTune === jobGroup.key ? '' : jobGroup.key"
                                                     class="underline disabled:no-underline whitespace-nowrap cursor-pointer disabled:cursor-auto disabled:text-gray-400"
                                             >
-                                                {{ trans("Show details") }}
+                                                {{ ctrans("Show details") }}
                                             </button>
                                         </div>
                                     </div>

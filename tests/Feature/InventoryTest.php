@@ -254,14 +254,14 @@ test('create warehouse by command', function () {
 
     expect($organisation->inventoryStats->number_warehouses)->toBe(2)
         ->and($organisation->group->inventoryStats->number_warehouses)->toBe(2)
-        ->and($warehouse->roles()->count())->toBe(10);
+        ->and($warehouse->roles()->count())->toBe(11);
 });
 
 test('seed warehouse permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
     $warehouse = Warehouse::where('code', 'AA')->first();
-    expect($warehouse->roles()->count())->toBe(10);
+    expect($warehouse->roles()->count())->toBe(11);
 });
 
 

@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
@@ -33,6 +34,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class SetDoneReturnDeliveryNote extends OrgAction
 {
+    use WithReturnsAuthorisation;
     use WithActionUpdate;
     use WithHydrateReturnDeliveryNotes;
     use WithReturnDeliveryNoteTransition;

@@ -148,16 +148,22 @@ class GetWarehouseNavigation
 
         $navigation = $this->getLocationsNavs($user, $warehouse, $navigation);
 
-        if ($user->hasAnyPermission([
+        $canViewIncoming = $user->hasAnyPermission([
             "incoming.$warehouse->id.view",
             "fulfilment.$warehouse->id.view",
-        ])) {
+        ]);
+        $canHandleReturns = $user->hasAnyPermission([
+            "incoming.$warehouse->id.view",
+            "returns.$warehouse->id",
+        ]);
+
+        if ($canViewIncoming || $canHandleReturns) {
             $navigation["incoming"] = [
                 "root"    => "grp.org.warehouses.show.incoming.",
                 "label"   => __("Goods in"),
                 "icon"    => ["fal", "fa-arrow-to-bottom"],
                 "route"   => [
-                    "name"       => "grp.org.warehouses.show.incoming.backlog",
+                    "name"       => $canViewIncoming ? "grp.org.warehouses.show.incoming.backlog" : 'grp.org.warehouses.show.incoming.return_delivery_notes.state.received',
                     "parameters" => [
                         $warehouse->organisation->slug,
                         $warehouse->slug
@@ -165,7 +171,7 @@ class GetWarehouseNavigation
                 ],
                 "topMenu" => [
                     'subSections' => [
-                        [
+                        $canViewIncoming ? [
                             'label' => __('Backlog'),
                             'icon'  => ['fal', 'fa-tasks-alt'],
                             'root'  => 'grp.org.warehouses.show.incoming.backlog',
@@ -176,7 +182,7 @@ class GetWarehouseNavigation
                                     $warehouse->slug
                                 ],
                             ]
-                        ],
+                        ] : null,
                         $user->hasPermissionTo("incoming.$warehouse->id.view") ?
                         [
                             'label' => __('Stock deliveries'),
@@ -203,7 +209,7 @@ class GetWarehouseNavigation
                                 ],
                             ]
                         ] : null,
-                        $user->hasPermissionTo("incoming.$warehouse->id.view") ? [
+                        $canHandleReturns ? [
                             'label' => __('Returns'),
                             'icon'  => ['fal', 'fa-exchange'],
                             'root'  => 'grp.org.warehouses.show.incoming.return_delivery_notes.',

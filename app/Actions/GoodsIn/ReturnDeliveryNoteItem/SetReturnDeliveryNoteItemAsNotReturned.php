@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
@@ -19,6 +20,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SetReturnDeliveryNoteItemAsNotReturned extends OrgAction
 {
+    use WithReturnsAuthorisation;
     use AsAction;
     use WithAttributes;
 

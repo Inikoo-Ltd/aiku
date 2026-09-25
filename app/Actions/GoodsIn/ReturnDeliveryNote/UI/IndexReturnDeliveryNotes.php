@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
@@ -38,6 +39,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexReturnDeliveryNotes extends OrgAction
 {
+    use WithReturnsAuthorisation;
     use WithReturnDeliveryNotesSubNavigation;
     use WithCustomerSubNavigation;
 
