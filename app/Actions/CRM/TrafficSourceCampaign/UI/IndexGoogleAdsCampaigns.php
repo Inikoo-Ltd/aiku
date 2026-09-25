@@ -450,19 +450,21 @@ class IndexGoogleAdsCampaigns extends OrgAction
                     ],
                     'model' => __('Google Ads'),
 
-                    /* Offered only once the account can actually be reached: a create form that can
-                       only fail wastes the time of whoever fills it in. */
-                    // 'actions' => GoogleAdsClient::unreachableReason($this->shop) ? [] : [
-                    //     [
-                    //         'type'  => 'button',
-                    //         'style' => 'create',
-                    //         'label' => __('New campaign'),
-                    //         'route' => [
-                    //             'name'       => 'grp.org.shops.show.marketing.google_ads.create',
-                    //             'parameters' => $request->route()->originalParameters(),
-                    //         ],
-                    //     ],
-                    // ],
+                    /* Makes the campaign and opens it, with nothing asked first. Offered only once the
+                       account can actually be reached, because a campaign that can never be published
+                       is a row nobody wanted. */
+                    'actions' => GoogleAdsClient::unreachableReason($this->shop) ? [] : [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Campaign'),
+                            'route' => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.org.shop.google_ads.campaign.store',
+                                'parameters' => ['organisation' => $this->organisation->id, 'shop' => $this->shop->id],
+                            ],
+                        ],
+                    ],
                 ],
 
                 /* A sentence rather than a boolean: "not connected to a Google account", "no Customer

@@ -184,8 +184,16 @@ class UpdateInProcessGoogleAdsCampaign extends OrgAction
         ];
     }
 
-    public function htmlResponse(): RedirectResponse
+    /**
+     * To the page by the campaign's current slug rather than back, because a rename changes the slug
+     * and the page it was saved from no longer exists.
+     */
+    public function htmlResponse(TrafficSourceCampaign $campaign): RedirectResponse
     {
-        return back();
+        return redirect()->route('grp.org.shops.show.marketing.google_ads.show', [
+            'organisation'          => $this->organisation->slug,
+            'shop'                  => $this->shop->slug,
+            'trafficSourceCampaign' => $campaign->slug,
+        ]);
     }
 }
