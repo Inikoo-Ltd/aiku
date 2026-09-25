@@ -8,8 +8,8 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
-use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydratePurchaseOrders;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydratePurchaseOrders;
@@ -42,6 +42,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StorePurchaseOrder extends OrgAction
 {
+    use WithProcurementSerialReferences;
     use WithProcurementEditAuthorisation;
     use WithPrepareDeliveryStoreFields;
     use WithNoStrictRules;
@@ -62,7 +63,7 @@ class StorePurchaseOrder extends OrgAction
         }
 
         if (!Arr::get($modelData, 'reference')) {
-            data_set($modelData, 'reference', $this->getNewReference($parent));
+            data_set($modelData, 'reference', $this->newProcurementReference($parent, SerialReferenceModelEnum::PURCHASE_ORDER));
         }
         if (!Arr::get($modelData, 'date')) {
             data_set($modelData, 'date', now());
@@ -96,20 +97,6 @@ class StorePurchaseOrder extends OrgAction
         GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay);
 
         return $purchaseOrder;
-    }
-
-    private function getNewReference(OrgSupplier|OrgAgent|OrgPartner $parent): string
-    {
-        $container = $parent instanceof OrgPartner || !$parent->purchaseOrderSerialReference ? $parent->organisation : $parent;
-
-        do {
-            $reference = GetSerialReference::run(
-                container: $container,
-                modelType: SerialReferenceModelEnum::PURCHASE_ORDER
-            );
-        } while ($parent->organisation->purchaseOrders()->where('reference', $reference)->exists());
-
-        return $reference;
     }
 
     public function rules(): array

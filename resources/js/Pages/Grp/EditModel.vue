@@ -83,7 +83,8 @@ import {
     faCamera,
     faStamp,
     faChevronDown,
-    faGem
+    faGem,
+    faHashtag
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -94,6 +95,7 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faHashtag,
     faChevronDown,
     faGem,
     faTemperatureLow,

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Procurement\OrgSupplier\UI;
 
-use App\Actions\Procurement\PurchaseOrder\WithPurchaseOrderSerialReference;
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\SupplyChain\Supplier\UI\WithSupplierInfo;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Procurement\OrgSupplier;
@@ -18,7 +18,7 @@ class GetOrgSupplierShowcase
 {
     use AsObject;
     use WithSupplierInfo;
-    use WithPurchaseOrderSerialReference;
+    use WithProcurementSerialReferences;
 
     public function handle(OrgSupplier $orgSupplier): array
     {
@@ -39,6 +39,7 @@ class GetOrgSupplierShowcase
                 'supplierInfo' => [
                     ...$this->supplierInfo($supplier),
                     'next_purchase_order_reference' => $this->nextPurchaseOrderReference($orgSupplier),
+                    'next_stock_delivery_reference' => $this->nextStockDeliveryReference($orgSupplier),
                 ],
             ],
             'stats'       => [

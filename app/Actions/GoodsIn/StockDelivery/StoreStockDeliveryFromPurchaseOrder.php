@@ -2,11 +2,11 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
-use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -31,6 +31,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 {
     use WithProcurementEditAuthorisation;
     use AsAction;
+    use WithProcurementSerialReferences;
 
     private PurchaseOrder $purchaseOrder;
 
@@ -75,10 +76,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         $stockDelivery = StoreStockDelivery::make()->action(
             $purchaseOrder->parent,
             array_merge([
-                'reference'   => GetSerialReference::run(
-                    container: $purchaseOrder->organisation,
-                    modelType: SerialReferenceModelEnum::STOCK_DELIVERY
-                ),
+                'reference'   => $this->newProcurementReference($purchaseOrder->parent, SerialReferenceModelEnum::STOCK_DELIVERY),
                 'state'       => StockDeliveryStateEnum::IN_PROCESS,
                 'date'        => now(),
                 'currency_id' => $purchaseOrder->currency_id,

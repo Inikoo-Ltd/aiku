@@ -27,6 +27,7 @@ use App\Models\SysAdmin\User;
 use App\Actions\Transfers\Aurora\RepairAuroraPurchaseOrderBuyers;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
 use App\Actions\GoodsIn\Sowing\DeleteSowing;
@@ -1017,6 +1018,32 @@ test('purchase orders are numbered with the org supplier format, skipping refere
 
     expect($orgSupplier->purchaseOrderSerialReference)->toBeNull()
         ->and(StorePurchaseOrder::make()->action($orgSupplier, $orderData, strict: false)->reference)->toBe($organisationFormatReference);
+});
+
+test('stock deliveries are numbered with the org supplier delivery format, skipping references already used', function () {
+    $supplier    = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    expect(UpdateOrgSupplier::make()->nextStockDeliveryReference($orgSupplier))->toStartWith('SD');
+
+    UpdateOrgSupplier::make()->action($orgSupplier, [
+        'stock_delivery_reference_format' => 'Camacho-D%04d_UK',
+        'stock_delivery_last_number'      => 7,
+    ]);
+    $orgSupplier->refresh();
+
+    StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'Camacho-D0008_UK', 'date' => date('Y-m-d')]);
+
+    expect(UpdateOrgSupplier::make()->nextStockDeliveryReference($orgSupplier))->toBe('Camacho-D0009_UK')
+        ->and(UpdateOrgSupplier::make()->newProcurementReference($orgSupplier, SerialReferenceModelEnum::STOCK_DELIVERY))->toBe('Camacho-D0009_UK')
+        ->and(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toStartWith('PO');
+
+    UpdateOrgSupplier::make()->action($orgSupplier, ['stock_delivery_reference_format' => null]);
+
+    expect($orgSupplier->serialReferences()->where('model', SerialReferenceModelEnum::STOCK_DELIVERY)->exists())->toBeFalse();
 });
 
 test('update quantity items to 0 in purchase order', function ($purchaseOrder) {

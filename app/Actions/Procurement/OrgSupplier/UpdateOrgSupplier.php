@@ -10,7 +10,7 @@ namespace App\Actions\Procurement\OrgSupplier;
 
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PurchaseOrder\WithPurchaseOrderSerialReference;
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSuppliers;
 use App\Actions\Traits\WithActionUpdate;
@@ -21,11 +21,11 @@ class UpdateOrgSupplier extends OrgAction
 {
     use WithProcurementEditAuthorisation;
     use WithActionUpdate;
-    use WithPurchaseOrderSerialReference;
+    use WithProcurementSerialReferences;
 
     public function handle(OrgSupplier $orgSupplier, $modelData = []): OrgSupplier
     {
-        $modelData = $this->updatePurchaseOrderSerialReference($orgSupplier, $modelData);
+        $modelData = $this->updateProcurementSerialReferences($orgSupplier, $modelData);
         $orgSupplier  = $this->update($orgSupplier, $modelData);
 
         if ($orgSupplier->wasChanged('status')) {
@@ -43,7 +43,7 @@ class UpdateOrgSupplier extends OrgAction
         return array_merge([
             'source_id' => 'sometimes|nullable|string|max:64',
             'status' => ['sometimes', 'required', 'boolean'],
-        ], $this->purchaseOrderSerialReferenceRules());
+        ], $this->procurementSerialReferenceRules());
     }
 
     public function asController(OrgSupplier $orgSupplier, ActionRequest $request): OrgSupplier
