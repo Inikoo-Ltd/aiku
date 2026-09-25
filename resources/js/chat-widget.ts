@@ -21,10 +21,56 @@ import { ctrans } from "@/Composables/useTrans"
 
 const CONTAINER_ID = "aiku-chat-widget"
 
+interface WidgetBroadcasting {
+    key: string
+    cluster: string | null
+    host: string
+    port: number
+    scheme: string
+}
+
 interface WidgetConfig {
     shop_id: number
     name: string
     theme: string[] | null
+    broadcasting: WidgetBroadcasting | null
+}
+
+/*
+ * A conversation is a public channel, so the storefront needs no credentials to hear its replies
+ * as they are written. Without this the widget only learns of an answer on its next poll, which
+ * is a chat that arrives late and feels broken. Loaded on demand so a page that never opens the
+ * chat never pays for it.
+ */
+const initEcho = async (broadcasting: WidgetBroadcasting | null): Promise<void> => {
+    if (!broadcasting?.key || (window as any).Echo) {
+        return
+    }
+
+    try {
+        const [{ default: Echo }, { default: Pusher }] = await Promise.all([
+            import("laravel-echo"),
+            import("pusher-js"),
+        ])
+
+        const isTls = broadcasting.scheme === "https"
+        ;(window as any).Pusher = Pusher
+        ;(window as any).Echo = new Echo({
+            broadcaster: "pusher",
+            key: broadcasting.key,
+            cluster: broadcasting.cluster ?? "mt1",
+            wsHost: broadcasting.host,
+            wsPort: broadcasting.port,
+            wssPort: broadcasting.port,
+            forceTLS: isTls,
+            encrypted: isTls,
+            enabledTransports: ["ws", "wss"],
+            disableStats: true,
+        })
+    } catch (error) {
+        /* A storefront without realtime still works, it just falls back to polling. */
+        console.error("Aiku chat widget: realtime unavailable", error)
+    }
 }
 
 /*
@@ -186,6 +232,8 @@ const boot = async () => {
         if (!data?.data?.shop_id) {
             return
         }
+
+        await initEcho(data.data.broadcasting ?? null)
 
         mount(data.data, baseUrl, stylesheet)
     } catch (error) {

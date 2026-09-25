@@ -14,20 +14,23 @@ class GetChatConfig
 
     public function handle(Website $website): array
     {
-        $chatEnabled = $website->settings['enable_chat'] ?? false;
+        return $this->forShop($website->shop, (bool) ($website->settings['enable_chat'] ?? false));
+    }
 
+    /**
+     * A shop running our widget on a storefront that is not ours has no website of ours to read
+     * the switch from, so its own chat setting stands in for it. Everything after that was always
+     * the shop's: the schedule, the timezone and the working hours.
+     */
+    public function forShop(?Shop $shop, bool $chatEnabled): array
+    {
         $config = [
             'is_online'     => false,
             'schedule'      => null,
             'offline_info'  => null,
         ];
 
-        if (!$chatEnabled) {
-            return $config;
-        }
-
-        $shop = $website->shop;
-        if (!$shop) {
+        if (!$chatEnabled || !$shop) {
             return $config;
         }
 
