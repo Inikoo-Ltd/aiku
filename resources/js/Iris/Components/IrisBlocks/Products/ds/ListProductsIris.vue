@@ -420,7 +420,7 @@ const search_class = ref(
 	getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false)
 )
 
-console.log("Layout :", layout)
+
 </script>
 
 <template>
