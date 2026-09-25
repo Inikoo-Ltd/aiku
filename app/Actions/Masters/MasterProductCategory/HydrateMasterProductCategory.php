@@ -9,8 +9,10 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\HydrateModel;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateProducts;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateStatus;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
@@ -40,6 +42,9 @@ class HydrateMasterProductCategory extends HydrateModel
         MasterFamilyHydrateMasterAssets::run($masterProductCategory);
         MasterFamilyHydrateFamilies::run($masterProductCategory);
         MasterFamilyHydrateStatus::run($masterProductCategory);
+        if ($masterProductCategory->type === MasterProductCategoryTypeEnum::FAMILY) {
+            MasterFamilyHydrateProducts::run($masterProductCategory->id);
+        }
         UpdateMasterProductCategoryWebImages::run($masterProductCategory);
         MasterProductCategoryHydrateMasterCollections::run($masterProductCategory);
 

@@ -8,8 +8,10 @@ import { faAlbumCollection, faEdit } from "@fal";
 import { faPlus } from "@far";
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
+import MasterFamilySalesTeaser from '@/Components/Master/MasterFamilySalesTeaser.vue';
+import MasterFamilySalesMovers from '@/Components/Master/MasterFamilySalesMovers.vue';
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
-import { trans } from 'laravel-vue-i18n';
+import { ctrans } from "@/Composables/useTrans"
 import Dialog from 'primevue/dialog';
 import { ref, inject } from 'vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
@@ -40,6 +42,7 @@ const props = defineProps<{
         missing_gr_route?: { name: string, parameters: Record<string, any> }
     }
     salesData?: object
+    salesAnalysisTeaser?: object
     actions?: any
 }>();
 
@@ -107,17 +110,17 @@ const saveGROffer = () => {
                 </template>
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">
-                        <span v-if="!data.family?.data.description_title">{{ trans("Description Title is missing")
+                        <span v-if="!data.family?.data.description_title">{{ ctrans("Description Title is missing")
                             }}.</span>
-                        <span v-if="!data.family?.data.description">{{ trans("Description is missing") }}.</span>
-                        <span v-if="!data.family?.data.description_extra">{{ trans("Extra description is missing")
+                        <span v-if="!data.family?.data.description">{{ ctrans("Description is missing") }}.</span>
+                        <span v-if="!data.family?.data.description_extra">{{ ctrans("Extra description is missing")
                             }}.</span>
                     </div>
-                    {{ trans("Please") }}
+                    {{ ctrans("Please") }}
                     <Link
                         @click="navigateTo"
                         class="underline font-bold">
-                    {{ trans("add missing description fields") }}
+                    {{ ctrans("add missing description fields") }}
                     </Link>.
                 </div>
             </Message>
@@ -134,72 +137,78 @@ const saveGROffer = () => {
                 <ProductCategoryCard :data="data.family?.data"  />
             </div>
 
-            <div class="col-span-1 md:col-span-2 lg:col-span-4 offer">
-                <template v-if="master_vol_gr_reward?.show_gr_vol">
-                    <div class="mb-1 font-bold">
-                        {{ trans("Active Gold Reward offer") }}:
-                    </div>
-                    <div
-                        v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage"
-                        @click="openModalMasterGROffer"
-                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold flex cursor-pointer"
-                    >
-                        <div class="grid w-72">
-                            <div class="flex">
-                                {{ trans('Trigger Quantity') }}
-                                <span class="ml-auto w-24">
-                                    : {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} Qty
-                                </span>
-                            </div>
-                            <div class="flex">
-                                {{ trans('Discount Percentage') }}
-                                <span class="ml-auto w-24">
-                                    : {{ parseFloat(props.master_vol_gr_reward?.gr_vol_discount_percentage as any) }} %
-                                </span>
-                            </div>
-                        </div>
-                        <FontAwesomeIcon :icon="faEdit" class="ml-auto my-auto text-amber-500" fixed-width/>
-                    </div>
-                    <div
-                        v-else
-                        class="mb-1 w-fit py-2 px-4 border border-amber-400 rounded-md font-semibold text-white bg-gradient-to-br from-amber-300 to-amber-500 cursor-pointer"
-                        @click="openModalMasterGROffer"
-                    >
-                        <FontAwesomeIcon :icon="faPlus" fixed-width />
-                        {{ trans('Add Master GR Offer') }}
-                    </div>
-                    <Link
-                        v-if="master_vol_gr_reward?.missing_gr_children_count && master_vol_gr_reward?.missing_gr_route"
-                        :href="route(master_vol_gr_reward.missing_gr_route.name, master_vol_gr_reward.missing_gr_route.parameters)"
-                        class="mt-1 text-sm text-yellow-600 flex items-center gap-1 hover:text-yellow-700"
-                    >
-                        <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
-                        {{ master_vol_gr_reward.missing_gr_children_count }} {{ trans("shop family missing Gold Reward offer") }}
-                    </Link>
-                    <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" :dismissableMask="screenType === 'desktop'" closeOnEscape>
-                        <InputVolDiscount
-                            :form="grOfferForm"
-                            fieldName="vol_gr_offer"
-                            :fieldData="{ initial_value: { item_quantity: 0, percentage_off: 0 } }"
-                        />
-                        <div class="flex">
-                            <Button
-                                :icon="faSave"
-                                :type="'save'"
-                                :class="'ml-auto'"
-                                :loading="grOfferForm.processing"
-                                @click="saveGROffer"
-                            />
-                        </div>
-                    </Dialog>
-                </template>
+            <div class="col-span-1 md:col-span-2 lg:col-span-4">
+                <MasterFamilySalesTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+
+                <div class="flex flex-col gap-4 lg:flex-row">
+                    <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:max-w-[23rem]" />
+                    <MasterFamilySalesMovers :teaser="salesAnalysisTeaser" class="min-w-0 flex-1" />
+                </div>
 
                 <MasterFamilyBestSellers v-if="data.bestSellers" :data="data.bestSellers" class="mt-4" />
             </div>
 
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
-                <!-- Sales Analytics Compact -->
-                <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" />
+                <div v-if="master_vol_gr_reward?.show_gr_vol" class="offer">
+                    <template v-if="master_vol_gr_reward?.show_gr_vol">
+                        <div class="mb-1 font-bold">
+                            {{ ctrans("Active Gold Reward offer") }}:
+                        </div>
+                        <div
+                            v-if="props.master_vol_gr_reward?.gr_vol_discount_percentage"
+                            @click="openModalMasterGROffer"
+                            class="mb-1 w-full py-2 px-4 border border-amber-400 rounded-md font-semibold flex cursor-pointer"
+                        >
+                            <div class="grid w-72">
+                                <div class="flex">
+                                    {{ ctrans('Trigger Quantity') }}
+                                    <span class="ml-auto w-24">
+                                        : {{ props.master_vol_gr_reward?.gr_vol_discount_quantity }} Qty
+                                    </span>
+                                </div>
+                                <div class="flex">
+                                    {{ ctrans('Discount Percentage') }}
+                                    <span class="ml-auto w-24">
+                                        : {{ parseFloat(props.master_vol_gr_reward?.gr_vol_discount_percentage as any) }} %
+                                    </span>
+                                </div>
+                            </div>
+                            <FontAwesomeIcon :icon="faEdit" class="ml-auto my-auto text-amber-500" fixed-width/>
+                        </div>
+                        <div
+                            v-else
+                            class="mb-1 w-full py-2 px-4 border border-amber-400 rounded-md font-semibold text-white bg-gradient-to-br from-amber-300 to-amber-500 cursor-pointer"
+                            @click="openModalMasterGROffer"
+                        >
+                            <FontAwesomeIcon :icon="faPlus" fixed-width />
+                            {{ ctrans('Add Master GR Offer') }}
+                        </div>
+                        <Link
+                            v-if="master_vol_gr_reward?.missing_gr_children_count && master_vol_gr_reward?.missing_gr_route"
+                            :href="route(master_vol_gr_reward.missing_gr_route.name, master_vol_gr_reward.missing_gr_route.parameters)"
+                            class="mt-1 text-sm text-yellow-600 flex items-center gap-1 hover:text-yellow-700"
+                        >
+                            <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
+                            {{ master_vol_gr_reward.missing_gr_children_count }} {{ ctrans("shop family missing Gold Reward offer") }}
+                        </Link>
+                        <Dialog v-model:visible="isOpenModalMasterGROffer" modal header="Gold Reward Offer" :style="{ width: '50rem' }" closable :draggable="false" :dismissableMask="screenType === 'desktop'" closeOnEscape>
+                            <InputVolDiscount
+                                :form="grOfferForm"
+                                fieldName="vol_gr_offer"
+                                :fieldData="{ initial_value: { item_quantity: 0, percentage_off: 0 } }"
+                            />
+                            <div class="flex">
+                                <Button
+                                    :icon="faSave"
+                                    :type="'save'"
+                                    :class="'ml-auto'"
+                                    :loading="grOfferForm.processing"
+                                    @click="saveGROffer"
+                                />
+                            </div>
+                        </Dialog>
+                    </template>
+                </div>
 
                 <!-- Product State Stats -->
                 <ProductCategoryStats v-if="data.family?.data.stats" :stats="data.family?.data.stats" />

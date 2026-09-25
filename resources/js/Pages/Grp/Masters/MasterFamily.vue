@@ -78,6 +78,7 @@ const props = defineProps<{
     sales?:object
     salesData?:object
     sales_analysis?: object
+    sales_analysis_teaser?: object
     currency?:Object
     url_master?:routeType
     shopsData? :any
@@ -101,8 +102,10 @@ const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
 
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+
 const handleTabUpdate = (tabSlug: string) => {
-    useTabChange(tabSlug, currentTab)
+    useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 }
 
 const component = computed(() => {
@@ -205,7 +208,7 @@ const showDialog = ref(false);
         </Message>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward"/>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward"/>
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

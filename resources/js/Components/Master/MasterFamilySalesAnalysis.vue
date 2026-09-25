@@ -4,7 +4,6 @@ import Chart from "primevue/chart"
 import { Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
 	faTag,
@@ -19,6 +18,10 @@ import {
 	faExclamationTriangle,
 	faChevronDown,
 	faChevronRight,
+	faUsers,
+	faBuilding,
+	faStore,
+	faSpinnerThird,
 } from "@fal"
 
 type EventType = "price" | "offer" | "content" | "status" | "launch" | "publish"
@@ -68,6 +71,12 @@ interface Totals {
 
 const props = defineProps<{
 	data: {
+		filters: {
+			organisations: Array<{ slug: string; code: string; name: string }>
+			shops: Array<{ slug: string; code: string; name: string; state: string; organisation_slug: string }>
+			selected_organisations: string[]
+			selected_shops: string[]
+		}
 		period: { from: string; to: string }
 		compare_period: { from: string; to: string }
 		frequency: "daily" | "weekly" | "monthly"
@@ -76,15 +85,16 @@ const props = defineProps<{
 		compare_sales: Array<{ date: string; sales: number; orders: number }>
 		totals: { current: Totals; previous: Totals }
 		shops: Array<{ shop_id: number; shop_code: string; shop_name: string; shop_state: string; organisation_id: number; family_state: string; sales: number; previous_sales: number; orders: number; previous_orders: number; stock_out_days: number }>
-		products: Array<{ id: number; code: string; name: string; slug: string; status: boolean; is_for_sale: boolean; created_at: string | null; discontinued_at: string | null; sales: number; previous_sales: number; websites: number; websites_out_of_stock: number; stock_outs: number; stock_out_days: number; lost_sales: number }>
+		products: Array<{ id: number; code: string; name: string; slug: string | null; status: boolean; is_for_sale: boolean; created_at: string | null; discontinued_at: string | null; sales: number; previous_sales: number; websites: number; websites_out_of_stock: number; stock_outs: number; stock_out_days: number; lost_sales: number }>
 		stock_outs: StockOut[]
+		skos: number
 		traffic: Array<{ date: string; visitors: number; page_views: number; add_to_baskets: number }>
 		events: ChangeEvent[]
 	}
 }>()
 
-const locale = useLocaleStore()
-const money = (value: number) => locale.currencyFormat(props.data.currency, Math.round(value))
+const moneyFormatter = computed(() => new Intl.NumberFormat(undefined, { style: "currency", currency: props.data.currency, maximumFractionDigits: 0 }))
+const money = (value: number) => moneyFormatter.value.format(Math.round(value))
 const formatDate = (date: string | null) => (date ? useFormatTime(date, { formatTime: "PP" }) : "")
 const change = (current: number, previous: number) => (previous ? ((current - previous) / previous) * 100 : null)
 const formatChange = (value: number | null) => (value === null ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(0)}%`)
@@ -111,13 +121,44 @@ const causeStyle: Record<Cause, { label: string; class: string; explanation: str
 
 const range = ref({ ...props.data.period })
 const compareRange = ref({ ...props.data.compare_period })
+const selectedOrganisations = ref<string[]>([...props.data.filters.selected_organisations])
+const selectedShops = ref<string[]>([...props.data.filters.selected_shops])
+const isShopMenuOpen = ref(false)
+const isLoading = ref(false)
 
 const reload = () => {
 	router.reload({
-		data: { from: range.value.from, to: range.value.to, compareFrom: compareRange.value.from, compareTo: compareRange.value.to },
+		onStart: () => (isLoading.value = true),
+		onFinish: () => (isLoading.value = false),
+		data: {
+			from: range.value.from,
+			to: range.value.to,
+			compareFrom: compareRange.value.from,
+			compareTo: compareRange.value.to,
+			organisations: selectedOrganisations.value.join(",") || undefined,
+			shops: selectedShops.value.join(",") || undefined,
+		},
 		only: ["sales_analysis"],
 	})
 }
+
+const availableShops = computed(() =>
+	props.data.filters.shops.filter((shop) => !selectedOrganisations.value.length || selectedOrganisations.value.includes(shop.organisation_slug))
+)
+const toggleOrganisation = (slug: string | null) => {
+	selectedOrganisations.value = slug === null ? [] : selectedOrganisations.value.includes(slug) ? selectedOrganisations.value.filter((selected) => selected !== slug) : [...selectedOrganisations.value, slug]
+	selectedShops.value = selectedShops.value.filter((shopSlug) => availableShops.value.some((shop) => shop.slug === shopSlug))
+	reload()
+}
+const toggleShop = (slug: string | null) => {
+	selectedShops.value = slug === null ? [] : selectedShops.value.includes(slug) ? selectedShops.value.filter((selected) => selected !== slug) : [...selectedShops.value, slug]
+	reload()
+}
+const shopCapsuleLabel = computed(() => {
+	if (!selectedShops.value.length) return ctrans("All websites")
+	if (selectedShops.value.length === 1) return props.data.filters.shops.find((shop) => shop.slug === selectedShops.value[0])?.code ?? selectedShops.value[0]
+	return `${selectedShops.value.length} ${ctrans("websites")}`
+})
 
 const isoDate = (date: Date) => date.toISOString().slice(0, 10)
 const shiftYears = (date: string, years: number) => {
@@ -136,7 +177,8 @@ const presets = [
 	{ label: ctrans("Last 3 months vs same months last year"), apply: () => ({ to: isoDate(yesterday()), years: 1, months: 3 }) },
 	{ label: ctrans("Last 5 years vs 5 years before"), apply: () => ({ to: isoDate(yesterday()), years: 5, months: 60 }) },
 ]
-const applyPreset = (preset: (typeof presets)[number]) => {
+const applyPreset = (preset: (typeof presets)[number] | undefined) => {
+	if (!preset) return
 	const { to, years, months } = preset.apply()
 	const from = new Date(to)
 	from.setMonth(from.getMonth() - months)
@@ -152,9 +194,10 @@ const previous = computed(() => props.data.totals.previous)
 const tiles = computed(() => [
 	{ key: "sales", icon: faMoneyBillWave, label: ctrans("Sales"), value: money(current.value.sales), previous: money(previous.value.sales), change: change(current.value.sales, previous.value.sales), good: "up" },
 	{ key: "orders", icon: faShoppingCart, label: ctrans("Orders"), value: current.value.orders.toLocaleString(), previous: previous.value.orders.toLocaleString(), change: change(current.value.orders, previous.value.orders), good: "up" },
-	{ key: "stock_out_days", icon: faBoxOpen, label: `${ctrans("Days out of stock")} (${current.value.stock_outs} ${ctrans("stock outs")})`, value: current.value.stock_out_days.toLocaleString(), previous: `${previous.value.stock_out_days.toLocaleString()} (${previous.value.stock_outs})`, change: change(current.value.stock_out_days, previous.value.stock_out_days), good: "down" },
-	{ key: "lost_sales", icon: faExclamationTriangle, label: ctrans("Estimated sales lost to stock outs"), value: money(current.value.lost_sales), previous: money(previous.value.lost_sales), change: change(current.value.lost_sales, previous.value.lost_sales), good: "down" },
-	{ key: "no_order", icon: faExclamationTriangle, label: ctrans("Ran out with nothing ordered"), value: current.value.stock_outs_no_order.toLocaleString(), previous: previous.value.stock_outs_no_order.toLocaleString(), change: change(current.value.stock_outs_no_order, previous.value.stock_outs_no_order), good: "down" },
+	{ key: "customers", icon: faUsers, label: ctrans("Customers"), value: current.value.customers.toLocaleString(), previous: previous.value.customers.toLocaleString(), change: change(current.value.customers, previous.value.customers), good: "up" },
+	{ key: "stock_out_days", icon: faBoxOpen, label: ctrans("Days out of stock"), value: `${current.value.stock_out_days.toLocaleString()} (${current.value.stock_outs}×)`, previous: `${previous.value.stock_out_days.toLocaleString()} (${previous.value.stock_outs}×)`, change: change(current.value.stock_out_days, previous.value.stock_out_days), good: "down" },
+	{ key: "lost_sales", icon: faExclamationTriangle, label: ctrans("Lost to stock outs"), value: money(current.value.lost_sales), previous: money(previous.value.lost_sales), change: change(current.value.lost_sales, previous.value.lost_sales), good: "down" },
+	{ key: "no_order", icon: faExclamationTriangle, label: ctrans("Ran out, nothing ordered"), value: current.value.stock_outs_no_order.toLocaleString(), previous: previous.value.stock_outs_no_order.toLocaleString(), change: change(current.value.stock_outs_no_order, previous.value.stock_outs_no_order), good: "down" },
 ])
 
 const tileChangeClass = (tile: (typeof tiles.value)[number]) =>
@@ -168,7 +211,7 @@ const bucketIndex = (date: string) => {
 	return index
 }
 
-const layers = ref({ compare: true, visitors: props.data.traffic.length > 0, stockOuts: true, price: true, offer: true, content: false, status: true, launch: true, publish: false })
+const markers = ref<Record<EventType, boolean>>({ price: false, offer: false, content: false, status: false, launch: false, publish: false })
 
 const stockOutsPerBucket = computed(() => {
 	const counts = labels.value.map(() => 0)
@@ -179,12 +222,10 @@ const stockOutsPerBucket = computed(() => {
 	})
 	return counts
 })
-const maxStockOuts = computed(() => Math.max(1, ...stockOutsPerBucket.value))
 
 const eventsByBucket = computed(() => {
 	const grouped: Record<number, ChangeEvent[]> = {}
 	for (const event of props.data.events) {
-		if (!layers.value[event.type]) continue
 		const index = bucketIndex(event.date)
 		if (index >= 0) (grouped[index] ??= []).push(event)
 	}
@@ -193,56 +234,62 @@ const eventsByBucket = computed(() => {
 
 const trafficByDate = computed(() => Object.fromEntries(props.data.traffic.map((row) => [row.date, row])))
 
+const pointRadius = computed(() => (labels.value.length > 40 ? 0 : 2))
+const hasVisitors = computed(() => props.data.traffic.some((row) => row.visitors > 0))
+
+const STOCK_OUT_VIEW_KEY = "masterFamilySalesAnalysis.stockOutView"
+const readStockOutView = (): "line" | "background" => {
+	try {
+		return localStorage.getItem(STOCK_OUT_VIEW_KEY) === "background" ? "background" : "line"
+	} catch {
+		return "line"
+	}
+}
+const stockOutView = ref<"line" | "background">(readStockOutView())
+const setStockOutView = (view: "line" | "background") => {
+	stockOutView.value = view
+	try {
+		localStorage.setItem(STOCK_OUT_VIEW_KEY, view)
+	} catch {
+		/* storage unavailable */
+	}
+}
+const stockOutShare = (count: number) => Math.min(1, count / Math.max(1, props.data.skos, count))
+const stockOutText = (count: number) => `${ctrans("Out of stock")}: ${count} ${ctrans("of")} ${Math.max(props.data.skos, count)} SKOs`
+const line = (label: string, color: string, data: Array<number | null>, yAxisID: string, extra: object = {}) => ({
+	label,
+	data,
+	borderColor: color,
+	backgroundColor: color,
+	tension: 0,
+	borderWidth: 1.5,
+	pointRadius: pointRadius.value,
+	yAxisID,
+	...extra,
+})
+
 const chartData = computed(() => ({
 	labels: labels.value,
 	datasets: [
-		{
-			label: ctrans("Sales"),
-			data: props.data.sales.map((row) => row.sales),
-			borderColor: "#0F9D58",
-			backgroundColor: "#0F9D5822",
-			borderWidth: 2,
-			pointRadius: 0,
-			fill: true,
-			cubicInterpolationMode: "monotone",
-			yAxisID: "sales",
-			order: 1,
-		},
-		layers.value.compare && {
-			label: ctrans("Compared period"),
-			data: labels.value.map((_, index) => props.data.compare_sales[index]?.sales ?? null),
-			borderColor: "#9CA3AF",
-			borderDash: [5, 4],
-			borderWidth: 1.5,
-			pointRadius: 0,
-			cubicInterpolationMode: "monotone",
-			yAxisID: "sales",
-			order: 2,
-		},
-		layers.value.visitors && {
-			type: "bar",
-			label: ctrans("Visitors"),
-			data: labels.value.map((date) => trafficByDate.value[date]?.visitors ?? null),
-			backgroundColor: "#4285F455",
-			borderRadius: 2,
-			yAxisID: "visitors",
-			order: 3,
-		},
-	].filter(Boolean),
+		line(ctrans("Sales"), "#1f845a", props.data.sales.map((row) => row.sales), "sales"),
+		line(ctrans("Compared period"), "#9ca3af", labels.value.map((_, index) => props.data.compare_sales[index]?.sales ?? null), "sales", { borderDash: [4, 3] }),
+		...(stockOutView.value === "line" ? [line(ctrans("Products out of stock"), "#dc2626", stockOutsPerBucket.value, "stock", { stepped: "middle" })] : []),
+		...(hasVisitors.value ? [line(ctrans("Visitors"), "#3b82f6", labels.value.map((date) => trafficByDate.value[date]?.visitors ?? null), "visitors")] : []),
+	],
 }))
 
-const overlays = {
-	id: "salesAnalysisOverlays",
+const markerPlugin = {
+	id: "salesAnalysisMarkers",
 	beforeDatasetsDraw(chart: any) {
-		if (!layers.value.stockOuts) return
+		if (stockOutView.value !== "background") return
 		const { ctx, chartArea, scales } = chart
 		const step = labels.value.length > 1 ? scales.x.getPixelForValue(1) - scales.x.getPixelForValue(0) : chartArea.width
 		stockOutsPerBucket.value.forEach((count, index) => {
 			if (!count) return
 			const x = scales.x.getPixelForValue(index)
 			ctx.save()
-			ctx.fillStyle = `rgba(219, 68, 55, ${0.06 + 0.22 * (count / maxStockOuts.value)})`
-			ctx.fillRect(x - step / 2, chartArea.top, step, chartArea.bottom - chartArea.top)
+			ctx.fillStyle = `rgba(220, 38, 38, ${0.04 + 0.4 * stockOutShare(count)})`
+			ctx.fillRect(Math.max(chartArea.left, x - step / 2), chartArea.top, step, chartArea.bottom - chartArea.top)
 			ctx.restore()
 		})
 	},
@@ -252,15 +299,36 @@ const overlays = {
 			const x = scales.x.getPixelForValue(Number(index))
 			;[...new Set(events.map((event) => event.type))].forEach((type, position) => {
 				ctx.save()
+				if (markers.value[type]) {
+					ctx.strokeStyle = eventStyle[type].color
+					ctx.lineWidth = 1.5
+					ctx.setLineDash([4, 3])
+					ctx.beginPath()
+					ctx.moveTo(x, chartArea.top)
+					ctx.lineTo(x, chartArea.bottom)
+					ctx.stroke()
+				}
 				ctx.fillStyle = eventStyle[type].color
 				ctx.beginPath()
-				ctx.arc(x, chartArea.top + 5 + position * 10, 3.5, 0, Math.PI * 2)
+				ctx.arc(x, chartArea.top + 4 + position * 8, 3, 0, Math.PI * 2)
 				ctx.fill()
 				ctx.restore()
 			})
 		}
 	},
 }
+
+const fieldLabels: Record<string, string> = {
+	is_for_sale: ctrans("for sale"),
+	status: ctrans("active"),
+	state: ctrans("state"),
+	description_extra: ctrans("extra description"),
+	description_title: ctrans("description title"),
+	gold_reward_percentage_off: ctrans("Gold reward % off"),
+	gold_reward_min_quantity: ctrans("Gold reward min quantity"),
+	gold_reward_state: ctrans("Gold reward"),
+}
+const fieldLabel = (field: string) => fieldLabels[field] ?? field.replace(/_/g, " ")
 
 const eventLabel = (event: ChangeEvent) => {
 	const subjects = event.subjects.length > 3 ? `${event.subjects.slice(0, 3).join(", ")} +${event.subjects.length - 3}` : event.subjects.join(", ")
@@ -275,7 +343,7 @@ const eventLabel = (event: ChangeEvent) => {
 		case "offer_ended":
 			return `${ctrans("Offer ended")}: ${subjects}`
 		default:
-			return event.subjects.length > 1 ? `${subjects} · ${event.field.replace(/_/g, " ")}` : `${subjects} · ${event.field.replace(/_/g, " ")}: ${values}`
+			return event.subjects.length > 1 ? `${subjects} · ${fieldLabel(event.field)}` : `${subjects} · ${fieldLabel(event.field)}: ${values}`
 	}
 }
 const shopsLabel = (event: ChangeEvent) =>
@@ -286,23 +354,22 @@ const chartOptions = computed(() => ({
 	maintainAspectRatio: false,
 	interaction: { mode: "index", intersect: false },
 	plugins: {
-		legend: { display: false },
+		salesAnalysisMarkers: { markers: { ...markers.value }, stockOutView: stockOutView.value },
+		legend: { position: "bottom", labels: { boxWidth: 12, boxHeight: 12 } },
 		tooltip: {
-			backgroundColor: "#fff",
-			titleColor: "#111827",
-			bodyColor: "#374151",
-			borderColor: "#d1d5db",
-			borderWidth: 1,
-			padding: 10,
 			callbacks: {
-				title: (items: any[]) => (props.data.frequency === "weekly" ? ctrans("Week of") + " " : props.data.frequency === "monthly" ? "" : "") + useFormatTime(items[0].label, { formatTime: props.data.frequency === "monthly" ? "MMM yyyy" : "PP" }),
-				label: (item: any) => (item.dataset.yAxisID === "sales" ? `${item.dataset.label}: ${money(item.raw ?? 0)}` : `${item.dataset.label}: ${(item.raw ?? 0).toLocaleString()}`),
+				title: (items: any[]) => (props.data.frequency === "weekly" ? ctrans("Week of") + " " : "") + useFormatTime(items[0].label, { formatTime: props.data.frequency === "monthly" ? "MMM yyyy" : "PP" }),
+				label: (item: any) =>
+					item.dataset.yAxisID === "sales"
+						? `${item.dataset.label}: ${money(item.raw ?? 0)}`
+						: item.dataset.yAxisID === "stock"
+							? stockOutText(item.raw ?? 0)
+							: `${item.dataset.label}: ${(item.raw ?? 0).toLocaleString()}`,
 				afterBody: (items: any[]) => {
-					const index = items[0].dataIndex
-					const lines: string[] = []
-					if (layers.value.stockOuts && stockOutsPerBucket.value[index]) lines.push(`${ctrans("Products out of stock")}: ${stockOutsPerBucket.value[index]}`)
-					const events = eventsByBucket.value[index] ?? []
-					events.slice(0, 8).forEach((event) => lines.push(`• ${eventLabel(event)} (${shopsLabel(event)})`))
+					const outOfStock = stockOutsPerBucket.value[items[0].dataIndex]
+					const events = eventsByBucket.value[items[0].dataIndex] ?? []
+					const lines = stockOutView.value === "background" && outOfStock ? [stockOutText(outOfStock)] : []
+					lines.push(...events.slice(0, 8).map((event) => `• ${eventLabel(event)} (${shopsLabel(event)})`))
 					if (events.length > 8) lines.push(`… +${events.length - 8}`)
 					return lines
 				},
@@ -310,18 +377,12 @@ const chartOptions = computed(() => ({
 		},
 	},
 	scales: {
-		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, color: "#6b7280" } },
-		sales: { type: "linear", position: "left", min: 0, grid: { color: "#f3f4f6" }, ticks: { color: "#0F9D58" }, title: { display: true, text: `${ctrans("Sales")} (${props.data.currency})`, color: "#0F9D58" } },
-		visitors: { type: "linear", position: "right", display: layers.value.visitors, min: 0, grid: { drawOnChartArea: false }, ticks: { color: "#4285F4", precision: 0 }, title: { display: true, text: ctrans("Visitors"), color: "#4285F4" } },
+		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
+		sales: { type: "linear", position: "left", beginAtZero: true, ticks: { callback: (value: number) => money(value) } },
+		stock: { type: "linear", position: "right", display: stockOutView.value === "line", beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { precision: 0, color: "#dc2626" } },
+		visitors: { type: "linear", position: "right", display: hasVisitors.value, beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { precision: 0, color: "#3b82f6" } },
 	},
 }))
-
-const layerOptions = computed(() => [
-	{ key: "compare", label: ctrans("Compared period"), color: "#9CA3AF" },
-	{ key: "visitors", label: ctrans("Visitors"), color: "#4285F4", disabled: props.data.traffic.length === 0 },
-	{ key: "stockOuts", label: ctrans("Out of stock"), color: "#DB4437" },
-	...(Object.keys(eventStyle) as EventType[]).map((type) => ({ key: type, label: eventStyle[type].label, color: eventStyle[type].color })),
-])
 
 const totalChange = computed(() => current.value.sales - previous.value.sales)
 const shareOfChange = (delta: number) => (totalChange.value ? `${Math.round((delta / Math.abs(totalChange.value)) * 100)}%` : "—")
@@ -349,72 +410,125 @@ const orderRoute = (stockOut: StockOut) =>
 			? route("grp.org.procurement.stock_deliveries.show", [stockOut.organisation_slug, stockOut.order.slug])
 			: null
 
-const productRoute = (slug: string) => {
+const productRoute = (slug: string | null) => {
 	const params = route().params
-	return params.masterShop && params.masterFamily ? route("grp.masters.master_shops.show.master_families.master_products.show", [params.masterShop, params.masterFamily, slug]) : null
+	return slug && params.masterShop && params.masterFamily ? route("grp.masters.master_shops.show.master_families.master_products.show", [params.masterShop, params.masterFamily, slug]) : null
 }
 </script>
 
 <template>
-	<div class="space-y-6 px-4 py-6 text-sm text-gray-700">
-		<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-			<label class="flex items-center gap-2">
-				<input v-model="range.from" type="date" :max="range.to" class="rounded border-gray-300 text-sm" @change="reload" />
-				<span class="text-gray-500">–</span>
-				<input v-model="range.to" type="date" :min="range.from" class="rounded border-gray-300 text-sm" @change="reload" />
-			</label>
-			<label class="flex items-center gap-2">
-				<span class="text-gray-500">{{ ctrans("compared with") }}</span>
-				<input v-model="compareRange.from" type="date" :max="compareRange.to" class="rounded border-gray-300 text-sm" @change="reload" />
-				<span class="text-gray-500">–</span>
-				<input v-model="compareRange.to" type="date" :min="compareRange.from" class="rounded border-gray-300 text-sm" @change="reload" />
-			</label>
-			<div class="flex flex-wrap gap-1">
+	<div class="relative space-y-4 px-4 py-4 text-sm text-gray-700">
+		<div class="flex flex-wrap items-center gap-2">
+			<div class="flex items-center gap-1" data-organisation-capsules>
+				<FontAwesomeIcon :icon="faBuilding" class="text-gray-400" fixed-width aria-hidden="true" />
 				<button
-					v-for="preset in presets"
-					:key="preset.label"
 					type="button"
-					class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-					@click="applyPreset(preset)">
-					{{ preset.label }}
+					class="rounded-full border px-2.5 py-0.5 text-xs"
+					:class="!selectedOrganisations.length ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+					@click="toggleOrganisation(null)">
+					{{ ctrans("All") }}
 				</button>
+				<button
+					v-for="organisation in data.filters.organisations"
+					:key="organisation.slug"
+					type="button"
+					v-tooltip="organisation.name"
+					class="rounded-full border px-2.5 py-0.5 text-xs"
+					:class="selectedOrganisations.includes(organisation.slug) ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+					@click="toggleOrganisation(organisation.slug)">
+					{{ organisation.code }}
+				</button>
+			</div>
+
+			<div class="relative" data-shop-capsule>
+				<button
+					type="button"
+					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs"
+					:class="selectedShops.length ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+					@click="isShopMenuOpen = !isShopMenuOpen">
+					<FontAwesomeIcon :icon="faStore" fixed-width aria-hidden="true" />
+					{{ shopCapsuleLabel }}
+					<FontAwesomeIcon :icon="faChevronDown" fixed-width aria-hidden="true" />
+				</button>
+				<div v-if="isShopMenuOpen" class="fixed inset-0 z-10" @click="isShopMenuOpen = false" />
+				<div v-if="isShopMenuOpen" class="absolute left-0 z-20 mt-1 max-h-80 w-72 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+					<button type="button" class="w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50" :class="!selectedShops.length ? 'font-medium text-gray-900' : 'text-gray-600'" @click="toggleShop(null)">
+						{{ ctrans("All websites") }}
+					</button>
+					<label v-for="shop in availableShops" :key="shop.slug" class="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-50">
+						<input type="checkbox" class="h-3.5 w-3.5 rounded border-gray-300" :checked="selectedShops.includes(shop.slug)" @change="toggleShop(shop.slug)" />
+						<span class="font-medium">{{ shop.code }}</span>
+						<span class="truncate text-gray-500">{{ shop.name }}</span>
+					</label>
+				</div>
+			</div>
+
+			<div class="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
+				<input v-model="range.from" type="date" :max="range.to" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
+				<span class="text-gray-400">–</span>
+				<input v-model="range.to" type="date" :min="range.from" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
+				<span class="text-gray-500">{{ ctrans("vs") }}</span>
+				<input v-model="compareRange.from" type="date" :max="compareRange.to" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
+				<span class="text-gray-400">–</span>
+				<input v-model="compareRange.to" type="date" :min="compareRange.from" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
+				<FontAwesomeIcon v-if="isLoading" :icon="faSpinnerThird" spin class="text-indigo-500" fixed-width :aria-label="ctrans('Loading')" />
+				<select class="rounded border-gray-300 py-1 text-xs text-gray-600" @change="applyPreset(presets[Number(($event.target as HTMLSelectElement).value)]); ($event.target as HTMLSelectElement).value = ''">
+					<option value="">{{ ctrans("Quick periods") }}</option>
+					<option v-for="(preset, index) in presets" :key="preset.label" :value="index">{{ preset.label }}</option>
+				</select>
 			</div>
 		</div>
 
-		<div class="grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
-			<div v-for="tile in tiles" :key="tile.key" class="rounded-lg border border-gray-200 bg-white p-3">
-				<div class="flex items-center gap-1.5 text-xs text-gray-500">
-					<FontAwesomeIcon :icon="tile.icon" fixed-width aria-hidden="true" />
-					{{ tile.label }}
-				</div>
-				<div class="mt-1 flex items-baseline gap-2 tabular-nums">
-					<span class="font-semibold text-gray-900">{{ tile.value }}</span>
-					<span class="text-xs" :class="tileChangeClass(tile)">{{ formatChange(tile.change) }}</span>
-				</div>
-				<div class="mt-0.5 text-xs tabular-nums text-gray-500">
-					{{ ctrans("was") }} {{ tile.previous }}
-				</div>
+		<div v-if="isLoading" class="absolute inset-x-0 top-28 z-10 flex justify-center">
+			<div class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 shadow">
+				<FontAwesomeIcon :icon="faSpinnerThird" spin class="text-indigo-500" fixed-width aria-hidden="true" />
+				{{ ctrans("Loading") }}…
+			</div>
+		</div>
+		<div class="space-y-4 transition-opacity" :class="isLoading ? 'pointer-events-none opacity-40' : ''" :aria-busy="isLoading">
+		<div class="flex flex-wrap gap-2">
+			<div
+				v-for="tile in tiles"
+				:key="tile.key"
+				v-tooltip="`${tile.label} · ${ctrans('was')} ${tile.previous}`"
+				class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm shadow-sm tabular-nums">
+				<FontAwesomeIcon :icon="tile.icon" class="text-gray-400" fixed-width aria-hidden="true" />
+				<span class="text-xs text-gray-500">{{ tile.label }}</span>
+				<span class="font-semibold text-gray-900">{{ tile.value }}</span>
+				<span class="text-xs" :class="tileChangeClass(tile)">{{ formatChange(tile.change) }}</span>
 			</div>
 		</div>
 
 		<div class="rounded-lg border border-gray-200 bg-white p-4">
-			<div class="mb-3 flex flex-wrap gap-1.5">
+			<div class="relative h-72 w-full">
+				<Chart type="line" class="h-full" :data="chartData" :options="chartOptions" :plugins="[markerPlugin]" />
+			</div>
+			<div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+				<span>{{ ctrans("Out of stock") }}:</span>
+				<div class="mr-3 flex overflow-hidden rounded border border-gray-300" data-stock-out-view>
+					<button
+						v-for="view in (['line', 'background'] as const)"
+						:key="view"
+						type="button"
+						class="px-2 py-0.5"
+						:class="stockOutView === view ? 'bg-gray-700 text-white' : 'text-gray-600 hover:bg-gray-50'"
+						@click="setStockOutView(view)">
+						{{ view === "line" ? ctrans("Line") : ctrans("Background") }}
+					</button>
+				</div>
+				<span v-tooltip="ctrans('Dots at the top mark every change; switch a type on to draw its changes as lines through the chart')">{{ ctrans("Lines") }}:</span>
 				<button
-					v-for="layer in layerOptions"
-					:key="layer.key"
+					v-for="(style, type) in eventStyle"
+					:key="type"
 					type="button"
-					:disabled="layer.disabled"
-					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs disabled:opacity-40"
-					:class="layers[layer.key] && !layer.disabled ? 'border-gray-400 text-gray-700' : 'border-gray-200 text-gray-400'"
-					@click="layers[layer.key] = !layers[layer.key]">
-					<span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: layer.color, opacity: layers[layer.key] ? 1 : 0.3 }" />
-					{{ layer.label }}
+					class="flex items-center gap-1 rounded-full border px-2 py-0.5"
+					:class="markers[type] ? 'border-gray-500 bg-gray-50 text-gray-800' : 'border-gray-200 text-gray-500'"
+					@click="markers[type] = !markers[type]">
+					<span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: style.color }" />
+					{{ style.label }}
 				</button>
+				<span v-if="!hasVisitors" class="ml-auto">{{ ctrans("Visitors are recorded from January 2026.") }}</span>
 			</div>
-			<div class="relative h-80 w-full">
-				<Chart type="line" class="h-full" :data="chartData" :options="chartOptions" :plugins="[overlays]" />
-			</div>
-			<p v-if="!data.traffic.length" class="mt-2 text-xs text-gray-500">{{ ctrans("Visitors are recorded from January 2026.") }}</p>
 		</div>
 
 		<div class="grid gap-6 xl:grid-cols-2">
@@ -615,6 +729,7 @@ const productRoute = (slug: string) => {
 					</ul>
 				</li>
 			</ul>
+		</div>
 		</div>
 	</div>
 </template>

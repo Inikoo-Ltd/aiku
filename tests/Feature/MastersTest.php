@@ -70,6 +70,7 @@ use App\Models\Masters\MasterAssetStats;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionOrderingStats;
 use App\Models\Masters\MasterCollectionStats;
+use App\Actions\Masters\MasterProductCategory\UI\GetMasterFamilySalesAnalysis;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterProductCategoryStats;
@@ -545,8 +546,15 @@ test('UI Show Master Family sales analysis tab', function (MasterProductCategory
             ->has('sales_analysis.shops')
             ->has('sales_analysis.products')
             ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events');
+            ->has('sales_analysis.events')
+            ->where('sales_analysis.filters.selected_organisations', [])
+            ->has('sales_analysis.filters.organisations');
     });
+
+    $teaser = GetMasterFamilySalesAnalysis::make()->teaser($masterFamily);
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'products'])
+        ->and($teaser['totals']['current']['sales'])->toEqual(0);
 })->depends('create master family');
 
 test("UI Show master shop", function (MasterShop $masterShop) {

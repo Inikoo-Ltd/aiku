@@ -17,10 +17,10 @@ enum MasterFamilyTabsEnum: string
     use HasTabs;
 
     case SHOWCASE  = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     // case FAMILIES     = 'families';
     case IMAGES    = 'images';
     case SALES     = 'sales';
-    case SALES_ANALYSIS = 'sales_analysis';
     case RELATED_PRODUCTS    = 'related_products';
 
     case RELATED_PRODUCT_CATEGORY = 'related_product_category';

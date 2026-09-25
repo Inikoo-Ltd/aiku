@@ -118,10 +118,22 @@ class GetMasterFamilyStockOuts
     {
         return DB::table('product_has_org_stocks')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
-            ->where(function ($query) use ($masterFamily) {
-                $query->whereIn('products.master_product_id', DB::table('master_assets')->where('master_family_id', $masterFamily->id)->select('id'))
-                    ->orWhereIn('products.family_id', DB::table('product_categories')->where('master_product_category_id', $masterFamily->id)->select('id'));
-            });
+            ->whereIn('products.id', self::familyProductIds($masterFamily));
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public static function familyProductIds(MasterProductCategory $masterFamily): array
+    {
+        $masterAssetIds = DB::table('master_assets')->where('master_family_id', $masterFamily->id)->pluck('id');
+        $shopFamilyIds  = DB::table('product_categories')->where('master_product_category_id', $masterFamily->id)->pluck('id');
+
+        return DB::table('products')->whereIn('master_product_id', $masterAssetIds)->pluck('id')
+            ->merge(DB::table('products')->whereIn('family_id', $shopFamilyIds)->pluck('id'))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function runs(array $orgStockIds, Carbon $from, Carbon $to): array

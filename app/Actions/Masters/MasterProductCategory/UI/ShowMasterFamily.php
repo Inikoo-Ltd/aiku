@@ -119,8 +119,12 @@ class ShowMasterFamily extends OrgAction
                 : Inertia::optional(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value))),
 
             MasterFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterFamilyTabsEnum::SALES_ANALYSIS->value ?
-                fn () => GetMasterFamilySalesAnalysis::run($masterFamily, $request->only(['from', 'to', 'compareFrom', 'compareTo']))
-                : Inertia::optional(fn () => GetMasterFamilySalesAnalysis::run($masterFamily, $request->only(['from', 'to', 'compareFrom', 'compareTo']))),
+                fn () => GetMasterFamilySalesAnalysis::run($masterFamily, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                : Inertia::optional(fn () => GetMasterFamilySalesAnalysis::run($masterFamily, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+
+            'sales_analysis_teaser' => $this->tab === MasterFamilyTabsEnum::SHOWCASE->value ?
+                Inertia::defer(fn () => GetMasterFamilySalesAnalysis::make()->teaser($masterFamily), 'sales_analysis_teaser')
+                : Inertia::optional(fn () => GetMasterFamilySalesAnalysis::make()->teaser($masterFamily)),
 
             'salesData' => $this->tab === MasterFamilyTabsEnum::SHOWCASE->value ?
                 fn () => GetMasterProductCategoryTimeSeriesData::run($masterFamily)
