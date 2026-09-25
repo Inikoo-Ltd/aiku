@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\OrgAction;
@@ -16,6 +17,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
@@ -56,6 +59,11 @@ class UpdateOrderShippingEngineAsManual extends OrgAction
 
 
         CalculateOrderTotalAmounts::run($order);
+
+        if ($order->shop->type == ShopTypeEnum::EXTERNAL && $order->shop->engine == ShopEngineEnum::FAIRE && $order->external_id) {
+            UpdateFaireOrder::run($order);
+            $order->refresh();
+        }
 
         return $order;
     }
