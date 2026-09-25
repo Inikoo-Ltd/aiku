@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, inject, watch } from "vue";
 import { ulid } from "ulid"
 import { faCube, faLink } from "@fal";
 import { faStar, faCircle } from "@fas";
@@ -37,6 +37,8 @@ const props = defineProps<{
     indexBlock?: number;
     webpageData?: any
 }>();
+
+const layout: any = inject("layout", {})
 
 const activeTab = ref(0);
 
