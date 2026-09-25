@@ -18,6 +18,8 @@ class GetPurchaseOrderJourney
 
     public const int AT_RISK_DAYS = 3;
 
+    public const int HANDOVER_DAYS_AFTER_READY = 7;
+
     private const array LEAD_TIME_STAGES = ['deposit_paid', 'production', 'qc', 'clean_handover', 'dispatched', 'in_transit'];
 
     private const array DISPATCHED_STATES = ['dispatched', 'received', 'checked', 'placed'];
@@ -43,6 +45,7 @@ class GetPurchaseOrderJourney
      *     qc_passed_at?: ?string,
      *     handed_over_at?: ?string,
      *     estimated_production_at?: ?string,
+     *     approved_ready_at?: ?string,
      *     estimated_received_at?: ?string,
      *     dispatched_at?: ?string,
      *     received_at?: ?string,
@@ -62,6 +65,10 @@ class GetPurchaseOrderJourney
         $today  = ($today ?? now())->copy()->startOfDay();
         $stages = $this->stages($facts);
         $days   = $this->stageDays($facts, array_keys($stages));
+
+        if (!$stages['dispatched']['done'] && !$stages['dispatched']['target'] && $stages['in_transit']['target']) {
+            $stages['dispatched']['target'] = Carbon::parse($stages['in_transit']['target'])->subDays($days['in_transit'])->toDateString();
+        }
 
         $keys     = array_keys($stages);
         $lastDone = -1;
@@ -154,9 +161,11 @@ class GetPurchaseOrderJourney
         $deliveryState = $facts['delivery_state'] ?? null;
         $isAgent       = $journey === 'agent';
 
+        $isSent = $facts['state'] !== 'in_process';
         $stages = [
-            'po_created' => $this->stage($facts['state'] !== 'in_process', $facts['submitted_at'] ?? null),
+            'po_created' => $this->stage($isSent, $isSent ? ($facts['submitted_at'] ?? null) : null),
         ];
+        $readyAt = !empty($facts['approved_ready_at']) ? Carbon::parse($facts['approved_ready_at']) : null;
 
         if (($facts['is_npo'] ?? false) && $journey !== 'partner') {
             $stages['spec_sample'] = $this->stage(false, $facts['sample_approved_at'] ?? null);
@@ -168,10 +177,10 @@ class GetPurchaseOrderJourney
             $stages['production'] = $this->stage(false, $facts['produced_at'] ?? null, $facts['estimated_production_at'] ?? null);
         }
         if ($isAgent || !empty($facts['qc_passed_at'])) {
-            $stages['qc'] = $this->stage(false, $facts['qc_passed_at'] ?? null);
+            $stages['qc'] = $this->stage(false, $facts['qc_passed_at'] ?? null, $readyAt?->toDateString());
         }
         if ($isAgent || !empty($facts['handed_over_at'])) {
-            $stages['clean_handover'] = $this->stage(false, $facts['handed_over_at'] ?? null);
+            $stages['clean_handover'] = $this->stage(false, $facts['handed_over_at'] ?? null, $readyAt?->copy()->addDays(self::HANDOVER_DAYS_AFTER_READY)->toDateString());
         }
 
         $stages['dispatched']         = $this->stage(in_array($deliveryState, self::DISPATCHED_STATES), $facts['dispatched_at'] ?? null);
@@ -181,7 +190,7 @@ class GetPurchaseOrderJourney
         $sellable = (int) ($facts['sellable_products'] ?? 0);
         if ($sellable > 0) {
             $allOnline = $deliveryState === 'placed' && (int) ($facts['online_products'] ?? 0) >= $sellable;
-            $onlineAt  = $allOnline ? max(array_filter([$facts['placed_at'] ?? null, $facts['online_at'] ?? null])) : null;
+            $onlineAt  = $allOnline && !empty($facts['placed_at']) ? max(array_filter([$facts['placed_at'], $facts['online_at'] ?? null])) : null;
 
             $stages['products_online'] = $this->stage($allOnline, $onlineAt ?: null);
         }

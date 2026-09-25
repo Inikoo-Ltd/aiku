@@ -35,6 +35,9 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     private const array FILTER_GROUPS = ['organisation', 'journey', 'agent', 'supplier', 'buyer', 'type', 'country', 'stage', 'status'];
 
+    /** @var array<string, float> units of each currency per pivot currency */
+    private array $rates = [];
+
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('supply-chain.edit');
@@ -51,8 +54,9 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     public function handle(ActionRequest $request): array
     {
-        $today   = now()->startOfDay();
-        $view    = $request->query('view') === 'purchase_orders' ? 'purchase_orders' : 'supplier_orders';
+        $today       = now()->startOfDay();
+        $view        = $request->query('view') === 'purchase_orders' ? 'purchase_orders' : 'supplier_orders';
+        $this->rates = $this->latestRates();
         $ribbons = collect($this->rows($view === 'supplier_orders'))->map(fn (object $row) => $this->toRibbon($row, $today));
 
         $active = collect(self::FILTER_GROUPS)->mapWithKeys(fn (string $group) => [$group => $request->query($group) ?: null])->all();
@@ -107,15 +111,26 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
      */
     private function rows(bool $splitAgentOrders): array
     {
-        $bindings = [
-            'group_id'       => $this->group->id,
-            'finished_since' => now()->subDays(self::FINISHED_WINDOW_DAYS),
+        $finishedSince = now()->subDays(self::FINISHED_WINDOW_DAYS);
+        $bindings      = [
+            'group_id'                => $this->group->id,
+            'finished_since'          => $finishedSince,
+            'finished_since_unlinked' => $finishedSince,
         ];
 
         $splitCondition = $splitAgentOrders
             ? "and not (po.parent_type = 'OrgAgent' and exists (
                     select 1 from agent_supplier_purchase_orders split
-                    where split.purchase_order_id = po.id and split.deleted_at is null and (split.data -> 'housekeeping') is null
+                    where split.purchase_order_id = po.id
+                        and split.deleted_at is null
+                        and (split.data -> 'housekeeping') is null
+                        and split.state not in ('cancelled', 'not_received')
+                        and exists (
+                            select 1 from purchase_order_transactions split_lines
+                            where split_lines.agent_supplier_purchase_order_id = split.id
+                                and split_lines.state not in ('cancelled', 'not_received')
+                                and split_lines.delivery_state not in ('cancelled', 'not_received')
+                        )
                 ))"
             : '';
 
@@ -123,14 +138,15 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             "select 'po' as row_type, po.id, po.slug, po.reference, po.parent_type, po.state, po.delivery_state, po.data,
                 po.cost_total, po.cost_items, po.grp_exchange, po.created_at, po.submitted_at, po.settled_at,
                 po.deposit_amount, po.deposit_paid_at, po.sample_approved_at, po.produced_at, po.qc_passed_at,
-                po.handed_over_at, po.estimated_received_at,
+                po.handed_over_at,
                 po.reference as purchase_order_reference, po.slug as purchase_order_slug,
                 {$this->sharedColumns()},
                 suppliers.slug as supplier_slug, suppliers.code as supplier_code, suppliers.name as supplier_name,
                 suppliers.data as supplier_data,
                 partners.slug as partner_slug, partners.code as partner_code, partners.name as partner_name,
                 countries.code as country_code, countries.name as country_name,
-                delivery.dispatched_at, delivery.received_at, delivery.placed_at,
+                {$this->deliveryColumns()},
+                coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at,
                 aspo.deposit_paid_at as aspo_deposit_paid_at, aspo.approved_ready_at,
                 aspo.qc_passed_at as aspo_qc_passed_at, aspo.handed_over_at as aspo_handed_over_at,
                 line_suppliers.suppliers as line_suppliers
@@ -141,15 +157,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             left join organisations partners on partners.id = po.partner_id
             left join addresses on addresses.id = coalesce(suppliers.address_id, agent_organisations.address_id, partners.address_id)
             left join countries on countries.id = coalesce(addresses.country_id, partners.country_id)
-            left join lateral (
-                select max(stock_deliveries.dispatched_at) as dispatched_at,
-                    max(stock_deliveries.received_at) as received_at,
-                    max(stock_deliveries.placed_at) as placed_at
-                from purchase_order_stock_delivery
-                join stock_deliveries on stock_deliveries.id = purchase_order_stock_delivery.stock_delivery_id
-                where purchase_order_stock_delivery.purchase_order_id = po.id
-                    and stock_deliveries.state not in ('cancelled', 'not_received')
-            ) delivery on true
+            {$this->deliveryLateral()}
             left join lateral (
                 select
                     case when bool_and(asp.deposit_paid_at is not null) filter (where asp.deposit_amount > 0) then max(asp.deposit_paid_at) end as deposit_paid_at,
@@ -177,22 +185,20 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         }
 
         $supplierOrders = DB::select(
-            "select 'aspo' as row_type, asp.id, asp.slug, asp.reference, 'OrgAgent' as parent_type, asp.state,
+            "select 'aspo' as row_type, asp.id, asp.slug, asp.reference, 'OrgAgent' as parent_type, po.state,
                 progress.delivery_state, po.data,
-                asp.cost_total, asp.cost_items,
-                coalesce(asp.grp_exchange, case when asp.currency_id = po.currency_id then po.grp_exchange end) as grp_exchange,
-                asp.created_at,
-                asp.submitted_at,
-                null as settled_at,
+                progress.lines_amount as cost_total, null as cost_items, po.grp_exchange,
+                po.created_at, po.submitted_at, null as settled_at,
                 asp.deposit_amount, asp.deposit_paid_at, asp.sample_approved_at, asp.produced_at, asp.qc_passed_at,
-                asp.handed_over_at, coalesce(asp.estimated_received_at, po.estimated_received_at) as estimated_received_at,
+                asp.handed_over_at,
+                coalesce(delivery.estimated_arrival, asp.estimated_received_at::date::text, po.estimated_received_at::date::text) as estimated_received_at,
                 po.reference as purchase_order_reference, po.slug as purchase_order_slug,
                 {$this->sharedColumns()},
                 suppliers.slug as supplier_slug, suppliers.code as supplier_code, suppliers.name as supplier_name,
                 suppliers.data as supplier_data,
                 null as partner_slug, null as partner_code, null as partner_name,
                 countries.code as country_code, countries.name as country_name,
-                delivery.dispatched_at, delivery.received_at, delivery.placed_at,
+                {$this->deliveryColumns()},
                 null as aspo_deposit_paid_at, asp.approved_ready_at,
                 null as aspo_qc_passed_at, null as aspo_handed_over_at,
                 null as line_suppliers
@@ -205,6 +211,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             left join countries on countries.id = addresses.country_id
             left join lateral (
                 select count(*) as active_lines,
+                    sum(purchase_order_transactions.net_amount) as lines_amount,
                     case
                         when bool_and(purchase_order_transactions.delivery_state = 'settled') then 'placed'
                         when bool_and(purchase_order_transactions.delivery_state in ('received', 'checked', 'settled')) then 'received'
@@ -216,21 +223,12 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                     and purchase_order_transactions.state not in ('cancelled', 'not_received')
                     and purchase_order_transactions.delivery_state not in ('cancelled', 'not_received')
             ) progress on true
-            left join lateral (
-                select max(stock_deliveries.dispatched_at) as dispatched_at,
-                    max(stock_deliveries.received_at) as received_at,
-                    max(stock_deliveries.placed_at) as placed_at
-                from purchase_order_stock_delivery
-                join stock_deliveries on stock_deliveries.id = purchase_order_stock_delivery.stock_delivery_id
-                where purchase_order_stock_delivery.purchase_order_id = po.id
-                    and stock_deliveries.state not in ('cancelled', 'not_received')
-                    and exists (
+            {$this->deliveryLateral('and exists (
                         select 1 from stock_delivery_items
                         join purchase_order_transactions on purchase_order_transactions.org_stock_id = stock_delivery_items.org_stock_id
                         where stock_delivery_items.stock_delivery_id = stock_deliveries.id
                             and purchase_order_transactions.agent_supplier_purchase_order_id = asp.id
-                    )
-            ) delivery on true
+                    )')}
             {$this->linesLateral('purchase_order_transactions.agent_supplier_purchase_order_id = asp.id')}
             where asp.deleted_at is null
                 and (asp.data -> 'housekeeping') is null
@@ -241,6 +239,36 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         );
 
         return array_merge($purchaseOrders, $supplierOrders);
+    }
+
+    /**
+     * A stage counts as reached only once every live delivery of the order has reached it, and only then does it
+     * carry a date; the delivery's own arrival estimate is kept while it is still on its way.
+     */
+    private function deliveryLateral(string $deliveryFilter = ''): string
+    {
+        return "left join lateral (
+                select count(*) as deliveries,
+                    bool_and(stock_deliveries.state in ('dispatched', 'received', 'checked', 'booking_in', 'booked_in', 'placed')) as all_dispatched,
+                    bool_and(stock_deliveries.state in ('received', 'checked', 'booking_in', 'booked_in', 'placed')) as all_received,
+                    bool_and(stock_deliveries.state = 'placed') as all_placed,
+                    max(stock_deliveries.dispatched_at) as dispatched_at,
+                    max(stock_deliveries.received_at) as received_at,
+                    max(stock_deliveries.placed_at) as placed_at,
+                    max(stock_deliveries.data ->> 'estimated_receiving_date')
+                        filter (where stock_deliveries.state not in ('received', 'checked', 'booking_in', 'booked_in', 'placed')) as estimated_arrival
+                from purchase_order_stock_delivery
+                join stock_deliveries on stock_deliveries.id = purchase_order_stock_delivery.stock_delivery_id
+                where purchase_order_stock_delivery.purchase_order_id = po.id
+                    and stock_deliveries.state not in ('cancelled', 'not_received')
+                    {$deliveryFilter}
+            ) delivery on true";
+    }
+
+    private function deliveryColumns(): string
+    {
+        return 'delivery.deliveries, delivery.all_dispatched, delivery.all_received, delivery.all_placed,
+            delivery.dispatched_at, delivery.received_at, delivery.placed_at';
     }
 
     private function sharedColumns(): string
@@ -278,19 +306,28 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                             and stock_deliveries.placed_at >= :finished_since
                     )
                 )
+                or (
+                    po.state = 'settled' and po.delivery_state = 'placed'
+                    and po.settled_at >= :finished_since_unlinked
+                    and not exists (select 1 from purchase_order_stock_delivery where purchase_order_stock_delivery.purchase_order_id = po.id)
+                )
             )";
     }
 
     /**
-     * NPO when a line's stock never arrived in that organisation before the order was raised; online when every
-     * sellable stock on the lines has a product for sale on a live webpage in the order's organisation.
+     * NPO when a line's stock was never received in that organisation before the order was raised.
+     * ponytail: stock that arrived without a delivery (a handful of Aurora-era purchase movements) still reads as new;
+     * checking org_stock_movements costs seconds per page, add a dated first-purchase column if it matters.
+     * Online when every sellable stock on the lines has a product for sale on a live webpage in the order's
+     * organisation; a new stock with no product yet counts as not online, since the brief ends the journey only once
+     * the products are created in the system and online.
      */
     private function linesLateral(string $linesFilter): string
     {
         return "left join lateral (
                 select
                     bool_or(not line.received_before) as is_npo,
-                    count(*) filter (where line.sellable) as sellable_products,
+                    count(*) filter (where line.sellable or (not line.received_before and not line.has_any_product)) as sellable_products,
                     count(*) filter (where line.sellable and line.online_at is not null) as online_products,
                     max(line.online_at) filter (where line.sellable) as online_at
                 from (
@@ -309,6 +346,10 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                                 and products.organisation_id = po.organisation_id
                                 and products.state <> 'discontinued'
                         ) as sellable,
+                        exists (
+                            select 1 from product_has_org_stocks
+                            where product_has_org_stocks.org_stock_id = stock_lines.org_stock_id
+                        ) as has_any_product,
                         (
                             select min(coalesce(webpages.live_at, webpages.created_at)) from product_has_org_stocks
                             join products on products.id = product_has_org_stocks.product_id
@@ -348,12 +389,12 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         $agentSettings = json_decode((string) $row->agent_settings, true) ?: [];
         $supplierData  = json_decode((string) $row->supplier_data, true) ?: [];
 
-        $receivedAt = $row->received_at ?: (in_array($row->delivery_state, self::RECEIVED_STATES) ? $row->settled_at : null);
+        $delivery = $this->deliveryProgress($row);
 
         $journeyData = GetPurchaseOrderJourney::run([
             'journey'                 => $journey,
             'state'                   => $row->state,
-            'delivery_state'          => $row->delivery_state,
+            'delivery_state'          => $delivery['state'],
             'created_at'              => $row->created_at,
             'submitted_at'            => $row->submitted_at,
             'is_npo'                  => (bool) $row->is_npo,
@@ -363,11 +404,12 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'produced_at'             => $row->produced_at,
             'qc_passed_at'            => $row->qc_passed_at ?: $row->aspo_qc_passed_at,
             'handed_over_at'          => $row->handed_over_at ?: $row->aspo_handed_over_at,
-            'estimated_production_at' => Arr::get($data, 'estimated_production_date') ?: $row->approved_ready_at,
+            'estimated_production_at' => Arr::get($data, 'estimated_production_date'),
+            'approved_ready_at'       => $row->approved_ready_at,
             'estimated_received_at'   => $row->estimated_received_at,
-            'dispatched_at'           => $row->dispatched_at,
-            'received_at'             => $receivedAt,
-            'placed_at'               => $row->placed_at,
+            'dispatched_at'           => $delivery['dispatched_at'],
+            'received_at'             => $delivery['received_at'],
+            'placed_at'               => $delivery['placed_at'],
             'sellable_products'       => (int) $row->sellable_products,
             'online_products'         => (int) $row->online_products,
             'online_at'               => $row->online_at,
@@ -382,7 +424,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             default => json_decode((string) $row->line_suppliers, true) ?: [],
         };
 
-        $amount = $row->cost_total ?? $row->cost_items;
+        $amount = $row->cost_items ?? $row->cost_total;
 
         return [
             'key'               => $row->row_type.'-'.$row->id,
@@ -408,10 +450,11 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'type'              => $row->is_npo ? 'npo' : 'reorder',
             'amount'            => $amount !== null ? (float) $amount : null,
             'currency_code'     => $row->currency_code,
-            'amount_grp'        => $amount !== null && $row->grp_exchange !== null ? round((float) $amount * (float) $row->grp_exchange, 2) : null,
+            'amount_grp'        => $this->toGroupCurrency($amount, $row->currency_code, $row->grp_exchange),
             'created_at'        => Carbon::parse($row->created_at)->toDateString(),
-            'placed_at'         => $row->placed_at ? Carbon::parse($row->placed_at)->toDateString() : null,
+            'placed_at'         => $delivery['placed_at'] ? Carbon::parse($delivery['placed_at'])->toDateString() : null,
             'current_stage'     => $journeyData['current_stage'],
+            'current_label'     => $journeyData['current_stage'] ? PurchaseOrderJourneyStageEnum::waitingLabels()[$journeyData['current_stage']] : null,
             'status'            => $journeyData['status'],
             'days_overdue'      => $journeyData['days_overdue'],
             'eta'               => $journeyData['eta'],
@@ -432,6 +475,72 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 ? ['name' => 'grp.models.agent_supplier_purchase_order.journey_stage', 'parameters' => ['agentSupplierPurchaseOrder' => $row->id]]
                 : ['name' => 'grp.models.purchase-order.journey_stage', 'parameters' => ['purchaseOrder' => $row->id]],
         ];
+    }
+
+    /**
+     * With deliveries, a stage is reached only when every delivery reached it; without any, the order's own delivery
+     * state stands, and its settled date is the best date known for the goods arriving.
+     *
+     * @return array{state: ?string, dispatched_at: ?string, received_at: ?string, placed_at: ?string}
+     */
+    private function deliveryProgress(object $row): array
+    {
+        if ((int) $row->deliveries > 0) {
+            return [
+                'state'         => match (true) {
+                    (bool) $row->all_placed     => 'placed',
+                    (bool) $row->all_received   => 'received',
+                    (bool) $row->all_dispatched => 'dispatched',
+                    default                     => 'in_process',
+                },
+                'dispatched_at' => $row->all_dispatched ? $row->dispatched_at : null,
+                'received_at'   => $row->all_received ? $row->received_at : null,
+                'placed_at'     => $row->all_placed ? $row->placed_at : null,
+            ];
+        }
+
+        return [
+            'state'         => $row->delivery_state,
+            'dispatched_at' => null,
+            'received_at'   => in_array($row->delivery_state, self::RECEIVED_STATES) ? $row->settled_at : null,
+            'placed_at'     => $row->delivery_state === 'placed' ? $row->settled_at : null,
+        ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function latestRates(): array
+    {
+        $rates = DB::table('currency_exchanges')
+            ->join('currencies', 'currencies.id', '=', 'currency_exchanges.currency_id')
+            ->where('currency_exchanges.date', '>=', now()->subDays(90)->toDateString())
+            ->where('currency_exchanges.exchange', '>', 0)
+            ->selectRaw('distinct on (currency_exchanges.currency_id) currencies.code, currency_exchanges.exchange')
+            ->orderBy('currency_exchanges.currency_id')
+            ->orderByDesc('currency_exchanges.date')
+            ->get()
+            ->mapWithKeys(fn (object $rate) => [$rate->code => (float) $rate->exchange])
+            ->all();
+
+        $rates[config('app.currency_exchange.pivot')] = 1.0;
+
+        return $rates;
+    }
+
+    private function toGroupCurrency(mixed $amount, ?string $currencyCode, mixed $storedExchange): ?float
+    {
+        if ($amount === null) {
+            return null;
+        }
+
+        $currencyRate = $this->rates[$currencyCode] ?? null;
+        $groupRate    = $this->rates[$this->group->currency->code] ?? null;
+        if ($currencyRate && $groupRate) {
+            return round((float) $amount * $groupRate / $currencyRate, 2);
+        }
+
+        return (float) $storedExchange > 0 ? round((float) $amount * (float) $storedExchange, 2) : null;
     }
 
     /**
@@ -532,7 +641,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
      */
     private function blockages(Collection $open): array
     {
-        $labels = PurchaseOrderJourneyStageEnum::labels();
+        $labels = PurchaseOrderJourneyStageEnum::waitingLabels();
 
         return $open->where('status', 'overdue')
             ->groupBy('current_stage')
@@ -554,7 +663,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     private function quickStats(Collection $filtered, Collection $open, Carbon $today): array
     {
         $placed   = $filtered->filter(fn (array $ribbon) => $ribbon['placed_at'] !== null);
-        $dueSoon  = $open->filter(fn (array $ribbon) => $ribbon['eta'] && Carbon::parse($ribbon['eta'])->lte($today->copy()->addDays(30)));
+        $dueSoon  = $open->filter(fn (array $ribbon) => $ribbon['status'] !== 'overdue' && $ribbon['eta'] && Carbon::parse($ribbon['eta'])->lte($today->copy()->addDays(30)));
         $oldest   = $open->min('created_at');
 
         return [
@@ -614,6 +723,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                     'key'         => $stage->value,
                     'label'       => PurchaseOrderJourneyStageEnum::labels()[$stage->value],
                     'description' => PurchaseOrderJourneyStageEnum::descriptions()[$stage->value],
+                    'markable'    => $stage->markColumn() !== null,
                 ])->all(),
                 'filters'    => $data['filters'],
                 'active'     => $data['active'],

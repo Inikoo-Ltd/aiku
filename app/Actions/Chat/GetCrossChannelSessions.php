@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat;
 
+use App\Actions\Chat\ChatSession\FlagUrgentChatRequest;
 use App\Actions\Chat\ChatSession\GetChatReplyPromise;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
@@ -45,6 +46,7 @@ class GetCrossChannelSessions
             'trashed'         => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
+            'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
             'page'            => ['sometimes', 'integer', 'min:1'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],

@@ -24,6 +24,7 @@ use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrder
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\User;
+use App\Actions\Transfers\Aurora\RepairAuroraPurchaseOrderBuyers;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
@@ -81,6 +82,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransact
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
+use App\Actions\Maintenance\GoodsIn\RepairStockDeliveryPurchaseOrderLinks;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
@@ -154,6 +156,9 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Currency;
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
+use Illuminate\Support\Carbon;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Location;
@@ -495,6 +500,53 @@ test('PO journey board marks stages on an agent supplier purchase order and keep
     $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertRedirect();
     expect($agentSupplierPurchaseOrder->refresh()->handed_over_at)->toBeNull();
 })->depends('create agent supplier purchase order');
+
+test('aurora purchase order buyers are filled from the Aurora main buyer', function (PurchaseOrder $purchaseOrder) {
+    $employee = StoreEmployee::make()->action($this->organisation, [
+        'worker_number'   => 'po-buyer',
+        'alias'           => 'po-buyer',
+        'contact_name'    => 'Po Buyer',
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+    ]);
+    $employee->updateQuietly(['source_id' => $this->organisation->id.':4242']);
+    $buyer = StoreUser::make()->action($employee, [
+        'username'       => 'po-buyer',
+        'password'       => Str::random(32),
+        'status'         => true,
+        'reset_password' => false,
+    ]);
+    $director = $this->adminGuest->getUser();
+
+    $purchaseOrder->updateQuietly(['buyer_id' => null, 'source_id' => $this->organisation->id.':9001']);
+
+    $repairFor = fn (int $staffKey) => new class ($staffKey, $director->username) extends RepairAuroraPurchaseOrderBuyers {
+        public function __construct(private readonly int $staffKey, private readonly string $directorUsername)
+        {
+        }
+
+        protected function auroraBuyers(Organisation $organisation): array
+        {
+            return ['9001' => ['staff_key' => $this->staffKey, 'name' => 'Someone']];
+        }
+
+        protected function auroraUserHandles(Organisation $organisation): array
+        {
+            return [77 => strtoupper($this->directorUsername)];
+        }
+    };
+
+    expect($repairFor(4242)->handle($this->organisation, dryRun: true)['filled'])->toBe(1)
+        ->and($purchaseOrder->fresh()->buyer_id)->toBeNull();
+
+    $repairFor(4242)->handle($this->organisation);
+    expect($purchaseOrder->fresh()->buyer_id)->toBe($buyer->id);
+
+    PurchaseOrder::whereKey($purchaseOrder->id)->update(['buyer_id' => null]);
+    $repairFor(77)->handle($this->organisation);
+    expect($purchaseOrder->fresh()->buyer_id)->toBe($director->id);
+})->depends('create purchase order independent supplier');
 
 test('update agent supplier purchase order', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
     $updated = UpdateAgentSupplierPurchaseOrder::make()->action(
@@ -5631,4 +5683,136 @@ test('undoing a put away from a delivery takes the stock out at the value it wen
     expect((float) $purchase->org_amount)->toBeGreaterThan(0)
         ->and((float) $reversal->quantity)->toBe(-4.0)
         ->and((float) $reversal->org_amount)->toBe(-(float) $purchase->org_amount);
+});
+
+test('a fetched delivery linked to its purchase order by their shared aurora line is counted as on its way once', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $supplier           = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    $orgSupplier        = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'LINK-01',
+        'name'             => 'Linked asset',
+        'cost'             => 100,
+        'stock_id'         => $orgStock->stock_id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+
+    $auroraLineSourceId = $this->organisation->id.':'.random_int(900000000, 999999999);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $supplierProduct->historicSupplierProduct,
+        $orgStock,
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 80])
+    )->update(['source_id' => $auroraLineSourceId]);
+    UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder);
+
+    $stockDelivery = StoreStockDelivery::make()->action($orgSupplier, [
+        'reference' => 'LINK-DEL-1',
+        'date'      => date('Y-m-d'),
+    ]);
+    StoreStockDeliveryItem::make()->action(
+        $stockDelivery,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $orgStock,
+        array_merge(StockDeliveryItem::factory()->definition(), ['unit_quantity' => 80])
+    )->update(['source_id' => $auroraLineSourceId]);
+
+    [, $product] = createProduct(StoreShop::run($this->organisation, Shop::factory()->definition()));
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+    $product->load('orgStocks');
+
+    RepairStockDeliveryPurchaseOrderLinks::run();
+
+    expect($stockDelivery->purchaseOrders()->pluck('purchase_orders.id')->all())->toBe([$purchaseOrder->id])
+        ->and($stockDelivery->refresh()->number_purchase_orders)->toBe(1)
+        ->and(RepairStockDeliveryPurchaseOrderLinks::run())->toBe(0)
+        ->and(collect(GetProductIncomingStock::run($product))->pluck('type')->all())->toBe(['purchase_order']);
+
+    DispatchStockDelivery::make()->action($stockDelivery);
+
+    $incoming = GetProductIncomingStock::run($product);
+
+    expect($incoming)->toHaveCount(1)
+        ->and($incoming[0]['type'])->toBe('stock_delivery')
+        ->and($incoming[0]['quantity'])->toBe(80.0);
+});
+
+test('procurement exchange rates keep their precision, the ones four decimals rounded away are derived again with their amounts, aurora own rates stay', function () {
+    $rupiah = Currency::where('code', 'IDR')->firstOrFail();
+    $rupee  = Currency::where('code', 'INR')->firstOrFail();
+    $euro   = Currency::where('code', 'EUR')->firstOrFail();
+    $date   = '2019-03-14';
+
+    foreach (['IDR' => 18500.1234, 'INR' => 93.1234, 'USD' => 1.3187, 'EUR' => 1.1654] as $code => $exchange) {
+        DB::table('currency_exchanges')->upsert(
+            ['currency_id' => Currency::where('code', $code)->value('id'), 'date' => $date, 'exchange' => $exchange, 'source' => 'M', 'created_at' => now(), 'updated_at' => now()],
+            ['currency_id', 'date'],
+            ['exchange']
+        );
+    }
+
+    $orgRate = GetHistoricCurrencyExchange::run($rupiah, $this->organisation->currency, Carbon::parse($date));
+    $grpRate = GetHistoricCurrencyExchange::run($rupiah, $this->organisation->group->currency, Carbon::parse($date));
+    $rupeeRate = GetHistoricCurrencyExchange::run($rupee, $this->organisation->group->currency, Carbon::parse($date));
+
+    $supplier        = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    $orgSupplier     = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'RUPIAH-01',
+        'name'             => 'Rupiah priced',
+        'cost'             => 100,
+        'stock_id'         => $this->orgStocks[0]->stock_id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, ['reference' => 'RUPIAH-PO', 'date' => $date, 'currency_id' => $rupiah->id]);
+    $transaction   = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], ['quantity_ordered' => 10]);
+
+    expect($orgRate)->toBeLessThan(0.0001)
+        ->and(round($rupeeRate, 4))->toBe(0.0142)
+        ->and((float) $purchaseOrder->org_exchange)->toEqualWithDelta($orgRate, 1e-10);
+
+    $stockDelivery = createStockDeliveryWithItems($this, 'RUPIAH-DEL', [10]);
+    $deliveryItem  = $stockDelivery->items()->first();
+    $euroDelivery  = createStockDeliveryWithItems($this, 'EURO-DEL', [10]);
+    $rupeeDelivery = createStockDeliveryWithItems($this, 'RUPEE-DEL', [10]);
+    $rupeeItem     = $rupeeDelivery->items()->first();
+
+    $purchaseOrder->updateQuietly(['org_exchange' => 0.0001, 'grp_exchange' => 0]);
+    $euroDelivery->updateQuietly(['currency_id' => $euro->id, 'date' => $date, 'org_exchange' => 1.2, 'grp_exchange' => 0]);
+    $transaction->updateQuietly(['net_amount' => 1000000, 'org_exchange' => 0.0001, 'org_net_amount' => 100, 'grp_exchange' => 0, 'grp_net_amount' => 0]);
+    $stockDelivery->updateQuietly(['currency_id' => $rupiah->id, 'date' => $date, 'org_exchange' => 0, 'grp_exchange' => 0.0001]);
+    $deliveryItem->updateQuietly(['net_amount' => 2000000, 'org_exchange' => 0, 'org_net_amount' => 0, 'grp_exchange' => 0.0001, 'grp_net_amount' => 200]);
+    $rupeeDelivery->updateQuietly(['currency_id' => $rupee->id, 'date' => $date, 'org_exchange' => 0.0150, 'grp_exchange' => 0.0142]);
+    $rupeeItem->updateQuietly(['net_amount' => 1000, 'org_exchange' => 0.0150, 'org_net_amount' => 15, 'grp_exchange' => 0.0142, 'grp_net_amount' => 14.20]);
+
+    (require database_path('migrations/2026_09_25_120100_backfill_procurement_exchanges_lost_to_rounding.php'))->up();
+
+    $purchaseOrder->refresh();
+    $transaction->refresh();
+    $stockDelivery->refresh();
+    $deliveryItem->refresh();
+
+    expect((float) $purchaseOrder->org_exchange)->toEqualWithDelta($orgRate, 1e-10)
+        ->and((float) $purchaseOrder->grp_exchange)->toEqualWithDelta($grpRate, 1e-10)
+        ->and((float) $transaction->org_exchange)->toEqualWithDelta($orgRate, 1e-10)
+        ->and((float) $transaction->org_net_amount)->toEqualWithDelta(1000000 * $orgRate, 0.01)
+        ->and((float) $transaction->grp_net_amount)->toEqualWithDelta(1000000 * $grpRate, 0.01)
+        ->and((float) $stockDelivery->org_exchange)->toEqualWithDelta($orgRate, 1e-10)
+        ->and((float) $stockDelivery->grp_exchange)->toEqualWithDelta($grpRate, 1e-10)
+        ->and((float) $deliveryItem->org_net_amount)->toEqualWithDelta(2000000 * $orgRate, 0.01)
+        ->and((float) $deliveryItem->grp_net_amount)->toEqualWithDelta(2000000 * $grpRate, 0.01)
+        ->and((float) $euroDelivery->fresh()->org_exchange)->toBe(1.2)
+        ->and((float) $euroDelivery->fresh()->grp_exchange)->toBe(0.0)
+        ->and((float) $rupeeDelivery->fresh()->org_exchange)->toBe(0.015)
+        ->and((float) $rupeeDelivery->fresh()->grp_exchange)->toEqualWithDelta($rupeeRate, 1e-10)
+        ->and((float) $rupeeItem->fresh()->org_net_amount)->toBe(15.0)
+        ->and((float) $rupeeItem->fresh()->grp_net_amount)->toEqualWithDelta(1000 * $rupeeRate, 0.01);
 });

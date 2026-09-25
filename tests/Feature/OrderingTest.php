@@ -4595,3 +4595,57 @@ test('the shop orders list flags a partner order and the channel filter separate
     expect($directOnly->get($directOrder->reference))->toBeFalse()
         ->and($directOnly->has($partnerOrder->reference))->toBeFalse();
 });
+
+test('org and group amounts of orders and invoices use the whole exchange rate', function () {
+    $orgExchange = 0.0025371234;
+    $grpExchange = 0.0021456789;
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
+
+    $transaction = StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order->transactions()->whereNot('id', $transaction->id)->delete();
+    $transaction->updateQuietly(['gross_amount' => 1000000, 'net_amount' => 1000000]);
+    $order->updateQuietly(['amount_off' => 0, 'org_exchange' => $orgExchange, 'grp_exchange' => $grpExchange]);
+
+    CalculateOrderTotalAmounts::make()->handle($order->refresh(), false, false);
+    $order->refresh();
+
+    expect($order->org_exchange)->toBe('0.0025371234')
+        ->and($order->grp_exchange)->toBe('0.0021456789')
+        ->and((float) $order->net_amount)->toBe(1000000.0)
+        ->and((float) $order->org_net_amount)->toBe(2537.12)
+        ->and((float) $order->grp_net_amount)->toBe(2145.68);
+
+    $invoiceData = Invoice::factory()->definition();
+    data_set($invoiceData, 'billing_address', new Address(Address::factory()->definition()));
+    $invoice = StoreInvoice::make()->action($order, $invoiceData);
+    StoreInvoiceTransaction::make()->action($invoice, $transaction, [
+        'date'            => now(),
+        'tax_category_id' => $transaction->tax_category_id,
+        'quantity'        => 1,
+        'gross_amount'    => 1000000,
+        'net_amount'      => 1000000,
+    ]);
+    $invoice->updateQuietly(['amount_off' => 0, 'org_exchange' => $orgExchange, 'grp_exchange' => $grpExchange]);
+
+    \App\Actions\Accounting\Invoice\CalculateInvoiceTotals::run($invoice->refresh());
+    $invoice->refresh();
+
+    expect((float) $invoice->net_amount)->toBe(1000000.0)
+        ->and((float) $invoice->org_net_amount)->toBe(2537.12)
+        ->and((float) $invoice->grp_net_amount)->toBe(2145.68);
+
+    $transaction->updateQuietly(['quantity_ordered' => 100000, 'org_exchange' => $orgExchange, 'grp_exchange' => $grpExchange]);
+    $order->updateQuietly(['state' => OrderStateEnum::PACKED]);
+
+    UpdateOrderStateToHandling::make()->action($order->refresh());
+    $transaction->refresh();
+
+    expect((float) $transaction->net_amount)->toBeGreaterThan(0.0)
+        ->and((float) $transaction->grp_net_amount)->toBe(round((float) $transaction->net_amount * $grpExchange, 2))
+        ->and((float) $transaction->org_net_amount)->toBe(round((float) $transaction->net_amount * $orgExchange, 2));
+});

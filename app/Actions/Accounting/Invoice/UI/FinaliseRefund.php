@@ -17,6 +17,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseRefund extends OrgAction
@@ -74,8 +75,17 @@ class FinaliseRefund extends OrgAction
         return Redirect::route($previousRouteName, $previousRouteParameters);
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(Invoice $refund, ActionRequest $request): Invoice
     {
+        if (!$refund->invoiceTransactions()->exists()) {
+            throw ValidationException::withMessages([
+                'message' => __('This refund has no lines to refund, add at least one before finalising it.'),
+            ]);
+        }
+
         $this->initialisationFromShop($refund->shop, $request);
 
         return $this->handle($refund);

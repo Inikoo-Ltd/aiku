@@ -9,9 +9,11 @@ use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprovalRecord;
 use App\Models\SysAdmin\Organisation;
+use App\Notifications\LeaveApprovedNotification;
 use App\Services\HumanResources\LeaveTypeResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -55,13 +57,18 @@ class ApproveLeave extends OrgAction
                 'approved_at' => now(),
             ]);
 
-            $this->applyBalanceDeduction($leave);
+            $balance = $this->applyBalanceDeduction($leave);
+
+            if ($leave->organisation->email) {
+                Notification::route('mail', $leave->organisation->email)
+                    ->notify(new LeaveApprovedNotification($leave, $balance));
+            }
         }
 
         return $leave;
     }
 
-    public function applyBalanceDeduction(Leave $leave): void
+    public function applyBalanceDeduction(Leave $leave): EmployeeLeaveBalance
     {
         $leave->loadMissing('leaveType');
         $startDate = $leave->start_date ?? now();
@@ -105,6 +112,8 @@ class ApproveLeave extends OrgAction
 
             $balance->increment($field, $deduction);
         }
+
+        return $balance;
     }
 
     public function asController(Organisation $organisation, Leave $leave, ActionRequest $request): Leave

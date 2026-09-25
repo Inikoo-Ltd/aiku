@@ -533,6 +533,20 @@ test('product web blocks return a null description tabs style when no family ext
         ->and(Arr::get($fieldValue, 'tabs_style'))->toBeNull();
 });
 
+test('iris product web block gives a guest the product price for the product snippet structured data', function () {
+    [, $product] = createProduct($this->shop);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    expect(auth()->check())->toBeFalse();
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect($product->price)->not->toBeNull()
+        ->and(Arr::get($irisProduct, 'price'))->toEqual($product->price)
+        ->and($irisProduct)->toHaveKey('stock');
+});
+
 test('website product workshop layout exposes the family extra description style', function () {
     [, $product] = createProduct($this->shop);
 
