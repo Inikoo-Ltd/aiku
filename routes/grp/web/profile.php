@@ -23,9 +23,12 @@ use App\Actions\UI\Profile\StoreProfileApiToken;
 use App\Actions\UI\Profile\ShowProfileShowcase;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\UI\Profile\UpdateUserBookmarks;
+use App\Actions\SysAdmin\User\BorrowUserPermissions;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProfile::class)->name('show');
+Route::delete('/borrowed-permissions', [BorrowUserPermissions::class, 'stop'])->name('borrowed_permissions.delete');
+Route::get('/borrowable-users', [BorrowUserPermissions::class, 'lenders'])->name('borrowable_users.index');
 Route::get('/edit', EditProfile::class)->name('edit');
 
 Route::post('/', UpdateProfile::class)->name('update');

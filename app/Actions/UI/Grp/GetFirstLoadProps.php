@@ -50,7 +50,7 @@ class GetFirstLoadProps
         $cacheKey          = 'grp-first-load-props:'.($user?->id ?? 'guest').':'.$language->code.':'.($lastDeployment?->id ?? 0);
         $ttl               = now()->addDays(7);
         $compute           = fn () => $this->getUserUiProps($user, $language);
-        $shouldCacheLayout = (bool)config('ui.cache.layout');
+        $shouldCacheLayout = config('ui.cache.layout') && !$user?->permissionsLender();
 
         try {
             $props = $shouldCacheLayout

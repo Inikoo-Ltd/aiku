@@ -366,22 +366,22 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
 
     public function authorisedOrganisations(): MorphToMany
     {
-        return $this->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->withTimestamps();
+        return $this->permissionsHolder()->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->withTimestamps();
     }
 
     public function authorisedShopOrganisations(): MorphToMany
     {
-        return $this->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::SHOP)->withTimestamps();
+        return $this->permissionsHolder()->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::SHOP)->withTimestamps();
     }
 
     public function authorisedAgentsOrganisations(): MorphToMany
     {
-        return $this->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::AGENT)->withTimestamps();
+        return $this->permissionsHolder()->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::AGENT)->withTimestamps();
     }
 
     public function authorisedDigitalAgencyOrganisations(): MorphToMany
     {
-        return $this->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::DIGITAL_AGENCY)->withTimestamps();
+        return $this->permissionsHolder()->morphedByMany(Organisation::class, 'model', 'user_has_authorised_models')->where('organisations.type', OrganisationTypeEnum::DIGITAL_AGENCY)->withTimestamps();
     }
 
     public function hasGroupAccess(): bool
@@ -392,22 +392,22 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
 
     public function authorisedShops(): MorphToMany
     {
-        return $this->morphedByMany(Shop::class, 'model', 'user_has_authorised_models')->withTimestamps();
+        return $this->permissionsHolder()->morphedByMany(Shop::class, 'model', 'user_has_authorised_models')->withTimestamps();
     }
 
     public function authorisedFulfilments(): MorphToMany
     {
-        return $this->morphedByMany(Fulfilment::class, 'model', 'user_has_authorised_models')->withTimestamps();
+        return $this->permissionsHolder()->morphedByMany(Fulfilment::class, 'model', 'user_has_authorised_models')->withTimestamps();
     }
 
     public function authorisedWarehouses(): MorphToMany
     {
-        return $this->morphedByMany(Warehouse::class, 'model', 'user_has_authorised_models')->withTimestamps();
+        return $this->permissionsHolder()->morphedByMany(Warehouse::class, 'model', 'user_has_authorised_models')->withTimestamps();
     }
 
     public function authorisedProductions(): MorphToMany
     {
-        return $this->morphedByMany(Production::class, 'model', 'user_has_authorised_models')->withTimestamps();
+        return $this->permissionsHolder()->morphedByMany(Production::class, 'model', 'user_has_authorised_models')->withTimestamps();
     }
 
     public function pseudoJobPositions(): BelongsToMany

@@ -353,7 +353,7 @@ class GetOrganisationNavigation
             'icon'    => ['fal', 'fa-life-ring'],
             'root'    => 'grp.org.tickets.',
             'route'   => [
-                'name'       => $user->roles()->where('name', RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? 'grp.org.tickets.board' : 'grp.org.tickets.index',
+                'name'       => $user->hasRole(RolesEnum::HELP_DESK_SUPERVISOR->value) ? 'grp.org.tickets.board' : 'grp.org.tickets.index',
                 'parameters' => [$organisation->slug],
             ],
             'topMenu' => [

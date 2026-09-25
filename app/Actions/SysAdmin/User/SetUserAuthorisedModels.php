@@ -24,6 +24,10 @@ class SetUserAuthorisedModels
 
     public function handle(User $user): void
     {
+        if ($user->permissionsLender()) {
+            $user = User::find($user->id);
+        }
+
         setPermissionsTeamId($user->group->id);
 
         $authorisedOrganisations = [];

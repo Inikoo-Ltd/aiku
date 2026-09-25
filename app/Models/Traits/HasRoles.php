@@ -11,6 +11,7 @@ namespace App\Models\Traits;
 use App\Models\Catalogue\Shop;
 use App\Models\HumanResources\JobPosition;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Traits\HasRoles as SpatieHasRoles;
@@ -22,6 +23,59 @@ trait HasRoles
         removeRole as spatieRemoveRole;
         givePermissionTo as spatieGivePermissionTo;
         revokePermissionTo as spatieRevokePermissionTo;
+        hasPermissionTo as spatieHasPermissionTo;
+        hasAnyPermission as spatieHasAnyPermission;
+        hasRole as spatieHasRole;
+        getAllPermissions as spatieGetAllPermissions;
+    }
+
+    /**
+     * A supervisor borrowing another user's permissions stays themselves: everything they do is
+     * still recorded as them, only what they are allowed to see and do comes from the lender.
+     */
+    private ?User $permissionsLender = null;
+
+    public function borrowPermissionsFrom(?User $lender): void
+    {
+        $this->permissionsLender = $lender;
+    }
+
+    public function permissionsLender(): ?User
+    {
+        return $this->permissionsLender;
+    }
+
+    public function permissionsHolder(): static
+    {
+        return $this->permissionsLender ?? $this;
+    }
+
+    public function hasPermissionTo($permission, $guardName = null): bool
+    {
+        return $this->permissionsLender
+            ? $this->permissionsLender->hasPermissionTo($permission, $guardName)
+            : $this->spatieHasPermissionTo($permission, $guardName);
+    }
+
+    public function hasAnyPermission(...$permissions): bool
+    {
+        return $this->permissionsLender
+            ? $this->permissionsLender->hasAnyPermission(...$permissions)
+            : $this->spatieHasAnyPermission(...$permissions);
+    }
+
+    public function hasRole($roles, ?string $guard = null): bool
+    {
+        return $this->permissionsLender
+            ? $this->permissionsLender->hasRole($roles, $guard)
+            : $this->spatieHasRole($roles, $guard);
+    }
+
+    public function getAllPermissions(): Collection
+    {
+        return $this->permissionsLender
+            ? $this->permissionsLender->getAllPermissions()
+            : $this->spatieGetAllPermissions();
     }
 
 
@@ -33,6 +87,10 @@ trait HasRoles
      */
     public function authTo(string|array $permission): bool
     {
+        if ($this->permissionsLender) {
+            return $this->permissionsLender->authTo($permission);
+        }
+
         $this->bindPermissionsTeam();
 
         $key = 'can:'.(is_array($permission) ? implode('|', $permission) : $permission);

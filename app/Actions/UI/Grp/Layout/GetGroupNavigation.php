@@ -117,7 +117,7 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-life-ring'],
             'root'    => 'grp.tickets.',
             'route'   => [
-                'name' => $user->roles()->where('name', RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? 'grp.tickets.board' : 'grp.tickets.index',
+                'name' => $user->hasRole(RolesEnum::HELP_DESK_SUPERVISOR->value) ? 'grp.tickets.board' : 'grp.tickets.index',
             ],
             'topMenu' => [
                 'subSections' => [
