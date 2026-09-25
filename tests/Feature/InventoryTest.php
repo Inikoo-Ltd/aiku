@@ -2046,6 +2046,30 @@ test('UI Show org stock stock_history tab', function () {
     });
 })->depends('create warehouse', 'create org stock');
 
+test('UI Show org stock in family has valid sub navigation routes', function () {
+    $warehouse = Warehouse::first();
+    $orgStock  = OrgStock::whereNotNull('org_stock_family_id')->first();
+    $this->withoutExceptionHandling();
+    $routeParameters = [$this->organisation->slug, $warehouse->slug, $orgStock->orgStockFamily->slug, $orgStock->slug];
+
+    get(route('grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show', $routeParameters))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Inventory/OrgStock')
+                ->where('pageHead.subNavigation', function ($subNavigation) {
+                    foreach ($subNavigation as $item) {
+                        expect(app('router')->has($item['route']['name']))->toBeTrue($item['route']['name']);
+                    }
+
+                    return true;
+                });
+        });
+
+    get(route('grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.delivery_notes', $routeParameters))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Inventory/DeliveryNotesInOrgStock');
+        });
+})->depends('create warehouse', 'create org stock');
+
 test('UI Show org stock labels and compliance tabs', function () {
     $warehouse = Warehouse::first();
     $orgStock  = OrgStock::first();

@@ -235,6 +235,7 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
                     Route::get('/procurement', [ShowOrgStockProcurement::class, 'inStockFamily'])->name('show.procurement');
                     Route::get('/labels', [ShowOrgStockLabels::class, 'inStockFamily'])->name('show.labels');
                     Route::get('/products', [ShowOrgStockProducts::class, 'inStockFamily'])->name('show.products');
+                    Route::get('/delivery_notes', [IndexDeliveryNotesInOrgStock::class, 'inStockFamily'])->name('show.delivery_notes');
                     Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
                     Route::get('/batch-codes/create', [CreateBatchCode::class, 'inOrgStock'])->name('show.batch_codes.create');
                 });

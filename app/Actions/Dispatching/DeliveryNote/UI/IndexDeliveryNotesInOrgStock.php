@@ -16,6 +16,7 @@ use App\Http\Resources\Dispatching\DeliveryNotesInOrgStockResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -155,6 +156,13 @@ class IndexDeliveryNotesInOrgStock extends OrgAction
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle(orgStock: $orgStock);
+    }
+
+    public function inStockFamily(Organisation $organisation, Warehouse $warehouse, OrgStockFamily $orgStockFamily, OrgStock $orgStock, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromWarehouse($warehouse, $request);
 
