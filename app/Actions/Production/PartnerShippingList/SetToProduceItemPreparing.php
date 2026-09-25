@@ -9,6 +9,7 @@
 namespace App\Actions\Production\PartnerShippingList;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
@@ -18,6 +19,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -57,11 +59,68 @@ class SetToProduceItemPreparing extends OrgAction
      * starts from it. Only the published labels of the artefact this line is made from are touched,
      * and only the expiry line inside them.
      */
-    private function writeExpiryOntoLabels(PartnerShoppingListItem $item, string $expiryDate): void
+    /**
+     * A published label that prints a batch code or an expiry date prints the run's own, so a run
+     * cannot be prepared without them: the sheet would otherwise carry the example saved on its design.
+     *
+     * @param  Collection<int, PartnerShoppingListItem>  $items
+     * @param  array<int, array<string, mixed>>  $lines
+     */
+    private function ensureRunTexts(Collection $items, array $lines): void
     {
-        $artefactId = Artefact::where('production_id', $this->production->id)
+        $missing = [];
+
+        foreach ($lines as $index => $line) {
+            $item = $items->get($line['id']);
+
+            if (!$item) {
+                continue;
+            }
+
+            foreach ($this->getRunSources($item) as $source) {
+                if (!filled(Arr::get($line, $source))) {
+                    $missing["lines.$index.$source"] = $source === 'batch_code'
+                        ? __('Type the batch code of :code, its label prints it', ['code' => $item->orgStock?->code ?? $item->id])
+                        : __('Choose the expiry date of :code, its label prints it', ['code' => $item->orgStock?->code ?? $item->id]);
+                }
+            }
+        }
+
+        if ($missing) {
+            throw ValidationException::withMessages($missing);
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getRunSources(PartnerShoppingListItem $item): array
+    {
+        $artefactId = $this->getArtefactId($item);
+
+        if (!$artefactId) {
+            return [];
+        }
+
+        return ArtefactLabel::where('artefact_id', $artefactId)
+            ->where('state', ArtefactLabelStateEnum::PUBLISHED)
+            ->get(['id', 'layout'])
+            ->flatMap(fn (ArtefactLabel $label) => DownloadArtefactLabelPdf::getRunSources($label))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function getArtefactId(PartnerShoppingListItem $item): ?int
+    {
+        return Artefact::where('production_id', $this->production->id)
             ->whereHas('orgStock', fn ($query) => $query->where('stock_id', $item->stock_id))
             ->value('id');
+    }
+
+    private function writeExpiryOntoLabels(PartnerShoppingListItem $item, string $expiryDate): void
+    {
+        $artefactId = $this->getArtefactId($item);
 
         if (!$artefactId) {
             return;
@@ -96,6 +155,10 @@ class SetToProduceItemPreparing extends OrgAction
     public function handleMany(array $lines, bool $preparing): array
     {
         $items = PartnerShoppingListItem::whereIn('id', collect($lines)->pluck('id'))->get()->keyBy('id');
+
+        if ($preparing) {
+            $this->ensureRunTexts($items, $lines);
+        }
 
         return collect($lines)
             ->filter(fn ($line) => $items->has($line['id']))

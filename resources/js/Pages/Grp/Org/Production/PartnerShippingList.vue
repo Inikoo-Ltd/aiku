@@ -14,7 +14,7 @@ import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -24,7 +24,7 @@ import CopyButton from "@/Components/Utils/CopyButton.vue"
 
 library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag)
 
-type PublishedLabel = { id: number, name: string, batch_code: string | null, pdf_url: string }
+type PublishedLabel = { id: number, name: string, run_sources: string[], pdf_url: string }
 
 const PRINT_FRAME_LIFETIME_MS = 60000
 
@@ -38,10 +38,23 @@ function labelUrl(label: PublishedLabel, item: BoardItem) {
     const runTexts = new URLSearchParams()
     const expiry = formatExpiryForLabel(item.run_expiry)
 
-    if (item.batch_code) runTexts.set("batch_code", item.batch_code)
+    if (item.run_batch_code) runTexts.set("batch_code", item.run_batch_code)
     if (expiry) runTexts.set("expiry_date", expiry)
 
     return runTexts.size ? `${label.pdf_url}?${runTexts}` : label.pdf_url
+}
+
+/**
+ * A label printing a batch code or an expiry date waits for the run's own, typed when it is
+ * prepared, and never falls back to the example saved on its design.
+ */
+function canPrintLabel(label: PublishedLabel, item: BoardItem) {
+    return (!label.run_sources.includes("batch_code") || Boolean(item.run_batch_code))
+        && (!label.run_sources.includes("expiry_date") || Boolean(item.run_expiry))
+}
+
+function labelsNeed(item: BoardItem, source: string) {
+    return (item.published_labels ?? []).some(label => label.run_sources.includes(source))
 }
 
 /**
@@ -54,7 +67,7 @@ function formatExpiryForLabel(date: string | null | undefined) {
 }
 
 async function printLabel(label: PublishedLabel, item: BoardItem) {
-    if (printingLabelId.value) return
+    if (printingLabelId.value || !canPrintLabel(label, item)) return
 
     printingLabelId.value = label.id
 
@@ -78,8 +91,8 @@ async function printLabel(label: PublishedLabel, item: BoardItem) {
         document.body.appendChild(printFrame)
     } catch {
         notify({
-            title: trans("Something went wrong"),
-            text: trans("The label :name could not be printed", { name: label.name }),
+            title: ctrans("Something went wrong"),
+            text: ctrans("The label :name could not be printed", { name: label.name }),
             type: "error",
         })
     } finally {
@@ -149,10 +162,10 @@ const mixLanes = computed(() => {
         job_order_id: line.job_order_id, job_order_reference: line.job_order_reference, job_order_slug: line.job_order_slug, job_order_artisan: line.job_order_artisan,
     }))
     return [
-        { label: trans("Needed"), items: lanes.needed },
-        { label: trans("Assigned"), items: lanes.assigned },
-        { label: trans("Mixing"), items: lanes.producing },
-        { label: trans("Done"), items: lanes.done },
+        { label: ctrans("Needed"), items: lanes.needed },
+        { label: ctrans("Assigned"), items: lanes.assigned },
+        { label: ctrans("Mixing"), items: lanes.producing },
+        { label: ctrans("Done"), items: lanes.done },
     ]
 })
 
@@ -290,7 +303,7 @@ function openPicker(mode: "prepare" | "assign" | "assign-mix", event: DragEvent)
 function updatePreparingQuantity(item: BoardItem, event: Event) {
     const quantity = Number((event.target as HTMLInputElement).value)
     if (quantity >= 1 && quantity !== Math.ceil(Number(item.quantity_to_produce ?? item.quantity))) {
-        setPreparing([{ id: item.id, quantity }], true)
+        setPreparing([{ id: item.id, quantity, batch_code: item.run_batch_code ?? null, expiry_date: item.run_expiry ?? null }], true)
     }
 }
 
@@ -470,10 +483,10 @@ function jobOrderHref(item: { job_order_slug: string }) {
     <PageHeading :data="pageHead" />
 
     <div v-if="Object.keys(selected).length" class="sticky top-0 z-10 mx-4 mt-4 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white">
-        <span>{{ Object.keys(selected).length }} {{ trans("lines selected") }}</span>
+        <span>{{ Object.keys(selected).length }} {{ ctrans("lines selected") }}</span>
         <div class="flex gap-2">
             <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="createJobOrders">
-                {{ trans("Create job orders") }}
+                {{ ctrans("Create job orders") }}
             </button>
         </div>
     </div>
@@ -481,7 +494,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
 
     <div v-if="mixes" class="mx-4 mt-5">
         <div v-if="!mixes.length && !(mixJobOrders ?? []).length" class="rounded-lg border border-dashed border-gray-300 px-4 py-10 text-center text-gray-400">
-            {{ trans("No mixes needed. Mixes appear here when an open job order uses a raw material that is made in-house.") }}
+            {{ ctrans("No mixes needed. Mixes appear here when an open job order uses a raw material that is made in-house.") }}
         </div>
         <div v-else-if="mixLanes" class="flex gap-3">
             <div
@@ -509,10 +522,10 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             <span class="ml-auto tabular-nums" :class="laneIndex === MIX_LANE_NEEDED ? 'font-semibold text-red-600' : ''">×{{ useLocaleStore().number(Number(item.quantity)) }}<span v-if="item.unit" class="font-normal text-gray-400"> {{ item.unit }}</span></span>
                         </div>
                         <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>
-                        <div v-if="item.needed_for" class="truncate text-gray-400" :title="item.needed_for.join(', ')">{{ trans("for") }} {{ item.needed_for.join(", ") }}</div>
+                        <div v-if="item.needed_for" class="truncate text-gray-400" :title="item.needed_for.join(', ')">{{ ctrans("for") }} {{ item.needed_for.join(", ") }}</div>
                         <div v-if="item.job_order_slug" class="flex items-center gap-1 text-gray-600">
                             <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
-                            {{ item.job_order_artisan ?? trans("No artisan") }}
+                            {{ item.job_order_artisan ?? ctrans("No artisan") }}
                             <Link :href="jobOrderHref(item)" class="primaryLink ml-auto">{{ item.job_order_reference }}</Link>
                         </div>
                         <div v-else-if="item.maker" class="flex items-center gap-1 text-gray-400">
@@ -527,9 +540,9 @@ function jobOrderHref(item: { job_order_slug: string }) {
 
     <div v-if="artisanWorkload && groupBy === 'maker'" class="mx-4 mt-5 rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-700">
         <div class="mb-2 flex items-center gap-2 text-sm text-gray-500">
-            <span>{{ trans("Open job orders per artisan") }} <span class="text-gray-400">· {{ trans("everyone should have at least two") }}</span></span>
+            <span>{{ ctrans("Open job orders per artisan") }} <span class="text-gray-400">· {{ ctrans("everyone should have at least two") }}</span></span>
             <button v-if="artisanWorkload.some(artisan => artisan.hidden)" type="button" class="ml-auto text-xs text-gray-400 hover:text-indigo-600" @click="showHiddenArtisans = !showHiddenArtisans">
-                {{ artisanWorkload.filter(artisan => artisan.hidden).length }} {{ trans("not artisans") }} · {{ showHiddenArtisans ? trans("hide") : trans("show") }}
+                {{ artisanWorkload.filter(artisan => artisan.hidden).length }} {{ ctrans("not artisans") }} · {{ showHiddenArtisans ? ctrans("hide") : ctrans("show") }}
             </button>
         </div>
         <div class="flex flex-wrap gap-1.5">
@@ -539,13 +552,13 @@ function jobOrderHref(item: { job_order_slug: string }) {
                 class="flex items-center gap-1 rounded-full border px-2.5 py-px text-xs"
                 :class="artisan.open_job_orders === 0 ? 'border-red-300 bg-red-50 text-red-700' : artisan.open_job_orders === 1 ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-600'">
                 <Link :href="route('grp.org.productions.show.operations.job-orders.index', { organisation: route().params['organisation'], production: route().params['production'], 'filter[employee_id]': artisan.id })" class="hover:underline">{{ artisan.name }} · {{ artisan.open_job_orders }}</Link>
-                <button type="button" class="opacity-40 hover:opacity-100" :title="trans('Not an artisan')" @click="toggleArtisan(artisan)">×</button>
+                <button type="button" class="opacity-40 hover:opacity-100" :title="ctrans('Not an artisan')" @click="toggleArtisan(artisan)">×</button>
             </span>
         </div>
         <div v-if="showHiddenArtisans" class="mt-2 flex flex-wrap gap-1.5">
             <span v-for="artisan in artisanWorkload.filter(artisan => artisan.hidden)" :key="artisan.id" class="flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2.5 py-px text-xs text-gray-400">
                 {{ artisan.name }}
-                <button type="button" class="hover:text-indigo-600" :title="trans('Is an artisan')" @click="toggleArtisan(artisan)">+</button>
+                <button type="button" class="hover:text-indigo-600" :title="ctrans('Is an artisan')" @click="toggleArtisan(artisan)">+</button>
             </span>
         </div>
     </div>
@@ -554,78 +567,82 @@ function jobOrderHref(item: { job_order_slug: string }) {
         <div v-if="pendingFirst" class="fixed inset-0 z-40" @click="pendingItems = []" />
         <div v-if="pendingFirst" class="fixed z-50 w-80 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
             <div v-if="pendingItems.length === 1" class="mb-1.5 font-medium">{{ pendingFirst.stock_code }} <span class="font-normal text-gray-500">{{ pendingFirst.stock_name }}</span></div>
-            <div v-else class="mb-1.5 font-medium">{{ trans(":count cards", { count: pendingItems.length }) }}</div>
+            <div v-else class="mb-1.5 font-medium">{{ ctrans(":count cards", { count: pendingItems.length }) }}</div>
 
             <template v-if="pickerMode === 'assign-mix'">
                 <label class="mb-2 flex items-center gap-2">
-                    <span class="text-gray-500">{{ trans("Quantity") }}</span>
+                    <span class="text-gray-500">{{ ctrans("Quantity") }}</span>
                     <input v-model.number="pendingQuantities[pendingFirst.id]" type="number" min="1" step="1" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
-                    <span class="text-gray-400">{{ (pendingFirst as any).unit }} · {{ trans("short") }} {{ useLocaleStore().number(Number(pendingFirst.quantity)) }}</span>
+                    <span class="text-gray-400">{{ (pendingFirst as any).unit }} · {{ ctrans("short") }} {{ useLocaleStore().number(Number(pendingFirst.quantity)) }}</span>
                 </label>
             </template>
 
             <template v-if="pickerMode === 'prepare'">
-                <div class="mb-1 text-gray-500">{{ trans("How many to make? (labels)") }}</div>
+                <div class="mb-1 text-gray-500">{{ ctrans("How many to make? (labels)") }}</div>
                 <form @submit.prevent="confirmPrepare">
                     <div class="flex max-h-64 flex-col gap-1 overflow-y-auto">
                         <label v-for="(item, index) in pendingItems" :key="item.id" class="flex items-center gap-2">
                             <span v-if="pendingItems.length > 1" class="w-24 truncate font-medium" :title="item.stock_name">{{ item.stock_code }}</span>
                             <input v-model.number="pendingQuantities[item.id]" type="number" min="1" step="1" :autofocus="index === 0" class="w-20 rounded border-gray-300 py-0.5 text-xs tabular-nums" />
-                            <span v-if="pendingQuantities[item.id] > Math.ceil(Number(item.quantity))" class="text-gray-400">+{{ pendingQuantities[item.id] - Math.ceil(Number(item.quantity)) }} {{ trans("for stock") }}</span>
+                            <span v-if="pendingQuantities[item.id] > Math.ceil(Number(item.quantity))" class="text-gray-400">+{{ pendingQuantities[item.id] - Math.ceil(Number(item.quantity)) }} {{ ctrans("for stock") }}</span>
                             <span
                                 v-if="item.batch_size"
                                 class="rounded bg-indigo-50 px-1.5 py-px text-indigo-700"
-                                :title="trans('Batch of :batch units, packed in :packed', { batch: item.batch_size ?? 0, packed: item.packed_in ?? 1 })">
-                                {{ trans("makes") }} {{ jobUnits(item) }} {{ trans("units") }}
+                                :title="ctrans('Batch of :batch units, packed in :packed', { batch: item.batch_size ?? 0, packed: item.packed_in ?? 1 })">
+                                {{ ctrans("makes") }} {{ jobUnits(item) }} {{ ctrans("units") }}
                             </span>
                         </label>
                     </div>
                     <div class="mt-2 space-y-2 border-t border-gray-100 pt-2">
                         <div class="text-gray-500">
-                            {{ trans("What the labels print") }}
-                            <span class="block text-gray-400">{{ trans("An empty batch code is named after the job order once it is made.") }}</span>
+                            {{ ctrans("What the labels print") }}
+                            <span class="block text-gray-400">{{ ctrans("An empty batch code is named after the job order once it is made.") }}</span>
                         </div>
                         <div v-for="item in pendingItems" :key="`texts-${item.id}`" class="space-y-1">
                             <div v-if="pendingItems.length > 1" class="truncate font-medium" :title="item.stock_name">{{ item.stock_code }}</div>
                             <div class="grid grid-cols-2 gap-1.5">
                                 <label class="flex min-w-0 flex-col gap-0.5">
-                                    <span class="text-gray-500">{{ trans("Batch code") }}</span>
+                                    <span class="text-gray-500">{{ ctrans("Batch code") }}</span>
                                     <input
                                         v-model="pendingBatchCodes[item.id]"
                                         type="text"
                                         maxlength="64"
-                                        :placeholder="trans('From job order')"
-                                        :title="trans('Leave empty and the job order reference names the batch')"
+                                        :required="labelsNeed(item, 'batch_code')"
+                                        :placeholder="labelsNeed(item, 'batch_code') ? ctrans('Printed on the label') : ctrans('From job order')"
+                                        :title="labelsNeed(item, 'batch_code')
+                                            ? ctrans('The label prints the batch code, type it before preparing')
+                                            : ctrans('Leave empty and the job order reference names the batch')"
                                         class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
                                 </label>
                                 <label class="flex min-w-0 flex-col gap-0.5">
-                                    <span class="text-gray-500">{{ trans("Expiry date") }}</span>
+                                    <span class="text-gray-500">{{ ctrans("Expiry date") }}</span>
                                     <input
                                         v-model="pendingExpiryDates[item.id]"
                                         type="date"
+                                        :required="labelsNeed(item, 'expiry_date')"
                                         class="w-full min-w-0 rounded border-gray-300 py-0.5 text-xs" />
                                 </label>
                             </div>
                         </div>
 
-                        <div v-if="changedExpiryItems.length" class="rounded border border-amber-200 bg-amber-50 p-1.5" role="group" :aria-label="trans('Keep the new expiry date?')">
+                        <div v-if="changedExpiryItems.length" class="rounded border border-amber-200 bg-amber-50 p-1.5" role="group" :aria-label="ctrans('Keep the new expiry date?')">
                             <div class="mb-1 text-amber-800">
                                 {{ changedExpiryItems.length > 1
-                                    ? trans("Expiry date changed on :count labels. Keep it for?", { count: changedExpiryItems.length })
-                                    : trans("Expiry date changed. Keep it for?") }}
+                                    ? ctrans("Expiry date changed on :count labels. Keep it for?", { count: changedExpiryItems.length })
+                                    : ctrans("Expiry date changed. Keep it for?") }}
                             </div>
                             <label class="flex items-start gap-1.5 text-amber-900">
                                 <input v-model="expiryAppliesToLabel" type="radio" :value="false" class="mt-0.5" />
-                                <span>{{ ctrans("This run only") }} (1x) <span class="block text-amber-700">{{ trans("the label design keeps its own date") }}</span></span>
+                                <span>{{ ctrans("This run only") }} (1x) <span class="block text-amber-700">{{ ctrans("the label design keeps its own date") }}</span></span>
                             </label>
                             <label class="mt-1 flex items-start gap-1.5 text-amber-900">
                                 <input v-model="expiryAppliesToLabel" type="radio" :value="true" class="mt-0.5" />
-                                <span>{{ ctrans("Save on the label") }} <span class="block text-amber-700">{{ trans("every future run starts from this date") }}</span></span>
+                                <span>{{ ctrans("Save on the label") }} <span class="block text-amber-700">{{ ctrans("every future run starts from this date") }}</span></span>
                             </label>
                         </div>
                     </div>
 
-                    <button type="submit" class="mt-2 w-full rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ pendingItems.length > 1 ? trans("Prepare :count", { count: pendingItems.length }) : trans("Prepare") }}</button>
+                    <button type="submit" class="mt-2 w-full rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ pendingItems.length > 1 ? ctrans("Prepare :count", { count: pendingItems.length }) : ctrans("Prepare") }}</button>
                 </form>
             </template>
 
@@ -634,10 +651,10 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <span v-for="item in pendingItems" :key="item.id" class="rounded bg-gray-100 px-1.5 py-px text-gray-600" :title="item.stock_name">{{ item.stock_code }} <span class="text-gray-400">×{{ Math.ceil(Number(item.quantity_to_produce ?? item.quantity)) }}</span></span>
                 </div>
                 <div class="mb-1 text-gray-500">
-                    <template v-if="pickerMode === 'reassign'">{{ trans("Change artisan of :reference", { reference: pendingFirst.job_order_reference ?? "" }) }} <span class="text-gray-400">({{ pendingFirst.job_order_artisan ?? trans("nobody") }})</span></template>
-                    <template v-else>{{ pickerMode === 'assign-mix' ? trans("Who mixes it?") : pendingItems.length > 1 ? trans("Who makes them?") : trans("Who makes :count?", { count: Math.ceil(Number(pendingFirst.quantity_to_produce ?? pendingFirst.quantity)) }) }}</template>
+                    <template v-if="pickerMode === 'reassign'">{{ ctrans("Change artisan of :reference", { reference: pendingFirst.job_order_reference ?? "" }) }} <span class="text-gray-400">({{ pendingFirst.job_order_artisan ?? ctrans("nobody") }})</span></template>
+                    <template v-else>{{ pickerMode === 'assign-mix' ? ctrans("Who mixes it?") : pendingItems.length > 1 ? ctrans("Who makes them?") : ctrans("Who makes :count?", { count: Math.ceil(Number(pendingFirst.quantity_to_produce ?? pendingFirst.quantity)) }) }}</template>
                 </div>
-                <input v-if="(artisanWorkload ?? []).length > 8" v-model="artisanSearch" type="search" :placeholder="trans('Type a name…')" autofocus class="mb-1 w-full rounded border-gray-300 py-0.5 text-xs" />
+                <input v-if="(artisanWorkload ?? []).length > 8" v-model="artisanSearch" type="search" :placeholder="ctrans('Type a name…')" autofocus class="mb-1 w-full rounded border-gray-300 py-0.5 text-xs" />
                 <div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
                     <button
                         v-for="artisan in artisanChoices"
@@ -648,7 +665,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         @click="assign(artisan.id)">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width class="text-gray-400" />
                         <span class="truncate">{{ artisan.name }}</span>
-                        <span v-if="pendingDefaultMaker && (artisan.id === pendingDefaultMaker.maker_id || artisan.name === pendingDefaultMaker.maker)" class="ml-auto text-[10px] uppercase tracking-wide">{{ trans("default") }}</span>
+                        <span v-if="pendingDefaultMaker && (artisan.id === pendingDefaultMaker.maker_id || artisan.name === pendingDefaultMaker.maker)" class="ml-auto text-[10px] uppercase tracking-wide">{{ ctrans("default") }}</span>
                         <span v-else class="ml-auto text-gray-400">{{ artisan.open_job_orders }}</span>
                     </button>
                 </div>
@@ -658,7 +675,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
 
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-4 text-sm">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900">
-            <div v-for="(label, key) in { family: trans('Category'), requester: trans('Requester'), priority: trans('Urgency') }" :key="key" class="flex flex-wrap items-center gap-1.5">
+            <div v-for="(label, key) in { family: ctrans('Category'), requester: ctrans('Requester'), priority: ctrans('Urgency') }" :key="key" class="flex flex-wrap items-center gap-1.5">
                 <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ label }}</span>
                 <button
                     v-for="option in boardFilterOptions[key]"
@@ -674,14 +691,14 @@ function jobOrderHref(item: { job_order_slug: string }) {
                 </button>
             </div>
         <div v-if="boardFilterOptions.artisan.length" class="relative flex items-center gap-1.5">
-            <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Artisan") }}</span>
+            <span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Artisan") }}</span>
             <button
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
                 :class="boardFilters.artisan.length ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                 @click="artisanMenuOpen = !artisanMenuOpen">
                 <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width :class="boardFilters.artisan.length ? 'text-white/70' : 'text-gray-400'" />
-                <span class="max-w-48 truncate">{{ boardFilters.artisan.length ? boardFilters.artisan.join(", ") : trans("Everybody") }}</span>
+                <span class="max-w-48 truncate">{{ boardFilters.artisan.length ? boardFilters.artisan.join(", ") : ctrans("Everybody") }}</span>
                 <span class="rounded-full px-1.5 text-xs tabular-nums" :class="boardFilters.artisan.length ? 'bg-white/20' : 'bg-white text-gray-500'">{{ boardFilters.artisan.length || boardFilterOptions.artisan.length }}</span>
             </button>
             <div v-if="artisanMenuOpen" class="fixed inset-0 z-30" @click="artisanMenuOpen = false" />
@@ -692,10 +709,10 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     <span class="truncate">{{ option.value }}</span>
                     <span class="ml-auto text-xs text-gray-400">{{ option.count }}</span>
                 </label>
-                <button v-if="boardFilters.artisan.length" type="button" class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50" @click="boardFilters.artisan = []">{{ trans("Everybody") }}</button>
+                <button v-if="boardFilters.artisan.length" type="button" class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50" @click="boardFilters.artisan = []">{{ ctrans("Everybody") }}</button>
             </div>
         </div>
-            <button v-if="boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ trans("Clear") }}</button>
+            <button v-if="boardFilters.family.length || boardFilters.requester.length || boardFilters.priority.length" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="boardFilters.family = []; boardFilters.requester = []; boardFilters.priority = []">× {{ ctrans("Clear") }}</button>
         </div>
     </div>
 
@@ -704,8 +721,8 @@ function jobOrderHref(item: { job_order_slug: string }) {
             :href="route(route().current() as string, { ...route().params, hitchhikers: hitchhikers.showing ? undefined : 1 })"
             preserve-scroll
             class="hover:text-indigo-600">
-            <template v-if="hitchhikers.showing">{{ trans("Hiding lines that are too small for a batch") }}</template>
-            <template v-else>{{ hitchhikers.count }} {{ trans("lines too small for a batch are waiting for company") }} · {{ trans("show") }}</template>
+            <template v-if="hitchhikers.showing">{{ ctrans("Hiding lines that are too small for a batch") }}</template>
+            <template v-else>{{ hitchhikers.count }} {{ ctrans("lines too small for a batch are waiting for company") }} · {{ ctrans("show") }}</template>
         </Link>
     </div>
 
@@ -718,7 +735,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
             @drop.prevent="onDrop(laneIndex, $event)">
             <div class="flex items-center gap-2 px-3 py-2 font-medium">
                 <span>{{ lane.label }}</span>
-                <button v-if="selectedLane === laneIndex && selectedCards.length" type="button" class="rounded-full bg-indigo-600 px-2 text-xs font-normal text-white" :title="trans('Click to clear selection, drag any selected card to move them all')" @click="selectedCards = []">{{ selectedCards.length }} {{ trans("selected") }} ×</button>
+                <button v-if="selectedLane === laneIndex && selectedCards.length" type="button" class="rounded-full bg-indigo-600 px-2 text-xs font-normal text-white" :title="ctrans('Click to clear selection, drag any selected card to move them all')" @click="selectedCards = []">{{ selectedCards.length }} {{ ctrans("selected") }} ×</button>
                 <span class="ml-auto rounded-full bg-white px-2 text-xs text-gray-500 dark:bg-gray-900">{{ lane.items.length }}</span>
             </div>
             <div class="flex max-h-[70vh] flex-col gap-1.5 overflow-y-auto px-2 pb-2">
@@ -739,11 +756,11 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <span
                             v-if="item.is_hitchhiker"
                             class="rounded bg-gray-100 px-1 font-normal text-gray-500 dark:bg-gray-800"
-                            :title="trans('Under a batch of :batch units, waiting for another order to ride with', { batch: item.batch_size ?? 0 })">
-                            {{ trans("hitchhiking") }}
+                            :title="ctrans('Under a batch of :batch units, waiting for another order to ride with', { batch: item.batch_size ?? 0 })">
+                            {{ ctrans("hitchhiking") }}
                         </span>
                         <span class="ml-auto flex items-center gap-1 tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
-                            ×{{ useLocaleStore().number(Number(item.quantity)) }} {{ trans("SKO") }}
+                            ×{{ useLocaleStore().number(Number(item.quantity)) }} {{ ctrans("SKO") }}
                             <template v-if="laneIndex === LANE_PREPARING && item.state === 'open'">
                                 <span class="text-indigo-600">→</span>
                                 <input
@@ -751,14 +768,14 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                     min="1"
                                     step="1"
                                     :value="Math.ceil(Number(item.quantity_to_produce ?? item.quantity))"
-                                    :title="trans('Quantity to make, edit to change')"
+                                    :title="ctrans('Quantity to make, edit to change')"
                                     class="w-14 rounded border-gray-200 px-1 py-0 text-right text-xs font-semibold tabular-nums text-indigo-700 hover:border-indigo-300 focus:border-indigo-500"
                                     @click.stop
                                     @mousedown.stop
                                     @change="updatePreparingQuantity(item, $event)" />
                             </template>
-                            <span v-else-if="item.job_order_quantity" class="text-indigo-600" :title="trans('Making :count units', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity) / (Number(item.packed_in) || 1)) }} {{ trans("SKO") }} ({{ useLocaleStore().number(Number(item.job_order_quantity)) }} {{ trans("units") }})</span>
-                            <span v-else-if="item.quantity_to_produce && Number(item.quantity_to_produce) !== Number(item.quantity)" class="text-indigo-600" :title="trans('Making :count SKO', { count: item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.quantity_to_produce)) }} {{ trans("SKO") }}</span>
+                            <span v-else-if="item.job_order_quantity" class="text-indigo-600" :title="ctrans('Making :count units', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity) / (Number(item.packed_in) || 1)) }} {{ ctrans("SKO") }} ({{ useLocaleStore().number(Number(item.job_order_quantity)) }} {{ ctrans("units") }})</span>
+                            <span v-else-if="item.quantity_to_produce && Number(item.quantity_to_produce) !== Number(item.quantity)" class="text-indigo-600" :title="ctrans('Making :count SKO', { count: item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.quantity_to_produce)) }} {{ ctrans("SKO") }}</span>
                         </span>
                     </div>
                     <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>
@@ -768,13 +785,13 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <Link v-if="item.job_order_slug" :href="jobOrderHref(item)" class="primaryLink ml-auto">{{ item.job_order_reference }}</Link>
                     </div>
                     <div v-if="laneIndex <= LANE_PREPARING" class="text-gray-400">
-                        <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
-                        <span v-else>{{ trans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
+                        <span v-if="Number(item.stock_available) >= Number(item.quantity)" class="text-emerald-600">{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available)) }}</span>
+                        <span v-else>{{ ctrans("In stock") }}: {{ useLocaleStore().number(Number(item.stock_available ?? 0)) }}</span>
                     </div>
                     <div
                         v-if="laneIndex === LANE_PREPARING && item.batch_code"
                         class="mt-1 flex max-w-full items-center gap-1 text-gray-500"
-                        :title="trans('Batch code for this run')"
+                        :title="ctrans('Batch code for this run')"
                         @click.stop
                         @mousedown.stop>
                         <FontAwesomeIcon icon="fal fa-hashtag" class="text-gray-400" fixed-width />
@@ -783,12 +800,22 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     </div>
                     <div v-if="laneIndex <= LANE_PREPARING && item.published_labels?.length" class="mt-1 flex flex-col gap-1">
                         <div v-for="label in item.published_labels" :key="label.id" class="flex max-w-full items-center gap-1">
+                            <span
+                                v-if="!canPrintLabel(label, item)"
+                                class="flex min-w-0 flex-1 items-center gap-1 rounded border border-gray-200 bg-gray-50 px-1.5 py-px text-gray-400"
+                                :title="laneIndex === LANE_PREPARING
+                                    ? ctrans('Prepare this run again with its batch code and expiry date to print the label :name', { name: label.name })
+                                    : ctrans('The label :name prints once the run is prepared with its batch code and expiry date', { name: label.name })">
+                                <FontAwesomeIcon icon="fal fa-file-pdf" fixed-width />
+                                <span class="truncate">{{ label.name }}</span>
+                            </span>
+                            <template v-else>
                             <a
                                 :href="labelUrl(label, item)"
                                 target="_blank"
                                 rel="noopener"
                                 class="flex min-w-0 flex-1 items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-px text-indigo-700 hover:bg-indigo-100"
-                                :title="trans('Open label :name', { name: label.name })"
+                                :title="ctrans('Open label :name', { name: label.name })"
                                 draggable="false"
                                 @click.stop
                                 @mousedown.stop>
@@ -798,7 +825,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             <button
                                 type="button"
                                 class="flex shrink-0 items-center gap-1 rounded border border-indigo-200 bg-white px-1.5 py-px text-indigo-700 hover:bg-indigo-50 disabled:cursor-wait disabled:opacity-60"
-                                :title="trans('Print label :name', { name: label.name })"
+                                :title="ctrans('Print label :name', { name: label.name })"
                                 :disabled="printingLabelId === label.id"
                                 @click.stop="printLabel(label, item)"
                                 @mousedown.stop>
@@ -806,16 +833,17 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                 <FontAwesomeIcon v-else icon="fal fa-print" fixed-width />
                                 {{ ctrans("Print") }}
                             </button>
+                            </template>
                         </div>
                     </div>
-                    <button v-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="trans('Change artisan')" @click.stop="openReassign(item, $event)">
+                    <button v-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="ctrans('Change artisan')" @click.stop="openReassign(item, $event)">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
-                        {{ item.job_order_artisan ?? trans("No artisan") }}
+                        {{ item.job_order_artisan ?? ctrans("No artisan") }}
                         <FontAwesomeIcon icon="fal fa-pencil" class="text-[9px] text-gray-300" fixed-width />
                     </button>
                     <div v-else-if="item.job_order_id" class="flex items-center gap-1 text-gray-600">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
-                        {{ item.job_order_artisan ?? trans("No artisan") }}
+                        {{ item.job_order_artisan ?? ctrans("No artisan") }}
                     </div>
                     <div v-else-if="item.maker" class="flex items-center gap-1 text-gray-400">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width />
@@ -842,7 +870,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
         <div v-for="group in groups.filter(group => !hiddenGroups.includes(group.label))" :key="group.label" class="rounded-lg border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2 font-medium dark:border-gray-700 dark:bg-gray-800">
                 <span>{{ group.label }}</span>
-                <span class="text-gray-500">{{ group.items.length }} {{ trans("lines") }}</span>
+                <span class="text-gray-500">{{ group.items.length }} {{ ctrans("lines") }}</span>
             </div>
             <table class="w-full text-sm">
                 <tbody>

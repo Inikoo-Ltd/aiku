@@ -2610,7 +2610,7 @@ test('a partner line the factory has stock for belongs on pre-pick, not the to p
     $orgStocks[0]->update(['state' => \App\Enums\Inventory\OrgStock\OrgStockStateEnum::ACTIVE]);
 });
 
-test('keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {
+test('a labelled run is prepared only with its batch code, and keeping the expiry date writes it onto the published label of a partner line made for another organisation', function () {
     $stocks       = createStocks($this->group);
     $makerOrgStock = createOrgStocks($this->organisation, [$stocks[0]])[0];
     \App\Models\Production\Artefact::where('production_id', $this->production->id)->where('org_stock_id', $makerOrgStock->id)->update(['org_stock_id' => null]);
@@ -2637,16 +2637,23 @@ test('keeping the expiry date writes it onto the published label of a partner li
         'org_stock_id'    => $makerOrgStock->id,
         'name'            => 'Dated',
         'state'           => \App\Enums\Production\Artefact\ArtefactLabelStateEnum::PUBLISHED,
-        'layout'          => ['fields' => [['source' => 'name', 'text' => 'Kept'], ['source' => 'expiry_date', 'text' => '']]],
+        'layout'          => ['fields' => [['source' => 'name', 'text' => 'Kept'], ['source' => 'expiry_date', 'text' => ''], ['source' => 'batch_code', 'text' => 'EXAMPLE-1']]],
     ]);
 
     actingAs($this->guest->getUser());
     \Pest\Laravel\post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $this->production->slug]), [
         'preparing' => true,
-        'lines'     => [['id' => $line->id, 'expiry_date' => '2027-03-09', 'expiry_applies_to_label' => true]],
-    ])->assertRedirect();
+        'lines'     => [['id' => $line->id, 'expiry_date' => '2027-03-09']],
+    ])->assertSessionHasErrors('lines.0.batch_code');
+    expect($line->refresh()->preparing_at)->toBeNull();
+
+    \Pest\Laravel\post(route('grp.org.productions.show.to_produce.items.preparing', [$this->organisation->slug, $this->production->slug]), [
+        'preparing' => true,
+        'lines'     => [['id' => $line->id, 'batch_code' => 'B-0309', 'expiry_date' => '2027-03-09', 'expiry_applies_to_label' => true]],
+    ])->assertRedirect()->assertSessionHasNoErrors();
 
     expect($line->refresh()->preparing_at)->not->toBeNull()
+        ->and($line->batch_code)->toBe('B-0309')
         ->and($label->refresh()->layout['fields'][1]['text'])->toBe('09/03/2027')
         ->and($label->layout['fields'][0]['text'])->toBe('Kept');
 });
