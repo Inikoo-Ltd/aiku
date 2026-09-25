@@ -24,8 +24,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * What an agent otherwise looks up by hand before answering a claim: which order it is, what
  * was ordered against what left the warehouse, and which of those lines the customer names.
  * Watching agents work claims, half of them started by searching the orders list and most
- * then opened the order's lines and its delivery note; nine in ten claims end in a
- * replacement, which is made from the lines given here.
+ * then opened the order's lines and its delivery note; most claims end in a replacement,
+ * which is made from the lines given here.
  */
 class GetChatClaimCase
 {
