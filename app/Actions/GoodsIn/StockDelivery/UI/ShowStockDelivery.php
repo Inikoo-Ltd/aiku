@@ -34,6 +34,7 @@ use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Http\Resources\Procurement\StockDeliveryUnderOverDeliveredItemResource;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
+use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
@@ -615,6 +616,15 @@ class ShowStockDelivery extends OrgAction
             'can_edit'                   => $this->canEdit,
             'can_edit_payments'          => $this->canEditPayments,
             'currency'                   => $stockDelivery->currency?->code,
+            'currency_id'                => $stockDelivery->currency_id,
+            'org_currency'               => $stockDelivery->organisation->currency->code,
+            'org_exchange'               => $stockDelivery->org_exchange,
+            'updateRoute'                => [
+                'name'       => 'grp.models.stock-delivery.update',
+                'parameters' => ['stockDelivery' => $stockDelivery->id],
+                'method'     => 'patch',
+            ],
+            'currencies'                 => Currency::orderBy('code')->get(['id', 'code'])->toArray(),
             'checklist'                  => $checklist,
             'agent_invoice_missing'      => !$agentInvoice?->received_at,
             'storeCostRoute'             => [
@@ -678,6 +688,8 @@ class ShowStockDelivery extends OrgAction
             'amount'      => $row?->amount,
             'received_at' => $row?->received_at,
             'is_na'       => (bool) $row?->is_na,
+            'currency_id' => $row?->currency_id,
+            'exchange'    => $row?->exchange,
             'updateRoute' => $row ? [
                 'name'       => 'grp.models.stock-delivery-cost.update',
                 'parameters' => ['stockDeliveryCost' => $row->id],

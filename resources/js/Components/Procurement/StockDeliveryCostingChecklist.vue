@@ -25,6 +25,8 @@ interface CostRow {
     amount: number | string | null
     received_at: string | null
     is_na: boolean
+    currency_id: number | null
+    exchange: number | string | null
     updateRoute: routeType | null
     deleteRoute: routeType | null
 }
@@ -41,6 +43,11 @@ const props = defineProps<{
         is_costed: boolean
         is_partner: boolean
         currency: string | null
+        currency_id: number | null
+        currencies: { id: number, code: string }[]
+        org_currency: string
+        org_exchange: number | string | null
+        updateRoute: routeType
         checklist: CostRow[]
         agent_invoice_missing: boolean
         storeCostRoute: routeType
@@ -91,7 +98,7 @@ const onError = () => {
     notify({ title: ctrans("Something went wrong"), text: ctrans("Failed to save the cost"), type: "error" })
 }
 
-const save = (row: CostRow, payload: { amount?: string | null, received?: boolean, is_na?: boolean }) => {
+const save = (row: CostRow, payload: { amount?: string | null, received?: boolean, is_na?: boolean, currency_id?: number, exchange?: string }) => {
     const data: { [key: string]: string | number | boolean | null } = {}
 
     if ("amount" in payload) {
@@ -102,6 +109,12 @@ const save = (row: CostRow, payload: { amount?: string | null, received?: boolea
     }
     if ("is_na" in payload) {
         data.is_na = payload.is_na
+    }
+    if ("currency_id" in payload) {
+        data.currency_id = payload.currency_id
+    }
+    if ("exchange" in payload) {
+        data.exchange = payload.exchange ? Number(payload.exchange) : null
     }
 
     const key = rowKey(row)
@@ -117,6 +130,16 @@ const save = (row: CostRow, payload: { amount?: string | null, received?: boolea
     } else {
         router.post(route(props.costing.storeCostRoute.name, props.costing.storeCostRoute.parameters), { type: row.type, ...data }, options)
     }
+}
+
+const saveOrgExchange = (value: string) => {
+    if (!value || Number(value) <= 0) return
+
+    router.patch(
+        route(props.costing.updateRoute.name, props.costing.updateRoute.parameters),
+        { org_exchange: Number(value) },
+        { preserveScroll: true, onError }
+    )
 }
 
 const addExtra = () => {
@@ -156,6 +179,21 @@ const removeExtra = (row: CostRow) => {
         </div>
 
         <template v-if="!costing.is_partner">
+            <label v-if="costing.org_currency !== costing.currency" class="mb-2 flex items-center gap-2 text-sm">
+                <span class="w-40 shrink-0">{{ ctrans("Invoice exchange rate") }}</span>
+                1 {{ costing.currency }} =
+                <input
+                    :value="costing.org_exchange"
+                    type="number"
+                    min="0"
+                    step="0.000001"
+                    class="w-32 h-7 rounded border-gray-300 text-sm disabled:bg-gray-100"
+                    :disabled="!canEdit"
+                    @change="saveOrgExchange(($event.target as HTMLInputElement).value)"
+                />
+                {{ costing.org_currency }}
+            </label>
+
             <div class="grid gap-1 text-sm">
                 <div
                     v-for="row in costing.checklist"
@@ -183,8 +221,30 @@ const removeExtra = (row: CostRow) => {
                             :disabled="!canEdit || row.is_na"
                             @blur="drafts[rowKey(row)] !== (row.amount == null ? '' : String(row.amount)) && save(row, { amount: drafts[rowKey(row)] })"
                         />
-                        <span class="text-gray-400">{{ costing.currency }}</span>
+                        <span v-if="row.type === 'agent_invoice'" class="text-gray-400">{{ costing.currency }}</span>
+                        <select
+                            v-else
+                            :value="row.currency_id ?? costing.currency_id"
+                            class="h-7 py-0 rounded border-gray-300 text-sm disabled:bg-gray-100"
+                            :disabled="!canEdit || row.is_na"
+                            @change="save(row, { currency_id: Number(($event.target as HTMLSelectElement).value), amount: drafts[rowKey(row)] })"
+                        >
+                            <option v-for="currency in costing.currencies" :key="currency.id" :value="currency.id">{{ currency.code }}</option>
+                        </select>
                     </div>
+
+                    <label v-if="row.currency_id && row.currency_id !== costing.currency_id" class="flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans("Rate to :currency", { currency: costing.currency ?? "" }) }}
+                        <input
+                            :value="row.exchange"
+                            type="number"
+                            min="0"
+                            step="0.000001"
+                            class="w-24 h-7 rounded border-gray-300 text-xs disabled:bg-gray-100"
+                            :disabled="!canEdit || row.is_na"
+                            @change="save(row, { exchange: ($event.target as HTMLInputElement).value })"
+                        />
+                    </label>
 
                     <label v-if="row.type !== 'agent_invoice'" class="flex items-center gap-1 text-xs">
                         <input

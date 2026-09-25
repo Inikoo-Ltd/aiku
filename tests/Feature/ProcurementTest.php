@@ -3275,6 +3275,41 @@ describe('stock delivery costing checklist', function () {
         expect($stockDelivery->refresh()->is_costed)->toBeFalse();
     });
 
+    test('costs in another currency are converted to the delivery currency', function () {
+        $stockDelivery = $this->costingStockDelivery;
+        $otherCurrency = Currency::where('id', '!=', $stockDelivery->currency_id)->first();
+
+        $shipping = StoreStockDeliveryCost::make()->action($stockDelivery, [
+            'type'        => StockDeliveryCostTypeEnum::SHIPPING->value,
+            'amount'      => 100,
+            'currency_id' => $otherCurrency->id,
+            'exchange'    => 1.5,
+        ]);
+
+        expect($shipping->currency_id)->toBe($otherCurrency->id)
+            ->and($shipping->amountInDeliveryCurrency())->toBe(150.0);
+
+        $shipping = UpdateStockDeliveryCost::make()->action($shipping, ['currency_id' => $stockDelivery->currency_id]);
+
+        expect($shipping->currency_id)->toBeNull()
+            ->and($shipping->exchange)->toBeNull()
+            ->and($shipping->amountInDeliveryCurrency())->toBe(100.0);
+    });
+
+    test('changing the invoice exchange rate reconverts the items to the organisation currency', function () {
+        $stockDelivery = $this->costingStockDelivery;
+        $orgStock      = OrgStock::where('organisation_id', $stockDelivery->organisation_id)->first();
+        $item          = StoreStockDeliveryItem::make()->action($stockDelivery, null, $orgStock, ['unit_quantity' => 10, 'state' => StockDeliveryItemStateEnum::IN_PROCESS], strict: false);
+        $item          = UpdateStockDeliveryItem::make()->action($item, ['net_amount' => 40], strict: false);
+
+        UpdateStockDelivery::make()->action($stockDelivery, ['org_exchange' => 2.5]);
+
+        $item->refresh();
+        expect((float) $stockDelivery->refresh()->org_exchange)->toBe(2.5)
+            ->and((float) $item->org_exchange)->toBe(2.5)
+            ->and((float) $item->org_net_amount)->toBe(100.0);
+    });
+
     test('non extra cost types are singletons', function () {
         $stockDelivery = $this->costingStockDelivery;
 
