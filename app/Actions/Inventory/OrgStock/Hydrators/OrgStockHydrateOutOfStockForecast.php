@@ -19,7 +19,8 @@ use Illuminate\Support\Facades\DB;
  * Predicts when an org stock will run out.
  *
  * The pipeline, in order:
- *  1. Rebuild the daily demand series over the last 91 days, counting ONLY days the stock
+ *  1. Rebuild the daily demand series over the last 91 days from delivery_note_items.created_at
+ *     (delivery_note_items.date is only set on Aurora-fetched rows), counting ONLY days the stock
  *     was actually on the shelf (running balance > 0 from org_stock_movements). An item that
  *     was out of stock 90% of the window still gets its true selling rate.
  *  2. Pick a model for that series: Croston with the Syntetos-Boylan correction for
@@ -143,8 +144,8 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         $dispatchedByDay = DB::table('delivery_note_items')
             ->where('org_stock_id', $orgStock->id)
             ->where('quantity_dispatched', '>', 0)
-            ->where('date', '>=', $from)
-            ->selectRaw('date(date) as day, sum(quantity_dispatched) as dispatched')
+            ->where('created_at', '>=', $from)
+            ->selectRaw('date(created_at) as day, sum(quantity_dispatched) as dispatched')
             ->groupBy('day')
             ->pluck('dispatched', 'day');
 
@@ -310,7 +311,7 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         $dispatched = (float) DB::table('delivery_note_items')
             ->whereIn('org_stock_id', $siblingIds)
             ->where('quantity_dispatched', '>', 0)
-            ->where('date', '>=', now()->subDays(self::WINDOW))
+            ->where('created_at', '>=', now()->subDays(self::WINDOW))
             ->sum('quantity_dispatched');
 
         if ($dispatched <= 0) {
@@ -341,7 +342,7 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         $dispatched = (float) DB::table('delivery_note_items')
             ->whereIn('org_stock_id', $familyStockIds)
             ->where('quantity_dispatched', '>', 0)
-            ->where('date', '>=', now()->subDays(self::WINDOW))
+            ->where('created_at', '>=', now()->subDays(self::WINDOW))
             ->sum('quantity_dispatched');
 
         if ($dispatched <= 0) {

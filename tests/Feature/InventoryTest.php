@@ -43,6 +43,7 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProducts;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
@@ -3826,5 +3827,28 @@ describe('discontinue confirm', function () {
         $after = $row();
         expect($after['state'])->toBe('discontinuing')
             ->and($after['organisations']['other']['condition'])->toBe('sell');
+    });
+});
+
+describe('out of stock forecast', function () {
+    beforeEach(function () {
+        list(, , $this->shop) = createShop();
+
+        $this->warehouse = createWarehouse();
+        $this->customer  = createCustomer($this->shop);
+
+        list($this->tradeUnit, $this->product) = createProduct($this->shop);
+    });
+
+    test('dispatches from delivery notes made in aiku feed the forecast although they carry no date', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $deliveryNoteItem->update(['quantity_dispatched' => 10]);
+
+        OrgStockHydrateOutOfStockForecast::run($deliveryNoteItem->orgStock);
+        $stats = $deliveryNoteItem->orgStock->stats->refresh();
+
+        expect($deliveryNoteItem->refresh()->date)->toBeNull()
+            ->and($stats->forecast_source)->toBe('croston')
+            ->and((float) $stats->predicted_daily_usage)->toBeGreaterThan(0.0);
     });
 });
