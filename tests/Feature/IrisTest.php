@@ -6,6 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Iris\Docs\ShowIrisDoc;
 use App\Actions\Iris\Docs\ShowIrisDocs;
 use App\Actions\UI\AikuPublic\BlogPosts;
@@ -27,6 +28,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Models\Accounting\Invoice;
@@ -607,4 +609,17 @@ test('dropshipping docs fill in the website own company, address and blocked cou
         ->toContain('<li>Francia (')
         ->not->toContain('Alemania')
         ->and(ShowIrisDocs::make()->fillPlaceholders('{company_name}', $website))->toBe('Pest & Co');
+});
+
+test('saving a dropshipping shop queues a purge of its docs from the website cache', function () {
+    config(['iris.cache.varnish' => true]);
+    Queue::fake();
+
+    PurgeIrisDocsFromVarnish::forShop($this->shop);
+    PurgeIrisDocsFromVarnish::assertNotPushed();
+
+    $website = asDropshippingWebsite($this->website, 'zz-pest-dse', 'es');
+    $website->shop->setRelation('website', $website);
+    PurgeIrisDocsFromVarnish::forShop($website->shop);
+    PurgeIrisDocsFromVarnish::assertPushed();
 });

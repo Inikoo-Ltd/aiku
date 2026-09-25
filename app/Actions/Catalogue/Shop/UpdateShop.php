@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
 use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
@@ -686,6 +687,8 @@ class UpdateShop extends OrgAction
             $shop->isCustomEvent = true;
             Event::dispatch(new AuditCustom($shop));
         }
+
+        PurgeIrisDocsFromVarnish::forShop($shop);
 
         return $shop;
     }

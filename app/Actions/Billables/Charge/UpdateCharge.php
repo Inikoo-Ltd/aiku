@@ -8,6 +8,7 @@
 
 namespace App\Actions\Billables\Charge;
 
+use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\OrgAction;
@@ -60,6 +61,8 @@ class UpdateCharge extends OrgAction
             ],
             $this->hydratorsDelay
         );
+
+        PurgeIrisDocsFromVarnish::forShop($charge->shop);
 
         return $charge;
     }
