@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp\Calls;
 
+use App\Enums\CRM\Livechat\MetaChatCallDirectionEnum;
 use App\Enums\CRM\Livechat\MetaChatCallStatusEnum;
 use App\Events\BroadcastWhatsappCallEvent;
 use App\Models\Chat\ChatAgent;
@@ -30,7 +31,8 @@ class EndWhatsappCall
             return ['ok' => false, 'message' => __('This call has already ended.'), 'code' => 409];
         }
 
-        $wasRinging = $metaChatCall->status === MetaChatCallStatusEnum::RINGING;
+        $wasRinging = $metaChatCall->status === MetaChatCallStatusEnum::RINGING
+            && $metaChatCall->direction === MetaChatCallDirectionEnum::USER_INITIATED;
 
         SendWhatsappCallAction::run($metaChatCall->shop, [
             'call_id' => $metaChatCall->wa_call_id,

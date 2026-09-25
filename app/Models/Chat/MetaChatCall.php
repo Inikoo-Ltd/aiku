@@ -65,12 +65,22 @@ class MetaChatCall extends Model
         ];
     }
 
+    /**
+     * Meta gives up on an unanswered call after about a minute. When its terminate webhook is
+     * lost the row would ring for ever and block every later call, so a ring older than that
+     * no longer counts as live.
+     */
+    public const int RING_TIMEOUT_SECONDS = 90;
+
     public function scopeLive(Builder $query): Builder
     {
-        return $query->whereIn('status', [
-            MetaChatCallStatusEnum::RINGING,
-            MetaChatCallStatusEnum::IN_PROGRESS,
-        ]);
+        return $query->where(function (Builder $query) {
+            $query->where('status', MetaChatCallStatusEnum::IN_PROGRESS)
+                ->orWhere(function (Builder $query) {
+                    $query->where('status', MetaChatCallStatusEnum::RINGING)
+                        ->where('ringing_at', '>', now()->subSeconds(self::RING_TIMEOUT_SECONDS));
+                });
+        });
     }
 
     public function metaChannel(): BelongsTo
@@ -100,10 +110,12 @@ class MetaChatCall extends Model
 
     public function isLive(): bool
     {
-        return in_array($this->status, [
-            MetaChatCallStatusEnum::RINGING,
-            MetaChatCallStatusEnum::IN_PROGRESS,
-        ], true);
+        if ($this->status === MetaChatCallStatusEnum::IN_PROGRESS) {
+            return true;
+        }
+
+        return $this->status === MetaChatCallStatusEnum::RINGING
+            && $this->ringing_at?->gt(now()->subSeconds(self::RING_TIMEOUT_SECONDS));
     }
 
     public function elapsedSeconds(): int

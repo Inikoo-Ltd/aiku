@@ -19,8 +19,10 @@ const formattedElapsed = computed(() => {
     return `${minutes}:${seconds}`
 })
 
+const isOutgoing = computed(() => call.value?.direction === "business_initiated")
+
 const label = computed(() => {
-    if (isRinging.value) return ctrans("Incoming WhatsApp call")
+    if (isRinging.value) return isOutgoing.value ? ctrans("Calling…") : ctrans("Incoming WhatsApp call")
 
     return micReady.value ? ctrans("On the call") : ctrans("Connecting…")
 })
@@ -67,7 +69,7 @@ const label = computed(() => {
         </button>
 
         <button
-            v-if="isRinging"
+            v-if="isRinging && !isOutgoing"
             type="button"
             :disabled="busy"
             class="rounded bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
@@ -83,7 +85,7 @@ const label = computed(() => {
             @click="end(props.organisation)"
         >
             <FontAwesomeIcon :icon="faPhoneSlash" aria-hidden="true" />
-            <span class="ml-1">{{ isRinging ? ctrans("Decline") : ctrans("Hang up") }}</span>
+            <span class="ml-1">{{ isRinging ? (isOutgoing ? ctrans("Cancel") : ctrans("Decline")) : ctrans("Hang up") }}</span>
         </button>
     </div>
 </template>

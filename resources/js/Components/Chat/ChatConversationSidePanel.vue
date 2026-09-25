@@ -18,10 +18,11 @@ import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import SelectQuery from '@/Components/SelectQuery.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
-import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock } from '@fal'
+import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock, faPhone } from '@fal'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
+import { useWhatsappCall } from '@/Composables/useWhatsappCall'
 
-library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock)
+library.add(faTag, faRobot, faChartLine, faCopy, faCheck, faTimes, faExternalLinkAlt, faArrowLeft, faLink, faUnlink, faLifeRing, faLock, faPhone)
 
 type SidePanelTab = 'profile' | 'statistics' | 'tickets' | 'timeline' | 'log' | 'history'
 
@@ -658,6 +659,11 @@ let customerSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const isWhatsapp = computed(() => props.session.channel === 'whatsapp')
 
+const { call: whatsappCall, busy: isWhatsappCallBusy, dial: dialWhatsapp } = useWhatsappCall()
+const startWhatsappCall = () => {
+    dialWhatsapp(String((route().params as Record<string, any>)?.organisation ?? ''), props.session.ulid)
+}
+
 const canMatchCustomer = computed(() => {
     if (!props.session.is_guest) return false
     if (isWhatsapp.value) return !!(props.session.phone_number || props.session.guest_phone)
@@ -881,6 +887,18 @@ const copyChatId = async () => {
                     <div v-if="session.phone_number || session.guest_phone || customerProfile.phone" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">{{ ctrans("Phone") }}</div>
                         <div class="col-span-2 text-xs font-medium text-gray-800 break-all">{{ session.phone_number || session.guest_phone || customerProfile.phone }}</div>
+                    </div>
+                    <div v-if="isWhatsapp && session.phone_number" class="grid grid-cols-3 gap-2 items-start">
+                        <div></div>
+                        <div class="col-span-2">
+                            <button type="button" :disabled="!!whatsappCall || isWhatsappCallBusy"
+                                class="inline-flex items-center gap-1 text-[11px] font-medium rounded border px-1.5 py-0.5 transition-colors disabled:opacity-60 hover:bg-gray-50"
+                                :style="{ color: themePrimary, borderColor: themePrimary }"
+                                @click="startWhatsappCall">
+                                <FontAwesomeIcon :icon="['fal', 'fa-phone']" class="text-[9px]" fixed-width />
+                                {{ ctrans("WhatsApp call") }}
+                            </button>
+                        </div>
                     </div>
                     <div v-if="customerProfile.location || customerProfile.address" class="grid grid-cols-3 gap-2 items-start">
                         <div class="text-gray-500 text-xs">{{ ctrans("Address") }}</div>

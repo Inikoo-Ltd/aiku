@@ -904,7 +904,7 @@ const initSocket = () => {
     }
 
     onCall = (payload: any) => {
-        if (payload?.id) applyCallBroadcast(payload)
+        if (payload?.id) applyCallBroadcast(payload, props.organisationSlug)
     }
 
     chatChannel.listen(".message", onMessage)

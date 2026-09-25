@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\Whatsapp\Calls;
 
+use App\Enums\CRM\Livechat\MetaChatCallDirectionEnum;
 use App\Enums\CRM\Livechat\MetaChatCallStatusEnum;
 use App\Events\BroadcastWhatsappCallEvent;
 use App\Models\Chat\ChatAgent;
@@ -33,6 +34,7 @@ class AnswerWhatsappCall
         // Meta already considers answered.
         $claimed = MetaChatCall::where('id', $metaChatCall->id)
             ->where('status', MetaChatCallStatusEnum::RINGING)
+            ->where('direction', MetaChatCallDirectionEnum::USER_INITIATED)
             ->update([
                 'status'      => MetaChatCallStatusEnum::IN_PROGRESS,
                 'user_id'     => $user->id,

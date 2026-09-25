@@ -93,7 +93,7 @@ const gatherComplete = (connection: RTCPeerConnection): Promise<void> =>
         })
     })
 
-const buildAnswer = async (offerSdp: string): Promise<string> => {
+const openPeer = async (): Promise<RTCPeerConnection> => {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     state.micReady = true
 
@@ -115,14 +115,37 @@ const buildAnswer = async (offerSdp: string): Promise<string> => {
         }
     }
 
-    await peer.setRemoteDescription({ type: "offer", sdp: offerSdp.trimEnd() + "\r\n" })
-
-    const answer = await peer.createAnswer()
-    await peer.setLocalDescription(answer)
-    await gatherComplete(peer)
-
-    return peer.localDescription?.sdp ?? answer.sdp ?? ""
+    return peer
 }
+
+const normaliseSdp = (sdp: string) => sdp.trimEnd() + "\r\n"
+
+const buildAnswer = async (offerSdp: string): Promise<string> => {
+    const connection = await openPeer()
+
+    await connection.setRemoteDescription({ type: "offer", sdp: normaliseSdp(offerSdp) })
+
+    const answer = await connection.createAnswer()
+    await connection.setLocalDescription(answer)
+    await gatherComplete(connection)
+
+    return connection.localDescription?.sdp ?? answer.sdp ?? ""
+}
+
+const buildOffer = async (): Promise<string> => {
+    const connection = await openPeer()
+
+    const offer = await connection.createOffer({ offerToReceiveAudio: true })
+    await connection.setLocalDescription(offer)
+    await gatherComplete(connection)
+
+    return connection.localDescription?.sdp ?? offer.sdp ?? ""
+}
+
+const fetchRemoteSdp = (organisation: string, metaChatCallId: number): Promise<string | undefined> =>
+    axios
+        .get(route("grp.org.chat.agents.whatsapp.calls.offer", { organisation, metaChatCall: metaChatCallId }))
+        .then((response) => response.data?.data?.remote_sdp)
 
 export const useWhatsappCall = () => {
     const call = computed(() => state.call)
@@ -138,7 +161,7 @@ export const useWhatsappCall = () => {
 
     // The broadcast is the one source of truth for a call's state: a call answered or hung up
     // in another tab has to close this one's media too, or the agent keeps a dead line open.
-    const applyBroadcast = (payload: WhatsappCall) => {
+    const applyBroadcast = (payload: WhatsappCall, organisation?: string) => {
         if (state.call && state.call.id !== payload.id && state.call.status === "in_progress") {
             return
         }
@@ -152,7 +175,16 @@ export const useWhatsappCall = () => {
             return
         }
 
-        if (payload.status === "in_progress") startTicker()
+        if (payload.status === "in_progress") {
+            startTicker()
+
+            if (payload.direction === "business_initiated" && organisation && peer && !peer.remoteDescription) {
+                const connection = peer
+                fetchRemoteSdp(organisation, payload.id)
+                    .then((sdp) => sdp && connection.setRemoteDescription({ type: "answer", sdp: normaliseSdp(sdp) }))
+                    .catch(() => end(organisation))
+            }
+        }
     }
 
     const answer = async (organisation: string) => {
@@ -161,12 +193,7 @@ export const useWhatsappCall = () => {
         busy.value = true
 
         try {
-            const offer = await axios
-                .get(route("grp.org.chat.agents.whatsapp.calls.offer", {
-                    organisation,
-                    metaChatCall: state.call.id,
-                }))
-                .then((response) => response.data?.data?.remote_sdp)
+            const offer = await fetchRemoteSdp(organisation, state.call.id)
 
             if (!offer) throw new Error("missing offer")
 
@@ -189,11 +216,42 @@ export const useWhatsappCall = () => {
 
             startTicker()
         } catch (error) {
-            console.log(error)
             teardownMedia()
             notify({
                 title: ctrans("Something went wrong"),
                 text: ctrans("The call could not be answered."),
+                type: "error",
+            })
+        } finally {
+            busy.value = false
+        }
+    }
+
+    const dial = async (organisation: string, metaChatSessionUlid: string) => {
+        if (state.call || busy.value) return
+
+        busy.value = true
+
+        try {
+            const sdp = await buildOffer()
+
+            const { data } = await axios.post(
+                route("grp.org.chat.agents.whatsapp.calls.start", {
+                    organisation,
+                    metaChatSession: metaChatSessionUlid,
+                }),
+                { sdp }
+            )
+
+            if (!data?.ok) {
+                teardownMedia()
+                notify({ title: ctrans("Something went wrong"), text: data?.message ?? "", type: "error" })
+            }
+        } catch (error) {
+            teardownMedia()
+            notify({
+                title: ctrans("Something went wrong"),
+                text: ctrans("The call could not be started."),
                 type: "error",
             })
         } finally {
@@ -234,6 +292,7 @@ export const useWhatsappCall = () => {
         videoAvailable: WHATSAPP_VIDEO_AVAILABLE,
         applyBroadcast,
         answer,
+        dial,
         end,
     }
 }
