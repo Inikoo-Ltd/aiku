@@ -35,7 +35,12 @@ class GetOrderProductsForModification extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->where('products.shop_id', $order->shop_id)->where('products.is_for_sale', true);
+        $queryBuilder->where('products.shop_id', $order->shop_id);
+        if ($order->isPartnerOrder()) {
+            $queryBuilder->offeredToPartners();
+        } else {
+            $queryBuilder->sellableToCustomer($order->customer_id);
+        }
         $queryBuilder->whereNotIn('products.id', $order->transactions()->where('model_type', 'Product')->pluck('model_id'));
         $queryBuilder
             ->defaultSort('products.code')

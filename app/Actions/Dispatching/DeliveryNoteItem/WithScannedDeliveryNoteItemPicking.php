@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\Picking\UpsertPicking;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -70,6 +71,7 @@ trait WithScannedDeliveryNoteItemPicking
             ->where('location_org_stocks.org_stock_id', $deliveryNoteItem->org_stock_id)
             ->where('location_org_stocks.warehouse_id', $deliveryNote->warehouse_id)
             ->where('location_org_stocks.quantity', '>', 0)
+            ->orderByRaw(PartnerBayPickingOrder::sql((string) (int) $deliveryNoteItem->id))
             ->orderByRaw("$defaultLocationColumn desc")
             ->orderBy('location_org_stocks.picking_priority')
             ->select([

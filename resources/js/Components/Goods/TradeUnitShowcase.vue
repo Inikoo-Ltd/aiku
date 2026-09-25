@@ -130,7 +130,7 @@ console.log
 				<div v-else>
 					<div
 						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
 						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 					</div>
 					<!-- <div class="mt-2 text-sm italic text-gray-500">

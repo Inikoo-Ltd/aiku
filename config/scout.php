@@ -8,6 +8,7 @@
 
 use App\Actions\Billables\Charge\Search\GetChargeSearchSchema;
 use App\Actions\Chat\ChatMessage\Search\GetChatMessageSearchSchema;
+use App\Actions\Chat\MetaChatMessage\Search\GetMetaChatMessageSearchSchema;
 use App\Actions\Production\Artefact\Search\GetArtefactSearchSchema;
 use App\Actions\Production\ArtefactDepartment\Search\GetArtefactDepartmentSearchSchema;
 use App\Actions\Production\ArtefactFamily\Search\GetArtefactFamilySearchSchema;
@@ -36,6 +37,7 @@ use App\Actions\Masters\MasterProductCategory\Search\GetMasterProductCategorySea
 use App\Actions\Web\Webpage\Search\GetWebpageSearchSchema;
 use App\Models\Billables\Charge;
 use App\Models\Chat\ChatMessage;
+use App\Models\Chat\MetaChatMessage;
 use App\Models\Billables\Service;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -284,6 +286,7 @@ return [
             Barcode::class         => GetBarcodeSearchSchema::run(),
             Employee::class        => GetEmployeeSearchSchema::run(),
             ChatMessage::class     => GetChatMessageSearchSchema::run(),
+            MetaChatMessage::class => GetMetaChatMessageSearchSchema::run(),
             Artefact::class           => GetArtefactSearchSchema::run(),
             ArtefactFamily::class     => GetArtefactFamilySearchSchema::run(),
             ArtefactDepartment::class => GetArtefactDepartmentSearchSchema::run(),

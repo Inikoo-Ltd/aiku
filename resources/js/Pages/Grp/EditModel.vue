@@ -81,7 +81,9 @@ import {
     faBalanceScale,
     faNotEqual,
     faCamera,
-    faStamp
+    faStamp,
+    faChevronDown,
+    faGem
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -92,6 +94,8 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faChevronDown,
+    faGem,
     faTemperatureLow,
     faNotEqual,
     faMusic,
@@ -171,6 +175,7 @@ library.add(
 
 const props = defineProps<{
     title: string
+    embedded?: boolean
     warning?: {
         text: string
         title: string
@@ -224,7 +229,10 @@ const props = defineProps<{
     }
 }>()
 
-const paramsSection = route().params['section'] || 0
+const firstSectionWithVisibleFields = Object.keys(props.formData?.blueprint ?? {}).find(
+    (sectionKey) => !Object.values(props.formData.blueprint[sectionKey].fields || {}).every((field: any) => field.hidden)
+)
+const paramsSection = route().params['section'] || firstSectionWithVisibleFields || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
 const currentTab = ref<string | number>(
@@ -232,6 +240,20 @@ const currentTab = ref<string | number>(
 )
  // if formData.current not exist, take first navigation
 const _buttonRefs = ref([]) // For click linked to Navigation
+
+const collapsedMobileSections = ref<(string | number)[]>(
+    props.embedded
+        ? Object.keys(props.formData?.blueprint ?? {}).filter((sectionKey) => String(sectionKey) !== String(currentTab.value))
+        : []
+)
+
+const isMobileSectionCollapsed = (sectionKey: string | number) => collapsedMobileSections.value.map(String).includes(String(sectionKey))
+
+const toggleMobileSection = (sectionKey: string | number) => {
+    collapsedMobileSections.value = isMobileSectionCollapsed(sectionKey)
+        ? collapsedMobileSections.value.filter((key) => String(key) !== String(sectionKey))
+        : [...collapsedMobileSections.value, sectionKey]
+}
 const isMobile = ref(false)
 const tabActive: any = ref({})
 const fieldGroupAnimateSection = ref()
@@ -327,8 +349,8 @@ const getSeverity = (type?: string) => {
 
 
 <template>
-    <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <Head v-if="!embedded" :title="capitalize(title)" />
+    <PageHeading v-if="!embedded" :data="pageHead" />
 
     <div v-if="warning && showWarningMessage">
         <Message v-if="warning && showWarningMessage" :severity="getSeverity(warning.type)" xclosable="true"
@@ -340,7 +362,7 @@ const getSeverity = (type?: string) => {
                         getSeverity(warning.type) === 'success' ? 'text-green-800' :
                             getSeverity(warning.type) === 'error' ? 'text-red-800' :
                                 'text-blue-500'
-                ]" />
+                ]" fixed-width />
 
                 <!-- Content -->
                 <div class="flex flex-col">
@@ -360,12 +382,14 @@ const getSeverity = (type?: string) => {
         </Message>
     </div>
     <!-- If overflow-hidden, affect to Multiselect on Address -->
-    <div class="rounded-lg shadow">
+    <div :class="embedded ? 'lg:h-full lg:min-h-0' : 'rounded-lg shadow'">
         <div v-if="!isMobile"
-            class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
+            class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x"
+            :class="embedded ? 'lg:h-full lg:min-h-0' : ''">
             <!-- Tab: Navigation -->
-            <aside v-if="!formData.fullLayout" class="bg-gray-50/50 py-0 lg:col-span-3 lg:h-full">
-                <div class="sticky top-16">
+            <aside v-if="!formData.fullLayout" class="bg-gray-50/50 py-0 lg:col-span-3 lg:h-full"
+                :class="embedded ? 'lg:min-h-0 lg:overflow-y-auto' : ''">
+                <div :class="embedded ? '' : 'sticky top-16'">
                     <template v-for="(sectionData, key) in formData.blueprint">
                         <!-- If Section: all fields is not hidden -->
                         <div v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))"
@@ -381,7 +405,7 @@ const getSeverity = (type?: string) => {
 									  }
 									: { 'border-left': `4px solid transparent` },
 							]">
-                            <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true"
+                            <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true"
                                 class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[
 									tabActive[key]
 										? 'text-gray-400 group-hover:text-gray-500'
@@ -404,6 +428,7 @@ const getSeverity = (type?: string) => {
             <div :class="[
 					'px-4 sm:px-6 md:px-4',
 					formData.fullLayout ? 'col-span-12' : 'col-span-9',
+					embedded ? 'lg:h-full lg:min-h-0 lg:overflow-y-auto' : '',
 				]">
                 <!-- Section: Error in models -->
                 <Transition name="spin-to-down">
@@ -430,7 +455,7 @@ const getSeverity = (type?: string) => {
                                     class="text-lg leading-6 font-medium text-gray-700 capitalize">
                                     {{ sectionData.title }}
                                 </h3>
-                                <p v-if="!sectionData.subtitle" class="max-w-2xl text-sm text-gray-500">
+                                <p v-if="sectionData.subtitle" class="max-w-2xl text-sm text-gray-500">
                                     {{ sectionData.subtitle }}
                                 </p>
                             </div>
@@ -475,18 +500,23 @@ const getSeverity = (type?: string) => {
         </div>
 
         <!-- Mobile view -->
-        <ul v-else class="space-y-8">
+        <ul v-else :class="embedded ? 'divide-y divide-gray-200' : 'space-y-8'">
             <template v-for="(sectionData, key) in formData.blueprint">
                 <!-- If Section: all fields is not hidden -->
                 <li v-if="!(Object.values(sectionData.fields || {}).every((field: any) => field.hidden))"
                     class="group font-medium" :aria-current="key === currentTab ? 'page' : undefined">
-                    <div class="bg-gray-200 py-3 pl-5 flex items-center">
-                        <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
+                    <button type="button" @click="toggleMobileSection(key)"
+                        :aria-expanded="!isMobileSectionCollapsed(key)"
+                        class="w-full bg-gray-200 py-3 px-5 flex items-center text-left font-medium">
+                        <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true" :icon="sectionData.icon"
                             class="flex-shrink-0 mr-3 h-5 w-5"
                             :class="[key === currentTab ? 'text-gray-400' : 'text-gray-500']" />
                         <span class="capitalize truncate">{{ sectionData.label }}</span>
-                    </div>
-                    <div class="px-5">
+                        <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true"
+                            class="ml-auto h-3 w-3 text-gray-500 transition-transform duration-200"
+                            :class="isMobileSectionCollapsed(key) ? '' : 'rotate-180'" />
+                    </button>
+                    <div v-show="!isMobileSectionCollapsed(key)" class="px-5">
                         <template v-for="(fieldData, fieldName, index) in formData.blueprint[key].fields">
                             <!-- Field: is not hidden and skip price when TBC -->
                             <div v-if="!fieldData?.hidden && !(['price', 'territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"

@@ -181,7 +181,7 @@ watch([allItems, () => props.modelValue?.chip, () => props.modelValue?.container
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
 
               <div v-else class="flex h-full items-center justify-center">
-                <FontAwesomeIcon :icon="faImage" class="text-3xl text-gray-300" />
+                <FontAwesomeIcon :icon="faImage" class="text-3xl text-gray-300" fixed-width />
               </div>
             </div>
 

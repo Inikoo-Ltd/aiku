@@ -301,7 +301,7 @@ onUnmounted(() => {
               icon="fal fa-compress"
               @click="onClickProduct('transactions')"
               v-tooltip="'minimize'"
-              class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" />
+              class="text-gray-500 hover:text-gray-700 text-lg cursor-pointer" fixed-width />
           </div>
 
           <div class="flex items-center gap-2">
@@ -328,7 +328,7 @@ onUnmounted(() => {
       <!-- Loading Icon -->
       <template #loading>
         <div>
-          <FontAwesomeIcon icon="fal fa-spinner" class="text-2xl animate-spin mb-2" />
+          <FontAwesomeIcon icon="fal fa-spinner" class="text-2xl animate-spin mb-2" fixed-width />
           <span>Loading Products...</span>
         </div>
       </template>

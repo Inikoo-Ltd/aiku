@@ -197,6 +197,12 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Unit label'),
                                     'value' => $tradeUnit->type
                                 ],
+                                'is_divisible' => [
+                                    'type'        => 'toggle',
+                                    'label'       => __('Divisible'),
+                                    'information' => __('Bulk material such as a litre of oil or a kilo of powder: products can use part of it. Leave off for pieces.'),
+                                    'value'       => $tradeUnit->is_divisible
+                                ],
                             ],
                         ],
                         [

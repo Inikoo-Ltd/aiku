@@ -76,7 +76,7 @@ const submitForm = async () => {
             <Button size="sm" :loading="isLoadingStep" @click="onSubmitEbay">{{ trans("Auth Store") }}</Button>
             <FontAwesomeIcon
                 v-tooltip="trans('Requests a token from eBay so we can sync without you entering your account details each time')"
-                icon="fal fa-info-circle" class="hidden md:block size-5 text-black"/>
+                icon="fal fa-info-circle" class="hidden md:block size-5 text-black" fixed-width/>
         </div>
         <p v-if="errors.message" class="text-sm text-red-600 mt-1">{{ errors.message?.[0] }}</p>
 

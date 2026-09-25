@@ -196,7 +196,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
             }
 
             StoreOrgStockMovement::make()->action($orgStock, $deductionLocationOrgStock->location, [
-                'quantity' => -$consumption['quantity'],
+                'quantity' => -$consumption['quantity'] / max(1, (int) $orgStock->packed_in),
                 'type'     => OrgStockMovementTypeEnum::PRODUCTION,
                 'user_id'  => $userId,
             ]);

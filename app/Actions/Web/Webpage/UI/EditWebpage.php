@@ -65,14 +65,27 @@ class EditWebpage extends OrgAction
             "seo_image"        => [
                 "type"        => "image_crop_square",
                 "label"       => __("Share image"),
-                "value"       => $webpage->imageSources(1200, 1200, 'seoImage'),
+                "value"       => $webpage->seo_image_url
+                    ? ['original' => $webpage->seo_image_url]
+                    : $webpage->imageSources(1200, 1200, 'seoImage'),
                 "information" => __("The preview image (og:image) shown when the page is shared on social media (i.e Whatsapp, Facebook). It is not shown on the page itself. Crop ratio from 1:1 to 3:1, served scaled down to fit 1200x1200 pixels."),
                 'hasOther'    => [
-                    'name'        => 'seo_image_alt',
-                    'value'       => Arr::get($webpage->seo_data, 'image_alt'),
-                    'label'       => __('Share image alt text'),
-                    'placeholder' => __('Describe the image'),
-                    'information' => __('Alternative text of the share image, used by screen readers and shown when the image cannot be loaded. Will use the Meta Title if missing.'),
+                    [
+                        'name'        => 'seo_image_alt',
+                        'type'        => 'alt',
+                        'value'       => Arr::get($webpage->seo_data, 'image_alt'),
+                        'label'       => __('Share image alt text'),
+                        'placeholder' => __('Describe the image'),
+                        'information' => __('Alternative text of the share image, used by screen readers and shown when the image cannot be loaded. Will use the Meta Title if missing.'),
+                    ],
+                    [
+                        'name'        => 'seo_image_url',
+                        'type'        => 'url',
+                        'value'       => $webpage->seo_image_url,
+                        'label'       => __('Or paste an image link'),
+                        'placeholder' => 'https://',
+                        'information' => __('Use an externally hosted image as the share image instead of uploading one. It takes precedence over the uploaded image; uploading a new image clears it.'),
+                    ],
                 ],
                 'options'     => [
                     "minAspectRatio" => 1,
@@ -126,17 +139,23 @@ class EditWebpage extends OrgAction
                 "maxLength"   => 150,
                 "counter"     => true,
             ],
+            'use_title_prefix_suffix' => [
+                'type'        => 'toggle',
+                'label'       => __('Add extra words to the title'),
+                'information' => __('Adds your prefix and suffix around this page title, so it shows like "Wholesale Bath Bombs | Ancient Wisdom" in the browser tab and on Google. Switch it off if you want the title to show exactly as you typed it.'),
+                'value'       => (bool) Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true),
+            ],
             'webpage_title_prefix'  => [
                 'type'          => 'input',
-                'information'   => __('Would add the set prefix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'information'   => __('Words that go in front of this page title. Leave it empty and we will use the one from your website settings.'),
                 'label'         => __('Title Prefix'),
                 'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
             ],
             'webpage_title_suffix'  => [
                 'type'          => 'input',
-                'information'   => __('Would add the set suffix to all of the webpages title. This would not override individual webpage setting (if exists)'),
+                'information'   => __('Words that go after this page title, like your shop name. Leave it empty and we will use the one from your website settings.'),
                 'label'         => __('Title Suffix'),
-                'value'         => data_get($webpage->settings, 'webpage.title_prefix', null),
+                'value'         => data_get($webpage->settings, 'webpage.title_suffix', null),
             ],
             'show_price'  => [
                 'type'          => 'toggle',
@@ -144,19 +163,25 @@ class EditWebpage extends OrgAction
                 'label'         => __('Show Price on Webpage'),
                 'value'         => data_get($webpage->settings, 'webpage.show_price', false),
             ],
-            'index_page'      => [
+        ];
+
+        $isHiddenFromSearchEngines = (bool) $webpage->sub_type?->isHiddenFromSearchEngines();
+
+        if (!$isHiddenFromSearchEngines) {
+            $fields['index_page'] = [
                 'type'        => 'toggle',
                 'label'       => __('Index Page'),
                 'information' => __('This will be used to determine if the page should be indexed by search engines'),
                 'value'       => $webpage->index_page ?? true,
-            ],
-            'follow_link'      => [
+            ];
+
+            $fields['follow_link'] = [
                 'type'        => 'toggle',
                 'label'       => __('Follow Link'),
                 'information' => __('This will be used to determine if the page should be followed by search engines'),
-                'value'       => $webpage->follow ?? true,
-            ],
-        ];
+                'value'       => $webpage->follow_link ?? true,
+            ];
+        }
 
         if ($isBlog && $webpage->sub_type != WebpageSubTypeEnum::MAILSHOT) {
             $fields['sub_type'] = [
@@ -222,6 +247,13 @@ class EditWebpage extends OrgAction
                 'type'  => 'warning',
                 'title' => __('Important'),
                 'text'  => __('This product is set as a part of a variant. Therefore editing this webpage state is disabled'),
+                'icon'  => ['fas', 'fa-exclamation-triangle']
+            ];
+        } elseif ($isHiddenFromSearchEngines) {
+            $warning = [
+                'type'  => 'warning',
+                'title' => __('Hidden from search engines'),
+                'text'  => __('This page is always served as noindex, nofollow and is left out of the sitemap, so the indexing settings are not offered.'),
                 'icon'  => ['fas', 'fa-exclamation-triangle']
             ];
         }

@@ -300,7 +300,7 @@ const setChartOptions = () => ({
 				class="text-xl mt-1"
 				:class="
 					visual?.value < 0 ? 'text-red-500 rotate-90' : 'text-green-500 rotate-[-90deg]'
-				" />
+				" fixed-width />
 		</div>
 
 		<div v-if="visual?.type === 'number'" class="mt-2">

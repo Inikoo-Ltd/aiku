@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailshot\UI;
 
 use App\Actions\Comms\PostRoom\UI\ShowPostRoom;
+use App\Actions\Comms\UI\ShowCommsDashboard;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\UI\Marketing\MarketingHub;
 use App\Models\Catalogue\Shop;
@@ -104,6 +105,23 @@ trait HasUIMailshots
                         'simple' => [
                             'route' => [
                                 'name'       => 'grp.org.shops.show.marketing.templates.index',
+                                'parameters' => $routeParameters
+                            ],
+                            'label' => __('Templates'),
+                            'icon'  => 'fal fa-bars'
+                        ],
+                    ],
+                ]
+            ),
+            'grp.org.shops.show.dashboard.comms.templates.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs('grp.org.shops.show.dashboard.comms.dashboard', $routeParameters),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.dashboard.comms.templates.index',
                                 'parameters' => $routeParameters
                             ],
                             'label' => __('Templates'),

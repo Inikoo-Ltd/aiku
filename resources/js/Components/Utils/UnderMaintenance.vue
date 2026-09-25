@@ -33,8 +33,8 @@ const handleLaunch = () => {
 <template>
     <div class="grid min-h-full place-items-center">
         <div class="text-center">
-            <FontAwesomeIcon v-if="data.state === 'closed'" icon='fas fa-do-not-enter' class='h-12 text-red-500' aria-hidden='true' />
-            <FontAwesomeIcon v-else icon='fal fa-construction' class='h-12' aria-hidden='true' />
+            <FontAwesomeIcon v-if="data.state === 'closed'" icon='fas fa-do-not-enter' class='h-12 text-red-500' fixed-width aria-hidden='true' />
+            <FontAwesomeIcon v-else icon='fal fa-construction' class='h-12' fixed-width aria-hidden='true' />
 
             <div class="mt-4 text-3xl font-bold tracking-tight text-gray-700 sm:text-5xl">
                 <h3 v-if="data.state == 'in_process'">
@@ -53,20 +53,20 @@ const handleLaunch = () => {
             <div class="mt-10 flex items-center justify-center gap-x-6">
                 <Button v-if="data.state === 'in_process'" :style="`secondary`" @click="router.visit(route('org.websites.workshop',data.slug))">
                     <div class="flex items-center gap-x-1">
-                        <FontAwesomeIcon icon='fal fa-drafting-compass' class='' aria-hidden='true' />
+                        <FontAwesomeIcon icon='fal fa-drafting-compass' class='' fixed-width aria-hidden='true' />
                         {{ trans("Workshop") }}
                     </div>
                 </Button>
                 <Button v-if="data.state === 'in_process'" :style="`primary`" @click="handleLaunch">
                     <div class="flex items-center gap-x-1">
                         <span>{{ trans("Launch") }}</span>
-                        <FontAwesomeIcon icon='fas fa-rocket-launch' class='' aria-hidden='true' />
+                        <FontAwesomeIcon icon='fas fa-rocket-launch' class='' fixed-width aria-hidden='true' />
                     </div>
                 </Button>
                 <Button v-if="data.state === 'live' && !data.status" :style="`primary`" @click="handleLaunch">
                     <div class="flex items-center gap-x-1">
                         <span>{{ trans("Restore") }}</span>
-                        <FontAwesomeIcon icon='fas fa-rocket-launch' class='' aria-hidden='true' />
+                        <FontAwesomeIcon icon='fas fa-rocket-launch' class='' fixed-width aria-hidden='true' />
                     </div>
                 </Button>
             </div>

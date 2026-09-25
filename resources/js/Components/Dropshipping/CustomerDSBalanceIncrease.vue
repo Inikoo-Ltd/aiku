@@ -3,9 +3,10 @@ import {ref} from "vue"
 import {routeType} from "@/types/route"
 import Select from "primevue/select"
 import {router} from '@inertiajs/vue3'
-import {trans} from "laravel-vue-i18n"
+import {ctrans} from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import {InputNumber} from "primevue"
+import {notify} from "@kyvg/vue3-notification"
 import { inject } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -84,6 +85,11 @@ const onSubmitIncrease = () => {
             },
             onError: (errors) => {
                 console.error("Error updating balance:", errors)
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: Object.values(errors ?? {})[0] ?? "Contact administrator.",
+                    type: "error"
+                })
             },
         }
     )
@@ -92,23 +98,23 @@ const onSubmitIncrease = () => {
 
 <template>
     <div class="p-6">
-        <h2 class="text-3xl font-bold text-center">{{ trans("Increase Balance") }}</h2>
+        <h2 class="text-3xl font-bold text-center">{{ ctrans("Increase Balance") }}</h2>
         <p class="text-base text-gray-500 italic mb-6 text-center">{{
-                trans("Enter the details to increase balance")
+                ctrans("Enter the details to increase balance")
             }}</p>
 
         <div class="space-y-6">
             <!-- Type -->
             <div v-if="types?.length > 0">
                 <label for="amount" class="block text-gray-700 font-medium mb-2">
-                    {{ trans("Type of payment") }}
+                    {{ ctrans("Type of payment") }}
                 </label>
                 <Select
                     v-model="increaseType"
                     :options="types ?? []"
                     optionLabel="label"
                     optionValue="value"
-                    :placeholder="trans('Select your type of payment')"
+                    :placeholder="ctrans('Select your type of payment')"
                     class="w-full"
                 />
             </div>
@@ -116,14 +122,14 @@ const onSubmitIncrease = () => {
             <!-- Reason -->
             <div>
                 <label for="amount" class="block text-gray-700 font-medium mb-2">
-                    {{ trans("Reason to deposit") }}
+                    {{ ctrans("Reason to deposit") }}
                 </label>
                 <Select
                     v-model="increaseReason"
                     :options="options ?? []"
                     optionLabel="label"
                     optionValue="value"
-                    :placeholder="trans('Select your reason')"
+                    :placeholder="ctrans('Select your reason')"
                     class="w-full"
                 />
             </div>
@@ -131,7 +137,7 @@ const onSubmitIncrease = () => {
             <!-- Amount -->
             <div>
                 <label for="amount" class="block text-gray-700 font-medium mb-2">
-                    {{ trans("Amount to deposit") }}
+                    {{ ctrans("Amount to deposit") }}
                 </label>
 
                 <InputNumber
@@ -152,17 +158,17 @@ const onSubmitIncrease = () => {
             <div v-if="canIssueCreditNote" class="space-y-3">
                 <label class="flex items-center gap-2 text-gray-700 font-medium cursor-pointer">
                     <input type="checkbox" v-model="issueCreditNote" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                    {{ trans("Issue a credit note for this amount") }}
+                    {{ ctrans("Issue a credit note for this amount") }}
                 </label>
                 <div v-if="issueCreditNote">
                     <label for="requestedBy" class="block text-gray-700 font-medium mb-2">
-                        {{ trans("Requested by") }}
+                        {{ ctrans("Requested by") }}
                     </label>
                     <input
                         v-model="requestedBy"
                         id="requestedBy"
                         type="text"
-                        :placeholder="trans('Name of the person who asked for this credit')"
+                        :placeholder="ctrans('Name of the person who asked for this credit')"
                         class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
             </div>
@@ -171,42 +177,42 @@ const onSubmitIncrease = () => {
             <div>
                 <label for="privateNote" class="block text-gray-700 font-medium mb-2">
                     <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs align-top mt-1" fixed-width aria-hidden="true" />
-                    {{ trans("Private Note") }}
+                    {{ ctrans("Private Note") }}
                 </label>
                 <textarea
                     v-model="privateNote"
                     id="privateNote"
                     name="privateNote"
                     rows="4"
-                    :placeholder="trans('Add any private notes here...')"
+                    :placeholder="ctrans('Add any private notes here...')"
                     class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
         </div>
 
         <!-- Section: Preview balance -->
         <div v-if="balance" class="bg-gray-100 py-1 px-3 mt-6 rounded text-gray-700 tabular-nums border border-indigo-300">
-            {{ trans("Preview balance") }}:
-            <span v-tooltip="trans('Current balance')">{{ locale.currencyFormat(currency.code, Number(balance)) }}</span>
-            + <span v-tooltip="trans('Change')" class="text-green-500">{{ locale.currencyFormat(currency.code, amount) }}</span>
-            ➞ <span v-tooltip="trans('Will be final balance')" class="font-bold">{{ locale.currencyFormat(currency.code, Number(balance) + (amount || 0)) }}</span>
+            {{ ctrans("Preview balance") }}:
+            <span v-tooltip="ctrans('Current balance')">{{ locale.currencyFormat(currency.code, Number(balance)) }}</span>
+            + <span v-tooltip="ctrans('Change')" class="text-green-500">{{ locale.currencyFormat(currency.code, amount) }}</span>
+            ➞ <span v-tooltip="ctrans('Will be final balance')" class="font-bold">{{ locale.currencyFormat(currency.code, Number(balance) + (amount || 0)) }}</span>
         </div>
 
         <div class="mt-8 flex justify-end space-x-4">
             <Button
-                :label="trans('Cancel')"
+                :label="ctrans('Cancel')"
                 type="negative"
                 @click="() => closeModal()"
             >
             </Button>
 
             <Button
-                :label="trans('Submit')"
+                :label="ctrans('Submit')"
                 type="primary"
                 @click="() => onSubmitIncrease()"
                 full
                 :loading="isLoading"
                 :disabled="amount <= 0 || !increaseReason || !privateNote"
-                v-tooltip="amount <= 0 ? trans('Add amount to submit') : ''"
+                v-tooltip="amount <= 0 ? ctrans('Add amount to submit') : ''"
             >
             </Button>
         </div>

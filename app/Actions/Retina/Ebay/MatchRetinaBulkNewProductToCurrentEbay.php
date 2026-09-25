@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Ebay;
 
 use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class MatchRetinaBulkNewProductToCurrentEbay extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use AsAction;
     use WithAttributes;
 

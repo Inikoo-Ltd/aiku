@@ -317,7 +317,7 @@ class SuggestPartnerShoppingList extends OrgAction
         if ($candidate['days_of_cover'] !== null) {
             $reason .= $candidate['days_of_cover'] <= 0
                 ? ' · we run out now'
-                : sprintf(' · we run out in ~%d days', (int) round($candidate['days_of_cover']));
+                : sprintf(' · Estimated: Would run out in ~%d days', (int) round($candidate['days_of_cover']));
         }
 
         return $reason;

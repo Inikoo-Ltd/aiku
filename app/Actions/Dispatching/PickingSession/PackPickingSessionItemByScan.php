@@ -7,11 +7,13 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItemPacking;
 use App\Actions\Dispatching\DeliveryNoteItem\WithScannedDeliveryNoteItemMatching;
 use App\Actions\Dispatching\PickingSession\Json\FetchPickingSessionItemRow;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -129,6 +131,21 @@ class PackPickingSessionItemByScan extends OrgAction
                 'code'      => $itemToPack->orgStock?->code ?? $scanned,
                 'reference' => $itemToPack->deliveryNote->reference,
             ]);
+
+        /*
+         * A wholesale note with every line packed still stays in packing until its parcels have
+         * dimensions (HELP-3169), and nothing else tells the packer why.
+         */
+        $deliveryNote = $itemToPack->deliveryNote->refresh();
+        if ($remainingAfter <= 0
+            && !$this->isDeliveryNotePacked($deliveryNote)
+            && UpdateDeliveryNoteStatePacked::hasMissingParcelDimensions($deliveryNote)
+            && $deliveryNote->deliveryNoteItems
+                ->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)
+                ->every(fn (DeliveryNoteItem $item) => UpdateDeliveryNoteItemPacking::quantityLeftToPack($item) <= 0)
+        ) {
+            $message .= '. '.__('Add the parcel dimensions of :reference and set it as packed', ['reference' => $deliveryNote->reference]);
+        }
 
         return $this->outcome($pickingSession, 'packed', $message, $scanned, $itemToPack, $tab);
     }

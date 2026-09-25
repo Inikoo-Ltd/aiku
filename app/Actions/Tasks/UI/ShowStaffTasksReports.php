@@ -11,12 +11,15 @@ namespace App\Actions\Tasks\UI;
 use App\Actions\Helpers\Ticket\UI\IndexTickets;
 use App\Actions\OrgAction;
 use App\Enums\Tasks\StaffTaskStatusEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -25,6 +28,8 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowStaffTasksReports extends OrgAction
 {
+    use WithStaffTasksScope;
+
     private const string METRICS_SQL = "
         count(*) as created,
         count(*) filter (where staff_tasks.status in ('todo', 'in_progress')) as open,
@@ -36,9 +41,9 @@ class ShowStaffTasksReports extends OrgAction
         max(extract(epoch from now() - staff_tasks.created_at) / 86400) filter (where staff_tasks.status in ('todo', 'in_progress')) as longest_wait_days
     ";
 
-    public function handle(Group $group, string $interval): array
+    public function handle(Group|Organisation $parent, User $viewer, string $interval): array
     {
-        $base = StaffTask::where('staff_tasks.group_id', $group->id);
+        $base = StaffTask::query()->within($parent)->visibleTo($viewer);
 
         [$from, $to] = $this->range($interval, (clone $base)->min('created_at'));
         $days        = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
@@ -71,14 +76,21 @@ class ShowStaffTasksReports extends OrgAction
             ->map(fn ($row) => ['department' => $row->department, 'label' => $row->department ? StaffTask::departmentLabel($row->department) : __('To a person'), ...$this->metrics($row)])
             ->all();
 
+        $workers = DB::query()->fromSub(
+            DB::table('staff_tasks')->whereNotNull('assignee_id')->select('id as staff_task_id', 'assignee_id as user_id')
+                ->union(DB::table('staff_task_collaborators')->select('staff_task_id', 'user_id')),
+            'task_workers'
+        )->selectRaw('staff_task_id, user_id, 1.0 / count(*) over (partition by staff_task_id) as share');
+
         $byAssignee = (clone $inRange)
-            ->join('users', 'users.id', '=', 'staff_tasks.assignee_id')
-            ->selectRaw('users.id as id, coalesce(users.contact_name, users.username) as name, '.self::METRICS_SQL)
+            ->joinSub($workers, 'workers', 'workers.staff_task_id', '=', 'staff_tasks.id')
+            ->join('users', 'users.id', '=', 'workers.user_id')
+            ->selectRaw('users.id as id, coalesce(users.contact_name, users.username) as name, '.str_replace('count(*)', 'sum(workers.share)', self::METRICS_SQL))
             ->groupBy('users.id', 'users.contact_name', 'users.username')
             ->orderByDesc('created')
             ->get();
         $assigneeUsers = User::whereIn('id', $byAssignee->pluck('id'))->get()->keyBy('id');
-        $byAssignee    = $byAssignee->map(fn ($row) => ['name' => $row->name, 'avatar' => $assigneeUsers->get($row->id)?->imageSources(48, 48), ...$this->metrics($row)])->all();
+        $byAssignee    = $byAssignee->map(fn ($row) => ['name' => $row->name, 'avatar' => $assigneeUsers->get($row->id)?->imageSources(48, 48), ...$this->metrics($row, 2)])->all();
 
         $byRequester = (clone $inRange)
             ->join('users', 'users.id', '=', 'staff_tasks.requester_id')
@@ -113,14 +125,19 @@ class ShowStaffTasksReports extends OrgAction
         ];
     }
 
-    private function metrics(?object $row): array
+    /**
+     * Per person counts are shared between the assignee and collaborators, so they carry a decimal.
+     */
+    private function metrics(?object $row, int $precision = 0): array
     {
+        $count = fn (string $key) => $precision ? round((float) ($row->$key ?? 0), $precision) : (int) ($row->$key ?? 0);
+
         return [
-            'created'           => (int) ($row->created ?? 0),
-            'open'              => (int) ($row->open ?? 0),
-            'done'              => (int) ($row->done ?? 0),
-            'cancelled'         => (int) ($row->cancelled ?? 0),
-            'stale'             => (int) ($row->stale ?? 0),
+            'created'           => $count('created'),
+            'open'              => $count('open'),
+            'done'              => $count('done'),
+            'cancelled'         => $count('cancelled'),
+            'stale'             => $count('stale'),
             'median_hours'      => isset($row->median_hours) ? round((float) $row->median_hours, 1) : null,
             'longest_wait_days' => isset($row->longest_wait_days) ? (int) $row->longest_wait_days : null,
         ];
@@ -147,9 +164,23 @@ class ShowStaffTasksReports extends OrgAction
 
     public function asController(ActionRequest $request): array
     {
-        $this->initialisationFromGroup(app('group'), $request);
+        $this->initialisationFromTasksScope($request);
 
-        return $this->handle($this->group, IndexTickets::make()->createdInterval());
+        return $this->handle($this->tasksParent(), $request->user(), IndexTickets::make()->createdInterval());
+    }
+
+    public function inOrganisation(Organisation $organisation, ActionRequest $request): array
+    {
+        $this->initialisationFromTasksScope($request, $organisation);
+
+        return $this->handle($this->tasksParent(), $request->user(), IndexTickets::make()->createdInterval());
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): array
+    {
+        $this->initialisationFromTasksScope($request, $organisation, $shop);
+
+        return $this->handle($this->tasksParent(), $request->user(), IndexTickets::make()->createdInterval());
     }
 
     public function htmlResponse(array $stats): Response
@@ -158,13 +189,14 @@ class ShowStaffTasksReports extends OrgAction
 
         return Inertia::render('Tasks/StaffTasksReports', [
             'breadcrumbs'      => array_merge(
-                ShowStaffTasks::make()->getBreadcrumbs(),
-                [['type' => 'simple', 'simple' => ['route' => ['name' => 'grp.tasks.reports'], 'label' => __('Reports')]]]
+                $this->tasksBreadcrumbs(),
+                [['type' => 'simple', 'simple' => ['route' => $this->tasksRoute('reports'), 'label' => __('Reports')]]]
             ),
             'title'            => $title,
             'pageHead'         => ['title' => $title, 'icon' => ['icon' => ['fal', 'fa-chart-line'], 'title' => $title]],
             'stats'            => $stats,
             'createdIntervals' => IndexTickets::make()->createdIntervalOptions(),
+            'listAllRoute'     => $this->tasksRoute('list_all'),
         ]);
     }
 }

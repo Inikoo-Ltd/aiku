@@ -13,16 +13,25 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 final class GmailClient
 {
-    public const string SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
+    /**
+     * Drive is read because mail is not always where the pictures are: anything over Gmail's
+     * attachment limit is sent as a Drive link instead, and the photograph a customer is
+     * talking about then lives there. A mailbox connected before this scope existed keeps
+     * working and simply has no Drive access until it is reconnected.
+     */
+    public const string SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive.readonly';
 
     private const string OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 
     private const string OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
     private const string API_BASE_URL = 'https://gmail.googleapis.com/gmail/v1/';
+
+    private const string DRIVE_BASE_URL = 'https://www.googleapis.com/drive/v3/';
 
     public function __construct(private readonly Shop $shop)
     {
@@ -157,6 +166,60 @@ final class GmailClient
         return $this->get("users/me/messages/$messageId", ['format' => 'full'])->json();
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getThreadMessages(string $threadId): array
+    {
+        return $this->get("users/me/threads/$threadId", ['format' => 'full'])->json('messages', []);
+    }
+
+    public function getAttachment(string $messageId, string $attachmentId): string
+    {
+        return GmailMessageParser::decodeData((string) $this->get("users/me/messages/$messageId/attachments/$attachmentId")->json('data'));
+    }
+
+    /**
+     * What the file is, before deciding whether to take it. Null when the sender never shared it
+     * with us, or when the mailbox was connected before we asked for Drive: the link stays in the
+     * message either way, which is what the sender sent.
+     *
+     * @return array{name: string, mimeType: string, size: int}|null
+     */
+    public ?string $lastDriveError = null;
+
+    public function driveFile(string $fileId): ?array
+    {
+        $response = Http::withToken($this->accessToken())
+            ->get(self::DRIVE_BASE_URL."files/$fileId", ['fields' => 'name,mimeType,size']);
+
+        if (! $response->successful()) {
+            $this->lastDriveError = $response->status().' '.$response->json('error.message', $response->body());
+
+            Log::warning('Drive file not readable', [
+                'shop'    => $this->shop->slug,
+                'file_id' => $fileId,
+                'error'   => $this->lastDriveError,
+            ]);
+
+            return null;
+        }
+
+        return [
+            'name'     => (string) $response->json('name', $fileId),
+            'mimeType' => (string) $response->json('mimeType', 'application/octet-stream'),
+            'size'     => (int) $response->json('size', 0),
+        ];
+    }
+
+    public function driveFileContents(string $fileId): string
+    {
+        return Http::withToken($this->accessToken())
+            ->throw()
+            ->get(self::DRIVE_BASE_URL."files/$fileId", ['alt' => 'media'])
+            ->body();
+    }
+
     public function send(string $rawRfc822, ?string $threadId = null): array
     {
         $payload = ['raw' => rtrim(strtr(base64_encode($rawRfc822), '+/', '-_'), '=')];
@@ -171,23 +234,33 @@ final class GmailClient
             ->json();
     }
 
-    public function addLabel(string $messageId, string $labelName): void
+    /**
+     * Label the message and take it out of the inbox: once it is in Aiku the mailbox has nothing
+     * left to do with it, and an inbox that keeps every handled mail unread confuses whoever opens it.
+     *
+     * @param  array<int, string>  $priorLabelIds  the message's labels as they were read, so a
+     *                                             wrong import can be undone from the log
+     */
+    public function fileAway(string $messageId, string $labelName, array $priorLabelIds = []): void
     {
         $labelId = $this->labelId($labelName);
 
-        Http::withToken($this->accessToken())
-            ->throw()
-            ->post(self::API_BASE_URL."users/me/messages/$messageId/modify", [
-                'addLabelIds' => [$labelId],
-            ]);
-    }
+        // Written down before it is taken away: an import that should never have happened
+        // leaves mail read that nobody read, and nothing else remembers which of them were
+        // unread. The line is what a restore reads back.
+        Log::info('gmail-file-away', [
+            'shop'       => $this->shop->slug,
+            'message'    => $messageId,
+            'label'      => $labelName,
+            'was_unread' => in_array('UNREAD', $priorLabelIds, true),
+            'was_inbox'  => in_array('INBOX', $priorLabelIds, true),
+        ]);
 
-    public function removeFromInbox(string $messageId): void
-    {
         Http::withToken($this->accessToken())
             ->throw()
             ->post(self::API_BASE_URL."users/me/messages/$messageId/modify", [
-                'removeLabelIds' => ['INBOX'],
+                'addLabelIds'    => [$labelId],
+                'removeLabelIds' => ['INBOX', 'UNREAD'],
             ]);
     }
 

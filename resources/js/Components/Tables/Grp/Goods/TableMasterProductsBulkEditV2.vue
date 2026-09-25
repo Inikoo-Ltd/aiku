@@ -6,13 +6,15 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, defineAsyncComponent } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Table from "@/Components/Table/Table.vue"
 import Image from "@common/Components/Image.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import TaxPresetEditModal from "@/Components/Utils/TaxPresetEditModal.vue"
 import TaxSweepProgressModal from "@/Components/Utils/TaxSweepProgressModal.vue"
 import { notify } from "@kyvg/vue3-notification"
+import Dialog from "primevue/dialog"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPercent, faHamburger, faFlowerTulip, faPencil, faArrowRight, faUndoAlt, faExclamationTriangle } from "@fal"
@@ -37,10 +39,10 @@ const emits = defineEmits<{
 }>()
 
 const PRESET_META: Record<string, { icon: any; title: string }> = {
-    standard: { icon: faPercent, title: trans('Standard rate') },
-    food: { icon: faHamburger, title: trans('Food') },
-    dried_flowers: { icon: faFlowerTulip, title: trans('Dried flowers') },
-    custom: { icon: faPercent, title: trans('Custom') },
+    standard: { icon: faPercent, title: ctrans('Standard rate') },
+    food: { icon: faHamburger, title: ctrans('Food') },
+    dried_flowers: { icon: faFlowerTulip, title: ctrans('Dried flowers') },
+    custom: { icon: faPercent, title: ctrans('Custom') },
 }
 
 const presetMeta = (value: string) => PRESET_META[value] ?? PRESET_META.standard
@@ -156,8 +158,8 @@ const saveEdits = async () => {
 
     if (clashing.length) {
         notify({
-            title: trans("Cannot save"),
-            text: trans("Same name on :codes, fix them first", { codes: clashing.map((item: any) => item.code).join(', ') }),
+            title: ctrans("Cannot save"),
+            text: ctrans("Same name on :codes, fix them first", { codes: clashing.map((item: any) => item.code).join(', ') }),
             type: "error",
         })
 
@@ -182,15 +184,15 @@ const saveEdits = async () => {
         }
 
         notify({
-            title: trans("Success"),
-            text: trans(':count products updated', { count: String(entries.length) }),
+            title: ctrans("Success"),
+            text: ctrans(':count products updated', { count: String(entries.length) }),
             type: "success",
         })
     } catch (error: any) {
         const errors = error?.response?.data?.errors ?? {}
 
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text: Object.entries(errors)
                 .map(([key, messages]) => `${entries[Number(key.split('.')[1])]?.[1].code}: ${(messages as string[]).join(' ')}`)
                 .join(' · ') || error?.response?.data?.message,
@@ -202,6 +204,177 @@ const saveEdits = async () => {
 }
 
 watch(() => props.bulkEditSaveSignal, () => saveEdits())
+
+const unitForSelection = ref('')
+
+const applyUnitToSelection = () => {
+    const unit = unitForSelection.value.trim()
+    if (!unit) return
+
+    for (const item of props.data?.data ?? []) {
+        if (compSelectedIds.value.includes(String(item.id))) {
+            setFieldValue(item, 'unit', unit)
+        }
+    }
+
+    unitForSelection.value = ''
+}
+
+const RESPONSIBILITY_PHRASE = 'yes I accept responsibility'
+
+const quantityForSelection = ref('')
+const quantityRows = ref<any[]>([])
+const openOrdersByMasterAsset = ref<Record<number, number> | null>(null)
+const responsibilityTyped = ref('')
+const quantitySaving = ref(false)
+const quantitySavedCount = ref(0)
+const quantitySavingTotal = ref(0)
+const lastBatch = ref<{ item: any; tradeUnitId: number; units: number }[]>([])
+const isUndoing = ref(false)
+
+const isResponsibilityAccepted = computed(() =>
+    responsibilityTyped.value.trim().toLowerCase() === RESPONSIBILITY_PHRASE.toLowerCase())
+
+const outerPrice = (item: any): number => Number(item.price) || 0
+
+const quantityPreview = computed(() => {
+    const newUnits = Number(quantityForSelection.value)
+
+    return quantityRows.value.map((item) => {
+        const oldUnits = Number(item.units) || 1
+        const openOrders = openOrdersByMasterAsset.value?.[item.id] ?? null
+        const skipReason = !item.single_trade_unit_id
+            ? ctrans('Several trade units, edit it on the product composition page')
+            : openOrders
+                ? ctrans('Open orders placed at the current pack size, edit it on the product composition page')
+                : oldUnits === newUnits
+                    ? ctrans('Already :units', { units: `${newUnits}` })
+                    : null
+
+        return {
+            item,
+            oldUnits,
+            newUnits,
+            price: outerPrice(item),
+            openOrders,
+            skipReason,
+        }
+    })
+})
+
+const quantityToApply = computed(() => quantityPreview.value.filter((row) => !row.skipReason))
+
+const openQuantityPreview = async () => {
+    const quantity = Number(quantityForSelection.value)
+    if (!(quantity > 0)) return
+
+    quantityRows.value = props.data?.data?.filter((item: any) => compSelectedIds.value.includes(String(item.id))) ?? []
+    openOrdersByMasterAsset.value = null
+    responsibilityTyped.value = ''
+    quantitySavedCount.value = 0
+
+    try {
+        const response = await axios.get(
+            route('grp.json.master_assets.open_orders_affected_by_units_change'),
+            { params: { ids: quantityRows.value.map((item) => item.id) } }
+        )
+        openOrdersByMasterAsset.value = response.data
+    } catch (error: any) {
+        quantityRows.value = []
+        notify({
+            title: ctrans("Something went wrong"),
+            text: error?.response?.data?.message ?? '',
+            type: "error",
+        })
+    }
+}
+
+const setItemUnits = (item: any, units: number) => {
+    item.units = units
+    item.trade_units_label = item.trade_units_label?.replace(/×[\d.]+$/, `×${units}`)
+}
+
+const undoLastBatch = async () => {
+    if (!lastBatch.value.length || isUndoing.value) return
+
+    isUndoing.value = true
+    const undone: number[] = []
+
+    try {
+        const response = await axios.get(
+            route('grp.json.master_assets.open_orders_affected_by_units_change'),
+            { params: { ids: lastBatch.value.map((entry) => entry.item.id) } }
+        )
+        const withOpenOrders = lastBatch.value.filter((entry) => response.data[entry.item.id])
+
+        for (const entry of lastBatch.value.filter((entry) => !response.data[entry.item.id])) {
+            await axios.patch(
+                route('grp.models.master_asset.update', { masterAsset: entry.item.id }),
+                { trade_units: [{ id: entry.tradeUnitId, quantity: entry.units }] },
+                { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+            )
+            setItemUnits(entry.item, entry.units)
+            undone.push(entry.item.id)
+        }
+
+        lastBatch.value = withOpenOrders
+
+        notify({
+            title: withOpenOrders.length ? ctrans("Partly undone") : ctrans("Undone"),
+            text: withOpenOrders.length
+                ? ctrans(':count products restored. Not restored because they have open orders now: :codes', { count: `${undone.length}`, codes: withOpenOrders.map((entry) => entry.item.code).join(', ') })
+                : ctrans(':count products restored', { count: `${undone.length}` }),
+            type: withOpenOrders.length ? "warn" : "success",
+        })
+    } catch (error: any) {
+        lastBatch.value = lastBatch.value.filter((entry) => !undone.includes(entry.item.id))
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans(':count products restored before the error', { count: `${undone.length}` }) + ' ' + (error?.response?.data?.message ?? ''),
+            type: "error",
+        })
+    } finally {
+        isUndoing.value = false
+    }
+}
+
+const applyQuantity = async () => {
+    if (!isResponsibilityAccepted.value || quantitySaving.value) return
+
+    const rowsToApply = [...quantityToApply.value]
+    lastBatch.value = []
+    quantitySavingTotal.value = rowsToApply.length
+    quantitySaving.value = true
+
+    try {
+        for (const row of rowsToApply) {
+            await axios.patch(
+                route('grp.models.master_asset.update', { masterAsset: row.item.id }),
+                { trade_units: [{ id: row.item.single_trade_unit_id, quantity: row.newUnits }] },
+                { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+            )
+            lastBatch.value.push({ item: row.item, tradeUnitId: row.item.single_trade_unit_id, units: row.oldUnits })
+            setItemUnits(row.item, row.newUnits)
+            quantitySavedCount.value++
+        }
+
+        notify({
+            title: ctrans("Success"),
+            text: ctrans(':count products updated', { count: `${quantitySavedCount.value}` }),
+            type: "success",
+        })
+        quantityRows.value = []
+        quantityForSelection.value = ''
+    } catch (error: any) {
+        notify({
+            title: ctrans("Something went wrong"),
+            text: ctrans(':count products updated before the error', { count: `${quantitySavedCount.value}` }) + ' ' + (error?.response?.data?.message ?? ''),
+            type: "error",
+        })
+    } finally {
+        quantitySaving.value = false
+    }
+}
 
 const bulkEditState = computed(() => ({
     dirty: Object.keys(pendingEdits.value).length,
@@ -243,7 +416,7 @@ const modalInitial = computed<string | null>(() => {
 const modalSubject = computed(() =>
     editingItems.value.length === 1
         ? editingItems.value[0].code
-        : trans(':count products', { count: String(editingItems.value.length) }))
+        : ctrans(':count products', { count: String(editingItems.value.length) }))
 
 const openForRow = (item: any) => {
     if (sweepRunning.value) return
@@ -285,7 +458,7 @@ const onSave = async (presetValue: string) => {
         modalPhase.value = 'sweep'
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong"),
+            title: ctrans("Something went wrong"),
             text: error?.response?.data?.message ?? '',
             type: "error",
         })
@@ -297,6 +470,51 @@ const onSave = async (presetValue: string) => {
 
 <template>
     <div class="overflow-x-auto">
+    <div v-if="lastBatch.length" class="mt-2 flex items-center gap-x-2 px-4 text-sm">
+        <span class="text-gray-500">
+            {{ ctrans('Last trade unit quantity change: :count products', { count: `${lastBatch.length}` }) }}
+        </span>
+        <button
+            type="button"
+            :disabled="isUndoing || quantitySaving"
+            @click="undoLastBatch"
+            class="rounded border border-amber-400 px-2 py-1 text-amber-700 hover:bg-amber-50 disabled:opacity-50">
+            <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" fixed-width :class="isUndoing ? 'animate-spin' : ''" />
+            {{ ctrans('Undo last batch') }}
+        </button>
+    </div>
+    <div v-if="compSelectedIds.length" class="mt-2 flex items-center gap-x-2 px-4 text-sm">
+        <span class="text-gray-500">{{ ctrans('Unit label for :count selected', { count: `${compSelectedIds.length}` }) }}</span>
+        <PureInput
+            v-model="unitForSelection"
+            classInput="!h-7 !text-sm !w-32"
+            :placeholder="ctrans('unit')"
+            :disabled="isSavingEdits"
+            @keydown.enter="applyUnitToSelection" />
+        <button
+            type="button"
+            :disabled="isSavingEdits || !unitForSelection.trim()"
+            @click="applyUnitToSelection"
+            class="rounded border border-gray-300 px-2 py-1 hover:bg-gray-50 disabled:opacity-50">
+            <FontAwesomeIcon :icon="faArrowRight" class="h-3 w-3" fixed-width />
+            {{ ctrans('Apply') }}
+        </button>
+        <span class="ml-4 text-gray-500">{{ ctrans('Trade unit quantity') }}</span>
+        <PureInput
+            v-model="quantityForSelection"
+            type="number"
+            classInput="!h-7 !text-sm !w-24"
+            :disabled="isSavingEdits || quantitySaving"
+            @keydown.enter="openQuantityPreview" />
+        <button
+            type="button"
+            :disabled="isSavingEdits || quantitySaving || !(Number(quantityForSelection) > 0)"
+            @click="openQuantityPreview"
+            class="rounded border border-gray-300 px-2 py-1 hover:bg-gray-50 disabled:opacity-50">
+            <FontAwesomeIcon :icon="faArrowRight" class="h-3 w-3" fixed-width />
+            {{ ctrans('Preview') }}
+        </button>
+    </div>
     <Table
         :resource="data"
         :name="tab"
@@ -309,7 +527,7 @@ const onSave = async (presetValue: string) => {
                 <span
                     v-if="dirtyCount(item)"
                     class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
-                    v-tooltip="trans(':count unsaved changes', { count: `${dirtyCount(item)}` })" />
+                    v-tooltip="ctrans(':count unsaved changes', { count: `${dirtyCount(item)}` })" />
                 {{ item.code }}
             </span>
         </template>
@@ -335,23 +553,23 @@ const onSave = async (presetValue: string) => {
                             v-if="sameNameAs(item).length"
                             :icon="faExclamationTriangle"
                             class="mt-1.5 h-3 w-3 shrink-0 text-amber-500"
-                            v-tooltip="trans('Same name as :codes', { codes: sameNameAs(item).join(', ') })" />
+                            v-tooltip="ctrans('Same name as :codes', { codes: sameNameAs(item).join(', ') })" fixed-width />
                         <button
                             v-if="isFieldDirty(item, 'name')"
                             type="button"
                             :disabled="isSavingEdits"
                             @click="revertFields(item, ['name'])"
-                            v-tooltip="trans('Undo')"
+                            v-tooltip="ctrans('Undo')"
                             class="mt-1.5 text-amber-600 hover:text-amber-800">
-                            <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                            <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" fixed-width />
                         </button>
                     </div>
                     <span class="px-1.5 text-xs text-gray-400">
-                        {{ trans('In :n shops', { n: `${item.used_in ?? 0}` }) }}
+                        {{ ctrans('In :n shops', { n: `${item.used_in ?? 0}` }) }}
                         <span
                             v-if="item.trade_units_label"
                             class="ml-1 whitespace-nowrap rounded border border-emerald-300 px-1 py-px text-emerald-700 tabular-nums"
-                            v-tooltip="trans('Trade units')">
+                            v-tooltip="ctrans('Trade units')">
                             {{ item.trade_units_label }}
                         </span>
                     </span>
@@ -372,7 +590,7 @@ const onSave = async (presetValue: string) => {
                         :ref="bindEditor"
                         :modelValue="fieldValue(item, field)"
                         :toggle="RICH_TEXT_TOOLBAR"
-                        :placeholder="trans('Click to write')"
+                        :placeholder="ctrans('Click to write')"
                         class="min-h-[1.5rem] max-h-40 overflow-y-auto"
                         @update:modelValue="(value: string) => setFieldValue(item, field, value)" />
                     <div
@@ -380,7 +598,7 @@ const onSave = async (presetValue: string) => {
                         @click="openEditor(item, field)"
                         class="rich-preview min-h-[1.5rem] max-h-24 cursor-text overflow-y-auto text-sm text-gray-700">
                         <div v-if="previewHtml(item, field)" v-html="previewHtml(item, field)" />
-                        <span v-else class="text-gray-300">{{ trans('Click to write') }}</span>
+                        <span v-else class="text-gray-300">{{ ctrans('Click to write') }}</span>
                     </div>
                 </div>
                 <button
@@ -388,9 +606,9 @@ const onSave = async (presetValue: string) => {
                     type="button"
                     :disabled="isSavingEdits"
                     @click="revertFields(item, [field])"
-                    v-tooltip="trans('Undo')"
+                    v-tooltip="ctrans('Undo')"
                     class="mt-1.5 text-amber-600 hover:text-amber-800">
-                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" fixed-width />
                 </button>
             </div>
         </template>
@@ -399,25 +617,25 @@ const onSave = async (presetValue: string) => {
             <div class="flex items-start justify-center gap-x-2">
                 <span
                     class="mt-1.5 w-10 shrink-0 text-right text-sm tabular-nums text-gray-500"
-                    v-tooltip="trans('Units per outer, edited on the product page')">
+                    v-tooltip="ctrans('Units per outer, edited on the product page')">
                     {{ Number(item.units) }}
                 </span>
                 <PureInput
                     classInput="!h-7 !text-sm !w-24"
                     :class="dirtyField(isFieldDirty(item, 'unit'))"
                     :modelValue="fieldValue(item, 'unit')"
-                    :placeholder="trans('unit')"
+                    :placeholder="ctrans('unit')"
                     :disabled="isSavingEdits"
-                    v-tooltip="trans('Unit label, for example piece or ball')"
+                    v-tooltip="ctrans('Unit label, for example piece or ball')"
                     @update:modelValue="(value: any) => setFieldValue(item, 'unit', value)" />
                 <button
                     v-if="isFieldDirty(item, 'unit')"
                     type="button"
                     :disabled="isSavingEdits"
                     @click="revertFields(item, ['unit'])"
-                    v-tooltip="trans('Undo')"
+                    v-tooltip="ctrans('Undo')"
                     class="mt-1.5 text-amber-600 hover:text-amber-800">
-                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" />
+                    <FontAwesomeIcon :icon="faUndoAlt" class="h-3 w-3" fixed-width />
                 </button>
             </div>
         </template>
@@ -430,15 +648,15 @@ const onSave = async (presetValue: string) => {
                     @click="!sweepRunning && (sweptIds = [])"
                     class="w-48 rounded-lg border px-3 py-1.5"
                     :class="[sweepRunning ? 'border-indigo-200 bg-indigo-50' : 'border-green-200 bg-green-50 cursor-pointer hover:bg-green-100']"
-                    v-tooltip="sweepRunning ? undefined : trans('Click to dismiss')">
+                    v-tooltip="sweepRunning ? undefined : ctrans('Click to dismiss')">
                     <div class="flex items-center justify-between text-xs mb-1">
                         <span class="flex items-center gap-1" :class="sweepRunning ? 'text-indigo-700' : 'text-green-700'">
                             <template v-if="sweptTransitions[item.id]">
-                                <FontAwesomeIcon :icon="taxPresetIcon(sweptTransitions[item.id].from)" class="h-3 w-3" />
-                                <FontAwesomeIcon :icon="faArrowRight" class="h-2.5 w-2.5 text-gray-400" />
-                                <FontAwesomeIcon :icon="taxPresetIcon(sweptTransitions[item.id].to)" class="h-3 w-3" />
+                                <FontAwesomeIcon :icon="taxPresetIcon(sweptTransitions[item.id].from)" class="h-3 w-3" fixed-width />
+                                <FontAwesomeIcon :icon="faArrowRight" class="h-2.5 w-2.5 text-gray-400" fixed-width />
+                                <FontAwesomeIcon :icon="taxPresetIcon(sweptTransitions[item.id].to)" class="h-3 w-3" fixed-width />
                             </template>
-                            {{ sweepRunning ? trans("Retaxing…") : trans("Done") }}
+                            {{ sweepRunning ? ctrans("Retaxing…") : ctrans("Done") }}
                         </span>
                         <span class="tabular-nums text-gray-600">{{ sweepProgress.baskets_done }}/{{ sweepProgress.baskets_total }}</span>
                     </div>
@@ -458,10 +676,10 @@ const onSave = async (presetValue: string) => {
                     :disabled="sweepRunning"
                     class="group inline-flex w-48 items-center gap-2 rounded-lg border border-gray-300 bg-white py-1.5 pl-1.5 pr-3 shadow-sm transition-all hover:bg-gray-50 hover:border-indigo-300 disabled:opacity-60 disabled:cursor-not-allowed">
                     <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 group-hover:bg-indigo-100 group-hover:text-indigo-600">
-                        <FontAwesomeIcon :icon="presetMeta(item.tax_preset).icon" class="h-3.5 w-3.5" />
+                        <FontAwesomeIcon :icon="presetMeta(item.tax_preset).icon" class="h-3.5 w-3.5" fixed-width />
                     </span>
                     <span class="flex-1 text-left text-sm text-gray-700">{{ presetMeta(item.tax_preset).title }}</span>
-                    <FontAwesomeIcon :icon="faPencil" class="h-3 w-3 text-gray-300 group-hover:text-indigo-500" />
+                    <FontAwesomeIcon :icon="faPencil" class="h-3 w-3 text-gray-300 group-hover:text-indigo-500" fixed-width />
                 </button>
             </div>
         </template>
@@ -487,6 +705,77 @@ const onSave = async (presetValue: string) => {
         :mini="false"
         @progress="sweepProgress = $event"
         @update:running="sweepRunning = $event" />
+
+    <Dialog
+        :visible="!!quantityRows.length"
+        @update:visible="(visible: boolean) => { if (!visible && !quantitySaving) quantityRows = [] }"
+        modal
+        :closable="!quantitySaving"
+        :header="ctrans('Set trade unit quantity to :units', { units: quantityForSelection })"
+        :style="{ width: '52rem' }">
+        <div class="space-y-3 text-sm">
+            <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800">
+                {{ ctrans('This changes what each product physically is: how many SKOs the warehouse picks per outer, in every shop that follows the master. The price does not change by itself, so the price per unit does. Only use it to fix a wrong composition; a product being repacked is edited one by one on its composition page.') }}
+            </div>
+
+            <div v-if="openOrdersByMasterAsset === null" class="py-6 text-center text-gray-500">
+                <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width />
+                {{ ctrans('Checking open orders') }}
+            </div>
+
+            <table v-else class="w-full">
+                <thead class="text-left text-xs text-gray-500">
+                    <tr>
+                        <th class="py-1">{{ ctrans('Product') }}</th>
+                        <th class="py-1 text-right">{{ ctrans('Units') }}</th>
+                        <th class="py-1 text-right">{{ ctrans('Price') }}</th>
+                        <th class="py-1 text-right">{{ ctrans('Per unit') }}</th>
+                        <th class="py-1"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr v-for="row in quantityPreview" :key="row.item.id" :class="row.skipReason ? 'text-gray-400' : ''">
+                        <td class="py-1 font-medium">{{ row.item.code }}</td>
+                        <td class="py-1 text-right tabular-nums">{{ row.oldUnits }} → {{ row.newUnits }}</td>
+                        <td class="py-1 text-right tabular-nums">{{ row.price.toFixed(2) }}</td>
+                        <td class="py-1 text-right tabular-nums">
+                            {{ (row.price / row.oldUnits).toFixed(2) }} → {{ (row.price / row.newUnits).toFixed(2) }}
+                        </td>
+                        <td class="py-1 pl-3 text-xs">
+                            <span v-if="row.skipReason">{{ ctrans('Skipped') }}: {{ row.skipReason }}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div v-if="openOrdersByMasterAsset !== null" class="space-y-2 border-t border-gray-200 pt-3">
+                <div class="font-medium">
+                    {{ ctrans(':count products will change, :skipped skipped', { count: `${quantityToApply.length}`, skipped: `${quantityPreview.length - quantityToApply.length}` }) }}
+                </div>
+                <template v-if="quantityToApply.length">
+                    <label class="block text-gray-700">
+                        {{ ctrans('To apply it, type: :phrase', { phrase: RESPONSIBILITY_PHRASE }) }}
+                    </label>
+                    <PureInput v-model="responsibilityTyped" :disabled="quantitySaving" :placeholder="RESPONSIBILITY_PHRASE" />
+                </template>
+            </div>
+        </div>
+
+        <template #footer>
+            <div class="flex items-center justify-end gap-2">
+                <span v-if="quantitySaving" class="text-sm text-gray-500">
+                    {{ ctrans(':done of :total', { done: `${quantitySavedCount}`, total: `${quantitySavingTotal}` }) }}
+                </span>
+                <Button :label="ctrans('Cancel')" type="tertiary" :disabled="quantitySaving" @click="quantityRows = []" />
+                <Button
+                    :label="ctrans('Change :count products', { count: `${quantityToApply.length}` })"
+                    type="negative"
+                    :loading="quantitySaving"
+                    :disabled="!quantityToApply.length || !isResponsibilityAccepted"
+                    @click="applyQuantity" />
+            </div>
+        </template>
+    </Dialog>
 </template>
 
 <style scoped>

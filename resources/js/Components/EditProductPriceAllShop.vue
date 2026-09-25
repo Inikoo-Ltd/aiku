@@ -11,7 +11,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
 import MasterPriceCurrencyTable from "@/Components/Pure/MasterPriceCurrencyTable.vue"
 import MasterRrpCurrencyTable from "@/Components/Pure/MasterRrpCurrencyTable.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { ref, computed, watch, onMounted } from "vue"
 import { useForm, router } from "@inertiajs/vue3"
 import { cloneDeep } from "lodash-es"
@@ -43,6 +43,7 @@ const loading = ref(false)
 const currencies_data = ref({})
 const org_data = ref(null)
 const avg_org_cost = ref(0)
+const rrp_price_ratio = ref(2.4)
 
 const tradeUnitsList = computed<any[]>(() => props.tradeUnits?.data ?? props.tradeUnits ?? [])
 
@@ -122,6 +123,7 @@ const fetchCreationData = async () => {
         currencies_data.value = response.data.currencies
         form.master_prices = response.data.master_prices
         form.master_rrps = response.data.master_rrps
+        rrp_price_ratio.value = response.data.rrp_price_ratio
         org_data.value = response.data.org_data
         avg_org_cost.value = response.data.avg_org_cost
     } catch (error: any) {
@@ -159,8 +161,8 @@ const submitForm = async () => {
         { headers: { "Content-Type": "multipart/form-data" } }
     ).then(() => {
         notify({
-            title: trans('Created Successfully'),
-            text: trans('Added products to Selected Stores'),
+            title: ctrans('Created Successfully'),
+            text: ctrans('Added products to Selected Stores'),
             type: 'success'
         })
         router.reload({ only: ['products'] })
@@ -169,7 +171,7 @@ const submitForm = async () => {
         emits('saved')
     }).catch((error: any) => {
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             data: {
                 html: Object.values(error.response.data.errors).flat().join('<br>')
             },
@@ -204,7 +206,7 @@ defineExpose({ refreshModalData })
                 :avg_org_cost="avg_org_cost"
             />
             <small v-if="form.errors.master_prices" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                <FontAwesomeIcon :icon="faCircleExclamation" />
+                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                 {{ form.errors.master_prices.join(", ") }}
             </small>
         </div>
@@ -215,9 +217,10 @@ defineExpose({ refreshModalData })
                 :currencies="currencies_data"
                 :unitsPerOuter="unitsPerOuter"
                 :costs="priceByCurrency"
+                :autoMultiplier="rrp_price_ratio"
             />
             <small v-if="form.errors.master_rrps" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                <FontAwesomeIcon :icon="faCircleExclamation" />
+                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />
                 {{ form.errors.master_rrps.join(", ") }}
             </small>
         </div>
@@ -228,6 +231,7 @@ defineExpose({ refreshModalData })
         v-model="tableData" 
         :currency="currency.code" 
         :form="form"
+        :rrpPriceRatio="rrp_price_ratio"
         :disable-exist="true" 
     />
 
@@ -236,7 +240,7 @@ defineExpose({ refreshModalData })
     </small>
 
     <div class="sticky bottom-0 z-10 pt-4 pb-2 flex items-end w-full bg-white border-t border-gray-200">
-        <Button :class="'ms-auto'" type="save" :disabled="disableClone" v-on:click="submitForm()" :loading="loading" :label="trans('save')">
+        <Button :class="'ms-auto'" type="save" :disabled="disableClone" v-on:click="submitForm()" :loading="loading" :label="ctrans('save')">
         </Button>
     </div>
 </template>

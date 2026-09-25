@@ -80,9 +80,12 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use App\Stubs\Migrations\HasSysAdminStats;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
@@ -125,7 +128,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(13)
+        ->and($group->roles()->count())->toBe(16)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -133,14 +136,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(12)
+    expect($group->jobPositions()->count())->toBe(15)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(12)
+    expect($group->jobPositions()->count())->toBe(15)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -193,7 +196,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(8)
-        ->and($group->roles()->count())->toBe(21)
+        ->and($group->roles()->count())->toBe(24)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -875,6 +878,10 @@ test('user status change', function (User $user) {
     expect($user->status)->toBeTrue();
     $user = UpdateUserStatus::make()->action($user, false);
     expect($user->status)->toBeFalse();
+
+    actingAs($user);
+    get(route('grp.dashboard.show'))->assertRedirect(route('grp.login.show'));
+    $this->assertGuest();
 })->depends('update user password');
 
 test('delete guest', function (User $user) {
@@ -1188,6 +1195,27 @@ test('update job positions in the organisation where the user is an employee', f
         ->and($user->pseudoJobPositions()->wherePivot('organisation_id', $organisation->id)->count())->toBe(0);
 })->depends('employee job position in another organisation');
 
+test('job positions that do not exist in the organisation are ignored', function (Employee $employee) {
+    $user         = $employee->getUser();
+    $organisation = $employee->organisation;
+    $jobPosition  = $organisation->jobPositions()->where('code', 'hr-c')->first();
+
+    UpdateUserOrganisationPseudoJobPositions::make()->action(
+        $user,
+        $organisation,
+        [
+            'permissions' => [
+                'this-position-does-not-exist' => [],
+                $jobPosition->code             => []
+            ]
+        ]
+    );
+    $employee->refresh();
+
+    expect($employee->jobPositions()->count())->toBe(1)
+        ->and($employee->jobPositions()->where('job_positions.id', $jobPosition->id)->count())->toBe(1);
+})->depends('employee job position in another organisation');
+
 test('can show hr dashboard', function () {
     actingAs(User::first());
 
@@ -1225,6 +1253,8 @@ test('UI show organisation setting', function () {
             ->has('breadcrumbs', 2)
             ->has('formData.blueprint.0.fields', 5)
             ->has('formData.blueprint.1.fields', 2)
+            ->where('formData.blueprint.10.fields.box_packing_list.type', 'toggle')
+            ->where('formData.blueprint.10.fields.box_packing_list_destinations.type', 'box_packing_list_destinations')
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
@@ -1491,10 +1521,10 @@ test('UI show goods dashboard group', function () {
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->component('Goods/GoodsDashboard')
-            ->has('breadcrumbs', 2)
-            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', 'Goods strategy')->etc())
-            ->has('flatTreeMaps');
+            ->component('Goods/ProductCommandControl')
+            ->where('pageHead.title', 'Product Command & Control')
+            ->has('kpis')
+            ->has('rows');
     });
 });
 
@@ -1832,6 +1862,7 @@ test('UI sysadmin user show/edit/create/actions', function (User $user) {
     get(route('grp.sysadmin.users.edit', [$user]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->has('formData.blueprint.permissions.fields.permissions.options.'.$user->getOrganisation()->slug.'.productions'));
     get(route('grp.sysadmin.users.show.actions.index', [$user]))->assertOk();
+    get(route('grp.sysadmin.users.show.visit_logs.index', [$user]))->assertOk();
 })->depends('SetUserAuthorisedModels command');
 
 test('UI sysadmin scheduled tasks and settings', function (User $user) {
@@ -1978,6 +2009,29 @@ test('update user group pseudo job positions', function (User $user) {
 
     UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
     expect($groupPseudoCount())->toBe(0);
+})->depends('SetUserAuthorisedModels command');
+
+test('compliance job positions: the worker drafts, the supervisor publishes, only the manager holds everything', function (User $user) {
+    app()->instance('group', $user->group);
+    setPermissionsTeamId($user->group->id);
+
+    $expectedPermissions = [
+        'gp-cpl-w' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => false, 'compliance' => false],
+        'gp-cpl-s' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => true, 'compliance' => false],
+        'gp-cpl-m' => ['compliance.view' => true, 'compliance.edit' => true, 'compliance.publish' => true, 'compliance' => true],
+    ];
+
+    foreach ($expectedPermissions as $code => $permissions) {
+        UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => [$code]]);
+        $user->refresh();
+
+        foreach ($permissions as $permission => $isGranted) {
+            expect($user->authTo($permission))->toBe($isGranted, "$code $permission");
+        }
+    }
+
+    UpdateUserGroupPseudoJobPositions::make()->action($user, ['permissions' => []]);
+    expect($user->refresh()->authTo('compliance.view'))->toBeFalse();
 })->depends('SetUserAuthorisedModels command');
 
 test('changing group permissions leaves the cached ui props in sync with the menu', function (User $admin) {
@@ -2335,8 +2389,65 @@ test('address boxes come in the order the country writes an address', function (
 test('edit profile includes preferences sections', function (Guest $guest) {
     $blueprint = \App\Actions\UI\Profile\EditProfile::make()->generateBlueprint($guest->getUser())['formData']['blueprint'];
 
-    expect(collect($blueprint)->pluck('label')->all())->toContain(__('Profile'), __('Notifications'), __('Log in'), __('Preferences'), __('Timezone'));
+    expect(collect($blueprint)->pluck('label')->all())
+        ->toContain(__('Notifications'), __('Log in'), __('Preferences'), __('Timezone'))
+        ->not->toContain(__('Profile'));
 
     $channels = collect($blueprint)->firstWhere('label', __('Notifications'))['fields']['notifications']['channels'];
     expect(collect($channels)->pluck('value')->all())->toBe(['email', 'slack', 'browser']);
 })->depends('create guest');
+
+test('a guest with job positions and no phone is stored without a deprecation', function () {
+    $group = createGroup();
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $jobPosition = $group->jobPositions()->where('code', 'gp-sc')->first();
+
+    $guestData = Guest::factory()->definition();
+    data_set($guestData, 'contact_name', 'No Phone');
+    data_set($guestData, 'phone', null);
+    data_set($guestData, 'user.username', 'nophone');
+    data_set($guestData, 'user.password', 'secret-password');
+    data_set($guestData, 'positions', [
+        $jobPosition->slug => [
+            'slug'   => $jobPosition->slug,
+            'scopes' => []
+        ],
+    ]);
+
+    set_error_handler(
+        fn (int $severity, string $message) => throw new ErrorException($message, 0, $severity),
+        E_DEPRECATED | E_WARNING | E_NOTICE
+    );
+
+    try {
+        $guest = StoreGuest::make()->action($group, $guestData);
+    } finally {
+        restore_error_handler();
+    }
+
+    expect($guest->phone)->toBeNull()
+        ->and($guest->getUser()->username)->toBe('nophone');
+});
+
+test('every audit event has its columns on the audit stats tables', function () {
+    $statsFields = new class () {
+        use HasSysAdminStats;
+    };
+
+    $auditFieldsByTable = [
+        'group_sysadmin_stats' => 'auditFields',
+        'organisation_stats'   => 'auditFields',
+        'user_stats'           => 'auditFieldsForNonSystem',
+        'web_user_stats'       => 'auditFieldsForNonSystem',
+        'supplier_user_stats'  => 'auditFieldsForNonSystem',
+    ];
+
+    foreach ($auditFieldsByTable as $tableName => $auditFields) {
+        $expectedColumns = collect($statsFields->{$auditFields}(new Blueprint(Schema::getConnection(), $tableName))->getColumns())
+            ->map(fn ($column) => $column->name);
+
+        expect($expectedColumns->diff(Schema::getColumnListing($tableName))->values()->all())->toBe([], $tableName);
+    }
+});

@@ -45,11 +45,19 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Actions\Web\Webpage\CloseWebpage;
+use App\Actions\Catalogue\Product\RetireProductIntoReplacement;
+use App\Actions\Catalogue\Product\KeepRetiredProductAsSeparate;
+use App\Actions\Catalogue\Product\UI\EditProduct;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Asset;
@@ -68,6 +76,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 uses()->group('base');
 
@@ -118,8 +127,8 @@ test('create shop', function () {
         ->and($organisation->catalogueStats->number_shops_type_b2b)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_state_in_process)->toBe(1)
         ->and($organisation->catalogueStats->number_shops_state_open)->toBe(0)
-        ->and($shopRoles->count())->toBe(13)
-        ->and($shopPermissions->count())->toBe(29);
+        ->and($shopRoles->pluck('name')->all())->toEqualCanonicalizing(RolesEnum::getRolesWithScope($shop))
+        ->and($shopPermissions->pluck('name')->all())->toEqualCanonicalizing(ShopPermissionsEnum::getAllValues($shop));
 
 
     $user = $this->guest->getUser();
@@ -884,6 +893,117 @@ test('a product can be exclusive to several customers and only they can see it',
         ->and($visibleTo(null))->toBeTrue();
 });
 
+test('a private product off the website can still be put on its own customer order', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $owner = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $other = \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, [
+        'customer_ids' => [$owner->id],
+    ]);
+    $product->update(['is_for_sale' => false]);
+
+    $sellableTo = fn (?int $customerId) => \App\Models\Catalogue\Product::where('shop_id', $shop->id)
+        ->sellableToCustomer($customerId)
+        ->whereKey($product->id)
+        ->exists();
+
+    expect($sellableTo($owner->id))->toBeTrue()
+        ->and($sellableTo($other->id))->toBeFalse()
+        ->and($sellableTo(null))->toBeFalse();
+});
+
+test('a product made for one customer is recorded as theirs', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $owner = $newCustomer();
+    $other = $newCustomer();
+
+    [, $seedProduct] = createProduct($shop);
+    $product = StoreProduct::make()->action($seedProduct->family, array_merge(
+        Product::factory()->definition(),
+        [
+            'trade_units'               => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]],
+            'price'                     => 1,
+            'exclusive_for_customer_id' => $owner->id,
+        ]
+    ));
+
+    expect($product->exclusiveCustomers()->pluck('customers.id')->all())->toBe([$owner->id])
+        ->and(Product::whereKey($product->id)->visibleToCustomer($other->id)->exists())->toBeFalse()
+        ->and($owner->refresh()->number_exclusive_products)->toBe(1);
+});
+
+test('staff choose who a product is sold to from its edit page', function () {
+    list($organisation, $user, $shop) = createShop();
+
+    $newCustomer = fn () => \App\Actions\CRM\Customer\StoreCustomer::make()->action(
+        $shop,
+        \App\Models\CRM\Customer::factory()->definition(),
+    );
+    $owner      = $newCustomer();
+    $wrongOwner = $newCustomer();
+
+    [, $seedProduct] = createProduct($shop);
+    $product = StoreProduct::make()->action($seedProduct->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 1]
+    ));
+    \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => [$wrongOwner->id]]);
+
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($owner, \App\Models\Ordering\Order::factory()->definition());
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
+
+    $soldOnlyTo = fn () => collect(EditProduct::make()->getBlueprint($product->refresh()))->pluck('fields')->collapse();
+
+    expect($soldOnlyTo()->get('customer_ids')['value'])->toBe([$wrongOwner->id])
+        ->and($soldOnlyTo()->get('customer_ids')['information_warning'][0]['description'])->toContain($owner->reference)
+        ->and($soldOnlyTo()->has('is_for_sale'))->toBeFalse();
+
+    UpdateProduct::make()->action($product, ['exclusive_for_customer_id' => $owner->id]);
+    expect($product->refresh()->exclusive_for_customer_id)->toBe($wrongOwner->id);
+
+    patch(route('grp.models.product.exclusive_customers.update', $product->id), ['customer_ids' => [$owner->id]])
+        ->assertSessionHasNoErrors();
+    $product->refresh();
+
+    expect($product->exclusiveCustomers()->pluck('customers.id')->all())->toBe([$owner->id])
+        ->and($product->exclusive_for_customer_id)->toBe($owner->id)
+        ->and($product->is_for_sale)->toBeFalse()
+        ->and($owner->refresh()->number_exclusive_products)->toBe(1)
+        ->and($wrongOwner->refresh()->number_exclusive_products)->toBe(0)
+        ->and($soldOnlyTo()->get('customer_ids')['information_warning'])->toBe([]);
+
+    expect(fn () => StoreProductWebpage::make()->action($product))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [$shop->organisation->slug, $shop->slug, $product->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('exclusive_customers.0.reference', $owner->reference)
+                ->where('pageHead.actions', fn ($actions) => collect($actions)->doesntContain('label', __('Create Webpage')))
+        );
+
+    patch(route('grp.models.product.exclusive_customers.update', $product->id), ['customer_ids' => []])
+        ->assertSessionHasNoErrors();
+
+    expect($product->refresh()->exclusive_for_customer_id)->toBeNull()
+        ->and($product->isExclusive())->toBeFalse();
+});
+
 test('repair records unrecorded exclusives among products hidden from the site', function () {
     list($organisation, $user, $shop) = createShop();
 
@@ -903,8 +1023,11 @@ test('repair records unrecorded exclusives among products hidden from the site',
         'updated_at'      => now(),
     ]);
 
-    createProduct($shop);
-    $intercompany = $shop->products()->orderBy('id')->first();
+    [, $seedProduct] = createProduct($shop);
+    $intercompany    = StoreProduct::make()->action($seedProduct->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $seedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 1]
+    ));
     $public       = StoreProduct::make()->action($intercompany->family, array_merge(
         Product::factory()->definition(),
         ['trade_units' => [['id' => $intercompany->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
@@ -1324,8 +1447,8 @@ test('retina new arrivals hide exclusive products from other customers and famil
         'state'             => ProductStateEnum::ACTIVE->value,
         'status'            => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE->value,
     ]);
-    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
     \App\Actions\Catalogue\Product\SyncProductExclusiveCustomers::make()->action($product, ['customer_ids' => []]);
+    DB::table('product_categories')->where('id', $product->family_id)->update(['is_in_website' => true]);
 
     $codesFor = fn (\App\Models\CRM\Customer $customer) => collect(
         \App\Actions\Retina\Ecom\NewArrival\UI\IndexRetinaEcomNewArrivals::make()->handle($customer)->items()
@@ -1516,4 +1639,177 @@ test('faire discontinue is skipped when faire returns far fewer live products th
 
     expect($discontinued)->toBe(0)
         ->and($products->every(fn ($product) => $product->refresh()->state !== \App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED))->toBeTrue();
+});
+
+function createRetiredProductSharingReplacementWebpage(Shop $shop, array $tradeUnits): array
+{
+    $storeProduct = fn (string $code) => StoreProduct::make()->action($shop, array_merge(
+        Product::factory()->definition(),
+        ['code' => $code, 'trade_units' => $tradeUnits, 'price' => 45, 'unit' => 'bottle']
+    ));
+
+    $retired     = $storeProduct(fake()->unique()->lexify('ret????'));
+    $replacement = $storeProduct($retired->code.'-10ml');
+
+    $replacementOwnPage = StoreProductWebpage::make()->action($replacement);
+    $sharedPage         = StoreProductWebpage::make()->action($retired);
+    $replacementOwnPage->modelHasWebBlocks()->delete();
+
+    $sharedPage->update(['state' => WebpageStateEnum::LIVE]);
+    CloseWebpage::make()->action($replacementOwnPage, ['redirect_type' => \App\Enums\Web\Redirect\RedirectTypeEnum::PERMANENT->value, 'to_webpage_id' => $sharedPage->id]);
+    $sharedPage->update(['model_id' => $replacement->id]);
+    $replacement->update(['webpage_id' => $sharedPage->id, 'is_for_sale' => true]);
+    $retired->update([
+        'is_for_sale' => true,
+        'data'        => array_merge($retired->data, ['retire_at_cutover' => true, 'replaced_by_product_id' => $replacement->id]),
+    ]);
+
+    return [$retired->refresh(), $replacement->refresh(), $sharedPage->refresh(), $replacementOwnPage->refresh()];
+}
+
+test('retire product into its replacement takes it off sale and discontinues it', function (Shop $shop) {
+    [$retired, $replacement, $sharedPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    expect($retired->is_main)->toBeFalse()
+        ->and($retired->is_for_sale)->toBeFalse()
+        ->and($retired->state)->toBe(ProductStateEnum::DISCONTINUED)
+        ->and($sharedPage->refresh()->model_id)->toBe($replacement->id)
+        ->and($replacement->refresh()->is_for_sale)->toBeTrue();
+})->depends('create shop');
+
+test('keep retired product as separate gives both products their own webpage', function (Shop $shop) {
+    [$retired, $replacement, $sharedPage, $replacementOwnPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+
+    $retired = KeepRetiredProductAsSeparate::make()->action($retired);
+    $replacement->refresh();
+
+    expect($retired->webpage_id)->toBe($sharedPage->id)
+        ->and($sharedPage->refresh()->model_id)->toBe($retired->id)
+        ->and($replacement->webpage_id)->toBe($replacementOwnPage->id)
+        ->and($replacementOwnPage->refresh()->state)->toBe(WebpageStateEnum::LIVE)
+        ->and($replacementOwnPage->redirect_webpage_id)->toBeNull()
+        ->and($replacementOwnPage->webBlocks()->exists())->toBeTrue()
+        ->and($replacementOwnPage->published_layout['web_blocks'] ?? [])->not->toBeEmpty()
+        ->and(ShowIrisWebpage::make()->getWebpageID($shop->website, $sharedPage->url))->toBe($sharedPage->id)
+        ->and(ShowIrisWebpage::make()->getWebpageID($shop->website, $replacementOwnPage->url))->toBe($replacementOwnPage->id)
+        ->and($retired->webpage->id)->toBe($sharedPage->id)
+        ->and($replacement->webpage->id)->toBe($replacementOwnPage->id)
+        ->and($retired->is_for_sale)->toBeTrue()
+        ->and($retired->data)->not->toHaveKey('retire_at_cutover')
+        ->and($retired->data)->not->toHaveKey('replaced_by_product_id');
+})->depends('create shop');
+
+test('keep retired product as separate finds the shared webpage by url when the product lost its webpage id', function (Shop $shop) {
+    [$retired, $replacement, $sharedPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $retired->update(['webpage_id' => null]);
+
+    $retired = KeepRetiredProductAsSeparate::make()->action($retired->refresh());
+
+    expect($retired->webpage_id)->toBe($sharedPage->id)
+        ->and($sharedPage->refresh()->model_id)->toBe($retired->id)
+        ->and($replacement->refresh()->webpage_id)->not->toBe($sharedPage->id);
+})->depends('create shop');
+
+test('retired product edit form hides the for sale toggle', function (Shop $shop) {
+    [$retired] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    $fields = collect(EditProduct::make()->getBlueprint($retired->refresh()))->pluck('fields')->collapse();
+
+    expect($retired->state)->toBe(ProductStateEnum::DISCONTINUED)
+        ->and($fields->has('is_for_sale'))->toBeFalse();
+})->depends('create shop');
+
+test('retired product off sale hides create webpage while the replacement holds its url', function (Shop $shop) {
+    [$retired] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    get(route('grp.org.shops.show.catalogue.products.all_products.show', [$shop->organisation->slug, $shop->slug, $retired->slug]))
+        ->assertInertia(
+            fn (AssertableInertia $page) => $page
+                ->where('retirement_decision', null)
+                ->where('pageHead.actions', fn ($actions) => collect($actions)->doesntContain('label', 'Create Webpage'))
+                ->etc()
+        );
+})->depends('create shop');
+
+test('keep retired product as separate reactivates a discontinued product', function (Shop $shop) {
+    [$retired, , $sharedPage] = createRetiredProductSharingReplacementWebpage($shop, [['id' => $this->tradeUnit1->id, 'quantity' => 1]]);
+    $retired = RetireProductIntoReplacement::make()->action($retired);
+
+    $retired = KeepRetiredProductAsSeparate::make()->action($retired);
+
+    expect($retired->state)->toBe(ProductStateEnum::ACTIVE)
+        ->and($retired->status)->not->toBe(ProductStatusEnum::DISCONTINUED)
+        ->and($retired->webpage_id)->toBe($sharedPage->id)
+        ->and($sharedPage->refresh()->state)->toBe(WebpageStateEnum::LIVE);
+})->depends('create shop');
+
+test('product webpage replaces characters not allowed in webpage urls', function (Shop $shop) {
+    $product = StoreProduct::make()->action($shop, array_merge(
+        Product::factory()->definition(),
+        ['code' => fake()->unique()->lexify('dot????').'-0.5L', 'trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 45, 'unit' => 'bottle']
+    ));
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    expect($webpage->url)->toBe(strtolower(str_replace('.', '-', $product->code)))
+        ->and($product->refresh()->webpage_id)->toBe($webpage->id);
+})->depends('create shop');
+
+test('product barcode is left alone when it stops being a single trade unit', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $this->tradeUnit1->update(['barcode' => '5060000000011']);
+    $this->tradeUnit2->update(['barcode' => '5060000000028']);
+
+    SyncProductTradeUnits::run($product, [
+        ['id' => $this->tradeUnit1->id, 'quantity' => 1],
+    ]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit::run(Product::find($product->id));
+    $product->refresh();
+
+    expect($product->barcode)->toBe('5060000000011');
+
+    SyncProductTradeUnits::run($product, [
+        ['id' => $this->tradeUnit1->id, 'quantity' => 1],
+        ['id' => $this->tradeUnit2->id, 'quantity' => 1],
+    ]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit::run(Product::find($product->id));
+    $product->refresh();
+
+    /* Clearing it here is what emptied 561 products and pushed blank GTINs to live listings. */
+    expect($product->barcode)->toBe('5060000000011');
+});
+
+test('customer service gets one stock notification for all their shops, new apart from back', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $shop = Shop::first();
+    createProduct($shop);
+    $product = $shop->products()->orderByDesc('id')->first();
+    $shop->updateQuietly(['is_aiku' => true, 'state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    \Illuminate\Support\Facades\Cache::forget(\App\Actions\Catalogue\Shop\NotifyShopStockArrivals::SENT_MARKER);
+
+    $agent = $this->adminGuest->getUser();
+    $agent->assignRole(Role::where('name', \App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::CUSTOMER_SERVICE_CLERK->value, $shop))->firstOrFail());
+
+    $product->updateQuietly(['is_for_sale' => true, 'state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'available_quantity' => 4, 'back_in_stock_since' => now()->subMinute(), 'first_in_stock_at' => now()->subMinute()]);
+
+    expect(\App\Actions\Catalogue\Shop\NotifyShopStockArrivals::run())->toBeGreaterThanOrEqual(1)
+        ->and(\App\Actions\Catalogue\Shop\NotifyShopStockArrivals::run())->toBe(0);
+
+    \Illuminate\Support\Facades\Notification::assertSentToTimes($agent, \App\Notifications\ShopStockArrivalsNotification::class, 1);
+    \Illuminate\Support\Facades\Notification::assertSentTo($agent, \App\Notifications\ShopStockArrivalsNotification::class, function ($notification) use ($product, $shop) {
+        $data = $notification->toArray(null);
+
+        return in_array($product->code, $notification->newCodes, true)
+            && !in_array($product->code, $notification->backCodes, true)
+            && in_array($shop->code, $notification->shopCodes, true)
+            && str_contains($data['body'], 'New in stock: ')
+            && str_contains($data['title'], $shop->code);
+    });
 });

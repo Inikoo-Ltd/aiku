@@ -12,33 +12,46 @@ use Illuminate\Support\Arr;
 trait WithAllegroMarketplace
 {
     /**
-     * @return array<string, array{language: string, currency_code: string|null, price_decimals: int, price_step: float|null}>
+     * The language our catalogue content is written in.
+     *
+     * Allegro's `language` is the offer's *base* language: the one the name and description
+     * we send are actually written in, which Allegro then translates from into every market
+     * it lists on. It is not the language of the market the seller sells on — sending the
+     * market's language makes Allegro reject the offer with "The description language and
+     * the offer's original language do not match", because our content is English whoever
+     * the seller is. Sending English also lets Allegro translate it to Polish, Czech,
+     * Slovak and Hungarian by itself.
+     */
+    public const string ALLEGRO_CONTENT_LANGUAGE = 'en-US';
+
+    /**
+     * @return array<string, array{currency_code: string|null, price_decimals: int, price_step: float|null}>
      */
     protected function allegroMarketplaces(): array
     {
         return [
-            'allegro-pl' => ['language' => 'pl-PL', 'currency_code' => 'PLN', 'price_decimals' => 2, 'price_step' => null],
-            'allegro-cz' => ['language' => 'cs-CZ', 'currency_code' => 'CZK', 'price_decimals' => 2, 'price_step' => null],
-            'allegro-sk' => ['language' => 'sk-SK', 'currency_code' => 'EUR', 'price_decimals' => 2, 'price_step' => null],
-            'allegro-hu' => ['language' => 'hu-HU', 'currency_code' => 'HUF', 'price_decimals' => 0, 'price_step' => 5.0],
+            'allegro-pl' => ['currency_code' => 'PLN', 'price_decimals' => 2, 'price_step' => null],
+            'allegro-cz' => ['currency_code' => 'CZK', 'price_decimals' => 2, 'price_step' => null],
+            'allegro-sk' => ['currency_code' => 'EUR', 'price_decimals' => 2, 'price_step' => null],
+            'allegro-hu' => ['currency_code' => 'HUF', 'price_decimals' => 0, 'price_step' => 5.0],
         ];
     }
 
     /**
-     * @return array{language: string, currency_code: string|null, price_decimals: int, price_step: float|null}
+     * @return array{currency_code: string|null, price_decimals: int, price_step: float|null}
      */
     public function getAllegroMarketplace(?string $marketplaceId): array
     {
         return Arr::get(
             $this->allegroMarketplaces(),
             (string) $marketplaceId,
-            ['language' => 'en-US', 'currency_code' => null, 'price_decimals' => 2, 'price_step' => null]
+            ['currency_code' => null, 'price_decimals' => 2, 'price_step' => null]
         );
     }
 
-    public function getAllegroOfferLanguage(?string $marketplaceId): string
+    public function getAllegroOfferLanguage(): string
     {
-        return $this->getAllegroMarketplace($marketplaceId)['language'];
+        return self::ALLEGRO_CONTENT_LANGUAGE;
     }
 
     public function getAllegroCurrencyCode(?string $marketplaceId): ?string

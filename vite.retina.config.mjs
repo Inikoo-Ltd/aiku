@@ -10,8 +10,17 @@ import vue from "@vitejs/plugin-vue";
 import i18n from "laravel-vue-i18n/vite";
 import { fileURLToPath, URL } from "node:url";
 import { codecov } from "./vite.codecov.mjs";
+import { langFilter, faPerIconImports, FA_COMMONJS_OPTIONS } from "./vite.app-plugins.mjs";
 import path from "node:path";
 import { analyzer } from 'vite-bundle-analyzer'
+import tailwindcss from 'tailwindcss';
+import tailwindcssNesting from 'tailwindcss/nesting';
+import autoprefixer from 'autoprefixer';
+import { createRequire } from "node:module";
+
+/* A plain import would be inlined by the esbuild pass vite runs over this config, breaking
+ * the helper's own require calls. */
+const retinaModuleGraph = createRequire(path.join(process.cwd(), "vite.retina.config.mjs"))("./app-module-graph.cjs").retina;
 
 
 export default defineConfig(
@@ -41,6 +50,8 @@ export default defineConfig(
             }
           }),
       i18n(),
+      langFilter(retinaModuleGraph),
+      faPerIconImports(),
       codecov("retina")
        //, analyzer()
     ],
@@ -71,11 +82,12 @@ export default defineConfig(
     build  : {
       sourcemap    : true,
       devSourcemap : true,
+      commonjsOptions: FA_COMMONJS_OPTIONS,
       rollupOptions: {
         output: {
           manualChunks(id) {
             if (id.includes("node_modules") &&
-              !id.includes("sentry")) {
+              !id.includes("sentry") && !id.includes("node_modules/primevue/")) {
               return id.toString().
                 split("node_modules/")[1].split(
                 "/")[0].toString();
@@ -85,6 +97,13 @@ export default defineConfig(
       }
     },
     css    : {
+      postcss: {
+        plugins: [
+          tailwindcssNesting,
+          tailwindcss({ config: "tailwind.retina.config.js" }),
+          autoprefixer
+        ],
+      },
       preprocessorOptions: {
         scss: {
           silenceDeprecations: ["legacy-js-api"]

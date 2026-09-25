@@ -624,6 +624,19 @@ class EditShop extends OrgAction
                 ],
 
                 $shop->type === ShopTypeEnum::DROPSHIPPING ? [
+                    'label'  => __('Packaging & Inserts'),
+                    'icon'   => 'fa-light fa-box-open',
+                    'fields' => [
+                        'packaging_and_inserts_enabled' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Enable packaging & inserts'),
+                            'value'       => $shop->hasPackagingAndInserts(),
+                            'information' => __('Lets customers choose packaging and add printed inserts to an order. While off, none of it is shown or required: no packaging preferences, no insert add-ons at checkout, no packaging or insert columns in the warehouse, and delivery notes are never held back for unprinted inserts.'),
+                        ],
+                    ],
+                ] : [],
+
+                $shop->type === ShopTypeEnum::DROPSHIPPING ? [
                     'label'  => __('Ebay Redirect Key'),
                     'icon'   => 'fa-light fa-key',
                     'fields' => [
@@ -758,6 +771,33 @@ class EditShop extends OrgAction
                                 'value'       => Arr::get($shop->settings, 'chat.data_contact_options_panel') ?? [],
                             ],
                         ] : [],
+                        'chat_unclaimed_website_seconds'  => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '30', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('Website chat unclaimed after (seconds)'),
+                            'information' => __('How long a website conversation may sit with nobody holding it before it joins the unclaimed queue everybody sees. Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.website') ?? '',
+                        ],
+                        'chat_unclaimed_whatsapp_seconds' => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '60', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('WhatsApp unclaimed after (seconds)'),
+                            'information' => __('Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.whatsapp') ?? '',
+                        ],
+                        'chat_unclaimed_email_seconds'    => [
+                            'type'        => 'input_number',
+                            'bind'        => ['step' => '300', 'maxFractionDigits' => 0, 'min' => 0],
+                            'label'       => __('Email unclaimed after (seconds)'),
+                            'information' => __('Leave empty or zero to follow the group default.'),
+                            'value'       => Arr::get($shop->settings, 'chat.unclaimed_after_seconds.email') ?? '',
+                        ],
+                        'chat_email_offline_replies' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Answer offline messages by email'),
+                            'information' => __('When nobody is on cover the widget asks the visitor for an email address. With this on, the conversation becomes an email one, so the answer written later is sent to them rather than left in a widget they have closed. Needs a mailbox connected to this shop.'),
+                            'value'       => (bool) Arr::get($shop->settings, 'chat.email_offline_replies', false),
+                        ],
                         'enable_whatsapp' => [
                             'type'        => 'toggle',
                             'label'       => __('Enable WhatsApp Channel'),
@@ -887,36 +927,30 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
-                    'label'       => __('Customer mailbox'),
-                    'icon'        => 'fa-light fa-envelope',
-                    'information' => $isMailboxConnected
-                        ? __('Connected to :email.', ['email' => $mailboxEmail]) . ($mailboxConnectedAt ? ' '.__('Since :date.', ['date' => $mailboxConnectedAt]) : '')
-                        : __('Connect a Google mailbox to send and receive customer emails from Aiku.'),
-                    'fields'      => [
-                        'mailbox__connect' => [
-                            'type'        => 'action',
-                            'label'       => __('Google mailbox'),
-                            'information' => $isMailboxConnected ? __('Connected.') : __('Not connected yet.'),
-                            'action'      => $isMailboxConnected ? [
-                                'type'   => 'button',
-                                'style'  => 'negative',
-                                'icon'   => ['fal', 'fa-envelope'],
-                                'label'  => __('Disconnect'),
-                                'route'  => [
+                    'label'  => __('Customer mailbox'),
+                    'icon'   => 'fa-light fa-envelope',
+                    'fields' => [
+                        'mailbox' => [
+                            'type'    => 'mailbox_connect',
+                            'noTitle'      => true,
+                            'noSaveButton' => true,
+                            'value'   => [
+                                'connected'        => $isMailboxConnected,
+                                'email'            => $mailboxEmail,
+                                'connected_at'     => $mailboxConnectedAt,
+                                'connect_url'      => route('grp.org.shops.show.settings.mailbox.connect', [$shop->organisation->slug, $shop->slug]).($request->query('section') ? '?section='.$request->query('section') : ''),
+                                'disconnect_route' => [
                                     'name'       => 'grp.org.shops.show.settings.mailbox.disconnect',
                                     'parameters' => [$shop->organisation->slug, $shop->slug],
-                                    'method'     => 'post',
                                 ],
-                            ] : [
-                                'type'  => 'button',
-                                'style' => 'save',
-                                'icon'  => ['fal', 'fa-envelope'],
-                                'label' => __('Connect Google mailbox'),
-                                'route' => [
-                                    'name'       => 'grp.org.shops.show.settings.mailbox.connect',
-                                    'parameters' => [$shop->organisation->slug, $shop->slug],
-                                ],
+                                'inbox_url'        => route('grp.org.shops.show.chat.inbox', [$shop->organisation->slug, $shop->slug]),
                             ],
+                        ],
+                        'mailbox_sender_name' => [
+                            'type'        => 'input',
+                            'label'       => __('Sender name'),
+                            'placeholder' => $shop->name,
+                            'value'       => Arr::get($shop->settings, 'gmail.sender_name', ''),
                         ],
                     ],
                 ],

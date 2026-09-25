@@ -10,6 +10,7 @@ namespace App\Imports\Ordering;
 
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Imports\WithImport;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Upload;
@@ -24,10 +25,11 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure, WithValidation, WithEvents
 {
     use WithImport;
+    use WithCustomerPurchasableProduct;
 
     protected Order $scope;
 
-    public function __construct(Order $order, Upload $upload)
+    public function __construct(Order $order, Upload $upload, protected bool $byCustomer = false)
     {
         $this->upload            = $upload;
         $this->scope             = $order;
@@ -92,9 +94,15 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         }
 
         try {
-            $existingTransaction = $this->scope->transactions()
-                ->where('historic_asset_id', $historicAsset->id)
-                ->first();
+            $existingTransaction = $this->findCustomerLine($this->scope, $product);
+
+            if ($this->byCustomer) {
+                if ($existingTransaction) {
+                    $this->ensureCustomerCanChangeLine($existingTransaction, $modelData['quantity_ordered']);
+                } else {
+                    $this->ensureProductIsPurchasableByCustomer($product, $this->scope->customer);
+                }
+            }
 
             if ($existingTransaction) {
                 UpdateTransaction::make()->action(

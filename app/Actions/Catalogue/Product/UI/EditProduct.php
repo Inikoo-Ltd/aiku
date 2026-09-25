@@ -8,8 +8,11 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Actions\Traits\WithBarcodeChoice;
+use App\Actions\Traits\WithDuplicatedBarcodeProducts;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
@@ -18,6 +21,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +32,8 @@ class EditProduct extends OrgAction
     use WithCatalogueAuthorisation;
     use WithProductNavigation;
     use WithUnitsChangeConfirmation;
+    use WithBarcodeChoice;
+    use WithDuplicatedBarcodeProducts;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -259,10 +265,28 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        $barcodes  = $product->tradeUnits->pluck('barcode')->filter()->unique();
+        $barcodeChoice = $this->getBarcodeChoice($product);
+        $followsMasterBarcode = $product->masterProduct && !$product->independent_barcode;
+
+        /*
+         * The same item listed in several pack sizes shares one trade unit, so all of them mirror
+         * its barcode. Correct as data, refused by the shop: one of them keeps the GTIN and the
+         * others publish without, which only a person can decide, so the field opens here.
+         */
+        $barcodeSharedWith = $product->barcode
+            ? $this->duplicatedBarcodeProducts($product->shop)
+                ->where('products.barcode', $product->barcode)
+                ->where('products.id', '!=', $product->id)
+                ->pluck('products.code')
+                ->all()
+            : [];
         $languages = [$product->shop->language_id => LanguageResource::make($product->shop->language)->resolve()];
 
-        $canEditNotForSale = true;
+        $exclusiveCustomers = $product->exclusiveCustomers()
+            ->orderBy('customers.name')
+            ->get(['customers.id', 'customers.name', 'customers.reference']);
+
+        $canEditNotForSale = $product->state != ProductStateEnum::DISCONTINUED && $exclusiveCustomers->isEmpty();
         if ($product->masterProduct && !$product->masterProduct->is_for_sale) {
             $canEditNotForSale = false;
         }
@@ -321,17 +345,33 @@ class EditProduct extends OrgAction
                             'description' => __('A price of zero means customers can order it at no charge. Only gifts and samples should be free.'),
                         ],
                     ],
-                    'rrp_per_unit' => [
-                        'type'     => 'input_number',
-                        'label'    => __('RRP') . '/' . __('unit'),
-                        'required' => true,
-                        'bind'     => [
-                            'minFractionDigits' => 0,
-                            'maxFractionDigits' => 2,
-                        ],
-                        'value'    => $product->units > 0 ? ($product->rrp / trimDecimalZeros($product->units)) : $product->rrp,
-                        'min'      => 0.01
-                    ],
+                    ...($product->shop->type == ShopTypeEnum::DROPSHIPPING
+                        ? [
+                            'rrp' => [
+                                'type'     => 'input_number',
+                                'label'    => __('RRP') . '/' . __('Outer'),
+                                'required' => true,
+                                'bind'     => [
+                                    'minFractionDigits' => 0,
+                                    'maxFractionDigits' => 2,
+                                ],
+                                'value'    => $product->rrp,
+                                'min'      => 0.01
+                            ],
+                        ]
+                        : [
+                            'rrp_per_unit' => [
+                                'type'     => 'input_number',
+                                'label'    => __('RRP') . '/' . __('unit'),
+                                'required' => true,
+                                'bind'     => [
+                                    'minFractionDigits' => 0,
+                                    'maxFractionDigits' => 2,
+                                ],
+                                'value'    => $product->units > 0 ? ($product->rrp / trimDecimalZeros($product->units)) : $product->rrp,
+                                'min'      => 0.01
+                            ],
+                        ]),
                 ]
             );
         }
@@ -658,7 +698,7 @@ class EditProduct extends OrgAction
                         'label'  => __('Properties'),
                         'title'  => __('id'),
                         'icon'   => 'fa-light fa-fingerprint',
-                        'fields' => [
+                        'fields' => array_filter([
                             'unit'                 => [
                                 'type'  => 'input',
                                 'label' => __('Unit'),
@@ -694,18 +734,26 @@ class EditProduct extends OrgAction
                                 'label'       => __('Marketing dimension'),
                                 'value'       => $product->marketing_dimensions,
                             ],
+                            'independent_barcode'  => $product->masterProduct && $barcodeChoice['hasChoice'] ? [
+                                'type'        => 'toggle',
+                                'label'       => __('Do not follow master barcode'),
+                                'value'       => $product->independent_barcode,
+                                'information' => __('The GTIN is chosen once on the master composition. Enabling this lets this shop publish a different one.'),
+                            ] : null,
                             'barcode'              => [
-                                'type'     => 'select',
-                                'label'    => __('Barcode'),
-                                'value'    => $product->barcode,
-                                'readonly' => $product->tradeUnits->count() == 1,
-                                'options'  => $barcodes->mapWithKeys(function ($barcode) {
-                                    return [(string)$barcode => $barcode];
-                                })->toArray()
+                                'type'        => 'barcode_choice',
+                                'label'       => __('Barcode'),
+                                'value'       => $product->barcode,
+                                /* One trade unit mirrors it, and a child following its master is decided there. */
+                                'readonly'    => (!$barcodeChoice['hasChoice'] || $followsMasterBarcode) && !$barcodeSharedWith,
+                                'options'     => $barcodeChoice,
+                                'information' => $barcodeSharedWith
+                                    ? __('This barcode is also on :listings in this shop. A shop accepts it on one listing only.', ['listings' => implode(', ', $barcodeSharedWith)])
+                                    : null,
                             ],
 
 
-                        ]
+                        ])
                     ],
                 $canEditNotForSale
                     ? [
@@ -720,6 +768,38 @@ class EditProduct extends OrgAction
                             ],
                         ],
                     ] : [],
+                [
+                    'label'  => __('Sold only to'),
+                    'icon'   => 'fal fa-gem',
+                    'fields' => [
+                        'customer_ids' => [
+                            'type'                => 'select_infinite',
+                            'label'               => __('Sold only to'),
+                            'information'         => __('Only these customers can see and buy this product. Adding a customer takes it off the website. Leave empty to make it a normal product.'),
+                            'information_warning' => $this->recentBuyersLeftOut($product, $exclusiveCustomers->pluck('id')->all()),
+                            'mode'                => 'tags',
+                            'placeholder'         => __('Search customers'),
+                            'fetchRoute'          => [
+                                'name'       => 'grp.json.shop.customers',
+                                'parameters' => ['shop' => $product->shop_id],
+                            ],
+                            'valueProp'           => 'id',
+                            'labelProp'           => 'name',
+                            'labelAdditionalProp' => 'reference',
+                            'required'            => false,
+                            'options'             => $exclusiveCustomers->map(fn ($customer) => [
+                                'id'        => $customer->id,
+                                'name'      => $customer->name,
+                                'reference' => $customer->reference,
+                            ])->all(),
+                            'value'               => $exclusiveCustomers->pluck('id')->all(),
+                            'updateRoute'         => [
+                                'name'       => 'grp.models.product.exclusive_customers.update',
+                                'parameters' => ['product' => $product->id],
+                            ],
+                        ],
+                    ],
+                ],
                 [
                     'label'  => __('Trade Unit'),
                     'icon'   => 'fal fa-atom',
@@ -773,6 +853,42 @@ class EditProduct extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @param  array<int, int>  $exclusiveCustomerIds
+     * @return array<int, array{description: string}>
+     */
+    private function recentBuyersLeftOut(Product $product, array $exclusiveCustomerIds): array
+    {
+        if (!$exclusiveCustomerIds || !$product->asset_id) {
+            return [];
+        }
+
+        $buyers = DB::table('transactions')
+            ->join('orders', 'orders.id', 'transactions.order_id')
+            ->join('customers', 'customers.id', 'orders.customer_id')
+            ->where('transactions.asset_id', $product->asset_id)
+            ->whereNull('transactions.deleted_at')
+            ->whereNull('orders.deleted_at')
+            ->where('orders.created_at', '>', now()->subYear())
+            ->whereNotIn('orders.customer_id', $exclusiveCustomerIds)
+            ->select('customers.name', 'customers.reference')
+            ->distinct()
+            ->limit(5)
+            ->get();
+
+        if ($buyers->isEmpty()) {
+            return [];
+        }
+
+        return [
+            [
+                'description' => __('Ordered in the last year by :customers, who are not on this list and can no longer order it.', [
+                    'customers' => $buyers->map(fn ($buyer) => $buyer->name.' ('.$buyer->reference.')')->implode(', '),
+                ]),
+            ],
+        ];
     }
 
     private function getGpsrTextField(Product $product, string $field, string $label, array $languages): array

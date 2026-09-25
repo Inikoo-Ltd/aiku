@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Media;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Helpers\Media;
@@ -17,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DetachRetinaAttachmentFromModel extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(PalletDelivery|PalletReturn $model, Media $attachment): PalletDelivery|PalletReturn
     {
         $model->attachments()->detach($attachment->id);

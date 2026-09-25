@@ -15,6 +15,7 @@ use App\Actions\Comms\Email\SendNewCustomerNotification;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -22,6 +23,8 @@ use Illuminate\Support\Arr;
 
 class RegisterFulfilmentCustomer extends OrgAction
 {
+    use WithIrisAuthCookie;
+
     /**
      * @throws \Throwable
      */
@@ -68,6 +71,7 @@ class RegisterFulfilmentCustomer extends OrgAction
         ShopHydrateCrmStats::dispatch($fulfilment->shop);
 
         auth('retina')->login($webUser);
+        $this->queueIrisAuthCookie();
 
         return $fulfilmentCustomer;
     }

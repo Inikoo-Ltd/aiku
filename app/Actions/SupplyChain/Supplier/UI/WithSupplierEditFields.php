@@ -18,6 +18,7 @@ trait WithSupplierEditFields
     {
         return [
             [
+                'label'  => __('Contact details'),
                 'title'  => __('ID/contact details '),
                 'icon'   => 'fal fa-address-book',
                 'fields' => [
@@ -71,6 +72,7 @@ trait WithSupplierEditFields
                 ]
             ],
             [
+                'label'  => __('Settings'),
                 'title'  => __('settings '),
                 'icon'   => 'fa-light fa-cog',
                 'fields' => [
@@ -132,10 +134,25 @@ trait WithSupplierEditFields
                         'value'   => Arr::get($supplier->settings, 'cooling_period'),
                         'options' => ['inputType' => 'number']
                     ],
-                    'order_number_prefix' => [
-                        'type'  => 'input',
-                        'label' => __('Order number prefix'),
-                        'value' => Arr::get($supplier->settings, 'order_number_prefix'),
+                ]
+            ],
+            [
+                'label'  => __('Purchase orders'),
+                'title'  => __('Purchase orders'),
+                'icon'   => 'fal fa-envelope',
+                'fields' => [
+                    'po_by_email' => [
+                        'type'        => 'toggle',
+                        'label'       => __('Send purchase orders by email'),
+                        'information' => __('Purchase orders get an "Email to supplier" button that prepares the email with the PDF'),
+                        'value'       => (bool)Arr::get($supplier->settings, 'po_by_email', false),
+                    ],
+                    'po_email' => [
+                        'type'        => 'input',
+                        'label'       => __('Email for purchase orders'),
+                        'placeholder' => $supplier->email ?? '',
+                        'information' => __('Leave empty to use the supplier email'),
+                        'value'       => Arr::get($supplier->settings, 'po_email'),
                     ],
                 ]
             ]

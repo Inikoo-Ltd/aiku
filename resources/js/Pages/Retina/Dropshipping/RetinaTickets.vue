@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"

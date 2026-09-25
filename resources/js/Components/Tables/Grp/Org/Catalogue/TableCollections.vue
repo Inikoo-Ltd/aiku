@@ -15,6 +15,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
 import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faFolderDownload, faFolderTree } from "@fal"
 import { faPlay, faTriangle, faEquals, faMinus } from "@fas"
+import { faHatCowboy } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Dialog from "primevue/dialog"
 import ConfirmPopup from "primevue/confirmpopup"
@@ -27,9 +28,9 @@ import { trans } from "laravel-vue-i18n"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import Image from "@common/Components/Image.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 
-
-library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolderDownload, faFolderTree, faTriangle, faEquals, faMinus)
+library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolderDownload, faFolderTree, faTriangle, faEquals, faMinus, faOctopusDeploy)
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -369,29 +370,38 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(code)="{ item: collection }">
             <div class="flex items-center gap-2">
                 <Link
+                    v-if="collection.master_collection_id"
                     :href="getRouteCollection(collection.url_master)"
                     v-tooltip="trans('Go to Master collections')"
                     class="-mr-1.5"
-                    :class="[collection.master_collection_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                    <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
+                    :class="'opacity-70 hover:opacity-100'">
+                    <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />
                 </Link>
 
                 <Link :href="collectionHref(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
                 </Link>
 
+                <FontAwesomeIcon
+                    v-if="collection.not_follow_master_items"
+                    v-tooltip="trans('Does not follow master items (families and products)')"
+                    :icon="faHatCowboy"
+                    class="text-red-500"
+                    fixed-width
+                />
+
                 <template v-if="collection.state === 'active'">
                     <FontAwesomeIcon
                         v-if="collection.products_status === 'discontinuing'"
                         :icon="faExclamationTriangle"
                         class="text-orange-500"
-                        v-tooltip="'Products are being discontinued'"
+                        v-tooltip="'Products are being discontinued'" fixed-width
                     />
                     <FontAwesomeIcon
                         v-else-if="collection.products_status === 'discontinued'"
                         :icon="faExclamationTriangle"
                         class="text-red-600"
-                        v-tooltip="'Products are discontinued'"
+                        v-tooltip="'Products are discontinued'" fixed-width
                     />
                 </template>
             </div>
@@ -483,8 +493,8 @@ const getIntervalStateColor = (isPositive: boolean) => {
         <template #cell(parents)="{ item: collection }">
 
             <template v-for="(parent, index) in collection.parents_data" :key="index">
-                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
-                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" />
+                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" fixed-width />
+                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" fixed-width />
                 <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
                     {{ parent.code && parent.code.length > 6 ? parent.code.substring(0, 6) + "..." : parent.code }}
                 </Link>&nbsp;
@@ -521,7 +531,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <div class="flex gap-x-2 gap-y-2">
                 <ConfirmPopup>
                     <template #icon>
-                        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+                        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" fixed-width />
                     </template>
                 </ConfirmPopup>
                 <div v-if="item.webpage_state == 'live'">

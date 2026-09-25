@@ -177,12 +177,12 @@ const getDeltaIndicator = (delta: number) => {
                 </div>
                 <!-- Total Invoices -->
                 <div class="cursor-pointer whitespace-nowrap" v-tooltip="'Total Invoices'">
-                    <FontAwesomeIcon :icon="faFileInvoice" class="text-gray-500 mr-1" />
+                    <FontAwesomeIcon :icon="faFileInvoice" class="text-gray-500 mr-1" fixed-width />
                     <span class="text-sm font-medium tabular-nums text-gray-700">{{ formattedTotalInvoices }}</span>
                 </div>
                 <!-- Customers with icon -->
                 <div class="cursor-pointer whitespace-nowrap" v-tooltip="'Customers'">
-                    <FontAwesomeIcon :icon="faUsers" class="text-gray-500 mr-1" />
+                    <FontAwesomeIcon :icon="faUsers" class="text-gray-500 mr-1" fixed-width />
                     <span class="text-sm font-medium tabular-nums text-gray-700">{{ formattedTotalCustomers }}</span>
                 </div>
             </div>
@@ -217,7 +217,7 @@ const getDeltaIndicator = (delta: number) => {
                             :class="getDeltaIndicator(year.sales_delta).color"
                             class="text-xs"
                         >
-                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(year.sales_delta).icon" :class="getDeltaIndicator(year.sales_delta).class" />
+                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(year.sales_delta).icon" :class="getDeltaIndicator(year.sales_delta).class" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -237,7 +237,7 @@ const getDeltaIndicator = (delta: number) => {
                             :class="getDeltaIndicator(year.invoices_delta).color"
                             class="text-xs"
                         >
-                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(year.invoices_delta).icon" :class="getDeltaIndicator(year.invoices_delta).class" />
+                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(year.invoices_delta).icon" :class="getDeltaIndicator(year.invoices_delta).class" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -273,7 +273,7 @@ const getDeltaIndicator = (delta: number) => {
                             :class="getDeltaIndicator(quarter.sales_delta).color"
                             class="text-xs"
                         >
-                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(quarter.sales_delta).icon" :class="getDeltaIndicator(quarter.sales_delta).class" />
+                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(quarter.sales_delta).icon" :class="getDeltaIndicator(quarter.sales_delta).class" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -293,7 +293,7 @@ const getDeltaIndicator = (delta: number) => {
                             :class="getDeltaIndicator(quarter.invoices_delta).color"
                             class="text-xs"
                         >
-                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(quarter.invoices_delta).icon" :class="getDeltaIndicator(quarter.invoices_delta).class" />
+                            <FontAwesomeIcon size="sm" :icon="getDeltaIndicator(quarter.invoices_delta).icon" :class="getDeltaIndicator(quarter.invoices_delta).class" fixed-width />
                         </div>
                     </div>
                 </div>

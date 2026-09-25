@@ -2,7 +2,7 @@
 	"scope": "webpage",
 	"slug": "luigi-last-seen-1",
 	"code": "luigi-last-seen-1",
-	"name": "Luigi: Last Seen",
+	"name": "Recommendation: Last Seen",
 	"website_type" : ["b2b","b2c","dropshipping"],
 	"is_in_test" : false,
 	"category": "block",

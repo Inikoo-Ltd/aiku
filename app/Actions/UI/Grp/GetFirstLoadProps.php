@@ -45,7 +45,9 @@ class GetFirstLoadProps
         }
 
 
-        $cacheKey          = 'grp-first-load-props:'.($user?->id ?? 'guest').':'.$language->code;
+        $lastDeployment = AppDeployment::latest()->first();
+
+        $cacheKey          = 'grp-first-load-props:'.($user?->id ?? 'guest').':'.$language->code.':'.($lastDeployment?->id ?? 0);
         $ttl               = now()->addDays(7);
         $compute           = fn () => $this->getUserUiProps($user, $language);
         $shouldCacheLayout = (bool)config('ui.cache.layout');
@@ -58,8 +60,6 @@ class GetFirstLoadProps
             Sentry::captureException($e);
             $props = $compute();
         }
-
-        $lastDeployment = AppDeployment::latest()->first();
 
         data_set($props, 'notifications', $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null);
         data_set($props, 'ticket_badges', $user ? GetTicketBadgeData::run($user) : null);

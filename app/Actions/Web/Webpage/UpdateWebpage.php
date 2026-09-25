@@ -71,12 +71,22 @@ class UpdateWebpage extends OrgAction
             data_set($newData, 'image_alt', Arr::pull($modelData, 'seo_image_alt'));
         }
 
+        if (Arr::has($modelData, 'use_title_prefix_suffix')) {
+            data_set($newData, 'use_title_prefix_suffix', (bool) Arr::pull($modelData, 'use_title_prefix_suffix'));
+        }
+
         // Example: reassign back to model or continue processing
         $modelData['seo_data'] = $newData;
 
 
+        if (Arr::has($modelData, 'seo_image_url')) {
+            $seoImageUrl = Arr::get($modelData, 'seo_image_url');
+            $modelData['seo_image_url'] = $seoImageUrl !== null && $seoImageUrl !== '' ? $seoImageUrl : null;
+        }
+
         $imageSeo = Arr::pull($modelData, 'seo_image');
         if ($imageSeo) {
+            $modelData['seo_image_url'] = null;
             $webpage = $this->processSeoImage([
                 'image' => $imageSeo
             ], $webpage);
@@ -95,6 +105,10 @@ class UpdateWebpage extends OrgAction
 
             if (Arr::has($modelData, 'state_data.state')) {
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
+
+                if (Arr::get($modelData, 'state_data.state') == WebpageStateEnum::CLOSED->value && $webpage->state != WebpageStateEnum::CLOSED) {
+                    data_set($modelData, 'closed_at', now());
+                }
             }
 
             if (Arr::has($modelData, 'state_data.redirect_webpage_id')) {
@@ -140,6 +154,16 @@ class UpdateWebpage extends OrgAction
             data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
         }
 
+        $subType = Arr::has($modelData, 'sub_type')
+            ? WebpageSubTypeEnum::fromValue(Arr::get($modelData, 'sub_type'))
+            : $webpage->sub_type;
+
+        if ($subType?->isHiddenFromSearchEngines()) {
+            foreach ($subType->searchEngineVisibility() as $field => $isVisible) {
+                data_set($modelData, $field, $isVisible);
+            }
+        }
+
         $webpage = $this->update($webpage, $modelData, ['data', 'settings']);
 
         $changes = Arr::except($webpage->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -163,6 +187,14 @@ class UpdateWebpage extends OrgAction
         BreakWebpageCache::run($webpage);
         BreakProductInWebpagesCache::make()->breakCache($webpage);
         return $webpage;
+    }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $seoImageUrl = trim((string) $this->get('seo_image_url', ''));
+        if ($seoImageUrl !== '' && !preg_match('/^[a-z][a-z0-9+.-]*:\/\//i', $seoImageUrl)) {
+            $this->set('seo_image_url', 'https://'.$seoImageUrl);
+        }
     }
 
     public function rules(): array
@@ -203,7 +235,9 @@ class UpdateWebpage extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
+            'seo_image_url'                  => ['sometimes', 'nullable', 'url:http,https', 'max:2048'],
             'seo_image_alt'                  => ['sometimes', 'nullable', 'string', 'max:255'],
+            'use_title_prefix_suffix'        => ['sometimes', 'boolean'],
             'seo_data'                       => ['sometimes', 'array'],
             'structured_data'                => ['sometimes', 'nullable', 'string'],
             'level'                          => ['sometimes', 'integer'],

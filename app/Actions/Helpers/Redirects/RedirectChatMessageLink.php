@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Redirects;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\Chat\ChatMessage;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,17 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RedirectChatMessageLink extends OrgAction
 {
+    use WithChatAgentAuthorisation;
+
+    private ChatMessage $chatMessage;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $shop = $this->chatMessage->chatSession?->shop;
+
+        return !$shop || $this->userCanViewChatOnShop($request->user(), $shop);
+    }
+
     public function handle(ChatMessage $chatMessage): RedirectResponse
     {
         $session = $chatMessage->chatSession;
@@ -28,11 +40,12 @@ class RedirectChatMessageLink extends OrgAction
             ]));
         }
 
-        return Redirect::to(route('grp.chat.dashboard'));
+        return Redirect::to(route('grp.chat.reports'));
     }
 
     public function asController(ChatMessage $chatMessage, ActionRequest $request): RedirectResponse
     {
+        $this->chatMessage = $chatMessage;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($chatMessage);

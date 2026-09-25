@@ -17,7 +17,8 @@ trait WithShopifyPortfolioMatching
         CustomerSalesChannel $customerSalesChannel,
         ?string $platformProductId,
         ?string $platformProductVariantId,
-        ?string $sku
+        ?string $sku,
+        bool $healPlatformIds = true
     ): ?Portfolio {
         $portfolio = $this->findPortfolioByPlatformId($customerSalesChannel, 'platform_product_variant_id', $platformProductVariantId);
 
@@ -29,7 +30,7 @@ trait WithShopifyPortfolioMatching
             $portfolio = $this->findPortfolioBySku($customerSalesChannel, $sku);
         }
 
-        if ($portfolio) {
+        if ($portfolio && $healPlatformIds) {
             $this->healPortfolioPlatformIds($portfolio, $platformProductId, $platformProductVariantId);
         }
 
@@ -44,9 +45,16 @@ trait WithShopifyPortfolioMatching
             return null;
         }
 
-        return $customerSalesChannel->portfolios()->whereIn($column, $candidates)->first();
+        return $customerSalesChannel->portfolios()
+            ->whereIn($column, $candidates)
+            ->when($column === 'platform_product_id', fn ($query) => $query->whereRaw("coalesce(settings->>'shopify_variant_adopted', 'false') <> 'true'"))
+            ->first();
     }
 
+    /**
+     * A portfolio can carry the sku of another product (shared stock, a recoded stock, a sku read
+     * back from the listing), so the portfolio whose product code it is answers first.
+     */
     private function findPortfolioBySku(CustomerSalesChannel $customerSalesChannel, ?string $sku): ?Portfolio
     {
         $sku = Str::lower(trim((string) $sku));
@@ -61,6 +69,8 @@ trait WithShopifyPortfolioMatching
                 $query->whereRaw('lower(sku) = ?', [$sku])
                     ->orWhereRaw('lower(item_code) = ?', [$sku]);
             })
+            ->orderByRaw('(lower(item_code) = ?) desc nulls last', [$sku])
+            ->orderBy('id')
             ->first();
     }
 

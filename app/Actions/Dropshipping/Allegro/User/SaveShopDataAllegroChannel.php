@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dropshipping\Allegro\User;
 
+use App\Actions\Dropshipping\Allegro\Traits\WithAllegroDispatchLocation;
+use App\Actions\Dropshipping\Allegro\Traits\WithAllegroShippingRates;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Shop;
@@ -20,6 +22,8 @@ use Sentry;
 class SaveShopDataAllegroChannel
 {
     use WithActionUpdate;
+    use WithAllegroDispatchLocation;
+    use WithAllegroShippingRates;
 
     public function handle(AllegroUser $allegroUser): AllegroUser
     {
@@ -38,22 +42,15 @@ class SaveShopDataAllegroChannel
                 data_set($data, 'taxId', Arr::get($userInfo, 'company.taxId'));
                 data_set($data, 'marketplace_id', Arr::get($userInfo, 'baseMarketplace.id'));
 
-                if (! Arr::get($allegroUser->settings, 'shipping.id')) {
-                    $shippingRates = $allegroUser->getShippingRates();
+                $shippingId = $this->findOurAllegroShippingRatesId($allegroUser)
+                    ?? Arr::get(ProcessShippingRates::run($allegroUser), 'id');
 
-                    if (Arr::get($shippingRates, 'shippingRates.0.id')) {
-                        $shipping = Arr::get($shippingRates, 'shippingRates.0');
-                    } else {
-                        $shipping = ProcessShippingRates::run($allegroUser);
-                    }
-
-                    $shippingId = Arr::get($shipping, 'id');
-                    if (blank($shippingId)) {
-                        Sentry::captureMessage('Shipping rates not found');
-                    }
-
-                    data_set($data, 'shipping_id', $shippingId);
+                if (blank($shippingId)) {
+                    Sentry::captureMessage('Shipping rates not found');
+                    $shippingId = Arr::get($allegroUser->settings, 'shipping.id');
                 }
+
+                data_set($data, 'shipping_id', $shippingId);
 
                 if (! Arr::get($allegroUser->settings, 'policy.return_id')) {
                     try {
@@ -99,16 +96,18 @@ class SaveShopDataAllegroChannel
                 }
 
                 if (Arr::get($data, 'responsible_person_id') === null) {
+                    $dispatchAddress = $this->allegroDispatchAddress();
+
                     try {
                         $responsiblePerson = $allegroUser->createResponsiblePerson([
                             'name' => trim($shop->name . '-' . rand(1000, 9999)),
                             'personalData' => [
                                 'name' => $shop->name,
                                 'address' => [
-                                    'street' => 'CTPark Trnava',
-                                    'city' => 'Zavar',
-                                    'countryCode' => 'SK',
-                                    'postalCode' => '919 26',
+                                    'street' => $dispatchAddress['street'],
+                                    'city' => $dispatchAddress['city'],
+                                    'countryCode' => $dispatchAddress['country_code'],
+                                    'postalCode' => $dispatchAddress['post_code'],
                                 ],
                                 'contact' => [
                                     'email' => $shop->email,

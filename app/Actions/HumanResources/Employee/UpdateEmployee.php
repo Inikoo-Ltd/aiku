@@ -137,6 +137,19 @@ class UpdateEmployee extends OrgAction
 
         $oldUserId = $employee->user_id;
         $oldState  = $employee->state;
+
+        if ($oldState !== EmployeeStateEnum::LEFT && $this->getNewState($modelData) === EmployeeStateEnum::LEFT) {
+            // ponytail: strict only, an Aurora fetch brings its own date and must not be stamped with today
+            if ($this->strict && blank(Arr::get($modelData, 'employment_end_at')) && !$employee->employment_end_at) {
+                Arr::set($modelData, 'employment_end_at', now()->format('Y-m-d'));
+            }
+
+            if ($employee->getUser()) {
+                $credentials['status']            = false;
+                $credentials['user_model_status'] = false;
+            }
+        }
+
         $employee  = $this->update($employee, $modelData, ['data', 'salary']);
 
         $userIdChanged = $employee->user_id != $oldUserId;
@@ -352,6 +365,17 @@ class UpdateEmployee extends OrgAction
         if ($this->has('state')) {
             $this->set('state', $this->normaliseEmployeeState($this->get('state')));
         }
+    }
+
+    private function getNewState(array $modelData): ?EmployeeStateEnum
+    {
+        $state = Arr::get($modelData, 'state');
+
+        if ($state instanceof EmployeeStateEnum) {
+            return $state;
+        }
+
+        return is_string($state) ? EmployeeStateEnum::tryFrom($state) : null;
     }
 
     private function normaliseEmployeeState(mixed $state): mixed

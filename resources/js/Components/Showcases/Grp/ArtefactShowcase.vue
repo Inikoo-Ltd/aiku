@@ -14,6 +14,7 @@ interface ArtefactShowcaseData {
     compliance_status: string
     compliance_label: string
     recommended_batch_size: number | null
+    jobs_off_batch: { id: number, job_order_reference: string, quantity: number, batch_size: number, demand_skos: number | null, suggested_quantity: number | null, route: { name: string, parameters: object } }[]
     batch_pack: { packed_in: number, batch_in_skos: number, suggested_batch_size: number | null } | null
     update_route: { name: string, parameters: any }
     artefact_department: { slug: string, name: string } | null
@@ -123,6 +124,18 @@ const onSaveBatchSize = async () => {
                         :disabled="!batchSize"
                         @click="onSaveBatchSize" />
                 </div>
+            </div>
+
+            <div v-if="data.jobs_off_batch.length" class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3" role="alert">
+                <div class="text-sm font-semibold text-amber-700">{{ trans('Open jobs raised with a different batch size') }}</div>
+                <div class="text-xs text-amber-700 mb-2">{{ trans('They keep the quantity they were raised with. Nothing is made yet, so it can still be changed on the job order.') }}</div>
+                <ul class="text-sm">
+                    <li v-for="job in data.jobs_off_batch" :key="job.id">
+                        <Link :href="route(job.route.name, job.route.parameters)" class="primaryLink">{{ job.job_order_reference }}</Link>
+                        <span class="tabular-nums ml-2">× {{ job.quantity }}</span>
+                        <span v-if="job.suggested_quantity" class="tabular-nums text-amber-700 ml-2">&rarr; {{ job.suggested_quantity }}</span>
+                    </li>
+                </ul>
             </div>
 
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4" :aria-label="ctrans('Artefact details')">

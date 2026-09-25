@@ -30,6 +30,7 @@ class StaffConversationResource extends JsonResource
             'DeliveryNote' => route('grp.org.warehouses.show.dispatching.delivery_notes.show', [$context->organisation->slug, $context->warehouse->slug, $context->slug]),
             'Order'        => route('grp.org.shops.show.ordering.orders.show', [$context->organisation->slug, $context->shop->slug, $context->slug]),
             'StaffTask'    => route('grp.tasks.index', ['task' => $context->reference]),
+            'ChatSession'  => route('grp.org.chat.conversations.detail', ['organisation' => $context->shop?->organisation?->slug, 'chatSession' => $context->id]),
             'PickingSession' => route('grp.org.warehouses.show.dispatching.picking_sessions.show', [$context->organisation->slug, $context->warehouse->slug, $context->slug]),
             default        => null,
         };
@@ -51,7 +52,7 @@ class StaffConversationResource extends JsonResource
             'name'            => $this->name,
             'context_type'    => $this->context_type,
             'context_id'      => $this->context_id,
-            'context_label'   => $this->context?->reference,
+            'context_label'   => $this->context?->reference ?? $this->name,
             'context_url'     => $this->contextUrl(),
             'participants'    => $participants,
             'last_message_at' => $this->last_message_at,

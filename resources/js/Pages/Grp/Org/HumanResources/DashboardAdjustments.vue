@@ -180,7 +180,7 @@ const getStatusColor = (status: string): string => {
 				<select
 					v-model="filters.employee_id"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option :value="null">{{ trans("All Employees") }}</option>
 					<option
 						v-for="employee in employeeOptions"
@@ -193,7 +193,7 @@ const getStatusColor = (status: string): string => {
 				<select
 					v-model="filters.status"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option :value="null">{{ trans("All Statuses") }}</option>
 					<option
 						v-for="status in statusOptions"
@@ -206,7 +206,7 @@ const getStatusColor = (status: string): string => {
 				<select
 					v-model="filters.year"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option v-for="year in yearOptions" :key="year.value" :value="year.value">
 						{{ year.label }}
 					</option>
@@ -215,7 +215,7 @@ const getStatusColor = (status: string): string => {
 				<select
 					v-model="filters.month"
 					@change="updateFilter"
-					class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+					class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm">
 					<option v-for="month in monthOptions" :key="month.value" :value="month.value">
 						{{ month.label }}
 					</option>

@@ -8,11 +8,13 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPriceTips;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\InertiaTable\InertiaTable;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterVariant;
@@ -136,6 +138,15 @@ class IndexMasterProductsPricing extends OrgAction
             return $masterAsset;
         });
 
+        $priceTips = GetMasterProductsPriceTips::make()->handle($parent->masterShop, $masterAssets->getCollection());
+
+        $isDropship = $parent->masterShop->type == ShopTypeEnum::DROPSHIPPING;
+
+        $masterAssets->getCollection()->each(function (MasterAsset $masterAsset) use ($priceTips, $isDropship) {
+            $masterAsset->price_tip   = $priceTips[$masterAsset->id] ?? null;
+            $masterAsset->is_dropship = $isDropship;
+        });
+
         return $masterAssets;
     }
 
@@ -159,7 +170,7 @@ class IndexMasterProductsPricing extends OrgAction
                 ->column(key: 'code', label: __('Code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Info'), sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price'), sortable: true, align: 'right')
-                ->column(key: 'rrp', label: __('RRP').'/'.__('Unit'), sortable: true, align: 'right')
+                ->column(key: 'rrp', label: __('RRP').'/'.($parent->masterShop->type == ShopTypeEnum::DROPSHIPPING ? __('Outer') : __('Unit')), sortable: true, align: 'right')
                 ->defaultSort('code');
         };
     }

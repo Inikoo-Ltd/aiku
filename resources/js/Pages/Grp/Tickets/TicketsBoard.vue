@@ -5,16 +5,17 @@
   -->
 
 <script setup lang="ts">
+import { ticketRoute, ticketsRoute } from "@/Composables/useTicketsRoute"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import draggable from "vuedraggable"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faCube } from "@fal"
+import { faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan } from "@fal"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
@@ -22,7 +23,7 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialog.vue"
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faCube)
+library.add(faLifeRing, faToolbox, faUserHeadset, faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan)
 
 const kindIcons: Record<string, string> = {
 	bug: "fal fa-bug",
@@ -32,6 +33,7 @@ const kindIcons: Record<string, string> = {
 	qa: "fal fa-vial",
 	documentation: "fal fa-books",
 	data_integrity: "fal fa-database",
+	support: "fal fa-search",
 }
 
 const cardPeople = (ticket: { assignee?: string | null; assignee_avatar?: any; collaborators?: { id: number; name: string; avatar?: any }[] }) => [
@@ -82,9 +84,9 @@ const columnClasses: Record<string, string> = {
 
 const periodLabels: Record<string, string> = {
 	"24h": "24h",
-	today: trans("Today"),
-	"1w": trans("1 week"),
-	all: trans("All"),
+	today: ctrans("Today"),
+	"1w": ctrans("1 week"),
+	all: ctrans("All"),
 }
 
 const openPicker = ref<string | null>(null)
@@ -95,7 +97,7 @@ const setPeriod = (columnKey: string, period: string) => {
 	props.columns.forEach((column) => {
 		if (column.period) periods[column.key] = column.key === columnKey ? period : column.period
 	})
-	router.get(route("grp.tickets.board"), { periods }, { preserveScroll: true })
+	router.get(ticketsRoute("board"), { periods }, { preserveScroll: true })
 }
 
 const bucketStamps: Record<string, string> = {
@@ -109,10 +111,10 @@ const bucketStamps: Record<string, string> = {
 type SortField = "created_at" | "updated_at" | "priority" | "in_column"
 
 const sortFields: { key: SortField; label: string }[] = [
-	{ key: "created_at", label: trans("Created") },
-	{ key: "updated_at", label: trans("Updated") },
-	{ key: "priority", label: trans("Urgency") },
-	{ key: "in_column", label: trans("In column") },
+	{ key: "created_at", label: ctrans("Created") },
+	{ key: "updated_at", label: ctrans("Updated") },
+	{ key: "priority", label: ctrans("Urgency") },
+	{ key: "in_column", label: ctrans("In column") },
 ]
 
 const priorityRank: Record<string, number> = { urgent: 3, high: 2, normal: 1, low: 0 }
@@ -173,10 +175,10 @@ const boardFilters = reactive<Record<FilterKey, string[]>>({
 })
 
 const filterLabels: Record<FilterKey, string> = {
-	module_label: trans("Module"),
-	kind_label: trans("Kind"),
-	priority_label: trans("Urgency"),
-	assignee_username: trans("Assignee"),
+	module_label: ctrans("Module"),
+	kind_label: ctrans("Kind"),
+	priority_label: ctrans("Urgency"),
+	assignee_username: ctrans("Assignee"),
 }
 
 const countedBy = (key: FilterKey) => {
@@ -200,8 +202,8 @@ const filterOptions = computed(() => ({
 }))
 
 const assigneeGroups = computed(() => [
-	{ label: trans("Current"), options: filterOptions.value.assignee_username.filter((option) => !props.formerAssignees.includes(option.value)) },
-	{ label: trans("Former"), options: filterOptions.value.assignee_username.filter((option) => props.formerAssignees.includes(option.value)) },
+	{ label: ctrans("Current"), options: filterOptions.value.assignee_username.filter((option) => !props.formerAssignees.includes(option.value)) },
+	{ label: ctrans("Former"), options: filterOptions.value.assignee_username.filter((option) => props.formerAssignees.includes(option.value)) },
 ].filter((group) => group.options.length))
 
 const shortName = (username: string) => username.charAt(0).toUpperCase() + username.slice(1)
@@ -226,6 +228,48 @@ const subFilter = reactive<Record<string, string | null>>({})
 
 const toggleSubFilter = (columnKey: string, status: string) =>
 	(subFilter[columnKey] = subFilter[columnKey] === status ? null : status)
+
+const columnToggles: Record<string, { order: string[]; labels: Record<string, string> }> = {
+	in_progress: { order: ["in_progress", "pending_deploy"], labels: { in_progress: ctrans("Working"), pending_deploy: ctrans("Deploying") } },
+	waiting: { order: ["answered", "waiting"], labels: { answered: ctrans("Replied"), waiting: ctrans("Waiting") } },
+	closed: { order: ["resolved", "cancelled"], labels: { resolved: ctrans("Done"), cancelled: ctrans("Cancelled") } },
+}
+
+const hasColumnToggle = (columnKey: string) => Boolean(columnToggles[columnKey])
+
+const chosenColumnToggles = reactive<Record<string, boolean>>({})
+
+const chooseColumnToggle = (columnKey: string, status: string) => {
+	chosenColumnToggles[columnKey] = true
+	subFilter[columnKey] = status
+}
+
+const subDotClasses: Record<string, string> = {
+	blue: "bg-blue-500",
+	amber: "bg-amber-500",
+	green: "bg-green-600",
+	red: "bg-red-500",
+}
+
+const columnToggleOptions = (column: { key: string; statuses: { status: string; label: string; color: string }[] }) => {
+	const order = columnToggles[column.key]?.order ?? []
+	return [...column.statuses].sort((first, second) => order.indexOf(first.status) - order.indexOf(second.status))
+}
+
+const columnTotal = (column: { key: string; tickets: any[] }) =>
+	column.tickets.filter((ticket) => matchesBoardFilters(ticket, column.key)).length
+
+watch(
+	() => props.columns,
+	(columns) => {
+		columns.forEach((column) => {
+			const toggle = columnToggles[column.key]
+			if (!toggle || chosenColumnToggles[column.key]) return
+			subFilter[column.key] = toggle.order.find((status) => (column.statuses.find((sub) => sub.status === status)?.count ?? 0) > 0) ?? toggle.order[0]
+		})
+	},
+	{ immediate: true }
+)
 
 const matchesBoardFilters = (ticket: any, columnKey: string) =>
 	(Object.keys(boardFilters) as FilterKey[]).every(
@@ -416,23 +460,23 @@ const cancelAssign = () => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" />
-	<div class="p-4 overflow-x-auto">
+	<div class="p-4 min-w-0">
 		<TicketsCreatedInterval :options="createdIntervals" :selected="createdInterval" class="mb-3" />
 		<div v-if="typeOptions?.length" class="mb-3 flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
-			<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ trans("Type") }}</span>
+			<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Type") }}</span>
 			<button
 				type="button"
 				class="rounded-md px-3 py-1 transition duration-200"
-				:class="!typeFilter ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+				:class="!typeFilter ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
 				@click="filterByType(null)">
-				{{ trans("All") }}
+				{{ ctrans("All") }}
 			</button>
 			<button
 				v-for="option in typeOptions"
 				:key="option.value"
 				type="button"
 				class="flex items-center gap-1.5 rounded-md px-3 py-1 transition duration-200"
-				:class="typeFilter === option.value ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
+				:class="typeFilter === option.value ? 'bg-[--app-accent] text-[--app-accent-text] shadow-sm' : 'text-gray-600 hover:bg-gray-100'"
 				@click="filterByType(option.value)">
 				<Icon v-if="option.icon" :data="option.icon" />
 				{{ option.label }}
@@ -455,7 +499,7 @@ const cancelAssign = () => {
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						boardFilters[key].includes(option.value)
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: option.value === 'Urgent'
 								? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
 								: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
@@ -482,26 +526,26 @@ const cancelAssign = () => {
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						onlyMine
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="toggleMine()">
 					<img v-if="myAvatar" :src="myAvatar" class="h-5 w-5 rounded-full object-cover" alt="" />
-					{{ trans("Me") }}
+					{{ ctrans("Me") }}
 				</button>
 				<button
 					type="button"
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
 					:class="
 						boardFilters.assignee_username.length && !onlyMine
-							? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+							? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
 							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
 					"
 					@click="assigneeMenuOpen = !assigneeMenuOpen">
 					<span class="max-w-48 truncate">{{
 						boardFilters.assignee_username.length && !onlyMine
 							? boardFilters.assignee_username.map(shortName).join(", ")
-							: trans("Everybody")
+							: ctrans("Everybody")
 					}}</span>
 					<span
 						class="rounded-full px-1.5 text-xs tabular-nums"
@@ -540,7 +584,7 @@ const cancelAssign = () => {
 						type="button"
 						class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50"
 						@click="boardFilters.assignee_username = []">
-						{{ trans("Everybody") }}
+						{{ ctrans("Everybody") }}
 					</button>
 				</div>
 			</div>
@@ -549,9 +593,10 @@ const cancelAssign = () => {
 				type="button"
 				class="text-xs text-gray-400 hover:text-gray-600"
 				@click="clearFilters()">
-				× {{ trans("Clear") }}
+				× {{ ctrans("Clear") }}
 			</button>
 		</div>
+		<div class="-mx-4 overflow-x-auto px-4 pb-2">
 		<div class="flex gap-3 min-w-max">
 			<div
 				v-for="column in columns"
@@ -562,9 +607,9 @@ const cancelAssign = () => {
 					<Icon :data="column.icon" />
 					<span class="text-sm font-semibold">{{ column.label }}</span>
 					<span
-						v-if="column.statuses.length === 1"
+						v-if="column.statuses.length === 1 || hasColumnToggle(column.key)"
 						class="text-xs text-gray-600 bg-white/70 rounded px-1.5 py-0.5 tabular-nums"
-						>{{ visibleCount(column) }}</span
+						>{{ hasColumnToggle(column.key) ? columnTotal(column) : visibleCount(column) }}</span
 					>
 					<span
 						v-else
@@ -592,7 +637,7 @@ const cancelAssign = () => {
 							<button
 								type="button"
 								class="px-1 py-0.5 hover:text-gray-900"
-								:title="trans('Sort by')"
+								:title="ctrans('Sort by')"
 								@click="openSortPicker = openSortPicker === column.key ? null : column.key">
 								{{ sortFields.find((option) => option.key === sortOf(column.key).field)?.label }}
 							</button>
@@ -613,7 +658,7 @@ const cancelAssign = () => {
 						<button
 							type="button"
 							class="px-1 py-0.5 hover:text-gray-900"
-							:title="sortOf(column.key).desc ? trans('Newest or highest first') : trans('Oldest or lowest first')"
+							:title="sortOf(column.key).desc ? ctrans('Newest or highest first') : ctrans('Oldest or lowest first')"
 							@click="changeSort(column, 'direction')">
 							{{ sortOf(column.key).desc ? "↓" : "↑" }}
 						</button>
@@ -644,6 +689,19 @@ const cancelAssign = () => {
 						</div>
 					</div>
 				</div>
+				<div v-if="hasColumnToggle(column.key)" class="mb-2 flex gap-0.5 rounded-md bg-white/70 p-0.5 text-xs">
+					<button
+						v-for="sub in columnToggleOptions(column)"
+						:key="sub.status"
+						type="button"
+						class="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded px-2 py-1 transition duration-200"
+						:class="subFilter[column.key] === sub.status ? [subActiveClasses[sub.color], 'font-medium shadow-sm'] : 'text-gray-500 hover:bg-white hover:text-gray-800'"
+						@click="chooseColumnToggle(column.key, sub.status)">
+						<span class="h-2 w-2 shrink-0 rounded-full" :class="subFilter[column.key] === sub.status ? 'bg-white/80' : subDotClasses[sub.color]" />
+						{{ columnToggles[column.key].labels[sub.status] ?? sub.label }}
+						<span class="tabular-nums" :class="subFilter[column.key] === sub.status ? 'text-white/80' : 'text-gray-400'">{{ subCount(column, sub.status) }}</span>
+					</button>
+				</div>
 				<draggable
 					v-model="column.tickets"
 					item-key="id"
@@ -655,7 +713,8 @@ const cancelAssign = () => {
 					:force-fallback="true"
 					:fallback-tolerance="4"
 					:disabled="!can_manage"
-					class="flex-1 space-y-2 min-h-24 max-h-[70vh] overflow-y-auto pr-0.5"
+					class="thinScrollbar flex-1 space-y-2 min-h-24 overflow-y-auto pr-1"
+					:class="hasColumnToggle(column.key) ? 'max-h-[70vh]' : 'max-h-[calc(70vh+2.25rem)]'"
 					@start="dragging = true"
 					@end="onDragEnd"
 					@change="onMoved(column, $event)">
@@ -674,14 +733,14 @@ const cancelAssign = () => {
 									<span class="flex items-center gap-1.5">
 										<Icon v-if="element.type_icon" :data="element.type_icon" class="text-gray-400" />
 										<Link
-											:href="route('grp.tickets.show', element.reference)"
+											:href="ticketRoute(element.reference)"
 											class="primaryLink font-medium"
 											@click.stop
 											>{{ element.reference }}</Link
 										>
 									</span>
 									<span class="flex items-center gap-1.5 text-[11px]">
-										<span class="text-gray-400" v-tooltip="{ content: trans('Raised'), delay: 0 }">{{ shortDate(element.created_at) }}</span>
+										<span class="text-gray-400" v-tooltip="{ content: ctrans('Raised'), delay: 0 }">{{ shortDate(element.created_at) }}</span>
 										<span class="text-gray-500" v-tooltip="{ content: column.label, delay: 0 }">{{ ageIn(column, element) }}</span>
 									</span>
 								</span>
@@ -731,25 +790,26 @@ const cancelAssign = () => {
 				</draggable>
 			</div>
 		</div>
+		</div>
 	</div>
 	<Teleport to="body">
 		<div v-if="assigning" class="fixed inset-0 z-40" @click="cancelAssign" />
 		<div
 			v-if="assigning"
-			class="fixed z-50 w-80 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl"
+			class="fixed z-50 w-80 rounded-lg border border-[--app-accent-muted] bg-white p-3 text-xs shadow-xl"
 			:style="{ left: assignPosition.x + 'px', top: assignPosition.y + 'px' }">
 			<div class="mb-1.5 font-medium">{{ assigning.reference }} <span class="font-normal text-gray-500">{{ assigning.subject }}</span></div>
-			<div class="mb-1 text-gray-500">{{ trans("Assign to") }}</div>
+			<div class="mb-1 text-gray-500">{{ ctrans("Assign to") }}</div>
 			<div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
 				<button
 					v-for="engineer in assignees"
 					:key="engineer.value"
 					type="button"
-					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-indigo-50"
+					class="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left hover:bg-[--app-accent-soft]"
 					@click="assignTo(engineer.value)">
 					<TicketUserAvatar :name="engineer.label" :avatar="engineer.avatar" size="xs" />
 					<span :class="engineer.is_me && 'font-medium'">{{ engineer.label }}</span>
-					<span v-if="engineer.is_me" class="text-gray-400">{{ trans("me") }}</span>
+					<span v-if="engineer.is_me" class="text-gray-400">{{ ctrans("me") }}</span>
 				</button>
 			</div>
 		</div>
@@ -766,6 +826,27 @@ const cancelAssign = () => {
 		status="resolved"
 		:update-route="{ name: updateRoute, parameters: { ticket: dropDialogTicket.id } }"
 		:can-wait-for-deployment="dropDialogTicket.status !== 'pending_deploy'"
+		:closes-conversation="dropDialogTicket.closes_source"
 		@updated="isDropDialogSaved = true" />
 	<TicketQuickLook v-model:ticket="quickLook" @closed="closeQuickLook" />
 </template>
+
+<style scoped>
+.thinScrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.300') transparent;
+}
+
+.thinScrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.thinScrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.thinScrollbar::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray.300');
+    border-radius: 9999px;
+}
+</style>

@@ -22,6 +22,7 @@ enum StockDeliveryTabsEnum: string
     case UNDER_OVER_DELIVERED = 'under_over_delivered';
     case SHOWCASE             = 'showcase';
     case ATTACHMENTS          = 'attachments';
+    case NOTES = 'notes';
     case HISTORY              = 'history';
 
     public function blueprint(): array
@@ -52,6 +53,10 @@ enum StockDeliveryTabsEnum: string
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+            StockDeliveryTabsEnum::NOTES => [
+                'title' => __('Notes'),
+                'icon'  => 'fal fa-sticky-note',
             ],
             StockDeliveryTabsEnum::HISTORY              => [
                 'title' => __('History'),

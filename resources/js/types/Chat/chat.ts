@@ -120,14 +120,25 @@ export interface Contact {
 	lastMessage: string
 	priority: string
 	lastMessageTime?: string
+	lastMessageAge?: string
 	unread: number
 	status: "waiting" | "active" | "closed" | string
 	is_spam?: boolean
+	is_rubbish?: boolean
+	can_dispose?: boolean
+	open_tickets_count?: number
+	blocking_tickets_count?: number
+	open_tasks?: { reference: string; subject: string; who: string; url: string }[]
+	customer_suggestion?: { label: string; basis: string | null; customer: { name: string | null; email: string | null; reference: string | null } | null; hint: string | null } | null
+	noise?: { label: string; note: string | null; source: string | null; automatic: boolean } | null
+	promise?: { at: string; overdue: boolean } | null
+	urgent?: "cancel_order" | "change_address" | null
 	is_highlighted?: boolean
 	messages?: ChatMessage[]
 	webUser?: {
 		id: string
 		name: string
+		customer_id?: number | null
 		slug: string
 		email: string
 		phone: string
@@ -178,13 +189,32 @@ export interface ChatMessageReactionGroup {
 	reactors: { type: string; id: number | null }[]
 }
 
+export interface ChatMessageAttachment {
+	id: number
+	is_image: boolean
+	media_url: { original: string; webp?: string } | null
+	original_url: string
+	file_name: string
+	file_size: number
+	file_mime: string
+	download_route: { name: string; parameters: Record<string, any>; method: string; url: string }
+}
+
 export interface ChatMessage {
 	id: string
 	message?: string
 	ulid?: string
 	message_text: string
+	html_body?: string | null
+	message_type?: "text" | "image" | "file"
 	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign"
 	created_at: string
 	is_read?: boolean
 	reactions?: ChatMessageReactionGroup[]
+	media_url?: { original: string; webp?: string } | null
+	file_name?: string | null
+	file_size?: number | null
+	file_mime?: string | null
+	download_route?: { url: string } | null
+	attachments?: ChatMessageAttachment[]
 }

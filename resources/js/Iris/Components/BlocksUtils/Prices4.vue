@@ -7,7 +7,8 @@ import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref, computed, watch } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import { useExpectedBackInStockLabel } from "@/Composables/useOutOfStockLabel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlusCircle, faQuestionCircle } from "@fal"
 import { faCircle } from "@fas"
@@ -39,6 +40,7 @@ interface ProductResource {
     rpp?: number
     unit: string
     stock: number
+    expected_back_in_stock_at?: string | null
     rating: number
     price: number
     url: string | null
@@ -164,6 +166,14 @@ const isStepOrderable = (minQuantity: number) => {
         && minQuantity <= props.product.stock
         && minQuantity !== basketQuantity.value
 }
+
+const stockTooltip = computed(() => {
+    if (props.product.stock > 0) {
+        return ctrans('Available product stocks')
+    }
+
+    return [ctrans('Out of stock'), useExpectedBackInStockLabel(props.product)].filter(Boolean).join(' · ')
+})
 
 const isStepOverStock = (minQuantity: number) => {
     return canOrderStepDiscount.value && minQuantity > props.product.stock
@@ -305,24 +315,24 @@ const onHideStepsPopover = () => {
                 </span>
 
                 <div v-if="layout?.iris?.is_logged_in && !product.is_coming_soon"
-                    v-tooltip="trans('Available product stocks')" class="flex items-center">
+                    v-tooltip="stockTooltip" class="flex items-center">
                     <FontAwesomeIcon :icon="faCircle" class="text-[8px]"
-                        :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" />
+                        :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" fixed-width />
                 </div>
 
                 <LabelComingSoon v-else-if="product.is_coming_soon" :product="product" />
             </div>
 
-            <div v-if="(product?.rrp_per_unit ?? 0 > 0) && !product.is_coming_soon"
-                style="margin-left: auto; display: flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
+            <div v-if="(product?.rrp_per_unit ?? 0) > 0 && !product.is_coming_soon"
+                style="margin-left: auto; display: flex; align-items: center; gap: 0.25rem; white-space: nowrap;  ">
                 <span @click="_popoverProfit?.toggle" @mouseenter="_popoverProfit?.show"
                     @mouseleave="_popoverProfit?.hide"
-                    class="cursor-pointer opacity-60 hover:opacity-100 flex items-center text-[8px] sm:text-[9px] md:text-[10px]">
+                    class="cursor-pointer opacity-60 hover:opacity-100 flex items-center text-[8px] sm:text-[9px] md:text-[10px] ">
                     <FontAwesomeIcon icon="fal fa-plus-circle" fixed-width />
                 </span>
 
-                <span class="text-[8px] sm:text-[9px] md:text-[10px] text-[#E87928] border-[#E87928] font-bold">
-                    {{ trans('RRP') }}:
+                <span class="text-[8px] sm:text-[9px] md:text-[10px]  border-primary font-bold">
+                    {{ ctrans('RRP') }}:
                     <span class="font-bold">
                         {{ locale.currencyFormatRrp(currency?.code, product?.rrp_per_unit) }}
                     </span>
@@ -344,9 +354,9 @@ const onHideStepsPopover = () => {
                     : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'">
 
                 <div class="font-semibold whitespace-nowrap">
-                  <!--   <span>{{ trans("Price") }}</span> -->
+                  <!--   <span>{{ ctrans("Price") }}</span> -->
                     <span class="text-[8px] sm:text-[9px] font-light">
-                        ({{ trans("Excl. Vat") }})
+                        ({{ ctrans("Excl. Vat") }})
                     </span>
                 </div>
 
@@ -384,7 +394,7 @@ const onHideStepsPopover = () => {
 
                     <div v-if="!isDiscountedPriceActive" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
                         <div class="flex text-xs items-center justify-center rounded-full ">
-                            <FontAwesomeIcon :icon="faCheck" />
+                            <FontAwesomeIcon :icon="faCheck" fixed-width />
                         </div>
                     </div>
                 </div>
@@ -397,13 +407,13 @@ const onHideStepsPopover = () => {
                     : 'grid-cols-[1fr_minmax(0,70%)] lg:grid-cols-[1fr_minmax(0,75%)] 2xl:grid-cols-[1fr_minmax(0,75%)]'">
                 <button v-if="displayStep" type="button"
                     class="inline-flex items-center gap-1 rounded cursor-pointer transition-all duration-150"
-                    v-tooltip="trans('Buy :qty+ :unit, save :off', {
+                    v-tooltip="ctrans('Buy :qty+ :unit, save :off', {
                         qty: displayStep.min_quantity,
                         unit: product.unit,
                         off: displayStep.percentage_off_label,
                     })" aria-haspopup="true" @click.stop.prevent="onToggleStepsPopover">
                     <FontAwesomeIcon :icon="faBadgePercent" class="text-lg"
-                        :class="activeStep ? 'step-discount-text' : 'step-discount-text-muted'" />
+                        :class="activeStep ? 'step-discount-text' : 'step-discount-text-muted'" fixed-width />
 
                     <div class="flex items-center gap-2 rounded px-1 md:py-[5px] py-[3px] xl:py-[3px] text-[8px] xl:text-[10px] 2xl:text-xs font-semibold leading-none whitespace-nowrap text-white transform transition-all duration-150"
                         :class="activeStep ? 'step-discount-bg' : 'step-discount-bg-muted border border-transparent'">
@@ -484,7 +494,7 @@ const onHideStepsPopover = () => {
                 <div v-if="isDiscountedPriceActive" class="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2">
                     <div class="flex text-xs items-center justify-center rounded-full"
                         :class="displayStep ? 'step-discount-text' : offerAccentClass">
-                        <FontAwesomeIcon :icon="faCheck" />
+                        <FontAwesomeIcon :icon="faCheck" fixed-width />
                     </div>
                 </div>
             </div>
@@ -505,7 +515,7 @@ const onHideStepsPopover = () => {
                     </div>
 
                     <div v-if="canOrderStepDiscount" class="mb-1 text-[10px] font-normal text-gray-500">
-                        {{ trans('Select a quantity to order it straight away') }}
+                        {{ ctrans('Select a quantity to order it straight away') }}
                     </div>
 
                     <button v-for="step in product.step_discount.steps" :key="step.min_quantity" type="button"

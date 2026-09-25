@@ -56,7 +56,7 @@ const onClickRemoveBar = (tabName: "activeUsers") => {
 					<div
 						@click="onClickRemoveBar('activeUsers')"
 						class="flex justify-center items-center cursor-pointer px-1.5 text-slate-400 hover:text-slate-600">
-						<FontAwesomeIcon icon="fal fa-times" class="" aria-hidden="true" />
+						<FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
 					</div>
 				</div>
 

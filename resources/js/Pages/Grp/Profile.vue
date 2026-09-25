@@ -1,29 +1,27 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import Tabs from "@/Components/Navigation/Tabs.vue"
+import TabsScrollable from "@/Components/Navigation/TabsScrollable.vue"
 
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { computed, defineAsyncComponent, inject, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 
-import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import ProfileHistory from "@/Components/Profile/ProfileHistory.vue"
 import ProfileShowcase from "@/Components/Profile/ProfileShowcase.vue"
+import ProfileHeader from "@/Components/Profile/ProfileHeader.vue"
 import ProfileKPIs from "@/Components/Profile/ProfileKPIs.vue"
 import ProfileTimesheets from "@/Components/Profile/ProfileTimesheets.vue"
 import ProfileVisitLogs from "@/Components/Profile/ProfileVisitLogs.vue"
 import ProfileTodo from "@/Components/Profile/ProfileTodo.vue"
 import ProfileNotifications from "@/Components/Profile/ProfileNotifications.vue"
 import ProfileApiTokens from "@/Components/Profile/ProfileApiTokens.vue"
-import EditProfile from "@/Pages/Grp/EditProfile.vue"
 
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 
@@ -80,20 +78,13 @@ const component = computed(() => {
         visit_logs: ProfileVisitLogs,
         timesheets: ProfileTimesheets,
         dashboard: ProfileShowcase,
-        history: TableHistories,
+        history: ProfileHistory,
     }
 
     return components[currentTab.value]
 })
 const handleTabUpdate = (newTabSlug: string) => {
     if (newTabSlug === currentTab.value) {
-        return
-    }
-
-    // Clocking tab navigates to separate route
-    if (newTabSlug === 'clocking') {
-        layout.stackedComponents = []
-        router.visit(route('grp.clocking_employees.index'))
         return
     }
 
@@ -106,8 +97,17 @@ const handleTabUpdate = (newTabSlug: string) => {
     fetchTabData(newTabSlug)
 }
 const isTabLoading = ref(false)
+const headerLayoutVersion = ref(0)
+const viewportFittedTabs = ['notifications', 'dashboard', 'timesheets']
+const isViewportFittedTab = computed(() => viewportFittedTabs.includes(currentTab.value))
 const dataTab = ref(null)
 const fetchTabData = async (tabSlug: string) => {
+    if (tabSlug === 'dashboard') {
+        dataTab.value = {}
+        currentTab.value = tabSlug
+        return
+    }
+
     isTabLoading.value = true
     let routeName = ''
 
@@ -175,10 +175,35 @@ const onLogoutAuth = () => {
     })
 }
 
+const _tabContent = ref<HTMLElement | null>(null)
+const tabContentHeight = ref<string>('auto')
+
+const fitTabContentToViewport = () => {
+    if (!_tabContent.value) {
+        return
+    }
+
+    const stackedPanelBottomPadding = 24
+    const available = window.innerHeight - _tabContent.value.getBoundingClientRect().top - stackedPanelBottomPadding
+    tabContentHeight.value = `${Math.max(320, available)}px`
+}
+
+watch([currentTab, isTabLoading, headerLayoutVersion], async () => {
+    await nextTick()
+    fitTabContentToViewport()
+})
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', fitTabContentToViewport)
+})
+
 onMounted(async () => {
+    window.addEventListener('resize', fitTabContentToViewport)
     await fetchPageHead()
     currentTab.value = props?.data?.currentTab || currentTab.value
     await fetchTabData(currentTab.value)
+    await nextTick()
+    fitTabContentToViewport()
 })
 
 </script>
@@ -186,34 +211,19 @@ onMounted(async () => {
 
 <template>
     <Head :title="trans('Profile')" />
-    <PageHeading v-if="dataProfile?.pageHead" :data="dataProfile?.pageHead">
-        <template #button-edit-profile="{ action }">
-            <Button
-                @click="() => layout.stackedComponents.push({ component: EditProfile })"
-                :label="action.label"
-                type="edit"
-            />
-
-            <Button
-                @click="() => onLogoutAuth()"
-                label="Logout"
-                :loading="isLoadingLogout"
-                icon="fal fa-sign-out-alt"
-                :style="'negative'"
-            />
-        </template>
-    </PageHeading>
+    <ProfileHeader :isLoadingLogout="isLoadingLogout" @logout="onLogoutAuth" @loaded="headerLayoutVersion++" />
 
     <template v-if="dataProfile?.tabs?.navigation">
-        <Tabs :current="currentTab" :navigation="dataProfile?.tabs?.navigation"
+        <TabsScrollable :current="currentTab" :navigation="dataProfile?.tabs?.navigation"
             @update:tab="(tabSlug: string) => handleTabUpdate(tabSlug)" />
 
         <!-- Loading: main content -->
         <div v-if="isTabLoading" class="pt-32 w-full flex justify-center">
             <LoadingIcon size="2x" />
         </div>
-        <div v-else-if="dataTab" class="pb-16 h-full overflow-auto">
-            <component :is="component" :data="dataTab" :tab="currentTab" />
+        <div v-else-if="dataTab" ref="_tabContent" :style="{ height: tabContentHeight }"
+            :class="isViewportFittedTab ? 'overflow-hidden' : 'pb-16 overflow-y-auto'">
+            <component :is="component" :data="dataTab" :tab="currentTab" v-bind="isViewportFittedTab ? { layoutVersion: headerLayoutVersion } : {}" />
         </div>
         <div v-else class="h-full w-full flex items-center justify-center text-gray-400 italic">
             {{ trans('No data to shown.') }}

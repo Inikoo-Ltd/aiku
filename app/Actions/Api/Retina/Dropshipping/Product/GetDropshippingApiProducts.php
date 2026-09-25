@@ -69,7 +69,6 @@ class GetDropshippingApiProducts extends RetinaApiAction
         $query->leftJoin('product_categories as family', 'products.family_id', 'family.id');
         $query->leftJoin('shops', 'products.shop_id', 'shops.id');
         $query->leftJoin('currencies', 'currencies.id', 'products.currency_id');
-        $query->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
         $selects = [
             'products.id',
@@ -86,6 +85,7 @@ class GetDropshippingApiProducts extends RetinaApiAction
             'products.barcode',
             'products.web_images',
             'products.description_extra',
+            'products.marketing_ingredients',
             'currencies.code as currency_code',
             'currencies.id as currency_id',
             'department.slug as department_slug',

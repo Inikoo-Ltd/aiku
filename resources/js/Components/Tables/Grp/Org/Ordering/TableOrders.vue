@@ -17,7 +17,7 @@ import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, 
 import { faShieldAlt, faStar, faHighlighter, faPennant, faCertificate } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { RouteParams } from "@/types/route-params"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeLayers, FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -217,18 +217,18 @@ const setNewMarkerDate = (newVal: Date) => {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #add-on-button-in-before>
             <DatePicker
-                v-tooltip="isValidMark ? trans('Order before :_selectedDate will be marked', {_selectedDate: getDateLocaleString(markerDate)}) : trans('Nothing is marked')"
+                v-tooltip="isValidMark ? ctrans('Order before :_selectedDate will be marked', {_selectedDate: getDateLocaleString(markerDate)}) : ctrans('Nothing is marked')"
                 @update:modelValue="(newVal: Date) => { setNewMarkerDate(newVal ?? new Date()) }"
                 :modelValue="markerDate"
-                :selectText="trans('Select')"
+                :selectText="ctrans('Select')"
                 :enableTimePicker="false"
                 :clearable="isValidMark"
             >
                 <template #dp-input>
                     <span class="h-9 rounded flex justify-center items-center border border-gray-300 hover:bg-gray-300 text-gray-600 hover:cursor-pointer" :class="isValidMark ? 'ps-3 pe-10 ' : 'px-3'">
                         <FontAwesomeLayers class="mr-5">
-                            <FontAwesomeIcon :icon="faCalendarAlt"/>
-                            <FontAwesomeIcon :icon="faHighlighter" style="right: -16px; bottom: -8px" class="text-red-500"/>
+                            <FontAwesomeIcon :icon="faCalendarAlt" fixed-width/>
+                            <FontAwesomeIcon :icon="faHighlighter" style="right: -16px; bottom: -8px" class="text-red-500" fixed-width/>
                         </FontAwesomeLayers>
                         {{ isValidMark ? getDateLocaleString(markerDate) : '-' }}
                     </span>
@@ -250,7 +250,7 @@ const setNewMarkerDate = (newVal: Date) => {
 
         <template #cell(state)="{ item: order }">
             <Icon :data="order.state_icon" />
-            <FontAwesomeIcon v-if="order.is_export" v-tooltip="trans('Export')" :icon="faGlobe" class="ml-1 text-indigo-500" fixed-width />
+            <FontAwesomeIcon v-if="order.is_export" v-tooltip="ctrans('Export')" :icon="faGlobe" class="ml-1 text-indigo-500" fixed-width />
         </template>
 
 
@@ -274,9 +274,9 @@ const setNewMarkerDate = (newVal: Date) => {
                 <Link :href="orderHref(order)" class="primaryLink">
                     <FontAwesomeIcon
                         v-if="isValidMark && isBeforeMark(order['date'])"
-                        v-tooltip="trans('Order created at :_dateCreated', {_dateCreated: getDateLocaleString(new Date(order['date']))})"
+                        v-tooltip="ctrans('Order created at :_dateCreated', {_dateCreated: getDateLocaleString(new Date(order['date']))})"
                         :icon="faPennant"
-                        class="mr-1 text-red-500"
+                        class="mr-1 text-red-500" fixed-width
                     />
                     {{ order["reference"] }}
                 </Link>
@@ -284,25 +284,33 @@ const setNewMarkerDate = (newVal: Date) => {
                 <img v-if="order?.platform" :src="order?.platform" class="w-4" alt="platform" loading="lazy" decoding="async" />
 
                 <span v-if="order.sales_channel_type === 'api'"
-                    v-tooltip="trans('Placed automatically through the customer API')"
+                    v-tooltip="ctrans('Placed automatically through the customer API')"
                     class="rounded bg-orange-100 border border-orange-300 px-1 text-xs font-semibold text-orange-700 leading-tight">API</span>
 
+                <span v-if="order.is_intercompany"
+                    v-tooltip="ctrans('Partner order: raised from the partner shopping list, not placed by an outside customer')"
+                    class="rounded bg-sky-100 border border-sky-300 px-1 text-xs font-semibold text-sky-700 leading-tight">Partner</span>
+
                 <span v-if="order.is_dropshipping"
-                    v-tooltip="trans('Dropshipping order, came in through a customer sales channel')"
+                    v-tooltip="ctrans('Dropshipping order, came in through a customer sales channel')"
                     class="rounded bg-fuchsia-100 border border-fuchsia-300 px-1 text-xs font-semibold text-fuchsia-700 leading-tight">DS</span>
 
-                <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
+                <span v-if="order.handled_in_aurora"
+                    v-tooltip="ctrans('Submitted in Aurora: process it in Aurora, not here')"
+                    class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white">Aurora</span>
+
+                <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')" icon="fas fa-star"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon
          			v-if="order.is_customer_vip"
-         			v-tooltip="trans('VIP Customer')"
+         			v-tooltip="ctrans('VIP Customer')"
          			:icon="faCertificate"
                     color="#191970"
          			fixed-width
     			/>
-                <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
+                <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="ctrans('Extra packing')" icon="fas fa-box-heart"
                                  class="text-yellow-500" fixed-width aria-hidden="true" />
-                <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
+                <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="ctrans('Insurance')" :icon="faShieldAlt"
                   class="text-yellow-500" fixed-width aria-hidden="true" /> -->
                 <NotesDisplay :item="order" reference-field="reference" />
 
@@ -311,7 +319,7 @@ const setNewMarkerDate = (newVal: Date) => {
                    class="underline whitespace-nowrap"
                    target="_blank"
                 >
-                    <Button size="xxs" :label="trans('Open tracking')" type="tertiary" iconRight="fal fa-external-link-alt" />
+                    <Button size="xxs" :label="ctrans('Open tracking')" type="tertiary" iconRight="fal fa-external-link-alt" />
                 </a>
             </div>
 
@@ -332,15 +340,15 @@ const setNewMarkerDate = (newVal: Date) => {
             <div class="text-right flex items-center justify-end gap-1.5">
                 <span v-if="order.platform_milestones?.draft_created_at && order.platform_milestones?.placed_at && order.platform_milestones.draft_created_at !== order.platform_milestones.placed_at"
                       v-tooltip="
-                          trans('Order Timeline:') + '<br>' +
-                          trans('Draft Initiated:') + ' ' + useFormatTime(order.platform_milestones.draft_created_at, { localeCode: locale.language.code, formatTime: 'aiku' }) + '<br>' +
-                          trans('Paid / Placed:') + ' ' + useFormatTime(order.platform_milestones.placed_at, { localeCode: locale.language.code, formatTime: 'aiku' }) +
-                          (order.submitted_at ? ('<br>' + trans('Warehouse Submitted:') + ' ' + useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '') +
-                          (order.dispatched_at ? ('<br>' + trans('Dispatched:') + ' ' + useFormatTime(order.dispatched_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '')
+                          ctrans('Order Timeline:') + '<br>' +
+                          ctrans('Draft Initiated:') + ' ' + useFormatTime(order.platform_milestones.draft_created_at, { localeCode: locale.language.code, formatTime: 'aiku' }) + '<br>' +
+                          ctrans('Paid / Placed:') + ' ' + useFormatTime(order.platform_milestones.placed_at, { localeCode: locale.language.code, formatTime: 'aiku' }) +
+                          (order.submitted_at ? ('<br>' + ctrans('Warehouse Submitted:') + ' ' + useFormatTime(order.submitted_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '') +
+                          (order.dispatched_at ? ('<br>' + ctrans('Dispatched:') + ' ' + useFormatTime(order.dispatched_at, { localeCode: locale.language.code, formatTime: 'aiku' })) : '')
                       "
                       class="text-gray-400 cursor-help"
                 >
-                    <FontAwesomeIcon :icon="faInfoCircle" size="xs" />
+                    <FontAwesomeIcon :icon="faInfoCircle" size="xs" fixed-width />
                 </span>
                 <span>
                     {{ useFormatTime(order.platform_milestones?.placed_at || order.date, { localeCode: locale.language.code, formatTime: "aiku" }) }}
@@ -360,11 +368,11 @@ const setNewMarkerDate = (newVal: Date) => {
 
             </div>
             <div v-else-if="order.shipping_data?.is_collection && order.state === 'dispatched'" class="border rounded border-green-500 w-fit px-1 py-0.5 text-green-500 bg-green-50">
-                {{ trans("Collected") }}
+                {{ ctrans("Collected") }}
                 <FontAwesomeIcon icon="fal fa-check" class="" fixed-width aria-hidden="true" />
             </div>
             <div v-else-if="order.shipping_data?.is_collection" class="border rounded border-pink-500 w-fit px-1 py-0.5 text-pink-500 bg-pink-50">
-                {{ trans("For Collection") }}
+                {{ ctrans("For Collection") }}
             </div>
 
             <div v-else-if="order.shipping_data?.[0]?.trackings?.[0]" class="flex gap-2 pr-2 py-1.5">
@@ -374,7 +382,7 @@ const setNewMarkerDate = (newVal: Date) => {
                         <Link
                             :href="generateRouteDeliveryNote(order.shipping_data?.[0].delivery_note_id)"
                             class="secondaryLink"
-                            v-tooltip="trans('Delivery Note') + ': ' + order.shipping_data?.[0].delivery_note_reference"
+                            v-tooltip="ctrans('Delivery Note') + ': ' + order.shipping_data?.[0].delivery_note_reference"
                         >
                             <FontAwesomeIcon icon="fal fa-truck" class="" fixed-width aria-hidden="true" />
                         </Link>

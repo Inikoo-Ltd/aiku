@@ -14,6 +14,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 
 class GetWebBlockFamiliesFour
 {
@@ -33,7 +34,13 @@ class GetWebBlockFamiliesFour
 
         $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock, 'family');
 
-        data_set($webBlock, 'web_block.layout.data.permissions', ['']);
+        $permissions = [];
+
+        if ($webpage->sub_type == WebpageSubTypeEnum::COLLECTION) {
+            $permissions = ['hidden'];
+        }
+
+        data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product_category', [
             'slug' => $productCategory->slug,
             'name' => $productCategory->name,

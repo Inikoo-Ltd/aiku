@@ -40,7 +40,7 @@ const isNoneSelected = computed(() => !(props.form?.[props.fieldName] ?? []).som
                     class="sr-only" />
                 <span class="flex h-4 w-4 items-center justify-center rounded border"
                     :class="option.value ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 bg-white'">
-                    <FontAwesomeIcon v-if="option.value" icon="fas fa-check" class="text-[10px]" aria-hidden="true" />
+                    <FontAwesomeIcon v-if="option.value" icon="fas fa-check" class="text-[10px]" fixed-width aria-hidden="true" />
                 </span>
                 {{ option.label }}
             </label>

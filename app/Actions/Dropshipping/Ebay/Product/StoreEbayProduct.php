@@ -243,7 +243,7 @@ class StoreEbayProduct extends RetinaAction
                     ],
                     'weight' => [
                         'unit' => 'KILOGRAM',
-                        'value' => (in_array($product->marketing_weight, [null, 0]) ? 100 : $product->marketing_weight) / 1000
+                        'value' => ($product->gross_weight ?: $product->marketing_weight ?: 100) / 1000
                     ]
                 ],
                 'product' => [
@@ -402,7 +402,7 @@ class StoreEbayProduct extends RetinaAction
             }
 
             $aspects = Arr::get($inventoryItem, 'product.aspects', []);
-            $filledAspects = $ebayUser->fillMissingAspects($product, $categoryAspects, $missingAspects, $aspects);
+            $filledAspects = $ebayUser->fillMissingAspects($product, $categoryAspects, $missingAspects, $aspects, $ebayUser->parseStandardValueAspects($publishedOffer));
 
             if ($filledAspects === $aspects) {
                 break;

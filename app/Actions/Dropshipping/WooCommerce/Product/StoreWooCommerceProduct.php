@@ -199,7 +199,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 'platform_product_variant_id' => Arr::get($result, 'id'),
             ]);
 
-            CheckWooPortfolio::run($portfolio, []);
+            CheckWooPortfolio::run($portfolio, is_array($result) ? $result : null);
 
             $portfolio->refresh();
 

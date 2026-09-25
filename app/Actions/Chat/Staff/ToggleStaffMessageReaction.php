@@ -35,7 +35,7 @@ class ToggleStaffMessageReaction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->route('staffMessage')->conversation->hasParticipant($request->user());
+        return $request->route('staffMessage')->conversation->canBeAccessedBy($request->user());
     }
 
     public function rules(): array

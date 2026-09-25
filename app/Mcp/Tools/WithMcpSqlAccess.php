@@ -56,4 +56,17 @@ trait WithMcpSqlAccess
 
         return null;
     }
+
+    /**
+     * Assistants cache the tool list, so one connected before the write tools shipped only sees SQL
+     * and concludes aiku refuses the change. The hint rides on answers it does get.
+     */
+    protected function orgStockWriteToolsHint(Request $request, string $subject): ?string
+    {
+        if (!$request->user()?->can_use_mcp_discontinue || !str_contains(strtolower($subject), 'org_stock')) {
+            return null;
+        }
+
+        return 'SQL is read-only. This user is enrolled to change the state of SKOs (discontinue, suspend, back to active): use org-stock-discontinue-preview-tool, then org-stock-discontinue-tool after they confirm. If those tools are not in your tool list, your copy of the aiku tools is out of date: tell the user to refresh the aiku connector in their assistant settings and allow its write actions. Aiku permissions are not the problem.';
+    }
 }

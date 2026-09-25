@@ -27,7 +27,7 @@ import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
 import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import Modal from "@/Components/Utils/Modal.vue"
 import Popover from "primevue/popover"
 import { Link, router } from "@inertiajs/vue3"
@@ -285,9 +285,9 @@ function productRoute(product: any, openEdit = false) {
 }
 
 const getTooltips = () => {
-	let tooltipText = props.data.availability_status.is_for_sale ? trans('Master product is currently for sale and available to be purchased') : trans('Master product is currently not for sale and unavailable to be purchased');
+	let tooltipText = props.data.availability_status.is_for_sale ? ctrans('Master product is currently for sale and available to be purchased') : ctrans('Master product is currently not for sale and unavailable to be purchased');
 	if (props.data.availability_status.from_trade_unit) {
-		tooltipText = trans('This master product For Sale status has been modified from the Trade Unit level')
+		tooltipText = ctrans('This master product For Sale status has been modified from the Trade Unit level')
 	}
 
 	return tooltipText;
@@ -330,14 +330,14 @@ const isModalProductForSale = ref(false)
 				<div class="flex items-start justify-between gap-3">
 					<div class="flex items-center gap-2 pt-0.5 text-xs font-semibold text-gray-500">
 						<span>{{ title }}</span>
-						<FontAwesomeIcon v-if="!hasPrices(prices)" :icon="faWarning" />
+						<FontAwesomeIcon v-if="!hasPrices(prices)" :icon="faWarning" fixed-width />
 						<span
 							v-if="rebelList.length > 0"
 							class="inline-flex items-center gap-1 text-yellow-500 hover:text-yellow-600 cursor-pointer"
-							v-tooltip="trans('Show rebel prices (products not following master pricing)')"
+							v-tooltip="ctrans('Show rebel prices (products not following master pricing)')"
 							@click.stop="toggleRebel"
 						>
-							<FontAwesomeIcon :icon="faStarfighter" />
+							<FontAwesomeIcon :icon="faStarfighter" fixed-width />
 							<span class="text-xs font-bold">{{ rebelList.length }}</span>
 						</span>
 					</div>
@@ -345,16 +345,16 @@ const isModalProductForSale = ref(false)
 					<template v-for="price in topPrices(prices)" :key="price.code">
 						<span
 							class="self-center text-right text-xs font-normal text-gray-400"
-							v-tooltip="costs ? trans('Margin vs effective cost') : trans('Retail margin vs price')"
+							v-tooltip="costs ? ctrans('Margin vs effective cost') : ctrans('Retail margin vs price')"
 						>{{ blockMarginPct(price.code, price.value, costs, counterpart) ?? '' }}</span>
 						<span class="text-right">{{ formatBlockValue(price.code, price.value, perUnits) }}</span>
 					</template>
 					<template v-for="price in independentMinorPrices(prices)" :key="price.code">
 						<span
 							class="self-center text-right text-xs font-normal text-gray-400"
-							v-tooltip="costs ? trans('Margin vs effective cost') : trans('Retail margin vs price')"
+							v-tooltip="costs ? ctrans('Margin vs effective cost') : ctrans('Retail margin vs price')"
 						>{{ blockMarginPct(price.code, price.value, costs, counterpart) ?? '' }}</span>
-						<span class="text-right text-green-600" v-tooltip="trans('Independent price')">
+						<span class="text-right text-green-600" v-tooltip="ctrans('Independent price')">
 							{{ formatBlockValue(price.code, price.value, perUnits) }}
 						</span>
 					</template>
@@ -362,11 +362,11 @@ const isModalProductForSale = ref(false)
 						v-if="restPrices(prices).length > 0"
 						class="col-span-2 text-right text-xs font-normal text-gray-400 hover:text-gray-600"
 					>
-						{{ trans('Minor currencies') }} ({{ restPrices(prices).length }})
+						{{ ctrans('Minor currencies') }} ({{ restPrices(prices).length }})
 						<FontAwesomeIcon
 							:icon="faChevronDown"
 							class="text-xs transition-transform duration-200"
-							:class="{ '-rotate-90': !open }"
+							:class="{ '-rotate-90': !open }" fixed-width
 						/>
 					</DisclosureButton>
 					<template v-if="open">
@@ -406,14 +406,14 @@ const isModalProductForSale = ref(false)
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer "
 				:class="data.availability_status.status ? 'border-green-500' : 'border-red-500'"
 			>
-				{{ data.availability_status.status ? trans('For Sale') : trans('Not For Sale') }}
+				{{ data.availability_status.status ? ctrans('For Sale') : ctrans('Not For Sale') }}
 				(<span class="font-semibold" :class='data.availability_status.total_product_for_sale != data.availability_status.total_products ? "opacity-80" : ""'>
 					{{ `${data.availability_status.total_product_for_sale}/${data.availability_status.total_products}` }}
 				</span>)
 				<FontAwesomeIcon
 					v-if="!data.availability_status.is_for_sale"
 					icon="fas fa-thumbtack"
-					:class="'text-red-500 ms-2 hover:cursor-pointer'"
+					:class="'text-red-500 ms-2 hover:cursor-pointer'" fixed-width
 				/>
 			</span>
 		</div>
@@ -441,7 +441,7 @@ const isModalProductForSale = ref(false)
 					<div v-else>
 						<div
 							class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-							<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+							<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
 							<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 						</div>
 					</div>
@@ -464,27 +464,27 @@ const isModalProductForSale = ref(false)
         <div class="min-w-0">
 			<div class="grid justify-items-end pr-3 pb-2 gap-2">
 				<ReuseMasterPriceBlock
-					:title="trans('Price / Outer')"
+					:title="ctrans('Price / Outer')"
 					:prices="data.masterProduct.master_prices"
 					:rebelList="rebelPriceList"
 					:toggleRebel="toggleRebelPrice"
-					:emptyTooltip="trans('Price is not set up for this master product')"
+					:emptyTooltip="ctrans('Price is not set up for this master product')"
 					:costs="data.pricingCosts"
 				/>
 
 				<Popover ref="rebelPricePopover">
 					<div class="min-w-[20rem]">
 						<div class="mb-2 text-xs font-semibold text-gray-700">
-							{{ trans('Rebel Prices') }}
-							<span class="text-gray-400">({{ trans('not following master pricing') }})</span>
+							{{ ctrans('Rebel Prices') }}
+							<span class="text-gray-400">({{ ctrans('not following master pricing') }})</span>
 						</div>
 
 						<div class="overflow-x-auto">
 							<table class="w-full border-collapse text-xs">
 								<thead>
 									<tr class="bg-gray-100 text-left text-gray-600">
-										<th class="border px-3 py-1.5">{{ trans('Shop') }}</th>
-										<th class="border px-3 py-1.5 text-right">{{ trans('Price') }}</th>
+										<th class="border px-3 py-1.5">{{ ctrans('Shop') }}</th>
+										<th class="border px-3 py-1.5 text-right">{{ ctrans('Price') }}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -500,28 +500,28 @@ const isModalProductForSale = ref(false)
 					</div>
 				</Popover>
 				<ReuseMasterPriceBlock
-					:title="trans('RRP / Unit')"
+					:title="data.is_dropship ? ctrans('RRP / Outer') : ctrans('RRP / Unit')"
 					:prices="data.masterProduct.master_rrp"
 					:rebelList="rebelRrpList"
 					:toggleRebel="toggleRebelRrp"
-					:emptyTooltip="trans('RRP is not set up for this master product')"
-					:perUnits="Number(data.masterProduct?.units) || 0"
+					:emptyTooltip="ctrans('RRP is not set up for this master product')"
+					:perUnits="data.is_dropship ? 0 : Number(data.masterProduct?.units) || 0"
 					:counterpart="data.masterProduct.master_prices"
 				/>
 
 				<Popover ref="rebelRrpPopover">
 					<div class="min-w-[20rem]">
 						<div class="mb-2 text-xs font-semibold text-gray-700">
-							{{ trans('Rebel RRP') }}
-							<span class="text-gray-400">({{ trans('not following master pricing') }})</span>
+							{{ ctrans('Rebel RRP') }}
+							<span class="text-gray-400">({{ ctrans('not following master pricing') }})</span>
 						</div>
 
 						<div class="overflow-x-auto">
 							<table class="w-full border-collapse text-xs">
 								<thead>
 									<tr class="bg-gray-100 text-left text-gray-600">
-										<th class="border px-3 py-1.5">{{ trans('Shop') }}</th>
-										<th class="border px-3 py-1.5 text-right">{{ trans('RRP') }}</th>
+										<th class="border px-3 py-1.5">{{ ctrans('Shop') }}</th>
+										<th class="border px-3 py-1.5 text-right">{{ ctrans('RRP') }}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -559,21 +559,21 @@ const isModalProductForSale = ref(false)
 	<Modal :isOpen="isModalProductForSale" @onClose="isModalProductForSale = false" width="w-full max-w-lg">
 		<div class="grid grid-cols-2 font-bold mb-4">
 			<div class="text-left text-lg">
-				{{ trans('Product For Sale Statuses') }}
+				{{ ctrans('Product For Sale Statuses') }}
 			</div>
 			<div class="justify-self-end text-lg">
 				<FontAwesomeIcon
 					icon="fal fa-edit"
 					class="hover:cursor-pointer hover:opacity-80"
 					style="color: var(--theme-color-0);"
-					v-tooltip="trans('Click to edit For Sale status')"
-					v-on:click="editRoute()"
+					v-tooltip="ctrans('Click to edit For Sale status')"
+					v-on:click="editRoute()" fixed-width
 				/>
 				<FontAwesomeIcon
 					v-if="data.availability_status?.from_trade_unit"
 					v-tooltip="getTooltips()"
 					icon="fal fa-atom"
-					:class="'ms-2 hover:cursor-pointer'"
+					:class="'ms-2 hover:cursor-pointer'" fixed-width
 				/>
 			</div>
         </div>
@@ -599,11 +599,11 @@ const isModalProductForSale = ref(false)
 			<div class="text-right min-h-max" :class="item.is_for_sale ? 'text-green-600' : 'text-red-600'">
 				<span
 				v-on:click="router.visit(productRoute(item, true))"
-				v-tooltip="item.is_for_sale ? trans('Product is currently for sale and available to be purchased') : trans('Product is currently not for sale and unavailable to be purchased')"
+				v-tooltip="item.is_for_sale ? ctrans('Product is currently for sale and available to be purchased') : ctrans('Product is currently not for sale and unavailable to be purchased')"
 				class="border border-solid hover:opacity-80 py-1 px-3 rounded-md hover:cursor-pointer"
 				:class="item.is_for_sale ? 'border-green-500' : 'border-red-500'">
-					{{ item.is_for_sale ? trans('For Sale') : trans('Not For Sale') }}
-					<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'"/>
+					{{ item.is_for_sale ? ctrans('For Sale') : ctrans('Not For Sale') }}
+					<FontAwesomeIcon :icon="item.is_for_sale ? faCheckCircle : faTimesCircle" :class="item.is_for_sale ? 'text-green-500' : 'text-red-500'" fixed-width/>
 				</span>
 			</div>
 		</div>

@@ -11,7 +11,10 @@ import { CentralStageData } from '@/types/BannerWorkshop'
 
 const props = defineProps<{
     data?: CentralStageData
+    scope?: "slide" | "common"
 }>()
+
+const editableScope = props.scope ?? "slide"
 
 
 const removeHttps = (val?: string) => {
@@ -81,9 +84,11 @@ const getAlignClass = (align: string) => {
         <template v-else>
             <!-- Fallback for FontSize is normal size -->
             <div v-if="data?.title" :style="{ ...data?.style }"
+                data-editable="centralStage.title" :data-editable-scope="editableScope"
                 :class="[data?.style?.fontSize?.fontTitle ?? 'text-[25px] lg:text-[44px]']"
                 class="text-gray-100 drop-shadow-md leading-none font-bold">{{ data?.title }}</div>
             <div v-if="data?.subtitle" :style="{ ...data?.style }"
+                data-editable="centralStage.subtitle" :data-editable-scope="editableScope"
                 :class="[data?.style?.fontSize?.fontSubtitle ?? 'text-[12px] lg:text-[20px]']"
                 class="text-gray-300 drop-shadow leading-none tracking-widest">{{ data?.subtitle }}</div>
         </template>

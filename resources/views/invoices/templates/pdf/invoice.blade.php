@@ -434,7 +434,6 @@
                                 {{ __('VAT refund') }}
                             @elseif($discretionaryRefundLine)
                             @elseif($transaction->quantity==0 || $transaction->quantity==null)
-                                {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
@@ -453,7 +452,6 @@
                                 {{ __('VAT refund') }}
                             @elseif($discretionaryRefundLine)
                             @elseif($transaction->quantity==0 || $transaction->quantity==null)
-                                {{ $invoice->currency->symbol . optional($transaction->historicAsset)->price }}
                             @elseif($transaction->historicAsset)
                                 @if($sameGrossNet)
                                     {{ $invoice->currency->symbol . number_format($transaction->net_amount / $transaction->quantity, 2) }}
@@ -587,6 +585,22 @@
                 <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
             </tr>
 
+            @if((float) $invoice->packaging_amount > 0)
+                <tr>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}">{{ __('Packaging') }}</td>
+                    <td>{{ $invoice->currency->symbol . $invoice->packaging_amount }}</td>
+                </tr>
+            @endif
+
+            @if((float) $invoice->leaflet_amount > 0)
+                <tr>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}">{{ __('Add-ons') }}</td>
+                    <td>{{ $invoice->currency->symbol . $invoice->leaflet_amount }}</td>
+                </tr>
+            @endif
+
             <tr>
                 <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
                 <td colspan="{{ $totalsLabelColspan }}">{{ __('Shipping') }}</td>
@@ -622,6 +636,22 @@
                 <td colspan="{{ $totalsLabelColspan }}">{{ __('Charges') }}</td>
                 <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
             </tr>
+
+            @if((float) $invoice->packaging_amount > 0)
+                <tr>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}">{{ __('Packaging') }}</td>
+                    <td>{{ $invoice->currency->symbol . $invoice->packaging_amount }}</td>
+                </tr>
+            @endif
+
+            @if((float) $invoice->leaflet_amount > 0)
+                <tr>
+                    <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
+                    <td colspan="{{ $totalsLabelColspan }}">{{ __('Add-ons') }}</td>
+                    <td>{{ $invoice->currency->symbol . $invoice->leaflet_amount }}</td>
+                </tr>
+            @endif
 
             <tr>
                 <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>

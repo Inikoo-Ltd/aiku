@@ -355,7 +355,7 @@ watch(
 
 						<FontAwesomeIcon
 							:icon="faChevronDown"
-							class="w-8 h-8 transition-transform details-arrow" />
+							class="w-8 h-8 transition-transform details-arrow" fixed-width />
 					</summary>
 
 					<div class="pb-4 px-4 space-y-3">
@@ -420,7 +420,7 @@ watch(
 								<span class="absolute inset-0 flex items-center justify-center">
 									<FontAwesomeIcon
 										:icon="faPlayCircle"
-										class="text-6xl text-white drop-shadow-lg" />
+										class="text-6xl text-white drop-shadow-lg" fixed-width />
 								</span>
 							</button>
 						</div>
@@ -437,7 +437,7 @@ watch(
 						<div class="w-full h-full flex items-center justify-center bg-gray-100">
 							<FontAwesomeIcon
 								:icon="faVideoSlash"
-								:class="['text-gray-400', responsiveClasses.iconSize]" />
+								:class="['text-gray-400', responsiveClasses.iconSize]" fixed-width />
 						</div>
 					</template>
 				</div>

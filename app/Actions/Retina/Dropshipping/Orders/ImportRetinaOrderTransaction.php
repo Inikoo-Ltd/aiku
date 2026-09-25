@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,10 +23,16 @@ class ImportRetinaOrderTransaction extends RetinaAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithCustomerPurchasableProduct;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Order $order, array $modelData): Order
     {
-        ImportTransactionInOrder::make()->action($order, $modelData);
+        $this->ensureCustomerCanChangeOrder($order);
+
+        ImportTransactionInOrder::make()->action($order, $modelData, byCustomer: true);
 
         return $order;
     }

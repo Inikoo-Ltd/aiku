@@ -12,6 +12,8 @@ use App\Actions\GoodsIn\StockDelivery\Traits\WithStockDeliveryWeightAndVolume;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryItems;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
+use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
@@ -24,6 +26,7 @@ use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
+use App\Http\Resources\Procurement\OrgPartnerResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Http\Resources\Procurement\StockDeliveryItemCostResource;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
@@ -158,6 +161,15 @@ class ShowStockDelivery extends OrgAction
                     fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))
                     : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($stockDelivery))),
 
+                StockDeliveryTabsEnum::NOTES->value => $this->tab == StockDeliveryTabsEnum::NOTES->value ?
+                    fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($stockDelivery, StockDeliveryTabsEnum::NOTES->value))
+                    : Inertia::optional(fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($stockDelivery, StockDeliveryTabsEnum::NOTES->value))),
+
+                'note_store_route' => [
+                    'name'       => 'grp.models.stock-delivery.note.store',
+                    'parameters' => [$stockDelivery->id],
+                ],
+
                 StockDeliveryTabsEnum::HISTORY->value => $this->tab == StockDeliveryTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($stockDelivery, StockDeliveryTabsEnum::HISTORY->value))),
@@ -167,6 +179,7 @@ class ShowStockDelivery extends OrgAction
             ->table(IndexStockDeliveryItems::make()->tableStructure($stockDelivery, prefix: StockDeliveryTabsEnum::DONE_ITEMS->value))
             ->table(IndexStockDeliveryUnderOverDeliveredItems::make()->tableStructure(prefix: StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: StockDeliveryTabsEnum::ATTACHMENTS->value))
+            ->table(IndexProcurementNotes::make()->tableStructure(prefix: StockDeliveryTabsEnum::NOTES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: StockDeliveryTabsEnum::HISTORY->value));
     }
 
@@ -411,6 +424,8 @@ class ShowStockDelivery extends OrgAction
             $orderer = OrgAgentResource::make($stockDelivery->parent)->toArray($request);
         } elseif ($stockDelivery->parent instanceof OrgSupplier) {
             $orderer = OrgSupplierResource::make($stockDelivery->parent)->toArray($request);
+        } elseif ($stockDelivery->parent instanceof OrgPartner) {
+            $orderer = OrgPartnerResource::make($stockDelivery->parent)->toArray($request);
         }
 
         $weightAndVolume = $this->getStockDeliveryWeightAndVolume($stockDelivery);
@@ -586,6 +601,7 @@ class ShowStockDelivery extends OrgAction
 
         return [
             'is_costed'                  => $stockDelivery->is_costed,
+            'is_partner'                 => $stockDelivery->parent_type === 'OrgPartner',
             'can_edit'                   => $this->canEdit,
             'currency'                   => $stockDelivery->currency?->code,
             'checklist'                  => $checklist,

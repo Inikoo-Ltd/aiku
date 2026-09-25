@@ -43,10 +43,12 @@ enum WebpageSubTypeEnum: string
     case PRICING = 'pricing';
     case ARTICLE = 'article';
     case MAILSHOT = 'mailshot';
+    case ADS_TESTING = 'ads_testing';
 
     /** System Sub Type */
     case LOGIN_PAGE = "login_page";
     case REGISTER_PAGE = "register_page";
+    case REGISTER_DASHBOARD_PAGE = "register_dashboard_page";
     case FORGOT_PASSWORD_PAGE = "forgot_password_page";
     case BLOG_DASHBOARD_PAGE = "blog_dashboard_page";
 
@@ -61,13 +63,14 @@ enum WebpageSubTypeEnum: string
     /**
      * System pages that back a website column, keyed by sub type.
      *
-     * @return array<string, array{web_block: string, website_field: string, url: string, title: string}>
+     * @return array<string, array{web_block: string, website_field: string, url: string, title: string, replaces_web_blocks?: array<int, string>}>
      */
     public static function systemPages(): array
     {
         return [
             self::LOGIN_PAGE->value           => ['web_block' => 'login', 'website_field' => 'login_page_id', 'url' => 'login', 'title' => 'Login'],
             self::REGISTER_PAGE->value        => ['web_block' => 'register', 'website_field' => 'register_page_id', 'url' => 'register', 'title' => 'Register'],
+            self::REGISTER_DASHBOARD_PAGE->value => ['web_block' => 'register-dashboard-2', 'website_field' => 'register_dashboard_page_id', 'url' => 'register-dashboard', 'title' => 'Register Dashboard', 'replaces_web_blocks' => ['register-dashboard']],
             self::FORGOT_PASSWORD_PAGE->value => ['web_block' => 'forgot-password', 'website_field' => 'forgot_password_page_id', 'url' => 'forgot-password', 'title' => 'Forgot Password'],
             self::BLOG_DASHBOARD_PAGE->value  => ['web_block' => 'blog-categories', 'website_field' => 'blog_dashboard_page_id', 'url' => 'blog', 'title' => 'Our Blog'],
         ];
@@ -83,6 +86,7 @@ enum WebpageSubTypeEnum: string
             'mailshot'              => __('Mailshot'),
             'article'               => __('Article'),
             'content'               => __('Content'),
+            'ads_testing'           => __('Ads Testing'),
 
             'blog'                  => __('Blog'),
             'newsletters'           => __('Newsletters'),
@@ -93,9 +97,86 @@ enum WebpageSubTypeEnum: string
 
             'login_page'            => __('Login'),
             'register_page'         => __('Register'),
+            'register_dashboard_page' => __('Register Dashboard'),
             'forgot_password_page'  => __('Forgot Password'),
             'blog_dashboard_page'   => __('Blog Dashboard'),
         ];
+    }
+
+    /**
+     * Sub types a content webpage can be created as by hand, every other sub type being decided by
+     * the catalogue entry or the system page it backs.
+     *
+     * @return array<int, self>
+     */
+    public static function contentSubTypes(): array
+    {
+        return [
+            self::CONTENT,
+            self::ADS_TESTING,
+        ];
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function contentSubTypesWithLabel(): array
+    {
+        $labels = self::labels();
+
+        return array_map(
+            fn (self $subType): array => [
+                'value' => $subType->value,
+                'label' => Arr::get($labels, $subType->value, $subType->value),
+            ],
+            self::contentSubTypes()
+        );
+    }
+
+    /**
+     * Sub types never offered to search engines. A page that only exists to try an advert out is
+     * kept out of the index, its links unfollowed and its url out of the sitemap, and that is not a
+     * per page choice: the webpage settings do not offer the toggles and nothing can turn it back
+     * on, so an advert can never compete with the catalogue in search results.
+     */
+    public function isHiddenFromSearchEngines(): bool
+    {
+        return $this === self::ADS_TESTING;
+    }
+
+    /**
+     * @return array{index_page: bool, follow_link: bool}
+     */
+    public function searchEngineVisibility(): array
+    {
+        $isVisible = !$this->isHiddenFromSearchEngines();
+
+        return [
+            'index_page'  => $isVisible,
+            'follow_link' => $isVisible,
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function hiddenFromSearchEnginesValues(): array
+    {
+        $subTypes = array_filter(
+            self::cases(),
+            fn (self $subType): bool => $subType->isHiddenFromSearchEngines()
+        );
+
+        return array_map(fn (self $subType): string => $subType->value, array_values($subTypes));
+    }
+
+    public static function fromValue(self|string|null $subType): ?self
+    {
+        if ($subType instanceof self || $subType === null) {
+            return $subType;
+        }
+
+        return self::tryFrom($subType);
     }
 
     /**

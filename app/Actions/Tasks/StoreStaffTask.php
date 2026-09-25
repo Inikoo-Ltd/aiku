@@ -16,6 +16,7 @@ use App\Models\Chat\StaffMessage;
 use App\Models\Tasks\StaffTask;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,6 +25,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class StoreStaffTask
 {
     use AsAction;
+
+    private ?User $requester = null;
 
     public function handle(User $requester, array $modelData): StaffTask
     {
@@ -68,19 +71,25 @@ class StoreStaffTask
                 SendStaffMessage::run($sourceMessage->conversation, $requester, ['body' => __('Raised :reference: :subject', ['reference' => $task->reference, 'subject' => $task->subject]), 'parent_id' => $sourceMessage->id]);
             }
 
+            if (!empty($modelData['collaborator_ids'])) {
+                SyncStaffTaskCollaborators::run($task, $modelData['collaborator_ids'], $requester);
+            }
+
             return $task;
         });
     }
 
     public function rules(): array
     {
-        $groupId = request()->user()->group_id;
+        $groupId = ($this->requester ?? request()->user())->group_id;
 
         return [
             'subject'           => ['required', 'string', 'max:255'],
             'description'       => ['sometimes', 'nullable', 'string', 'max:5000'],
             'assignee_id'       => ['required_without:department', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $groupId)->where('status', true), fn ($attribute, $value, $fail) => $value && !StaffTask::canBeAssigned(User::find($value)) ? $fail(__('Engineers and QA get tickets, not tasks')) : null],
             'department'        => ['required_without:assignee_id', 'nullable', 'string', Rule::in(array_column(StaffTask::departments($groupId), 'value'))],
+            'collaborator_ids'   => ['sometimes', 'array', 'max:20'],
+            'collaborator_ids.*' => ['integer', Rule::exists('users', 'id')->where('group_id', $groupId)],
             'priority'          => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'due_at'            => ['sometimes', 'nullable', 'date'],
             'model_type'        => ['sometimes', 'nullable', Rule::in(StaffTask::LINKABLE_MODELS)],
@@ -89,10 +98,17 @@ class StoreStaffTask
         ];
     }
 
+    public function action(User $requester, array $modelData): StaffTask
+    {
+        $this->requester = $requester;
+
+        return $this->handle($requester, Validator::make($modelData, $this->rules())->validate());
+    }
+
     public function asController(ActionRequest $request): StaffTaskResource
     {
         $task = $this->handle($request->user(), $request->validated());
 
-        return new StaffTaskResource($task->load(['requester', 'assignee', 'conversation', 'model']));
+        return new StaffTaskResource($task->load(['requester', 'assignee', 'collaborators.image', 'conversation.participants', 'model']));
     }
 }

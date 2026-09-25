@@ -168,7 +168,8 @@ const fetchRoute = async () => {
     try {
         const www = await axios.get(route('grp.json.dropshipping.customer_sales_channel.shopify_products', {
             customerSalesChannel: props.customerSalesChannel?.id,
-            query: querySearchPortfolios.value
+            query: querySearchPortfolios.value,
+            portfolio: selectedPortfolio.value?.id
         }))
         resultOfFetchShopifyProduct.value = www.data.products
         // console.log('qweqw', www)
@@ -294,7 +295,7 @@ onMounted(() => {
         <!-- Close Button -->
         <button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
             aria-label="Close">
-            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
+            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" fixed-width />
         </button>
 
         <!-- Message Content -->
@@ -415,7 +416,7 @@ onMounted(() => {
                     </div>
 
                     <Button
-                        @click="() => {if(portfolio.is_for_sale) fetchRoute(); isOpenModalVariant = true; selectedPortfolio = portfolio}"
+                        @click="() => {selectedPortfolio = portfolio; if(portfolio.is_for_sale) fetchRoute(); isOpenModalVariant = true}"
                         :label="portfolio.platform_possible_matches?.number_matches ? trans('Select other product from Shopify') : trans('Match it with an existing product in your shop')"
                         :capitalize="false"
                         size="xxs"
@@ -438,7 +439,7 @@ onMounted(() => {
                     </div>
 
                     <Button class="mt-2"
-                        @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
+                        @click="() => (selectedPortfolio = portfolio, fetchRoute(), isOpenModalVariant = true)"
                         :label="trans('Connect with other product')"
                         :icon="faRecycle"
                         size="xxs"
@@ -585,6 +586,9 @@ onMounted(() => {
                                                 </div>
                                                 <div v-if="item.sku_list" v-tooltip="trans('SKO')" class="w-fit text-xxs text-slate-600 italic">
                                                         {{ item.sku_list.join('; ') }}
+                                                </div>
+                                                <div v-if="item.variant_to_link" class="w-fit text-xs text-green-700 mt-1">
+                                                    {{ trans("Will link to the existing variant :_sku", {_sku: item.variant_to_link}) }}
                                                 </div>
                                             </div>
                                             <!-- <div v-if="!item.no_price" xclick="() => selectProduct(item)"

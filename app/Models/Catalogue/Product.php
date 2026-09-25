@@ -258,6 +258,8 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|Product onlyTrashed()
  * @method static Builder<static>|Product query()
  * @method static Builder<static>|Product visibleToCustomer(?int $customerId)
+ * @method static Builder<static>|Product offeredToPartners()
+ * @method static Builder<static>|Product sellableToCustomer(?int $customerId)
  * @method static Builder<static>|Product whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|Product whereLocale(string $column, string $locale)
@@ -325,6 +327,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_prices'      => 'boolean',
         'not_follow_master_trade_units' => 'boolean',
         'not_follow_master_media'       => 'boolean',
+        'independent_barcode'           => 'boolean',
         'is_golden_product'             => 'boolean',
     ];
 
@@ -347,7 +350,10 @@ class Product extends Model implements Auditable, HasMedia
                 'description_extra',
                 'state',
                 'is_for_sale',
+                'is_in_website',
                 'is_on_demand',
+                'barcode',
+                'web_images',
                 'created_at'
             ]);
     }
@@ -403,6 +409,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_trade_units',
         'is_golden_product',
         'barcode',
+        'independent_barcode',
         'is_for_sale',
         'exclusive_for_customer_id',
     ];
@@ -591,6 +598,51 @@ class Product extends Model implements Auditable, HasMedia
     }
 
     /**
+     * Products a given customer may be sold: everything on sale, plus the active products sold
+     * exclusively to them. An exclusive product is not for sale because it is not shown on the
+     * website, which says nothing about whether this customer can buy it.
+     */
+    public function scopeSellableToCustomer(Builder $query, ?int $customerId): Builder
+    {
+        return $query->where(function (Builder $query) use ($customerId) {
+            $query->where('products.is_for_sale', true);
+
+            if ($customerId) {
+                $query->orWhere(function (Builder $query) use ($customerId) {
+                    $query->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+                        ->whereExists(function ($sub) use ($customerId) {
+                            $sub->from('product_has_exclusive_customers')
+                                ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                                ->where('product_has_exclusive_customers.customer_id', $customerId);
+                        });
+                });
+            }
+        });
+    }
+
+    /**
+     * Products staff may put on an order for one of the group's partner companies: everything
+     * active that is not private, plus the ranges private to the partner companies. Another
+     * customer's private label is never offered to them.
+     */
+    public function scopeOfferedToPartners(Builder $query): Builder
+    {
+        return $query->whereIn('products.state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+            ->where(function (Builder $query) {
+                $query->whereNotExists(function ($sub) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id');
+                })->orWhereExists(function ($sub) {
+                    $sub->from('product_has_exclusive_customers')
+                        ->whereColumn('product_has_exclusive_customers.product_id', 'products.id')
+                        ->whereIn('product_has_exclusive_customers.customer_id', function ($partners) {
+                            $partners->from('org_partners')->whereNotNull('customer_id')->select('customer_id');
+                        });
+                });
+            });
+    }
+
+    /**
      * Read from the pivot, never from exclusive_for_customer_id. Aurora rewrites that column on
      * every product fetch from its own single-customer field, and it holds nothing for the ranges
      * sold to the AW group companies, so trusting it would quietly make those products public.
@@ -647,15 +699,6 @@ class Product extends Model implements Auditable, HasMedia
     public function masterProduct(): BelongsTo
     {
         return $this->belongsTo(MasterAsset::class, 'master_product_id');
-    }
-
-    public function getLuigiIdentity(): string
-    {
-        if ($this->webpage) {
-            return $this->webpage->luigiIdentity();
-        }
-
-        return 'unknown';
     }
 
     public function frontImage(): HasOne
@@ -731,6 +774,11 @@ class Product extends Model implements Auditable, HasMedia
     public function variant(): BelongsTo
     {
         return $this->belongsTo(Variant::class, 'variant_id');
+    }
+
+    public function dropshippingBasePrice(): float
+    {
+        return (float) ($this->rrp > 0 ? $this->rrp : $this->price);
     }
 
     public function bundle(): MorphOne

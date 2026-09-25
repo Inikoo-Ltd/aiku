@@ -14,7 +14,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Head } from "@inertiajs/vue3"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 library.add(faFileInvoiceDollar, faHandHoldingUsd)
 
 defineProps<{

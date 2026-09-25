@@ -225,7 +225,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width />
             </button>
             <div v-if="previewState === 'loading'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
-                <FontAwesomeIcon icon="fal fa-spinner" spin class="mr-2" />{{ trans("Loading") }}
+                <FontAwesomeIcon icon="fal fa-spinner" spin class="mr-2" fixed-width />{{ trans("Loading") }}
             </div>
             <div v-else-if="previewState === 'unavailable'" class="flex h-[85vh] w-full max-w-5xl items-center justify-center rounded bg-white text-sm text-gray-500">
                 <div class="max-w-md px-6 text-center">
@@ -240,7 +240,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown))
             <div v-else-if="isArchiveAttachment(currentFile)" :key="currentFile.url" class="flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded bg-white">
                 <div class="flex shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-500">
                     <span class="tabular-nums">{{ trans(":count files", { count: String(zipFileCount) }) }} · {{ formatSize(zipTotalSize) }}</span>
-                    <a :href="currentFile.url" :download="currentFile.name" class="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition duration-200 hover:bg-indigo-700 focus:!bg-indigo-800">
+                    <a :href="currentFile.url" :download="currentFile.name" class="inline-flex items-center gap-1.5 rounded-md bg-[--app-accent] px-3 py-1.5 text-xs font-medium text-[--app-accent-text] transition duration-200 hover:bg-[--app-accent-deep] focus:!bg-[--app-accent-deep]">
                         <FontAwesomeIcon icon="fal fa-download" fixed-width />{{ trans("Download") }}
                     </a>
                 </div>

@@ -35,7 +35,7 @@ class GetShopEmailMarketingPerformance
      * summed across every channel the revenue here adds up to the shop's real revenue, not a multiple
      * of it.
      *
-     * @return array{totals: array{sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float}, mailshots: array<int, array{id: int, subject: string, type: string, sent_at: string|null, sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float, prospects_registered: int}>}
+     * @return array{totals: array{sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float, spam_rate: float, click_rate: float, unsubscribe_rate: float, bounce_rate: float}, mailshots: array<int, array{id: int, subject: string, type: string, sent_at: string|null, sent: int, opened: int, clicked: int, unsubscribed: int, estimated_cost: float, attributed_revenue: float, attributed_customers: float, prospects_registered: int, spam_rate: float, click_rate: float, unsubscribe_rate: float, bounce_rate: float}>}
      */
     public function handle(Shop $shop, ?Carbon $from = null, ?Carbon $to = null, int $limit = 8): array
     {
@@ -117,8 +117,14 @@ class GetShopEmailMarketingPerformance
                 'attributed_revenue'   => round((float) ($attribution->revenue ?? 0), 2),
                 'attributed_customers' => round((float) ($attribution->customers ?? 0), 2),
                 'prospects_registered' => (int) ($campaignId ? ($prospectConversions->get($campaignId)->registered ?? 0) : 0),
+                'spam_rate'            => $this->rate($this->spamCount($mailshot), $mailshot->stats->number_dispatched_emails),
+                'click_rate'           => $this->rate($mailshot->stats->number_dispatched_emails_state_clicked, $mailshot->stats->number_dispatched_emails),
+                'unsubscribe_rate'     => $this->rate($mailshot->stats->number_dispatched_emails_state_unsubscribed, $mailshot->stats->number_dispatched_emails),
+                'bounce_rate'          => $this->rate($this->bounceCount($mailshot), $mailshot->stats->number_dispatched_emails),
             ];
         })->all();
+
+        $totalSent = array_sum(array_column($rows, 'sent'));
 
         return [
             'totals'    => [
@@ -129,9 +135,33 @@ class GetShopEmailMarketingPerformance
                 'estimated_cost'       => round(array_sum(array_column($rows, 'estimated_cost')), 2),
                 'attributed_revenue'   => round(array_sum(array_column($rows, 'attributed_revenue')), 2),
                 'attributed_customers' => round(array_sum(array_column($rows, 'attributed_customers')), 2),
+                'spam_rate'            => $this->rate($mailshots->sum(fn (Mailshot $mailshot) => $this->spamCount($mailshot)), $totalSent),
+                'click_rate'           => $this->rate(array_sum(array_column($rows, 'clicked')), $totalSent),
+                'unsubscribe_rate'     => $this->rate(array_sum(array_column($rows, 'unsubscribed')), $totalSent),
+                'bounce_rate'          => $this->rate($mailshots->sum(fn (Mailshot $mailshot) => $this->bounceCount($mailshot)), $totalSent),
             ],
             'mailshots' => $rows,
         ];
+    }
+
+    private function spamCount(Mailshot $mailshot): int
+    {
+        return (int) $mailshot->stats->number_dispatched_emails_state_spam;
+    }
+
+    private function bounceCount(Mailshot $mailshot): int
+    {
+        return (int) $mailshot->stats->number_dispatched_emails_state_hard_bounce
+            + (int) $mailshot->stats->number_dispatched_emails_state_soft_bounce;
+    }
+
+    private function rate(int|float|null $count, int|float|null $sent): float
+    {
+        if (!$sent) {
+            return 0.0;
+        }
+
+        return round((float) $count / $sent * 100, 2);
     }
 
     /**

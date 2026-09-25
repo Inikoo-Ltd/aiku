@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\Traits\WithLineTaxCategories;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
@@ -40,15 +41,19 @@ class CalculateInvoiceTotals extends OrgAction
         $shippingGross = $transactions->where('model_type', 'ShippingZone')->sum('gross_amount');
         $chargeNet     = $transactions->where('model_type', 'Charge')->sum('net_amount');
         $chargeGross   = $transactions->where('model_type', 'Charge')->sum('gross_amount');
+        $packagingGross = $transactions->whereIn('model_type', ['Packaging', 'Leaflet'])->sum('gross_amount');
 
         $taxBreakdown = $this->getTaxBreakdown(
-            $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge', 'Adjustment']),
+            $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge', 'Adjustment', 'Packaging', 'Leaflet']),
             $invoice->amount_off
         );
 
         $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
-        $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross;
+        $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross + $packagingGross;
         $taxAmount   = round(array_sum(array_column($taxBreakdown, 'tax_amount')), 2);
+        if ($invoice->type == InvoiceTypeEnum::INVOICE && $invoice->order) {
+            $taxAmount = $invoice->order->getMarketplaceTaxAmount() ?? $taxAmount;
+        }
 
         $totalAmount = $netAmount + $taxAmount;
 

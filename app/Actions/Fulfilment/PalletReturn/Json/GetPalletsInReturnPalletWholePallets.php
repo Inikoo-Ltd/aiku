@@ -90,7 +90,7 @@ class GetPalletsInReturnPalletWholePallets extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         if ($request->user() instanceof WebUser) {
-            return true;
+            return $request->route()->parameter('palletReturn')->fulfilment_customer_id === $request->user()->customer?->fulfilmentCustomer?->id;
         }
 
         $this->canEdit   = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");

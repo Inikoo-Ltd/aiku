@@ -54,12 +54,22 @@ export const parseStructuredData = (raw: unknown): StructuredDataValue | null =>
     }
 }
 
+export const CATEGORY_ITEM_LIST_SCRIPT_KEY = "category-item-list"
+
 export const injectStructuredDataScript = (
-    data: StructuredDataValue
+    data: StructuredDataValue,
+    uniqueKey?: string
 ): HTMLScriptElement | null => {
     try {
+        if (uniqueKey && document.head.querySelector(`script[data-structured-data-key="${uniqueKey}"]`)) {
+            return null
+        }
+
         const script = document.createElement("script")
         script.type = "application/ld+json"
+        if (uniqueKey) {
+            script.dataset.structuredDataKey = uniqueKey
+        }
         script.textContent = JSON.stringify(data)
         document.head.appendChild(script)
         return script

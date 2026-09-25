@@ -68,6 +68,7 @@ class PortfolioResource extends JsonResource
             'code'                      => $this->item?->code ?? $this->item_code,
             'currency_code'             => $this->item?->currency?->code,
             'name'                      => $this->item?->name ?? $this->item_name ?? $this->item?->code,
+            'ingredients'               => $this->item instanceof Product ? $this->item->marketing_ingredients : null,
             'customer_product_name'     => $this->customer_product_name,
             'customer_description'      => $this->customer_description,
             'selling_price'             => $this->selling_price,

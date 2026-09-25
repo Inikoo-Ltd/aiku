@@ -8,12 +8,14 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Http\Resources\HasSelfCall;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Pagination\AbstractPaginator;
 use App\Http\Resources\Traits\HasCardWebImages;
 use App\Http\Resources\Traits\HasPriceMetrics;
-use Illuminate\Support\Arr;
+use App\Http\Resources\Traits\HasProductOfferPrices;
 
 /**
  * @property string $slug
@@ -51,48 +53,32 @@ use Illuminate\Support\Arr;
  * @property mixed $is_golden_product
  * @property mixed $variant_id
  * @property mixed $step_discount_data
+ * @property string|null $expected_back_in_stock_at
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
     use HasPriceMetrics;
     use HasCardWebImages;
+    use HasProductOfferPrices;
 
-
-    private function getStepDiscount(): ?array
+    public static function collection($resource): AnonymousResourceCollection
     {
-        $stepDiscountData = is_string($this->step_discount_data) ? json_decode($this->step_discount_data, true) : $this->step_discount_data;
+        $products = collect($resource instanceof AbstractPaginator ? $resource->items() : $resource)
+            ->filter(fn ($product) => is_object($product));
 
-        $steps = Arr::get($stepDiscountData, 'steps', []);
-
-        if (empty($steps)) {
-            return null;
-        }
-
-        $tiers = collect($steps)
-            ->sortBy('min_quantity')
-            ->map(function (array $step) {
-                $percentageOff   = (float)Arr::get($step, 'percentage_off', 0);
-                $discountedPrice = round($this->price * (1 - $percentageOff), 2);
-
-                [, , , , , $pricePerUnit] = $this->getPriceMetrics($this->rrp, $discountedPrice, $this->units);
-
-                return [
-                    'min_quantity'         => (int)Arr::get($step, 'min_quantity', 1),
-                    'percentage_off'       => $percentageOff,
-                    'percentage_off_label' => percentage($percentageOff, 1),
-                    'price'                => $discountedPrice,
-                    'price_per_unit'       => $pricePerUnit,
-                    'is_popular'           => (bool)Arr::get($step, 'is_popular', false),
-                ];
-            })
-            ->values()
+        $outOfStockProductIds = $products
+            ->filter(fn ($product) => $product->available_quantity <= 0)
+            ->pluck('id')
             ->all();
 
-        return [
-            'label' => Arr::get($stepDiscountData, 'label'),
-            'steps' => $tiers,
-        ];
+        $expectedBackInStockAt = GetProductIncomingStock::make()->earliestEtaByProduct($outOfStockProductIds);
+
+        $products->each(function ($product) use ($expectedBackInStockAt) {
+            $product->expected_back_in_stock_at = $expectedBackInStockAt[$product->id] ?? null;
+        });
+
+        return parent::collection($resource);
     }
 
     public function toArray($request): array
@@ -122,17 +108,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
                 }
             }
         }
-
-        $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
-
-        $productOffersData = json_decode($this->product_offers_data, true);
-
-        $bestPercentageOff            = Arr::get($productOffersData, 'best_percentage_off.percentage_off', 0);
-        $bestPercentageOffOfferFactor = 1 - (float)$bestPercentageOff;
-
-        [$marginDiscounted, , $profitDiscounted, $profitPerUnitDiscounted, , $pricePerUnitDiscounted] = $this->getPriceMetrics($this->rrp, $bestPercentageOffOfferFactor * $this->price, $this->units);
-
 
         $offerNetAmountPerQuantity = (int)$this->quantity_ordered ? ($this->net_amount / ((int)$this->quantity_ordered)) : null;
 
@@ -141,7 +117,6 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'code'                       => $this->code,
             'slug'                       => $this->slug,
             'family_code'                => $this->family_code,
-            'luigi_identity'             => $oldLuigiIdentity,
             'name'                       => $this->name,
             'stock'                      => $this->available_quantity,
             'price'                      => $this->price,
@@ -168,26 +143,15 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'profit_per_unit'            => $profitPerUnit,
             'price_per_unit'             => $pricePerUnit,
             'available_quantity'         => $this->available_quantity,
-            'is_coming_soon'             => $this->status === ProductStatusEnum::COMING_SOON,
+            'expected_back_in_stock_at'  => $this->expected_back_in_stock_at ?? null,
             'is_on_demand'               => $this->is_on_demand,
-            'is_golden_product'          => (bool)$this->is_golden_product,
-            'variant'                    => $this->variant_id,
-            'family_id'                  => $this->family_id,
-            'product_offers_data'        => $productOffersData,
             'offers_data'                => $this->offers_data, // this comes from transaction.offers_data
 
 
-            // Gold Reward price
-            'discounted_price'           => round($this->price * $bestPercentageOffOfferFactor, 2),
-            'discounted_price_per_unit'  => $pricePerUnitDiscounted,
-            'discounted_profit'          => $profitDiscounted,
-            'discounted_profit_per_unit' => $profitPerUnitDiscounted,
-            'discounted_margin'          => $marginDiscounted,
-            'discounted_percentage'      => percentage($bestPercentageOff, 1),
-            'step_discount'              => $this->getStepDiscount(),
+            ...$this->getProductOfferPrices(),
 
             'offer_net_amount_per_quantity' => $offerNetAmountPerQuantity,
-            'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / $units : null,
+            'offer_price_per_unit'          => $offerNetAmountPerQuantity ? $offerNetAmountPerQuantity / max(1, $units) : null,
 
         ];
     }

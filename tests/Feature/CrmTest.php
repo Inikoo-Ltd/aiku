@@ -16,6 +16,8 @@ use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
+use App\Actions\CRM\Customer\AnonymiseCustomer;
+use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
@@ -78,6 +80,9 @@ use App\Models\Analytics\AikuScopedSection;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
+use App\Models\Accounting\Invoice;
+use App\Models\Helpers\Audit;
+use App\Models\SysAdmin\User;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerNote;
 use App\Models\CRM\Favourite;
@@ -95,7 +100,10 @@ use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Queue;
@@ -1759,4 +1767,177 @@ test('repair moves never-validated australian tax numbers to the customer countr
     expect($customer->refresh()->taxNumber->country_code)->toBe('IT')
         ->and($customer->taxNumber->status)->not->toBe(TaxNumberStatusEnum::UNKNOWN)
         ->and($repair->query()->where('tax_numbers.owner_id', $customer->id)->exists())->toBeFalse();
+});
+
+test('a shop has one partner customer per organisation', function () {
+    DB::beginTransaction();
+    $partnerCustomers = [
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition())->id,
+        StoreCustomer::make()->action($this->shop, Customer::factory()->definition())->id,
+    ];
+    DB::table('customers')->where('id', $partnerCustomers[0])->update(['as_organisation_id' => $this->organisation->id]);
+
+    expect(fn () => DB::table('customers')->where('id', $partnerCustomers[1])->update(['as_organisation_id' => $this->organisation->id]))
+        ->toThrow(UniqueConstraintViolationException::class);
+
+    DB::rollBack();
+});
+
+describe('anonymise customer (GDPR erasure)', function () {
+    beforeEach(function () {
+        $this->erasureEmail    = 'jane.'.uniqid().'@example.com';
+        $this->erasureUsername = 'jane-'.uniqid();
+        $this->erasureCustomer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
+            'contact_name' => 'Jane Erasure',
+            'email'        => $this->erasureEmail,
+            'phone'        => '+441234567890',
+        ]));
+        $this->erasureWebUser = StoreWebUser::make()->action($this->erasureCustomer, [
+            'email'    => $this->erasureEmail,
+            'username' => $this->erasureUsername,
+            'password' => 'password',
+        ]);
+        $this->erasureOrder   = StoreOrder::make()->action($this->erasureCustomer, []);
+        $this->erasureInvoice = StoreInvoice::make()->action($this->erasureCustomer, Invoice::factory()->definition());
+        $this->erasureAddressId = $this->erasureCustomer->address_id;
+
+        $this->erasureCustomer = AnonymiseCustomer::make()->action($this->erasureCustomer, 'Erasure request by email', false);
+        $this->erasureCustomer->refresh();
+    });
+
+    test('personal fields are erased and the customer is soft deleted', function () {
+        $customer = $this->erasureCustomer;
+
+        expect($customer->trashed())->toBeTrue()
+            ->and($customer->name)->toBe('Anonymised '.$customer->reference)
+            ->and($customer->contact_name)->toBeNull()
+            ->and($customer->company_name)->toBeNull()
+            ->and($customer->email)->toBeNull()
+            ->and($customer->phone)->toBeNull()
+            ->and($customer->identity_document_number)->toBeNull()
+            ->and($customer->contact_website)->toBeNull()
+            ->and($customer->address_id)->toBeNull()
+            ->and($customer->addresses()->count())->toBe(0)
+            ->and($customer->searchable_text)->not->toContain('jane')
+            ->and($customer->reference)->not->toBeNull()
+            ->and($customer->shop_id)->toBe($this->shop->id)
+            ->and(Arr::get($customer->data, 'deleted.cause'))->toBe('anonymised');
+
+        $address = \App\Models\Helpers\Address::find($this->erasureAddressId);
+        expect($address->address_line_1)->toBeNull()
+            ->and($address->postal_code)->toBeNull()
+            ->and($address->country_id)->not->toBeNull();
+    });
+
+    test('invoices and orders stay linked and untouched', function () {
+        $invoice = Invoice::find($this->erasureInvoice->id);
+        $order   = Order::find($this->erasureOrder->id);
+
+        expect($invoice->customer_id)->toBe($this->erasureCustomer->id)
+            ->and($invoice->total_amount)->toBe($this->erasureInvoice->total_amount)
+            ->and($invoice->deleted_at)->toBeNull()
+            ->and($order->customer_id)->toBe($this->erasureCustomer->id)
+            ->and($order->deleted_at)->toBeNull()
+            ->and($this->erasureCustomer->invoices()->count())->toBe(1);
+    });
+
+    test('web user is anonymised, soft deleted and can not log in', function () {
+        $webUser = WebUser::withTrashed()->find($this->erasureWebUser->id);
+
+        expect($webUser->trashed())->toBeTrue()
+            ->and($webUser->username)->toBe('gdpr-'.$webUser->id)
+            ->and($webUser->email)->toBe('anonymised-'.$webUser->id.'@example.invalid')
+            ->and($webUser->contact_name)->toBeNull()
+            ->and($webUser->password)->toBeNull()
+            ->and(Auth::guard('retina')->attempt(['username' => $this->erasureUsername, 'password' => 'password']))->toBeFalse()
+            ->and(Auth::guard('retina')->attempt(['username' => $webUser->username, 'password' => 'password']))->toBeFalse();
+    });
+
+    test('the old email and username can register again', function () {
+        $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), [
+            'contact_name' => 'Jane Again',
+            'email'        => $this->erasureEmail,
+        ]));
+        $webUser  = StoreWebUser::make()->action($customer, [
+            'email'    => $this->erasureEmail,
+            'username' => $this->erasureUsername,
+            'password' => 'password',
+        ]);
+
+        expect($customer->email)->toBe($this->erasureEmail)
+            ->and($webUser->username)->toBe($this->erasureUsername);
+    });
+
+    test('audit records who, when and why without the erased values', function () {
+        $audit = Audit::where('auditable_type', 'Customer')
+            ->where('auditable_id', $this->erasureCustomer->id)
+            ->where('event', AnonymiseCustomer::AUDIT_EVENT)
+            ->first();
+
+        expect($audit)->not->toBeNull()
+            ->and($audit->new_values['reason'])->toBe('Erasure request by email')
+            ->and(json_encode($audit->old_values).json_encode($audit->new_values))->not->toContain('jane');
+
+        $leakedAudits = Audit::where('auditable_type', 'Customer')
+            ->where('auditable_id', $this->erasureCustomer->id)
+            ->get()
+            ->filter(fn (Audit $audit) => str_contains(json_encode($audit->old_values).json_encode($audit->new_values), 'jane'));
+        expect($leakedAudits)->toBeEmpty();
+    });
+
+    test('customer is no longer found by search', function () {
+        Config::set('scout.driver', 'collection');
+
+        expect(Customer::search($this->erasureEmail)->get())->toBeEmpty()
+            ->and(Customer::search('Jane Erasure')->get())->toBeEmpty();
+    });
+
+    test('a second run is a no-op', function () {
+        $auditsBefore = Audit::where('auditable_type', 'Customer')->where('auditable_id', $this->erasureCustomer->id)->count();
+
+        $customer = AnonymiseCustomer::make()->action($this->erasureCustomer, 'again', false);
+
+        expect($customer->trashed())->toBeTrue()
+            ->and(Audit::where('auditable_type', 'Customer')->where('auditable_id', $this->erasureCustomer->id)->count())->toBe($auditsBefore);
+    });
+});
+
+describe('who can erase a customer', function () {
+    function userAuthorisedTo(array $permissions): User
+    {
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('authTo')->andReturnUsing(fn (string $permission) => in_array($permission, $permissions));
+
+        return $user;
+    }
+
+    test('a crm clerk can erase a customer without orders or invoices', function () {
+        $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+        expect(AnonymiseCustomer::canBeAnonymisedBy(userAuthorisedTo(["crm.{$this->shop->id}.edit"]), $customer))->toBeTrue()
+            ->and(AnonymiseCustomer::canBeAnonymisedBy(userAuthorisedTo(["crm.{$this->shop->id}.view"]), $customer))->toBeFalse();
+    });
+
+    test('only a crm supervisor can erase a customer with invoices', function () {
+        $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+        StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+
+        expect(AnonymiseCustomer::confirmationText($customer))->toBe($customer->reference.' with orders');
+
+        expect(AnonymiseCustomer::canBeAnonymisedBy(userAuthorisedTo(["crm.{$this->shop->id}.edit"]), $customer))->toBeFalse()
+            ->and(AnonymiseCustomer::canBeAnonymisedBy(userAuthorisedTo(["supervisor-crm.{$this->shop->id}"]), $customer))->toBeTrue();
+    });
+
+    test('erase from the customer page needs the reference typed back', function () {
+        $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+        $this->post(route('grp.models.customer.anonymise', ['customer' => $customer->id]), ['reason' => 'Erasure request', 'reference' => 'wrong'])
+            ->assertSessionHasErrors('reference');
+        expect(Customer::find($customer->id))->not->toBeNull();
+
+        $this->post(route('grp.models.customer.anonymise', ['customer' => $customer->id]), ['reason' => 'Erasure request', 'reference' => AnonymiseCustomer::confirmationText($customer)])
+            ->assertRedirect();
+        expect(Customer::find($customer->id))->toBeNull()
+            ->and(AnonymiseCustomer::isAnonymised(Customer::withTrashed()->find($customer->id)))->toBeTrue();
+    });
 });

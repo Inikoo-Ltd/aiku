@@ -83,7 +83,7 @@ const getLeaveColor = (type: string): string => {
 		medical: "bg-red-500",
 		unpaid: "bg-gray-500",
 	}
-	return colors[type] || "bg-indigo-500"
+	return colors[type] || "bg-[--app-accent]"
 }
 </script>
 
@@ -106,13 +106,13 @@ const getLeaveColor = (type: string): string => {
 					<input
 						v-model="startDate"
 						type="date"
-						class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
 						@change="updateFilters" />
 					<span class="text-gray-500">{{ trans("to") }}</span>
 					<input
 						v-model="endDate"
 						type="date"
-						class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+						class="rounded-md border-gray-300 shadow-sm focus:border-[--app-accent] focus:ring-[--app-accent] sm:text-sm"
 						@change="updateFilters" />
 				</div>
 			</div>
@@ -168,8 +168,8 @@ const getLeaveColor = (type: string): string => {
 							<div class="text-2xl font-bold text-purple-600">{{ formatNumber(analytics.summary.avg_daily_hours) }}h</div>
 							<div class="text-sm text-gray-500">{{ trans("Avg Daily") }}</div>
 						</div>
-						<div class="text-center p-4 bg-indigo-50 rounded-lg">
-							<div class="text-2xl font-bold text-indigo-600">{{ formatNumber(analytics.attendance.overtime_hours) }}h</div>
+						<div class="text-center p-4 bg-[--app-accent-soft] rounded-lg">
+							<div class="text-2xl font-bold text-[--app-accent]">{{ formatNumber(analytics.attendance.overtime_hours) }}h</div>
 							<div class="text-sm text-gray-500">{{ trans("Overtime") }}</div>
 						</div>
 					</div>
@@ -181,7 +181,7 @@ const getLeaveColor = (type: string): string => {
 						</div>
 						<div class="w-full bg-gray-200 rounded-full h-2">
 							<div 
-								class="bg-indigo-600 h-2 rounded-full" 
+								class="bg-[--app-accent] h-2 rounded-full" 
 								:style="{ width: Math.min(analytics.summary.overtime_ratio, 100) + '%' }">
 							</div>
 						</div>

@@ -9,6 +9,7 @@
 namespace App\Models\GoodsIn;
 
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\Traits\InOrganisation;
@@ -122,5 +123,32 @@ class StockDeliveryItem extends Model
     public function sowings(): HasMany
     {
         return $this->hasMany(Sowing::class);
+    }
+
+    public function unitsPerSko(): float
+    {
+        return (float) ($this->orgStock?->packed_in ?: 1);
+    }
+
+    /**
+     * What one SKO put away from this line cost in the organisation's currency: the landed cost
+     * once the delivery is costed, the goods price until then.
+     *
+     * @return array{cost_per_sku: float, cost_status: OrgStockMovementCostStatusEnum}|null
+     */
+    public function orgStockMovementCost(): ?array
+    {
+        $isLanded  = $this->is_costed && $this->cost_total > 0;
+        $orgAmount = $isLanded ? $this->cost_total * ($this->org_exchange ?? 1) : (float) $this->org_net_amount;
+        $skos      = $this->unit_quantity / $this->unitsPerSko();
+
+        if ($orgAmount <= 0 || $skos <= 0) {
+            return null;
+        }
+
+        return [
+            'cost_per_sku' => round($orgAmount / $skos, 6),
+            'cost_status'  => $isLanded ? OrgStockMovementCostStatusEnum::COSTED : OrgStockMovementCostStatusEnum::DELIVERY,
+        ];
     }
 }

@@ -42,6 +42,8 @@ class StorePortfolio extends OrgAction
 
     private Customer $customer;
 
+    private bool $hydrateChannel = true;
+
     /**
      * @throws \Throwable
      */
@@ -49,7 +51,7 @@ class StorePortfolio extends OrgAction
     {
         $this->assertItemBelongsToChannelShop($customerSalesChannel, $item);
 
-        $rrp = $item->rrp ?? 0;
+        $rrp = $item instanceof Product ? $item->dropshippingBasePrice() : 0;
 
         $pricingType  = Arr::get($customerSalesChannel->settings, 'pricing.type');
         $pricingValue = Arr::get($customerSalesChannel->settings, 'pricing.value');
@@ -60,7 +62,10 @@ class StorePortfolio extends OrgAction
                 $addedValue = $rrp * ($pricingValue / 100);
             }
 
-            $rrp = round($rrp + $addedValue, 2);
+            $adjustedRrp = round($rrp + $addedValue, 2);
+            if ($adjustedRrp > 0) {
+                $rrp = $adjustedRrp;
+            }
         }
 
         $customerProductName = Arr::get($modelData, 'customer_product_name', $item->name);
@@ -121,7 +126,9 @@ class StorePortfolio extends OrgAction
         OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
         ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
         CustomerHydratePortfolios::dispatch($customerSalesChannel->customer_id)->delay(5);
-        CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
+        if ($this->hydrateChannel) {
+            CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
+        }
         ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
 
         return $portfolio;
@@ -190,11 +197,12 @@ class StorePortfolio extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Portfolio
+    public function action(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true, bool $hydrateChannel = true): Portfolio
     {
         if (!$audit) {
             Portfolio::disableAuditing();
         }
+        $this->hydrateChannel = $hydrateChannel;
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;

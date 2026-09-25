@@ -20,16 +20,6 @@ class FetchAuroraPurchaseOrder extends FetchAurora
 {
     protected function parseModel(): void
     {
-        if ($this->auroraModelData->{'Purchase Order Parent'} == 'Supplier') {
-            $supplierData = Db::connection('aurora')->table('Supplier Dimension')
-                ->select('aiku_ignore')
-                ->where('Supplier Key', $this->auroraModelData->{'Purchase Order Parent Key'})->first();
-            if ($supplierData && $supplierData->aiku_ignore == 'Yes') {
-                return;
-            }
-        }
-
-
         if (in_array($this->auroraModelData->{'Purchase Order Parent'}, ['Parcel', 'Container'])) {
             return;
         }
@@ -49,6 +39,15 @@ class FetchAuroraPurchaseOrder extends FetchAurora
         }
 
         if (!$orgParent) {
+            if ($this->auroraModelData->{'Purchase Order Parent'} == 'Supplier') {
+                $supplierData = Db::connection('aurora')->table('Supplier Dimension')
+                    ->select('aiku_ignore')
+                    ->where('Supplier Key', $this->auroraModelData->{'Purchase Order Parent Key'})->first();
+                if ($supplierData && $supplierData->aiku_ignore == 'Yes') {
+                    return;
+                }
+            }
+
             print "Error No parent found ".$this->auroraModelData->{'Purchase Order Parent'}."  ".$this->auroraModelData->{'Purchase Order Parent Key'}." ".$this->auroraModelData->{'Purchase Order Parent Name'}."  \n";
 
             return;
@@ -141,6 +140,7 @@ class FetchAuroraPurchaseOrder extends FetchAurora
             'delivery_address'         => $this->auroraModelData->{'Purchase Order Warehouse Address'},
             'terms_and_conditions'     => $this->auroraModelData->{'Purchase Order Terms and Conditions'},
             'estimated_receiving_date' => $estimatedReceivingDate?->toDateString(),
+            'estimated_production_date' => $this->parseDatetime($this->auroraModelData->{'Purchase Order Estimated Production Date'})?->toDateString(),
         ]);
         $this->parsedData["purchase_order"] = [
             'date'            => $date,
@@ -163,6 +163,7 @@ class FetchAuroraPurchaseOrder extends FetchAurora
             "cost_total"    => $this->auroraModelData->{'Purchase Order Total Amount'},
 
             "estimated_received_at" => $estimatedReceivingDate,
+            "buyer_id"              => $this->parseBuyerId(),
 
             "source_id"       => $this->organisation->id.':'.$this->auroraModelData->{'Purchase Order Key'},
             "org_exchange"    => $org_exchange,
@@ -174,6 +175,16 @@ class FetchAuroraPurchaseOrder extends FetchAurora
             'fetched_at'      => now(),
             'last_fetched_at' => now()
         ];
+    }
+
+    private function parseBuyerId(): ?int
+    {
+        $staffKey = $this->auroraModelData->{'Purchase Order Main Buyer Key'};
+        if (!$staffKey) {
+            return null;
+        }
+
+        return $this->parseEmployee($this->organisation->id.':'.$staffKey)?->users()->first()?->id;
     }
 
     /**

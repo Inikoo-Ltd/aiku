@@ -252,7 +252,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 				<FontAwesomeIcon
 					:icon="faEdit"
 					class="text-blue-500 cursor-pointer"
-					@click="toggleEdit" />
+					@click="toggleEdit" fixed-width />
 			</div>
 			<div class="pl-4 pr-4 pb-5">
 				<!-- Iterate over the reactive copy -->
@@ -317,14 +317,14 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 						<template v-else>
 							(<FontAwesomeIcon
 								:icon="faExclamationTriangle"
-								class="text-red-500 mr-1" />
+								class="text-red-500 mr-1" fixed-width />
 							no email set)
 						</template>
 					</i>
 					<span
 						class="inline-block p-2"
 						@click="confirmDeleteWidgetItem($event, item, index)">
-						<FontAwesomeIcon :icon="faTrashAlt" class="text-red-500 cursor-pointer" />
+						<FontAwesomeIcon :icon="faTrashAlt" class="text-red-500 cursor-pointer" fixed-width />
 					</span>
 				</span>
 			</div>
@@ -373,7 +373,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 					<FontAwesomeIcon
 						:icon="faTrashAlt"
 						class="text-red-500 cursor-pointer ml-2"
-						@click="deleteUserInput(0)" />
+						@click="deleteUserInput(0)" fixed-width />
 				</div>
 
 				<div v-if="!subscriberList.some(item => item.user_id === layoutStore.user.id)" @click="() => addMySelfAsSubscriber()" class="text-xs text-gray-400 mt-1 underline hover:text-gray-700 cursor-pointer w-fit">

@@ -14,9 +14,9 @@ use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireProductInventoryQuantity;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMissingChildDescription;
@@ -49,6 +49,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
@@ -246,6 +247,11 @@ class UpdateProduct extends OrgAction
             Event::dispatch(new AuditCustom($product));
         }
 
+        if (Arr::has($changed, 'barcode')) {
+            $product->portfolios()->update(['barcode' => $product->barcode]);
+            ShopHydrateProductsWithDuplicatedBarcode::dispatch($product->shop)->delay($this->hydratorsDelay);
+        }
+
         if (Arr::has($changed, 'description_title')) {
             UpdateProductAndMasterTranslations::make()->action($product, [
                 'translations' => [
@@ -297,18 +303,14 @@ class UpdateProduct extends OrgAction
             UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
         }
 
-        if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale', 'exclusive_for_customer_id'])) {
+        if (Arr::hasAny($changed, ['state', 'status', 'is_for_sale'])) {
             $this->productHydrators($product, hydrateForSale: !Arr::has($modelData, 'is_for_sale'));
-        }
-
-        if (Arr::has($changed, 'exclusive_for_customer_id')) {
-            CustomerHydrateExclusiveProducts::dispatch($product->exclusive_for_customer_id)->delay($this->hydratorsDelay);
         }
 
         $isInStock = $product->available_quantity > 0;
 
 
-        $fieldsUsedInLuigi = [
+        $productContentFields = [
             'code',
             'name',
             'description',
@@ -320,7 +322,7 @@ class UpdateProduct extends OrgAction
 
 
         $fieldsUsedInWebpages = array_merge(
-            $fieldsUsedInLuigi,
+            $productContentFields,
             ['rrp', 'units', 'unit'],
             $this->getDangerousGoodsFieldNames(),
             $this->getProductInformationFieldNames()
@@ -459,7 +461,20 @@ class UpdateProduct extends OrgAction
                 'string',
                 'max:255',
                 Rule::exists('barcodes', 'number')
-                    ->whereNull('deleted_at')
+                    ->whereNull('deleted_at'),
+                /*
+                 * Within one shop a barcode belongs to at most one listing: WooCommerce and Wix
+                 * refuse the second one outright. The collisions already in the catalogue are
+                 * worked through by hand, this only stops new ones being written.
+                 */
+                Rule::unique('products', 'barcode')
+                    ->ignore($this->product->id)
+                    ->where(fn ($query) => $query
+                        ->where('shop_id', $this->shop->id)
+                        ->where('is_main', true)
+                        ->whereNull('exclusive_for_customer_id')
+                        ->whereNull('deleted_at')
+                        ->where('state', '<>', ProductStateEnum::DISCONTINUED->value)),
             ],
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
@@ -467,13 +482,6 @@ class UpdateProduct extends OrgAction
 
             'has_independent_units'     => ['sometimes', 'boolean'],
             'unit'                      => ['sometimes', 'string'],
-            'exclusive_for_customer_id' => [
-                'sometimes',
-                'nullable',
-                'integer',
-                Rule::exists('customers', 'id')->where('shop_id', $this->shop->id)
-            ],
-
             'name_i8n'              => ['sometimes', 'array'],
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n'       => ['sometimes', 'array'],
@@ -530,6 +538,7 @@ class UpdateProduct extends OrgAction
             'not_follow_master_trade_units' => ['sometimes', 'boolean'],
             'not_follow_master_prices'      => ['sometimes', 'boolean'],
             'not_follow_master_media'       => ['sometimes', 'boolean'],
+            'independent_barcode'           => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
         ];
 
@@ -539,7 +548,6 @@ class UpdateProduct extends OrgAction
             $rules['code']                      = ['sometimes', 'string'];
             $rules['org_stocks']                = ['sometimes', 'nullable', 'array'];
             $rules['gross_weight']              = ['sometimes', 'integer', 'gt:0'];
-            $rules['exclusive_for_customer_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['well_formatted_org_stocks'] = ['sometimes', 'present', 'array'];
             $rules['description']               = ['sometimes', 'nullable', 'max:15000'];
             $rules['price']                     = ['sometimes', 'nullable', 'numeric'];
@@ -559,7 +567,7 @@ class UpdateProduct extends OrgAction
         $this->product = $product;
         $this->initialisationFromShop($product->shop, $request);
 
-        return $this->handle($product, $this->markWrittenTextAsReviewed($this->validatedData));
+        return $this->handle($product, $this->markBarcodeAsChosen($this->markWrittenTextAsReviewed($this->validatedData)));
     }
 
     /**
@@ -582,6 +590,32 @@ class UpdateProduct extends OrgAction
         }
 
         return $modelData;
+    }
+
+    /**
+     * A barcode reaching here was picked by a person, so no hydrator may write over it again.
+     * Like markWrittenTextAsReviewed this belongs to the controller: the cascade from the master
+     * calls handle() directly and must not raise the flag, or the first cascade would orphan
+     * every child from the next one.
+     *
+     * @param array<string, mixed> $modelData
+     *
+     * @return array<string, mixed>
+     */
+    private function markBarcodeAsChosen(array $modelData): array
+    {
+        if (Arr::has($modelData, 'barcode')) {
+            data_set($modelData, 'independent_barcode', true);
+        }
+
+        return $modelData;
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        if ($this->strict) {
+            $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
     }
 
     public function action(Product $product, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Product

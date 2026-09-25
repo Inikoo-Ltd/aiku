@@ -194,7 +194,6 @@ class Website extends Model implements Auditable, HasMedia
      * it or visitors keep the old behaviour for hours while the admin UI shows the new value.
      */
     private const IRIS_CACHED_SETTINGS = [
-        'iris_search_model',
         'google_tag_id',
         'webpage.show_price',
     ];
@@ -223,11 +222,6 @@ class Website extends Model implements Auditable, HasMedia
                 BreakWebsiteIrisCache::run($website);
             }
         });
-    }
-
-    public function usesLuigiSearch(): bool
-    {
-        return data_get($this->settings, 'iris_search_model', 'internal') !== 'internal';
     }
 
     protected $casts = [
@@ -308,7 +302,7 @@ class Website extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(Webpage::class, 'id', 'landing_page_id');
     }
-    
+
     public function loginPage(): HasOne
     {
         return $this->hasOne(Webpage::class, 'id', 'login_page_id');
@@ -317,6 +311,11 @@ class Website extends Model implements Auditable, HasMedia
     public function registerPage(): HasOne
     {
         return $this->hasOne(Webpage::class, 'id', 'register_page_id');
+    }
+
+    public function registerDashboardPage(): HasOne
+    {
+        return $this->hasOne(Webpage::class, 'id', 'register_dashboard_page_id');
     }
 
     public function forgotPasswordPage(): HasOne

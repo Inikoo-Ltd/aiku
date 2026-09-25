@@ -135,6 +135,36 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-cpl-m'    => [
+            'code'               => 'gp-cpl-m',
+            'name'               => 'Compliance Manager',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'compliance',
+            'roles'              => [
+                RolesEnum::COMPLIANCE_MANAGER
+            ],
+            'organisation_types' => []
+        ],
+        'gp-cpl-s'    => [
+            'code'               => 'gp-cpl-s',
+            'name'               => 'Compliance Supervisor',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'compliance',
+            'roles'              => [
+                RolesEnum::COMPLIANCE_SUPERVISOR
+            ],
+            'organisation_types' => []
+        ],
+        'gp-cpl-w'    => [
+            'code'               => 'gp-cpl-w',
+            'name'               => 'Compliance Worker',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'compliance',
+            'roles'              => [
+                RolesEnum::COMPLIANCE_WORKER
+            ],
+            'organisation_types' => []
+        ],
 
         'org-admin'  => [
             'code'               => 'org-admin',

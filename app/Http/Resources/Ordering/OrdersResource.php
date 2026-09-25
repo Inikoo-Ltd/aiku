@@ -31,6 +31,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $payment_state
  * @property mixed $payment_status
  * @property string $platform
+ * @property mixed $sales_channel_type
+ * @property mixed $sales_channel_name
+ * @property mixed $sales_channel_code
  * @property mixed $currency_code
  * @property mixed $currency_id
  * @property mixed $organisation_name
@@ -108,6 +111,7 @@ class OrdersResource extends JsonResource
             'platform'                    => $this->getPlatformLogo($this->platform ?? ''),
             'sales_channel_type'          => $this->sales_channel_type,
             'sales_channel_name'          => $this->sales_channel_name,
+            'is_intercompany'             => $this->sales_channel_code === 'intercompany',
             'total_amount'                => $this->total_amount,
             'customer_name'               => $this->customer_name,
             'customer_slug'               => $this->customer_slug,
@@ -125,6 +129,7 @@ class OrdersResource extends JsonResource
             'shop_slug'                   => $this->shop_slug,
             'created_at'                  => $this->created_at,
             'is_premium_dispatch'         => $this->is_premium_dispatch,
+            'handled_in_aurora'           => (bool)$this->handled_in_aurora,
             'has_extra_packing'           => $this->has_extra_packing,
             'has_insurance'               => $this->has_insurance,
             'is_dropshipping'             => $this->customer_sales_channel_id !== null,

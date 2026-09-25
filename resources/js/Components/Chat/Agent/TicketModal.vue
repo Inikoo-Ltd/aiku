@@ -11,7 +11,7 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle, faExternalLink, faLifeRing } from "@fortawesome/free-solid-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBug, faBooks, faDatabase } from "@fal"
+import { faBug, faBooks, faDatabase, faQuestionCircle } from "@fal"
 import { faExclamationTriangle, faArrowUp, faMinus, faArrowDown } from "@fas"
 
 import { notify } from "@kyvg/vue3-notification"
@@ -22,7 +22,7 @@ import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import { capitalize } from "@/Composables/capitalize"
 import type { SessionAPI } from "@/types/Chat/chat"
 
-library.add(faBug, faBooks, faDatabase, faExclamationTriangle, faArrowUp, faMinus, faArrowDown)
+library.add(faBug, faBooks, faDatabase, faQuestionCircle, faExclamationTriangle, faArrowUp, faMinus, faArrowDown)
 
 const props = defineProps<{
     isOpen: boolean
@@ -66,13 +66,39 @@ const kinds = [
     { label: trans("Data integrity"), value: "data_integrity" },
 ]
 
-const form = ref<{ summary: string; description: string; priority: string; kind: string | null; images: File[] }>({
+const form = ref<{ summary: string; description: string; priority: string; kind: string | null; blocksSource: boolean; closesSource: boolean; images: File[] }>({
     summary: "",
     description: "",
     priority: "normal",
     kind: null,
+    blocksSource: false,
+    closesSource: false,
     images: [],
 })
+
+const blockedTooltip = trans("While this is ticked, this chat cannot be closed until the ticket is resolved or cancelled.")
+const closesTooltip = trans("Whoever settles the ticket writes a closing note. That note is sent to this customer here, and the chat is closed for you.")
+
+// A chat nobody is holding open is not one a developer can close on your behalf.
+watch(
+    () => form.value.blocksSource,
+    (blocked) => {
+        if (!blocked) {
+            form.value.closesSource = false
+        }
+    }
+)
+
+// A bug is the case where the customer is left waiting on us, so it starts blocked. Ticked,
+// not enforced: the agent knows when a bug report is a note for later rather than a promise.
+watch(
+    () => form.value.kind,
+    (kind) => {
+        if (kind === "bug") {
+            form.value.blocksSource = true
+        }
+    }
+)
 const isSubmitting = ref(false)
 const created = ref<{ key: string; url: string; summary: string } | null>(null)
 
@@ -86,6 +112,8 @@ watch(
             description: props.session?.ai_summary?.summary ?? "",
             priority: "normal",
             kind: null,
+            blocksSource: false,
+            closesSource: false,
             images: [],
         }
     }
@@ -103,6 +131,8 @@ const submit = async () => {
         payload.append("description", form.value.description ?? "")
         payload.append("priority", form.value.priority)
         payload.append("reference_url", window.location.href)
+        payload.append("blocks_source", form.value.blocksSource ? "1" : "0")
+        payload.append("closes_source", form.value.closesSource ? "1" : "0")
         if (form.value.kind) {
             payload.append("kind", form.value.kind)
         }
@@ -127,7 +157,7 @@ const submit = async () => {
     <Modal :isOpen="isOpen" @onClose="emit('close')" width="w-full max-w-lg">
         <div class="flex items-center gap-3 mb-5">
             <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" />
+                <FontAwesomeIcon :icon="faLifeRing" class="text-blue-600" fixed-width />
             </div>
             <div>
                 <h2 class="text-base font-semibold text-gray-800">{{ trans("Create ticket") }}</h2>
@@ -136,11 +166,11 @@ const submit = async () => {
         </div>
 
         <div v-if="created" class="flex flex-col items-center text-center py-6 px-4">
-            <FontAwesomeIcon :icon="faCheckCircle" class="text-emerald-500 text-3xl mb-3" />
+            <FontAwesomeIcon :icon="faCheckCircle" class="text-emerald-500 text-3xl mb-3" fixed-width />
             <p class="text-sm font-medium text-gray-700">{{ trans("Ticket created") }}</p>
             <a :href="created.url" target="_blank" rel="noopener" class="inline-flex items-center gap-2 mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
                 {{ created.key }}
-                <FontAwesomeIcon :icon="faExternalLink" class="text-xs" />
+                <FontAwesomeIcon :icon="faExternalLink" class="text-xs" fixed-width />
             </a>
             <p class="text-xs text-gray-400 mt-1">{{ created.summary }}</p>
             <Button class="mt-4" size="sm" :label="trans('Close')" @click="emit('close')" />
@@ -200,6 +230,37 @@ const submit = async () => {
                     </Select>
                 </div>
             </div>
+            <label class="flex cursor-pointer select-none items-start gap-2 rounded-md border p-3 transition duration-200"
+                :class="form.blocksSource ? 'border-amber-300 bg-amber-50' : 'border-gray-200'">
+                <input v-model="form.blocksSource" type="checkbox" class="mt-0.5 cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
+                <span class="text-xs">
+                    <span class="flex items-center gap-1.5 font-medium" :class="form.blocksSource ? 'text-amber-800' : 'text-gray-700'">
+                        {{ trans("Mark as blocked") }}
+                        <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="blockedTooltip" class="text-gray-400" fixed-width />
+                    </span>
+                    <span class="mt-0.5 block" :class="form.blocksSource ? 'text-amber-700' : 'text-gray-400'">
+                        {{ form.blocksSource
+                            ? trans("This chat stays open until this ticket is resolved or cancelled.")
+                            : trans("The chat can be closed while this ticket is still open.") }}
+                    </span>
+
+                    <label v-if="form.blocksSource" class="mt-2 flex cursor-pointer items-start gap-2 border-t border-amber-200 pt-2" @click.stop>
+                        <input v-model="form.closesSource" type="checkbox" class="mt-0.5 cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
+                        <span>
+                            <span class="flex items-center gap-1.5 font-medium text-amber-800">
+                                {{ trans("Let the developer close this chat when the ticket is settled") }}
+                                <FontAwesomeIcon :icon="faQuestionCircle" v-tooltip="closesTooltip" class="text-amber-400" fixed-width />
+                            </span>
+                            <span class="mt-0.5 block text-amber-700">
+                                {{ form.closesSource
+                                    ? trans("Their closing note is sent to the customer here, and the chat is closed.")
+                                    : trans("You close the chat yourself once the ticket is settled.") }}
+                            </span>
+                        </span>
+                    </label>
+                </span>
+            </label>
+
             <p class="text-xs text-gray-400">{{ trans("Raised as a Customer support ticket.") }}</p>
             <div class="flex items-center justify-end gap-2 pt-2">
                 <Button type="tertiary" size="sm" :label="trans('Cancel')" @click="emit('close')" />

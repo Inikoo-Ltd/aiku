@@ -20,8 +20,8 @@ class BreakWebsiteIrisCache
 
     /**
      * Drops only the caches that hold website settings for the storefront: the layout props
-     * (which carry iris_search_model) and the Website model cached per domain. Unlike
-     * BreakWebsiteCache this triggers no crawl, so it is safe to run over every website.
+     * and the Website model cached per domain. Unlike BreakWebsiteCache this triggers no
+     * crawl, so it is safe to run over every website.
      */
     public function handle(Website $website, ?Command $command = null): void
     {

@@ -22,7 +22,12 @@ class SyncStockTradeUnits
 {
     use AsAction;
 
-    public function handle(Stock $stock, array $tradeUnitsData): Stock
+    /**
+     * $stockStrategy says what the counts stored in each warehouse mean under the new packing:
+     * 'convert' rescales them where the packing converts arithmetically, anything else keeps them
+     * and flags the locations for a recount.
+     */
+    public function handle(Stock $stock, array $tradeUnitsData, ?string $stockStrategy = null, ?int $userId = null): Stock
     {
         $stock->tradeUnits()->sync($tradeUnitsData);
         $stock->unsetRelation('tradeUnits');
@@ -37,7 +42,7 @@ class SyncStockTradeUnits
         StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
 
         foreach ($stock->orgStocks as $orgStock) {
-            SyncOrgStockTradeUnits::run($orgStock, $tradeUnitsData);
+            SyncOrgStockTradeUnits::run($orgStock, $tradeUnitsData, $stockStrategy, $userId);
 
             $jobs = $orgStock->products
                 ->map(fn ($product) => SyncProductOrgStocksFromTradeUnits::makeJob($product))

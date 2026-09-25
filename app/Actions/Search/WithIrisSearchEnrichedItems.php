@@ -37,7 +37,7 @@ trait WithIrisSearchEnrichedItems
 
         $models = $modelClass::query()
             ->whereIn('id', $ids)
-            ->with(['webpage' => fn ($query) => $query->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE)->with('shop')])
+            ->with(['webpage' => fn ($query) => $query->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE)->with('shop'), 'image'])
             ->get()
             ->keyBy('id');
 

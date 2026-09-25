@@ -30,17 +30,9 @@ class StoreEcomBasketTransaction extends IrisAction
      */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
-        $this->ensureProductIsPurchasableByCustomer($product, $customer);
-
         $order = $this->getOrderInBasket($customer);
 
-        if (!$order) {
-            $order = StoreEcomOrder::make()->action($customer);
-        }
-
-        $historicAsset = $product->currentHistoricProduct;
-
-        $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAsset->id)->first();
+        $existingTransaction = $order ? $this->findCustomerLine($order, $product) : null;
         if ($existingTransaction) {
             return UpdateEcomBasketTransaction::run(
                 $existingTransaction,
@@ -50,11 +42,17 @@ class StoreEcomBasketTransaction extends IrisAction
             );
         }
 
+        $this->ensureProductIsPurchasableByCustomer($product, $customer);
+
+        if (!$order) {
+            $order = StoreEcomOrder::make()->action($customer);
+        }
+
         $order->update([
             'updated_by_customer_at' => now()
         ]);
 
-        return StoreTransaction::make()->action($order, $historicAsset, [
+        return StoreTransaction::make()->action($order, $product->currentHistoricProduct, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
         ]);
     }
@@ -62,7 +60,7 @@ class StoreEcomBasketTransaction extends IrisAction
     public function rules(): array
     {
         return [
-            'quantity' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['required', 'integer', 'min:0'],
         ];
     }
 

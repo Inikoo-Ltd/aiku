@@ -552,7 +552,7 @@ const submitEditAddress = async () => {
                         :icon="getStatusIcon(invoice.tax_number_status, invoice.tax_number_valid)"
                         :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)"
                         size="xs"
-                        v-tooltip="taxNumberStatusText"
+                        v-tooltip="taxNumberStatusText" fixed-width
                     />
                 </dd>
             </dl>
@@ -561,7 +561,7 @@ const submitEditAddress = async () => {
             <dl v-if="invoice.identity_document_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt v-tooltip="invoice.identity_document_number?.label" class="flex-none">
                     <span class="sr-only">{{ invoice.identity_document_number?.label }}</span>
-                    <FontAwesomeIcon :icon="faIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
+                    <FontAwesomeIcon :icon="faIdCard" size="xs" class="text-gray-400" fixed-width aria-hidden="true"/>
                 </dt>
                 <dd class="text-base text-gray-500 flex items-center gap-x-2">
                     <span>{{ invoice.identity_document_number?.number }}</span> 
@@ -573,7 +573,7 @@ const submitEditAddress = async () => {
             <dl v-if="invoice.identity_document_number_alt" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <dt v-tooltip="invoice.identity_document_number_alt?.label" class="flex-none">
                     <span class="sr-only">{{ invoice.identity_document_number_alt?.label }}</span>
-                    <FontAwesomeIcon :icon="faIdCard" size="xs" class="text-gray-400" fixed-widtharia-hidden="true"/>
+                    <FontAwesomeIcon :icon="faIdCard" size="xs" class="text-gray-400" fixed-width aria-hidden="true"/>
                 </dt>
                 <dd class="text-base text-gray-500 flex items-center gap-x-2">
                     <span>{{ invoice.identity_document_number_alt?.number }}</span>
@@ -596,7 +596,7 @@ const submitEditAddress = async () => {
                             class="absolute bottom-2 right-2 text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
                             v-tooltip="ctrans('Edit invoice address')"
                             @click="openEditAddressModal"
-                            aria-hidden="true"
+                            fixed-width aria-hidden="true"
                         />
                         <div v-html="invoice.address.formatted_address"/>
                     </div>
@@ -609,7 +609,7 @@ const submitEditAddress = async () => {
                             class="text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
                             v-tooltip="trans('Edit invoice address')"
                             @click="openEditAddressModal"
-                            aria-hidden="true"
+                            fixed-width aria-hidden="true"
                         />
                     </div>
                 </dd>
@@ -647,7 +647,7 @@ const submitEditAddress = async () => {
                             class="text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
                             v-tooltip="trans('Edit invoice date')"
                             @click="openEditDateModal"
-                            aria-hidden="true"
+                            fixed-width aria-hidden="true"
                         />
                     </dd>
                 </dl>

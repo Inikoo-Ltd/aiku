@@ -3,7 +3,7 @@ import { inject, ref, computed, watch } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
@@ -209,28 +209,15 @@ const onAddToBasket = async (product: ProductResource, basket: any) => {
         basket.quantity_ordered = response.data?.quantity_ordered
         setStatus('success')
 
-        // Luigi: event add to cart
-        const addToCartEcommerce = {
-            currency: layout?.iris?.currency?.code,
-            value: product.price,
-            items: [
-                {
-                    item_id: product?.luigi_identity,
-                }
-            ]
-        }
-        window?.dataLayer?.push({
-            event: "add_to_cart",
-            ecommerce: addToCartEcommerce,
-        })
 
         pushAddToCart(response.data?.quantity_ordered ?? get(basket, ['quantity_ordered_new'], 0))
 
     } catch (error: any) {
         setStatus('error')
+        set(basket, ['quantity_ordered_new'], basket.quantity_ordered ?? 0)
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Failed to add product to basket"),
+            title: ctrans("Something went wrong"),
+            text: error.response?.data?.message || ctrans("Failed to add product to basket"),
             type: "error"
         })
     } finally {
@@ -268,7 +255,7 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
             onSuccess: () => {
                 setStatus('success')
                 layout.reload_handle()
-                basket.quantity_ordered = basket.quantity_ordered_new
+                basket.quantity_ordered = nextQuantity
                 pushAddToCart(nextQuantity - previousQuantity)
                 if (isWillRemoveFrombasket) {
                     // Remove product from layout basket
@@ -291,8 +278,8 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                     if (products) {
                         const index = products.findIndex((p: any) => p.transaction_id === productTransactionId)
                         if (index !== -1) {
-                            products[index].quantity_ordered = basket.quantity_ordered_new
-                            products[index].quantity_ordered_new = basket.quantity_ordered_new
+                            products[index].quantity_ordered = nextQuantity
+                            products[index].quantity_ordered_new = nextQuantity
                         }
                     }
 
@@ -305,8 +292,8 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
                     ...currentList,
                     [product.id]: {
                         transaction_id: product.transaction_id,
-                        quantity_ordered: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
-                        quantity_ordered_new: get(basket, ['quantity_ordered_new'], basket.quantity_ordered),
+                        quantity_ordered: nextQuantity,
+                        quantity_ordered_new: nextQuantity,
                         department_id: existingEntry.department_id ?? null,
                         sub_department_id: existingEntry.sub_department_id ?? null,
                         family_id: existingEntry.family_id ?? null,
@@ -319,9 +306,10 @@ const onUpdateQuantity = (product: ProductResource, basket: any) => {
             },
             onError: errors => {
                 setStatus('error')
+                basket.quantity_ordered_new = basket.quantity_ordered
                 notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message || trans("Failed to update product quantity in basket"),
+                    title: ctrans("Something went wrong"),
+                    text: errors.message || ctrans("Failed to update product quantity in basket"),
                     type: "error"
                 })
             },
@@ -357,10 +345,7 @@ const updateQuantity = (newQuantity: number) => {
     if (newQuantity === 0) {
         set(localBasket.value, ['quantity_ordered_new'], 0)
     } else {
-        const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
-    
-        // set quantity_ordered_new
-        set(localBasket.value, ['quantity_ordered_new'], clampedQuantity)
+        set(localBasket.value, ['quantity_ordered_new'], Math.max(0, newQuantity))
     }
 
     // trigger debounced update jika berubah
@@ -387,9 +372,7 @@ const decrement = () => {
 
 
 const orderQuantity = async (quantity: number) => {
-    const clampedQuantity = Math.max(0, Math.min(quantity, props.product.stock))
-
-    set(localBasket.value, ['quantity_ordered_new'], clampedQuantity)
+    set(localBasket.value, ['quantity_ordered_new'], Math.max(0, quantity))
 
     if (!localBasket.value.quantity_ordered) {
         await onAddToBasket(props.product, localBasket.value)
@@ -437,7 +420,7 @@ watch(
         <button v-if="showChartButton" @click.stop.prevent="instantAddToBasket" :style="buttonStyle"
             :disabled="isLoadingSubmitQuantityProduct || !canOrder"
             class="rounded-full button-cart hover:bg-green-700 bg-gray-800 text-gray-300  h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-            v-tooltip="trans('Add to basket')">
+            v-tooltip="ctrans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
             <FontAwesomeIcon v-else :icon="icon ? icon : faShoppingCart" fixed-width />
         </button>
@@ -461,7 +444,7 @@ watch(
                 class="md:hidden group-hover:flex w-9 h-9 md:w-6 md:h-6 text-gray-100 hover:bg-gray-100 text-xs items-center justify-center  rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
                 <FontAwesomeIcon :icon="faMinus" :style="{
                     color: hoveredButton === 'minus' ? 'black' : buttonStyleHover?.color
-                }"  />
+                }" fixed-width  />
             </button>
 
             <!-- Quantity display (always visible) -->
@@ -472,11 +455,11 @@ watch(
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"  type="button"
-                :disabled="isLoadingSubmitQuantityProduct || (currentQuantity >= props.product.stock)" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
+                :disabled="isLoadingSubmitQuantityProduct" @mouseenter="hoveredButton = 'plus'" @mouseleave="hoveredButton = null"
                 class="md:hidden group-hover:flex w-9 h-9 md:w-6 md:h-6 text-gray-100 hover:bg-gray-100 text-xs items-center justify-center  rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" :style="{
                     color: hoveredButton === 'plus' ? 'black' : buttonStyleHover?.color
-                }" />
+                }" fixed-width />
             </button>
         </div>
     </div>

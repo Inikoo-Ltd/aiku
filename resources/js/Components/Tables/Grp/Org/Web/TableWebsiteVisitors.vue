@@ -27,7 +27,7 @@ defineProps<{
                     v-if="visitor.device_type.icon" 
                     :icon="visitor.device_type.icon" 
                     :title="visitor.device_type.tooltip"
-                    class="text-gray-600"
+                    class="text-gray-600" fixed-width
                 />
                 <span>{{ visitor.device_type.label }}</span>
             </div>
@@ -40,7 +40,7 @@ defineProps<{
                     v-if="visitor.browser.icon" 
                     :icon="visitor.browser.icon" 
                     :title="visitor.browser.tooltip"
-                    class="text-gray-600"
+                    class="text-gray-600" fixed-width
                 />
                 <span>{{ visitor.browser.label }}</span>
             </div>
@@ -53,7 +53,7 @@ defineProps<{
                     v-if="visitor.os.icon" 
                     :icon="visitor.os.icon" 
                     :title="visitor.os.tooltip"
-                    class="text-gray-600"
+                    class="text-gray-600" fixed-width
                 />
                 <span>{{ visitor.os.label }}</span>
             </div>

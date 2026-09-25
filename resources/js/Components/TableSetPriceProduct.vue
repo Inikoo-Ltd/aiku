@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n";
+import { ctrans } from "@/Composables/useTrans"
 import { inject, computed, watch } from "vue";
 
 // Interfaces
@@ -56,10 +56,15 @@ const emits = defineEmits<{
     (e: "change", payload: { tableData: ProductItem[]; data: ProductData }): void;
 }>();
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     currency: string;
     form: any;
-}>();
+    rrpPriceRatio?: number;
+}>(), {
+    rrpPriceRatio: 2.4,
+});
+
+const rrpPriceRatio = computed(() => props.rrpPriceRatio);
 
 const locale = inject("locale", {});
 
@@ -113,7 +118,7 @@ modelValue.value.data.forEach((item) => {
 
         // default rrp
         if (!item.product.rrp) {
-            item.product.rrp = roundDown2(Number(item.product.price / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4);
+            item.product.rrp = roundDown2(Number(item.product.price / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * rrpPriceRatio.value);
         }
 
         // watcher untuk auto mode
@@ -121,7 +126,7 @@ modelValue.value.data.forEach((item) => {
             () => item.product!.price,
             (newPrice) => {
                 if (!item.product!.useCustomRrp) {
-                    item.product!.rrp = roundDown2(Number(newPrice / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4);
+                    item.product!.rrp = roundDown2(Number(newPrice / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * rrpPriceRatio.value);
                     emits("change", modelValue.value);
                 }
             },
@@ -150,7 +155,7 @@ const applyMasterPricing = () => {
 
         if (masterRrp != null) {
             item.product.useCustomRrp = true;
-            item.product.rrp = masterRrp;
+            item.product.rrp = roundDown2(masterRrp / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1));
         }
     });
 
@@ -221,44 +226,44 @@ function roundDown2(num: number) {
                         </th>
 
                         <th class="px-3 py-2  border border-gray-200 border border  border-gray-400 bg-gray-200">
-                            {{ trans('Shop') }}
+                            {{ ctrans('Shop') }}
                         </th>
 
                         <th class="px-3 py-2 text-right  border border-gray-200 border  border-gray-400 bg-gray-200">
-                            {{ trans('Stock') }}
+                            {{ ctrans('Stock') }}
                         </th>
 
                         <th class="px-3 py-2 text-right border border-gray-200   border-gray-400 bg-gray-200">
-                            {{ trans('Org Cost') }}
+                            {{ ctrans('Org Cost') }}
                         </th>
 
                         <!-- PRICE -->
                         <th
                             class="px-3 py-2 w-56 bg-blue-100 text-blue-700 text-right border border-blue-400 border-l-2">
-                            {{ trans('Outer Price') }}
+                            {{ ctrans('Outer Price') }}
                         </th>
 
                         <th class="px-3 py-2 w-32 bg-blue-100 text-blue-700 text-right border border-blue-400">
-                            {{ trans('Price / Unit') }}
+                            {{ ctrans('Price / Unit') }}
                         </th>
 
                         <th class="px-3 py-2 w-20 bg-blue-100 text-blue-700 text-right border border-blue-400 border-r">
-                            {{ trans('Margin') }}
+                            {{ ctrans('Margin') }}
                         </th>
 
                         <!-- RRP -->
                         <th
                             class="px-3 py-2 w-48 bg-purple-100 text-purple-700 text-right border border-purple-400 border-l-2">
-                            {{ trans('Outer RRP') }}
+                            {{ ctrans('Outer RRP') }}
                         </th>
 
                         <th class="px-3 py-2 w-32 bg-purple-100 text-purple-700 text-right border border-purple-400">
-                            {{ trans('RRP / Unit') }}
+                            {{ ctrans('RRP / Unit') }}
                         </th>
 
                         <th
                             class="px-3 py-2 w-28 bg-purple-100 text-purple-700 text-right border border-purple-400 border-r-2">
-                            {{ trans('RRP Margin') }}
+                            {{ ctrans('RRP Margin') }}
                         </th>
 
                     </tr>
@@ -291,7 +296,7 @@ function roundDown2(num: number) {
                             </div> -->
 
                             <!-- VALUE -->
-                            <div v-if="item.product?.org_value_in_warehouse" v-tooltip="trans('Value in warehouse')"
+                            <div v-if="item.product?.org_value_in_warehouse" v-tooltip="ctrans('Value in warehouse')"
                                 class="flex items-center gap-1 text-[11px] text-gray-500">
                                 <span class="font-medium text-gray-600">
                                      {{ locale.currencyFormat(item.product?.shop_currency ?? currency,item.product?.org_value_in_warehouse_per_shop) }}
@@ -349,7 +354,7 @@ function roundDown2(num: number) {
         </div>
 
         <div v-else class="text-xs text-gray-500 italic p-4 text-center bg-gray-50 rounded">
-            {{ trans('No data available') }}
+            {{ ctrans('No data available') }}
         </div>
     </div>
 

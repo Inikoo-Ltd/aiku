@@ -30,7 +30,8 @@ class UpdateDispatchedEmail extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'state'                => ['sometimes', 'required', Rule::enum(DispatchedEmailStateEnum::class)]
+            'state'                => ['sometimes', 'required', Rule::enum(DispatchedEmailStateEnum::class)],
+            'ses_id'               => ['sometimes', 'nullable', 'string', 'max:80'],
         ];
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);

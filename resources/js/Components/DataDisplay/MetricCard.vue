@@ -41,7 +41,7 @@ defineProps({
       <div class="flex items-center">
         <FontAwesomeIcon
           :icon="['fal', changeType === 'increase' ? 'arrow-up' : 'arrow-down']"
-          :class="changeType === 'increase' ? 'text-green-500' : 'text-red-500'" />
+          :class="changeType === 'increase' ? 'text-green-500' : 'text-red-500'" fixed-width />
         <span
           :class="changeType === 'increase' ? 'text-green-500' : 'text-red-500'"
           class="text-sm ml-1">

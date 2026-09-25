@@ -23,9 +23,9 @@ import Icon from "@/Components/Icon.vue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import JsBarcode from "jsbarcode"
 import { ctrans } from "@/Composables/useTrans"
-import { trans } from "laravel-vue-i18n"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Modal from "@/Components/Utils/Modal.vue"
+import OrgStockLabelModal from "@/Components/Warehouse/Inventory/OrgStockLabelModal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -80,6 +80,19 @@ const props = defineProps < {
         barcode_update_route?: routeType
         can_edit_unit_barcode?: boolean
         unit_barcode_update_route?: routeType
+        label_options?: {
+            sizes: { key: string; label: string }[]
+            default_size: string
+            layouts: { key: string; label: string }[]
+            fields: Record<string, {
+                key: string
+                label: string
+                available: boolean
+                checked: boolean
+                reason: string | null
+            }[]>
+            custom_text_max_length: number
+        }
         label_route?: {
             name: string
             parameters: Record<string, string>
@@ -100,6 +113,16 @@ const props = defineProps < {
             reason_label: string | null
         }[]
         stock_history_route?: routeType
+        future_orders?: {
+            id: number
+            reference: string
+            supplier_name: string | null
+            delivery_state_label: string
+            estimated_received_at: string | null
+            quantity: string | number
+            quantity_fractional?: [number, [number, number]]
+            route: routeType
+        }[]
     }
     reasons?: {
         increase: [],
@@ -230,6 +253,14 @@ const applyBarcodeChange = (value: string | null) => {
     )
 }
 
+const isLabelModalOpen = ref(false)
+const labelLevel = ref<string>("unit")
+
+const openLabelModal = (level: string) => {
+    labelLevel.value = level
+    isLabelModalOpen.value = true
+}
+
 const confirm = useConfirm()
 
 const rejectProps = {
@@ -305,10 +336,10 @@ const saveBarcode = (value: string | null) => {
                         <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-red-400 text-lg mt-0.5" fixed-width aria-hidden="true" />
                         <div>
                             <div class="text-sm font-semibold text-red-600">
-                                {{ trans("This SKO has no product") }}
+                                {{ ctrans("This SKO has no product") }}
                             </div>
                             <div class="mt-1 text-xs text-red-500">
-                                {{ trans("It cannot be sold until it is attached to a product") }}
+                                {{ ctrans("It cannot be sold until it is attached to a product") }}
                             </div>
                         </div>
                     </div>
@@ -356,23 +387,23 @@ const saveBarcode = (value: string | null) => {
                 <template v-for="barcode in data.barcodes" :key="barcode.level">
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 p-3 xl:contents">
                         <div class="w-12 shrink-0 text-sm font-medium uppercase tracking-wide text-gray-500"
-                            v-tooltip="trans(barcode.label)">
+                            v-tooltip="ctrans(barcode.label)">
                             {{ barcode.level === 'sko' ? ctrans('SKO') : ctrans('Unit') }}
                         </div>
 
-                        <a v-if="barcode.number && data.label_route"
-                            :href="route(data.label_route.name, { ...data.label_route.parameters, level: barcode.level })"
-                            target="_blank"
-                            v-tooltip="ctrans('Open PDF label')"
-                            class="min-w-0 max-w-full justify-self-start transition hover:opacity-60">
+                        <button v-if="barcode.number && data.label_route && data.label_options"
+                            type="button"
+                            v-tooltip="ctrans('Print PDF label')"
+                            class="min-w-0 max-w-full justify-self-start transition hover:opacity-60"
+                            @click="openLabelModal(barcode.level)">
                             <svg :id="'barcode-' + barcode.level" class="h-14 max-w-full"></svg>
-                        </a>
+                        </button>
                         <svg v-else-if="barcode.number" :id="'barcode-' + barcode.level" class="h-14 max-w-full justify-self-start"></svg>
 
                         <button
                             v-else-if="canEditBarcode(barcode)"
                             type="button"
-                            class="flex h-14 max-w-full px-2 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-left text-sm text-gray-400 transition hover:border-indigo-400 hover:text-indigo-500"
+                            class="flex h-14 max-w-full px-2 items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-left text-sm text-gray-400 transition hover:border-[--app-accent] hover:text-[--app-accent]"
                             @click="openBarcodeModal(barcode)">
                             <Icon :data="{ icon: 'fal fa-plus' }" />
                             {{ ctrans("Add barcode (type or scan it)") }}
@@ -384,7 +415,7 @@ const saveBarcode = (value: string | null) => {
                             v-if="barcode.number && canEditBarcode(barcode)"
                             type="button"
                             v-tooltip="ctrans('Edit barcode')"
-                            class="text-gray-300 transition hover:text-indigo-500"
+                            class="text-gray-300 transition hover:text-[--app-accent]"
                             @click="openBarcodeModal(barcode)">
                             <Icon :data="{ icon: 'fal fa-edit' }" />
                         </button>
@@ -419,6 +450,43 @@ const saveBarcode = (value: string | null) => {
                 </template>
             </div>
 
+            <!-- Future orders -->
+            <div v-if="data.future_orders?.length" class="mt-6 rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                    <span class="text-xs font-medium uppercase tracking-wide text-gray-400">
+                        {{ ctrans("Future orders") }}
+                    </span>
+                    <span class="text-xs text-gray-400">
+                        {{ ctrans("bought, not yet on the shelf") }}
+                    </span>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    <Link v-for="futureOrder in data.future_orders" :key="futureOrder.id"
+                        :href="route(futureOrder.route.name, futureOrder.route.parameters)"
+                        class="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
+                        <Icon :data="{ icon: 'fal fa-truck-loading' }" class="w-4 shrink-0 text-gray-400" />
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate font-medium text-gray-700">
+                                {{ futureOrder.reference }}
+                                <span v-if="futureOrder.supplier_name" class="font-normal text-gray-500">· {{ futureOrder.supplier_name }}</span>
+                            </div>
+                            <div class="truncate text-xs text-gray-400">
+                                {{ futureOrder.delivery_state_label }}
+                                <span v-if="futureOrder.estimated_received_at">
+                                    · {{ ctrans("expected") }} {{ useFormatTime(futureOrder.estimated_received_at) }}
+                                </span>
+                                <span v-else>· {{ ctrans("no expected date") }}</span>
+                            </div>
+                        </div>
+                        <div class="font-semibold tabular-nums text-green-600 flex items-center">
+                            +
+                            <FractionDisplay v-if="futureOrder.quantity_fractional" :fractionData="futureOrder.quantity_fractional" />
+                            <template v-else>{{ futureOrder.quantity }}</template>
+                        </div>
+                    </Link>
+                </div>
+            </div>
+
             <!-- Latest movements -->
             <div v-if="data.latest_movements?.length" class="mt-6 rounded-xl border border-gray-200 bg-white shadow-sm">
                 <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
@@ -427,7 +495,7 @@ const saveBarcode = (value: string | null) => {
                     </span>
                     <Link v-if="data.stock_history_route"
                         :href="route(data.stock_history_route.name, data.stock_history_route.parameters)"
-                        class="text-xs font-medium text-indigo-500 hover:text-indigo-700">
+                        class="text-xs font-medium text-[--app-accent] hover:text-[--app-accent-strong]">
                         {{ ctrans("View all") }}
                     </Link>
                 </div>
@@ -491,7 +559,7 @@ const saveBarcode = (value: string | null) => {
                     spellcheck="false"
                     maxlength="54"
                     :placeholder="ctrans('e.g. 5055796528387')"
-                    class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-indigo-500 focus:ring-indigo-500"
+                    class="w-full rounded-md border-gray-300 py-2 px-3 font-mono text-lg tracking-wide focus:border-[--app-accent] focus:ring-[--app-accent]"
                     @keydown.enter.prevent="saveBarcode(barcodeInput.trim() || null)"
                 />
                 <div class="flex justify-between gap-2">
@@ -514,6 +582,14 @@ const saveBarcode = (value: string | null) => {
                 </div>
             </div>
         </Modal>
+
+        <OrgStockLabelModal
+            v-if="data.label_route && data.label_options"
+            :isOpen="isLabelModalOpen"
+            :level="labelLevel"
+            :labelRoute="data.label_route"
+            :options="data.label_options"
+            @onClose="isLabelModalOpen = false" />
 
         <ConfirmDialog />
     </div>

@@ -102,6 +102,17 @@ class ChatMessage extends Model implements HasMedia
         return $this->belongsTo(Media::class, 'media_id');
     }
 
+    /**
+     * @return \Illuminate\Support\Collection<int, Media>
+     */
+    public function attachedFiles(): \Illuminate\Support\Collection
+    {
+        return $this->media
+            ->whereIn('collection_name', ['chat_images', 'chat_attachments'])
+            ->sortBy('order_column')
+            ->values();
+    }
+
 
     public function sender(): MorphTo
     {
@@ -235,9 +246,15 @@ class ChatMessage extends Model implements HasMedia
             'organisation_id' => $shop?->organisation_id,
             'shop_id'         => $shop?->id,
             'message'         => (string)$this->message_text,
+            'subject'         => (string)($this->metadata['email_subject'] ?? ''),
             'sender_type'     => $this->sender_type->value,
             'created_at'      => $this->created_at?->timestamp ?? 0,
         ];
+    }
+
+    public function typesenseSearchParameters(): array
+    {
+        return ['infix' => 'fallback,fallback'];
     }
 
 }

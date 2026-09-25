@@ -8,9 +8,13 @@
 
 namespace App\Actions\Comms\Outbox\UI;
 
+use App\Actions\Comms\EmailTemplate\UI\IndexEmailTemplates;
+use App\Actions\Comms\EmailTemplate\UI\IndexOtherStoreEmailTemplates;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\Comms\Email\EmailBuilderEnum;
+use App\Enums\UI\Mail\EmailTemplateTabsEnum;
+use App\Http\Resources\Mail\EmailTemplateResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Email;
 use App\Models\Comms\Outbox;
@@ -56,7 +60,7 @@ class ShowOutboxWorkshop extends OrgAction
     {
         $this->parent = $shop;
         $this->outbox = $outbox;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab($this->templateTabs());
 
         return $this->handle($outbox);
     }
@@ -69,7 +73,7 @@ class ShowOutboxWorkshop extends OrgAction
     {
         $this->parent = $shop;
         $this->outbox = $outbox;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab($this->templateTabs());
 
         return $this->handle($outbox);
     }
@@ -83,13 +87,20 @@ class ShowOutboxWorkshop extends OrgAction
     {
         $this->parent = $fulfilment;
         $this->outbox = $outbox;
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab($this->templateTabs());
 
         return $this->handle($outbox);
     }
 
+    private function templateTabs(): array
+    {
+        return [EmailTemplateTabsEnum::TEMPLATES->value, EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value];
+    }
+
     public function htmlResponse(Email $email, ActionRequest $request): Response
     {
+        $shop = $email->shop;
+
 
         return Inertia::render(
             'Org/Web/Workshop/Outbox/OutboxWorkshop',
@@ -170,8 +181,36 @@ class ShowOutboxWorkshop extends OrgAction
                 ],
                 'mergeTags' => GetOutboxMergeTagByOutbox::run($this->outbox),
                 'status' => $email->outbox->state,
-                'organisationSlug' => $this->organisation->slug
+                'organisationSlug' => $this->organisation->slug,
+                'shopSlug' => $email->shop?->slug,
+                'shopId' => $email->shop_id,
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => EmailTemplateTabsEnum::navigationOnly($this->templateTabs()),
+                ],
+                EmailTemplateTabsEnum::TEMPLATES->value => $this->tab == EmailTemplateTabsEnum::TEMPLATES->value ?
+                    fn () => EmailTemplateResource::collection(
+                        IndexEmailTemplates::run($shop, EmailTemplateTabsEnum::TEMPLATES->value, true)
+                    )
+                    : Inertia::optional(fn () => EmailTemplateResource::collection(
+                        IndexEmailTemplates::run($shop, EmailTemplateTabsEnum::TEMPLATES->value, true)
+                    )),
+                EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value => $this->tab == EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value ?
+                    fn () => EmailTemplateResource::collection(
+                        IndexOtherStoreEmailTemplates::run($shop, EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value, true)
+                    )
+                    : Inertia::optional(fn () => EmailTemplateResource::collection(
+                        IndexOtherStoreEmailTemplates::run($shop, EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value, true)
+                    )),
             ]
+        )->table(
+            IndexEmailTemplates::make()->tableStructure(
+                prefix: EmailTemplateTabsEnum::TEMPLATES->value
+            )
+        )->table(
+            IndexOtherStoreEmailTemplates::make()->tableStructure(
+                prefix: EmailTemplateTabsEnum::OTHER_STORE_TEMPLATES->value
+            )
         );
     }
 

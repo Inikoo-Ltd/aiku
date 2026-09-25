@@ -79,7 +79,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
 
         Cache::put($cooldownKey, true, self::COOLDOWN_SECONDS);
 
-        $ordersBefore = $customerSalesChannel->orders()->count();
+        $ordersBefore = $this->countImportedOrders($customerSalesChannel);
 
         try {
             $this->fetch($customerSalesChannel, $platformUser);
@@ -91,7 +91,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             );
         }
 
-        $newOrders = $customerSalesChannel->orders()->count() - $ordersBefore;
+        $newOrders = $this->countImportedOrders($customerSalesChannel) - $ordersBefore;
 
         if ($newOrders < 1) {
             return $this->notification(
@@ -106,6 +106,15 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             __('Orders fetched'),
             trans_choice('{1} :count new order was imported.|[2,*] :count new orders were imported.', $newOrders, ['count' => $newOrders])
         );
+    }
+
+    /**
+     * A request AW declines still lands as a cancelled placeholder, which must not be announced to
+     * the customer as an imported order.
+     */
+    private function countImportedOrders(CustomerSalesChannel $customerSalesChannel): int
+    {
+        return $customerSalesChannel->orders()->whereNull('data->declined_reason')->count();
     }
 
     private function isSupported(CustomerSalesChannel $customerSalesChannel): bool

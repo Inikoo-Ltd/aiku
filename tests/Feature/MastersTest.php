@@ -1556,6 +1556,55 @@ test('UI Index Master Products in family has pricing tab', function () {
     );
 });
 
+test('master product RRP is edited per outer in dropshipping and per unit elsewhere', function (ShopTypeEnum $shopType, string $rrpLabel, bool $isDropship) {
+    $masterShop = StoreMasterShop::make()->action(group(), [
+        'type' => $shopType,
+        'code' => 'RRPO-'.uniqid(),
+        'name' => 'RRP Outer Master Shop',
+    ]);
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RRPO-DEP-'.uniqid(),
+        'name' => 'RRP Outer Dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RRPO-FAM-'.uniqid(),
+        'name' => 'RRP Outer Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RRPO-AST-'.uniqid(),
+        'name'    => 'RRP Outer Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 4.8,
+        'rrp'     => 9.6,
+        'units'   => 2,
+        'stocks'  => [],
+    ]);
+
+    get(route('grp.masters.master_shops.show.master_products.composition', [
+        'masterShop'    => $masterShop->slug,
+        'masterProduct' => $masterAsset->slug,
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.2.fields.master_rrps.label', $rrpLabel)
+            ->where('formData.blueprint.2.fields.master_rrps.perUnits', fn ($perUnits) => $isDropship ? $perUnits === null : $perUnits == $masterAsset->units)
+            ->etc()
+    );
+
+    get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterShop->slug,
+        $masterFamily->slug,
+        'tab' => 'pricing',
+    ]))->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('pricing.data.0.is_dropship', $isDropship)
+            ->etc()
+    );
+})->with([
+    'dropshipping' => [ShopTypeEnum::DROPSHIPPING, 'RRP / Outer', true],
+    'b2b'          => [ShopTypeEnum::B2B, 'RRP / Unit', false],
+]);
+
 test('UI Show Master Variant has pricing tab listing all variant products', function () {
     $masterShop = createFreshMasterShop();
 
@@ -1941,7 +1990,7 @@ test('CheckMasterAssetTradeUnitOrgStockExistence returns true when no trade unit
     expect($isValid)->toBeTrue();
 });
 
-test('UpdateBulkMasterProduct updates rrp and price for multiple master products', function () {
+test('UpdateBulkMasterProduct updates rrp, price and unit label for multiple master products', function () {
     $masterShop      = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
         'code' => 'UBP-DEPT-'.uniqid(),
@@ -1972,15 +2021,49 @@ test('UpdateBulkMasterProduct updates rrp and price for multiple master products
 
     UpdateBulkMasterProduct::make()->handle([
         'products' => [
-            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12],
-            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22],
+            ['id' => $masterAssetOne->id, 'rrp' => 15, 'price' => 12, 'unit' => 'ball'],
+            ['id' => $masterAssetTwo->id, 'rrp' => 25, 'price' => 22, 'unit' => 'ball'],
         ],
     ]);
 
     expect((int)$masterAssetOne->refresh()->price)->toBe(12)
         ->and((int)$masterAssetOne->rrp)->toBe(15)
         ->and((int)$masterAssetTwo->refresh()->price)->toBe(22)
-        ->and((int)$masterAssetTwo->rrp)->toBe(25);
+        ->and((int)$masterAssetTwo->rrp)->toBe(25)
+        ->and($masterAssetOne->unit)->toBe('ball')
+        ->and($masterAssetTwo->unit)->toBe('ball');
+});
+
+test('bulk trade unit quantity sets units through the master update and reports no open orders', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'BTQ-DEPT-'.uniqid(),
+        'name' => 'Bulk Quantity Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'BTQ-FAM-'.uniqid(),
+        'name' => 'Bulk Quantity Family',
+    ]);
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'BTQ-AST-'.uniqid(),
+        'name'    => 'Bulk Quantity Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'unit'    => 'piece',
+        'stocks'  => [],
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    UpdateMasterAsset::make()->action($masterAsset, ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 10]]]);
+
+    expect((float) $masterAsset->refresh()->units)->toBe(10.0)
+        ->and((float) $masterAsset->price)->toBe(10.0)
+        ->and($masterAsset->unit)->toBe('piece');
+
+    getJson(route('grp.json.master_assets.open_orders_affected_by_units_change', ['ids' => [$masterAsset->id]]))
+        ->assertSuccessful()
+        ->assertExactJson([(string) $masterAsset->id => 0]);
 });
 
 test('UpdateMultipleMasterProductsFamily moves master assets to a new family', function () {
@@ -2171,6 +2254,32 @@ test('DeleteMasterProductCategory force deletes a master sub department without 
     DeleteMasterProductCategory::make()->handle($masterSubDepartment, true);
 
     expect(MasterProductCategory::find($masterSubDepartmentId))->toBeNull();
+});
+
+test('DeleteMasterProductCategory deletes empty shop categories and keeps the ones with products', function () {
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'DMC-DEPT-'.uniqid(), 'name' => 'Delete Cascade Department']);
+    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'DMC-FAM-'.uniqid(), 'name' => 'Delete Cascade Family']);
+
+    [, $product] = createProduct($this->shop);
+    $department  = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $emptyFamily = StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+    $familyWithProducts = $product->family;
+
+    $emptyFamily->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+    $familyWithProducts->updateQuietly(['master_product_category_id' => $masterFamily->id]);
+
+    expect(fn () => DeleteMasterProductCategory::make()->action($masterFamily))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    DeleteMasterProductCategory::make()->handle($masterFamily);
+
+    expect(ProductCategory::find($emptyFamily->id))->toBeNull()
+        ->and(ProductCategory::find($familyWithProducts->id))->not->toBeNull()
+        ->and(MasterProductCategory::find($masterFamily->id))->toBeNull()
+        ->and($familyWithProducts->fresh()->master_product_category_id)->toBeNull();
 });
 
 test('AttachMasterFamiliesToMasterDepartment moves families under a department', function () {
@@ -2762,6 +2871,76 @@ test('master product creation data refuses a trade unit quantity of zero instead
     ])->assertSessionHasErrors('trade_units.0.quantity');
 });
 
+test('master product creation suggests price and RRP from the master shop ratios, editable per master shop', function (ShopTypeEnum $type, float $defaultCostPriceRatio, float $defaultRrpPriceRatio) {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['type' => $type]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'RRPDEP-'.uniqid(),
+        'name' => 'RRP ratio dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'RRPFAM-'.uniqid(),
+        'name' => 'RRP ratio family',
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    $creationData = fn () => \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily->refresh(),
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    expect(data_get($creationData(), 'rrp_price_ratio'))->toBe($defaultRrpPriceRatio)
+        ->and($masterShop->costPriceRatio())->toBe($defaultCostPriceRatio);
+
+    $masterShop = UpdateMasterShop::make()->action($masterShop, ['cost_price_ratio' => 2.8, 'rrp_price_ratio' => 1.9]);
+
+    expect($masterShop->costPriceRatio())->toBe(2.8)
+        ->and(data_get($creationData(), 'rrp_price_ratio'))->toBe(1.9);
+})->with([
+    'wholesale'    => [ShopTypeEnum::B2B, 2.0, 2.4],
+    'dropshipping' => [ShopTypeEnum::DROPSHIPPING, 3.5, 2.0],
+]);
+
+test('master product creation prices a new product at cost times the price ratio and its RRP at price times the RRP ratio', function () {
+    $masterShop = createFreshMasterShop();
+    $masterShop->update(['price_exchanges' => ['GBP' => ['is_major' => true]]]);
+    $masterShop = UpdateMasterShop::make()->action($masterShop, ['cost_price_ratio' => 3, 'rrp_price_ratio' => 2]);
+
+    $this->shop->updateQuietly([
+        'master_shop_id' => $masterShop->id,
+        'currency_id'    => Currency::where('code', 'GBP')->firstOrFail()->id,
+        'state'          => ShopStateEnum::OPEN,
+    ]);
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'CPRDEP-'.uniqid(),
+        'name' => 'Cost price ratio dept',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'CPRFAM-'.uniqid(),
+        'name' => 'Cost price ratio family',
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $stock     = \App\Actions\Goods\Stock\StoreStock::make()->action(group(), \App\Models\Goods\Stock::factory()->definition());
+    $stock     = \App\Actions\Goods\Stock\UpdateStock::make()->action($stock, ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]);
+    $orgStock  = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['lpp_per_sku' => 10, 'packed_in' => 1]);
+    $tradeUnit->orgStocks()->attach($orgStock->id, ['quantity' => 1]);
+
+    $data = \App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation::make()->handle(
+        $masterFamily,
+        ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]
+    );
+
+    $cost = data_get($data, 'avg_org_cost');
+
+    expect($cost)->toBeGreaterThan(0)
+        ->and(data_get($data, 'master_prices.GBP.value'))->toEqual(round($cost * 3, 2))
+        ->and(data_get($data, 'master_rrps.GBP.value'))->toEqual(round($cost * 3 * 2, 2));
+});
+
 test('minor currency recalculation includes variant master assets', function () {
     $masterShop = createFreshMasterShop();
     $masterShop->update(['price_exchanges' => [
@@ -3217,6 +3396,32 @@ test('creating a master asset queues its effective cost hydration', function (Ma
     );
 })->depends("create master family");
 
+test('changing a master composition queues its effective cost hydration', function (MasterProductCategory $masterFamily) {
+    $masterAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'EFFECTIVE_COST_2',
+        'name'    => 'effective cost 2',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $tradeUnit = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    Queue::fake();
+
+    UpdateMasterAsset::make()->action($masterAsset, [
+        'trade_units' => [
+            ['id' => $tradeUnit->id, 'quantity' => 1],
+        ],
+    ]);
+
+    Queue::assertPushed(
+        \App\Jobs\BoundedUniqueJobDecorator::class,
+        fn ($job) => $job->displayName() === MasterAssetHydrateEffectiveCost::class
+            && $job->getParameters()[0]->id === $masterAsset->id
+    );
+})->depends("create master family");
+
 test('upload and delete sound sample on master asset', function () {
     $masterDepartment = ensureMasterProductCategory();
     $masterFamily     = StoreMasterProductCategory::make()->action($masterDepartment, [
@@ -3335,4 +3540,365 @@ test('recommended trade units follow the linked trade unit family, not the famil
 
     expect($recommended)->toContain($tradeUnit->id)
         ->and($recommended)->toContain($prefixOnlyTradeUnit->id);
+});
+
+test('store master variant is blocked while a product waits for its cutover retirement decision', function () {
+    $masterShop   = createFreshMasterShop();
+    $masterFamily = StoreMasterFamily::make()->action(
+        StoreMasterDepartment::make()->action($masterShop, ['code' => 'RTD-DEP-'.uniqid(), 'name' => 'Retirement Dept']),
+        ['code' => 'RTD-FAM-'.uniqid(), 'name' => 'Retirement Family']
+    );
+    $leader = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'RTD-LEAD-'.uniqid(),
+        'name'    => 'Retired Leader',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'rrp'     => 20,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($this->shop);
+    $originalData           = $product->data;
+    $originalMasterProduct  = $product->master_product_id;
+    $product->updateQuietly([
+        'master_product_id' => $leader->id,
+        'data'              => array_merge($product->data ?? [], ['retire_at_cutover' => true, 'replaced_by_product_id' => $product->id]),
+    ]);
+
+    try {
+        $response = post(route('grp.models.master_variant.store', $masterFamily->id), [
+            'data_variants' => [
+                'variants' => [['label' => 'Size', 'options' => ['S']]],
+                'groupBy'  => 'Size',
+                'products' => [$leader->id => ['is_leader' => true, 'product' => ['id' => $leader->id]]],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('leader_id');
+        expect($leader->refresh()->master_variant_id)->toBeNull();
+    } finally {
+        $product->updateQuietly(['master_product_id' => $originalMasterProduct, 'data' => $originalData]);
+    }
+});
+
+test('master products can be looked up by the codes pasted into the ordering tab', function () {
+    $masterShop = createFreshMasterShop();
+
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PASTE-DEP-'.uniqid(),
+        'name' => 'Paste order department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PASTE-FAM-'.uniqid(),
+        'name' => 'Paste order family',
+    ]);
+    $otherFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PASTE-OTHER-'.uniqid(),
+        'name' => 'Paste order other family',
+    ]);
+
+    $first = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PASTE-A1',
+        'name'    => 'Paste asset one',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+    $second = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PASTE-A2',
+        'name'    => 'Paste asset two',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 11,
+        'stocks'  => [],
+    ]);
+    $outsider = StoreMasterAsset::make()->action($otherFamily, [
+        'code'    => 'PASTE-OUT',
+        'name'    => 'Paste asset from another family',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 12,
+        'stocks'  => [],
+    ]);
+
+    $codes = collect(get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterFamily->id,
+        'codes'                 => 'paste-a2, PASTE-A1 ,PASTE-OUT,PASTE-NOPE',
+    ]))->assertOk()->json('data'))->pluck('code');
+
+    expect($codes->all())->toContain($first->code, $second->code)
+        ->and($codes->all())->not->toContain($outsider->code);
+
+    get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterDepartment->id,
+        'codes'                 => 'PASTE-A1',
+    ]))->assertForbidden();
+
+    get(route('grp.json.master_product_category.products_by_codes', [
+        'masterProductCategory' => $masterFamily->id,
+    ]))->assertSessionHasErrors('codes');
+
+    $shopCodes = collect(get(route('grp.json.master_shop.products_by_codes', [
+        'masterShop' => $masterShop->id,
+        'codes'      => 'PASTE-A1,PASTE-OUT',
+    ]))->assertOk()->json('data'))->pluck('code');
+
+    expect($shopCodes->all())->toContain($first->code, $outsider->code);
+});
+
+function createShopCollectionUnderMaster(Shop $shop): array
+{
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, ['code' => 'NFM-DEPT-'.uniqid(), 'name' => 'Not Follow Master Department']);
+    $masterFamilyA    = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'NFM-FA-'.uniqid(), 'name' => 'Not Follow Master Family A']);
+    $masterFamilyB    = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'NFM-FB-'.uniqid(), 'name' => 'Not Follow Master Family B']);
+    $masterAsset      = StoreMasterAsset::make()->action($masterFamilyA, [
+        'code'    => 'NFM-MA-'.uniqid(),
+        'name'    => 'Not Follow Master Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => 10,
+        'stocks'  => [],
+    ]);
+
+    [, $product] = createProduct($shop);
+    $department  = $shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $familyA     = StoreProductCategory::make()->action($department, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::FAMILY->value]));
+    $familyB     = StoreProductCategory::make()->action($department, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::FAMILY->value]));
+    $familyA->updateQuietly(['master_product_category_id' => $masterFamilyA->id]);
+    $familyB->updateQuietly(['master_product_category_id' => $masterFamilyB->id]);
+    $product->updateQuietly(['master_product_id' => $masterAsset->id]);
+
+    $masterCollection = StoreMasterCollection::make()->action($masterDepartment, ['code' => 'NFM-MC-'.uniqid(), 'name' => 'Master name'], createChildren: false);
+    $collection       = StoreCollection::make()->action($shop, [
+        'code'                 => 'NFM-C-'.uniqid(),
+        'name'                 => 'Shop name',
+        'master_collection_id' => $masterCollection->id,
+    ]);
+
+    return [$masterCollection, $collection->refresh(), $masterFamilyA, $masterFamilyB, $masterAsset, $familyA, $familyB, $product];
+}
+
+test('collection items follow master unless not_follow_master_items, and mirror it again when switched off', function () {
+    [$masterCollection, $collection, $masterFamilyA, $masterFamilyB, $masterAsset, $familyA, $familyB, $product] = createShopCollectionUnderMaster($this->shop);
+
+    expect($collection->not_follow_master_items)->toBeFalse()
+        ->and($collection->not_follow_master_content)->toBeFalse();
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyB);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterAsset);
+    DetachMasterModelFromMasterCollection::make()->action($masterCollection, $masterFamilyA);
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id])
+        ->and($collection->products()->count())->toBe(0);
+
+    // The shop edits it on its own: the product comes in through its family
+    \App\Actions\Catalogue\Collection\AttachModelsToCollection::make()->action($collection, ['families' => [$product->family_id]]);
+    expect($collection->families()->pluck('product_categories.id')->sort()->values()->all())->toBe(collect([$familyA->id, $product->family_id])->sort()->values()->all())
+        ->and($collection->products()->wherePivot('type', 'indirect')->pluck('products.id')->all())->toContain($product->id);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyB->id])
+        ->and($collection->products()->wherePivot('type', 'direct')->pluck('products.id')->all())->toBe([$product->id])
+        ->and($collection->products()->wherePivot('type', 'indirect')->count())->toBe(0);
+
+    // Following again, so master changes reach it
+    DetachMasterModelFromMasterCollection::make()->action($masterCollection, $masterFamilyB);
+    expect($collection->families()->count())->toBe(0);
+});
+
+test('shop cannot attach or detach items of a collection that follows master items', function () {
+    [, $collection, , , , $familyA] = createShopCollectionUnderMaster($this->shop);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), ['families' => [$familyA->id]])
+        ->assertSessionHasErrors('collection');
+    expect($collection->families()->count())->toBe(0);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), ['families' => [$familyA->id]])
+        ->assertSessionHasNoErrors();
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+
+    \Pest\Laravel\delete(route('grp.models.collection.detach-models', ['collection' => $collection->id]), ['family' => $familyA->id])
+        ->assertSessionHasErrors('collection');
+});
+
+test('collection content follows master unless not_follow_master_content, and is taken from master again when switched off', function () {
+    [$masterCollection, $collection] = createShopCollectionUnderMaster($this->shop);
+    $shop   = $collection->shop;
+    $locale = $shop->language->code;
+    UpdateShop::make()->action($shop, ['collection_follow_master' => true]);
+
+    UpdateMasterCollection::make()->action($masterCollection, ['name' => 'Master name 2']);
+    expect($collection->refresh()->name)->toBe('Master name 2');
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => true]);
+
+    UpdateMasterCollection::make()->action($masterCollection, ['name' => 'Master name 3']);
+    \App\Actions\Masters\MasterCollection\UpdateMasterCollectionTranslationsFromUpdate::make()->action($masterCollection, [
+        'translations' => ['name' => [$locale => 'Master name translated']]
+    ]);
+    expect($collection->refresh()->name)->toBe('Master name 2');
+
+    // Local texts stay local
+    UpdateCollection::make()->action($collection, ['description' => 'Local description']);
+    expect($masterCollection->refresh()->getTranslations('description_i8n'))->not->toHaveKey($locale)
+        ->and($collection->refresh()->description)->toBe('Local description');
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => false]);
+
+    $collection->refresh();
+    expect($collection->name)->toBe('Master name translated')
+        ->and($collection->name_i8n)->toBe([$locale => 'Master name translated']);
+});
+
+test('updating a collection the old way leaves its follow master flags and items alone', function () {
+    [$masterCollection, $collection, $masterFamilyA, , , $familyA] = createShopCollectionUnderMaster($this->shop);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+
+    UpdateCollection::make()->action($collection, ['name' => 'Renamed in shop']);
+
+    $collection->refresh();
+    expect($collection->name)->toBe('Renamed in shop')
+        ->and($collection->not_follow_master_items)->toBeFalse()
+        ->and($collection->not_follow_master_content)->toBeFalse()
+        ->and($collection->families()->pluck('product_categories.id')->all())->toBe([$familyA->id]);
+});
+
+test('UI collection under master shows the follow master toggles and opens item editing only when not following', function () {
+    [, $collection] = createShopCollectionUnderMaster($this->shop);
+    $parameters = [$this->organisation->slug, $this->shop->slug, $collection->slug];
+
+    get(route('grp.org.shops.show.catalogue.collections.edit', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint.1.fields.not_follow_master_items.value', false)
+            ->where('formData.blueprint.1.fields.not_follow_master_content.value', false));
+
+    get(route('grp.org.shops.show.catalogue.collections.show', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Catalogue/Collection')->where('can_edit_items', false));
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true, 'not_follow_master_content' => true]);
+
+    get(route('grp.org.shops.show.catalogue.collections.edit', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formData.blueprint.1.fields.not_follow_master_items.value', true)
+            ->where('formData.blueprint.1.fields.not_follow_master_content.value', true));
+
+    get(route('grp.org.shops.show.catalogue.collections.show', $parameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit_items', true)->where('not_follow_master_items', true));
+
+    request()->merge(['filter' => ['global' => $collection->code]]);
+    $listed = collect(\App\Http\Resources\Catalogue\CollectionsResource::collection(
+        \App\Actions\Catalogue\Collection\UI\IndexCollections::run($this->shop)
+    )->resolve())->firstWhere('id', $collection->id);
+    $listedInMaster = collect(\App\Http\Resources\Catalogue\CollectionsResource::collection(
+        \App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection::run($collection->masterCollection)
+    )->resolve())->firstWhere('id', $collection->id);
+    expect($listed['not_follow_master_items'])->toBeTrue()
+        ->and($listedInMaster['not_follow_master_items'])->toBeTrue();
+});
+
+test('shop editing items of a collection that does not follow master items leaves the master untouched', function () {
+    [$masterCollection, $collection, $masterFamilyA, , $masterAsset, $familyA, $familyB, $product] = createShopCollectionUnderMaster($this->shop);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterFamilyA);
+    AttachModelToMasterCollection::make()->action($masterCollection, $masterAsset);
+
+    $masterItems = fn () => DB::table('master_collection_has_models')
+        ->where('master_collection_id', $masterCollection->id)
+        ->orderBy('model_type')->orderBy('model_id')
+        ->get(['model_type', 'model_id', 'type', 'created_at', 'updated_at'])
+        ->toArray();
+    $masterBefore = $masterItems();
+    $masterRowBefore = (array) DB::table('master_collections')->where('id', $masterCollection->id)->first();
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+
+    post(route('grp.models.collection.attach-models', ['collection' => $collection->id]), [
+        'families' => [$familyB->id],
+        'products' => [$product->id],
+    ])->assertSessionHasNoErrors();
+    \Pest\Laravel\delete(route('grp.models.collection.detach-models', ['collection' => $collection->id]), ['family' => $familyA->id])
+        ->assertSessionHasNoErrors();
+
+    expect($collection->families()->pluck('product_categories.id')->all())->toBe([$familyB->id])
+        ->and($masterItems())->toEqual($masterBefore)
+        ->and((array) DB::table('master_collections')->where('id', $masterCollection->id)->first())->toEqual($masterRowBefore);
+});
+
+test('master collection counts its shop collections that do not follow master items or content', function () {
+    [$masterCollection, $collection] = createShopCollectionUnderMaster($this->shop);
+    $stats = fn () => $masterCollection->stats()->first(['total_collections_rebel_items', 'total_collections_rebel_content'])->toArray();
+
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 0]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => true]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 1, 'total_collections_rebel_content' => 0]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_content' => true]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 1, 'total_collections_rebel_content' => 1]);
+
+    UpdateCollection::make()->action($collection, ['not_follow_master_items' => false]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 1]);
+
+    // Moving to another master takes the count along
+    [$otherMasterCollection] = createShopCollectionUnderMaster($this->shop);
+    UpdateCollection::make()->action($collection, ['master_collection_id' => $otherMasterCollection->id]);
+    expect($stats())->toBe(['total_collections_rebel_items' => 0, 'total_collections_rebel_content' => 0])
+        ->and($otherMasterCollection->stats()->first()->total_collections_rebel_content)->toBe(1);
+
+    \App\Actions\Catalogue\Collection\DeleteCollection::make()->handle($collection->refresh());
+    expect($otherMasterCollection->stats()->first()->total_collections_rebel_content)->toBe(0);
+
+    $this->artisan('hydrate:master_collections')->assertSuccessful();
+});
+
+test('masters staff view and edit the catalogue of shops under a master and view any organisation stock', function () {
+    $masterShop = createFreshMasterShop();
+    DB::table('shops')->where('id', $this->shop->id)->update(['master_shop_id' => $masterShop->id]);
+    $shopWithoutMaster = Shop::where('group_id', $this->group->id)->whereNull('master_shop_id')->first();
+
+    setPermissionsTeamId($this->group->id);
+    $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    expect($user->authTo("products.{$this->shop->id}.view"))->toBeFalse()
+        ->and($user->authTo("inventory.{$this->organisation->id}.view"))->toBeFalse();
+
+    $user->assignRole('masters-viewer');
+    $user->refresh();
+    expect($user->authTo("products.{$this->shop->id}.view"))->toBeTrue()
+        ->and($user->authTo("products.{$this->shop->id}.edit"))->toBeFalse()
+        ->and($user->authTo(["crm.{$this->shop->id}.view", "products.{$this->shop->id}.view"]))->toBeTrue()
+        ->and($user->authTo("inventory.{$this->organisation->id}.view"))->toBeTrue()
+        ->and($user->authTo("inventory.{$this->organisation->id}.edit"))->toBeFalse()
+        ->and($user->authTo("crm.{$this->shop->id}.view"))->toBeFalse();
+
+    \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($user);
+    expect($user->authorisedShops()->where('shops.id', $this->shop->id)->exists())->toBeTrue()
+        ->and($user->authorisedOrganisations()->where('organisations.id', $this->organisation->id)->exists())->toBeTrue()
+        ->and($user->authorisedWarehouses()->where('warehouses.organisation_id', $this->organisation->id)->count())
+        ->toBe($this->organisation->warehouses()->count());
+
+    $user->assignRole('masters-manager');
+    $user->refresh();
+    expect($user->authTo("products.{$this->shop->id}.edit"))->toBeTrue()
+        ->and($user->authTo("products.{$this->shop->id}"))->toBeTrue();
+
+    if ($shopWithoutMaster) {
+        expect($user->authTo("products.{$shopWithoutMaster->id}.view"))->toBeFalse();
+    }
 });

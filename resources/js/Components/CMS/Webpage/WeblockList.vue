@@ -74,7 +74,7 @@ onMounted(() => {
 							<input v-model="search" type="text" :placeholder="trans('Search block...')"
 								class="w-64 pl-9 pr-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300" />
 							<FontAwesomeIcon :icon="faSearch"
-								class=" absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></FontAwesomeIcon>
+								class=" absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" fixed-width></FontAwesomeIcon>
 						</div>
 					</div>
 				</div>
@@ -113,7 +113,7 @@ onMounted(() => {
 									<Image v-if="block.screenshot" :src="block.screenshot"
 										class="max-h-full max-w-full object-contain transition group-hover:scale-[1.03]" />
 
-									<FontAwesomeIcon v-else icon="fal fa-image" class="text-3xl text-gray-300" />
+									<FontAwesomeIcon v-else icon="fal fa-image" class="text-3xl text-gray-300" fixed-width />
 								</div>
 
 								<!-- title -->

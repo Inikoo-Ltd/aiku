@@ -121,7 +121,7 @@ defineExpose({
             <!-- MOBILE : Carousel -->
             <div v-if="isMobile" @click.capture="onClickAnnouncement($event, activeIndex)" class="flex items-center transition-all duration-500">
                 <FontAwesomeIcon v-if="texts[activeIndex]?.icon && navigatingIndex !== activeIndex" :icon="texts[activeIndex].icon"
-                    class="opacity-50 mr-2" />
+                    class="opacity-50 mr-2" fixed-width />
                 <span v-html="texts[activeIndex]?.text"></span>
                 <LoadingIcon v-if="navigatingIndex === activeIndex" class="opacity-70 ml-2" />
             </div>
@@ -133,7 +133,7 @@ defineExpose({
                         paddingLeft: announcementData?.fields?.text_transition_data?.gap + 'px',
                         paddingRight: announcementData?.fields?.text_transition_data?.gap + 'px',
                     }">
-                    <FontAwesomeIcon v-if="abc.icon && navigatingIndex !== idx" :icon="abc.icon" class="opacity-50" />
+                    <FontAwesomeIcon v-if="abc.icon && navigatingIndex !== idx" :icon="abc.icon" class="opacity-50" fixed-width />
                     <LoadingIcon v-if="navigatingIndex === idx" class="opacity-70 my-auto" />
                     <span v-html="abc.text"></span>
                 </div>

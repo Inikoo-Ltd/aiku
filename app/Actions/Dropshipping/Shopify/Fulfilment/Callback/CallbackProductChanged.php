@@ -28,8 +28,8 @@ class CallbackProductChanged extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
-        $portfolio = Portfolio::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->where('platform_product_id', $modelData['id'])->first();
-        if ($portfolio) {
+        $portfolios = Portfolio::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->where('platform_product_id', $modelData['id'])->get();
+        foreach ($portfolios as $portfolio) {
             CheckShopifyPortfolio::run($portfolio);
         }
 

@@ -18,7 +18,6 @@ use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Web\Website\Layouts\FetchUsedDepartmentDescriptionWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedFamiliesOverviewWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
-use App\Actions\Web\Website\Layouts\FetchUsedProductWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedFamiliesWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedFamilyDescriptionWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedSubDepartmentsWebBlock;
@@ -71,6 +70,12 @@ class StoreWebpage extends OrgAction
 
         if (!Arr::exists($modelData, 'sub_type')) {
             $modelData['sub_type'] = WebpageSubTypeEnum::CONTENT;
+        }
+
+        $subType = WebpageSubTypeEnum::fromValue($modelData['sub_type']);
+
+        foreach ($subType?->searchEngineVisibility() ?? [] as $field => $isVisible) {
+            data_set($modelData, $field, $isVisible, overwrite: $subType->isHiddenFromSearchEngines());
         }
 
         if (Arr::exists($modelData, 'seo_structure_type')) {
@@ -148,7 +153,6 @@ class StoreWebpage extends OrgAction
 
             if ($this->strict || $isFromCSV) {
                 $usedProductsTemplateCode               = FetchUsedProductsWebBlock::run($this->website);
-                $usedProductTemplateCode                = FetchUsedProductWebBlock::run($this->website);
                 $usedFamiliesTemplateCode               = FetchUsedFamiliesWebBlock::run($this->website);
                 $usedFamiliesOverviewTemplateCode       = FetchUsedFamiliesOverviewWebBlock::run($this->website);
                 $usedFamilyDescriptionTemplateCode      = FetchUsedFamilyDescriptionWebBlock::run($this->website);
@@ -156,11 +160,7 @@ class StoreWebpage extends OrgAction
                 $usedSubDepartmentsTemplateCode         = FetchUsedSubDepartmentsWebBlock::run($this->website);
 
                 if ($model instanceof Product) {
-                    $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::PRODUCT, $usedProductTemplateCode);
-                    $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
-                    $this->createWebBlock($webpage, 'luigi-trends-1');
-                    $this->createWebBlock($webpage, 'recommendation-customer-recently-bought-1');
-                    $this->createWebBlock($webpage, 'luigi-last-seen-1');
+                    StoreProductWebpageDefaultWebBlocks::run($webpage);
                 } elseif ($model instanceof Collection) {
                     $this->createWebBlock($webpage, 'collection-description-1');
                     $this->createWebBlockFromSavedTemplate($webpage, WebBlockTemplateEnum::FAMILIES, $usedFamiliesTemplateCode);
@@ -336,6 +336,8 @@ class StoreWebpage extends OrgAction
             'title'              => ['required', 'string'],
             'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
             'seo_data'           => ['sometimes', 'array'],
+            'index_page'         => ['sometimes', 'boolean'],
+            'follow_link'        => ['sometimes', 'boolean'],
             'layout_style'       => ['sometimes', 'string'],
             'fieldValue'         => ['sometimes', 'array'],
             'fromCSV'            => ['sometimes', 'boolean']
@@ -355,6 +357,9 @@ class StoreWebpage extends OrgAction
                             'column' => 'website_id',
                             'value'  => $this->website->id
                         ],
+
+                        ['column' => 'deleted_at', 'operator' => 'null'],
+
                     ]
                 ),
             ];

@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer;
+use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
@@ -25,6 +26,7 @@ use App\Actions\Billables\Service\StoreService;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
+use App\Actions\Chat\ChatSession\StartCustomerEmailChat;
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\AttachModelsToCollection;
 use App\Actions\Catalogue\Collection\AttachMultipleParentsToACollection;
@@ -39,8 +41,11 @@ use App\Actions\Catalogue\Product\AttachImagesToProduct;
 use App\Actions\Catalogue\Product\DeleteImagesFromProduct;
 use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Product\MoveFamilyProductToOtherFamily;
+use App\Actions\Catalogue\Product\KeepRetiredProductAsSeparate;
+use App\Actions\Catalogue\Product\RetireProductIntoReplacement;
 use App\Actions\Catalogue\Product\SetProductOffline;
 use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\SyncProductExclusiveCustomers;
 use App\Actions\Catalogue\Product\SyncProductTradeUnitsToMasterAsset;
 use App\Actions\Catalogue\Product\UI\HydrateProductImagesFromTradeUnits;
 use App\Actions\Catalogue\Product\UpdateBulkProduct;
@@ -59,6 +64,7 @@ use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\RehydrateChildProductImages;
 use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\SyncProductCategoryRelatedProductCategories;
 use App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRelatedProducts;
+use App\Actions\SysAdmin\McpChange\RevertMcpChange;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
@@ -113,11 +119,14 @@ use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\ApproveCustomer;
+use App\Actions\CRM\Customer\AnonymiseCustomer;
+use App\Actions\CRM\CustomerComms\UnsubscribeCustomerFromMarketing;
 use App\Actions\CRM\Customer\DeleteCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
@@ -414,7 +423,9 @@ use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\ProcurementNote\StoreProcurementNote;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderJourneyStage;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
@@ -437,6 +448,8 @@ use App\Actions\Production\Artefact\Label\PublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\StoreArtefactLabel;
 use App\Actions\Production\Artefact\Label\UnpublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabel;
+use App\Actions\Production\Artefact\Label\UpdateArtefactLabelOnArtwork;
+use App\Actions\Inventory\OrgStock\UpdateOrgStockLabelMandatoryInformation;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
@@ -456,6 +469,7 @@ use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock;
 use App\Actions\Production\JobOrder\StoreJobOrder;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
+use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
 use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
@@ -498,6 +512,7 @@ use App\Actions\SysAdmin\User\DeleteUserAccessToken;
 use App\Actions\SysAdmin\User\StoreUserFromEmployee;
 use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
+use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\Web\Announcement\DeleteAnnouncement;
@@ -533,7 +548,6 @@ use App\Actions\Web\WebLayoutTemplate\ApplyWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\DeleteWebLayoutTemplate;
 use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
-use App\Actions\Web\Webpage\RefreshWebpagePageSpeed;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
@@ -561,12 +575,13 @@ use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
 use App\Stubs\UIDummies\ImportDummy;
 use App\Actions\Helpers\Ticket\DeleteTicket;
-use App\Actions\Helpers\Ticket\EscalateTicket;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicketComment;
+use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
 use App\Actions\Helpers\Ticket\ToggleTicketCommentVisibility;
+use App\Actions\Helpers\Ticket\TranslateTicketText;
 use App\Actions\Helpers\Ticket\DeleteTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
@@ -579,18 +594,21 @@ Route::post('dashboard/break-cache', BreakDashboardTimeSeriesCache::class)->name
 Route::get('/profile/app-login-qrcode', GetProfileAppLoginQRCode::class)->name('profile.app-login-qrcode');
 
 Route::patch('notification/{notification}', MarkNotificationAsRead::class)->name('notifications.read');
+Route::patch('notification/{notification}/unread', MarkNotificationAsUnread::class)->name('notifications.unread');
 Route::patch('notifications', MarkAllNotificationAsRead::class)->name('notifications.all.read');
 
 Route::prefix('ticket')->name('ticket.')->group(function () {
     Route::post('/', StoreTicket::class)->name('store');
     Route::patch('{ticket:id}', UpdateTicket::class)->name('update')->whereNumber('ticket');
     Route::patch('{ticket:id}/collaborators', SyncTicketCollaborators::class)->name('collaborators.update')->whereNumber('ticket');
+    Route::patch('{ticket:id}/deploy-comment', UpdateTicketDeployComment::class)->name('deploy_comment.update')->whereNumber('ticket');
     Route::post('{ticket:id}/comment', StoreTicketComment::class)->name('comment.store')->whereNumber('ticket');
     Route::patch('comment/{ticketComment:id}', UpdateTicketComment::class)->name('comment.update')->whereNumber('ticketComment');
     Route::patch('comment/{ticketComment:id}/visibility', ToggleTicketCommentVisibility::class)->name('comment.toggle_visibility')->whereNumber('ticketComment');
+    Route::post('comment/{ticketComment:id}/translate', TranslateTicketText::class)->name('comment.translate')->whereNumber('ticketComment');
+    Route::post('{ticket:id}/translate', [TranslateTicketText::class, 'inTicket'])->name('translate')->whereNumber('ticket');
     Route::delete('comment/{ticketComment:id}', DeleteTicketComment::class)->name('comment.delete')->whereNumber('ticketComment');
     Route::post('{ticket:id}/rate', RateTicket::class)->name('rate')->whereNumber('ticket');
-    Route::post('{ticket:id}/escalate', EscalateTicket::class)->name('escalate')->whereNumber('ticket');
     Route::delete('{ticket:id}', DeleteTicket::class)->name('delete')->whereNumber('ticket');
 });
 
@@ -660,6 +678,7 @@ Route::prefix('shipping-zone')->name('shipping_zone.')->group(function () {
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');
 Route::patch('customer/{customer:id}', UpdateCustomer::class)->name('customer.update')->withoutScopedBindings();
+Route::patch('customer/{customer:id}/credit-line', UpdateCustomerCreditLine::class)->name('customer.credit_line.update')->withoutScopedBindings();
 Route::patch('credit-transaction/{customer:id}/increase', IncreaseCreditTransactionCustomer::class)->name('credit_transaction.increase')->withoutScopedBindings();
 Route::patch('credit-transaction/{customer:id}/decrease', DecreaseCreditTransactionCustomer::class)->name('credit_transaction.decrease')->withoutScopedBindings();
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
@@ -685,6 +704,7 @@ Route::patch('master-product-category/{masterProductCategory:id}/related-assets'
 Route::patch('master-product-category/{masterProductCategory:id}/related-master-product-categories', SyncMasterProductCategoryRelatedMasterProductCategories::class)->name('master_product_category.related_master_product_categories.sync')->withoutScopedBindings();
 
 Route::patch('product-category/{productCategory:id}/related-products', SyncProductCategoryRelatedProducts::class)->name('product_category.related_products.sync')->withoutScopedBindings();
+Route::post('mcp-change/{mcpChange:id}/revert', RevertMcpChange::class)->name('mcp_change.revert');
 Route::patch('product-category/{productCategory:id}/related-product-categories', SyncProductCategoryRelatedProductCategories::class)->name('product_category.related_product_categories.sync')->withoutScopedBindings();
 
 Route::patch('master-product-category/{masterProductCategory:id}/reorder-index', UpdateMasterAssetIndex::class)->name('master_product_category.reorder_index');
@@ -928,7 +948,10 @@ Route::delete('recurring-bill-transaction/{recurringBillTransaction:id}', Delete
 Route::name('product.')->prefix('product')->group(function () {
     Route::post('/product/', StoreProduct::class)->name('store');
     Route::patch('/{product:id}/offline', SetProductOffline::class)->name('offline');
+    Route::patch('/{product:id}/retire-into-replacement', RetireProductIntoReplacement::class)->name('retire_into_replacement');
+    Route::patch('/{product:id}/keep-as-separate', KeepRetiredProductAsSeparate::class)->name('keep_as_separate');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
+    Route::patch('/{product:id}/exclusive-customers', SyncProductExclusiveCustomers::class)->name('exclusive_customers.update');
     Route::patch('/{shop:id}/bulk-update', UpdateBulkProduct::class)->name('bulk_update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
@@ -1094,6 +1117,7 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
 });
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
+    Route::post('email-chat', [StartCustomerEmailChat::class, 'inShop'])->name('email_chat.store');
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('prospect/mailshot', StoreProspectMailshot::class)->name('prospect.mailshot.store');
     Route::post('prospect/mailshot/{mailshot:id}/send', SendProspectMailShot::class)->name('prospect.mailshot.send')->withoutScopedBindings();
@@ -1159,8 +1183,10 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('send-test', SendTestEmail::class)->name('send-test');
     });
 
+
     Route::name('email-template.')->prefix('email-template')->group(function () {
         Route::post('', StoreMailshotTemplate::class)->name('store')->withoutScopedBindings();
+        Route::post('common-outbox', [StoreMailshotTemplate::class, 'inCommonOutbox'])->name('store.common-outbox')->withoutScopedBindings();
         Route::patch('{emailTemplate:id}', UpdateMailshotTemplate::class)->name('update')->withoutScopedBindings();
         Route::post('{emailTemplate:id}/as-new-template', StoreMailshotAsNewTemplate::class)->name('store.as-new-template')->withoutScopedBindings();
         Route::delete('{emailTemplate:id}', DeleteMailshotTemplate::class)->name('delete')->withoutScopedBindings();
@@ -1301,11 +1327,14 @@ Route::delete('/web-user/{webUser:id}', DeleteWebUser::class)->name('web-user.de
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
     Route::delete('', DeleteCustomer::class)->name('delete');
+    Route::post('anonymise', AnonymiseCustomer::class)->name('anonymise');
+    Route::post('unsubscribe-marketing', UnsubscribeCustomerFromMarketing::class)->name('unsubscribe_marketing');
     Route::post('delivery-address', AddDeliveryAddressToCustomer::class)->name('address.store');
     Route::patch('address/update', UpdateCustomerAddress::class)->name('address.update');
     Route::delete('address/{address:id}/delete', [DeleteCustomerDeliveryAddress::class, 'inCustomer'])->name('delivery-address.delete')->withoutScopedBindings();
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inCustomer'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
+    Route::post('email-chat', StartCustomerEmailChat::class)->name('email_chat.store');
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('submitted-order', StoreSubmittedOrder::class)->name('submitted_order.store');
     Route::post('tags/store', [StoreTag::class, 'inCustomer'])->name('tags.store');
@@ -1338,6 +1367,7 @@ Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::cl
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
 Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}', UpdateAgentSupplierPurchaseOrder::class)->name('agent_supplier_purchase_order.update');
 Route::post('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/deposit', StoreAspoDeposit::class)->name('agent_supplier_purchase_order.deposit.store');
+Route::patch('/agent-supplier-purchase-order/{agentSupplierPurchaseOrder:id}/journey-stage', [UpdatePurchaseOrderJourneyStage::class, 'inAgentSupplierPurchaseOrder'])->name('agent_supplier_purchase_order.journey_stage');
 
 Route::name('aspo-deposit.')->prefix('aspo-deposit/{aspoDeposit:id}')->group(function () {
     Route::patch('update', UpdateAspoDeposit::class)->name('update');
@@ -1374,6 +1404,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
 
 Route::patch('/job-order/{jobOrder:id}', UpdateJobOrder::class)->name('job-order.update');
 Route::post('/job-order/{jobOrder:id}/item', StoreJobOrderItem::class)->name('job-order.item.store')->withoutScopedBindings();
+Route::patch('/job-order-item/{jobOrderItem:id}', UpdateJobOrderItem::class)->name('job-order-item.update')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/confirm', ConfirmJobOrder::class)->name('job-order.confirm')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class)->name('job-order.receive')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidManufactureTaskSession::class)->name('manufacture-task-session.void')->withoutScopedBindings();
@@ -1434,6 +1465,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
 });
 
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
+    Route::post('note', [StoreProcurementNote::class, 'inStockDelivery'])->name('note.store');
     Route::patch('update', UpdateStockDelivery::class)->name('update');
     Route::patch('dispatch', DispatchStockDelivery::class)->name('dispatch');
     Route::patch('undispatch', UndispatchStockDelivery::class)->name('undispatch');
@@ -1480,14 +1512,16 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
+    Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
     Route::delete('', DeletePurchaseOrder::class)->name('delete');
     Route::patch('submit', UpdatePurchaseOrderStateToSubmitted::class)->name('submit');
     Route::patch('undo-submit', UpdatePurchaseOrderStateToInProcess::class)->name('undo-submit');
+    Route::post('note', [StoreProcurementNote::class, 'inPurchaseOrder'])->name('note.store');
     Route::patch('confirm', UpdatePurchaseOrderStateToConfirmed::class)->name('confirm');
     Route::patch('undo-confirm', RevertPurchaseOrderToSubmitted::class)->name('undo-confirm');
     Route::patch('cancel', UpdatePurchaseOrderStateToCancelled::class)->name('cancel');
     Route::post('stock-delivery', StoreStockDeliveryFromPurchaseOrder::class)->name('stock-delivery.store');
-    Route::post('transactions/{historicSupplierProduct:id}/{orgStock:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
+    Route::post('transactions/{orgSupplierProduct:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/update', UpdatePurchaseOrderTransaction::class)->name('transaction.update')->withoutScopedBindings();
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/cancel', CancelPurchaseOrderTransaction::class)->name('transaction.cancel')->withoutScopedBindings();
@@ -1543,11 +1577,25 @@ Route::name('artefact.')->prefix('artefact/{artefact:id}')->group(function () {
     Route::post('labels/{label:id}/unpublish', UnpublishArtefactLabel::class)->name('labels.unpublish');
     Route::get('labels/{label:id}/pdf', DownloadArtefactLabelPdf::class)->name('labels.pdf');
     Route::delete('labels/{label:id}', DeleteArtefactLabel::class)->name('labels.delete');
+    Route::post('labels/{label:id}/on-artwork', UpdateArtefactLabelOnArtwork::class)->name('labels.on_artwork');
     Route::post('tags/store', [StoreTag::class, 'inArtefact'])->name('tags.store');
     Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inArtefact'])->name('tags.update');
     Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inArtefact'])->name('tags.delete');
     Route::post('tags/attach', [AttachTagsToModel::class, 'inArtefact'])->name('tags.attach');
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inArtefact'])->name('tags.detach');
+});
+
+Route::name('org_stock.')->prefix('org-stock/{orgStock:id}')->group(function () {
+    Route::post('label-sheet', [PdfArtefactLabelSheet::class, 'inOrgStock'])->name('label_sheet');
+    Route::post('labels', [StoreArtefactLabel::class, 'inOrgStock'])->name('labels.store');
+    Route::post('labels/{label:id}', [UpdateArtefactLabel::class, 'inOrgStock'])->name('labels.update');
+    Route::post('labels/{label:id}/publish', [PublishArtefactLabel::class, 'inOrgStock'])->name('labels.publish');
+    Route::post('labels/{label:id}/unpublish', [UnpublishArtefactLabel::class, 'inOrgStock'])->name('labels.unpublish');
+    Route::post('labels/{label:id}/on-artwork', [UpdateArtefactLabelOnArtwork::class, 'inOrgStock'])->name('labels.on_artwork');
+    Route::get('labels/{label:id}/pdf', [DownloadArtefactLabelPdf::class, 'inOrgStock'])->name('labels.pdf');
+    Route::delete('labels/{label:id}', [DeleteArtefactLabel::class, 'inOrgStock'])->name('labels.delete');
+    Route::patch('label-mandatory-information', UpdateOrgStockLabelMandatoryInformation::class)->name('label_mandatory_information.update');
+    Route::post('compliance-item', [StoreArtefactComplianceItem::class, 'inOrgStock'])->name('compliance-item.store');
 });
 
 Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () {
@@ -1578,7 +1626,6 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('webpage/{webpage:id}/break-cache', BreakWebpageCache::class)->name('webpage.break_cache')->withoutScopedBindings();
-Route::post('webpage/{webpage:id}/pagespeed/refresh', RefreshWebpagePageSpeed::class)->name('webpage.pagespeed.refresh')->withoutScopedBindings();
 Route::post('webpage/{webpage:id}/redirect', StoreRedirectFromWebpage::class)->name('webpage.redirect.store')->withoutScopedBindings();
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
@@ -1639,10 +1686,10 @@ Route::patch('master-variant/{masterVariant:id}', UpdateMasterVariant::class)->n
 
 Route::patch('variant/{variant:id}', UpdateVariant::class)->name('variant.update');
 
-Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update');
-Route::patch('delivery-note-item/{deliveryNoteItem:id}/apply-new-composition', ApplyNewCompositionToDeliveryNoteItem::class)->name('delivery_note_item.apply_new_composition');
-Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store');
-Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete');
+Route::patch('delivery-note-item/{deliveryNoteItem:id}', UpdateDeliveryNoteItem::class)->name('delivery_note_item.update')->middleware(EnsureNotHandledInAurora::class);
+Route::patch('delivery-note-item/{deliveryNoteItem:id}/apply-new-composition', ApplyNewCompositionToDeliveryNoteItem::class)->name('delivery_note_item.apply_new_composition')->middleware(EnsureNotHandledInAurora::class);
+Route::patch('delivery-note-item/{deliveryNoteItem:id}/store-packing', UpdateDeliveryNoteItemPacking::class)->name('delivery_note_item.packing.store')->middleware(EnsureNotHandledInAurora::class);
+Route::delete('delivery-note-item/{deliveryNoteItem:id}/unpack-packing', UpdateDeliveryNoteItemUnpack::class)->name('delivery_note_item.packing.delete')->middleware(EnsureNotHandledInAurora::class);
 
 Route::name('clocking-machine.')->prefix('clocking-machine')->group(function () {
     Route::post('{clockingMachine}/qr/generate', GenerateClockingMachineQrCode::class)->name('qr.generate');

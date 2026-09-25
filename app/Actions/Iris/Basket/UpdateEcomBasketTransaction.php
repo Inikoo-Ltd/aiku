@@ -10,6 +10,7 @@ namespace App\Actions\Iris\Basket;
 
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
@@ -18,8 +19,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateEcomBasketTransaction extends IrisAction
 {
+    use WithCustomerPurchasableProduct;
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
+        $this->ensureCustomerCanChangeLine($transaction, Arr::get($modelData, 'quantity_ordered'));
+
         $transaction->order->update([
             'updated_by_customer_at' => now()
         ]);
@@ -31,7 +39,7 @@ class UpdateEcomBasketTransaction extends IrisAction
     public function rules(): array
     {
         return [
-            'quantity_ordered'          => ['required', 'numeric', 'min:0'],
+            'quantity_ordered'          => ['required', 'integer', 'min:0'],
         ];
     }
 

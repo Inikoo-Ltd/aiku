@@ -112,7 +112,7 @@ function deleteItem(item: { id: number }) {
                         <template v-if="item.days_of_cover !== null">
                             ·
                             <span :class="{ 'text-red-600 font-medium': Number(item.days_of_cover) <= 14, 'text-amber-600': Number(item.days_of_cover) > 14 && Number(item.days_of_cover) <= 30 }">
-                                {{ Number(item.days_of_cover) === 0 ? trans("we run out now") : `${trans("we run out in")} ~${Math.round(Number(item.days_of_cover))} ${trans("days")}` }}
+                                {{ Number(item.days_of_cover) === 0 ? trans("we run out now") : `${ctrans("Estimated: Would run out in")} ~${Math.round(Number(item.days_of_cover))} ${trans("days")}` }}
                             </span>
                         </template>
                     </div>

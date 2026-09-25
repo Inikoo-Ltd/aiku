@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import {Head, router} from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import {capitalize} from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import {computed, ref, inject, onMounted, onUnmounted} from 'vue'
@@ -16,7 +16,7 @@ import {useTabChange} from "@/Composables/tab-change"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import {debounce} from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import {trans} from "laravel-vue-i18n"
+import { ctrans } from '@/Composables/useTrans'
 import {routeType} from '@/types/route'
 import {PageHeadingTypes} from '@/types/PageHeading'
 import {UploadPallet} from '@/types/Pallet'
@@ -42,6 +42,7 @@ import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.v
 import {faSpinnerThird, faCheck} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
+import OrderPackagingPanel from '@/Components/Retina/Dropshipping/OrderPackagingPanel.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -136,6 +137,25 @@ const props = defineProps<{
     }
     is_forbidden_delivery: boolean
     is_forbidden_billing?: boolean
+    packaging_panel: {
+        packagingOptions: { value: number, label: string, price: number, price_max: number, sizes: string | null, family_code: string | null }[]
+        selectedPackaging: number | null
+        leafletOptions: { id: number, label: string, type: string, price: number, family_codes: string[] }[]
+        defaultLeafletsByFamily: Record<string, number[]>
+        insertsWithoutArtwork?: string[]
+        personalisedMessageLeafletIds?: number[]
+        personalisedMessage: string
+        customerLeaflets: {
+            id: number
+            leaflet_id: number
+            family_code: string | null
+            name: string
+            mime_type: string | null
+            meta: string | null
+            state: string
+            state_label: string
+        }[]
+    }
 }>()
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -155,6 +175,16 @@ onUnmounted(() => {
     }
 })
 const locale = inject('locale', aikuLocaleStructure)
+
+// Packaging & inserts is a per-shop setting. With it off the panel has nothing to show, so the
+// items table takes the whole row instead of leaving an empty column beside it.
+const hasPackagingPanel = computed<boolean>(
+    () => (props.packaging_panel?.packagingOptions?.length ?? 0) > 0
+)
+
+const insertsWithoutArtwork = computed<string[]>(
+    () => props.packaging_panel?.insertsWithoutArtwork ?? []
+)
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
@@ -201,8 +231,8 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         }, 3000)
 
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update the note, try again."),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update the note, try again."),
             type: "error",
         })
     }
@@ -246,8 +276,8 @@ const onAddProducts = async (product: { historic_asset_id: number }) => {
             onBefore: () => 'isLoadingSubmit.value = true',
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong."),
-                    text: error.products || undefined,
+                    title: ctrans("Something went wrong."),
+                    text: error.products || error.message,
                     type: "error"
                 })
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
@@ -268,8 +298,8 @@ const isModalUploadSpreadsheet = ref(false)
 
 const onNoStructureUpload = () => {
     notify({
-        title: trans("Something went wrong"),
-        text: trans("Upload structure is not provided. Please contact support."),
+        title: ctrans("Something went wrong"),
+        text: ctrans("Upload structure is not provided. Please contact support."),
         type: "error",
     })
 }
@@ -292,22 +322,22 @@ const onChangePriorityDispatch = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is changed to priority dispatch!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to priority dispatch!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is no longer on priority dispatch."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on priority dispatch."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update priority dispatch, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update priority dispatch, try again."),
                     type: "error"
                 })
             },
@@ -335,22 +365,22 @@ const onChangeExtraPacking = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is changed to extra packing!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to extra packing!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order is no longer on extra packing."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on extra packing."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update extra packing, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update extra packing, try again."),
                     type: "error"
                 })
             },
@@ -378,22 +408,22 @@ const onChangeInsurance = async (val: boolean) => {
             onSuccess: () => {
                 if (val) {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order has insurance!"),
+                        title: ctrans("Success"),
+                        text: ctrans("The order has insurance!"),
                         type: "success"
                     })
                 } else {
                     notify({
-                        title: trans("Success"),
-                        text: trans("The order no longer has insurance."),
+                        title: ctrans("Success"),
+                        text: ctrans("The order no longer has insurance."),
                         type: "success"
                     })
                 }
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update insurance, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update insurance, try again."),
                     type: "error"
                 })
             },
@@ -414,14 +444,14 @@ const onChangeInsurance = async (val: boolean) => {
                 <Button
                     v-if="upload_spreadsheet"
                     @click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-                    :label="trans('Upload products')"
+                    :label="ctrans('Upload products')"
                     icon="upload"
                     type="tertiary"
                     class="rounded-none border-0"
                 />
                 <Button
                     @click="() => isModalProductListOpen = true"
-                    :label="trans('Add products')"
+                    :label="ctrans('Add products')"
                     type="tertiary"
                     icon="fas fa-plus"
                     class="rounded-none border-none"
@@ -445,7 +475,8 @@ const onChangeInsurance = async (val: boolean) => {
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
           @update:tab="handleTabUpdate"/>
 
-    <div class="mb-4 mx-4 mt-4 overflow-x-auto rounded-md border border-gray-200">
+    <div class="mx-4 mt-4 grid grid-cols-1 gap-4 items-start" :class="hasPackagingPanel ? 'xl:grid-cols-3' : 'xl:grid-cols-1'">
+      <div class="min-w-0 mb-4 overflow-x-auto rounded-md border border-gray-200" :class="hasPackagingPanel ? 'xl:col-span-2' : 'xl:col-span-1'">
         <component :is="component"
                    :data="props[currentTab as keyof typeof props]" :tab="currentTab"
                    :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
@@ -527,6 +558,24 @@ const onChangeInsurance = async (val: boolean) => {
                 </div>
             </div>
         </template>
+      </div>
+
+      <!-- Packaging & Personalisation panel (frontend only, no order logic) -->
+      <div v-if="hasPackagingPanel" class="xl:col-span-1">
+        <OrderPackagingPanel
+          :accentColor="layout?.app?.theme?.[4]"
+          :currencyCode="currency?.code"
+          :packagingOptions="packaging_panel.packagingOptions"
+          :selectedPackaging="packaging_panel.selectedPackaging"
+          :leafletOptions="packaging_panel.leafletOptions"
+          :defaultLeafletsByFamily="packaging_panel.defaultLeafletsByFamily"
+          :personalisedMessage="packaging_panel.personalisedMessage"
+          :personalisedMessageLeafletIds="packaging_panel.personalisedMessageLeafletIds"
+          :customerLeaflets="packaging_panel.customerLeaflets"
+          :packagingPreferencesHref="route('retina.sysadmin.packaging-preferences.show')"
+          :updateRoute="{ name: 'retina.models.order.update_packaging', parameters: { order: data.data.id } }"
+        />
+      </div>
     </div>
 
     <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-4 md:px-6 gap-4">        
@@ -536,13 +585,13 @@ const onChangeInsurance = async (val: boolean) => {
             <!-- <div class="">
                 <div class="text-sm text-gray-500">
                     <FontAwesomeIcon style="color: rgb(148, 219, 132)" icon="fal fa-sticky-note" class="xopacity-70" fixed-width aria-hidden="true" />
-                    {{ trans("Notes from staff") }}
+                    {{ ctrans("Notes from staff") }}
                     :
                 </div>
                 <PureTextarea
                     :modelValue="props.data.data.public_notes || ''"
                     @update:modelValue="() => debounceDeliveryInstructions()"
-                    :placeholder="trans('No notes from staff')"
+                    :placeholder="ctrans('No notes from staff')"
                     rows="4"
                     disabled
                     xloading="isLoadingNote.includes('shipping_notes')"
@@ -572,7 +621,7 @@ const onChangeInsurance = async (val: boolean) => {
             <div class="">
                 <div class="text-sm text-gray-500">
                     <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
-                    {{ trans("Other Instructions") }}:
+                    {{ ctrans("Other Instructions") }}:
                 </div>
                 <PureTextarea
                     v-model="noteToSubmit"
@@ -593,7 +642,7 @@ const onChangeInsurance = async (val: boolean) => {
             <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
                     iconRight="fas fa-arrow-right"
-                    :label="trans('Place order')"
+                    :label="ctrans('Place order')"
                     :routeTarget="routes?.pay_with_balance"
                     class="w-full"
                     full
@@ -604,7 +653,7 @@ const onChangeInsurance = async (val: boolean) => {
                 <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
                     <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true"/>
                     <div class="leading-5">
-                        {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                        {{ ctrans("This is your final confirmation. You can pay totally with your current balance.") }}
                     </div>
                 </div>
             </template>
@@ -613,7 +662,7 @@ const onChangeInsurance = async (val: boolean) => {
             <ButtonWithLink
                 v-else
                 iconRight="fas fa-arrow-right"
-                :label="trans('Continue to Checkout')"
+                :label="ctrans('Continue to Checkout')"
                 :routeTarget="{
                     name: 'retina.dropshipping.checkout.show',
                     parameters: {
@@ -622,12 +671,24 @@ const onChangeInsurance = async (val: boolean) => {
                 }"
                 class="w-full"
                 full
-                :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                :tooltip="insertsWithoutArtwork.length
+                    ? trans('Upload the file for :inserts before checking out', { inserts: insertsWithoutArtwork.join(', ') })
+                    : undefined"
+                :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                    || insertsWithoutArtwork.length > 0"
             />
+
+            
+            <div v-if="insertsWithoutArtwork.length" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
+                <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
+                <div class="leading-5">
+                    {{ trans("Upload the file for :inserts before checking out.", { inserts: insertsWithoutArtwork.join(', ') }) }}
+                </div>
+            </div>
         </div>
         <div v-else class="w-full md:w-72 pt-5 text-sm">
-            <div v-if="is_forbidden_billing" class="text-red-500">*{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>
-            <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ trans("We cannot deliver to :_country. Please update the address or contact support.", { _country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
+            <div v-if="is_forbidden_billing" class="text-red-500">*{{ ctrans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: box_stats?.customer?.addresses?.billing?.country?.name }) }}</div>
+            <div v-else-if="is_forbidden_delivery" class="text-red-500">*{{ ctrans("We cannot deliver to :_country. Please update the address or contact support.", { _country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
         </div>
     </div>
 
@@ -639,10 +700,10 @@ const onChangeInsurance = async (val: boolean) => {
         <button @click="isModalProductListOpen = false" class="absolute top-3 right-3 z-50 flex items-center justify-center 
                w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 
                text-gray-600 hover:text-black transition">
-            <FontAwesomeIcon :icon="faTimes" />
+            <FontAwesomeIcon :icon="faTimes" fixed-width />
         </button>
 
-        <ProductsSelectorAutoSelect :headLabel="trans('Add products to Order') + ' #' + props?.data?.data?.reference"
+        <ProductsSelectorAutoSelect :headLabel="ctrans('Add products to Order') + ' #' + props?.data?.data?.reference"
             :routeFetch="props.routes.select_products" :isLoadingSubmit
             @submit="(products: {}) => onAddProducts(products)" :listLoadingProducts withQuantity />
     </Modal>

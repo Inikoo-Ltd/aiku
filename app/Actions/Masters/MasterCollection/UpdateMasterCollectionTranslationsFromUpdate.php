@@ -54,7 +54,7 @@ class UpdateMasterCollectionTranslationsFromUpdate extends OrgAction
         $masterCollection->save();
 
         if ($masterCollection->childrenCollections) {
-            foreach ($masterCollection->childrenCollections as $collection) {
+            foreach ($masterCollection->childrenCollections()->where('not_follow_master_content', false)->get() as $collection) {
                 $this->updateChildren($collection, $name_i8n, $description_i8n, $description_title_i8n, $description_extra_i8n);
             }
         }
@@ -64,10 +64,10 @@ class UpdateMasterCollectionTranslationsFromUpdate extends OrgAction
 
     public function updateChildren(Collection $collection, array $name_i8n, array $description_i8n, array $description_title_i8n, array $description_extra_i8n)
     {
-        $childNameI8n = $collection->getTranslations('name_i8n');
-        $childDescriptionI8n = $collection->getTranslations('description_i8n');
-        $childDescriptionTitleI8n = $collection->getTranslations('description_title_i8n');
-        $childDescriptionExtraI8n =  $collection->getTranslations('description_extra_i8n');
+        $childNameI8n = $collection->name_i8n ?? [];
+        $childDescriptionI8n = $collection->description_i8n ?? [];
+        $childDescriptionTitleI8n = $collection->description_title_i8n ?? [];
+        $childDescriptionExtraI8n =  $collection->description_extra_i8n ?? [];
         $childLanguage = $collection->shop->language->code;
 
         $updateChild = false;

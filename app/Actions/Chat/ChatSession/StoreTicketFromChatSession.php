@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatEvent;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -23,13 +24,13 @@ use App\Models\Helpers\Ticket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreTicketFromChatSession
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(ChatSession|MetaChatSession $session, ChatAgent $agent, array $modelData): Ticket
     {
@@ -56,11 +57,14 @@ class StoreTicketFromChatSession
             'source_type'     => class_basename($session),
             'source_id'       => $session->id,
             'source_channel'  => $this->channel($session)->value,
+            'blocks_source'   => (bool) Arr::get($modelData, 'blocks_source', false),
+            'closes_source'   => (bool) Arr::get($modelData, 'closes_source', false),
             'images'          => Arr::get($modelData, 'images', []),
         ]);
 
         $payload = [
             'key'                   => $ticket->reference,
+            'blocks_source'         => $ticket->blocks_source,
             'url'                   => route('grp.tickets.show', $ticket->reference),
             'summary'               => $ticket->subject,
             'priority_name'         => ChatPriorityEnum::labels()[$ticket->priority->value],
@@ -108,6 +112,8 @@ class StoreTicketFromChatSession
             'priority'      => ['sometimes', Rule::enum(ChatPriorityEnum::class)],
             'kind'          => ['sometimes', 'nullable', Rule::in(TicketKindEnum::chatValues())],
             'reference_url' => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'blocks_source' => ['sometimes', 'boolean'],
+            'closes_source' => ['sometimes', 'boolean'],
             'images'        => ['sometimes', 'array', 'max:5'],
             'images.*'      => Ticket::ticketFileRules(),
         ];
@@ -127,10 +133,14 @@ class StoreTicketFromChatSession
 
     private function respond(ChatSession|MetaChatSession $session, Request $request): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($session);
 
         if (!$agent) {
             return response()->json(['success' => false, 'message' => 'Only authenticated agents can create tickets'], 403);
+        }
+
+        if (!$this->userCanDisposeOfChat($agent->user, $session)) {
+            return response()->json(['success' => false, 'message' => $this->chatHeldByAnotherAgentMessage($session)], 403);
         }
 
         $ticket = $this->handle($session, $agent, $request->validate($this->rules()));
@@ -140,6 +150,7 @@ class StoreTicketFromChatSession
             'message' => 'Ticket created',
             'data'    => [
                 'key'           => $ticket->reference,
+                'blocks_source' => $ticket->blocks_source,
                 'url'           => route('grp.tickets.show', $ticket->reference),
                 'summary'       => $ticket->subject,
                 'priority_name' => ChatPriorityEnum::labels()[$ticket->priority->value],

@@ -1111,7 +1111,7 @@ onBeforeUnmount(() => {
 		<!-- Close Button -->
 		<button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
 			aria-label="Close">
-			<FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
+			<FontAwesomeIcon :icon="faTimes" class="w-4 h-4" fixed-width />
 		</button>
 
 		<!-- Message Content -->
@@ -1267,13 +1267,13 @@ onBeforeUnmount(() => {
 				v-if="disableButtons(item)">
 				<FontAwesomeLayers v-if="item.product_state == 'discontinued'" v-tooltip="trans('This product line has been discontinued. Please remove this item')
 					" class="flex h-full w-full">
-					<FontAwesomeIcon :icon="faBan" class="text-2xl" />
-					<FontAwesomeIcon :icon="faCube" class="text-md text-center" />
+					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
+					<FontAwesomeIcon :icon="faCube" class="text-md text-center" fixed-width />
 				</FontAwesomeLayers>
 				<FontAwesomeLayers v-else v-tooltip="trans('This product line is currently not for sale')"
 					class="flex h-full w-full">
-					<FontAwesomeIcon :icon="faBan" class="text-2xl" />
-					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" />
+					<FontAwesomeIcon :icon="faBan" class="text-2xl" fixed-width />
+					<FontAwesomeIcon :icon="faDollarSign" class="text-lg text-center" fixed-width />
 				</FontAwesomeLayers>
 			</div>
 			<div class="whitespace min-w-[50px] font-medium whitespace-break-spaces flex items-center text-center w-full"
@@ -1694,7 +1694,7 @@ onBeforeUnmount(() => {
 						v-else-if="selectedMedia.length === 0"
 						class="col-span-full flex flex-col items-center justify-center text-center text-gray-400"
 					>
-						<FontAwesomeIcon icon="fal fa-image" class="text-3xl mb-2 opacity-60" />
+						<FontAwesomeIcon icon="fal fa-image" class="text-3xl mb-2 opacity-60" fixed-width />
 						<p class="text-sm font-medium">
 							{{ trans('No media added yet') }}
 						</p>
@@ -1713,7 +1713,7 @@ onBeforeUnmount(() => {
 						<button
 							class="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100"
 							@click="removeMedia(img)">
-							<FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" />
+							<FontAwesomeIcon icon="fal fa-times" class="text-lg text-red-500" fixed-width />
 						</button>
 					</div>
 				</div>

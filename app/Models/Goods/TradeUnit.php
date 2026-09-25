@@ -83,6 +83,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $gpsr_manual
  * @property string|null $gpsr_class_category_danger
  * @property string|null $gpsr_class_languages
+ * @property bool $is_divisible
  * @property bool $pictogram_toxic
  * @property bool $pictogram_corrosive
  * @property bool $pictogram_explosive

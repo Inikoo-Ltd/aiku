@@ -15,7 +15,7 @@ import {library} from "@fortawesome/fontawesome-svg-core"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faGoogle} from "@fortawesome/free-brands-svg-icons"
 import { routeType } from '@/types/route'
-import PageHeading from '@/Components/Headings/PageHeading.vue';
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue';
 import { inject } from 'vue'
 import { faUserLock, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH } from '@fal'
 import { Head } from '@inertiajs/vue3'
@@ -191,7 +191,7 @@ onBeforeUnmount(() => {
                     :aria-current="key === currentTab ? 'page' : undefined"
                 >
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
-                        <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
+                        <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true" :icon="sectionData.icon"
                             class="flex-shrink-0 mr-3 h-5 w-5"
                             :class="[
                                 key === currentTab ? 'text-gray-400' : 'text-gray-500',

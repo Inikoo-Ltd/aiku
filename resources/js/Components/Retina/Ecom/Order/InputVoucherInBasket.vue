@@ -318,23 +318,23 @@ const onRemoveVoucher = () => {
         <!-- <div v-if="layout.app.environment == 'local' && layout.retina.type == 'b2b'" class="mt-2 pr-2 md:pr-6">
             <div v-if="!hasAttachedVoucher" class="flex items-center justify-end">
                 <div class="w-full md:w-[540px] border border-dashed border-gray-300 rounded-md px-3 py-2 text-right text-sm text-gray-500">
-                    {{ trans('No voucher attached') }}
+                    {{ ctrans('No voucher attached') }}
                 </div>
             </div>
             <div v-else-if="isVoucherExpired" class="flex items-center justify-end">
                 <div class="w-full md:w-[540px] border border-red-200 bg-red-50 rounded-md px-3 py-2 text-right text-sm text-red-700">
-                    <span class="font-medium">{{ trans('Voucher expired') }}</span>
+                    <span class="font-medium">{{ ctrans('Voucher expired') }}</span>
                     <span class="ml-1">({{ currentVoucher?.voucher_code }})</span>
-                    <span class="ml-2 text-red-600">{{ trans('Until') }}: {{ voucherUntilLabel }}</span>
+                    <span class="ml-2 text-red-600">{{ ctrans('Until') }}: {{ voucherUntilLabel }}</span>
                 </div>
             </div>
             <div v-else class="flex items-center justify-end">
                 <div class="w-full md:w-[540px] border border-green-200 bg-green-50 rounded-md px-3 py-2 text-right text-sm text-green-700">
-                    <span class="font-medium">{{ trans('Voucher active') }}</span>
+                    <span class="font-medium">{{ ctrans('Voucher active') }}</span>
                     <span class="ml-1">({{ currentVoucher?.voucher_code }})</span>
                     <span class="ml-2">{{ currentVoucher?.name }}</span>
                     <span class="ml-2">{{ currentVoucher?.discount }}</span>
-                    <span class="ml-2 text-green-600">{{ trans('Until') }}: {{ voucherUntilLabel }}</span>
+                    <span class="ml-2 text-green-600">{{ ctrans('Until') }}: {{ voucherUntilLabel }}</span>
                 </div>
             </div>
         </div> -->

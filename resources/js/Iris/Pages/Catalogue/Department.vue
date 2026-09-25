@@ -13,7 +13,7 @@ import {
 } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-import PageHeading from '@/Components/Headings/PageHeading.vue'
+import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
@@ -117,7 +117,7 @@ const componentProps = computed(() => {
                                 class="flex items-center gap-2 text-sm text-gray-500 transition-colors duration-150"
                                 :class="{ 'cursor-default': !item.url }"
                             >
-                                <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="h-4 w-4" />
+                                <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="h-4 w-4" fixed-width />
                                 <span>{{ item.label || '-' }}</span>
                             </component>
                         </div>

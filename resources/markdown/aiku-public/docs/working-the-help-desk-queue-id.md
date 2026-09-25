@@ -2,7 +2,7 @@
 title: Mengerjakan antrean help desk
 summary: Untuk engineer dan lead engineer - cara mengambil tiket, menjaga agar terus berjalan, mengerjakannya bersama kolaborator, bertanya kepada pelapor, menutupnya dengan catatan, dan meminta QA memeriksa perbaikan Anda.
 date: 2026-09-15
-source_date: 2026-09-15
+source_date: 2026-09-21
 tags: help desk, tickets, engineers
 category: help-desk
 audience: engineers
@@ -168,7 +168,7 @@ Penghitung tiket hijau di sisi kanan layar menunjukkan berapa tiket terbuka yang
 
 ## Meminta QA memeriksa
 
-Setelah perbaikan Anda live, tekan <b>Ask QA to check</b>. Tiket dikirim ke tim QA. Mereka mengujinya dan menjawab <b>QA passed</b> atau <b>QA failed</b> dengan catatan. Anda diberi tahu untuk keduanya. Jika gagal, perbaiki lalu tekan <b>Ask QA to check again</b>. Menutup tiket dengan <b>Done</b> tetap keputusan Anda.
+Setelah perbaikan Anda live, tekan <b>Ask QA to check</b>. Anda ditanya apa yang harus mereka periksa dan siapa yang memeriksanya - siapa pun di QA, atau seseorang dengan nama. Catatannya opsional tetapi layak ditulis: catatan itu diposting sebagai komentar pada tiket, dan itulah bedanya antara QA menguji apa yang Anda ubah dan QA menebak-nebak. Tiket lalu dikirim ke tim QA, yang mengujinya dan menjawab <b>QA passed</b> atau <b>QA failed</b> dengan catatan mereka sendiri. Anda diberi tahu untuk keduanya. Jika gagal, perbaiki lalu tekan <b>Ask QA to check again</b>. Menutup tiket dengan <b>Done</b> tetap keputusan Anda.
 
 ## Tiket pelanggan
 

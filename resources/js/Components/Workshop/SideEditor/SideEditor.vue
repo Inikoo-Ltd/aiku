@@ -92,10 +92,10 @@ onMounted(() => {
         <div v-for="(field, index) of blueprint.filter((item) => item.type != 'hidden')" :key="getFieldKey(field.key, index)" class="min-w-0 max-w-full">
             <Accordion class="w-full min-w-0" :value="panelOpen">
                 <template #collapseicon>
-                    <FontAwesomeIcon :icon="faCaretDown" class="text-white"></FontAwesomeIcon>
+                    <FontAwesomeIcon :icon="faCaretDown" class="text-white" fixed-width></FontAwesomeIcon>
                 </template>
                 <template #expandicon>
-                    <FontAwesomeIcon :icon="faCaretLeft" class="text-black"></FontAwesomeIcon>
+                    <FontAwesomeIcon :icon="faCaretLeft" class="text-black" fixed-width></FontAwesomeIcon>
                 </template>
 
                 <ParentFieldSideEditor

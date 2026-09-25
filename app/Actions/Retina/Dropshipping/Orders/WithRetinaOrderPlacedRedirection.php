@@ -61,6 +61,8 @@ trait WithRetinaOrderPlacedRedirection
                     'ecommerce' => [
                         'transaction_id' => $arr['order']->id,
                         'value'          => (float)$arr['order']->total_amount,
+                        'tax'            => (float)$arr['order']->tax_amount,
+                        'shipping'       => (float)$arr['order']->shipping_amount,
                         'currency'       => $arr['order']->shop->currency->code,
                         'items'          => $itemsToPushLayer
                     ]

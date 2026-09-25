@@ -11,11 +11,13 @@ namespace App\Actions\Retina\CRM;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\CRM\CustomerComms;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaCustomerComms extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
 

@@ -146,7 +146,7 @@ const saveTranslation = () => {
 
   <div class="px-4 grid grid-cols-2 gap-3 mt-4">
     <h2 v-if="props.title" class="text-lg font-bold flex items-center gap-2">
-      <FontAwesomeIcon :icon="faLanguage" />
+      <FontAwesomeIcon :icon="faLanguage" fixed-width />
       {{ props.title }}
     </h2>
 

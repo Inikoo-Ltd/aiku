@@ -301,6 +301,29 @@ test('retina api dropshipping portfolio flow', function () {
     $response->assertOk();
 });
 
+test('retina api dropshipping feeds expose product ingredients', function () {
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $this->product->updateQuietly(['marketing_ingredients' => 'Aqua, Glycerin, Parfum']);
+
+    $response = getJson(route('retina.api.dropshipping.products.index'));
+    $response->assertOk();
+    $product = collect($response->json('data'))->firstWhere('id', $this->product->id);
+    expect($product['ingredients'])->toBe('Aqua, Glycerin, Parfum');
+
+    $portfolioId = postJson(route('retina.api.dropshipping.products.my_product.store', $this->product))
+        ->assertCreated()
+        ->json('data.id');
+
+    $response = getJson(route('retina.api.dropshipping.products.my_product.index'));
+    $response->assertOk();
+    expect(collect($response->json('data'))->firstWhere('id', $portfolioId)['ingredients'])->toBe('Aqua, Glycerin, Parfum');
+
+    $response = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId));
+    $response->assertOk();
+    expect($response->json('data.ingredients'))->toBe('Aqua, Glycerin, Parfum');
+});
+
 // ---- Dropshipping: order transactions ----
 
 test('retina api dropshipping order transactions flow', function () {
@@ -334,11 +357,17 @@ test('retina api dropshipping order transactions flow', function () {
         'data' => [['id', 'quantity_ordered']],
     ]);
 
+    DB::table('products')->where('id', $this->product->id)->update(['available_quantity' => 10]);
     $response = patchJson(route('retina.api.dropshipping.transaction.update', $transactionId), [
         'quantity_ordered' => 3,
     ]);
     $response->assertOk();
     expect($response->json('data.quantity_ordered'))->toBe(3);
+
+    DB::table('products')->where('id', $this->product->id)->update(['available_quantity' => 0]);
+    patchJson(route('retina.api.dropshipping.transaction.update', $transactionId), [
+        'quantity_ordered' => 4,
+    ])->assertUnprocessable();
 
     $response = deleteJson(route('retina.api.dropshipping.transaction.delete', $transactionId));
     $response->assertOk();

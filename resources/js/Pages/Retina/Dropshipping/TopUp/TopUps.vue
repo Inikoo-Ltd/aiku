@@ -7,7 +7,7 @@
 
     <script setup  lang="ts">
     import {Head} from '@inertiajs/vue3';
-    import PageHeading from '@/Components/Headings/PageHeading.vue';
+    import PageHeading from '@/Components/Headings/PageHeadingPublic.vue';
     import RetinaTableTopUps from '@/Components/Tables/Retina/RetinaTableTopUps.vue';
     import { capitalize } from "@/Composables/capitalize"
 

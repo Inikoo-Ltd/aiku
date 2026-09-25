@@ -35,12 +35,15 @@ use App\Actions\Inventory\OrgStock\UI\IndexOrgStockReplenishments;
 use App\Actions\Inventory\OrgStock\UI\IndexNegativeLocationOrgStocks;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockLowStockAudits;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
+use App\Actions\Inventory\OrgStock\UI\ShowOrgStockLabels;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProcurement;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockProducts;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStockStockHistory;
 use App\Actions\Inventory\OrgStock\UI\PdfOrgStockLabel;
 use App\Actions\Inventory\OrgStock\UI\ShowSkoBarcodeScanner;
 use App\Actions\Inventory\OrgStock\AssignSkoBarcodeToOrgStock;
+use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
+use App\Actions\Inventory\OrgStock\GetOrgStockDiscontinuePreview;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStockUnitBarcode;
 use App\Actions\Inventory\OrgStockFamily\UI\IndexInvoicesInOrgStockFamily;
@@ -66,6 +69,8 @@ Route::prefix('stock-histories')->as('org_stock_histories.')->group(function () 
 
 Route::prefix('stocks')->as('org_stocks.')->group(function () {
     Route::get('barcode-scanner', ShowSkoBarcodeScanner::class)->name('barcode_scanner');
+    Route::get('discontinue-preview', GetOrgStockDiscontinuePreview::class)->name('discontinue_preview');
+    Route::post('discontinue', DiscontinueOrgStocks::class)->name('discontinue');
     Route::patch('{orgStock}/update', UpdateOrgStock::class)->name('update');
     Route::patch('{orgStock}/assign-sko-barcode', AssignSkoBarcodeToOrgStock::class)->name('assign_sko_barcode');
     Route::patch('{orgStock}/update-unit-barcode', UpdateOrgStockUnitBarcode::class)->name('update_unit_barcode');
@@ -103,6 +108,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/edit', EditOrgStock::class)->name('edit');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
+            Route::get('/labels', ShowOrgStockLabels::class)->name('show.labels');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
             Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
@@ -118,6 +124,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/composition', EditOrgStockComposition::class)->name('composition');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
+            Route::get('/labels', ShowOrgStockLabels::class)->name('show.labels');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
             Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
@@ -132,6 +139,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/edit', EditOrgStock::class)->name('edit');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
+            Route::get('/labels', ShowOrgStockLabels::class)->name('show.labels');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
             Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
@@ -146,6 +154,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/edit', EditOrgStock::class)->name('edit');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
+            Route::get('/labels', ShowOrgStockLabels::class)->name('show.labels');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
             Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
@@ -160,6 +169,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/edit', EditOrgStock::class)->name('edit');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
+            Route::get('/labels', ShowOrgStockLabels::class)->name('show.labels');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
             Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
@@ -174,6 +184,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/edit', EditOrgStock::class)->name('edit');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
+            Route::get('/labels', ShowOrgStockLabels::class)->name('show.labels');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
             Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
@@ -188,6 +199,7 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
             Route::get('/edit', EditOrgStock::class)->name('edit');
             Route::get('/stock-history', ShowOrgStockStockHistory::class)->name('show.stock_history');
             Route::get('/procurement', ShowOrgStockProcurement::class)->name('show.procurement');
+            Route::get('/labels', ShowOrgStockLabels::class)->name('show.labels');
             Route::get('/products', ShowOrgStockProducts::class)->name('show.products');
             Route::get('/delivery_notes', IndexDeliveryNotesInOrgStock::class)->name('show.delivery_notes');
             Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
@@ -221,6 +233,7 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
                     Route::get('/edit', [EditOrgStock::class, 'inStockFamily'])->name('edit');
                     Route::get('/stock-history', [ShowOrgStockStockHistory::class, 'inStockFamily'])->name('show.stock_history');
                     Route::get('/procurement', [ShowOrgStockProcurement::class, 'inStockFamily'])->name('show.procurement');
+                    Route::get('/labels', [ShowOrgStockLabels::class, 'inStockFamily'])->name('show.labels');
                     Route::get('/products', [ShowOrgStockProducts::class, 'inStockFamily'])->name('show.products');
                     Route::get('/batch-codes', [IndexBatchCodes::class, 'inOrgStock'])->name('show.batch_codes');
                     Route::get('/batch-codes/create', [CreateBatchCode::class, 'inOrgStock'])->name('show.batch_codes.create');

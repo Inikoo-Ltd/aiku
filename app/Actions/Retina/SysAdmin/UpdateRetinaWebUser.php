@@ -12,6 +12,7 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\CRM\WebUser;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -20,6 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaWebUser extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
     use WithActionUpdate;
 
     private WebUser $webUserToUpdate;

@@ -21,13 +21,14 @@ class NotificationResource extends JsonResource
         $data = $this->data;
 
         return [
-            'id'      => $this->id,
-            'read_at' => $this->read_at,
-            'title'   => Arr::get($data, 'title'),
-            'body'    => Arr::get($data, 'body'),
-            'type'    => Arr::get($data, 'type'),
-            'slug'    => Arr::get($data, 'slug'),
-            'route'   => Arr::get($data, 'route')
+            'id'         => $this->id,
+            'read_at'    => $this->read_at,
+            'created_at' => $this->created_at,
+            'title'      => Arr::get($data, 'title'),
+            'body'       => Arr::get($data, 'body'),
+            'type'       => Arr::get($data, 'type'),
+            'slug'       => Arr::get($data, 'slug'),
+            'route'      => Arr::get($data, 'route')
         ];
     }
 }

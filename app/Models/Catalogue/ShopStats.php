@@ -194,6 +194,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_products_mismatch_family
  * @property int $number_products_no_description
  * @property int $number_products_not_online
+ * @property int $number_products_with_duplicated_barcode
  * @property-read \App\Models\Catalogue\Shop|null $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily

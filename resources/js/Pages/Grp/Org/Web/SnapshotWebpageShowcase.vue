@@ -145,7 +145,7 @@ const updateSnapshot = () => {
 <template>
   <ConfirmDialog>
     <template #icon>
-      <FontAwesomeIcon :icon="faExclamationCircle" class="text-2xl text-yellow-500" />
+      <FontAwesomeIcon :icon="faExclamationCircle" class="text-2xl text-yellow-500" fixed-width />
     </template>
   </ConfirmDialog>
 
@@ -163,7 +163,7 @@ const updateSnapshot = () => {
         <div class="flex flex-wrap items-center justify-between gap-4">
           <!-- Logged In / Logged Out Switch -->
           <div class="flex items-center gap-3">
-            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" />
+            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" fixed-width />
             <InputSwitch v-model="filterBlock" :true-value="true" :false-value="false" />
             <span class="text-sm font-medium text-gray-800">
               {{ filterBlock ? 'Logged In' : 'Logged Out' }}
@@ -176,7 +176,7 @@ const updateSnapshot = () => {
               class="p-button-outlined">
               <template #option="slotProps">
                 <div class="flex items-center gap-2">
-                  <FontAwesomeIcon :icon="slotProps.option.icon" />
+                  <FontAwesomeIcon :icon="slotProps.option.icon" fixed-width />
                   <span>{{ slotProps.option.label }}</span>
                 </div>
               </template>

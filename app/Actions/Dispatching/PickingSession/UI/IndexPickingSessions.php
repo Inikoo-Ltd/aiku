@@ -12,7 +12,6 @@ namespace App\Actions\Dispatching\PickingSession\UI;
 use App\Actions\Dispatching\PickingSession\Traits\WithPickingSessionsSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
 use App\Http\Resources\Dispatching\PickingSessionsResource;
@@ -115,14 +114,11 @@ class IndexPickingSessions extends OrgAction
                 'picking_sessions.quantity_packed',
                 'picking_sessions.picking_percentage',
                 'picking_sessions.packing_percentage',
+                'picking_sessions.is_waiting_ready',
                 'users.id as user_id',
                 'users.username as user_username',
                 'users.contact_name as user_name',
             ])
-            ->selectRaw(
-                "(SELECT count(*) FROM picking_session_has_delivery_notes pshdn JOIN delivery_notes dn ON dn.id = pshdn.delivery_note_id WHERE pshdn.picking_session_id = picking_sessions.id AND dn.handling_blocked_at IS NOT NULL AND dn.state IN (?, ?)) as number_delivery_notes_waiting_ready",
-                [DeliveryNoteStateEnum::PICKED->value, DeliveryNoteStateEnum::PACKING->value]
-            )
             ->defaultSort('picking_sessions.id')
             ->allowedSorts([
                 'reference',

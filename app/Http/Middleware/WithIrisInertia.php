@@ -9,7 +9,6 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Helpers\Images\GetPictureSources;
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
@@ -95,7 +94,6 @@ trait WithIrisInertia
                 ],
                 "website"              => WebsiteIrisResource::make($website)->getArray(),
                 'theme'                => Arr::get($website->published_layout, 'theme'),
-                'iris_search_model'    => Arr::get($website->settings, 'iris_search_model', 'internal'),
                 'is_have_gtm'          => (bool)Arr::get($website->settings, 'google_tag_id'),
                 'currency'             => [
                     'code'   => $shop->currency->code,
@@ -108,7 +106,6 @@ trait WithIrisInertia
                 'website_i18n'         => [
                     'current_language' => LanguageResource::make($currentLanguage)->getArray(),
                     'shop_language'    => LanguageResource::make($shop->language)->getArray(),
-                    'language_options' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->extra_languages),
                 ],
                 'migration_redirect'   => $migrationRedirect
             ];

@@ -28,7 +28,7 @@ Next to the dashboard, the **Shopping list** tab holds every open line.
 
 ## Browsing the partner's catalogue
 
-Next to the shopping list there is a **Browse** tab: the partner's whole catalogue as a shop, with live stock and prices. Move through it by **Departments** or **Collections**, drill down to families, or just type in the search box. Every product card shows the current price, a **Their stock** badge with what the partner has available, and — for items you use — your own numbers: *our stock*, *our sales / quarter* and *we run out in* so many days (red when it's two weeks or less).
+Next to the shopping list there is a **Browse** tab: the partner's whole catalogue as a shop, with live stock and prices. Move through it by **Departments** or **Collections**, drill down to families, or just type in the search box. Every product card shows the current price, a **Their stock** badge with what the partner has available, and — for items you use — your own numbers: *our stock*, *our sales / quarter* and *Estimated: Would run out in* so many days (red when it's two weeks or less).
 
 Two things about that catalogue are worth knowing. The prices are **yours, not the shelf's**: the seller's list price with your intercompany discount already taken off, converted into your own organisation's currency, so what you read is what the invoice will say. And it includes products the partner has made **exclusive to you** — lines that never appear on their public shop but exist for your organisation. If you cannot find something you expected, that is worth asking about; if you find something you did not expect, it is probably yours by arrangement.
 
@@ -42,7 +42,7 @@ While you browse, your shopping list rides along as a receipt pinned to the righ
 
 Auto-fill exists so replenishment doesn't depend on someone remembering every item. You give it one number — a **budget**, in the same currency as the prices you are buying at — and it builds a proposal that fits inside it:
 
-- It looks at every item the partner can supply that you actually use, ranks them by **how soon you run out** (the same *we run out in* forecast you see while browsing), and tops up the soonest-out first, each at its recommended order quantity, rounded to that item's order step.
+- It looks at every item the partner can supply that you actually use, ranks them by **how soon you run out** (the same *Estimated: Would run out in* forecast you see while browsing), and tops up the soonest-out first, each at its recommended order quantity, rounded to that item's order step.
 - Every proposed line shows its **reason** ("Our sales/quarter ~48 · our stock 0 · we run out now"), the quantity and the cost, so you can see why it is there. Quantities follow the same forecast as the *suggested* chips in Browse.
 - The **instruction box** is optional and takes plain language: *"prioritise essential oils, skip anything we hold over 8 weeks of"*, *"focus on candles, nothing seasonal"*. An AI reads your instruction together with the same usage data and reshapes the proposal accordingly — but its output is checked against reality before you see it: quantities are capped at what the partner actually has, and the total is forced back inside your budget. If the instruction can't be followed, you get the standard proposal instead.
 - **Nothing is added by itself.** The proposal is a set of ticked lines you can untick, re-quantify or regenerate with a different budget or instruction; only **Add items to shopping list** commits anything.

@@ -3,6 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        try {
+            if (document.cookie.split(';').some(c => c.trim().split('=')[0] === 'iris_vua') || JSON.parse(localStorage.getItem('iris') || '{}').is_logged_in) {
+                document.documentElement.classList.add('iris-logged-in')
+            }
+        } catch (e) {}
+    </script>
     <meta name="app-release" content="{{ config('sentry.release') }}">
     <title inertia>{{ $browserTitle ?? config('app.name') }}</title>
 
@@ -93,6 +100,31 @@
           href="{{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->asset('resources/css/app.css') }}">
 
     {{ Vite::useHotFile('iris.hot')->useBuildDirectory('iris')->withEntryPoints(['resources/js/app-iris.js']) }}
+@php
+    /*
+     * The app blocks its mount on the active locale chunk so nothing is ever painted in the
+     * untranslated source language; preloading it here keeps that chunk off the critical
+     * request chain instead of waiting for the entry bundle to request it.
+     */
+    $irisManifestPath = public_path('iris/manifest.json');
+    $irisLangChunk = is_file($irisManifestPath)
+        ? Cache::remember(
+            'iris:lang-chunk:'.app()->getLocale().':'.filemtime($irisManifestPath),
+            now()->addDay(),
+            function () use ($irisManifestPath) {
+                $manifest = json_decode(file_get_contents($irisManifestPath), true) ?? [];
+                $locale = app()->getLocale();
+
+                return $manifest['lang/'.$locale.'.json']['file']
+                    ?? $manifest['lang/'.str_replace('_', '-', $locale).'.json']['file']
+                    ?? '';
+            }
+        )
+        : '';
+@endphp
+    @if($irisLangChunk)
+        <link rel="modulepreload" as="script" href="{{ asset('iris/'.$irisLangChunk) }}">
+    @endif
     @inertiaHead
 
     <!-- Third parties (GTM) deferred to first interaction or shortly after load -->

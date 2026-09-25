@@ -44,6 +44,10 @@ enum RolesEnum: string
     case MASTERS_CLERK = 'masters-clerk';
     case MASTERS_VIEWER = 'masters-viewer';
 
+    case COMPLIANCE_MANAGER = 'compliance-manager';
+    case COMPLIANCE_SUPERVISOR = 'compliance-supervisor';
+    case COMPLIANCE_WORKER = 'compliance-worker';
+
     case ORGANISATIONS_MANAGER = 'organisations-manager';
 
 
@@ -155,6 +159,9 @@ enum RolesEnum: string
             RolesEnum::MASTERS_MEDIA => __('Masters media'),
             RolesEnum::MASTERS_CLERK => __('Masters clerk'),
             RolesEnum::MASTERS_VIEWER => __('Masters viewer'),
+            RolesEnum::COMPLIANCE_MANAGER => __('Compliance manager'),
+            RolesEnum::COMPLIANCE_SUPERVISOR => __('Compliance supervisor'),
+            RolesEnum::COMPLIANCE_WORKER => __('Compliance worker'),
             RolesEnum::SEO_SUPERVISOR => __('SEO supervisor'),
             RolesEnum::SEO_CLERK => __('SEO clerk'),
             RolesEnum::PPC_SUPERVISOR => __('PPC supervisor'),
@@ -197,6 +204,7 @@ enum RolesEnum: string
             GroupPermissionsEnum::ORGANISATIONS,
             GroupPermissionsEnum::GOODS,
             GroupPermissionsEnum::MASTERS,
+            GroupPermissionsEnum::COMPLIANCE,
             GroupPermissionsEnum::GROUP_WEBMASTER,
         ];
     }
@@ -236,6 +244,18 @@ enum RolesEnum: string
             ],
             RolesEnum::MASTERS_VIEWER => [
                 GroupPermissionsEnum::MASTERS_VIEW
+            ],
+            RolesEnum::COMPLIANCE_MANAGER => [
+                GroupPermissionsEnum::COMPLIANCE
+            ],
+            RolesEnum::COMPLIANCE_SUPERVISOR => [
+                GroupPermissionsEnum::COMPLIANCE_VIEW,
+                GroupPermissionsEnum::COMPLIANCE_EDIT,
+                GroupPermissionsEnum::COMPLIANCE_PUBLISH
+            ],
+            RolesEnum::COMPLIANCE_WORKER => [
+                GroupPermissionsEnum::COMPLIANCE_VIEW,
+                GroupPermissionsEnum::COMPLIANCE_EDIT
             ],
             RolesEnum::ORG_ADMIN => [
                 OrganisationPermissionsEnum::ORG_ADMIN,
@@ -300,6 +320,7 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::ACCOUNTING,
                 OrganisationPermissionsEnum::ACCOUNTING_VIEW,
                 OrganisationPermissionsEnum::ACCOUNTING_EDIT,
+                OrganisationPermissionsEnum::ORG_REPORTS,
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
                 OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
             ],
@@ -308,6 +329,7 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::ACCOUNTING_VIEW,
                 OrganisationPermissionsEnum::ACCOUNTING_EDIT,
                 OrganisationPermissionsEnum::SUPERVISOR_ACCOUNTING,
+                OrganisationPermissionsEnum::ORG_REPORTS,
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
                 OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
             ],
@@ -318,6 +340,7 @@ enum RolesEnum: string
             ],
             RolesEnum::SHOP_ADMIN => [
                 ShopPermissionsEnum::SHOP_ADMIN,
+                ShopPermissionsEnum::CHAT_MANAGER,
                 ShopPermissionsEnum::PRODUCTS,
                 ShopPermissionsEnum::WEB,
                 ShopPermissionsEnum::CRM,
@@ -335,10 +358,12 @@ enum RolesEnum: string
             RolesEnum::FULFILMENT_SHOP_SUPERVISOR => [
                 FulfilmentPermissionsEnum::FULFILMENT_SHOP,
                 FulfilmentPermissionsEnum::SUPERVISOR_FULFILMENT_SHOP,
+                FulfilmentPermissionsEnum::FULFILMENT_CHAT_MANAGER,
                 WarehousePermissionsEnum::FULFILMENT,
             ],
             RolesEnum::FULFILMENT_SHOP_CLERK => [
                 FulfilmentPermissionsEnum::FULFILMENT_SHOP,
+                FulfilmentPermissionsEnum::FULFILMENT_CHAT,
                 WarehousePermissionsEnum::FULFILMENT_VIEW,
             ],
             RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR => [
@@ -457,6 +482,7 @@ enum RolesEnum: string
                 ShopPermissionsEnum::SUPERVISOR_WEB,
             ],
             RolesEnum::CUSTOMER_SERVICE_CLERK => [
+                ShopPermissionsEnum::CHAT,
                 ShopPermissionsEnum::CRM,
                 ShopPermissionsEnum::ORDERS,
                 ShopPermissionsEnum::PRODUCTS_VIEW,
@@ -466,6 +492,8 @@ enum RolesEnum: string
 
             ],
             RolesEnum::CUSTOMER_SERVICE_SUPERVISOR => [
+                ShopPermissionsEnum::CHAT,
+                ShopPermissionsEnum::CHAT_MANAGER,
                 ShopPermissionsEnum::CRM,
                 ShopPermissionsEnum::SUPERVISOR_CRM,
                 ShopPermissionsEnum::ORDERS,
@@ -477,6 +505,7 @@ enum RolesEnum: string
 
             ],
             RolesEnum::CUSTOMER_SERVICE_VIEWER => [
+                ShopPermissionsEnum::CHAT_VIEW,
                 ShopPermissionsEnum::CRM_VIEW,
                 ShopPermissionsEnum::ORDERS_VIEW,
                 ShopPermissionsEnum::PRODUCTS_VIEW,
@@ -538,6 +567,9 @@ enum RolesEnum: string
             RolesEnum::MASTERS_MEDIA,
             RolesEnum::MASTERS_CLERK,
             RolesEnum::MASTERS_VIEWER,
+            RolesEnum::COMPLIANCE_MANAGER,
+            RolesEnum::COMPLIANCE_SUPERVISOR,
+            RolesEnum::COMPLIANCE_WORKER,
             RolesEnum::ORGANISATIONS_MANAGER => 'Group',
 
             RolesEnum::SHOP_ADMIN,

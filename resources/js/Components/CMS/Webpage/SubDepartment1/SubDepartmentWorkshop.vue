@@ -155,7 +155,7 @@ const textVisible = computed(() => {
             <FontAwesomeIcon
               v-if="item?.icon"
               :icon="item?.icon"
-              class="text-xl w-5 h-5"
+              class="text-xl w-5 h-5" fixed-width
             />
             <Image
               v-else

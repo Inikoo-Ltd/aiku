@@ -6,7 +6,14 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
+use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
+use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
+use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoriesByCodes;
+use App\Actions\Catalogue\Product\Json\GetProductsByCodes;
+use App\Actions\Helpers\Ticket\Json\GetTicketChat;
 use App\Actions\Helpers\Ticket\Json\GetTicketControls;
+use App\Actions\Helpers\Ticket\Json\GetTicketQaQueue;
 use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
 use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
@@ -119,17 +126,20 @@ use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Production\ManufactureTask\Json\GetManufactureTasks;
 use App\Actions\Production\RawMaterial\Json\GetRawMaterials;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
+use App\Actions\Inventory\OrgStock\Json\FetchOrgStockLabelOptions;
 use App\Actions\Inventory\OrgStock\Json\FetchOrgStockStocksManagement;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
+use App\Actions\Masters\MasterAsset\Json\GetMasterAssetsOpenOrdersAffectedByUnitsChange;
 use App\Actions\Masters\MasterAsset\Json\GetPickFractional;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoryTimeSeriesOrganisations;
 use App\Actions\CRM\Customer\Json\GetCustomersInShop;
+use App\Actions\CRM\Prospect\Json\GetProspectByEmail;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
 use App\Actions\Goods\Stock\JSON\ValidateStockTradeUnitChanges;
@@ -231,7 +241,13 @@ Route::get('organisation/{organisation}/employees/pickers', GetPickers::class)->
 Route::get('organisation/{organisation}/employees/picker-users', GetPickerUsers::class)->name('employees.picker_users');
 
 Route::get('product-category/{productCategory}/families', GetFamiliesInProductCategory::class)->name('product_category.families.index');
+Route::get('product-category/{productCategory:id}/products-by-codes', GetProductsByCodes::class)->name('product_category.products_by_codes')->withoutScopedBindings();
+Route::get('shop/{shop:id}/products-by-codes', [GetProductsByCodes::class, 'inShopController'])->name('shop.products_by_codes')->withoutScopedBindings();
+Route::get('shop/{shop:id}/product-categories-by-codes', GetProductCategoriesByCodes::class)->name('shop.product_categories_by_codes')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
+Route::get('master-product-category/{masterProductCategory:id}/products-by-codes', GetMasterProductsByCodes::class)->name('master_product_category.products_by_codes')->withoutScopedBindings();
+Route::get('master-shop/{masterShop:id}/products-by-codes', [GetMasterProductsByCodes::class, 'inMasterShopController'])->name('master_shop.products_by_codes')->withoutScopedBindings();
+Route::get('master-shop/{masterShop:id}/product-categories-by-codes', GetMasterProductCategoriesByCodes::class)->name('master_shop.product_categories_by_codes')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/shops-content', GetShopsContentInMasterProductCategory::class)->name('master_product_category.shops_content.index')->withoutScopedBindings();
 Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks');
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
@@ -252,6 +268,7 @@ Route::get('organisation/{organisation}/org-supplier-products', GetOrgSupplierPr
 Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');
 Route::get('warehouse/{warehouse}/scan-sko-barcode', ScanSkoBarcode::class)->name('warehouse.scan_sko_barcode');
 Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/stocks-management', FetchOrgStockStocksManagement::class)->name('warehouse.org_stock.stocks_management')->withoutScopedBindings();
+Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/label-options', FetchOrgStockLabelOptions::class)->name('warehouse.org_stock.label_options')->withoutScopedBindings();
 
 Route::get('trade-units/{tradeUnit}/tags', [IndexTags::class, 'inTradeUnit'])->name('trade_units.tags.index');
 Route::get('artefacts/{artefact:id}/tags', [IndexTags::class, 'inArtefact'])->name('artefacts.tags.index');
@@ -315,6 +332,7 @@ Route::post('pallet-return/{palletReturn:id}/pick-by-scan', PickPalletReturnItem
 
 Route::get('customer/{customer}/tags', [IndexTags::class, 'inCustomer'])->name('customer.tags.index');
 Route::get('shop/{shop:id}/customers', GetCustomersInShop::class)->name('shop.customers');
+Route::get('shop/{shop:id}/prospect-by-email', GetProspectByEmail::class)->name('shop.prospect_by_email');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
@@ -353,6 +371,7 @@ Route::get('product/{product:id}/trade-units/recommended', [GetRecommendedTradeU
 Route::get('master-families/{masterShop}/all-master-family', GetMasterFamilies::class)->name('master-family.all-master-family')->withoutScopedBindings();
 
 Route::get('get-pick-fractional', GetPickFractional::class)->name('product.get-pick-fractional')->withoutScopedBindings();
+Route::get('master-assets/open-orders-affected-by-units-change', GetMasterAssetsOpenOrdersAffectedByUnitsChange::class)->name('master_assets.open_orders_affected_by_units_change');
 
 Route::post('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
 Route::post('master-product-category/{masterProductCategory:id}/pricing-sales', GetMasterProductsPricingSales::class)->name('master_product_category.pricing_sales')->withoutScopedBindings();
@@ -417,4 +436,7 @@ Route::get('{webpage:id}/web-layout-templates/{layoutTemplate:id}', FetchWebLayo
 
 Route::post('warehouse/{warehouse}/low-stock-audit-lock', HandleLowStockAuditLock::class)->name('warehouse.low_stock_audit_lock')->withoutScopedBindings();
 
+Route::get('tickets/qa-queue', GetTicketQaQueue::class)->name('ticket.qa_queue');
+Route::get('tickets/recently-updated', GetRecentlyUpdatedTickets::class)->name('ticket.recently_updated');
 Route::get('tickets/{ticket:id}/controls', GetTicketControls::class)->name('ticket.controls')->whereNumber('ticket');
+Route::get('tickets/{ticket:id}/chat', GetTicketChat::class)->name('ticket.chat')->whereNumber('ticket');

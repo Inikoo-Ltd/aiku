@@ -134,13 +134,13 @@ console.log('ssss',props)
                         v-if="collection.products_status === 'discontinuing'"
                         :icon="faExclamationTriangle"
                         class="text-orange-500"
-                        v-tooltip="'Products are being discontinued'"
+                        v-tooltip="'Products are being discontinued'" fixed-width
                     />
                     <FontAwesomeIcon
                         v-else-if="collection.products_status === 'discontinued'"
                         :icon="faExclamationTriangle"
                         class="text-red-600"
-                        v-tooltip="'Products are discontinued'"
+                        v-tooltip="'Products are discontinued'" fixed-width
                     />
                 </template>
             </div>

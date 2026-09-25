@@ -147,7 +147,7 @@ defineExpose({
                 @update:modelValue="() => getData()">
                 <template #copyButton>
                     <div class="flex justify-center items-center px-2 absolute inset-y-0 right-0 gap-x-1 cursor-pointer opacity-20 hover:opacity-75 active:opacity-100">
-                        <FontAwesomeIcon icon="fad fa-search" class="text-lg leading-none" aria-hidden="true" />
+                        <FontAwesomeIcon icon="fad fa-search" class="text-lg leading-none" fixed-width aria-hidden="true" />
                     </div>
                 </template>
             </PureInput>
@@ -232,7 +232,7 @@ defineExpose({
         </table>
 
         <div v-if="loading" class="flex justify-center items-center w-full h-64 p-12">
-            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin w-6" aria-hidden="true" />
+            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin w-6" fixed-width aria-hidden="true" />
         </div>
         
         <div v-if="dataList.length == 0 && !loading" class="flex justify-center items-center w-full h-64 p-12">

@@ -41,7 +41,12 @@ class GetOrderProducts extends OrgAction
                 ->where('transactions.order_id', $order->id)
                 ->whereNull('transactions.deleted_at');
         });
-        $queryBuilder->where('products.shop_id', $order->shop_id)->where('products.is_for_sale', true);
+        $queryBuilder->where('products.shop_id', $order->shop_id);
+        if ($order->isPartnerOrder()) {
+            $queryBuilder->offeredToPartners();
+        } else {
+            $queryBuilder->sellableToCustomer($order->customer_id);
+        }
         $queryBuilder
             ->defaultSort('products.code')
             ->select([

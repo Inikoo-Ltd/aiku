@@ -23,6 +23,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
 use App\Models\Billables\ShippingZone;
+use App\Models\Billables\Packaging;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\DispatchedEmail;
@@ -38,6 +39,7 @@ use App\Models\Helpers\Currency;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Reviews\OrderReviewStat;
+use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasAddresses;
@@ -78,6 +80,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property OrderStateEnum $state
  * @property OrderStatusEnum $status
  * @property OrderHandingTypeEnum $handing_type
+ * @property bool $handled_in_aurora
  * @property bool $customer_locked
  * @property bool $billing_locked
  * @property bool $delivery_locked
@@ -230,6 +233,7 @@ class Order extends Model implements HasMedia, Auditable
     public const PAY_SETTLED_STATUSES = [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED];
 
     protected $casts = [
+        'handled_in_aurora'             => 'boolean',
         'data'                          => 'array',
         'payment_data'                  => 'array',
         'post_submit_modification_data' => 'array',
@@ -237,6 +241,7 @@ class Order extends Model implements HasMedia, Auditable
         'shipping_data'                 => 'array',
         'categories_data'               => 'array',
         'discretionary_offers_data'     => 'array',
+        'insert_types'                  => 'array',
         'date'                          => 'datetime',
         'updated_by_customer_at'        => 'datetime',
         'submitted_at'                  => 'datetime',
@@ -260,6 +265,8 @@ class Order extends Model implements HasMedia, Auditable
         'shipping_amount'               => 'decimal:2',
         'is_shipper_locked'             => 'boolean',
         'insurance_amount'              => 'decimal:2',
+        'packaging_amount'              => 'decimal:2',
+        'leaflet_amount'                => 'decimal:2',
         'net_amount'                    => 'decimal:2',
         'grp_net_amount'                => 'decimal:2',
         'org_net_amount'                => 'decimal:2',
@@ -426,6 +433,11 @@ class Order extends Model implements HasMedia, Auditable
             ->saveSlugsTo('slug');
     }
 
+    public function isPartnerOrder(): bool
+    {
+        return OrgPartner::where('customer_id', $this->customer_id)->exists();
+    }
+
     public function customerClient(): BelongsTo
     {
         return $this->belongsTo(CustomerClient::class);
@@ -516,6 +528,17 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(Currency::class);
     }
 
+    /**
+     * The tax a marketplace (Faire) actually charged the retailer. When set it is the order's
+     * and its invoice's tax, whatever Aiku's own per-line rates would add up to.
+     */
+    public function getMarketplaceTaxAmount(): ?float
+    {
+        $amount = Arr::get($this->data, 'marketplace_tax_amount');
+
+        return is_null($amount) ? null : (float)$amount;
+    }
+
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
@@ -557,6 +580,11 @@ class Order extends Model implements HasMedia, Auditable
     public function shippingZone(): BelongsTo
     {
         return $this->belongsTo(ShippingZone::class);
+    }
+
+    public function packaging(): BelongsTo
+    {
+        return $this->belongsTo(Packaging::class);
     }
 
     public function shipper(): BelongsTo
@@ -626,4 +654,9 @@ class Order extends Model implements HasMedia, Auditable
             ->withTimestamps();
     }
 
+
+    public function isLockedInAurora(): bool
+    {
+        return $this->handled_in_aurora && !in_array($this->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED]);
+    }
 }

@@ -2,10 +2,12 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Models\Chat\ChatMessage;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -62,14 +64,27 @@ class ChatSessionListResource extends JsonResource
                 'summary'     => Arr::get($summaryData, 'summary'),
                 'key_points'  => Arr::get($summaryData, 'key_points', []),
                 'sentiment'   => Arr::get($summaryData, 'sentiment', 'neutral'),
+                'status'      => Arr::get($summaryData, 'status'),
+                'topic'       => $this->topic,
+                'topic_label' => ChatTopicEnum::tryFrom((string) $this->topic)?->label(),
             ];
         }
 
         return [
             'ulid' => $this->ulid,
             'channel' => $this->channel?->value ?? 'website',
+            'customer_language' => ($this->activeUserLanguage ?? $this->userLanguage)?->only(['code', 'name']),
             'status' => $this->status,
             'is_spam' => (bool) $this->is_spam,
+            'is_rubbish' => (bool) $this->is_rubbish,
+            'rubbish_reason' => $this->rubbish_reason
+                ? \App\Enums\CRM\Livechat\ChatIgnoreReasonEnum::from($this->rubbish_reason)->label()
+                : null,
+            'customer_suggestion' => \App\Actions\Chat\ChatSession\SuggestChatSessionCustomer::forList($this->resource),
+            'noise' => \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::forList($this->resource),
+            'claim' => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
+            'promise' => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
+            'urgent'  => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
@@ -97,14 +112,16 @@ class ChatSessionListResource extends JsonResource
             'web_user' => $webUser ? [
                 'id' => $webUser->id,
                 'name' => $webUser->contact_name,
-                'slug' => $webUser->customer->slug,
-                'email' => $webUser->customer->email,
-                'phone' => $webUser->customer->phone,
-                'slug' => $webUser->customer->slug,
-                'organisation' => $webUser->customer->organisation->name,
-                'organisation_slug' => $webUser->customer->organisation->slug,
-                'shop' => $webUser->customer->shop->name,
-                'shop_slug' => $webUser->customer->shop->slug,
+                // The customer's own id, so the name can be followed through the majordomo
+                // redirect, which knows whether they belong to a shop or to a fulfilment.
+                'customer_id' => $webUser->customer?->id,
+                'slug' => $webUser->customer?->slug,
+                'email' => $webUser->customer?->email,
+                'phone' => $webUser->customer?->phone,
+                'organisation' => $webUser->customer?->organisation?->name,
+                'organisation_slug' => $webUser->customer?->organisation?->slug,
+                'shop' => $webUser->customer?->shop?->name,
+                'shop_slug' => $webUser->customer?->shop?->slug,
                 'image' => !blank($webUser->image_id)
                     ? $webUser->imageSources(320, 320)
                     : [
@@ -134,6 +151,17 @@ class ChatSessionListResource extends JsonResource
                     'original' => '/retina-default-user.svg'
                 ]
             ] : null,
+
+            'open_tickets_count'     => (int) ($this->open_tickets_count ?? 0),
+            'blocking_tickets_count' => (int) ($this->blocking_tickets_count ?? 0),
+            'open_tasks'             => $this->relationLoaded('staffTasks') ? $this->staffTasks->map(fn (StaffTask $task) => [
+                'reference' => $task->reference,
+                'subject'   => $task->subject,
+                'who'       => $task->assignee?->chatName() ?? StaffTask::departmentLabel((string) $task->department),
+                'url'       => route('grp.tasks.index', ['task' => $task->reference]),
+            ])->values()->all() : [],
+
+            'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
 
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,

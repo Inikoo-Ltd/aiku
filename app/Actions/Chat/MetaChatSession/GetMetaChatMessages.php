@@ -33,7 +33,14 @@ class GetMetaChatMessages
     public function handle(MetaChatSession $metaChatSession, array $filters): Collection
     {
         $query = $metaChatSession->messages()
-            ->with('attachment')
+            ->with([
+                'attachment',
+                'senderAgent.user',
+                'repliedTo.attachment',
+                'originalLanguage',
+                'translations.targetLanguage',
+                'reactions',
+            ])
             ->orderBy('created_at', 'desc');
 
         if (!empty($filters['cursor'])) {

@@ -55,7 +55,6 @@ class WebBlockProductForWorkshopResource extends JsonResource
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
         return [
-            'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
             'name'              => $product->name,

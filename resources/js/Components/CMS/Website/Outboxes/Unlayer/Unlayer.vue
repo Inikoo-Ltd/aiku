@@ -168,7 +168,7 @@ console.log(props,'dsad');
 <template>
     <div v-show="isUnlayerLoading" class="mt-32 md:mt-64">
         <!-- <span>Loading...</span> -->
-        <FontAwesomeIcon icon='fad fa-spinner-third' class='block mx-auto h-14 animate-spin' aria-hidden='true' />
+        <FontAwesomeIcon icon='fad fa-spinner-third' class='block mx-auto h-14 animate-spin' fixed-width aria-hidden='true' />
         <div class="text-center mt-2 text-gray-500">Editor is loading...</div>
     </div>
     <div v-show="!isUnlayerLoading" class="unlayer" :id="editorId"></div>

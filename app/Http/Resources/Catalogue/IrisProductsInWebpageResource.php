@@ -12,6 +12,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasCardWebImages;
 use App\Http\Resources\Traits\HasPriceMetrics;
+use App\Http\Resources\Traits\HasProductOfferPrices;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -44,17 +45,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $is_on_demand
  * @property mixed $is_variant
  * @property mixed $brand_name
+ * @property mixed $family_id
+ * @property mixed $is_golden_product
+ * @property mixed $variant_id
+ * @property mixed $product_offers_data
+ * @property mixed $step_discount_data
  */
 class IrisProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
     use HasPriceMetrics;
     use HasCardWebImages;
+    use HasProductOfferPrices;
 
     public function toArray($request): array
     {
-        $oldLuigiIdentity = $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->website_id.':'.$this->webpage_id;
-
         $url = $this->canonical_url;
         if (!app()->environment('production')) {
             $url = ShowIrisWebpage::make()->getEnvironmentUrl($url);
@@ -66,7 +71,6 @@ class IrisProductsInWebpageResource extends JsonResource
         return [
             'id'              => $this->id,
             'code'            => $this->code,
-            'luigi_identity'  => $oldLuigiIdentity,
             'name'            => $this->name,
             'stock'           => $this->available_quantity,
             'price'           => $this->price,
@@ -90,6 +94,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'is_on_demand'    => $this->is_on_demand,
             'is_variant'      => $this->is_variant,
             'brand_name'      => $this->brand_name,
+            ...$this->getProductOfferPrices(),
         ];
     }
 }

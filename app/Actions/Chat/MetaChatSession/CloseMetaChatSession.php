@@ -7,6 +7,8 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\WithBlockingTickets;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -14,13 +16,13 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastMetaChatListEvent;
+use App\Actions\Chat\ChatSession\SummarizeChatSession;
 use App\Events\BroadcastRealtimeMetaChat;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,6 +30,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class CloseMetaChatSession
 {
     use AsAction;
+    use WithBlockingTickets;
+    use WithChatAgentAuthorisation;
 
     /**
      * @throws \Throwable
@@ -38,6 +42,16 @@ class CloseMetaChatSession
         ChatActorTypeEnum $actorType = ChatActorTypeEnum::AGENT,
         array $additionalData = []
     ): MetaChatSession {
+        if ($actorType === ChatActorTypeEnum::AGENT) {
+            $blockers = $this->unresolvedBlockers($metaChatSession);
+
+            if ($blockers->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'message' => $this->blockersMessage($blockers),
+                ]);
+            }
+        }
+
         $systemMessage = null;
 
         $metaChatSession = DB::transaction(function () use ($metaChatSession, $actorId, $actorType, $additionalData, &$systemMessage) {
@@ -91,6 +105,8 @@ class CloseMetaChatSession
             BroadcastRealtimeMetaChat::dispatch($systemMessage->fresh('metaChatSession'));
         }
 
+        SummarizeChatSession::dispatch($metaChatSession)->delay(now()->addSeconds(5));
+
         BroadcastMetaChatListEvent::dispatch(null, $metaChatSession);
 
         return $metaChatSession;
@@ -103,7 +119,7 @@ class CloseMetaChatSession
      */
     public function asController(string $organisation, MetaChatSession $metaChatSession): RedirectResponse
     {
-        $agent = $this->getCurrentAgent();
+        $agent = $this->getCurrentAgent($metaChatSession);
 
         if (!$agent) {
             throw ValidationException::withMessages([
@@ -128,9 +144,9 @@ class CloseMetaChatSession
         return back()->setStatusCode(303);
     }
 
-    public function getCurrentAgent(): ?ChatAgent
+    public function getCurrentAgent(MetaChatSession $metaChatSession): ?ChatAgent
     {
-        return Auth::user()?->chatAgent;
+        return $this->getAuthorisedChatAgent($metaChatSession);
     }
 
     protected function logCloseEvent(

@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\OrgAction;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
@@ -24,6 +25,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -85,7 +87,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
                 'supplier_products.slug',
                 'supplier_products.id as supplier_product_id',
                 'supplier_products.name',
-                'supplier_products.cost as unit_cost',
+                DB::raw('coalesce(purchase_order_transactions.unit_cost, supplier_products.cost) as unit_cost'),
                 'supplier_products.units_per_pack',
                 'supplier_products.units_per_carton',
                 'supplier_products.current_historic_supplier_product_id as historic_id',
@@ -107,7 +109,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
 
-        $this->attachImages($paginator);
+        $this->attachOrgStockData($paginator);
 
         return $paginator;
     }
@@ -152,7 +154,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         return PurchaseOrderOrgSupplierProductsResource::collection($orgSupplierProducts);
     }
 
-    private function attachImages(LengthAwarePaginator $paginator): void
+    private function attachOrgStockData(LengthAwarePaginator $paginator): void
     {
         $orgStockIds = $paginator->getCollection()->pluck('org_stock_id')->filter()->unique()->values();
 
@@ -162,9 +164,15 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $orgStocks = OrgStock::with('tradeUnits.image')->whereIn('id', $orgStockIds)->get()->keyBy('id');
 
-        $paginator->getCollection()->transform(function ($row) use ($orgStocks) {
-            $tradeUnit = $orgStocks->get($row->org_stock_id)?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
-            $row->image_sources = $tradeUnit?->imageSources(64, 64);
+        $quarterlyUsage = GetOrgStocksQuarterlyUsage::run($orgStockIds);
+
+        $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage) {
+            $orgStock  = $orgStocks->get($row->org_stock_id);
+            $tradeUnit = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+
+            $row->image_sources      = $tradeUnit?->imageSources(64, 64);
+            $row->stock_in_locations = $orgStock?->quantity_in_locations;
+            $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
 
             return $row;
         });

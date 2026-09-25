@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\Ordering\Order\AssignDefaultPackagingToOrderWithoutPackaging;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
@@ -86,6 +87,10 @@ class ShowOrder extends OrgAction
 
     public function handle(Order $order): Order
     {
+        if (AssignDefaultPackagingToOrderWithoutPackaging::run($order)) {
+            $order->refresh();
+        }
+
         return $order;
     }
 
@@ -245,18 +250,43 @@ class ShowOrder extends OrgAction
 
         $orderBanStatus = $this->isForbiddenDetailed($order);
 
-        $actions = $order->shop->type == ShopTypeEnum::DROPSHIPPING
-            ?
-            GetDropshippingOrderActions::run($order, $this->canEdit)
-            :
-            GetEcomOrderActions::run($order, $this->canEdit);
+        $lockedInAurora = $order->isLockedInAurora();
+        $canEdit        = $this->canEdit && !$lockedInAurora;
 
-        $allowOrderModification = $this->canEdit
+        $actions = match (true) {
+            $lockedInAurora => [],
+            $order->shop->type == ShopTypeEnum::DROPSHIPPING => GetDropshippingOrderActions::run($order, $canEdit),
+            default => GetEcomOrderActions::run($order, $canEdit),
+        };
+
+        if (!$canEdit
+            && !$lockedInAurora
+            && $order->state == OrderStateEnum::SUBMITTED
+            && $order->pay_status != OrderPayStatusEnum::PAID
+            && $order->transactions()->exists()
+            && $request->user()->authTo("org-supervisor.{$order->organisation_id}.accounting")) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'key'     => 'send-unpaid-to-warehouse',
+                'label'   => __('Send to warehouse (unpaid)'),
+                'tooltip' => __('Release this order to the warehouse before it is fully paid, e.g. for a customer on payment terms'),
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.order.state.in-warehouse-unpaid',
+                    'parameters' => [
+                        'order' => $order->id,
+                    ],
+                ],
+            ];
+        }
+
+        $allowOrderModification = $canEdit
             && $order->shop->type != ShopTypeEnum::EXTERNAL
             && (!$order->platform || $order->platform->type == PlatformTypeEnum::MANUAL)
             && !in_array($order->state, [OrderStateEnum::CANCELLED, OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED]);
 
-        if ($order->state != OrderStateEnum::CANCELLED) {
+        if ($order->state != OrderStateEnum::CANCELLED && !$lockedInAurora) {
             $wrapped_actions = [
                 [
                     'type'  => 'button',
@@ -363,6 +393,7 @@ class ShowOrder extends OrgAction
                     'previous' => $this->getPrevious($order, $request),
                     'next'     => $this->getNext($order, $request),
                 ],
+                'aurora_notice' => $lockedInAurora ? __('This order was submitted in Aurora. Process it in Aurora, not here: it will update here once Aurora dispatches or cancels it.') : null,
                 'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
                 'staff_chat'  => [
                     'context_type' => 'Order',
@@ -546,6 +577,11 @@ class ShowOrder extends OrgAction
                         [
                             'label' => __('Group by Tariff Code'),
                             'value' => 'group_by_tariff_code',
+                        ],
+                        [
+                            'label'   => __('Price breakdown (gross, discount, net)'),
+                            'value'   => 'price_breakdown',
+                            'tooltip' => __('Shows each line with its price before discount, the discount amount and the final amount. Useful for customs clearance.'),
                         ],
                     ],
                     'route_download_pdf' => [

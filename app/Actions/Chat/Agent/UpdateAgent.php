@@ -52,6 +52,7 @@ class UpdateAgent extends OrgAction
                 'is_available',
                 'current_chat_count',
                 'language_id',
+                'signature',
             ];
 
             $updateData = array_intersect_key(
@@ -86,14 +87,6 @@ class UpdateAgent extends OrgAction
                 $agent->update($updateData);
             }
 
-
-            if (array_key_exists('shop_id', $modelData)) {
-                AssignChatAgentToScope::make()->update([
-                    'organisation_id' => $organisation->id,
-                    'shop_id'         => $modelData['shop_id'],
-                ], $agent);
-            }
-
             return $agent;
         });
     }
@@ -102,16 +95,6 @@ class UpdateAgent extends OrgAction
     public function rules(): array
     {
         return [
-            'shop_id' => [
-                'sometimes',
-                'nullable',
-                'array',
-            ],
-            'shop_id.*' => [
-                'integer',
-                'exists:shops,id',
-            ],
-
             'organisation_id' => [
                 'sometimes',
                 'nullable',
@@ -168,6 +151,13 @@ class UpdateAgent extends OrgAction
             'auto_accept' => [
                 'sometimes',
                 'boolean',
+            ],
+
+            'signature' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:20000',
             ],
         ];
     }

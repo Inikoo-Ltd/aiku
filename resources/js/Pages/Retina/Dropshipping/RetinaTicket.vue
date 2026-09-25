@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { capitalize } from "@/Composables/capitalize"
-import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import TicketThread from "@/Components/Tickets/TicketThread.vue"
 import TicketRating from "@/Components/Tickets/TicketRating.vue"
 import Icon from "@/Components/Icon.vue"

@@ -165,7 +165,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 						<!-- Scope -->
 						<div v-tooltip="`Review ${item.scope}`"
 							class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100">
-							<FontAwesomeIcon :icon="scopeIcon(item.scope)" class="text-sm text-gray-500" />
+							<FontAwesomeIcon :icon="scopeIcon(item.scope)" class="text-sm text-gray-500" fixed-width />
 						</div>
 
 						<!-- Content -->
@@ -182,7 +182,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 											:severity="item.review.is_public ? 'success' : 'secondary'"
 											class="text-[10px]">
 											<template #icon>
-												<FontAwesomeIcon :icon="item.review.is_public ? faEye : faEyeSlash" />
+												<FontAwesomeIcon :icon="item.review.is_public ? faEye : faEyeSlash" fixed-width />
 											</template>
 
 											{{ item.review.is_public ? 'Public' : 'Private' }}
@@ -202,7 +202,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 							<!-- Row 2 -->
 							<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
 								<span>{{ item.code }}</span>
-								<FontAwesomeIcon :icon="faCircle" class="text-[5px]" />
+								<FontAwesomeIcon :icon="faCircle" class="text-[5px]" fixed-width />
 								<span>{{ useFormatTime(item.created_at) }}</span>
 							</div>
 						</div>
@@ -248,7 +248,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 										? 'border-blue-200 bg-blue-50 text-blue-600 shadow-sm'
 										: 'border-transparent text-gray-500 hover:border-gray-200 hover:bg-gray-100',
 								]">
-								<FontAwesomeIcon :icon="faThumbsUp" />
+								<FontAwesomeIcon :icon="faThumbsUp" fixed-width />
 
 								<span>
 									{{ item.review.likes ?? 0 }}
@@ -262,7 +262,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 										? 'border-red-200 bg-red-50 text-red-600 shadow-sm'
 										: 'border-transparent text-gray-500 hover:border-gray-200 hover:bg-gray-100',
 								]">
-								<FontAwesomeIcon :icon="faThumbsDown" />
+								<FontAwesomeIcon :icon="faThumbsDown" fixed-width />
 
 								<div>
 									{{ item.review.dislikes ?? 0 }}
@@ -272,7 +272,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 
 						  
                         <div class="mt-auto ml-auto text-[11px] text-gray-400 w-fit">
-                            <AddressLocation :data="item['location']" :use_flag="item?.location[1] != layout?.iris?.shop?.location[1]" />
+                            <AddressLocation :data="item?.location" :use_flag="item?.location?.[1] != layout?.iris?.shop?.location?.[1]" />
                         </div>
 					</div>
 
@@ -284,7 +284,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 
 								<img v-if="layout?.iris?.website?.logo?.avif" :src="layout.iris.website.logo.avif"
 									src="logo" />
-								<FontAwesomeIcon v-else :icon="faReply" class="text-[10px]" />
+								<FontAwesomeIcon v-else :icon="faReply" class="text-[10px]" fixed-width />
 							</div>
 
 							<div class="min-w-0 flex-1">
@@ -329,7 +329,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 												? 'border-blue-200 bg-blue-50 text-blue-600 shadow-sm'
 												: 'border-transparent text-gray-500 hover:border-gray-200 hover:bg-gray-100'
 										]">
-										<FontAwesomeIcon :icon="faThumbsUp" />
+										<FontAwesomeIcon :icon="faThumbsUp" fixed-width />
 
 										<span>
 											{{ item.review.reply.likes ?? 0 }}
@@ -343,7 +343,7 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 												? 'border-red-200 bg-red-50 text-red-600 shadow-sm'
 												: 'border-transparent text-gray-500 hover:border-gray-200 hover:bg-gray-100'
 										]">
-										<FontAwesomeIcon :icon="faThumbsDown" />
+										<FontAwesomeIcon :icon="faThumbsDown" fixed-width />
 
 										<span>
 											{{ item.review.reply.dislikes ?? 0 }}
@@ -371,12 +371,12 @@ const toggleReaction = (item: any, target: "review" | "review_reply", isLike: bo
 				<template v-if="previewImages.length > 1">
 					<button type="button" class="absolute left-2 top-1/2 z-40 -translate-y-1/2 text-3xl text-white"
 						@click="prevPreviewImage">
-						<FontAwesomeIcon :icon="faChevronCircleLeft" />
+						<FontAwesomeIcon :icon="faChevronCircleLeft" fixed-width />
 					</button>
 
 					<button type="button" class="absolute right-2 top-1/2 z-40 -translate-y-1/2 text-3xl text-white"
 						@click="nextPreviewImage">
-						<FontAwesomeIcon :icon="faChevronCircleRight" />
+						<FontAwesomeIcon :icon="faChevronCircleRight" fixed-width />
 					</button>
 
 					<div class="mt-2 text-xs text-white">

@@ -154,7 +154,7 @@ class FixShopifyPortfolios
         }
 
         $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
-        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id, $portfolio->isShopifyVariantAdopted() ? $portfolio->platform_product_variant_id : null);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
@@ -184,7 +184,7 @@ class FixShopifyPortfolios
         }
 
         $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
-        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id, $portfolio->isShopifyVariantAdopted() ? $portfolio->platform_product_variant_id : null);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
@@ -212,7 +212,7 @@ class FixShopifyPortfolios
             }
         }
         $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
-        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id, $portfolio->isShopifyVariantAdopted() ? $portfolio->platform_product_variant_id : null);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
@@ -246,7 +246,7 @@ class FixShopifyPortfolios
         CustomerSalesChannelsHydratePortfolios::run($portfolio->customerSalesChannel);
 
         $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
-        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id, $portfolio->isShopifyVariantAdopted() ? $portfolio->platform_product_variant_id : null);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
@@ -270,7 +270,7 @@ class FixShopifyPortfolios
         StoreShopifyProduct::run($portfolio);
 
         $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
-        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id, $portfolio->isShopifyVariantAdopted() ? $portfolio->platform_product_variant_id : null);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),

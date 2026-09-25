@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Fulfilment\StoredItem\UI;
 
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Actions\Fulfilment\StoredItem\UI\GetStoredItemShowcase;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemMovements;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemPallets;
@@ -32,9 +33,11 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowRetinaStoredItem extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function authorize(ActionRequest $request): bool
     {
-        return true; //TODO: @raul Permission
+        return $this->asAction || $this->retinaCustomerOwnsRouteModels($request);
     }
 
     public function asController(StoredItem $storedItem, ActionRequest $request): StoredItem

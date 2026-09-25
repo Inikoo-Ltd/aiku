@@ -2,6 +2,8 @@
 
 namespace App\Models\Chat;
 
+use App\Models\Helpers\Ticket;
+use App\Models\Tasks\StaffTask;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum;
@@ -13,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -129,6 +132,22 @@ class MetaChatSession extends Model
             : $this->lastVisitorMessage()->latest()->first()?->created_at;
 
         return $lastInboundAt !== null && $lastInboundAt->gt(now()->subDay());
+    }
+
+    /**
+     * Raised off this conversation, so the thread can say what is outstanding on it.
+     */
+    public function tickets(): MorphMany
+    {
+        return $this->morphMany(Ticket::class, 'source');
+    }
+
+    /**
+     * Colleagues asked to do something for this conversation, e.g. chase a supplier for a document; the chat waits on the open ones.
+     */
+    public function staffTasks(): MorphMany
+    {
+        return $this->morphMany(StaffTask::class, 'model');
     }
 
     public function assignments(): HasMany

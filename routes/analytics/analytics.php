@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Web\Website\Analytics\RecordWebsiteHit;
+use App\Actions\Web\WebVital\StoreWebVitalSample;
 use Illuminate\Support\Facades\Route;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
@@ -16,3 +17,5 @@ Route::post('analytics/hit', RecordWebsiteHit::class)->name('hit')->middleware(
         Sample::always()
     ]
 );
+
+Route::post('analytics/web-vitals', StoreWebVitalSample::class)->name('web_vitals')->middleware('throttle:web-vitals');

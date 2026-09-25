@@ -12,7 +12,7 @@ use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Invoice\StoreStandaloneCreditNote;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
+use App\Actions\Traits\Authorisations\WithCustomerBalanceAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
@@ -28,7 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class IncreaseCreditTransactionCustomer extends OrgAction
 {
-    use WithCRMEditAuthorisation;
+    use WithCustomerBalanceAuthorisation;
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithCreditTransactionRules {

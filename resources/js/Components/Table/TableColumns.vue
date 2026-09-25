@@ -65,7 +65,7 @@ const buttonTooltip = computed(() =>
             <span v-tooltip="buttonTooltip" class="flex items-center">
                 <FontAwesomeIcon
                     :icon="hiddenCount ? 'fal fa-eye-slash' : 'fal fa-eye'"
-                    aria-hidden="true"
+                    fixed-width aria-hidden="true"
                     class="h-4 w-4 text-gray-500" />
                 <span class="sr-only">{{ buttonTooltip }}</span>
             </span>
@@ -99,7 +99,7 @@ const buttonTooltip = computed(() =>
                             class="text-gray-500" />
                         <p :id="`toggle-column-${column.key}`" :title="labelOf(column)" class="max-w-[18rem] truncate text-sm text-gray-800">
                             {{ labelOf(column) }}
-                            <FontAwesomeIcon v-if="Array.isArray(column.label)" class="text-gray-700" :icon="column.label" aria-hidden="true" />
+                            <FontAwesomeIcon v-if="Array.isArray(column.label)" class="text-gray-700" :icon="column.label" fixed-width aria-hidden="true" />
                         </p>
                     </div>
 

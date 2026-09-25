@@ -10,7 +10,7 @@ import { computed, reactive, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useLocaleStore } from "@/Stores/locale"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -64,6 +64,8 @@ const props = defineProps<{
 	toDoLimit: number
 	lanes: { to_do: Card[]; queued: Card[]; producing: Card[]; restocked: Card[] }
 	toProduceRoute: { name: string; parameters: (string | number)[] }
+	prePickRoute: { name: string; parameters: (string | number)[] }
+	sentFromStock: number
 }>()
 
 const locale = useLocaleStore()
@@ -161,7 +163,7 @@ const filters = reactive<Record<FilterKey, string[]>>({
 	artisan: [],
 })
 
-const requesterOf = (card: Card) => card.buyer_code ?? trans("Warehouse")
+const requesterOf = (card: Card) => card.buyer_code ?? ctrans("Warehouse")
 
 const allCards = computed(() => [
 	...props.lanes.to_do,
@@ -201,25 +203,25 @@ const keep = (card: Card) =>
 const lanes = computed(() => [
 	{
 		key: "to_do",
-		label: trans("To restock"),
+		label: ctrans("To restock"),
 		items: props.lanes.to_do.filter(keep),
 		tone: "red" as Tone,
 	},
 	{
 		key: "queued",
-		label: trans("Queued to produce"),
+		label: ctrans("Queued to produce"),
 		items: props.lanes.queued.filter(keep),
 		tone: "amber" as Tone,
 	},
 	{
 		key: "producing",
-		label: trans("On the floor"),
+		label: ctrans("On the floor"),
 		items: props.lanes.producing.filter(keep),
 		tone: "violet" as Tone,
 	},
 	{
 		key: "restocked",
-		label: trans("Back in stock"),
+		label: ctrans("Back in stock"),
 		items: props.lanes.restocked.filter(keep),
 		tone: "green" as Tone,
 	},
@@ -274,7 +276,7 @@ watch(
 	<div
 		v-if="Object.keys(selected).length"
 		class="sticky top-0 z-10 mx-4 mt-4 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white">
-		<span>{{ Object.keys(selected).length }} {{ trans("artefacts selected") }}</span>
+		<span>{{ Object.keys(selected).length }} {{ ctrans("artefacts selected") }}</span>
 		<button
 			type="button"
 			class="rounded bg-white px-3 py-1 text-indigo-600"
@@ -286,7 +288,7 @@ watch(
 					}))
 				)
 			">
-			{{ trans("Queue to produce") }}
+			{{ ctrans("Queue to produce") }}
 		</button>
 	</div>
 
@@ -295,35 +297,35 @@ watch(
 			class="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
 			<div class="flex items-center gap-2 text-gray-500">
 				<FontAwesomeIcon icon="fal fa-stopwatch" fixed-width aria-hidden="true" />
-				{{ trans("Lead time") }}
+				{{ ctrans("Lead time") }}
 			</div>
 			<div class="mt-1">
 				<span class="text-2xl font-semibold tabular-nums">{{ leadTime.days }}</span>
 				<span class="ml-1 text-gray-500">{{
-					trans("days on the floor → back in stock")
+					ctrans("days on the floor → back in stock")
 				}}</span>
 			</div>
 			<div class="text-xs text-gray-400">
 				{{
 					leadTime.source === "measured"
-						? trans("measured from :count job orders", { count: leadTime.samples })
-						: trans("estimate — no finished job orders to measure yet")
+						? ctrans("measured from :count job orders", { count: leadTime.samples })
+						: ctrans("estimate — no finished job orders to measure yet")
 				}}
 			</div>
 		</div>
 
 		<div
 			class="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
-			<div class="text-gray-500">{{ trans("Stock cover") }}</div>
+			<div class="text-gray-500">{{ ctrans("Stock cover") }}</div>
 			<div class="mt-1">
 				<span class="text-2xl font-semibold tabular-nums">{{
 					locale.number(coverTotal)
 				}}</span>
-				<span class="ml-1 text-gray-500">{{ trans("artefacts this factory makes") }}</span>
+				<span class="ml-1 text-gray-500">{{ ctrans("artefacts this factory makes") }}</span>
 			</div>
 			<div class="text-xs text-gray-400">
 				{{
-					trans("grouped by how long our stock lasts against a :days day lead time", {
+					ctrans("grouped by how long our stock lasts against a :days day lead time", {
 						days: leadTime.days,
 					})
 				}}
@@ -334,12 +336,12 @@ watch(
 	<div class="mx-4 mt-3 text-sm">
 		<div
 			class="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-			{{ trans("Needs making") }}
+			{{ ctrans("Needs making") }}
 			<span class="rounded-full bg-gray-100 px-1.5 tabular-nums text-gray-600">{{
 				locale.number(needsMakingTotal)
 			}}</span>
 			<span class="normal-case tracking-normal text-gray-400">{{
-				trans("click a band to change what the To restock column shows")
+				ctrans("click a band to change what the To restock column shows")
 			}}</span>
 		</div>
 		<div class="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -365,7 +367,7 @@ watch(
 						v-if="bucket.untouched"
 						class="rounded-full px-1.5 py-0.5 text-xs"
 						:class="tonePalette[bucket.tone].chip">
-						{{ locale.number(bucket.untouched) }} {{ trans("need action") }}
+						{{ locale.number(bucket.untouched) }} {{ ctrans("need action") }}
 					</span>
 				</div>
 				<div class="mt-0.5 text-gray-600 dark:text-gray-300">{{ bucket.label }}</div>
@@ -378,7 +380,7 @@ watch(
 					</span>
 					<span v-if="bucket.to_make" class="ml-auto tabular-nums"
 						>{{ locale.number(Math.round(bucket.to_make)) }}
-						{{ trans("to make") }}</span
+						{{ ctrans("to make") }}</span
 					>
 				</div>
 			</button>
@@ -395,7 +397,7 @@ watch(
 						? 'border-indigo-400 ring-2 ring-indigo-200'
 						: 'border-gray-200 hover:border-gray-300 dark:border-gray-700'
 				"
-				:title="trans('Nothing here needs making — open it anyway to make some')"
+				:title="ctrans('Nothing here needs making — open it anyway to make some')"
 				@click="toggleBucket(bucket.bucket)">
 				<FontAwesomeIcon
 					:icon="passiveIcons[bucket.bucket]"
@@ -417,10 +419,10 @@ watch(
 			class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900">
 			<div
 				v-for="(label, key) in {
-					family: trans('Category'),
-					requester: trans('Requester'),
-					priority: trans('Urgency'),
-					artisan: trans('Artisan'),
+					family: ctrans('Category'),
+					requester: ctrans('Requester'),
+					priority: ctrans('Urgency'),
+					artisan: ctrans('Artisan'),
 				}"
 				:key="key"
 				class="flex flex-wrap items-center gap-1.5">
@@ -457,7 +459,7 @@ watch(
 				type="button"
 				class="ml-auto text-xs text-gray-400 hover:text-gray-600"
 				@click="clearFilters">
-				× {{ trans("Clear") }}
+				× {{ ctrans("Clear") }}
 			</button>
 		</div>
 	</div>
@@ -473,13 +475,13 @@ watch(
 					v-if="lane.key === 'queued'"
 					:href="route(toProduceRoute.name, toProduceRoute.parameters)"
 					class="primaryLink text-xs font-normal">
-					{{ trans("board") }}
+					{{ ctrans("board") }}
 				</Link>
 				<span
 					class="ml-auto rounded-full bg-white px-2 text-xs text-gray-500 dark:bg-gray-900"
 					:title="
 						isToDoCapped(lane.key)
-							? trans('the most urgent :count — clear them and more appear', {
+							? ctrans('the most urgent :count — clear them and more appear', {
 									count: toDoLimit,
 								})
 							: ''
@@ -487,6 +489,17 @@ watch(
 					{{ lane.items.length }}<template v-if="isToDoCapped(lane.key)">+</template>
 				</span>
 			</div>
+
+			<Link
+				v-if="lane.key === 'queued' && sentFromStock"
+				:href="route(prePickRoute.name, prePickRoute.parameters)"
+				class="primaryLink mx-3 mb-2 text-xs">
+				{{
+					ctrans(":count partner lines are sent from stock, see Pre-pick", {
+						count: sentFromStock,
+					})
+				}}
+			</Link>
 
 			<div class="flex max-h-[70vh] flex-col gap-1.5 overflow-y-auto px-2 pb-2">
 				<div
@@ -540,14 +553,14 @@ watch(
 					</div>
 					<div class="text-gray-400">
 						<span v-if="Number(card.stock_available) > 0"
-							>{{ trans("In stock") }}:
+							>{{ ctrans("In stock") }}:
 							{{ locale.number(Number(card.stock_available)) }}</span
 						>
-						<span v-else class="text-red-600">{{ trans("Out of stock") }}</span>
+						<span v-else class="text-red-600">{{ ctrans("Out of stock") }}</span>
 						<span v-if="card.days_of_cover != null">
 							·
 							{{
-								trans(":days days cover", {
+								ctrans(":days days cover", {
 									days: Math.round(Number(card.days_of_cover)),
 								})
 							}}</span
@@ -570,12 +583,12 @@ watch(
 								: 'bg-indigo-600 text-white hover:bg-indigo-700'
 						"
 						@click="toggleCard(card)">
-						{{ card.artefact_id in selected ? trans("Selected") : trans("Select") }}
+						{{ card.artefact_id in selected ? ctrans("Selected") : ctrans("Select") }}
 					</button>
 				</div>
 
 				<div v-if="!lane.items.length" class="px-2 py-6 text-center text-xs text-gray-400">
-					{{ trans("Nothing here") }}
+					{{ ctrans("Nothing here") }}
 				</div>
 			</div>
 		</div>

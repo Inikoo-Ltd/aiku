@@ -138,15 +138,11 @@ function onSave(item) {
 
     if (!updated) return
 
+    const original = editingBackup.value[item.id] ?? {}
+
     router.patch(
         route("grp.models.product.update", { product: item.id }),
-        {
-            price: updated.price,
-            rrp: updated.rrp,
-            rrp_per_unit: updated.rrp_per_unit,
-            unit: updated.unit,
-            name: updated.name
-        },
+        Object.fromEntries(Object.entries(updated).filter(([field, value]) => value !== original[field])),
         {
             preserveScroll: true,
             onStart: () => {
@@ -360,6 +356,7 @@ function productRoute(product: Product) {
                     product.shop_slug,
                     product.slug])
         case "grp.org.shops.show.catalogue.products.sales":
+        case "grp.org.shops.show.catalogue.products.duplicated_barcodes.index":
         case "grp.org.shops.show.catalogue.products.all_products.index":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.departments.show.collection.show":
@@ -783,8 +780,8 @@ const familyRoute = (item) => {
             <div class="flex items-center">
                 <span v-if="mismatch_trade_unit_with_master && !hide_sku_in_name_column" class="py-1 px-2 border border-solid border-yellow-600 text-yellow-600 mr-2 rounded-md cursor-pointer min-w-[40px] " v-tooltip="trans(`Follow this child's trade unit`)" @click="repairTradeUnitFromChildren(product)">
                     <FontAwesomeLayers class="w-fit-content">
-                        <FontAwesomeIcon :icon="faTools" style="right:-20; bottom:-5" class="text-xs"/>
-                        <FontAwesomeIcon :icon="faRunning" class="text-lg"/>
+                        <FontAwesomeIcon :icon="faTools" style="right:-20; bottom:-5" class="text-xs" fixed-width/>
+                        <FontAwesomeIcon :icon="faRunning" class="text-lg" fixed-width/>
                     </FontAwesomeLayers>
                     <LoadingIcon v-if="isLoadingRepairFromChildren == product.id"/>
                 </span>
@@ -821,7 +818,7 @@ const familyRoute = (item) => {
             <div class="flex items-center gap-2 max-w-xs">
                 <span class="truncate text-gray-500" v-tooltip="product.description">{{ product.description }}</span>
                 <button v-if="editable_table" class="shrink-0" @click="() => openDescriptionModal(product)" v-tooltip="trans('Edit description')">
-                    <FontAwesomeIcon icon="fal fa-pencil" class="text-gray-500 hover:text-gray-700" aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-pencil" class="text-gray-500 hover:text-gray-700" fixed-width aria-hidden="true" />
                 </button>
             </div>
         </template>
@@ -847,7 +844,7 @@ const familyRoute = (item) => {
                     </div>
                     <div v-else-if="isErrorFetchingTradeUnit" class="text-md font-medium text-red-400 grid grid-cols-1">
                         <span>
-                            <FontAwesomeIcon :icon="faWarning"/> {{ trans('Error fetching Trade Unit details') }}
+                            <FontAwesomeIcon :icon="faWarning" fixed-width/> {{ trans('Error fetching Trade Unit details') }}
                         </span>
                         <span class="mt-2">
                             Unable to modify trade unit here. Please access it from the Product Edit page
@@ -900,10 +897,10 @@ const familyRoute = (item) => {
                     :step="0.25"  showButtons button-layout="horizontal" inputClass="w-full text-xs"
                     @update:model-value="()=>deleteError(product)" :min="0.01">
                     <template #incrementbuttonicon>
-                        <FontAwesomeIcon :icon="faPlus" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
                     </template>
                     <template #decrementbuttonicon>
-                        <FontAwesomeIcon :icon="faMinus" />
+                        <FontAwesomeIcon :icon="faMinus" fixed-width />
                     </template>
                 </InputNumber>
                 <p class="text-red-600 text-xxs">{{ errors?.[product.id]?.price }}</p>
@@ -918,10 +915,10 @@ const familyRoute = (item) => {
                 <InputNumber v-model="editingValues[product.id].rrp_per_unit" mode="currency" :currency="product.currency_code" :min="0.01"
                     :step="0.25" showButtons  button-layout="horizontal" inputClass="w-full text-xs"  @update:model-value="()=>deleteError(product)">
                     <template #incrementbuttonicon>
-                        <FontAwesomeIcon :icon="faPlus" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
                     </template>
                     <template #decrementbuttonicon>
-                        <FontAwesomeIcon :icon="faMinus" />
+                        <FontAwesomeIcon :icon="faMinus" fixed-width />
                     </template>
                 </InputNumber>
                 <p class="text-red-600 text-xxs">{{ errors?.[product.id]?.rrp }}</p>
@@ -934,10 +931,10 @@ const familyRoute = (item) => {
                 <InputNumber v-model="editingValues[product.id].rrp" mode="currency" :currency="product.currency_code" :min="0.01"
                     :step="0.25" showButtons  button-layout="horizontal" inputClass="w-full text-xs"  @update:model-value="()=>deleteError(product)">
                     <template #incrementbuttonicon>
-                        <FontAwesomeIcon :icon="faPlus" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
                     </template>
                     <template #decrementbuttonicon>
-                        <FontAwesomeIcon :icon="faMinus" />
+                        <FontAwesomeIcon :icon="faMinus" fixed-width />
                     </template>
                 </InputNumber>
                 <p class="text-red-600 text-xxs">{{ errors?.[product.id]?.rrp }}</p>
@@ -1082,7 +1079,7 @@ const familyRoute = (item) => {
             <div class="whitespace-nowrap">
                 <Link :href="(masterProductRoute(product) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
                     :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" />
+                <FontAwesomeIcon :icon="faOctopusDeploy" color="#4B0082" fixed-width />
                 </Link>
                 <Link :href="productHref(product)" class="primaryLink">
                     {{ product["code"] }}
@@ -1094,14 +1091,14 @@ const familyRoute = (item) => {
             <div class="flex items-center gap-2">
                 <FontAwesomeIcon :icon="product.is_variant_leader ? faStar : faShapes" class="shrink-0" :class="product.is_variant_leader
                     ? 'text-yellow-500'
-                    : 'text-gray-500'" />
+                    : 'text-gray-500'" fixed-width />
 
                 <div class="whitespace-nowrap flex items-center gap-1">
                     <Link :href="masterProductRoute(product) as string" v-tooltip="trans('Go to Master')"
                         class="transition-opacity" :class="product.master_product_id
                             ? 'opacity-70 hover:opacity-100'
                             : 'opacity-0 pointer-events-none'">
-                        <FontAwesomeIcon icon="fab fa-octopus-deploy" class="text-indigo-700" />
+                        <FontAwesomeIcon icon="fab fa-octopus-deploy" class="text-indigo-700" fixed-width />
                     </Link>
 
                     <Link :href="productHref(product)" class="primaryLink">
@@ -1124,7 +1121,7 @@ const familyRoute = (item) => {
                 : 'bg-gray-50 border-gray-200'">
                     <!-- ICON -->
                     <FontAwesomeIcon :icon="product.is_variant_leader ? faStar : faShapes" class="shrink-0"
-                        :style="{ ...getClassColorIcon(product.variant_slug), fontSize: '0.7rem' }" />
+                        :style="{ ...getClassColorIcon(product.variant_slug), fontSize: '0.7rem' }" fixed-width />
 
                     <!-- CODE -->
                     <span class="leading-none truncate" :style="{ ...getClassColorIcon(product.variant_slug) }">
@@ -1177,7 +1174,7 @@ const familyRoute = (item) => {
             <div v-if="editable_table">
                 <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="()=>onEdit(item)">
                     <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
-                        aria-hidden="true" v-tooltip="'edit'" />
+                        fixed-width aria-hidden="true" v-tooltip="'edit'" />
                 </button>
 
                 <span v-else class="flex items-center space-x-3">
@@ -1190,9 +1187,9 @@ const familyRoute = (item) => {
                             class="text-2xl animate-spin" fixed-width aria-hidden="true" />
 
                         <FontAwesomeIcon v-else-if="editingValues[item.id]" icon="fad fa-save" class="h-8"
-                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
 
-                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" fixed-width aria-hidden="true" />
                     </button>
                 </span>
             </div>

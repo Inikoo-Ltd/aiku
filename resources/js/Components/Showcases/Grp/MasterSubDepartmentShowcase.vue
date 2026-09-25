@@ -73,7 +73,7 @@ const openFamilyModal = () => {
                 v-if="!data.subDepartment.description || !data.subDepartment.description_title || !data.subDepartment.description_extra"
                 severity="error" closable>
                 <template #icon>
-                    <FontAwesomeIcon :icon="faInfoCircle" />
+                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
                 </template>
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">

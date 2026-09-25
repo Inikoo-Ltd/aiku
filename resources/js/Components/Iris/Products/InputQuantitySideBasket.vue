@@ -5,7 +5,7 @@ import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductResource } from '@/types/Iris/Products'
@@ -67,7 +67,7 @@ const onUpdateQuantity = async (newVal?: number) => {
 
         setStatus('success')
         layout.reload_handle()
-        props.product.quantity_ordered = props.product.quantity_ordered_new
+        props.product.quantity_ordered = selectedQuantity
 
         if (selectedQuantity <= 0) {
             emits('productRemoved')
@@ -78,9 +78,10 @@ const onUpdateQuantity = async (newVal?: number) => {
         }
     } catch (error: any) {
         setStatus('error')
+        props.product.quantity_ordered_new = props.product.quantity_ordered
         notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Failed to update product quantity in basket"),
+            title: ctrans("Something went wrong"),
+            text: error.response?.data?.message || ctrans("Failed to update product quantity in basket"),
             type: "error"
         })
     }
@@ -145,11 +146,7 @@ const debUpdateQuantity = debounce((newVal?: number) => {
         <div class="max-w-full relative ">
             <InputNumber
                 :modelValue="product.quantity_ordered_new"
-                @input="(e) => (
-                    Number(e?.value) > product.available_quantity
-                    ? (set(product, 'quantity_ordered_new', product.available_quantity), debUpdateQuantity())
-                    : (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())
-                )"
+                @input="(e) => (set(product, 'quantity_ordered_new', e?.value), debUpdateQuantity())"
                 @update:modelValue="e => (e != product.quantity_ordered_new ? (set(product, 'quantity_ordered_new', e), debUpdateQuantity()) : false)"
                 :disabled="product.quantity_ordered_new % 1 !== 0"
                 v-tooltip="product.quantity_ordered_new % 1 !== 0 ? ctrans('Cannot edit: product is partially ordered. Use the minus/plus button to adjust quantity.') : null"
@@ -161,7 +158,6 @@ const debUpdateQuantity = debounce((newVal?: number) => {
                     status === 'error' ? 'text-center !border-red-500' : 'text-center'
                 "
                 :min="0"
-                :max="product.available_quantity"
                 fluid
                 :inputStyle="{
                     lineHeight: '1rem',
@@ -174,9 +170,8 @@ const debUpdateQuantity = debounce((newVal?: number) => {
             </div>
         </div>
 
-        <div @click="() => product.quantity_ordered_new < product.available_quantity ? (product.quantity_ordered_new++, debUpdateQuantity()) : null"
-            class=""
-            :class="product.quantity_ordered_new >= product.available_quantity ? 'opacity-20' : 'cursor-pointer opacity-50 hover:opacity-100'"
+        <div @click="() => (product.quantity_ordered_new++, debUpdateQuantity())"
+            class="cursor-pointer opacity-50 hover:opacity-100"
         >
             <FontAwesomeIcon icon="far fa-plus" class="" fixed-width aria-hidden="true" />
         </div>

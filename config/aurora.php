@@ -13,7 +13,7 @@ return [
      * on aiku and only accepts the fetchers listed below. Empty this once the last
      * organisation has migrated, then the whole Transfers/Aurora tree can go.
      */
-    'following_organisations' => array_filter(array_map('trim', explode(',', (string)env('AURORA_FOLLOWING_ORGANISATIONS', 'aroma')))),
+    'following_organisations' => array_filter(array_map('trim', explode(',', (string)env('AURORA_FOLLOWING_ORGANISATIONS', '')))),
 
     /*
      * What an organisation that has already left Aurora still accepts, by fetcher short
@@ -27,12 +27,12 @@ return [
     'allowed_fetchers' => [
         'Agents',
         'AgentSupplierPurchaseOrders',
-        'Artefacts',
         'Histories',
         'HistoricSupplierProducts',
         'JobOrders',
         'OrgStockMovements',
         'PurchaseOrgStockMovements',
+        'PurchaseOrderNotes',
         'PurchaseOrders',
         'PurchaseOrderTransactions',
         'RawMaterials',

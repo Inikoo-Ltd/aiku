@@ -129,12 +129,12 @@ function getCountryLabel(code: string): string {
         <div class="flex items-center ">
           <Button :icon="faEdit" type="edit" size="xs" @click="openEditModal(index)" >
              <template #icon>
-              <FontAwesomeIcon :icon="faPencil" class="w-4 h-4" />
+              <FontAwesomeIcon :icon="faPencil" class="w-4 h-4" fixed-width />
             </template>
           </Button>
           <Button :icon="faTrash" type="edit" class="text-red-500" size="xs" @click="deleteItem(index)" >
             <template #icon>
-              <FontAwesomeIcon :icon="faTrash" class="text-red-500 w-4 h-4" />
+              <FontAwesomeIcon :icon="faTrash" class="text-red-500 w-4 h-4" fixed-width />
             </template>
           </Button>
         </div>

@@ -225,6 +225,7 @@ class GetDropshippingOrderActions
                         'key'                  => 'cancel',
                         'label'                => __('Cancel'),
                         'cancellation_reasons' => OrderCancellationReasonEnum::valuesWithLabels(),
+                        'is_paid'              => $order->payment_amount > 0,
                         'route'                => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.order.state.cancelled',

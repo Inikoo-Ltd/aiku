@@ -2,8 +2,11 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI\Traits;
 
+use App\Actions\Dispatching\PartnerStaging\PartnerBayPickingOrder;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteHandler;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Database\Query\Builder;
@@ -65,6 +68,30 @@ trait WithDeliveryNoteItemUI
                     ");
     }
 
+    /**
+     * A cancellation return holds the picked goods off the shelf until someone walks them back.
+     * Once it reaches returned the ledger pair is closed, so the pickings are history and undoing
+     * one would credit the stock back a second time.
+     */
+    protected function getIsReturnedToLocationSubquery(): Builder
+    {
+        return DB::table('return_delivery_note_items')
+            ->join(
+                'return_delivery_notes',
+                'return_delivery_notes.id',
+                '=',
+                'return_delivery_note_items.return_delivery_note_id'
+            )
+            ->whereColumn('return_delivery_note_items.delivery_note_items_id', 'delivery_note_items.id')
+            ->where('return_delivery_notes.type', ReturnDeliveryNoteTypeEnum::CANCELLATION->value)
+            ->whereIn('return_delivery_notes.state', [
+                ReturnDeliveryNoteStateEnum::RETURNED->value,
+                ReturnDeliveryNoteStateEnum::DONE->value,
+            ])
+            ->whereNull('return_delivery_notes.deleted_at')
+            ->selectRaw('count(*) > 0');
+    }
+
     protected function hasPickingsWithBatchCodes(DeliveryNote $deliveryNote): bool
     {
         return DB::table('pickings')
@@ -91,7 +118,7 @@ trait WithDeliveryNoteItemUI
             DB::table('location_org_stocks')
                 ->join('locations', 'locations.id', '=', 'location_org_stocks.location_id')
                 ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
-                ->where('locations.is_goods_out', false)
+                ->whereRaw(PartnerBayPickingOrder::sql('delivery_note_items.id').' < 2')
                 ->select([
                     'locations.id',
                     'locations.code',
@@ -99,6 +126,7 @@ trait WithDeliveryNoteItemUI
                     'locations.sort_code',
                     'locations.warehouse_area_id',
                 ])
+                ->orderByRaw(PartnerBayPickingOrder::sql('delivery_note_items.id'))
                 ->orderByRaw("
                     CASE
                         WHEN (SELECT type FROM shops WHERE shops.id = delivery_note_items.shop_id) = 'b2b'
@@ -139,6 +167,7 @@ trait WithDeliveryNoteItemUI
             'delivery_note_items.quantity_packed',
             'delivery_note_items.quantity_dispatched',
             'delivery_note_items.quantity_not_picked',
+            'delivery_note_items.boxes',
             'delivery_note_items.is_handled',
             'delivery_note_items.is_dirty',
             'delivery_note_items.batch_code_id',
@@ -156,6 +185,7 @@ trait WithDeliveryNoteItemUI
             'org_stocks.note_to_packers as org_stock_note_to_packers',
             'delivery_note_items.quantity_waiting_crm',
             'delivery_note_items.quantity_waiting_warehouse',
+            DB::raw("(SELECT jsonb_build_object('code', historic_assets.code, 'name', historic_assets.name, 'quantity', transactions.quantity_ordered) FROM transactions JOIN historic_assets ON historic_assets.id = transactions.historic_asset_id WHERE transactions.id = delivery_note_items.transaction_id) as ordered_asset"),
         ];
     }
 

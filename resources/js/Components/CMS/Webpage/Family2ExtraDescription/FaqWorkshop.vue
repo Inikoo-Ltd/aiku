@@ -48,7 +48,7 @@ const containerStyle = computed(() => (getStyles(props.fieldValue?.faq?.containe
 
                     <FontAwesomeIcon
                         :icon="openIndex === index ? faMinus : faPlus"
-                        class="shrink-0 text-sm text-black transition-transform duration-200"
+                        class="shrink-0 text-sm text-black transition-transform duration-200" fixed-width
                     />
                 </button>
 

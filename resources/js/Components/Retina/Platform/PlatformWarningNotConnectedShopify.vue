@@ -14,7 +14,6 @@ const props = defineProps<{
 
 // Method: Platform reconnect
 const onClickReconnect = async () => {
-    console.log('customerSalesChannel', props.customer_sales_channel)
     try {
         const response = await axios[props.customer_sales_channel.reconnect_route.method || 'get'](
             route(
@@ -22,12 +21,10 @@ const onClickReconnect = async () => {
                 props.customer_sales_channel.reconnect_route.parameters
             )
         )
-        console.log('1111 response', response)
-        if (response.status !== 200) {
+        if (response.status !== 200 || !response.data) {
             throw new Error('Something went wrong. Try again later.')
-        } else {
-            window.open(response.data, '_blank');
         }
+        window.location.href = response.data
     } catch (error: any) {
         notify({
             title: 'Something went wrong',

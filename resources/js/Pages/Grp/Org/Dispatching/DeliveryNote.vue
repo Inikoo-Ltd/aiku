@@ -52,7 +52,6 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue";
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 import Modal from "@/Components/Utils/Modal.vue";
-import { trans } from "laravel-vue-i18n";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
@@ -63,6 +62,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import PureCheckbox from "@/Components/Pure/PureCheckbox.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
@@ -77,6 +77,7 @@ import { ctrans } from "@/Composables/useTrans"
 library.add(faSmileWink, faEye, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes, faClipboardCheck, faClipboardListCheck, faBarcodeRead);
 
 const props = defineProps<{
+	aurora_notice?: string | null
     title: string,
     pageHead: PageHeadingTypes
     staff_chat?: { context_type: string; context_id: number; audiences: { key: string; label: string }[] }
@@ -107,6 +108,41 @@ const props = defineProps<{
         description?: string
     }
     delivery_note: DeliveryNote
+    packaging?: {
+        current: {
+            id: number
+            name: string
+            dimensions: string | null
+        } | null
+        options: {
+            id: number
+            name: string
+            dimensions: string | null
+            price: number
+            is_free: boolean
+            family_code: string | null
+            image?: any
+        }[]
+        update_route: routeType
+    }
+    inserts?: {
+        leaflets: {
+            id: number
+            name: string
+            type: string
+            copies: number
+            state: string
+            state_label: string
+            has_media: boolean
+        }[]
+        print_status: {
+            total: number
+            printed: number
+            all_printed: boolean
+            label: string
+        }
+        print_all_route: routeType
+    }
     is_collection: boolean
     notes?: {
         note_list: {
@@ -237,8 +273,8 @@ const toggleScanToPick = async () => {
 	} catch (error: any) {
 		isScanToPickOn.value = !wanted
 		notify({
-			title: trans("Something went wrong"),
-			text: error?.response?.data?.message || trans("Could not save the scan setting, try again"),
+			title: ctrans("Something went wrong"),
+			text: error?.response?.data?.message || ctrans("Could not save the scan setting, try again"),
 			type: "error",
 		})
 	} finally {
@@ -285,7 +321,7 @@ const tabsNavigation = computed(() => {
 
 	const [todoTab, doneTab] = pair
 
-	navigation.items = { ...navigation.items, title: trans("All items"), number: counts.all }
+	navigation.items = { ...navigation.items, title: ctrans("All items"), number: counts.all }
 	navigation[todoTab] = { ...navigation[todoTab], number: counts.todo }
 	navigation[doneTab] = { ...navigation[doneTab], number: counts.done }
 
@@ -328,6 +364,9 @@ const hasClearedTodoTabBaySelector = computed(() =>
 	&& !!props.pageHead?.actions?.some((action: any) => action?.key === "trigger-set-as-picked-or-packed")
 )
 
+// Cancelling leaves the picked goods on the trolley, so the put-away worklist is the default.
+const createReturnOnCancel = ref(true)
+
 // Section: To Queue
 const isModalToQueue = ref(false);
 
@@ -355,7 +394,7 @@ const onUpdatePicker = () => {
         {
             onError: (error) => {
                 notify({
-                    title: trans("Something went wrong"),
+                    title: ctrans("Something went wrong"),
                     text: error.message,
                     type: "error"
                 });
@@ -396,7 +435,7 @@ const onSubmitShipment = () => {
                 // TODO: Make condition if the error related to delivery address then set to true
                 // set(listError.value, 'box_stats_delivery_address', true) // To make the Box stats delivery address error
                 notify({
-                    title: trans("Something went wrong."),
+                    title: ctrans("Something went wrong."),
                     text: errors.message,
                     type: "error"
                 });
@@ -436,8 +475,8 @@ const onSaveAddress = (submitShipment: Function) => {
                 submitShipment()
             },
             onError: () => notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to update the address, try again."),
+                title: ctrans("Something went wrong"),
+                text: ctrans("Failed to update the address, try again."),
                 type: "error"
             })
         }
@@ -462,7 +501,7 @@ provide("openModalAddShipment", openModalAddShipment);
 // Method: display error depends on the response on button Finalise and Dispatch
 const handleFinaliseError = (e: unknown) => {
     if (typeof e === 'string') {
-        notify({ title: trans('Something went wrong'), text: e, type: 'error' })
+        notify({ title: ctrans('Something went wrong'), text: e, type: 'error' })
         return
     }
 
@@ -475,7 +514,7 @@ const handleFinaliseError = (e: unknown) => {
 
     if (keys.length === 0) {
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             text: (e as { message?: string })?.message || 'Please try again later or contact administrator.',
             type: 'error',
         })
@@ -485,7 +524,7 @@ const handleFinaliseError = (e: unknown) => {
     if (keys.length === 1) {
         const value = errors[keys[0]]
         notify({
-            title: trans('Something went wrong'),
+            title: ctrans('Something went wrong'),
             text: Array.isArray(value) ? (value as string[]).join(', ') : String(value),
             type: 'error',
         })
@@ -782,7 +821,7 @@ const stopSocketListener = () => {
 	<PageHeading :data="pageHead" isButtonGroupWithBorder>
 		<template #afterTitle2>
 			<div v-if="hasReturn?.reference"
-				v-tooltip="trans('Go to Return')"
+				v-tooltip="ctrans('Go to Return')"
 				@click="() => {
 					router.visit(route(hasReturn.route.name, hasReturn.route.parameters))
 				}"
@@ -790,19 +829,19 @@ const stopSocketListener = () => {
 			>
 				<FontAwesomeIcon :icon="faExchange" class="opacity-75" fixed-width />
 				<span class="ml-2 font-normal text-lg leading-none text-indigo-500">
-					{{ trans("Returned") }}
+					{{ ctrans("Returned") }}
 				</span>
 			</div>
 			<FontAwesomeIcon
 				v-if="delivery_note.is_premium_dispatch"
-				v-tooltip="trans('Priority dispatch')"
+				v-tooltip="ctrans('Priority dispatch')"
 				icon="fas fa-star"
 				class="text-yellow-500 animate-bounce"
 				fixed-width
 				aria-hidden="true" />
 			<FontAwesomeIcon
 				v-if="delivery_note.has_extra_packing"
-				v-tooltip="trans('Extra packing')"
+				v-tooltip="ctrans('Extra packing')"
 				icon="fas fa-box-heart"
 				class="text-yellow-500 animate-bounce"
 				fixed-width
@@ -854,8 +893,6 @@ const stopSocketListener = () => {
 		</template>
 
 		<template #otherBefore v-if="!box_stats.is_replacement">
-			<StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
-			<StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
 			<!-- toggle picking view -->
 			<div
 				v-if="
@@ -867,7 +904,7 @@ const stopSocketListener = () => {
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
 				<div class="flex items-center justify-between w-full">
 					<span class="text-sm text-gray-700 font-medium mx-2">
-						{{ trans("Worker View") }}
+						{{ ctrans("Worker View") }}
 					</span>
 					<ToggleSwitch v-model="pickingView">
 						<template #handle="{ checked }">
@@ -891,10 +928,15 @@ const stopSocketListener = () => {
 					as="a"
 					target="_blank"
 					class="flex items-center"
-					v-tooltip="trans('Download PDF of this Delivery Note')">
+					v-tooltip="ctrans('Download PDF of this Delivery Note')">
 					<Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
 				</a>
 			</div> -->
+		</template>
+
+		<template #other>
+			<StaffTaskPanel v-if="staff_task" :model-type="staff_task.model_type" :model-id="staff_task.model_id" class="mr-2" />
+			<StaffChatContextButtons v-if="staff_chat" :context="staff_chat" />
 		</template>
 
 		<template #button-to-queue="{ action }">
@@ -926,16 +968,33 @@ const stopSocketListener = () => {
 		<template #wrapped-cancel="{ action }">
 			<ModalConfirmationDelete
 				:routeDelete="action.route"
-				:title="trans('Are you sure you want to cancel the delivery?')"
+				:title="ctrans('Are you sure you want to cancel the delivery?')"
 				:description="
-					trans(
+					ctrans(
 						'This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.'
 					)
 				"
 				isFullLoading
-				:noLabel="trans('Yes, cancel delivery')"
+				:extraBody="{ create_return: createReturnOnCancel }"
+				:noLabel="ctrans('Yes, cancel delivery')"
 				noIcon="x"
-				:cancelLabel="trans('No, keep delivery')">
+				:cancelLabel="ctrans('No, keep delivery')">
+				<template #warning>
+					<label class="mt-4 flex items-start gap-x-2 cursor-pointer">
+						<PureCheckbox v-model="createReturnOnCancel" class="mt-0.5" />
+						<span class="text-sm text-gray-700">
+							{{ ctrans("Create Return") }}
+							<span class="block text-xs text-gray-500">
+								{{
+									ctrans(
+										"Picked goods stay off the shelf until someone walks them back. Untick to send them back to their locations straight away."
+									)
+								}}
+							</span>
+						</span>
+					</label>
+				</template>
+
 				<template #default="{ isOpenModal, changeModel }">
 					<Button
 						@click="changeModel"
@@ -968,12 +1027,20 @@ const stopSocketListener = () => {
 
 	</PageHeading>
 
+    <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
+        <div>
+            <div class="text-xl font-bold uppercase">{{ ctrans("Process in Aurora") }}</div>
+            <div class="text-base">{{ aurora_notice }}</div>
+        </div>
+    </div>
+
 	<!-- Section: Consumables the packer must add to the box -->
 	<div v-if="consumables?.length" class="p-2 pb-0">
 		<div class="inline-flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border-2 border-amber-500 bg-amber-300 px-4 py-3 shadow-sm">
 			<div class="flex items-center gap-2">
 				<FontAwesomeIcon :icon="faBoxOpen" class="text-xl text-amber-900" fixed-width aria-hidden="true" />
-				<span class="text-sm font-bold uppercase tracking-wider text-amber-900">{{ trans("Packer must add") }}</span>
+				<span class="text-sm font-bold uppercase tracking-wider text-amber-900">{{ ctrans("Packer must add") }}</span>
 			</div>
 			<span v-for="consumable in consumables" :key="consumable.code"
 				class="flex items-center gap-2 rounded bg-amber-950 px-3 py-1 text-amber-50">
@@ -998,7 +1065,7 @@ const stopSocketListener = () => {
 				<!-- Icon -->
 				<FontAwesomeIcon
 					:icon="faExclamationTriangle"
-					class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+					class="text-yellow-500 w-4 h-4 flex-shrink-0" fixed-width />
 
 				<!-- Main Content -->
 				<div class="flex gap-2 flex-wrap items-center">
@@ -1133,6 +1200,8 @@ const stopSocketListener = () => {
 			:isEditable="is_editable"
 			:tariffCodesExport="tariff_codes_export"
 			:routes
+			:packaging
+			:inserts
 			:state="delivery_note.state"
 			:shop_type="shop_type"
 			:allowWaiting="allow_waiting"
@@ -1140,6 +1209,7 @@ const stopSocketListener = () => {
 			:order_slug="order_slug"
 			:warehouse
 			:deliveryNote="delivery_note"
+			:boxPackingList="box_stats?.box_packing_list"
 			:total_unit_counts="total_unit_counts"
 			@update:quantity-to-resend="handleQuantityToResendUpdate"
 			@validation-error="handleValidationError"
@@ -1183,13 +1253,13 @@ const stopSocketListener = () => {
 	<Modal :isOpen="isModalToQueue" @close="isModalToQueue = false" width="w-full max-w-lg" :title>
 		<div class="mt-1 flex flex-col items-start w-full pr-3 gap-y-1.5">
 			<div class="mx-auto font-semibold text-lg">
-				{{ trans("Select Picker") }}
+				{{ ctrans("Select Picker") }}
 			</div>
 			<div class="mt-4 flex items-center w-full gap-x-1.5">
 				<dd class="flex-1">
 					<!-- Label for Picker -->
 					<div class="text-sm font-medium">
-						{{ trans("Select picker") }}
+						{{ ctrans("Select picker") }}
 					</div>
 					<PureMultiselectInfiniteScroll
 						v-model="selectedPicker"
@@ -1198,7 +1268,7 @@ const stopSocketListener = () => {
                         "
 						required
 						:fetchRoute="routes.pickers_list"
-						:placeholder="trans('Select picker')"
+						:placeholder="ctrans('Select picker')"
 						labelProp="contact_name"
 						valueProp="id"
 						object
@@ -1246,14 +1316,14 @@ const stopSocketListener = () => {
 					@click="onUpdatePicker()"
 					:label="
 						delivery_note_state.value === 'queued'
-							? trans('Change picker')
-							: trans('Set Picker')
+							? ctrans('Change picker')
+							: ctrans('Set Picker')
 					"
 					:iconRight="['fas', 'fa-arrow-right']"
 					full
 					:loading="isLoadingToQueue"
 					:disabled="!selectedPicker"
-					v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+					v-tooltip="selectedPicker ? '' : ctrans('Select picker before set to queue')">
 				</Button>
 			</div>
 		</div>
@@ -1267,11 +1337,11 @@ const stopSocketListener = () => {
 		width="w-full max-w-2xl">
 		<div>
 			<div class="text-center font-bold mb-4">
-				{{ trans("Add shipment") }}
+				{{ ctrans("Add shipment") }}
 			</div>
 
 			<div class="w-full mt-3">
-				<span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
+				<span class="text-xs px-1 my-2">{{ ctrans("Shipping options") }}: </span>
 				<div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
 					<div
 						v-if="isLoadingData === 'addTrackingNumber'"
@@ -1302,7 +1372,7 @@ const stopSocketListener = () => {
 							{{ shipment.tracking_url }}
 						</div>
 						<FontAwesomeIcon
-							v-tooltip="trans('Barcode print')"
+							v-tooltip="ctrans('Barcode print')"
 							icon="fal fa-print"
 							class="text-gray-500 absolute top-3 right-3"
 							fixed-width
@@ -1320,7 +1390,7 @@ const stopSocketListener = () => {
 						:fetchRoute="shipments?.fetch_route"
 						required
 						:disabled="isLoadingButton == 'addTrackingNumber'"
-						:placeholder="trans('Select shipping')"
+						:placeholder="ctrans('Select shipping')"
 						object
 						@optionsList="(e) => (optionShippingList = e)">
 						<template #singlelabel="{ value }">
@@ -1351,7 +1421,7 @@ const stopSocketListener = () => {
 						!formTrackingNumber.shipping_id?.api_shipper
 					"
 					class="mt-3">
-					<span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
+					<span class="text-xs px-1 my-2">{{ ctrans("Tracking number") }}: </span>
 					<PureInput
 						v-model="formTrackingNumber.tracking_number"
 						placeholder="ABC-DE-1234567"

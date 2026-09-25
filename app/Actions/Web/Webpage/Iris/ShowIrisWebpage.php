@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage\Iris;
 use App\Actions\Web\RefreshGrpAssetUrls;
 use App\Actions\Web\Webpage\Traits\WithIrisBlogBreadcrumbs;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Actions\Web\Webpage\WithWebpageSeoData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -30,6 +31,7 @@ class ShowIrisWebpage
     use AsAction;
     use WithIrisGetWebpageWebBlocks;
     use WithIrisBlogBreadcrumbs;
+    use WithWebpageSeoData;
 
 
     public function getCanonicalUrl($webpageID): ?string
@@ -37,6 +39,31 @@ class ShowIrisWebpage
         $webpageData = DB::table('webpages')->select('canonical_url')->where('id', $webpageID)->first();
 
         return $webpageData?->canonical_url;
+    }
+
+    /**
+     * Page render data averages 345KB and reaches 20MB, and 80k of them are live at once, so it is
+     * stored deflated. An array is an entry written before this was introduced.
+     */
+    public function rememberCompressed(string $key, \Closure $build): array
+    {
+        $cached = cache()->get($key);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        if (is_string($cached)) {
+            $webpageData = @unserialize((string) @gzuncompress($cached));
+            if (is_array($webpageData)) {
+                return $webpageData;
+            }
+        }
+
+        $webpageData = $build();
+        cache()->put($key, gzcompress(serialize($webpageData)), config('iris.cache.webpage.ttl'));
+
+        return $webpageData;
     }
 
     public function getWebpageData($webpageID, array $parentPaths, bool $loggedIn): array
@@ -55,18 +82,10 @@ class ShowIrisWebpage
         );
 
 
-        $webpageImg = [];
-        if ($webpage->seoImage) {
-            $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
-        }
+        $webpageImg = $this->getWebpageShareImageSources($webpage);
+        $visibility = $webpage->searchEngineVisibility();
 
-        $website = $webpage->website;
-
-        $title = $webpage->title;
-        // Prioritize webpage prefix/suffix -> website prefix/suffix
-        $prefix = data_get($webpage->settings, 'webpage.title_prefix', data_get($website->settings, 'webpage.title_prefix', null));
-        $suffix = data_get($webpage->settings, 'webpage.title_suffix', data_get($website->settings, 'webpage.title_suffix', null));
-        $title = collect([$prefix, $title, $suffix])->filter()->implode(' ');
+        $title = $this->getWebpageSeoTitle($webpage);
         $baseWebpageData = [
             'breadcrumbs'                 => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
@@ -75,7 +94,7 @@ class ShowIrisWebpage
             'navigation'                  => $this->getIrisProductNavigation($webpage),
             'webpage_data'                => [
                 'seo_data'      => $webpage->seo_data,
-                'seo_image_alt' => Arr::get($webpage->seo_data, 'image_alt'),
+                'seo_image_alt' => $this->getWebpageShareImageAlt($webpage),
                 'title'         => $title,
                 'description'   => $webpage->description,
                 'canonical_url' => $webpage->canonical_url,
@@ -91,8 +110,8 @@ class ShowIrisWebpage
                     : null,
             ],
             'webpage_img'                       => $webpageImg,
-            'index_page'                        => $webpage->index_page,
-            'follow_link'                       => $webpage->follow_link,
+            'index_page'                        => $visibility['index_page'],
+            'follow_link'                       => $visibility['follow_link'],
             'webpage_slug'                      => $webpage->slug,
             'webpage_id'                        => $webpage->id,
             'allow_review_reaction'             => Arr::get($webpage->shop->settings, 'reviews.allow_reactions', true),
@@ -126,7 +145,7 @@ class ShowIrisWebpage
     {
         if ($path == 'robots.txt') {
             return 'robots';
-        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys', 'login', 'register', 'forgot-password'])) {
+        } elseif (in_array($path, ['login.sys', 'register.sys', 'index.php', 'asset_label.php', 'home.sys', 'login', 'register', 'register-dashboard', 'forgot-password'])) {
             return $path;
         }
 
@@ -186,9 +205,7 @@ class ShowIrisWebpage
             $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
             $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
-            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths, $loggedIn) {
-                return $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
-            });
+            $webpageData = $this->rememberCompressed($key, fn () => $this->getWebpageData($webpageID, $parentPaths, $loggedIn));
         }
 
         if (Arr::get($webpageData, 'status') != 'ok') {
@@ -271,10 +288,11 @@ class ShowIrisWebpage
         if (is_string($webpageData)) {
 
             // Depends on the visitor, so it must never reach Varnish or the browser cache.
-            if (in_array($webpageData, ['login', 'register', 'forgot-password'])) {
+            if (in_array($webpageData, ['login', 'register', 'register-dashboard', 'forgot-password'])) {
                 $redirect = match($webpageData) {
                     'login'             => '/app/login',
                     'register'          => '/app/register',
+                    'register-dashboard' => '/app/register',
                     'forgot-password'   => '/app/reset-password-send',
                     default             => null,
                 };

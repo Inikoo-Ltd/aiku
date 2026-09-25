@@ -59,7 +59,7 @@ const props = withDefaults(
 						dataTable.interval_percentages[type].percentage < 0
 							? 'text-red-500 rotate-90'
 							: 'text-green-500 rotate-[-90deg]'
-					" />
+					" fixed-width />
 			</div>
 			<div v-else-if="section === 'footer'">
 				<span
@@ -90,7 +90,7 @@ const props = withDefaults(
 						totalAmount[type + '_percentages'] < 0
 							? 'text-red-500 rotate-90'
 							: 'text-green-500 rotate-[-90deg]'
-					" />
+					" fixed-width />
 			</div>
 		</Transition>
 	</div>

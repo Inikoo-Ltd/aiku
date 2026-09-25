@@ -15,11 +15,17 @@ use App\Actions\UI\Grp\GetFirstLoadProps;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Vite;
 use Inertia\Middleware;
 
 class HandleInertiaGrpRequests extends Middleware
 {
     protected $rootView = 'app-grp';
+
+    public function version(Request $request): ?string
+    {
+        return Vite::manifestHash('grp');
+    }
 
     /**
      * JSON endpoints outside grp.json.* polled from every open tab: the full layout is never read from their response.
@@ -43,6 +49,29 @@ class HandleInertiaGrpRequests extends Middleware
         'grp.models.delivery_note.state.packed',
         'grp.models.printing.shipment.label',
     ];
+
+    /**
+     * php.ini sizes are written as 8M or 512K, and 0 or an empty value means no limit at all,
+     * which the browser reads as "do not check".
+     */
+    private function iniBytes(string $directive): ?int
+    {
+        $value = trim((string) ini_get($directive));
+
+        if ($value === '' || $value === '0' || $value === '-1') {
+            return null;
+        }
+
+        $unit   = strtolower(substr($value, -1));
+        $number = (int) $value;
+
+        return match ($unit) {
+            'g' => $number * 1024 * 1024 * 1024,
+            'm' => $number * 1024 * 1024,
+            'k' => $number * 1024,
+            default => $number,
+        };
+    }
 
     public function share(Request $request): array
     {
@@ -81,6 +110,14 @@ class HandleInertiaGrpRequests extends Middleware
                 'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
                 'ziggy' => [
                     'location' => $request->url(),
+                ],
+                // What this server will actually accept. The browser used to carry its own idea
+                // of a size limit, which was a guess: a batch under the guess but over the real
+                // limit was refused whole, taking the files that would have been fine with it.
+                'upload' => [
+                    'max_file_bytes' => $this->iniBytes('upload_max_filesize'),
+                    'max_post_bytes' => $this->iniBytes('post_max_size'),
+                    'max_files'      => (int) ini_get('max_file_uploads') ?: 20,
                 ],
                 'phpComponent' => app()->environment('local') ? str_replace('\\', '/', $request->route()->getActionName()) : null,
 

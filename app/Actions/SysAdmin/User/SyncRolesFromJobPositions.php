@@ -8,8 +8,10 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Actions\Chat\Agent\RevokeChatAgentAccess;
 use App\Actions\SysAdmin\CleanUserCaches;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\HumanResources\JobPosition;
@@ -19,8 +21,10 @@ use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
+use OwenIt\Auditing\Events\AuditCustom;
 
 class SyncRolesFromJobPositions
 {
@@ -28,10 +32,11 @@ class SyncRolesFromJobPositions
 
     public function handle(User $user): void
     {
-        $roles = [];
+        $rolesBefore = $user->roles()->pluck('name')->sort()->values()->all();
+        $roles       = [];
 
         if ($user->status) {
-            foreach ($user->employees()->wherePivot('status', true)->get() as $employee) {
+            foreach ($user->employees()->wherePivot('status', true)->where('employees.state', '!=', EmployeeStateEnum::LEFT)->get() as $employee) {
                 foreach ($employee->jobPositions as $jobPosition) {
                     $roles = $this->getRoles($roles, $jobPosition);
                 }
@@ -59,6 +64,18 @@ class SyncRolesFromJobPositions
                     ],
                     setUserAuthorisedModels: false
                 );
+            }
+
+            if (str_starts_with($accountingRole->name, 'accounting-supervisor-')) {
+                foreach ($organisation->shops()->where('type', ShopTypeEnum::B2B)->get() as $shop) {
+                    UserAddRoles::run(
+                        $user,
+                        [
+                            Role::where('name', RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_VIEWER->value, $shop))->first()
+                        ],
+                        setUserAuthorisedModels: false
+                    );
+                }
             }
         }
 
@@ -124,6 +141,24 @@ class SyncRolesFromJobPositions
 
 
         $user->refresh();
+
+        $rolesAfter = $user->roles()->pluck('name')->sort()->values()->all();
+        if ($rolesBefore !== $rolesAfter) {
+            $user->auditEvent     = 'roles';
+            $user->isCustomEvent  = true;
+            $user->auditCustomOld = ['removed' => array_values(array_diff($rolesBefore, $rolesAfter))];
+            $user->auditCustomNew = ['added' => array_values(array_diff($rolesAfter, $rolesBefore))];
+            Event::dispatch(new AuditCustom($user));
+        }
+
+        // Losing the customer service position takes chat with it: the conversations this
+        // person can no longer work go back to their shop's queue rather than staying in a
+        // name nobody can act on, and the agent profile is suspended once nothing is left.
+        // withTrashed: a suspended profile has to be found here too, or regaining the
+        // position would never bring it back.
+        if ($chatAgent = $user->chatAgent()->withTrashed()->first()) {
+            RevokeChatAgentAccess::run($chatAgent);
+        }
     }
 
 

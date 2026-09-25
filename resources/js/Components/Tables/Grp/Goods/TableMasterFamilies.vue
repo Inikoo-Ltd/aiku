@@ -68,7 +68,11 @@ function familyRoute(masterFamily: MasterFamily) {
     } else if (
         routeCurrent == "grp.masters.master_shops.show.master_gr.index" ||
         routeCurrent == "grp.masters.master_shops.show.master_families.vol_gr_reward.index" ||
-        routeCurrent == 'grp.masters.master_shops.show.master_collections.show'
+        routeCurrent == 'grp.masters.master_shops.show.master_collections.show' || 
+        routeCurrent == 'grp.masters.master_departments.show.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_departments.show.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_sub_departments.master_collections.families' ||
+        routeCurrent == 'grp.masters.master_shops.show.master_collections.families'
     ) {
         return route(
             "grp.masters.master_shops.show.master_families.show",
@@ -356,7 +360,7 @@ const chevronClass = (masterFamily: MasterFamily) =>
             <Link :href="familyRoute(family)" class="primaryLink" v-tooltip="family.name">
                 {{ family["code"] }}
             </Link>
-            <FontAwesomeIcon v-if="family.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch detected in products linked to this master family. Please modify the master family trade units to fix the issue.')"/>
+            <FontAwesomeIcon v-if="family.mismatch_detected" :icon="faWarning" class="text-red-500 ml-2" v-tooltip="trans('Trade unit mismatch detected in products linked to this master family. Please modify the master family trade units to fix the issue.')" fixed-width/>
         </template>
 
         <template #cell(last_offers)="{ item: family }">

@@ -299,7 +299,7 @@ const isFormInvalid = computed(() => {
                 <!-- Customer -->
                 <div class="space-y-2" v-if="!props.customer_id">
                     <label class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Select Customer') }}:
                     </label>
                     <PureMultiselectInfiniteScroll
@@ -328,7 +328,7 @@ const isFormInvalid = computed(() => {
                 <!-- Minimum purchase amount -->
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Minimum purchase amount') }}:
                     </label>
                     <InputNumber v-model="offerAmount" inputId="offer_amount" class="w-full" mode="currency"
@@ -342,7 +342,7 @@ const isFormInvalid = computed(() => {
                         {{ trans('Choose where this offer will apply') }}
                     </h3>
                     <label class="font-semibold">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Target') }}
                     </label>
 
@@ -385,7 +385,7 @@ const isFormInvalid = computed(() => {
                 <!-- Discount -->
                 <div class="space-y-2">
                     <label class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="text-xs text-red-400" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="text-xs text-red-400" fixed-width />
                         {{ trans('Percentage Discount') }}
                     </label>
 
@@ -396,7 +396,7 @@ const isFormInvalid = computed(() => {
                 <!-- Offer Duration -->
                 <div class="space-y-3">
                     <div class="font-medium flex items-center gap-x-1">
-                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" />
+                        <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ trans('Offer Duration') }}:
                     </div>
 
@@ -433,7 +433,7 @@ const isFormInvalid = computed(() => {
                         <div class="space-y-2">
                             <label class="font-medium mb-2 block">
                                 <FontAwesomeIcon icon="fas fa-asterisk"
-                                    class="font-light text-xs text-red-400 align-middle" />
+                                    class="font-light text-xs text-red-400 align-middle" fixed-width />
                                 {{ trans('Start Date') }}
                                 <InformationIcon
                                     :information="trans('If start date is empty, will start immediately')" />:

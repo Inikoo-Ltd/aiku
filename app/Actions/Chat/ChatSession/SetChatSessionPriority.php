@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -15,7 +16,6 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,6 +23,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class SetChatSessionPriority
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(ChatSession $chatSession, string $priority, ?ChatAgent $agent = null): ChatSession
     {
@@ -58,7 +59,7 @@ class SetChatSessionPriority
     /** @noinspection PhpUnusedParameterInspection */
     public function asController(?string $organisation, ChatSession $chatSession, ActionRequest $request): JsonResponse
     {
-        $agent = Auth::user()?->chatAgent;
+        $agent = $this->getAuthorisedChatAgent($chatSession);
 
         if (!$agent) {
             return response()->json(['success' => false, 'message' => 'Only authenticated agents can change priority'], 403);

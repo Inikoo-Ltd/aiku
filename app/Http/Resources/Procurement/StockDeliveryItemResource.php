@@ -41,6 +41,7 @@ class StockDeliveryItemResource extends JsonResource
             ->get();
 
         $warehouseSlugByLocation = $locations->pluck('warehouse_slug', 'location_id');
+        $warehouse               = $item->organisation?->warehouses()->first();
 
         $sowings = $item->sowings()
             ->where('type', SowingTypeEnum::SOW)
@@ -74,8 +75,9 @@ class StockDeliveryItemResource extends JsonResource
             $warehouseArea = __('No Area');
         }
 
-        $checked = (float) $item->unit_quantity_checked;
-        $placed  = (float) $item->unit_quantity_placed;
+        $checked     = (float) $item->unit_quantity_checked;
+        $placed      = (float) $item->unit_quantity_placed;
+        $unitsPerSko = $item->unitsPerSko();
 
         $isEditable = $item->state !== StockDeliveryItemStateEnum::CANCELLED
             && in_array($item->stockDelivery?->state, [
@@ -89,18 +91,22 @@ class StockDeliveryItemResource extends JsonResource
             StockDeliveryItemStateEnum::RECEIVED,
             StockDeliveryItemStateEnum::CHECKED,
             StockDeliveryItemStateEnum::NOT_RECEIVED,
-        ], true);
+        ], true) || ($isEditable && $item->state === StockDeliveryItemStateEnum::PLACED);
 
         return [
             'id'                    => $item->id,
             'slug'                  => $supplierProduct?->slug,
-            'code'                  => $supplierProduct?->code,
-            'name'                  => $supplierProduct?->name,
+            'code'                  => $supplierProduct?->code ?? $item->org_stock_code,
+            'name'                  => $supplierProduct?->name ?? $item->org_stock_name,
             'units_per_pack'        => $supplierProduct?->units_per_pack,
             'units_per_carton'      => $supplierProduct?->units_per_carton,
             'unit_quantity'         => $item->unit_quantity,
             'unit_quantity_checked' => $item->unit_quantity_checked,
             'unit_quantity_placed'  => $item->unit_quantity_placed,
+            'units_per_sko'         => $unitsPerSko,
+            'sko_quantity'          => round((float) $item->unit_quantity / $unitsPerSko, 4),
+            'sko_quantity_checked'  => round($checked / $unitsPerSko, 4),
+            'sko_quantity_placed'   => round($placed / $unitsPerSko, 4),
             'net_amount'            => $item->net_amount,
             'net_currency'          => $supplierProduct?->currency?->code,
             'org_net_amount'        => $item->org_net_amount,
@@ -135,12 +141,20 @@ class StockDeliveryItemResource extends JsonResource
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,
-            'placement_remaining'   => max(0, $checked - $placed),
+            'placement_remaining'   => round(max(0, $checked - $placed) / $unitsPerSko, 4),
             'has_available_qty'     => $checked - $placed > 0,
             'is_editable'           => $isEditable,
             'locations'             => $locations,
             'warehouse_area'        => $warehouseArea,
             'warehouse_slug'        => $locations->first()?->warehouse_slug,
+            'searchLocationsRoute'  => $warehouse ? [
+                'name'       => 'grp.org.warehouses.show.infrastructure.locations.index.excluded_in_org_stock',
+                'parameters' => [
+                    'organisation' => $item->organisation->slug,
+                    'warehouse'    => $warehouse->slug,
+                    'orgStock'     => $item->orgStock?->slug,
+                ],
+            ] : null,
             'sowings'               => $sowings,
             'placedRoute'           => $canPlace ? [
                 'name'       => 'grp.models.stock-delivery-item.place',

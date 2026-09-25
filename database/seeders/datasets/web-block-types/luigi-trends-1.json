@@ -2,7 +2,7 @@
 	"scope": "webpage",
 	"slug": "luigi-trends-1",
 	"code": "luigi-trends-1",
-	"name": "Luigi: Trends",
+	"name": "Recommendation: Trends",
 	"website_type" : ["b2b","b2c","dropshipping"],
 	"is_in_test" : false,
 	"category": "block",
@@ -10,7 +10,7 @@
 	"data": {
 		"fieldValue": {
 			"settings": null,
-			"title" : "<p style=\"text-align: center\">Trending</p>",
+			"title" : "<p style=\"text-align: center\">Trends</p>",
 			"container": {
 				"properties": {
 					"background": {

@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Basket\UI;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Http\Resources\Dropshipping\SelectProductsForBasketResource;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
@@ -19,6 +20,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaProductsForBasket extends RetinaAction
 {
+    use WithRetinaCustomerOwnedRouteModels;
+
     public function handle(Order $order, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

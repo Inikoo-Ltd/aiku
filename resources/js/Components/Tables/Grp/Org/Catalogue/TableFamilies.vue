@@ -288,7 +288,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
             <div class="whitespace-nowrap">
                 <Link :href="(masterFamilyRoute(family) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
                     :class="[family.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
+                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
                 </Link>
 
                 <Link :href="familyRoute(family)" class="primaryLink" v-tooltip="family.name">
@@ -406,15 +406,15 @@ const getIntervalStateColor = (isPositive: boolean) => {
 
         <template #cell(webpage_state)="{ item: family }">
             <div class="whitespace-nowrap">
-                <FontAwesomeIcon v-if="family['webpage_state'] == 'live'" v-tooltip="trans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500"/>
-                <FontAwesomeIcon v-else v-tooltip="trans('Webpage is Offline')" :icon="faSkull" class="text-red-500"/>
+                <FontAwesomeIcon v-if="family['webpage_state'] == 'live'" v-tooltip="trans('Webpage is Live')" :icon="faBroadcastTower" class="text-green-500" fixed-width/>
+                <FontAwesomeIcon v-else v-tooltip="trans('Webpage is Offline')" :icon="faSkull" class="text-red-500" fixed-width/>
             </div>
         </template>
 
         <template #cell(is_following_master)="{ item: family }">
             <div class="whitespace-nowrap">
                 <FontAwesomeIcon v-tooltip="family.is_following_master ? ctrans('Family is Following Master') : ctrans('Family is not Following Master')" 
-                    :icon="faOctopusDeploy" :class="family.is_following_master ? 'text-green-500' : 'text-red-500'"
+                    :icon="faOctopusDeploy" :class="family.is_following_master ? 'text-green-500' : 'text-red-500'" fixed-width
                 />
             </div>
         </template>
@@ -427,7 +427,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         dotClass(item.is_name_reviewed),
                     ]" 
                     :icon="statusIcon(item.is_name_reviewed)" 
-                    v-tooltip="!item.is_name_reviewed ? ctrans('Name needs a review') : ''" 
+                    v-tooltip="!item.is_name_reviewed ? ctrans('Name needs a review') : ''" fixed-width 
                 />
                 
                 <span class="ml-auto text-right" v-if="!item.is_name_reviewed && item.name_updated_at">
@@ -445,7 +445,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         dotClass(item.is_description_reviewed),
                     ]" 
                     :icon="statusIcon(item.is_description_reviewed)" 
-                    v-tooltip="!item.is_description_reviewed ? ctrans('Description needs a review') : ''" 
+                    v-tooltip="!item.is_description_reviewed ? ctrans('Description needs a review') : ''" fixed-width 
                 />
                 
                 <span class="ml-auto text-right" v-if="!item.is_description_reviewed && item.description_updated_at">
@@ -463,7 +463,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         dotClass(item.is_description_title_reviewed),
                     ]" 
                     :icon="statusIcon(item.is_description_title_reviewed)" 
-                    v-tooltip="!item.is_description_title_reviewed ? ctrans('Description Title needs a review') : ''" 
+                    v-tooltip="!item.is_description_title_reviewed ? ctrans('Description Title needs a review') : ''" fixed-width 
                 />
                 
                 <span class="ml-auto text-right" v-if="!item.is_description_title_reviewed && item.description_title_updated_at">
@@ -481,7 +481,7 @@ const getIntervalStateColor = (isPositive: boolean) => {
                         dotClass(item.is_description_extra_reviewed),
                     ]" 
                     :icon="statusIcon(item.is_description_extra_reviewed)" 
-                    v-tooltip="!item.is_description_extra_reviewed ? ctrans('Extra Description needs a review') : ''" 
+                    v-tooltip="!item.is_description_extra_reviewed ? ctrans('Extra Description needs a review') : ''" fixed-width 
                 />
                 
                 <span class="ml-auto text-right" v-if="!item.is_description_extra_reviewed && item.extra_description_updated_at">

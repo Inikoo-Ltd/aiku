@@ -317,7 +317,7 @@ const reviewLink = computed(() => {
                         class="group inline-flex items-center gap-2 text-xs  font-bold hover:underline">
                         {{ reviewLink.text }}
                         <FontAwesomeIcon :icon="faArrowRight"
-                            class="text-xs transition-transform group-hover:translate-x-1" />
+                            class="text-xs transition-transform group-hover:translate-x-1" fixed-width />
                     </a>
 
                     <a v-if="['family', 'product'].includes(webpage_data.sub_type)" :href="'/reviews'"
@@ -334,15 +334,15 @@ const reviewLink = computed(() => {
                 <!-- Previous -->
                 <button @click="prev" :disabled="current === 0" :aria-label="ctrans('Previous')"
                         class="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:-left-5">
-                    <FontAwesomeIcon :icon="faChevronLeft" class="text-[10px] text-gray-600" />
+                    <FontAwesomeIcon :icon="faChevronLeft" class="text-[10px] text-gray-600" fixed-width />
                 </button>
 
                 <!-- Next -->
                 <button @click="next" :disabled="isNextDisabled" :aria-label="ctrans('Next')"
                         class="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 lg:right-3">
                     <FontAwesomeIcon v-if="isFetchingMoreReviews" :icon="faChevronRight"
-                                     class="text-[10px] text-gray-600 animate-pulse" />
-                    <FontAwesomeIcon v-else :icon="faChevronRight" class="text-[10px] text-gray-600" />
+                                     class="text-[10px] text-gray-600 animate-pulse" fixed-width />
+                    <FontAwesomeIcon v-else :icon="faChevronRight" class="text-[10px] text-gray-600" fixed-width />
                 </button>
 
                 <div class="grid grid-cols-1 divide-gray-200 lg:grid-cols-4 2xl:grid-cols-5 px-8 lg:px-0">
@@ -381,7 +381,7 @@ const reviewLink = computed(() => {
                                         ? 'bg-green-50 text-green-600'
                                         : 'text-gray-500 hover:bg-gray-100'
                                         ">
-                                    <FontAwesomeIcon :icon="faThumbsUp" class="text-[10px]" />
+                                    <FontAwesomeIcon :icon="faThumbsUp" class="text-[10px]" fixed-width />
                                     <span class="text-[11px] font-medium">
                                         {{ review.likes }}
                                     </span>
@@ -394,7 +394,7 @@ const reviewLink = computed(() => {
                                         ? 'bg-red-50 text-red-600'
                                         : 'text-gray-500 hover:bg-gray-100'
                                         ">
-                                    <FontAwesomeIcon :icon="faThumbsDown" class="text-[10px]" />
+                                    <FontAwesomeIcon :icon="faThumbsDown" class="text-[10px]" fixed-width />
                                 </button>
                             </div>
                         </div>
@@ -447,7 +447,7 @@ const reviewLink = computed(() => {
 
                 <button @click="reviewModalVisible = false"
                         class="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
-                    <FontAwesomeIcon :icon="faTimes" class="text-xs" />
+                    <FontAwesomeIcon :icon="faTimes" class="text-xs" fixed-width />
                 </button>
 
             </div>
@@ -482,7 +482,7 @@ const reviewLink = computed(() => {
                                 ? ' text-green-600'
                                 : 'text-gray-500 hover:bg-gray-100'
                         ]">
-                        <FontAwesomeIcon :icon="faThumbsUp" />
+                        <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
                         {{ selectedReview.likes ?? 0 }}
                     </button>
                     <button :disabled="reactingKeys[`${selectedReview.id}-review`]"
@@ -492,7 +492,7 @@ const reviewLink = computed(() => {
                                 ? ' text-red-600'
                                 : 'text-gray-500 hover:bg-gray-100'
                         ]">
-                        <FontAwesomeIcon :icon="faThumbsDown" />
+                        <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
                         {{ selectedReview.dislikes ?? 0 }}
                     </button>
 
@@ -523,7 +523,7 @@ const reviewLink = computed(() => {
                                 ? ' text-green-600'
                                 : 'text-gray-500 hover:bg-gray-100'
                         ]">
-                        <FontAwesomeIcon :icon="faThumbsUp" />
+                        <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
                         {{ selectedReview.reply_likes ?? 0 }}
                     </button>
                     <button :disabled="reactingKeys[`${selectedReview.id}-review_reply`]"
@@ -533,7 +533,7 @@ const reviewLink = computed(() => {
                                 ? ' text-red-600'
                                 : 'text-gray-500 hover:bg-gray-100'
                         ]">
-                        <FontAwesomeIcon :icon="faThumbsDown" />
+                        <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
                         {{ selectedReview.reply_dislikes ?? 0 }}
                     </button>
 

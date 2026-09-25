@@ -156,6 +156,7 @@ const extendedColumns = [
     { key: "family_code", label: "Family code" },
     { key: "family_name", label: "Family name" },
     { key: "product_name", label: "Product name" },
+    { key: "barcode", label: "Barcode (EAN/GTIN)" },
     { key: "materials_ingredients", label: "Materials/Ingredients" },
     { key: "unit_dimensions", label: "Unit dimensions" },
     { key: "unit_net_weight", label: "Unit net weight (kg)" },

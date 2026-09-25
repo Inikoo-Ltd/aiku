@@ -78,6 +78,7 @@ class StoreDispatchedEmail extends OrgAction
             $rules['last_clicked_at']  = ['sometimes', 'nullable', 'date'];
             $rules['number_reads']     = ['sometimes', 'integer'];
             $rules['number_clicks']    = ['sometimes', 'integer'];
+            $rules['ses_id']           = ['sometimes', 'nullable', 'string', 'max:80'];
 
 
             $rules = $this->noStrictStoreRules($rules);

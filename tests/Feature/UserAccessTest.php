@@ -12,10 +12,14 @@ use App\Actions\UI\Profile\DeleteProfileApiToken;
 use App\Actions\UI\Profile\StoreProfileApiToken;
 use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Http\Resources\SysAdmin\User\UserShowcaseResource;
+use App\Listeners\ForgetWildcardPermissionIndex;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\McpRequest;
+use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\Role;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 beforeAll(function () {
     loadDB();
@@ -199,5 +203,28 @@ describe('permission caching', function () {
 
         expect(Cache::tags('auth-user:'.$this->user->id)->get('can:'.$this->permission))->toBeNull()
             ->and($this->user->authTo($this->permission))->toBeFalse('a role change must not survive in the holders cache');
+    });
+
+    test('a permission granted by another octane worker applies from the next request', function () {
+        $permission = ShopPermissionsEnum::getPermissionName(ShopPermissionsEnum::WEB_EDIT->value, $this->shop);
+
+        $this->user->revokePermissionTo($permission);
+        $this->user->roles()->detach();
+        Cache::tags('auth-user:'.$this->user->id)->flush();
+
+        expect(User::find($this->user->id)->authTo($permission))->toBeFalse();
+
+        DB::table('model_has_permissions')->insert([
+            'permission_id' => Permission::where('name', $permission)->value('id'),
+            'model_type'    => 'User',
+            'model_id'      => $this->user->id,
+            'group_id'      => $this->group->id,
+        ]);
+
+        expect(User::find($this->user->id)->authTo($permission))->toBeFalse('this worker still holds the index built before the grant');
+
+        new ForgetWildcardPermissionIndex()->handle((object)['sandbox' => app()]);
+
+        expect(User::find($this->user->id)->authTo($permission))->toBeTrue('the next request must see the grant');
     });
 });

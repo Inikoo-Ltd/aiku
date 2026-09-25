@@ -123,7 +123,7 @@ const openFile = (file: TicketAttachment) => {
             <select
                 v-if="typeOptions.length > 1"
                 v-model="selectedType"
-                class="ml-auto cursor-pointer rounded-md border-gray-300 py-0.5 pl-2 pr-7 text-xs text-gray-600 focus:border-indigo-400 focus:ring-indigo-400"
+                class="ml-auto cursor-pointer rounded-md border-gray-300 py-0.5 pl-2 pr-7 text-xs text-gray-600 focus:border-[--app-accent] focus:ring-[--app-accent]"
                 :aria-label="trans('Filter attachments by type')">
                 <option value="all">{{ trans("All types") }}</option>
                 <option v-for="option in typeOptions" :key="option.value" :value="option.value">{{ option.label }} ({{ option.count }})</option>
@@ -134,13 +134,13 @@ const openFile = (file: TicketAttachment) => {
                 v-for="file in filteredFiles"
                 :key="file.url"
                 type="button"
-                class="overflow-hidden rounded-lg border border-gray-200 text-left transition hover:border-indigo-300 hover:shadow-sm"
+                class="overflow-hidden rounded-lg border border-gray-200 text-left transition hover:border-[--app-accent-muted] hover:shadow-sm"
                 :title="file.name"
                 :disabled="previewBlocked"
                 :class="previewBlocked && 'cursor-not-allowed opacity-70 hover:!border-gray-200 hover:!shadow-none'"
                 @click="openFile(file)">
                 <div class="relative flex items-center justify-center overflow-hidden bg-gray-50" :class="compact ? 'h-20' : 'h-24'">
-                    <FontAwesomeIcon v-show="!loadedThumbnailUrls.includes(file.url)" :icon="iconFor(file).icon" :class="[iconFor(file).class, compact ? 'text-3xl' : 'text-4xl']" />
+                    <FontAwesomeIcon v-show="!loadedThumbnailUrls.includes(file.url)" :icon="iconFor(file).icon" :class="[iconFor(file).class, compact ? 'text-3xl' : 'text-4xl']" fixed-width />
                     <Image
                         v-if="file.thumbnail"
                         :src="file.thumbnail"

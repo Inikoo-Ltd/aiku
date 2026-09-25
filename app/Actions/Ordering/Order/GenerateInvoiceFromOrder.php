@@ -21,6 +21,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithLineTaxCategories;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -89,6 +90,8 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'charges_amount'            => $order->charges_amount,
                 'shipping_amount'           => $order->shipping_amount,
                 'insurance_amount'          => $order->insurance_amount,
+                'packaging_amount'          => $order->packaging_amount,
+                'leaflet_amount'            => $order->leaflet_amount,
                 'amount_off'                => $order->amount_off,
                 'tax_amount'                => Arr::get($updatedData, 'tax_amount', $order->tax_amount),
                 'customer_sales_channel_id' => $order->customer_sales_channel_id,
@@ -130,6 +133,8 @@ class GenerateInvoiceFromOrder extends OrgAction
                     );
                 } elseif ($transaction->model_type == 'ShippingZone') {
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
+                } elseif (in_array($transaction->model_type, ['Packaging', 'Leaflet'])) {
+                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $data);
                 } else {
                     $invoiceTransactionData = $this->recalculateTransactionTotals($transaction, $deliveryNote);
                     StoreInvoiceTransaction::make()->action($invoice, $transaction, $invoiceTransactionData);
@@ -186,6 +191,8 @@ class GenerateInvoiceFromOrder extends OrgAction
                 StoreCreditTransaction::make()->action($invoice->customer, [
                     'amount'     => $amountToCredit,
                     'type'       => CreditTransactionTypeEnum::FROM_EXCESS,
+                    'reason'     => CreditTransactionReasonEnum::OTHER,
+                    'notes'      => __('Refund for items not shipped in order :reference', ['reference' => $order->reference]),
                     'payment_id' => $creditPayment->id,
                     'date'       => now()
                 ]);
@@ -229,7 +236,7 @@ class GenerateInvoiceFromOrder extends OrgAction
          * transactions is how invoices ended up with a VAT figure their own rows did not add up
          * to (HELP-3081).
          */
-        $modelTypes = ['Service', 'Charge', 'Adjustment'];
+        $modelTypes = ['Service', 'Charge', 'Adjustment', 'Packaging', 'Leaflet'];
         if (!$order->collection_address_id) {
             $modelTypes[] = 'ShippingZone';
         }

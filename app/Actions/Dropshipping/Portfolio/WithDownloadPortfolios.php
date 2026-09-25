@@ -40,7 +40,9 @@ trait WithDownloadPortfolios
             array_splice($headers, 2, 0, [$referenceHeader]);
         }
 
-        $csvData[] = $headers;
+        $tempFile = tempnam(sys_get_temp_dir(), 'csv');
+        $file     = fopen($tempFile, 'w');
+        fputcsv($file, $headers, ',', '"', '');
 
         $normalizedProductStates = $this->normalizeProductStates($productStates);
 
@@ -85,25 +87,17 @@ trait WithDownloadPortfolios
 
         $portfolios
             ->orderBy('portfolios.id')
-            ->chunk(100, function ($products) use (&$csvData, $isExtendedProperties, $columns) {
+            ->chunk(500, function ($products) use ($file, $isExtendedProperties, $columns) {
                 foreach ($products as $row) {
                     if ($isExtendedProperties) {
-                        $csvData[] = $this->mapExtendedProperties($row, $columns);
+                        $mappedData = $this->mapExtendedProperties($row, $columns);
                     } else {
                         $mappedData = $this->map($row);
                         array_splice($mappedData, 2, 0, [$row->reference ?? '']);
-                        $csvData[] = $mappedData;
                     }
+                    fputcsv($file, $mappedData, ',', '"', '');
                 }
             });
-
-
-        $tempFile = tempnam(sys_get_temp_dir(), 'csv');
-        $file     = fopen($tempFile, 'w');
-
-        foreach ($csvData as $row) {
-            fputcsv($file, $row, ',', '"', '');
-        }
 
         fclose($file);
 
@@ -150,6 +144,7 @@ trait WithDownloadPortfolios
             'family_code'             => 'Family code',
             'family_name'             => 'Family name',
             'product_name'            => 'Product name',
+            'barcode'                 => 'Barcode (EAN/GTIN)',
             'materials_ingredients'   => 'Materials/Ingredients',
             'unit_dimensions'         => 'Unit dimensions',
             'unit_net_weight'         => 'Unit net weight (kg)',
@@ -179,6 +174,7 @@ trait WithDownloadPortfolios
             'family_code'             => $row->family_code ?? '',
             'family_name'             => $row->family_name ?? '',
             'product_name'            => $row->name,
+            'barcode'                 => $row->barcode ?? '',
             'materials_ingredients'   => $row->marketing_ingredients ?? '',
             'unit_dimensions'         => $dimensions,
             'unit_net_weight'         => $row->marketing_weight / 1000,

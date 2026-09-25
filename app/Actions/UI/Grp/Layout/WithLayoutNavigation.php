@@ -73,6 +73,7 @@ trait WithLayoutNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
+                            'label' => __('Dashboard'),
                             'icon'  => ['fal', 'fa-chart-network'],
                             'root'  => 'grp.org.accounting.dashboard',
                             'route' => [
@@ -195,6 +196,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Working place'),
                             'tooltip' => __('Working place'),
                             'icon'    => ['fal', 'fa-building'],
                             'root'    => 'grp.org.hr.workplaces.',
@@ -204,6 +206,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Responsibilities'),
                             'tooltip' => __('Responsibilities'),
                             'icon'    => ['fal', 'fa-sitemap'],
                             'root'    => 'grp.org.hr.job_positions.',
@@ -213,6 +216,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Holidays'),
                             'tooltip' => __('Holidays'),
                             'icon'    => ['fal', 'fa-umbrella'],
                             'root'    => 'grp.org.hr.holidays.',
@@ -222,6 +226,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Overtime'),
                             'tooltip' => __('Overtime'),
                             'icon'    => ['fal', 'fa-stopwatch'],
                             'root'    => 'grp.org.hr.overtime.',
@@ -231,6 +236,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Leave Requests'),
                             'tooltip' => __('Leave Requests'),
                             'icon'    => ['fas', 'fa-house-leave'],
                             'root'    => 'grp.org.hr.leaves.',
@@ -240,6 +246,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Adjustments'),
                             'tooltip' => __('Adjustments'),
                             'icon'    => ['fal', 'fa-clock'],
                             'root'    => 'grp.org.hr.adjustments.',
@@ -249,6 +256,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Analytics'),
                             'tooltip' => __('Analytics'),
                             'icon'    => ['fal', 'fa-chart-line'],
                             'root'    => 'grp.org.hr.analytics.',
@@ -258,6 +266,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Shift Schedules'),
                             'tooltip' => __('Shift Schedules'),
                             'icon'    => ['fal', 'fa-calendar-check'],
                             'root'    => 'grp.org.hr.shift_schedules.',
@@ -267,6 +276,7 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
+                            'label'   => __('Staff chat'),
                             'tooltip' => __('Staff chat'),
                             'icon'    => ['fal', 'fa-comments-alt'],
                             'root'    => 'grp.org.hr.staff_chat.',

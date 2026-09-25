@@ -10,6 +10,7 @@ namespace App\Actions\CRM\WebUser\Retina;
 
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Traits\WithIrisAuthCookie;
 use App\Models\CRM\WebUser;
 use App\Models\CRM\WebUserPasswordReset;
 use Hash;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateRetinaWebUserPassword extends RetinaAction
 {
     use WithActionUpdate;
+    use WithIrisAuthCookie;
 
 
     public function handle(array $modelData): WebUser
@@ -87,6 +89,7 @@ class UpdateRetinaWebUserPassword extends RetinaAction
     {
         Session::put('reloadLayout', '1');
         Auth::guard('retina')->login($webUser);
+        $this->queueIrisAuthCookie();
 
         return Redirect::route('retina.dashboard.show');
     }

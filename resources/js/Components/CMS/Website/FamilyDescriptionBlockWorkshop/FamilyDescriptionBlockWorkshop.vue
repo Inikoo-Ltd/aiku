@@ -212,7 +212,7 @@ const sidebarOpen = ref(true)
           <div class="flex items-center gap-2">
             <button type="button" class="w-8 h-8 rounded-lg hover:bg-gray-200 transition"
               @click="sidebarOpen = !sidebarOpen">
-              <FontAwesomeIcon :icon="sidebarOpen ? faExpand : faCompressWide" />
+              <FontAwesomeIcon :icon="sidebarOpen ? faExpand : faCompressWide" fixed-width />
             </button>
 
             <div class="py-1 px-2 hidden lg:block">
@@ -251,7 +251,7 @@ const sidebarOpen = ref(true)
           <!-- EMPTY STATE -->
           <div v-else class="flex items-center justify-center text-gray-500 h-full">
             <div class="flex flex-col items-center">
-              <FontAwesomeIcon :icon="faInfoCircle" class="text-3xl lg:text-4xl mb-2" />
+              <FontAwesomeIcon :icon="faInfoCircle" class="text-3xl lg:text-4xl mb-2" fixed-width />
               <h3 class="text-sm lg:text-lg font-semibold">
                 {{ trans("No Family selected") }}
               </h3>
@@ -285,7 +285,7 @@ const sidebarOpen = ref(true)
               <FontAwesomeIcon :icon="faDotCircle" class="w-4 h-4" :class="family?.slug == dataPicked?.sub_department?.slug
                 ? 'text-blue-500'
                 : 'text-gray-400'
-                " />
+                " fixed-width />
 
               <span class="group-hover:underline">
                 {{ family.name }}

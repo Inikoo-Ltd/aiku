@@ -86,10 +86,14 @@ function referenceRoute(item: any) {
       <Link v-if="item.reference" :href="referenceRoute(item)" class="secondaryLink">
         {{ item.reference }}
       </Link>
-      <span v-if="item.number_delivery_notes_waiting_ready" v-tooltip="trans('Waiting items picked, ready to pack')" class="ml-2 inline-flex items-center gap-1 rounded bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700 animate-pulse">
-        <FontAwesomeIcon icon="fal fa-box-check" fixed-width aria-hidden="true" />
-        {{ item.number_delivery_notes_waiting_ready }}
-      </span>
+      <FontAwesomeIcon
+        v-if="item.is_waiting_ready"
+        v-tooltip="trans('Waiting items picked, ready to continue')"
+        icon="fal fa-box-check"
+        class="ml-2 text-green-500 animate-pulse"
+        fixed-width
+        aria-hidden="true"
+      />
     </template>
   </Table>
 </template>

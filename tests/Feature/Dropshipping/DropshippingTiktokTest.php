@@ -17,6 +17,8 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Tiktok\Order\FulfillOrderToTiktok;
 use App\Actions\Dropshipping\Tiktok\Order\GetTiktokOrdersApi;
 use App\Actions\Dropshipping\Tiktok\Product\CheckTiktokPortfolio;
+use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\Dropshipping\Tiktok\Product\CreateNewAllPortfoliosToTiktok;
 use App\Actions\Dropshipping\Tiktok\Product\MatchPortfolioToCurrentTiktokProduct;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts;
@@ -32,12 +34,14 @@ use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Client\Request;
@@ -47,6 +51,8 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 
 use function Pest\Laravel\actingAs;
 
@@ -831,6 +837,22 @@ test('picking the shop makes the channel ready and the check reads the shop name
         && str_contains($request->url(), 'shop_cipher=GCP_XF90igAAAABh00qsWgtvOiGFNqyubMt3'));
 });
 
+test('picking a shop tiktok holds no warehouse for keeps the channel incomplete and tells the customer why', function () {
+    $tiktokUser = tiktokChannel($this->customer, ['tiktok_shop_id' => null, 'tiktok_shop_chiper' => null, 'tiktok_warehouse_id' => null]);
+    UpdateCustomerSalesChannel::run($tiktokUser->customerSalesChannel, ['state' => CustomerSalesChannelStateEnum::AUTHENTICATED, 'platform_status' => false]);
+
+    $channelResource = fn () => RetinaCustomerSalesChannelResource::make($tiktokUser->customerSalesChannel->refresh())->resolve();
+    expect($channelResource()['tiktok_shop_has_no_warehouse'])->toBeFalse();
+
+    fakeTiktok(array_merge(tiktokShopFixtures($tiktokUser), ['/logistics/' => tiktokOk([])]));
+    $tiktokUser = UpdateTiktokUser::make()->action($tiktokUser, ['tiktok_shop_id' => '7000714532876273420', 'tiktok_shop_chiper' => 'GCP_XF90igAAAABh00qsWgtvOiGFNqyubMt3']);
+
+    expect($tiktokUser->refresh()->tiktok_warehouse_id)->toBeNull()
+        ->and($tiktokUser->customerSalesChannel->refresh()->platform_status)->toBeFalse()
+        ->and($channelResource()['tiktok_shop_has_no_warehouse'])->toBeTrue()
+        ->and($channelResource()['platform_completion'])->toBeFalsy();
+});
+
 test('an expired access token is refreshed before the call and a failed refresh keeps the current tokens', function () {
     $tiktokUser = tiktokChannel($this->customer, ['access_token_expire_in' => (string) now()->subMinute()->timestamp]);
 
@@ -888,3 +910,66 @@ test('closing the channel soft deletes the tiktok user and stops the webhook fro
     expect(fn () => HandleOrderIncomingTiktok::run(tiktokWebhookPayload($tiktokUser, '1')))->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
     Http::assertNothingSent();
 });
+
+test('a retina customer reads the authorised shops of their own tiktok account without tokens and never those of another customer', function () {
+    $ownTiktokUser   = tiktokChannel($this->customer);
+    $otherTiktokUser = tiktokChannel(StoreCustomer::make()->action($this->shop, Customer::factory()->definition()));
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    actingAs(tiktokRetinaWebUser($this->customer), 'retina');
+
+    $this->getJson(route('retina.json.dropshipping.customer_sales_channel.tiktok_user.show', $otherTiktokUser->id))->assertForbidden();
+
+    $response = $this->getJson(route('retina.json.dropshipping.customer_sales_channel.tiktok_user.show', $ownTiktokUser->id))
+        ->assertOk()
+        ->assertJsonPath('data.authorized_shop.0.id', $ownTiktokUser->tiktok_shop_id);
+
+    expect($response->getContent())->not->toContain('access-token')->not->toContain('refresh-token');
+});
+
+test('retina tiktok write routes act on the customer own channel and refuse the channel of another customer', function () {
+    Queue::fake();
+    $ownTiktokUser   = tiktokChannel($this->customer);
+    $otherTiktokUser = tiktokChannel(StoreCustomer::make()->action($this->shop, Customer::factory()->definition()));
+    $ownPortfolio    = tiktokListedPortfolio($ownTiktokUser, $this->product, 'OWN-PRODUCT');
+    $otherPortfolio  = tiktokListedPortfolio($otherTiktokUser, $this->product, 'OTHER-PRODUCT');
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    actingAs(tiktokRetinaWebUser($this->customer), 'retina');
+
+    $this->getJson(route('retina.models.dropshipping.tiktok.check', $otherTiktokUser->id))->assertForbidden();
+    $this->getJson(route('retina.models.dropshipping.tiktok.product.sync', $otherTiktokUser->id))->assertForbidden();
+    $this->postJson(route('retina.models.customer_sales_channel.tiktok_sync_all_stored_items', $otherTiktokUser->customer_sales_channel_id))->assertForbidden();
+
+    StoreProductToTiktok::mock()->shouldReceive('handle')->once();
+    MatchPortfolioToCurrentTiktokProduct::mock()->shouldReceive('handle')->once();
+    CreateNewAllPortfoliosToTiktok::mock()->shouldReceive('handle')->once();
+    CheckTiktokChannel::partialMock()->shouldReceive('handle')->twice()->andReturn($ownTiktokUser->customerSalesChannel);
+
+    $writes = fn (TiktokUser $tiktokUser, Portfolio $portfolio) => [
+        $this->postJson(route('retina.models.portfolio.store_new_tiktok_product', $portfolio->id)),
+        $this->postJson(route('retina.models.portfolio.match_to_existing_tiktok_product', $portfolio->id), ['platform_product_id' => 'P1']),
+        $this->postJson(route('retina.models.dropshipping.tiktok.batch_all', $tiktokUser->customer_sales_channel_id)),
+        $this->postJson(route('retina.models.dropshipping.tiktok.batch_upload', $tiktokUser->customer_sales_channel_id), ['portfolios' => [$portfolio->id]]),
+        $this->patchJson(route('retina.models.dropshipping.tiktok.update', $tiktokUser->id), ['name' => 'Renamed shop']),
+        $this->deleteJson(route('retina.models.dropshipping.tiktok.delete', $tiktokUser->id)),
+    ];
+
+    foreach ($writes($otherTiktokUser, $otherPortfolio) as $response) {
+        $response->assertForbidden();
+    }
+    expect($otherTiktokUser->fresh())->not->toBeNull()->name->toBe('Maomao beauty shop');
+
+    $this->getJson(route('retina.models.dropshipping.tiktok.check', $ownTiktokUser->id))->assertSuccessful();
+    foreach ($writes($ownTiktokUser, $ownPortfolio) as $response) {
+        $response->assertSuccessful();
+    }
+    expect(TiktokUser::find($ownTiktokUser->id))->toBeNull();
+});
+
+function tiktokRetinaWebUser(Customer $customer): WebUser
+{
+    $username = 'tiktok-'.Str::lower(Str::random(8));
+
+    return StoreWebUser::make()->action($customer, ['username' => $username, 'email' => $username.'@testmail.com', 'password' => 'test']);
+}

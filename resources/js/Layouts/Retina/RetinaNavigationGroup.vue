@@ -49,7 +49,7 @@ const isPanelOpen = ref(isCurrentRouteActive.value || props.itemKey == layout.or
                 <FontAwesomeIcon icon='fal fa-chevron-down' class='transition-all duration-200 ease-in-out'
                     :class="[isPanelOpen ? 'rotate-180' : '',
                         layout.leftSidebar.show ? 'justify-self-end text-xs' : 'h-[4px] aspect-square p-[2px] text-white bg-indigo-700 rounded border border-gray-100/50 absolute bottom-0 translate-y-1/2 left-1/2 -translate-x-1/2 text-[4px]'
-                    ]" aria-hidden='true' />
+                    ]" fixed-width aria-hidden='true' />
             </DisclosureButton>
 
             <!-- {{ Object.keys(orgNav[layout.organisationsState?.[layout.currentParams.organisation]?.[generateCurrentString(itemKey)]]) }} -->

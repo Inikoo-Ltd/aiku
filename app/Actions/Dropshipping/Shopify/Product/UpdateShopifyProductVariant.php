@@ -28,6 +28,10 @@ class UpdateShopifyProductVariant extends RetinaAction
 
     public function handle(Portfolio $portfolio): array
     {
+        if ($portfolio->isShopifyVariantAdopted()) {
+            return [true, 'The merchant owns the price of this variant, nothing is sent'];
+        }
+
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
         /** @var ShopifyUser $shopifyUser */
@@ -98,8 +102,8 @@ class UpdateShopifyProductVariant extends RetinaAction
                 $price        = $portfolio->customer_price;
                 $comparePrice = $portfolio->customer_price;
             } else {
-                $price        = $product->rrp;
-                $comparePrice = $product->rrp;
+                $price        = $product->dropshippingBasePrice();
+                $comparePrice = $price;
             }
 
             $variables = [
