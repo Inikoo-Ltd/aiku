@@ -28,7 +28,7 @@ class RepairOrgStocksPackedIn
         $count = 0;
 
         // Get total count for progress bar
-        $total = OrgStock::count();
+        $total = OrgStock::whereNull('packed_in')->count();
 
         if ($total === 0) {
             $command->info("No org stocks found.");
@@ -44,7 +44,7 @@ class RepairOrgStocksPackedIn
         $progressBar->setFormat('aiku_eta');
         $progressBar->start();
 
-        OrgStock::chunk($chunkSize, function ($orgStocks) use (&$count, $progressBar) {
+        OrgStock::whereNull('packed_in')->chunkById($chunkSize, function ($orgStocks) use (&$count, $progressBar) {
             foreach ($orgStocks as $orgStock) {
                 OrgStockHydratePackedIn::run($orgStock);
                 $count++;

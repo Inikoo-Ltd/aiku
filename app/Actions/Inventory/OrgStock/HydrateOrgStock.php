@@ -11,7 +11,6 @@ namespace App\Actions\Inventory\OrgStock;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
-use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProducts;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePurchaseOrders;
@@ -46,7 +45,6 @@ class HydrateOrgStock
         OrgStockHydrateValueInLocations::run($orgStock);
         OrgStockHydrateMovements::run($orgStock);
         OrgStockHydrateProductsAvailableQuantity::run($orgStock);
-        OrgStockHydratePackedIn::run($orgStock);
         OrgStockHydrateSkuValue::run($orgStock);
         OrgStockHydrateSkuCommercialValue::run($orgStock);
         OrgStockHydrateStockValue::run($orgStock);

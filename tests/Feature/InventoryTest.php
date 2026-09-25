@@ -1243,7 +1243,17 @@ test('org stock hydrator', function () {
     $this->artisan('hydrate:org_stocks')->assertExitCode(0);
 
     $orgStock = OrgStock::first();
+    $orgStock->updateQuietly(['packed_in' => 4321]);
     HydrateOrgStock::run($orgStock);
+
+    expect($orgStock->fresh()->packed_in)->toBe(4321);
+
+    $this->artisan('repair:org-stocks-packed-in');
+    expect($orgStock->fresh()->packed_in)->toBe(4321);
+
+    $orgStock->updateQuietly(['packed_in' => null]);
+    $this->artisan('repair:org-stocks-packed-in');
+    expect($orgStock->fresh()->packed_in)->toBe(1);
 });
 
 test('org stock families  hydrator', function () {
