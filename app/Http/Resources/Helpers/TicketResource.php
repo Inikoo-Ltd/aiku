@@ -186,9 +186,11 @@ class TicketResource extends JsonResource
             return $icon;
         }
 
-        $icon['tooltip'] = $name
-            ? __('QA check requested from :name', ['name' => $name])
-            : __('QA check open to anyone in QA');
+        $icon['tooltip'] = match (true) {
+            $this->qa_status === TicketQaStatusEnum::CHECKING => __(':name is checking this', ['name' => $name ?? __('QA')]),
+            $name !== null && $name !== ''                   => __('QA check requested from :name', ['name' => $name]),
+            default                                           => __('QA check open to anyone in QA'),
+        };
 
         return $icon;
     }

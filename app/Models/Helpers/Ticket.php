@@ -243,6 +243,21 @@ class Ticket extends Model implements Auditable, HasMedia
         return $user !== null && $user->authTo('help-desk.qa');
     }
 
+    public function canBeClaimedForQaBy(?User $user): bool
+    {
+        return self::canGiveQaVerdict($user)
+            && !$this->qa_status?->isVerdict()
+            && $this->qa_status !== TicketQaStatusEnum::CHECKING
+            && ($this->qa_user_id === null || $this->qa_user_id === $user->id);
+    }
+
+    public function isQaHeldByAnotherThan(?User $user): bool
+    {
+        return in_array($this->qa_status, [TicketQaStatusEnum::REQUESTED, TicketQaStatusEnum::CHECKING], true)
+            && $this->qa_user_id !== null
+            && $this->qa_user_id !== $user?->id;
+    }
+
     public function canRequestQaBy(?User $user): bool
     {
         return self::canBeAssignedBy($user) || $this->isAssignedTo($user) || $this->hasCollaborator($user);

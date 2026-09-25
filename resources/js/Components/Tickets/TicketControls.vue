@@ -45,6 +45,8 @@ const props = defineProps<{
     can_assign: boolean
     can_flag_confidential: boolean
     can_qa: boolean
+    can_claim_qa?: boolean
+    qa_held_by_another?: boolean
     can_request_qa: boolean
     is_reporter: boolean
     can_change_kind_module: boolean
@@ -181,7 +183,7 @@ const sendQaVerdict = () => {
 
 const isClosed = computed(() => ["resolved", "cancelled"].includes(props.ticket.status))
 const isResolvedWithinADay = computed(() => props.ticket.status === "resolved" && !!props.ticket.resolved_at && Date.now() - new Date(props.ticket.resolved_at).getTime() < 24 * 60 * 60 * 1000)
-const canGiveQaVerdict = computed(() => props.can_qa && (!props.ticket.qa_status || props.ticket.qa_status === "requested"))
+const canGiveQaVerdict = computed(() => props.can_qa && !props.qa_held_by_another && (!props.ticket.qa_status || ["requested", "checking"].includes(props.ticket.qa_status)))
 const canSkipQa = computed(() => canGiveQaVerdict.value && !props.ticket.qa_requested_at)
 
 const qaVerdictCopy = computed(() => ({
@@ -439,6 +441,14 @@ const saveDeployComment = () => {
                         <button v-if="canAskQa" v-tooltip="ticket.qa_status ? ctrans('Ask QA to check again') : ctrans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
                         <button v-if="can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
                         <span v-if="canGiveQaVerdict && (canAskQa || (can_request_qa && ticket.qa_status === 'requested'))" class="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
+                        <Button
+                            v-if="can_claim_qa"
+                            type="secondary"
+                            size="xs"
+                            icon="fal fa-search"
+                            :label="ctrans('I\'ll check this')"
+                            :loading="isPending('qa:claim')"
+                            @click="update('qa_status', 'checking', 'qa:claim')" />
                         <template v-if="canGiveQaVerdict">
                             <button v-tooltip="ctrans('QA passed')" type="button" class="rounded-md p-1.5 text-green-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('passed')"><FontAwesomeIcon icon="fal fa-shield-check" fixed-width /></button>
                             <button v-tooltip="ctrans('QA failed')" type="button" class="rounded-md p-1.5 text-red-500 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaVerdict('failed')"><FontAwesomeIcon icon="fal fa-shield" fixed-width /></button>

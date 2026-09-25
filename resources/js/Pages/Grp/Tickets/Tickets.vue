@@ -302,6 +302,32 @@ watch(
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.module_label || "-" }}</span>
             </template>
+            <template #cell(kind_module)="{ item }">
+                <div class="flex flex-col items-start gap-0.5">
+                    <button
+                        v-if="canEditKind(item)"
+                        type="button"
+                        :class="[editableCellClass, 'text-gray-700', isEditing('kind', item) && '!bg-gray-200']"
+                        :title="ctrans('Change kind')"
+                        :disabled="isRowSaving(item)"
+                        @click="openEditor('kind', item, $event)">
+                        {{ item.kind_label || ctrans("No kind") }}
+                        <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'kind')" class="text-[10px] text-gray-400" fixed-width />
+                    </button>
+                    <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.kind_label || "-" }}</span>
+                    <button
+                        v-if="canEditModule(item)"
+                        type="button"
+                        :class="[editableCellClass, 'text-xs text-gray-500', isEditing('module', item) && '!bg-gray-200']"
+                        :title="ctrans('Change module')"
+                        :disabled="isRowSaving(item)"
+                        @click="openEditor('module', item, $event)">
+                        {{ item.module_label || ctrans("No module") }}
+                        <FontAwesomeIcon :icon="isSaving(item, 'module') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'module')" class="text-[10px] text-gray-400" fixed-width />
+                    </button>
+                    <span v-else :class="[readOnlyCellClass, 'text-xs text-gray-500']">{{ item.module_label || "-" }}</span>
+                </div>
+            </template>
             <template #cell(reporter)="{ item }">
                 <div class="mx-auto flex w-20 flex-col items-center gap-0.5 p-2 text-center" :title="item.customer ? `${item.reporter} · ${item.customer}` : item.reporter">
                     <TicketUserAvatar :name="item.reporter" :avatar="item.reporter_avatar" />

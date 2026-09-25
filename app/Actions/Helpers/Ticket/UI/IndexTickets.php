@@ -142,7 +142,7 @@ class IndexTickets extends OrgAction
                 ],
                 'engine'   => function ($query, $elements) {
                     $query->where(function ($query) use ($elements) {
-                        $query->whereIn('tickets.qa_status', [...array_diff($elements, ['none']), TicketQaStatusEnum::REQUESTED->value]);
+                        $query->whereIn('tickets.qa_status', [...array_diff($elements, ['none']), TicketQaStatusEnum::REQUESTED->value, TicketQaStatusEnum::CHECKING->value]);
                         if (in_array('none', $elements)) {
                             $query->orWhereNull('tickets.qa_status');
                         }
@@ -271,7 +271,7 @@ class IndexTickets extends OrgAction
             );
         }
 
-        $this->restrictRows($queryBuilder);
+        $this->restrictRows($queryBuilder, $prefix);
         $this->pinToTop($queryBuilder);
 
         return $queryBuilder
@@ -287,7 +287,7 @@ class IndexTickets extends OrgAction
     {
     }
 
-    protected function restrictRows($queryBuilder): void
+    protected function restrictRows($queryBuilder, ?string $prefix): void
     {
     }
 
@@ -321,15 +321,38 @@ class IndexTickets extends OrgAction
                 ->column(key: 'subject', label: __('Subject'), canBeHidden: false, sortable: true, searchable: true, className: 'w-full max-w-0')
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
                 ->column(key: 'qa_status', label: __('QA verdict'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
-                ->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center')
-                ->column(key: 'kind', label: __('Kind'), canBeHidden: false, className: 'whitespace-nowrap w-px')
-                ->column(key: 'module', label: __('Module'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                ->column(key: 'priority', label: __('Priority'), icon: 'fal fa-flag', canBeHidden: false, sortable: true, className: 'w-px text-center');
+
+            if ($this->combinesKindAndModule()) {
+                $table->column(key: 'kind_module', label: __('Kind / Module'), canBeHidden: false, className: 'whitespace-nowrap w-px');
+            } else {
+                $table
+                    ->column(key: 'kind', label: __('Kind'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                    ->column(key: 'module', label: __('Module'), canBeHidden: false, className: 'whitespace-nowrap w-px');
+            }
+
+            $table
                 ->column(key: 'reporter', label: __('Reporter'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
-                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px')
-                ->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
+                ->column(key: 'assignee', label: __('Assignee'), canBeHidden: false, type: 'avatar', className: 'whitespace-nowrap w-px');
+
+            if ($this->showsCreatedColumn()) {
+                $table->column(key: 'created_at', label: __('Created'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px');
+            }
+
+            $table
                 ->column(key: 'updated_at', label: __('Updated'), canBeHidden: false, sortable: true, type: 'date', className: 'whitespace-nowrap w-px')
                 ->defaultSort('-created_at');
         };
+    }
+
+    protected function combinesKindAndModule(): bool
+    {
+        return false;
+    }
+
+    protected function showsCreatedColumn(): bool
+    {
+        return true;
     }
 
     public function jsonResponse(LengthAwarePaginator $tickets): AnonymousResourceCollection

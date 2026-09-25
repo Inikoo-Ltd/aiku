@@ -255,6 +255,8 @@ class ShowTicket extends OrgAction
             'can_assign'             => $ticket->canChangeAssigneeBy($user),
             'can_flag_confidential'  => Ticket::canBeAssignedBy($user),
             'can_qa'                 => Ticket::canGiveQaVerdict($user),
+            'can_claim_qa'           => $ticket->canBeClaimedForQaBy($user),
+            'qa_held_by_another'     => $ticket->isQaHeldByAnotherThan($user),
             'can_request_qa'         => $ticket->canRequestQaBy($user),
             'is_reporter'            => $ticket->isReportedBy($user),
             'can_cancel_as_reporter' => $ticket->canBeCancelledByReporter($user),

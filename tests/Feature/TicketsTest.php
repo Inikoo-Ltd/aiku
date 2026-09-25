@@ -1369,8 +1369,8 @@ test('QA has its own ticket list, filtered first by QA assignee, and the ticket 
 
     $mine   = StoreTicket::make()->action($this->group, ['subject' => 'Checked by me']);
     $anyone = StoreTicket::make()->action($this->group, ['subject' => 'Anyone in QA']);
-    Ticket::whereKey($mine->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $qa->id]);
-    Ticket::whereKey($anyone->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => null]);
+    Ticket::whereKey($mine->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $qa->id, 'status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($anyone->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => null, 'status' => TicketStatusEnum::RESOLVED]);
 
     $elementGroupKeys = fn (AssertableInertia $page) => array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
     $references       = fn (AssertableInertia $page) => collect($page->toArray()['props']['data']['data'])->pluck('reference')->all();
@@ -1398,7 +1398,8 @@ test('QA has its own ticket list, filtered first by QA assignee, and the ticket 
         ->assertInertia(fn (AssertableInertia $page) => expect($references($page))->toContain($anyone->reference)->not->toContain($mine->reference));
     $untouched = StoreTicket::make()->action($this->group, ['subject' => 'Nobody looked yet']);
     $passed    = StoreTicket::make()->action($this->group, ['subject' => 'Already passed']);
-    Ticket::whereKey($passed->id)->update(['qa_status' => TicketQaStatusEnum::PASSED, 'qa_user_id' => $qa->id]);
+    Ticket::whereKey($untouched->id)->update(['status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($passed->id)->update(['qa_status' => TicketQaStatusEnum::PASSED, 'qa_user_id' => $qa->id, 'status' => TicketStatusEnum::RESOLVED]);
 
     get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertInertia(function (AssertableInertia $page) use ($references, $untouched, $mine, $passed) {
         $page->where('listTip', fn ($tip) => str_contains($tip, 'no QA verdict'));
@@ -2749,6 +2750,7 @@ test('the ticket list offers ownership by role and QA filters', function () {
     UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
     UpdateTicket::make()->action($forQa, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
     $failed->forceFill(['qa_status' => TicketQaStatusEnum::FAILED, 'qa_user_id' => $qa->id])->saveQuietly();
+    Ticket::whereIn('id', [$forAnyone->id, $forQa->id, $failed->id])->update(['status' => TicketStatusEnum::RESOLVED]);
 
     $references   = fn (array $elements) => collect(get(route('grp.tickets.list', ['elements' => $elements, 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
     $qaReferences = fn (array $elements) => collect(get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => '', ...$elements], 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
@@ -3338,4 +3340,63 @@ test('a failed QA verdict leaves a ticket that is still being worked on exactly 
     patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Not there yet'])->assertRedirect();
 
     expect($ticket->refresh()->status)->toBe(TicketStatusEnum::WAITING);
+});
+
+test('a checker claims a ticket, it leaves every other checker\'s QA list, and only they can give its verdict', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa  = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Claim me']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::RESOLVED->value]);
+
+    $qaListIds = fn (array $query = []) => collect(get(route('grp.tickets.qa_list', ['perPage' => 1000, ...$query]))->assertOk()->inertiaProps()['data']['data'])->pluck('id');
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertForbidden();
+
+    actingAs($qa);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->qa_status)->toBe(TicketQaStatusEnum::CHECKING)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_checked_at)->toBeNull()
+        ->and($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->latest('id')->value('has_qa_verdict'))->toBeNull()
+        ->and($qaListIds())->toContain($ticket->id);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', false));
+
+    actingAs($otherQa);
+    expect($qaListIds())->not->toContain($ticket->id)
+        ->and($qaListIds(['elements' => ['qa_checker' => 'everyone']]))->toContain($ticket->id);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertSessionHasErrors('qa_status');
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertSessionHasErrors('qa_status');
+    expect($ticket->refresh()->qa_user_id)->toBe($qa->id);
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_checked_at)->not->toBeNull();
+
+    $askedOfOther = StoreTicket::make()->action($this->group, ['subject' => 'Asked of the other checker']);
+    Ticket::whereKey($askedOfOther->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $otherQa->id]);
+
+    get(route('grp.tickets.show', $askedOfOther->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', true));
+    patch(route('grp.models.ticket.update', $askedOfOther->id), ['qa_status' => 'checking'])->assertSessionHasErrors('qa_status');
+    patch(route('grp.models.ticket.update', $askedOfOther->id), ['qa_status' => 'failed', 'qa_note' => 'Not mine to judge'])->assertSessionHasErrors('qa_status');
+    expect($askedOfOther->refresh()->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
+        ->and($askedOfOther->qa_user_id)->toBe($otherQa->id);
+
+    actingAs($otherQa);
+    get(route('grp.tickets.show', $askedOfOther->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true)->where('qa_held_by_another', false));
 });

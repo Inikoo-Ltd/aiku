@@ -65,18 +65,32 @@ class IndexQaTickets extends IndexTickets
         ];
     }
 
-    /* A check asked of somebody in particular is theirs to do. It stays out of everybody
-       else's list whatever the filters say, so the queue a checker sees is only work they
-       can actually pick up: unclaimed requests, and the ones addressed to them. */
-    protected function restrictRows($queryBuilder): void
+    /* A ticket with a checker on it - asked of them, claimed by them, or already given their
+       verdict - is theirs, and stays out of every other checker's list. Choosing Everyone in
+       the QA assignee filter is the one way to see the whole team's work. */
+    protected function restrictRows($queryBuilder, ?string $prefix): void
     {
+        $checkerFilter = explode(',', (string) request()->input(($prefix ? $prefix.'_' : '').'elements.qa_checker', ''));
+
+        if (in_array('everyone', $checkerFilter, true)) {
+            return;
+        }
+
         $user = request()->user();
 
         $queryBuilder->where(fn ($query) => $query
-            ->where('tickets.qa_status', '!=', TicketQaStatusEnum::REQUESTED->value)
-            ->orWhereNull('tickets.qa_status')
-            ->orWhereNull('tickets.qa_user_id')
+            ->whereNull('tickets.qa_user_id')
             ->orWhere('tickets.qa_user_id', $user->id));
+    }
+
+    protected function combinesKindAndModule(): bool
+    {
+        return true;
+    }
+
+    protected function showsCreatedColumn(): bool
+    {
+        return false;
     }
 
     protected function pinToTop($queryBuilder): void
