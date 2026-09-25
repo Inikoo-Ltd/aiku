@@ -392,7 +392,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                                         color: `color-mix(in srgb, ${themeColor} 80%, black)`,
                                     }
                                     : {},
-                            { borderLeft: `6px solid ${getOrganisationColour(item.slug) ?? 'transparent'}` }
+                            { borderLeft: `5px solid ${getOrganisationColour(item.slug) ?? 'transparent'}` }
                         ]"
                 >
                     <div class="flex items-center gap-x-2 flex-1 min-w-0">
