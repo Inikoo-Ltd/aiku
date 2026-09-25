@@ -8,20 +8,21 @@
 import { computed, onMounted, ref, watch } from "vue"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash } from "@fal"
+import { faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Image from "@/Common/Components/Image.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
+import StaffTaskImportDialog from "@/Components/Tasks/StaffTaskImportDialog.vue"
 import StaffTaskCollaborators from "@/Components/Tasks/StaffTaskCollaborators.vue"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash)
+library.add(faTasks, faPlus, faComments, faCircle, faSpinner, faCheckCircle, faBan, faCalendar, faUser, faBell, faBellSlash, faList)
 
 const props = defineProps<{
     title: string
@@ -33,15 +34,16 @@ const store = useStaffMessaging()
 const myId = computed(() => usePage().props?.auth?.user?.id)
 
 const views = [
-    { key: "mine", label: trans("Assigned to me") },
-    { key: "department", label: trans("My department") },
-    { key: "requested", label: trans("I asked for") },
+    { key: "mine", label: ctrans("Assigned to me") },
+    { key: "department", label: ctrans("My department") },
+    { key: "requested", label: ctrans("I asked for") },
 ]
 const view = ref("mine")
 const showClosed = ref(false)
 const tasks = ref<any[]>([])
 const loading = ref(false)
 const dialogOpen = ref(false)
+const importOpen = ref(false)
 const cancelNoteFor = ref<any | null>(null)
 const cancelNote = ref("")
 
@@ -63,7 +65,7 @@ const update = async (task: any, payload: Record<string, unknown>) => {
             tasks.value.splice(index, 1)
         }
     } catch (error: any) {
-        notify({ title: trans("Could not update task"), text: error.response?.data?.message, type: "error" })
+        notify({ title: ctrans("Could not update task"), text: error.response?.data?.message, type: "error" })
     }
 }
 
@@ -73,7 +75,7 @@ const syncCollaborators = async (task: any, people: any[]) => {
         const index = tasks.value.findIndex((t) => t.id === task.id)
         if (index !== -1) tasks.value[index] = data.data
     } catch (error: any) {
-        notify({ title: trans("Could not update task"), text: error.response?.data?.message, type: "error" })
+        notify({ title: ctrans("Could not update task"), text: error.response?.data?.message, type: "error" })
     }
 }
 
@@ -100,6 +102,11 @@ const onCreated = (task: any) => {
     else view.value = "requested"
 }
 
+const onImported = () => {
+    if (view.value === "requested") load()
+    else view.value = "requested"
+}
+
 onMounted(async () => {
     await store.fetchConversations()
     if (props.selected_task) view.value = "requested"
@@ -115,10 +122,16 @@ onMounted(async () => {
     <Head :title="title" />
     <PageHeading :data="pageHead">
         <template #other>
-            <button class="flex items-center gap-x-1.5 px-3 py-1.5 text-sm rounded-md bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong]" @click="dialogOpen = true">
-                <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
-                {{ trans('New task') }}
-            </button>
+            <div class="flex items-center gap-x-2">
+                <button class="flex items-center gap-x-1.5 px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50" @click="importOpen = true">
+                    <FontAwesomeIcon icon="fal fa-list" fixed-width aria-hidden="true" />
+                    {{ ctrans('From a list') }}
+                </button>
+                <button class="flex items-center gap-x-1.5 px-3 py-1.5 text-sm rounded-md bg-[--app-accent] text-[--app-accent-text] hover:bg-[--app-accent-strong]" @click="dialogOpen = true">
+                    <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
+                    {{ ctrans('New task') }}
+                </button>
+            </div>
         </template>
     </PageHeading>
 
@@ -134,12 +147,12 @@ onMounted(async () => {
             </button>
             <label class="ml-auto flex items-center gap-x-1.5 text-xs text-gray-500">
                 <input v-model="showClosed" type="checkbox" class="rounded border-gray-300 text-[--app-accent] focus:ring-[--app-accent]" />
-                {{ trans('Show closed') }}
+                {{ ctrans('Show closed') }}
             </label>
         </div>
 
-        <div v-if="loading" class="py-10 text-center text-sm text-gray-400">{{ trans('Loading…') }}</div>
-        <div v-else-if="!tasks.length" class="py-10 text-center text-sm text-gray-400">{{ trans('Nothing here') }}</div>
+        <div v-if="loading" class="py-10 text-center text-sm text-gray-400">{{ ctrans('Loading…') }}</div>
+        <div v-else-if="!tasks.length" class="py-10 text-center text-sm text-gray-400">{{ ctrans('Nothing here') }}</div>
 
         <ul v-else class="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white">
             <li v-for="task in tasks" :key="task.id" class="flex items-start gap-x-3 px-4 py-3">
@@ -171,22 +184,22 @@ onMounted(async () => {
                     </div>
                 </div>
                 <div class="flex items-center gap-x-1 shrink-0">
-                    <button v-tooltip="trans('Open thread')" class="p-1.5 text-gray-400 hover:text-[--app-accent]" @click="openThread(task)">
+                    <button v-tooltip="ctrans('Open thread')" class="p-1.5 text-gray-400 hover:text-[--app-accent]" @click="openThread(task)">
                         <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
                     </button>
                     <button
                         v-if="task.requester?.id !== myId && task.assignee?.id !== myId"
-                        v-tooltip="task.is_subscribed ? trans('Stop notifications') : trans('Notify me about this task')"
+                        v-tooltip="task.is_subscribed ? ctrans('Stop notifications') : ctrans('Notify me about this task')"
                         class="p-1.5"
                         :class="task.is_subscribed ? 'text-[--app-accent]' : 'text-gray-400 hover:text-[--app-accent]'"
                         @click="toggleSubscription(task)">
                         <FontAwesomeIcon :icon="task.is_subscribed ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />
                     </button>
                     <template v-if="['todo', 'in_progress'].includes(task.status)">
-                        <button v-if="task.assignee?.id !== myId" class="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="claim(task)">{{ trans('I will do it') }}</button>
-                        <button v-else-if="task.status === 'todo'" class="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="update(task, { status: 'in_progress' })">{{ trans('Working on it') }}</button>
-                        <button class="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700" @click="done(task)">{{ trans('Done') }}</button>
-                        <button v-tooltip="trans(`Can't be done`)" class="p-1.5 text-gray-400 hover:text-red-600" @click="askCancel(task)">
+                        <button v-if="task.assignee?.id !== myId" class="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="claim(task)">{{ ctrans('I will do it') }}</button>
+                        <button v-else-if="task.status === 'todo'" class="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50" @click="update(task, { status: 'in_progress' })">{{ ctrans('Working on it') }}</button>
+                        <button class="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700" @click="done(task)">{{ ctrans('Done') }}</button>
+                        <button v-tooltip="ctrans(`Can't be done`)" class="p-1.5 text-gray-400 hover:text-red-600" @click="askCancel(task)">
                             <FontAwesomeIcon icon="fal fa-ban" fixed-width aria-hidden="true" />
                         </button>
                     </template>
@@ -196,14 +209,15 @@ onMounted(async () => {
     </div>
 
     <StaffTaskDialog :is-open="dialogOpen" @close="dialogOpen = false" @created="onCreated" />
+    <StaffTaskImportDialog :is-open="importOpen" @close="importOpen = false" @created="onImported" />
 
     <div v-if="cancelNoteFor" class="fixed inset-0 z-30 flex items-center justify-center bg-black/40" @click.self="cancelNoteFor = null">
         <div class="bg-white rounded-xl p-5 w-full max-w-md space-y-3">
-            <h3 class="text-sm font-semibold text-gray-900">{{ trans(`Why can't :reference be done?`, { reference: cancelNoteFor.reference }) }}</h3>
+            <h3 class="text-sm font-semibold text-gray-900">{{ ctrans(`Why can't :reference be done?`, { reference: cancelNoteFor.reference }) }}</h3>
             <textarea v-model="cancelNote" rows="3" autofocus class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[--app-accent]" />
             <div class="flex justify-end gap-x-2">
-                <button class="px-3 py-1.5 text-sm text-gray-600" @click="cancelNoteFor = null">{{ trans('Back') }}</button>
-                <button :disabled="!cancelNote.trim()" class="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white disabled:opacity-40" @click="confirmCancel">{{ trans('Confirm') }}</button>
+                <button class="px-3 py-1.5 text-sm text-gray-600" @click="cancelNoteFor = null">{{ ctrans('Back') }}</button>
+                <button :disabled="!cancelNote.trim()" class="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white disabled:opacity-40" @click="confirmCancel">{{ ctrans('Confirm') }}</button>
             </div>
         </div>
     </div>

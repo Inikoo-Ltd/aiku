@@ -3514,6 +3514,37 @@ test('engineers and qa see staff tasks but cannot be assigned one', function () 
     \Pest\Laravel\postJson(route('grp.tasks.store'), ['subject' => 'Fix the bug', 'assignee_id' => $engineer->id])->assertUnprocessable();
 });
 
+test('staff tasks are raised from a pasted list with people, departments and due dates', function () {
+    $colleague = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();
+    $department = \App\Models\Tasks\StaffTask::departments($this->organisation->group_id)[0];
+
+    $list = "Task\tWho\tDue\n"
+        ."1. Refresh the banner\t{$department['label']}\t30/10/2026\n"
+        ."- Call the supplier | {$colleague->username} | 2026-11-02\n\n"
+        ."Tidy my desk";
+
+    $rows = \App\Actions\Tasks\StoreStaffTasksFromList::make()->parse($this->user, $list);
+
+    expect(collect($rows)->pluck('subject')->all())->toBe(['Refresh the banner', 'Call the supplier', 'Tidy my desk'])
+        ->and(collect($rows)->pluck('error')->filter()->all())->toBeEmpty()
+        ->and($rows[0]['department'])->toBe($department['value'])
+        ->and($rows[0]['due_at'])->toBe('2026-10-30')
+        ->and($rows[1]['assignee_id'])->toBe($colleague->id)
+        ->and($rows[2]['assignee_id'])->toBe($this->user->id);
+
+    actingAs($this->user);
+    \Pest\Laravel\postJson(route('grp.tasks.import'), ['list' => "Fine\nBroken | nobody-called-this | soon-ish"])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('list');
+
+    $tasks = \App\Actions\Tasks\StoreStaffTasksFromList::run($this->user, $list);
+
+    expect($tasks)->toHaveCount(3)
+        ->and($tasks[0]->department)->toBe($department['value'])
+        ->and($tasks[1]->assignee_id)->toBe($colleague->id)
+        ->and($tasks[1]->due_at->toDateString())->toBe('2026-11-02');
+});
+
 test('inbound gmail message becomes an email chat session and the agent reply goes back through gmail', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
 
