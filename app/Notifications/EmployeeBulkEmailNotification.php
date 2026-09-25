@@ -32,9 +32,9 @@ class EmployeeBulkEmailNotification extends Notification
             ->greeting(__('Hello :name,', ['name' => $this->recipientName]))
             ->line(new HtmlString($this->body));
 
-        if (app()->isProduction()) {
-            $message->mailer('ses')->from('hello@aiku.io', $this->organisationName);
-        }
+        // if (app()->isProduction()) {
+        //     $message->mailer('ses')->from('hello@aiku.io', $this->organisationName);
+        // }
 
         if ($this->replyToEmail) {
             $message->replyTo($this->replyToEmail);
