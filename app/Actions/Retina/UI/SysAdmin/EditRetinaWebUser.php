@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\RetinaAction;
+use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
 use App\Models\CRM\WebUser;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,6 +18,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditRetinaWebUser extends RetinaAction
 {
+    use WithRetinaRouteModelOwnershipCheck;
+
     public function handle(WebUser $webUser): WebUser
     {
         return $webUser;
@@ -24,7 +27,7 @@ class EditRetinaWebUser extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root;
+        return $request->user()->is_root && $this->retinaCustomerOwnsRouteModels($request);
     }
 
     public function asController(WebUser $webUser, ActionRequest $request): WebUser
@@ -103,7 +106,7 @@ class EditRetinaWebUser extends RetinaAction
                                 ]
                             ])
                         ],
-                        [
+                        ...($webUser->is_root ? [] : [[
                             'label'   => __('Delete'),
                             'icon'    => 'fa-light fa-trash',
                             'fields'  => [
@@ -122,7 +125,7 @@ class EditRetinaWebUser extends RetinaAction
                                     ],
                                 ],
                             ]
-                        ]
+                        ]]),
                     ],
                     'args'      => [
                         'updateRoute' => [

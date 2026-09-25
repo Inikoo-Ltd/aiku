@@ -18,6 +18,9 @@ use App\Actions\Fulfilment\Space\StoreSpace;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAudit;
 use App\Actions\Retina\Fulfilment\Pallet\StoreRetinaPalletFromDelivery;
+use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Enums\Billables\Rental\RentalTypeEnum;
@@ -42,6 +45,9 @@ use App\Models\Fulfilment\RentalAgreement;
 use App\Models\Fulfilment\Space;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Fulfilment\StoredItemAudit;
+use Illuminate\Support\Str;
+use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -1230,4 +1236,55 @@ test('logging in flags the browser so the storefront can paint logged in before 
 
     expect($authCookie)->not->toBeNull()
         ->and($authCookie->isHttpOnly())->toBeFalse();
+});
+
+test('only the main user manages the customer web users, and the main user can not be disabled or deleted', function () {
+    $this->webUser->updateQuietly(['is_root' => true, 'status' => true]);
+    $mainUser = $this->webUser;
+
+    $staffUser = StoreRetinaWebUser::make()->action($this->customer, [
+        'username' => 'staff-'.Str::lower(Str::random(6)),
+        'email'    => Str::random(8).'@example.com',
+        'password' => 'secret',
+    ]);
+
+    $otherCustomer = StoreCustomer::make()->action($this->fulfilment->shop, Customer::factory()->definition());
+    $otherWebUser  = StoreWebUser::make()->action($otherCustomer, [
+        'username' => 'other-'.Str::lower(Str::random(6)),
+        'email'    => Str::random(8).'@example.com',
+        'password' => 'secret',
+    ]);
+
+    actingAs($staffUser, 'retina');
+    $this->patch(route('retina.models.web-users.update', $mainUser->id), ['contact_name' => 'Hijacked'])->assertForbidden();
+    $this->delete(route('retina.models.web-users.delete', $mainUser->id))->assertForbidden();
+    expect($mainUser->fresh()->contact_name)->not->toBe('Hijacked');
+
+    actingAs($mainUser, 'retina');
+    $this->get(route('retina.sysadmin.web-users.show', $otherWebUser->slug))->assertForbidden();
+    $this->get(route('retina.sysadmin.web-users.edit', $otherWebUser->slug))->assertForbidden();
+    $this->patch(route('retina.models.web-users.update', $otherWebUser->id), ['status' => false])->assertForbidden();
+    expect($otherWebUser->fresh()->status)->toBeTrue();
+
+    $this->get(route('retina.sysadmin.web-users.edit', $mainUser->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')->count('formData.blueprint', 1));
+    $this->get(route('retina.sysadmin.web-users.edit', $staffUser->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')->count('formData.blueprint', 2));
+
+    $this->patch(route('retina.models.web-users.update', $staffUser->id), ['status' => false])->assertSessionHasNoErrors();
+    expect($staffUser->fresh()->status)->toBeFalse();
+
+    $this->patch(route('retina.models.web-users.update', $mainUser->id), ['status' => false])->assertSessionHasErrors('status');
+    expect($mainUser->fresh()->status)->toBeTrue();
+
+    $this->delete(route('retina.models.web-users.delete', $mainUser->id))->assertSessionHasErrors('web_user');
+    expect(WebUser::find($mainUser->id))->not->toBeNull();
+
+    actingAs($staffUser->fresh(), 'retina');
+    $this->get(route('retina.dashboard.show'))->assertRedirect(route('retina.login.show'));
+    expect(auth('retina')->check())->toBeFalse();
+
+    actingAs($mainUser, 'retina');
+    $this->delete(route('retina.models.web-users.delete', $staffUser->id))->assertRedirect(route('retina.sysadmin.web-users.index'));
+    expect(WebUser::withTrashed()->find($staffUser->id))->toBeNull();
 });
