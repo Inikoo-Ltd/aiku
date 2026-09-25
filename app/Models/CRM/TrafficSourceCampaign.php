@@ -56,6 +56,10 @@ class TrafficSourceCampaign extends Model implements Auditable
      */
     protected array $auditEvents = [];
 
+    protected $attributes = [
+        'state' => GoogleAdsCampaignStateEnum::PUBLISHED_PAUSED->value,
+    ];
+
     protected function casts(): array
     {
         return [

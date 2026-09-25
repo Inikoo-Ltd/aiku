@@ -359,7 +359,9 @@ test('the product web block label info carries the product data in label, show a
         'clp_ghs_pictograms', 'ufi_number', 'safety_icons', 'net_quantity', 'packaging_material_codes',
         'ce_marking', 'ukca_marking', 'weee_symbol', 'ip_rating', 'sorting_recycling_information',
     ])
-        ->and(collect($labelInfo)->every(fn ($item) => array_keys($item) === ['show', 'label', 'value']))->toBeTrue()
+        ->and(collect($labelInfo)->except(['ce_marking', 'weee_symbol'])->every(fn ($item) => array_keys($item) === ['show', 'label', 'value']))->toBeTrue()
+        ->and(array_keys($labelInfo['ce_marking']))->toBe(['show', 'label', 'value', 'mark'])
+        ->and(array_keys($labelInfo['weee_symbol']))->toBe(['show', 'label', 'value', 'mark'])
         ->and($labelInfo['ip_rating'])->toBe(['show' => true, 'label' => 'IP Rating', 'value' => true])
         ->and($labelInfo['batch_number'])->toBe(['show' => true, 'label' => 'Batch Number', 'value' => true])
         ->and($labelInfo['markets'])->toBe(['show' => true, 'label' => 'Markets', 'value' => [['value' => 'uk', 'label' => 'UK']]])
