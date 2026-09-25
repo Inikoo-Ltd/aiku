@@ -1356,6 +1356,47 @@ test('GetAgentUnreadMessagesSummary counts unassigned unread visitor messages', 
         ->and($after['waiting']['email']['live']['sessions'])->toBe($summary['waiting']['email']['live']['sessions'] + 1);
 });
 
+test('customers waiting on WhatsApp link to the WhatsApp conversation, not the bare inbox', function () {
+    $user      = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $chatAgent = ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+    ]);
+
+    makeChatWorker($user, $this->shop);
+
+    $channel         = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $whatsappSession = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+421900000404',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    \App\Models\Chat\MetaChatMessage::create([
+        'meta_chat_session_id' => $whatsappSession->id,
+        'meta_channel_id'      => $channel->id,
+        'message_type'         => ChatMessageTypeEnum::TEXT,
+        'sender_type'          => ChatSenderTypeEnum::GUEST,
+        'message_text'         => 'Hello, is anyone there?',
+        'is_read'              => false,
+        'created_at'           => now()->subMinutes(29),
+        'updated_at'           => now()->subMinutes(29),
+    ]);
+
+    $summary = GetAgentUnreadMessagesSummary::make()->handle($chatAgent);
+
+    expect($summary['waiting']['chat']['live']['url'])
+        ->toBe(route('grp.org.chat.inbox', [$this->organisation->slug, 'channel' => 'whatsapp', 'session' => $whatsappSession->ulid]));
+});
+
 test('a chat list event tells the agent which channel it came from and links to the conversation', function () {
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),

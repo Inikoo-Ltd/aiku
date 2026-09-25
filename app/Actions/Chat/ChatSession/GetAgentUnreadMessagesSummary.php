@@ -237,7 +237,7 @@ class GetAgentUnreadMessagesSummary
 
         return $session instanceof ChatSession
             ? route('grp.org.chat.inbox.conversation', [$organisationSlug, $session->ulid])
-            : route('grp.org.chat.inbox', [$organisationSlug]);
+            : route('grp.org.chat.inbox', [$organisationSlug, 'channel' => 'whatsapp', 'session' => $session->ulid]);
     }
 
     private function emptySummary(): array
