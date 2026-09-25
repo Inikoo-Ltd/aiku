@@ -34,6 +34,9 @@ class DeleteStockDelivery extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
+        if (!$this->asAction && $this->stockDelivery->isManagedByPartner()) {
+            $validator->errors()->add('state', __('This delivery is managed by the partner until you receive it'));
+        }
         if (!in_array($this->stockDelivery->state, self::DELETABLE_STATES, true)) {
             $validator->errors()->add('state', __('You can not delete this stock delivery with state :state', ['state' => $this->stockDelivery->state->value]));
         }

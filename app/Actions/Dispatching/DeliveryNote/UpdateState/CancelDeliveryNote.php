@@ -17,6 +17,7 @@ use App\Actions\Dispatching\PickedBay\Hydrators\PickedBayHydrateNumberDeliveryNo
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote;
+use App\Actions\GoodsIn\StockDelivery\DeleteStockDelivery;
 use App\Actions\Ordering\Order\UpdateState\RollbackOrderAfterDeliveryNoteCancellation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -27,8 +28,10 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
@@ -192,6 +195,13 @@ class CancelDeliveryNote extends OrgAction
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::CANCELLED);
+
+        $partnerStockDelivery = StockDelivery::where('delivery_note_id', $deliveryNote->id)
+            ->where('state', StockDeliveryStateEnum::CONFIRMED)
+            ->first();
+        if ($partnerStockDelivery) {
+            DeleteStockDelivery::make()->action($partnerStockDelivery);
+        }
 
         DeliveryNoteHydrateTrolleys::dispatch($deliveryNote->id);
         DeliveryNoteHydratePickedBays::dispatch($deliveryNote->id);

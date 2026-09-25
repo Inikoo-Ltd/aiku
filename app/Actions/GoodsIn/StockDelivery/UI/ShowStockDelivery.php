@@ -105,9 +105,10 @@ class ShowStockDelivery extends OrgAction
                         'title' => __('Stock Delivery'),
                     ],
                     'afterTitle' => [
-                        'label' => $this->getStateLabels($stockDelivery)[$stockDelivery->state->value],
+                        'label' => $this->getStateLabels($stockDelivery)[$stockDelivery->state->value]
+                            .($stockDelivery->isManagedByPartner() && $stockDelivery->state !== StockDeliveryStateEnum::DISPATCHED ? ' · '.__('Managed by :partner until dispatched', ['partner' => $stockDelivery->parent?->partner?->name]) : ''),
                     ],
-                    'edit'       => $this->canEdit ? [
+                    'edit'       => $this->canEdit && !$stockDelivery->isManagedByPartner() ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                             'parameters' => array_values($request->route()->originalParameters()),
@@ -411,6 +412,12 @@ class ShowStockDelivery extends OrgAction
             ],
             default => [],
         };
+
+        if ($stockDelivery->isManagedByPartner()) {
+            $actions = $stockDelivery->state === StockDeliveryStateEnum::DISPATCHED
+                ? array_values(array_filter($actions, fn (array $action) => $action['key'] === 'receive_stock_delivery'))
+                : [];
+        }
 
         return array_merge($actions, [$pdfButton]);
     }

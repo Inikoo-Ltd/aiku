@@ -108,6 +108,8 @@ use App\Models\Production\JobOrder;
 use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Production\PartnerShippingList\SendPartnerOrderToWarehouse;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
@@ -3877,6 +3879,63 @@ describe('partner shopping list', function () {
             ->and($stockDelivery->items()->first()->state)->toBe(StockDeliveryItemStateEnum::DISPATCHED);
 
         DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
+    });
+
+    test('mirror stock delivery follows a cancelled and resent delivery note', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 6,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+
+        $staleStockDelivery = SendPartnerOrderToWarehouse::make()->action($order);
+        CancelDeliveryNote::make()->action($order->deliveryNotes()->first(), null);
+
+        expect(StockDelivery::find($staleStockDelivery->id))->toBeNull();
+
+        $resentDeliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), [], releaseFromGate: true);
+        foreach ($resentDeliveryNote->deliveryNoteItems as $deliveryNoteItem) {
+            $deliveryNoteItem->update(['quantity_dispatched' => $deliveryNoteItem->quantity_required]);
+        }
+
+        $stockDelivery = SyncPartnerStockDeliveryOnDispatch::run($resentDeliveryNote->refresh());
+
+        expect($stockDelivery)->not->toBeNull()
+            ->and($stockDelivery->delivery_note_id)->toBe($resentDeliveryNote->id)
+            ->and($stockDelivery->state)->toBe(StockDeliveryStateEnum::DISPATCHED)
+            ->and($stockDelivery->items()->first()->org_stock_id)->toBe($this->buyerOrgStock->id);
+
+        DB::table('delivery_note_items')->where('delivery_note_id', $resentDeliveryNote->id)->update(['quantity_dispatched' => 0]);
+    });
+
+    test('buyer can not change a partner stock delivery before the seller dispatches it', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 3,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+
+        $stockDelivery = SendPartnerOrderToWarehouse::make()->action($result['orders'][0]);
+
+        expect($stockDelivery->isManagedByPartner())->toBeTrue();
+
+        actingAs($this->adminGuest->getUser());
+
+        $this->delete(route('grp.models.stock-delivery.delete', $stockDelivery->id))->assertSessionHasErrors('state');
+        $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id))->assertSessionHasErrors('state');
+        $this->patch(route('grp.models.stock-delivery.receive', $stockDelivery->id))->assertSessionHasErrors('state');
+
+        expect($stockDelivery->refresh()->state)->toBe(StockDeliveryStateEnum::CONFIRMED)
+            ->and($stockDelivery->trashed())->toBeFalse();
     });
 
     test('out of stock forecast hydrator fills stats', function () {

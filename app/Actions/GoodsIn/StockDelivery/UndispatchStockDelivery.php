@@ -31,6 +31,9 @@ class UndispatchStockDelivery extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
+        if (!$this->asAction && $this->stockDelivery->isManagedByPartner()) {
+            $validator->errors()->add('state', __('This delivery is managed by the partner until you receive it'));
+        }
         if ($this->stockDelivery->state !== StockDeliveryStateEnum::DISPATCHED) {
             $validator->errors()->add('state', __('You can not unmark this stock delivery as dispatched with state :state', ['state' => $this->stockDelivery->state->value]));
         }

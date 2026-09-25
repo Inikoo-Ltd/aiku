@@ -19,6 +19,7 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
@@ -109,6 +110,10 @@ class UpdateStockDelivery extends OrgAction
 
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
+        if ($stockDelivery->isManagedByPartner()) {
+            throw ValidationException::withMessages(['state' => __('This delivery is managed by the partner until you receive it')]);
+        }
+
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, $request);
 
