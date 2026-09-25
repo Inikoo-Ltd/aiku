@@ -66,6 +66,20 @@ class UpdateTicket extends OrgAction
             StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment, 'images' => $images], isStatusNote: Arr::get($modelData, 'status') !== TicketStatusEnum::ANSWERED->value);
         }
 
+        /* A failed check on a ticket already marked Done sends it back to the assignee: the work
+           is not finished, and a ticket left Closed drops off the board where nobody looks at it
+           again. Only from Done - failing a ticket that is still in progress changes nothing,
+           since it is already where it needs to be - and only when the caller is not setting a
+           status itself, so an explicit choice always wins. Passing and skipping never move a
+           ticket. The status block below does the rest: it clears resolved_at and closed_at and
+           restores started_at, and the usual status notifications go out. */
+        if (Arr::get($modelData, 'qa_status') === TicketQaStatusEnum::FAILED->value
+            && $ticket->status === TicketStatusEnum::RESOLVED
+            && !Arr::exists($modelData, 'status')
+        ) {
+            data_set($modelData, 'status', TicketStatusEnum::IN_PROGRESS->value);
+        }
+
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
             data_set($modelData, 'assigned_at', Arr::get($modelData, 'assignee_id') ? now() : null);
 
@@ -127,6 +141,9 @@ class UpdateTicket extends OrgAction
                 'author_type' => 'User',
                 'author_id'   => $asker->id,
                 'body'        => $qaNote !== '' ? $verdict.': '.$qaNote : $verdict,
+                /* Only a verdict marks the comment. Requesting a check, and withdrawing one,
+                   are ordinary comments: there is nothing to show a badge for yet. */
+                'has_qa_verdict' => $ticket->qa_status?->isVerdict() ? $ticket->qa_status->value : null,
             ])->attachTicketImages($images);
             NotifyTicketUsers::make()->mentioned($ticket, $asker, $qaNote);
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' · '.$verdict);

@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Models\Helpers\Ticket;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
@@ -367,7 +368,7 @@ class GetOrganisationNavigation
                         ],
                     ],
                     [
-                        'label' => __('List'),
+                        'label' => __('Ticket List'),
                         'icon'  => ['fal', 'fa-list'],
                         'root'  => 'grp.org.tickets.list',
                         'route' => [
@@ -375,6 +376,15 @@ class GetOrganisationNavigation
                             'parameters' => [$organisation->slug],
                         ],
                     ],
+                    ...(Ticket::canCheckQa($user) ? [[
+                        'label' => __('QA List'),
+                        'icon'  => ['fal', 'fa-vial'],
+                        'root'  => 'grp.org.tickets.qa_list',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.qa_list',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ]] : []),
                     [
                         'label' => __('Board'),
                         'icon'  => ['fal', 'fa-columns'],

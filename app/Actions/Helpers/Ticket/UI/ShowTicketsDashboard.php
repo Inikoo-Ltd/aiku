@@ -68,6 +68,17 @@ class ShowTicketsDashboard extends OrgAction
             $data['qa_queue'] = $this->qaQueue($group, $user);
         }
 
+        if ($canQa) {
+            $qaBase = fn (): Builder => (clone $base)->visibleTo($user);
+
+            $data['qa_stats'] = [
+                'not_checked' => $qaBase()->whereNull('qa_status')->count(),
+                'passed'      => $qaBase()->where('qa_status', TicketQaStatusEnum::PASSED)->count(),
+                'failed'      => $qaBase()->where('qa_status', TicketQaStatusEnum::FAILED)->count(),
+                'requested'   => $qaBase()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count(),
+            ];
+        }
+
         if ($canManage) {
             $byStatus = $open()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 

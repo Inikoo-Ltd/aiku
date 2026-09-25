@@ -25,6 +25,8 @@ class TicketCommentResource extends JsonResource
             'body'        => $this->body,
             'is_internal' => $this->is_internal,
             'is_lead_only' => $this->is_lead_only,
+            'has_qa_verdict' => $request->routeIs('retina.*') ? null : $this->has_qa_verdict?->value,
+            'qa_verdict_label' => $request->routeIs('retina.*') ? null : $this->has_qa_verdict?->shortLabel(),
             'can_toggle_visibility' => $request->user() instanceof \App\Models\SysAdmin\User && \App\Models\Helpers\Ticket::canBeAssignedBy($request->user()),
             'is_staff'    => $this->author_type === 'User',
             'author'        => $this->author?->contact_name ?: $this->author?->username,

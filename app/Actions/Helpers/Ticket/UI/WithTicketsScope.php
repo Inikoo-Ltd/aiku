@@ -56,7 +56,7 @@ trait WithTicketsScope
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $this->ticketsRoute('list'),
-                        'label' => __('List'),
+                        'label' => __('Ticket List'),
                     ],
                 ],
             ]
