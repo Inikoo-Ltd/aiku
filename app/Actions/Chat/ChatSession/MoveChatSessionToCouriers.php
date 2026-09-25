@@ -104,7 +104,7 @@ class MoveChatSessionToCouriers
             && !in_array($domain, SuggestChatSessionCustomer::FREE_MAIL_DOMAINS, true);
     }
 
-    public function userMayMove(?User $user, ChatSession $chatSession): bool
+    public function userMayMove(mixed $user, ChatSession $chatSession): bool
     {
         return $user instanceof User
             && self::canBeMoved($chatSession)

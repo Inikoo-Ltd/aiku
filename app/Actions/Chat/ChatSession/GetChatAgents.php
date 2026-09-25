@@ -23,8 +23,7 @@ class GetChatAgents
     /**
      * Who a conversation can be handed to: the shops somebody works come from the chat
      * permission their customer service position grants, not from the shop assignment
-     * table that used to carry it. Managers are left out on purpose, since a chat is
-     * handed to somebody who answers them rather than to somebody who oversees them.
+     * table that used to carry it.
      */
     public function handle(): array
     {

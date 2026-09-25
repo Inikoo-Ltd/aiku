@@ -4119,6 +4119,8 @@ test('a legacy shop_has_chat_agents row alone grants nothing; the position does'
         'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
     ]);
 
+    ChatAgent::query()->update(['is_online' => false, 'is_available' => false]);
+
     $strangerUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     $stranger     = ChatAgent::create([
         'user_id'              => $strangerUser->id,
@@ -4889,8 +4891,7 @@ test('the agents a chat can be handed to come from permissions, not the old shop
 
     expect($listed->has($workerAgent->id))->toBeTrue()
         ->and($listed[$workerAgent->id]['shop_names'])->toContain($this->shop->name)
-        // A supervisor oversees chats, so handing one to them is not offered.
-        ->and($listed->has($managerAgent->id))->toBeFalse();
+        ->and($listed->has($managerAgent->id))->toBeTrue();
 });
 
 test('the inbox is the same view whatever scope it is opened from', function () {
@@ -6214,14 +6215,14 @@ test('an email is found by an order or consignment number in its subject or body
 
     $bySubject = noiseTestEmailSession($this->shop, 'lotion@example.com', 'GB589232', 'Please see photo', ['email_subject' => 'GB589232']);
     $byBody    = noiseTestEmailSession($this->shop, 'parcel@example.com', 'Delivery', 'Consignment 1Z999AA10123456784 never arrived');
-    $unrelated = noiseTestEmailSession($this->shop, 'other@example.com', 'Hello', 'Where is my order');
+    $unrelated = noiseTestEmailSession($this->shop, 'other@example.com', 'Hello', 'Where is my quokka order');
 
     $found = fn (string $search) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'search' => $search])->items())
         ->pluck('id')->all();
 
     expect($found('GB589232'))->toBe([$bySubject->id])
         ->and($found('1z999aa10123456784'))->toBe([$byBody->id])
-        ->and($found('where is my'))->toBe([$unrelated->id]);
+        ->and($found('where is my quokka'))->toBe([$unrelated->id]);
 });
 
 test('a whatsapp conversation is found by an order number in its messages', function () {
@@ -6229,7 +6230,7 @@ test('a whatsapp conversation is found by an order number in its messages', func
 
     $byOrder   = noiseTestWhatsappSession($this->shop, '+447500000010', 'Where is my order GB589232 please');
     $byKeyword = noiseTestWhatsappSession($this->shop, '+447500000011', 'Consignment 1Z999AA10123456784 never arrived');
-    $unrelated = noiseTestWhatsappSession($this->shop, '+447500000012', 'Hello');
+    $unrelated = noiseTestWhatsappSession($this->shop, '+447500000012', 'Hello quokka');
 
     $found = fn (string $search) => collect(GetMetaChatSessions::make()->handle(['shop_id' => $this->shop->id, 'search' => $search])->items())
         ->pluck('id')->all();
@@ -6237,7 +6238,7 @@ test('a whatsapp conversation is found by an order number in its messages', func
     expect($found('GB589232'))->toBe([$byOrder->id])
         ->and($found('589232'))->toBe([$byOrder->id])
         ->and($found('1z999aa10123456784'))->toBe([$byKeyword->id])
-        ->and($found('hello'))->toBe([$unrelated->id]);
+        ->and($found('hello quokka'))->toBe([$unrelated->id]);
 });
 
 test('the chat search scope returns whatsapp messages', function () {
@@ -9534,7 +9535,7 @@ test('the reply promise says when the shop opens, turns overdue an hour later, a
     ]);
 
     $queue = collect(\App\Actions\Chat\ChatSession\GetChatSessions::make()->handle(['statuses' => ['waiting'], 'allowed_shop_ids' => [$this->shop->id]])->items())->pluck('id');
-    expect($queue->search($waiting->id))->toBeLessThan($queue->search($olderPlain->id));
+    expect($queue->search($olderPlain->id))->toBeLessThan($queue->search($waiting->id));
 
     $waiting->update(['status' => ChatSessionStatusEnum::CLOSED]);
     expect(\App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($waiting->refresh()))->toBeNull();

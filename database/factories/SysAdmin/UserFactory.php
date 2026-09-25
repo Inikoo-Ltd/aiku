@@ -10,6 +10,7 @@ namespace Database\Factories\SysAdmin;
 
 use App\Models\SysAdmin\Group;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class UserFactory extends Factory
 {
@@ -17,7 +18,7 @@ class UserFactory extends Factory
     {
         return [
             'group_id'   => Group::factory(),
-            'username'   => fake()->unique()->userName,
+            'username'   => fake()->unique()->userName.'.'.Str::lower(Str::random(6)),
             'password'   => 'password',
             'email'      => fake()->email,
             'language_id' => 1,
