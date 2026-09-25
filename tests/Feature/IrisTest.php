@@ -17,6 +17,47 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Actions\CRM\Customer\StoreCustomer;
+use App\Models\Accounting\Invoice;
+use App\Models\CRM\Customer;
+use App\Models\Helpers\Media;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+use function Pest\Laravel\actingAs;
+
+function createAttachedMedia(string $modelType, int $modelId, string $scope): Media
+{
+    $media = Media::create([
+        'group_id'              => test()->organisation->group_id,
+        'ulid'                  => (string) Str::ulid(),
+        'uuid'                  => (string) Str::uuid(),
+        'name'                  => $scope,
+        'file_name'             => $scope.'.txt',
+        'mime_type'             => 'text/plain',
+        'disk'                  => 'local',
+        'collection_name'       => 'attachment',
+        'size'                  => 4,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    @mkdir(dirname($media->getPath()), 0777, true);
+    file_put_contents($media->getPath(), 'data');
+
+    DB::table('model_has_attachments')->insert([
+        'group_id'   => $media->group_id,
+        'model_type' => $modelType,
+        'model_id'   => $modelId,
+        'media_id'   => $media->id,
+        'scope'      => $scope,
+        'data'       => '{}',
+    ]);
+
+    return $media;
+}
 
 beforeEach(function () {
     loadDB();
@@ -415,4 +456,66 @@ test('iris streams a product ingredients label pdf only for its own shop product
     $otherShop = createOwnShop('ingredients-label-other-shop')[2];
     $product->updateQuietly(['shop_id' => $otherShop->id]);
     $this->get($url)->assertNotFound();
+});
+
+test('iris attachment routes only serve public product documents and labeling guides', function () {
+    Storage::fake('local');
+    [, $product] = createProduct($this->shop);
+    $customer    = createCustomer($this->shop);
+    $baseUrl     = 'http://'.$this->website->domain.'/attachment/';
+
+    $productSds       = createAttachedMedia('Product', $product->id, 'sds');
+    $tradeUnitIfra    = createAttachedMedia('TradeUnit', 1, 'ifra');
+    $labelingGuide    = createAttachedMedia('TradeUnitFamily', 1, 'labeling_guide');
+    $privateSds       = createAttachedMedia('TradeUnit', 1, 'sds_private');
+    $employeeContract = createAttachedMedia('Employee', 1, 'Contract');
+    $customerNote     = createAttachedMedia('Customer', $customer->id, 'CustomerNote');
+
+    foreach ([$productSds, $tradeUnitIfra, $labelingGuide] as $media) {
+        $this->get($baseUrl.$media->ulid)->assertOk();
+        $this->get($baseUrl.$media->ulid.'/download')->assertOk();
+    }
+
+    foreach ([$privateSds, $employeeContract, $customerNote] as $media) {
+        $this->get($baseUrl.$media->ulid)->assertNotFound();
+        $this->get($baseUrl.$media->ulid.'/download')->assertNotFound();
+    }
+});
+
+test('retina attachment download serves public documents and the customer own order files only', function () {
+    Storage::fake('local');
+    [, $product]   = createProduct($this->shop);
+    $customer      = createCustomer($this->shop);
+    $otherCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $webUser       = createWebUser($customer);
+
+    $order      = createOrder($customer, $product);
+    $orderFile  = createAttachedMedia('Order', $order->id, 'Other');
+    $productSds = createAttachedMedia('Product', $product->id, 'sds');
+    $employeeCv = createAttachedMedia('Employee', 1, 'CV');
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    actingAs($webUser, 'retina');
+
+    $this->get(route('retina.models.attachment.download', $orderFile->ulid))->assertOk();
+    $this->get(route('retina.models.attachment.download', $productSds->ulid))->assertOk();
+    $this->get(route('retina.models.attachment.download', $employeeCv->ulid))->assertNotFound();
+
+    $order->updateQuietly(['customer_id' => $otherCustomer->id]);
+    $this->get(route('retina.models.attachment.download', $orderFile->ulid))->assertNotFound();
+
+    $order->updateQuietly(['customer_id' => $customer->id]);
+});
+
+test('iris invoice pdf is not served on another shop website', function () {
+    $customer = createCustomer($this->shop);
+    createInvoiceFor($customer, $this->shop, now()->toDateString(), 10);
+    $invoice = Invoice::where('customer_id', $customer->id)->latest('id')->first();
+    $invoice->updateQuietly(['ulid' => (string) Str::ulid()]);
+
+    $otherWebsite = createWebsite(createOwnShop('iris-invoice-other-shop')[2]);
+    $otherWebsite->update(['status' => true]);
+
+    $this->get('http://'.$otherWebsite->domain.'/invoice/'.$invoice->ulid)->assertNotFound();
+    $this->get('http://'.$this->website->domain.'/invoice/'.$invoice->ulid)->assertOk();
 });

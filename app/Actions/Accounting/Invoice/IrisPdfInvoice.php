@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithExportData;
 use App\Models\Accounting\Invoice;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,8 +30,12 @@ class IrisPdfInvoice extends OrgAction
     }
 
 
-    public function asController(Invoice $invoice): Response
+    public function asController(Invoice $invoice, ActionRequest $request): Response
     {
+        if ($invoice->shop_id !== $request->input('website')?->shop_id) {
+            abort(404);
+        }
+
         return $this->handle($invoice);
     }
 }
