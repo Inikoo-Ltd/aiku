@@ -577,6 +577,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('allegro:update-inventory')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'UpdateInventoryInAllegroPortfolio',
+                ),
+                name: 'UpdateInventoryInAllegroPortfolio',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('wix:update-inventory')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateInventoryInWixPortfolio',
                 ),
