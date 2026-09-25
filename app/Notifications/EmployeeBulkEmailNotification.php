@@ -33,7 +33,7 @@ class EmployeeBulkEmailNotification extends Notification
             ->line(new HtmlString($this->body));
 
         if (app()->isProduction()) {
-            $message->mailer('ses')->from('help@aiku.io', $this->organisationName);
+            $message->mailer('ses')->from('hello@aiku.io', $this->organisationName);
         }
 
         if ($this->replyToEmail) {
