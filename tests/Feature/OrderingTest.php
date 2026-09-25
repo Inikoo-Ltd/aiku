@@ -229,6 +229,7 @@ beforeEach(function () {
 
 afterEach(function () {
     $this->shop->update(['shipping_zone_schema_id' => null]);
+    $this->organisation->update(['settings' => Arr::except($this->organisation->settings, 'fulfilment_gate')]);
 });
 
 test('store shipping country action', function () {
@@ -3395,8 +3396,7 @@ test('a part paid order that fails to submit is alerted, an unpaid one is not', 
 });
 
 test('fulfilment gate holds order from warehouse until released', function () {
-    $settings = $this->organisation->settings ?? [];
-    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
@@ -3425,13 +3425,10 @@ test('fulfilment gate holds order from warehouse until released', function () {
         ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
         ->and($order->at_gate_at)->toBeNull()
         ->and(\App\Models\Dispatching\FulfilmentGateRelease::where('order_id', $order->id)->count())->toBe(1);
-
-    $this->organisation->update(['settings' => $settings]);
 });
 
 test('fulfilment gate lets paid fully coverable order straight to warehouse', function () {
-    $settings = $this->organisation->settings ?? [];
-    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
@@ -3459,12 +3456,10 @@ test('fulfilment gate lets paid fully coverable order straight to warehouse', fu
         ->and($order->at_gate_at)->toBeNull();
 
     $this->product->orgStocks()->update(['quantity_available' => 0]);
-    $this->organisation->update(['settings' => $settings]);
 });
 
 test('fulfilment gate auto releases paid order when stock arrives', function () {
-    $settings = $this->organisation->settings ?? [];
-    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
@@ -3499,12 +3494,10 @@ test('fulfilment gate auto releases paid order when stock arrives', function () 
         ->and($order->deliveryNotes()->count())->toBe(1);
 
     $this->product->orgStocks()->update(['quantity_available' => 0]);
-    $this->organisation->update(['settings' => $settings]);
 });
 
 test('make queue ranks paid blocked stock with suggested quantity', function () {
-    $settings = $this->organisation->settings ?? [];
-    $this->organisation->update(['settings' => array_merge($settings, ['fulfilment_gate' => true])]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 
     $modelData = Order::factory()->definition();
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
@@ -3543,8 +3536,6 @@ test('make queue ranks paid blocked stock with suggested quantity', function () 
         ->and((float) $row->blocked_paid_amount)->toBe(250.0)
         ->and((int) $row->suggested_quantity)->toBeGreaterThanOrEqual(5)
         ->and((float) $row->score)->toBeGreaterThan(0);
-
-    $this->organisation->update(['settings' => $settings]);
 });
 
 test('repair order charge flags sets premium flag from orphan charge line', function (Order $order) {
