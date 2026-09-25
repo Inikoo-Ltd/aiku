@@ -323,7 +323,6 @@ onMounted(() => {
     webpageData: props.webpageData ?? injectedWebpageData,
     currencyCode: layout?.iris?.currency?.code,
     websiteName: layout?.iris?.website?.name,
-    showPrice: Boolean(layout?.iris?.is_logged_in),
   })
 
   fetchVariantProducts()

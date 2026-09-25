@@ -19,7 +19,6 @@ type GenerateProductsStructureOptions = {
     webBlocks?: any[] | Record<string, any>
     categoryName?: string | null
     currencyCode?: string | null
-    showPrice?: boolean
 }
 
 type BuildStructuredDataOptions = {
@@ -27,7 +26,6 @@ type BuildStructuredDataOptions = {
     webBlocks?: any[] | Record<string, any>
     currencyCode?: string | null
     websiteName?: string | null
-    showPrice?: boolean
 }
 
 const PRODUCT_BLOCK_TYPES = ["products-1", "products-2"]  // Family page
@@ -91,7 +89,6 @@ export const generateProductsStructureFromProductsList = ({
     webBlocks,
     categoryName,
     currencyCode,
-    showPrice = true,
 }: GenerateProductsStructureOptions): StructuredDataNode[] => {
     const variants: StructuredDataNode[] = []
 
@@ -147,7 +144,7 @@ export const generateProductsStructureFromProductsList = ({
                 }
             }
 
-            if (showPrice && product.price) {
+            if (product.price) {
                 variant.offers = {
                     "@type": "Offer",
                     price: product.price,
@@ -448,7 +445,6 @@ export const buildStructuredData = ({
     webBlocks,
     currencyCode,
     websiteName,
-    showPrice = true,
 }: BuildStructuredDataOptions): StructuredDataValue | null => {
     if (webpageData?.model_type === "ProductCategory" && webpageData?.sub_type === "family") {
         const baseStructuredData = parseStructuredData(webpageData?.seo_data?.structured_data)
@@ -457,7 +453,6 @@ export const buildStructuredData = ({
             webBlocks,
             categoryName: webpageData?.title ?? null,
             currencyCode,
-            showPrice,
         })
     
         if (!autoVariants.length) {
