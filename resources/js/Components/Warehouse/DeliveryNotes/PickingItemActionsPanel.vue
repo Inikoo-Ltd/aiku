@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInventory, faClipboardListCheck, faDebug } from "@fal"
 import { computed, inject, ref } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -107,7 +107,7 @@ const errors = ref<string[]>([])
 
                     <!-- Stock count -->
                     <span
-                        v-tooltip="trans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(currentLocation?.quantity || 0), stockLocation: currentLocation?.location_code || '' })"
+                        v-tooltip="ctrans(':stockAvailable stock available on location :stockLocation', { stockAvailable: locale.number(currentLocation?.quantity || 0), stockLocation: currentLocation?.location_code || '' })"
                         class="align-middle whitespace-nowrap text-base py-0.5 tabular-nums border-gray-300 rounded"
                     >
                         (<span class="text-lg font-bold">
@@ -145,8 +145,8 @@ const errors = ref<string[]>([])
                     step: 1,
                     min: 0,
                     max: Math.min(
-                        Number(currentLocation?.quantity),
-                        Number(item.quantity_waiting_warehouse) + Number(currentLocation?.quantity_picked)
+                        Number(currentLocation?.quantity) + Number(currentLocation?.quantity_picked ?? 0),
+                        Number(item.quantity_waiting_warehouse) + Number(currentLocation?.quantity_picked ?? 0)
                     ),
                 }"
                 :additionalData="{
@@ -161,8 +161,8 @@ const errors = ref<string[]>([])
                     <div class="flex gap-x-8 w-fit">
                         <ButtonWithLink
                             v-tooltip="hasEnoughStockToPickAll
-                                ? trans('Pick all required quantity in location :xlocation', { xlocation: currentLocation.location_code || '-' })
-                                : trans('Not enough stock in location :xlocation to pick all :xrequired required', { xlocation: currentLocation.location_code || '-', xrequired: locale.number(item.quantity_waiting_warehouse ?? 0) })"
+                                ? ctrans('Pick all required quantity in location :xlocation', { xlocation: currentLocation.location_code || '-' })
+                                : ctrans('Not enough stock in location :xlocation to pick all :xrequired required', { xlocation: currentLocation.location_code || '-', xrequired: locale.number(item.quantity_waiting_warehouse ?? 0) })"
                             icon="fal fa-clipboard-list-check"
                             :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
                             type="secondary"
@@ -200,7 +200,7 @@ const errors = ref<string[]>([])
                     parameters: { deliveryNoteItem: item.id },
                 }"
                 :bindToLink="{ preserveScroll: true }"
-                v-tooltip="trans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(item.quantity_waiting_warehouse) || '0' })"
+                v-tooltip="ctrans('Set :numberNotPicked as not picked', { numberNotPicked: locale.number(item.quantity_waiting_warehouse) || '0' })"
             >
                 <template #label>
                     <FractionDisplayFE
@@ -216,19 +216,19 @@ const errors = ref<string[]>([])
             <Button
                 @click="isOpenModalPassToCs = true"
                 icon="fal fa-user-headset"
-                :label="waitingWarehouseInUnitsOverPack ? undefined : trans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: String(Number(item.quantity_waiting_warehouse)) })"
+                :label="waitingWarehouseInUnitsOverPack ? undefined : ctrans('Pass :qtyInWarehouse to CS', { qtyInWarehouse: String(Number(item.quantity_waiting_warehouse)) })"
                 :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
                 type="tertiary"
                 class="!bg-purple-300 hover:!bg-purple-400/80 !text-purple-700 !border-purple-400 !py-2"
             >
                 <template v-if="waitingWarehouseInUnitsOverPack" #label>
                     <span class="inline-flex items-center gap-x-1">
-                        {{ trans('Pass') }}
+                        {{ ctrans('Pass') }}
                         <FractionDisplayFE
                             :numerator="waitingWarehouseInUnitsOverPack.numerator"
                             :denominator="waitingWarehouseInUnitsOverPack.denominator"
                         />
-                        {{ trans('to CS') }}
+                        {{ ctrans('to CS') }}
                     </span>
                 </template>
             </Button>

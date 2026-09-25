@@ -8,7 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStockMovement;
 
-use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\AddToLocationOrgStockQuantity;
 use App\Actions\Inventory\OrgStockMovement\Traits\WithOrgStockMovementHydrator;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -29,15 +29,8 @@ class DeleteOrgStockMovement extends OrgAction
             ->first();
 
         if ($locationOrgStock !== null) {
-            $runningQuantity = $locationOrgStock->quantity - $orgStockMovement->quantity;
+            $runningQuantity = AddToLocationOrgStockQuantity::run($locationOrgStock, -(float)$orgStockMovement->quantity);
 
-
-            UpdateLocationOrgStock::run(
-                $locationOrgStock,
-                [
-                    'quantity' => $runningQuantity
-                ]
-            );
             $runningQuantityOrg = DB::table('location_org_stocks')
                 ->where('org_stock_id', $orgStockMovement->org_stock_id)->sum('quantity');
 

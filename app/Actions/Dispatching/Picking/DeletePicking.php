@@ -28,10 +28,10 @@ class DeletePicking extends OrgAction
     {
         $deliveryNoteItem = $picking->deliveryNoteItem;
 
-        $orgStockMovement = $picking->orgStockMovement;
-
-        $deliveryNoteItem = DB::transaction(function () use ($picking, $orgStockMovement, $deliveryNoteItem, $user) {
-            $quantity = $picking->quantity;
+        $deliveryNoteItem = DB::transaction(function () use ($picking, $deliveryNoteItem, $user) {
+            $picking          = Picking::lockForUpdate()->findOrFail($picking->id);
+            $orgStockMovement = $picking->orgStockMovement;
+            $quantity         = $picking->quantity;
 
             if ($orgStockMovement) {
                 $location           = $orgStockMovement->location;

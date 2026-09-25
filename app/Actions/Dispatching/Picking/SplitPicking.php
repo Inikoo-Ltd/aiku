@@ -4,6 +4,7 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
+use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Dispatching\Picking;
@@ -23,6 +24,7 @@ class SplitPicking extends OrgAction
     public function handle(Picking $picking, float $splitQuantity): Picking
     {
         return DB::transaction(function () use ($picking, $splitQuantity): Picking {
+            $picking     = Picking::lockForUpdate()->findOrFail($picking->id);
             $originalQty = (float) $picking->quantity;
             $newOriginalQty = $originalQty - $splitQuantity;
 
@@ -36,11 +38,14 @@ class SplitPicking extends OrgAction
                 $perUnitCost      = $originalQuantity != 0.0 ? abs((float) $originalMovement->org_amount / $originalQuantity) : 0.0;
                 $grpRatio         = (float) $originalMovement->org_amount != 0.0 ? (float) $originalMovement->grp_amount / (float) $originalMovement->org_amount : 1.0;
 
-                $originalMovement->update([
-                    'quantity'   => -$newOriginalQty,
-                    'org_amount' => round(-$newOriginalQty * $perUnitCost, 3),
-                    'grp_amount' => round(-$newOriginalQty * $perUnitCost * $grpRatio, 3),
-                ]);
+                UpdateOrgStockMovement::make()->action(
+                    $originalMovement,
+                    [
+                        'quantity'   => -$newOriginalQty,
+                        'org_amount' => round(-$newOriginalQty * $perUnitCost, 3),
+                    ],
+                    strict: false
+                );
 
                 $newMovement = StoreOrgStockMovement::run(
                     $picking->orgStock,
@@ -64,6 +69,10 @@ class SplitPicking extends OrgAction
                 $newPicking->org_stock_movement_id = null;
             }
             $newPicking->save();
+
+            if ($originalMovement === null) {
+                StorePickingOrgStockMovement::dispatch($newPicking->id, $this->user?->id)->afterCommit();
+            }
 
             if (app()->environment('production')) {
                 SavePickingInAurora::dispatch($picking);

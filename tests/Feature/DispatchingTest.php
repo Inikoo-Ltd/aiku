@@ -2514,6 +2514,63 @@ test('picking upsert from waiting warehouse', function () {
     expect($item->refresh()->pickings()->exists())->toBeTrue();
 });
 
+test('lowering a pick from the waiting warehouse panel puts the difference back on the shelf', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+
+    expect((float)$locationOrgStock->quantity)->toBe(94.0);
+
+    $item->update(['state' => DeliveryNoteItemStateEnum::HANDLING_BLOCKED, 'quantity_waiting_warehouse' => 4, 'locked_at' => null]);
+
+    \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, [
+        'quantity'              => 2,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'picking_id'            => $picking->id,
+    ]);
+
+    $locationOrgStock->refresh();
+    expect((float)$picking->refresh()->quantity)->toBe(2.0)
+        ->and((float)$picking->orgStockMovement->quantity)->toBe(-2.0)
+        ->and((float)$locationOrgStock->quantity)->toBe(98.0);
+});
+
+test('a pick edited or deleted before its queued movement runs is taken off the shelf as it ends up', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+
+    $movement = $picking->orgStockMovement;
+    $picking->update(['org_stock_movement_id' => null]);
+    \App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement::make()->action($movement);
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(100.0);
+
+    \App\Actions\Dispatching\Picking\UpdatePicking::make()->action($picking->refresh(), ['quantity' => 4]);
+    \App\Actions\Dispatching\Picking\StorePickingOrgStockMovement::run($picking->id, $this->user->id);
+    \App\Actions\Dispatching\Picking\StorePickingOrgStockMovement::run($picking->id, $this->user->id);
+
+    expect((float)$picking->refresh()->orgStockMovement->quantity)->toBe(-4.0)
+        ->and($picking->orgStock->orgStockMovements()->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PICKED)->count())->toBe(1)
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBe(96.0);
+
+    \App\Actions\Dispatching\Picking\SplitPicking::make()->handle($picking->refresh(), 1);
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(96.0)
+        ->and((float)$picking->refresh()->orgStockMovement->quantity)->toBe(-3.0);
+
+    $pendingPickingId = $picking->id;
+    $movement = $picking->orgStockMovement;
+    $picking->update(['org_stock_movement_id' => null]);
+    \App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement::make()->action($movement);
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
+    \App\Actions\Dispatching\Picking\StorePickingOrgStockMovement::run($pendingPickingId, $this->user->id);
+
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(99.0);
+});
+
 test('picking and delivery note item repairs and reindex', function () {
     $pickingRepairs = \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(true);
     $itemRepairs    = \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(true);

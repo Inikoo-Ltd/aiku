@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStockMovement;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Inventory\LocationOrgStock\AddToLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\CalculateValueLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
@@ -111,15 +112,7 @@ class StoreOrgStockMovement extends OrgAction
 
         if ($locationOrgStock) {
             if ($this->strict) {
-                $runningQuantity = $locationOrgStock->quantity + $orgStockMovement->quantity;
-
-                UpdateLocationOrgStock::run(
-                    $locationOrgStock,
-                    [
-                        'quantity' => $runningQuantity,
-                    ]
-                );
-                //here we need to do this:
+                $runningQuantity = AddToLocationOrgStockQuantity::run($locationOrgStock, (float)$orgStockMovement->quantity);
 
                 $runningQuantityOrg = DB::table('location_org_stocks')
                     ->where('org_stock_id', $orgStock->id)->sum('quantity');

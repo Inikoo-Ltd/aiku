@@ -28,6 +28,8 @@ class UpdateLocationOrgStock extends OrgAction
 
     private LocationOrgStock $locationOrgStock;
 
+    private bool $fromRequest = false;
+
 
     public function handle(LocationOrgStock $locationOrgStock, array $modelData): LocationOrgStock
     {
@@ -94,7 +96,6 @@ class UpdateLocationOrgStock extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'quantity'                          => ['sometimes', 'numeric'],
             'data'                              => ['sometimes', 'array'],
             'settings'                          => ['sometimes', 'array'],
             'notes'                             => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -106,6 +107,10 @@ class UpdateLocationOrgStock extends OrgAction
             'set_as_priority_dropshipping'      => ['sometimes', 'boolean'],
             'set_as_priority_wholesale'         => ['sometimes', 'boolean'],
         ];
+
+        if (!$this->fromRequest) {
+            $rules['quantity'] = ['sometimes', 'numeric'];
+        }
 
         if (!$this->strict) {
             $rules['audited_at']      = ['date'];
@@ -134,6 +139,7 @@ class UpdateLocationOrgStock extends OrgAction
 
     public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): LocationOrgStock
     {
+        $this->fromRequest      = true;
         $this->asAction         = true;
         $this->locationOrgStock = $locationOrgStock;
         $this->initialisation($locationOrgStock->organisation, $request);

@@ -21,6 +21,7 @@ use App\Models\Dispatching\Picking;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -43,12 +44,32 @@ class UpdatePicking extends OrgAction
     {
         $this->user ??= $user;
 
-        $oldQuantity = $picking->quantity;
-        $oldType = $picking->type;
-
         if (Arr::has($modelData, 'quantity') && Arr::get($modelData, 'quantity') == 0) {
             return DeletePicking::make()->action($picking, $this->user);
         }
+
+        $picking = DB::transaction(fn () => $this->updatePickingAndItsMovement($picking, $modelData));
+
+        /** @var DeliveryNoteItem $deliveryNoteItem */
+        $deliveryNoteItem = $picking->deliveryNoteItem;
+
+
+        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+
+        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
+
+        return $picking;
+    }
+
+    /**
+     * The pick row is locked so this cannot interleave with StorePickingOrgStockMovement: either
+     * the movement exists and is moved to the new quantity, or the queued job has not run yet
+     * and will read the new quantity itself.
+     */
+    private function updatePickingAndItsMovement(Picking $picking, array $modelData): Picking
+    {
+        $picking     = Picking::lockForUpdate()->findOrFail($picking->id);
+        $oldQuantity = $picking->quantity;
 
         if (Arr::has($modelData, 'quantity') && in_array($picking->type, [PickingTypeEnum::PICK, PickingTypeEnum::MAGIC_PICK], true)) {
             $deliveryNoteItemForClamp = $picking->deliveryNoteItem;
@@ -68,32 +89,19 @@ class UpdatePicking extends OrgAction
         $picking = $this->update($picking, $modelData);
 
 
-        if ($picking->orgStockMovement) {
-
-            if ($oldQuantity != $picking->quantity) {
-                UpdateOrgStockMovement::make()->action($picking->orgStockMovement, [
-                    'quantity' => -($picking->quantity),
-                ]);
-            }
-
+        if ($picking->orgStockMovement && $oldQuantity != $picking->quantity) {
+            UpdateOrgStockMovement::make()->action($picking->orgStockMovement, [
+                'quantity' => -($picking->quantity),
+            ]);
         }
-
-
-        /** @var DeliveryNoteItem $deliveryNoteItem */
-        $deliveryNoteItem = $picking->deliveryNoteItem;
-
-
-        CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
-
-        $this->ignoreZeroQuantityItems($deliveryNoteItem->deliveryNote, $this->user);
 
         return $picking;
     }
 
     /**
-     * What this picking can be raised to without sending the location negative. The location
-     * already has this picking's current quantity taken out of it, so that amount is headroom
-     * the picking gets to keep.
+     * What this picking can be raised to without sending the location negative. Once its
+     * movement is stored the location already has this picking's quantity taken out of it, so
+     * that amount is headroom the picking gets to keep; before that it is not.
      */
     private function quantityAvailableInLocation(Picking $picking): float
     {
@@ -103,6 +111,10 @@ class UpdatePicking extends OrgAction
 
         if (!$locationOrgStock) {
             return (float)$picking->quantity;
+        }
+
+        if (!$picking->org_stock_movement_id) {
+            return (float)$locationOrgStock->quantity;
         }
 
         return (float)$locationOrgStock->quantity + (float)$picking->quantity;
