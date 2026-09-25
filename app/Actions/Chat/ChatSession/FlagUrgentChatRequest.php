@@ -8,6 +8,8 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Actions\Chat\MetaChatSession\CloseMetaChatSession;
+use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
@@ -56,6 +58,8 @@ class FlagUrgentChatRequest
 
     private const string ADDRESS_WORDS = '/(\b(change|update|wrong|new|different|correct)\b.{0,40}\baddress|\baddress\b.{0,40}\b(change|wrong|incorrect|update)|adresse\b.{0,40}\b(ändern|änderung|falsch|changer|modifier)|(ändern|changer|modifier)\b.{0,40}\badresse|direcci[oó]n|indirizzo|adres[ay]?\b.{0,40}\b(zmen|změn|zmian|wijzig)|(zmen|změn|zmian|wijzig)\w*\b.{0,40}\badres|c[ií]mv[aá]ltoz)/iu';
 
+    private const string OPEN_PROMISE_WORDS = "/\\b(i|we)(['’]ll| will| am going| are going| have asked)\\b|one moment|few minutes|\\barrange|\\bwaiting for\\b/iu";
+
     public function handle(ChatSession|MetaChatSession $chatSession): ?string
     {
         if ($chatSession->status === ChatSessionStatusEnum::CLOSED) {
@@ -72,7 +76,7 @@ class FlagUrgentChatRequest
         $assessment = $this->assess($text, $weSaid, $isDropship);
         $request    = $assessment['request'];
 
-        if ($assessment['only_thanks'] && $this->mayCloseAfterThanks($chatSession) && $this->assess($text, $weSaid)['only_thanks']) {
+        if ($assessment['only_thanks'] && $this->mayCloseAfterThanks($chatSession, $text, $weSaid) && $this->assess($text, $weSaid)['only_thanks']) {
             $this->closeAfterThanks($chatSession);
 
             return null;
@@ -99,28 +103,37 @@ class FlagUrgentChatRequest
     /**
      * A thanks needs no agent, but only once we have answered, with nothing attached and no
      * ticket still open on it: a first message that only says thanks is somebody we have not
-     * heard yet. Email and website only; a new message reopens the conversation. The model is
-     * asked twice and both must agree: on real replies one answer was not steady enough on the
-     * few that mattered.
+     * heard yet. A reply of only emoji is not read as thanks, and on WhatsApp neither is a
+     * sticker, voice note, location, contact or button tap, although those arrive as text.
+     * A question mark, or our last message promising something or asking them to wait, keeps
+     * it open whatever the model says: on real WhatsApp replies it missed both now and then.
+     * A new message reopens the conversation. The model is asked twice and both must agree:
+     * on real replies one answer was not steady enough on the few that mattered.
      */
-    private function mayCloseAfterThanks(ChatSession|MetaChatSession $chatSession): bool
+    private function mayCloseAfterThanks(ChatSession|MetaChatSession $chatSession, string $text, string $weSaid): bool
     {
         return config('chat.close_after_thanks')
-            && $chatSession instanceof ChatSession
+            && preg_match('/[\p{L}\p{N}]/u', $text)
+            && !str_contains($text, '?')
+            && !preg_match(self::OPEN_PROMISE_WORDS, $weSaid)
             && $chatSession->last_agent_message_at
             && !$chatSession->tickets()->whereNotIn('status', [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::CANCELLED->value])->exists()
             && !$chatSession->messages()
                 ->whereIn('sender_type', array_map(fn (ChatSenderTypeEnum $sender) => $sender->value, self::CUSTOMER_SENDERS))
                 ->where('created_at', '>', $chatSession->last_agent_message_at)
-                ->where(fn ($query) => $query->where('message_type', '!=', ChatMessageTypeEnum::TEXT->value)->orHas('attachment'))
+                ->where(fn ($query) => $query->where('message_type', '!=', ChatMessageTypeEnum::TEXT->value)
+                    ->orHas('attachment')
+                    ->when($chatSession instanceof MetaChatSession, fn ($query) => $query->orWhereRaw("coalesce(metadata->>'wa_type', 'text') <> 'text'")))
                 ->exists();
     }
 
-    private function closeAfterThanks(ChatSession $chatSession): void
+    /**
+     * Only stored, never sent: on WhatsApp nothing goes to the customer unless it is posted
+     * to Meta, which neither the close nor this note does.
+     */
+    private function closeAfterThanks(ChatSession|MetaChatSession $chatSession): void
     {
-        CloseChatSession::run($chatSession, null, ChatActorTypeEnum::SYSTEM, ['reason' => 'only_thanks']);
-
-        $chatSession->messages()->create([
+        $note = [
             'message_text' => 'Closed automatically: the customer only thanked us. Anything they write next reopens it.',
             'message_type' => ChatMessageTypeEnum::TEXT->value,
             'sender_type'  => ChatSenderTypeEnum::SYSTEM->value,
@@ -128,7 +141,17 @@ class FlagUrgentChatRequest
             'read_at'      => now(),
             'delivered_at' => now(),
             'metadata'     => ['automated' => ChatAutomationKindEnum::THANKS_CLOSED->value],
-        ]);
+        ];
+
+        if ($chatSession instanceof MetaChatSession) {
+            CloseMetaChatSession::run($chatSession, null, ChatActorTypeEnum::SYSTEM, ['reason' => 'only_thanks']);
+            StoreMetaChatMessage::run($chatSession, $note);
+
+            return;
+        }
+
+        CloseChatSession::run($chatSession, null, ChatActorTypeEnum::SYSTEM, ['reason' => 'only_thanks']);
+        $chatSession->messages()->create($note);
     }
 
     /**
@@ -271,9 +294,13 @@ class FlagUrgentChatRequest
         "only_thanks": first read what we last said. It is false whenever our last message asks
         them anything or offers or proposes something ("if it is okay with you", "shall we",
         "would you like", "let us know"): whatever they answer, even "yes", "ok" or "thanks", is
-        a decision an agent must act on. It is also false when our last message promises to
-        come back to them, send them something or find something out later: that promise is
-        still open. Otherwise it is true only when everything the customer wrote is thanks, an
+        a decision an agent must act on. It is also false whenever our last message says we
+        will still do something, however small or routine: come back to them, check, find out,
+        send, arrange, request, refund, replace, dispatch or chase something ("I will arrange",
+        "I will get that requested", "we are sending a replacement today", "I reported it and
+        am waiting for the update"), or asks them to wait ("one moment", "give me a few
+        minutes"). That work is still open and the conversation must stay with the agent.
+        Otherwise it is true only when everything the customer wrote is thanks, an
         acknowledgement, a confirmation that they received or saw something, or a goodbye ("ok
         thanks", "perfect", "received, thank you", "great, have a nice day"), and nothing in it
         asks, reports, tells or waits for anything from us. It is false when there is any
@@ -281,8 +308,9 @@ class FlagUrgentChatRequest
         will send something, a mention of an attachment or a photo, or anything an agent would
         want to read or answer. Read it after what we last said: a "yes", "no", "ok" or
         "alright" that answers a question we asked, or agrees to something we proposed, is a
-        decision an agent must act on, so false. Saying a payment was made, or giving a number,
-        an email, an address or any other detail, is false.
+        decision an agent must act on, so false. Saying a payment was made, that they did
+        something (registered, ordered, sent, paid), or giving a number, an email, an address or
+        any other detail, is false. A greeting ("hello", "hi") is false: they are about to write.
 
         What we last said to them:
         $weSaid

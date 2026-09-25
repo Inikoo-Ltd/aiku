@@ -5962,6 +5962,52 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
 });
 
+test('a whatsapp thanks after we answered closes quietly with nothing sent, but never a sticker, voice note, location, emoji, question or open promise of ours', function () {
+    config(['chat.close_after_thanks' => true]);
+    \Illuminate\Support\Facades\Http::fake();
+    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+
+    $answered = function (string $phone, string $text, array $message = []): MetaChatSession {
+        $session = noiseTestWhatsappSession($this->shop, $phone, $text);
+        $session->update(['last_agent_message_at' => now()->subHour()]);
+        $session->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->update($message);
+
+        return $session;
+    };
+
+    $thanks = $answered('+447500000301', 'Thank you so much!', ['metadata' => json_encode(['wa_type' => 'text'])]);
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($thanks);
+
+    expect($thanks->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($thanks->closed_by)->toBe(\App\Enums\CRM\Livechat\ChatSessionClosedByTypeEnum::SYSTEM)
+        ->and($thanks->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->whereRaw("metadata->>'automated' = 'thanks_closed'")->exists())->toBeTrue();
+    \Illuminate\Support\Facades\Http::assertNothingSent();
+
+    $notClosed = [
+        'sticker'  => $answered('+447500000302', 'Thanks', ['message_type' => ChatMessageTypeEnum::IMAGE, 'metadata' => json_encode(['wa_type' => 'sticker'])]),
+        'voice'    => $answered('+447500000303', 'Thanks', ['message_type' => ChatMessageTypeEnum::FILE, 'metadata' => json_encode(['wa_type' => 'audio'])]),
+        'location' => $answered('+447500000304', 'Thanks', ['metadata' => json_encode(['wa_type' => 'location'])]),
+        'emoji'    => $answered('+447500000305', '👍🙏'),
+        'question' => $answered('+447500000307', 'Thanks, is it the same email?'),
+        'promise'  => tap($answered('+447500000308', 'Thank you so much'), fn (MetaChatSession $session) => $session->messages()->create([
+            'meta_channel_id' => $session->meta_channel_id,
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::AGENT,
+            'message_text'    => 'I will arrange for the replacement to be sent out as soon as possible',
+        ])),
+    ];
+    foreach ($notClosed as $case => $session) {
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
+        expect($session->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING, $case);
+    }
+
+    config(['chat.close_after_thanks' => false]);
+    $switchedOff = $answered('+447500000306', 'Thank you!');
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($switchedOff);
+    expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
+});
+
 test('an agent unsubscribes a customer from every newsletter and reminder in one click, and when is kept', function () {
     $customer = createOwnCustomer($this->shop, 'unsubscribe-all');
     $comms    = $customer->comms ?? $customer->comms()->create([]);
