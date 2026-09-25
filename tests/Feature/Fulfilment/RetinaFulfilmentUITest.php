@@ -1288,6 +1288,9 @@ test('only the main user manages the customer web users, and the main user can n
     $this->withSession([$retinaSessionKey => $mainUser->id])->get(route('retina.dashboard.show'))->assertOk();
 
     auth()->forgetGuards();
+    $this->withSession([$retinaSessionKey => $mainUser->id])->getJson(route('retina.api.profile'), $fromStorefront)->assertOk();
+
+    auth()->forgetGuards();
     $this->withSession([$retinaSessionKey => $staffUser->id])->get(route('retina.dashboard.show'))->assertRedirect(route('retina.login.show'));
 
     auth()->forgetGuards();
