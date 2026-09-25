@@ -20,6 +20,7 @@ enum MasterFamilyTabsEnum: string
     // case FAMILIES     = 'families';
     case IMAGES    = 'images';
     case SALES     = 'sales';
+    case SALES_ANALYSIS = 'sales_analysis';
     case RELATED_PRODUCTS    = 'related_products';
 
     case RELATED_PRODUCT_CATEGORY = 'related_product_category';
@@ -33,6 +34,10 @@ enum MasterFamilyTabsEnum: string
             MasterFamilyTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            MasterFamilyTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             // MasterFamilyTabsEnum::FAMILIES => [
             //     'title' => __('Families in shop'),

@@ -1,0 +1,620 @@
+<script setup lang="ts">
+import { computed, ref } from "vue"
+import Chart from "primevue/chart"
+import { Link, router } from "@inertiajs/vue3"
+import { ctrans } from "@/Composables/useTrans"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLocaleStore } from "@/Stores/locale"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import {
+	faTag,
+	faPercent,
+	faPen,
+	faToggleOn,
+	faSparkles,
+	faRocketLaunch,
+	faBoxOpen,
+	faMoneyBillWave,
+	faShoppingCart,
+	faExclamationTriangle,
+	faChevronDown,
+	faChevronRight,
+} from "@fal"
+
+type EventType = "price" | "offer" | "content" | "status" | "launch" | "publish"
+type Cause = "no_order" | "ordered_after" | "ordered_too_late" | "supplier_late" | "restocked_directly" | "discontinued" | "unknown"
+
+interface StockOut {
+	org_stock_id: number
+	code: string
+	organisation: string
+	organisation_id: number
+	organisation_slug: string
+	started_on: string
+	back_in_on: string | null
+	days: number
+	approximate: boolean
+	cause: Cause
+	order: { kind: "purchase_order" | "stock_delivery"; reference: string; slug: string; supplier: string | null; ordered_on: string; expected_on: string | null; expected_is_estimate: boolean } | null
+	days_to_order: number | null
+	lost_sales: number
+	websites: number
+}
+
+interface ChangeEvent {
+	datetime: string
+	date: string
+	type: EventType
+	field: string
+	subjects: string[]
+	old: string | null
+	new: string | null
+	changes: number
+	shops: string[]
+	details: Array<{ subject: string; shop: string | null; old: string | null; new: string | null }>
+	user: string | null
+}
+
+interface Totals {
+	sales: number
+	orders: number
+	invoices: number
+	refunds: number
+	stock_outs: number
+	stock_out_days: number
+	lost_sales: number
+	stock_outs_no_order: number
+}
+
+const props = defineProps<{
+	data: {
+		period: { from: string; to: string }
+		compare_period: { from: string; to: string }
+		frequency: "daily" | "weekly" | "monthly"
+		currency: string
+		sales: Array<{ date: string; sales: number; orders: number }>
+		compare_sales: Array<{ date: string; sales: number; orders: number }>
+		totals: { current: Totals; previous: Totals }
+		shops: Array<{ shop_id: number; shop_code: string; shop_name: string; shop_state: string; organisation_id: number; family_state: string; sales: number; previous_sales: number; orders: number; previous_orders: number; stock_out_days: number }>
+		products: Array<{ id: number; code: string; name: string; slug: string; status: boolean; is_for_sale: boolean; created_at: string | null; discontinued_at: string | null; sales: number; previous_sales: number; websites: number; websites_out_of_stock: number; stock_outs: number; stock_out_days: number; lost_sales: number }>
+		stock_outs: StockOut[]
+		traffic: Array<{ date: string; visitors: number; page_views: number; add_to_baskets: number }>
+		events: ChangeEvent[]
+	}
+}>()
+
+const locale = useLocaleStore()
+const money = (value: number) => locale.currencyFormat(props.data.currency, Math.round(value))
+const formatDate = (date: string | null) => (date ? useFormatTime(date, { formatTime: "PP" }) : "")
+const change = (current: number, previous: number) => (previous ? ((current - previous) / previous) * 100 : null)
+const formatChange = (value: number | null) => (value === null ? "—" : `${value > 0 ? "+" : ""}${value.toFixed(0)}%`)
+const changeClass = (value: number) => (value > 0 ? "text-green-600" : value < 0 ? "text-red-600" : "text-gray-500")
+
+const eventStyle: Record<EventType, { label: string; color: string; icon: any }> = {
+	price: { label: ctrans("Price"), color: "#DB4437", icon: faTag },
+	offer: { label: ctrans("Offers"), color: "#F4B400", icon: faPercent },
+	content: { label: ctrans("Content"), color: "#4285F4", icon: faPen },
+	status: { label: ctrans("Status"), color: "#6B7280", icon: faToggleOn },
+	launch: { label: ctrans("New products"), color: "#0F9D58", icon: faSparkles },
+	publish: { label: ctrans("Web page"), color: "#8E24AA", icon: faRocketLaunch },
+}
+
+const causeStyle: Record<Cause, { label: string; class: string; explanation: string }> = {
+	no_order: { label: ctrans("No order placed"), class: "bg-red-100 text-red-700", explanation: ctrans("Nothing was on order when it ran out, and nothing was ordered by the end of the period") },
+	ordered_after: { label: ctrans("Ordered after running out"), class: "bg-red-100 text-red-700", explanation: ctrans("No order was placed until after it had run out") },
+	ordered_too_late: { label: ctrans("Ordered too late"), class: "bg-orange-100 text-orange-700", explanation: ctrans("It was on order when it ran out, but the order was placed too late to arrive in time") },
+	supplier_late: { label: ctrans("Supplier late"), class: "bg-yellow-100 text-yellow-800", explanation: ctrans("It was ordered in time, but the delivery had not arrived by the date expected") },
+	restocked_directly: { label: ctrans("Restocked without an order"), class: "bg-gray-100 text-gray-700", explanation: ctrans("Restocked without a purchase order or stock delivery, for example made in house") },
+	discontinued: { label: ctrans("Discontinued"), class: "bg-gray-100 text-gray-500", explanation: ctrans("Discontinued and sold out, not counted as a stock out") },
+	unknown: { label: ctrans("No purchase records"), class: "bg-gray-100 text-gray-500", explanation: ctrans("Purchase orders before October 2016 are not in aiku") },
+}
+
+const range = ref({ ...props.data.period })
+const compareRange = ref({ ...props.data.compare_period })
+
+const reload = () => {
+	router.reload({
+		data: { from: range.value.from, to: range.value.to, compareFrom: compareRange.value.from, compareTo: compareRange.value.to },
+		only: ["sales_analysis"],
+	})
+}
+
+const isoDate = (date: Date) => date.toISOString().slice(0, 10)
+const shiftYears = (date: string, years: number) => {
+	const shifted = new Date(date)
+	shifted.setFullYear(shifted.getFullYear() - years)
+	return isoDate(shifted)
+}
+const yesterday = () => {
+	const date = new Date()
+	date.setDate(date.getDate() - 1)
+	return date
+}
+const presets = [
+	{ label: ctrans("Last 12 months vs year before"), apply: () => ({ to: isoDate(yesterday()), years: 1, months: 12 }) },
+	{ label: ctrans("Last 12 months vs 2 years ago"), apply: () => ({ to: isoDate(yesterday()), years: 2, months: 12 }) },
+	{ label: ctrans("Last 3 months vs same months last year"), apply: () => ({ to: isoDate(yesterday()), years: 1, months: 3 }) },
+	{ label: ctrans("Last 5 years vs 5 years before"), apply: () => ({ to: isoDate(yesterday()), years: 5, months: 60 }) },
+]
+const applyPreset = (preset: (typeof presets)[number]) => {
+	const { to, years, months } = preset.apply()
+	const from = new Date(to)
+	from.setMonth(from.getMonth() - months)
+	from.setDate(from.getDate() + 1)
+	range.value = { from: isoDate(from), to }
+	compareRange.value = { from: shiftYears(isoDate(from), years), to: shiftYears(to, years) }
+	reload()
+}
+
+const current = computed(() => props.data.totals.current)
+const previous = computed(() => props.data.totals.previous)
+
+const tiles = computed(() => [
+	{ key: "sales", icon: faMoneyBillWave, label: ctrans("Sales"), value: money(current.value.sales), previous: money(previous.value.sales), change: change(current.value.sales, previous.value.sales), good: "up" },
+	{ key: "orders", icon: faShoppingCart, label: ctrans("Orders"), value: current.value.orders.toLocaleString(), previous: previous.value.orders.toLocaleString(), change: change(current.value.orders, previous.value.orders), good: "up" },
+	{ key: "stock_out_days", icon: faBoxOpen, label: `${ctrans("Days out of stock")} (${current.value.stock_outs} ${ctrans("stock outs")})`, value: current.value.stock_out_days.toLocaleString(), previous: `${previous.value.stock_out_days.toLocaleString()} (${previous.value.stock_outs})`, change: change(current.value.stock_out_days, previous.value.stock_out_days), good: "down" },
+	{ key: "lost_sales", icon: faExclamationTriangle, label: ctrans("Estimated sales lost to stock outs"), value: money(current.value.lost_sales), previous: money(previous.value.lost_sales), change: change(current.value.lost_sales, previous.value.lost_sales), good: "down" },
+	{ key: "no_order", icon: faExclamationTriangle, label: ctrans("Ran out with nothing ordered"), value: current.value.stock_outs_no_order.toLocaleString(), previous: previous.value.stock_outs_no_order.toLocaleString(), change: change(current.value.stock_outs_no_order, previous.value.stock_outs_no_order), good: "down" },
+])
+
+const tileChangeClass = (tile: (typeof tiles.value)[number]) =>
+	tile.change === null || tile.change === 0 ? "text-gray-500" : (tile.change > 0) === (tile.good === "up") ? "text-green-600" : "text-red-600"
+
+const labels = computed(() => props.data.sales.map((row) => row.date))
+
+const bucketIndex = (date: string) => {
+	let index = -1
+	for (let position = 0; position < labels.value.length && labels.value[position] <= date; position++) index = position
+	return index
+}
+
+const layers = ref({ compare: true, visitors: props.data.traffic.length > 0, stockOuts: true, price: true, offer: true, content: false, status: true, launch: true, publish: false })
+
+const stockOutsPerBucket = computed(() => {
+	const counts = labels.value.map(() => 0)
+	const counted = props.data.stock_outs.filter((stockOut) => stockOut.cause !== "discontinued")
+	labels.value.forEach((bucketStart, index) => {
+		const bucketEnd = labels.value[index + 1] ?? props.data.period.to
+		counts[index] = counted.filter((stockOut) => stockOut.started_on < bucketEnd && (stockOut.back_in_on ?? "9999-12-31") > bucketStart).length
+	})
+	return counts
+})
+const maxStockOuts = computed(() => Math.max(1, ...stockOutsPerBucket.value))
+
+const eventsByBucket = computed(() => {
+	const grouped: Record<number, ChangeEvent[]> = {}
+	for (const event of props.data.events) {
+		if (!layers.value[event.type]) continue
+		const index = bucketIndex(event.date)
+		if (index >= 0) (grouped[index] ??= []).push(event)
+	}
+	return grouped
+})
+
+const trafficByDate = computed(() => Object.fromEntries(props.data.traffic.map((row) => [row.date, row])))
+
+const chartData = computed(() => ({
+	labels: labels.value,
+	datasets: [
+		{
+			label: ctrans("Sales"),
+			data: props.data.sales.map((row) => row.sales),
+			borderColor: "#0F9D58",
+			backgroundColor: "#0F9D5822",
+			borderWidth: 2,
+			pointRadius: 0,
+			fill: true,
+			cubicInterpolationMode: "monotone",
+			yAxisID: "sales",
+			order: 1,
+		},
+		layers.value.compare && {
+			label: ctrans("Compared period"),
+			data: labels.value.map((_, index) => props.data.compare_sales[index]?.sales ?? null),
+			borderColor: "#9CA3AF",
+			borderDash: [5, 4],
+			borderWidth: 1.5,
+			pointRadius: 0,
+			cubicInterpolationMode: "monotone",
+			yAxisID: "sales",
+			order: 2,
+		},
+		layers.value.visitors && {
+			type: "bar",
+			label: ctrans("Visitors"),
+			data: labels.value.map((date) => trafficByDate.value[date]?.visitors ?? null),
+			backgroundColor: "#4285F455",
+			borderRadius: 2,
+			yAxisID: "visitors",
+			order: 3,
+		},
+	].filter(Boolean),
+}))
+
+const overlays = {
+	id: "salesAnalysisOverlays",
+	beforeDatasetsDraw(chart: any) {
+		if (!layers.value.stockOuts) return
+		const { ctx, chartArea, scales } = chart
+		const step = labels.value.length > 1 ? scales.x.getPixelForValue(1) - scales.x.getPixelForValue(0) : chartArea.width
+		stockOutsPerBucket.value.forEach((count, index) => {
+			if (!count) return
+			const x = scales.x.getPixelForValue(index)
+			ctx.save()
+			ctx.fillStyle = `rgba(219, 68, 55, ${0.06 + 0.22 * (count / maxStockOuts.value)})`
+			ctx.fillRect(x - step / 2, chartArea.top, step, chartArea.bottom - chartArea.top)
+			ctx.restore()
+		})
+	},
+	afterDatasetsDraw(chart: any) {
+		const { ctx, chartArea, scales } = chart
+		for (const [index, events] of Object.entries(eventsByBucket.value)) {
+			const x = scales.x.getPixelForValue(Number(index))
+			;[...new Set(events.map((event) => event.type))].forEach((type, position) => {
+				ctx.save()
+				ctx.fillStyle = eventStyle[type].color
+				ctx.beginPath()
+				ctx.arc(x, chartArea.top + 5 + position * 10, 3.5, 0, Math.PI * 2)
+				ctx.fill()
+				ctx.restore()
+			})
+		}
+	},
+}
+
+const eventLabel = (event: ChangeEvent) => {
+	const subjects = event.subjects.length > 3 ? `${event.subjects.slice(0, 3).join(", ")} +${event.subjects.length - 3}` : event.subjects.join(", ")
+	const values = event.old !== null || event.new !== null ? `${event.old ?? "—"} → ${event.new ?? "—"}` : ""
+	switch (event.field) {
+		case "launch":
+			return `${ctrans("New")}: ${subjects}`
+		case "publish":
+			return `${ctrans("Web page published")}${subjects ? `: ${subjects}` : ""}`
+		case "offer_started":
+			return `${ctrans("Offer started")}: ${subjects}`
+		case "offer_ended":
+			return `${ctrans("Offer ended")}: ${subjects}`
+		default:
+			return event.subjects.length > 1 ? `${subjects} · ${event.field.replace(/_/g, " ")}` : `${subjects} · ${event.field.replace(/_/g, " ")}: ${values}`
+	}
+}
+const shopsLabel = (event: ChangeEvent) =>
+	event.shops.length === 0 ? ctrans("All websites") : event.shops.length > 3 ? `${event.shops.length} ${ctrans("websites")}` : event.shops.join(", ")
+
+const chartOptions = computed(() => ({
+	responsive: true,
+	maintainAspectRatio: false,
+	interaction: { mode: "index", intersect: false },
+	plugins: {
+		legend: { display: false },
+		tooltip: {
+			backgroundColor: "#fff",
+			titleColor: "#111827",
+			bodyColor: "#374151",
+			borderColor: "#d1d5db",
+			borderWidth: 1,
+			padding: 10,
+			callbacks: {
+				title: (items: any[]) => (props.data.frequency === "weekly" ? ctrans("Week of") + " " : props.data.frequency === "monthly" ? "" : "") + useFormatTime(items[0].label, { formatTime: props.data.frequency === "monthly" ? "MMM yyyy" : "PP" }),
+				label: (item: any) => (item.dataset.yAxisID === "sales" ? `${item.dataset.label}: ${money(item.raw ?? 0)}` : `${item.dataset.label}: ${(item.raw ?? 0).toLocaleString()}`),
+				afterBody: (items: any[]) => {
+					const index = items[0].dataIndex
+					const lines: string[] = []
+					if (layers.value.stockOuts && stockOutsPerBucket.value[index]) lines.push(`${ctrans("Products out of stock")}: ${stockOutsPerBucket.value[index]}`)
+					const events = eventsByBucket.value[index] ?? []
+					events.slice(0, 8).forEach((event) => lines.push(`• ${eventLabel(event)} (${shopsLabel(event)})`))
+					if (events.length > 8) lines.push(`… +${events.length - 8}`)
+					return lines
+				},
+			},
+		},
+	},
+	scales: {
+		x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, color: "#6b7280" } },
+		sales: { type: "linear", position: "left", min: 0, grid: { color: "#f3f4f6" }, ticks: { color: "#0F9D58" }, title: { display: true, text: `${ctrans("Sales")} (${props.data.currency})`, color: "#0F9D58" } },
+		visitors: { type: "linear", position: "right", display: layers.value.visitors, min: 0, grid: { drawOnChartArea: false }, ticks: { color: "#4285F4", precision: 0 }, title: { display: true, text: ctrans("Visitors"), color: "#4285F4" } },
+	},
+}))
+
+const layerOptions = computed(() => [
+	{ key: "compare", label: ctrans("Compared period"), color: "#9CA3AF" },
+	{ key: "visitors", label: ctrans("Visitors"), color: "#4285F4", disabled: props.data.traffic.length === 0 },
+	{ key: "stockOuts", label: ctrans("Out of stock"), color: "#DB4437" },
+	...(Object.keys(eventStyle) as EventType[]).map((type) => ({ key: type, label: eventStyle[type].label, color: eventStyle[type].color })),
+])
+
+const totalChange = computed(() => current.value.sales - previous.value.sales)
+const shareOfChange = (delta: number) => (totalChange.value ? `${Math.round((delta / Math.abs(totalChange.value)) * 100)}%` : "—")
+
+const causeFilter = ref<Cause | null>(null)
+const visibleStockOuts = computed(() => props.data.stock_outs.filter((stockOut) => !causeFilter.value || stockOut.cause === causeFilter.value))
+const causeCounts = computed(() => {
+	const counts: Partial<Record<Cause, number>> = {}
+	props.data.stock_outs.forEach((stockOut) => (counts[stockOut.cause] = (counts[stockOut.cause] ?? 0) + 1))
+	return counts
+})
+
+const eventTypeFilter = ref<EventType | null>(null)
+const eventShopFilter = ref<string>("")
+const eventShops = computed(() => [...new Set(props.data.events.flatMap((event) => event.shops))].sort())
+const visibleEvents = computed(() =>
+	props.data.events.filter((event) => (!eventTypeFilter.value || event.type === eventTypeFilter.value) && (!eventShopFilter.value || event.shops.includes(eventShopFilter.value)))
+)
+const expandedEvents = ref<Record<string, boolean>>({})
+
+const orderRoute = (stockOut: StockOut) =>
+	stockOut.order?.kind === "purchase_order"
+		? route("grp.org.procurement.purchase_orders.show", [stockOut.organisation_slug, stockOut.order.slug])
+		: stockOut.order
+			? route("grp.org.procurement.stock_deliveries.show", [stockOut.organisation_slug, stockOut.order.slug])
+			: null
+
+const productRoute = (slug: string) => {
+	const params = route().params
+	return params.masterShop && params.masterFamily ? route("grp.masters.master_shops.show.master_families.master_products.show", [params.masterShop, params.masterFamily, slug]) : null
+}
+</script>
+
+<template>
+	<div class="space-y-6 px-4 py-6 text-sm text-gray-700">
+		<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+			<label class="flex items-center gap-2">
+				<input v-model="range.from" type="date" :max="range.to" class="rounded border-gray-300 text-sm" @change="reload" />
+				<span class="text-gray-500">–</span>
+				<input v-model="range.to" type="date" :min="range.from" class="rounded border-gray-300 text-sm" @change="reload" />
+			</label>
+			<label class="flex items-center gap-2">
+				<span class="text-gray-500">{{ ctrans("compared with") }}</span>
+				<input v-model="compareRange.from" type="date" :max="compareRange.to" class="rounded border-gray-300 text-sm" @change="reload" />
+				<span class="text-gray-500">–</span>
+				<input v-model="compareRange.to" type="date" :min="compareRange.from" class="rounded border-gray-300 text-sm" @change="reload" />
+			</label>
+			<div class="flex flex-wrap gap-1">
+				<button
+					v-for="preset in presets"
+					:key="preset.label"
+					type="button"
+					class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+					@click="applyPreset(preset)">
+					{{ preset.label }}
+				</button>
+			</div>
+		</div>
+
+		<div class="grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3">
+			<div v-for="tile in tiles" :key="tile.key" class="rounded-lg border border-gray-200 bg-white p-3">
+				<div class="flex items-center gap-1.5 text-xs text-gray-500">
+					<FontAwesomeIcon :icon="tile.icon" fixed-width aria-hidden="true" />
+					{{ tile.label }}
+				</div>
+				<div class="mt-1 flex items-baseline gap-2 tabular-nums">
+					<span class="font-semibold text-gray-900">{{ tile.value }}</span>
+					<span class="text-xs" :class="tileChangeClass(tile)">{{ formatChange(tile.change) }}</span>
+				</div>
+				<div class="mt-0.5 text-xs tabular-nums text-gray-500">
+					{{ ctrans("was") }} {{ tile.previous }}
+				</div>
+			</div>
+		</div>
+
+		<div class="rounded-lg border border-gray-200 bg-white p-4">
+			<div class="mb-3 flex flex-wrap gap-1.5">
+				<button
+					v-for="layer in layerOptions"
+					:key="layer.key"
+					type="button"
+					:disabled="layer.disabled"
+					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs disabled:opacity-40"
+					:class="layers[layer.key] && !layer.disabled ? 'border-gray-400 text-gray-700' : 'border-gray-200 text-gray-400'"
+					@click="layers[layer.key] = !layers[layer.key]">
+					<span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: layer.color, opacity: layers[layer.key] ? 1 : 0.3 }" />
+					{{ layer.label }}
+				</button>
+			</div>
+			<div class="relative h-80 w-full">
+				<Chart type="line" class="h-full" :data="chartData" :options="chartOptions" :plugins="[overlays]" />
+			</div>
+			<p v-if="!data.traffic.length" class="mt-2 text-xs text-gray-500">{{ ctrans("Visitors are recorded from January 2026.") }}</p>
+		</div>
+
+		<div class="grid gap-6 xl:grid-cols-2">
+			<div class="rounded-lg border border-gray-200 bg-white">
+				<div class="border-b px-4 py-2 font-semibold">{{ ctrans("Websites") }}</div>
+				<table class="w-full text-xs tabular-nums">
+					<thead class="text-gray-600">
+						<tr class="border-b">
+							<th class="px-4 py-2 text-left font-normal">{{ ctrans("Website") }}</th>
+							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Before") }}</th>
+							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Now") }}</th>
+							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Change") }}</th>
+							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Share of change") }}</th>
+							<th class="px-4 py-2 text-right font-normal">{{ ctrans("Days out of stock") }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y">
+						<tr v-for="shop in data.shops" :key="shop.shop_id">
+							<td class="px-4 py-1.5">
+								<span class="font-medium">{{ shop.shop_code }}</span>
+								<span class="ml-1 text-gray-500">{{ shop.shop_name }}</span>
+								<span v-if="shop.shop_state !== 'open' || shop.family_state !== 'active'" class="ml-1 text-gray-400">({{ shop.shop_state !== "open" ? shop.shop_state : shop.family_state }})</span>
+							</td>
+							<td class="px-2 py-1.5 text-right">{{ money(shop.previous_sales) }}</td>
+							<td class="px-2 py-1.5 text-right">{{ money(shop.sales) }}</td>
+							<td class="px-2 py-1.5 text-right" :class="changeClass(shop.sales - shop.previous_sales)">
+								{{ formatChange(change(shop.sales, shop.previous_sales)) }}
+							</td>
+							<td class="px-2 py-1.5 text-right" :class="changeClass(shop.sales - shop.previous_sales)">{{ shareOfChange(shop.sales - shop.previous_sales) }}</td>
+							<td class="px-4 py-1.5 text-right" :class="shop.stock_out_days ? 'text-red-600' : 'text-gray-400'">{{ shop.stock_out_days || "—" }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="rounded-lg border border-gray-200 bg-white">
+				<div class="border-b px-4 py-2 font-semibold">{{ ctrans("Products") }}</div>
+				<div class="max-h-[32rem] overflow-y-auto">
+					<table class="w-full text-xs tabular-nums">
+						<thead class="sticky top-0 bg-white text-gray-600">
+							<tr class="border-b">
+								<th class="px-4 py-2 text-left font-normal">{{ ctrans("Product") }}</th>
+								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Before") }}</th>
+								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Now") }}</th>
+								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Change") }}</th>
+								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Websites") }}</th>
+								<th class="px-4 py-2 text-right font-normal">{{ ctrans("Out of stock") }}</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y">
+							<tr v-for="product in data.products" :key="product.id">
+								<td class="px-4 py-1.5">
+									<Link v-if="productRoute(product.slug)" :href="productRoute(product.slug)" class="font-medium hover:underline">{{ product.code }}</Link>
+									<span v-else class="font-medium">{{ product.code }}</span>
+									<span v-if="product.discontinued_at || !product.status" class="ml-1 rounded bg-gray-100 px-1 text-gray-500">{{ ctrans("discontinued") }}</span>
+									<span v-else-if="!product.is_for_sale" class="ml-1 rounded bg-gray-100 px-1 text-gray-500">{{ ctrans("not for sale") }}</span>
+									<span v-if="product.created_at && product.created_at >= data.period.from" class="ml-1 rounded bg-green-50 px-1 text-green-700">{{ ctrans("new") }}</span>
+									<div class="truncate text-gray-500" :title="product.name">{{ product.name }}</div>
+								</td>
+								<td class="px-2 py-1.5 text-right">{{ money(product.previous_sales) }}</td>
+								<td class="px-2 py-1.5 text-right">{{ money(product.sales) }}</td>
+								<td class="px-2 py-1.5 text-right" :class="changeClass(product.sales - product.previous_sales)">
+									{{ formatChange(change(product.sales, product.previous_sales)) }}
+								</td>
+								<td class="px-2 py-1.5 text-right">{{ product.websites }}</td>
+								<td class="px-4 py-1.5 text-right">
+									<span v-if="product.stock_outs" class="text-red-600" v-tooltip="`${product.stock_outs} ${ctrans('stock outs')}, ~${money(product.lost_sales)} ${ctrans('lost')}`">
+										{{ product.stock_out_days }} {{ ctrans("days") }}
+									</span>
+									<span v-else class="text-gray-400">—</span>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<div class="rounded-lg border border-gray-200 bg-white">
+			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+				<span class="mr-2 font-semibold">{{ ctrans("Stock outs") }}</span>
+				<button
+					type="button"
+					class="rounded-full border px-2 py-0.5 text-xs"
+					:class="causeFilter === null ? 'border-gray-400 text-gray-700' : 'border-gray-200 text-gray-500'"
+					@click="causeFilter = null">
+					{{ ctrans("All") }} {{ data.stock_outs.length }}
+				</button>
+				<button
+					v-for="(count, cause) in causeCounts"
+					:key="cause"
+					type="button"
+					class="rounded-full px-2 py-0.5 text-xs"
+					:class="[causeStyle[cause].class, causeFilter === cause ? 'ring-1 ring-gray-500' : '']"
+					v-tooltip="causeStyle[cause].explanation"
+					@click="causeFilter = causeFilter === cause ? null : cause">
+					{{ causeStyle[cause].label }} {{ count }}
+				</button>
+			</div>
+			<div v-if="!visibleStockOuts.length" class="px-4 py-6 text-gray-500">{{ ctrans("No stock outs in this period") }}</div>
+			<div v-else class="max-h-[32rem] overflow-y-auto">
+				<table class="w-full text-xs tabular-nums">
+					<thead class="sticky top-0 bg-white text-gray-600">
+						<tr class="border-b">
+							<th class="px-4 py-2 text-left font-normal">{{ ctrans("SKO") }}</th>
+							<th class="px-2 py-2 text-left font-normal">{{ ctrans("Stock held by") }}</th>
+							<th class="px-2 py-2 text-left font-normal">{{ ctrans("Ran out") }}</th>
+							<th class="px-2 py-2 text-left font-normal">{{ ctrans("Back in stock") }}</th>
+							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Days") }}</th>
+							<th class="px-2 py-2 text-left font-normal">{{ ctrans("Why") }}</th>
+							<th class="px-2 py-2 text-left font-normal">{{ ctrans("Order") }}</th>
+							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Websites") }}</th>
+							<th class="px-4 py-2 text-right font-normal">{{ ctrans("Estimated lost") }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y">
+						<tr v-for="stockOut in visibleStockOuts" :key="`${stockOut.org_stock_id}-${stockOut.started_on}`">
+							<td class="px-4 py-1.5 font-medium">{{ stockOut.code }}</td>
+							<td class="px-2 py-1.5">{{ stockOut.organisation }}</td>
+							<td class="px-2 py-1.5">{{ formatDate(stockOut.started_on) }}</td>
+							<td class="px-2 py-1.5">
+								<span v-if="stockOut.back_in_on">{{ formatDate(stockOut.back_in_on) }}</span>
+								<span v-else class="text-red-600">{{ ctrans("still out") }}</span>
+							</td>
+							<td class="px-2 py-1.5 text-right" v-tooltip="stockOut.approximate ? ctrans('Before August 2023 stock was only recorded at the end of each month, so the dates are approximate') : undefined">
+								{{ stockOut.approximate ? "≈" : "" }}{{ stockOut.days }}
+							</td>
+							<td class="px-2 py-1.5">
+								<span class="whitespace-nowrap rounded-full px-2 py-0.5" :class="causeStyle[stockOut.cause].class" v-tooltip="causeStyle[stockOut.cause].explanation">
+									{{ causeStyle[stockOut.cause].label }}
+								</span>
+								<span v-if="stockOut.days_to_order !== null" class="ml-1 text-gray-500">{{ ctrans(":days days later", { days: String(stockOut.days_to_order) }) }}</span>
+							</td>
+							<td class="px-2 py-1.5">
+								<template v-if="stockOut.order">
+									<Link :href="orderRoute(stockOut)" class="hover:underline">{{ stockOut.order.reference }}</Link>
+									<div class="text-gray-500">
+										{{ stockOut.order.kind === "purchase_order" ? ctrans("ordered") : ctrans("dispatched") }} {{ formatDate(stockOut.order.ordered_on) }}
+										<span v-if="stockOut.order.expected_on" v-tooltip="stockOut.order.expected_is_estimate ? ctrans('No expected date was recorded; assumed from a usual delivery time') : undefined">· {{ ctrans("expected") }} {{ stockOut.order.expected_is_estimate ? "~" : "" }}{{ formatDate(stockOut.order.expected_on) }}</span>
+									</div>
+								</template>
+								<span v-else class="text-gray-400">—</span>
+							</td>
+							<td class="px-2 py-1.5 text-right">{{ stockOut.websites }}</td>
+							<td class="px-4 py-1.5 text-right">{{ stockOut.lost_sales ? `~${money(stockOut.lost_sales)}` : "—" }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="border-t px-4 py-2 text-xs text-gray-500">
+				{{ ctrans("Estimated lost = this family's average daily sales of the product in the 180 days before it ran out, times the days out of stock (at most 90).") }}
+			</p>
+		</div>
+
+		<div class="rounded-lg border border-gray-200 bg-white">
+			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+				<span class="mr-2 font-semibold">{{ ctrans("Changes") }}</span>
+				<button
+					type="button"
+					class="rounded-full border px-2 py-0.5 text-xs"
+					:class="eventTypeFilter === null ? 'border-gray-400 text-gray-700' : 'border-gray-200 text-gray-500'"
+					@click="eventTypeFilter = null">
+					{{ ctrans("All") }}
+				</button>
+				<button
+					v-for="(style, type) in eventStyle"
+					:key="type"
+					type="button"
+					class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+					:class="eventTypeFilter === type ? 'border-gray-400 text-gray-700' : 'border-gray-200 text-gray-500'"
+					@click="eventTypeFilter = eventTypeFilter === type ? null : type">
+					<FontAwesomeIcon :icon="style.icon" :style="{ color: style.color }" fixed-width aria-hidden="true" />
+					{{ style.label }}
+				</button>
+				<select v-model="eventShopFilter" class="ml-auto rounded border-gray-300 py-0.5 text-xs">
+					<option value="">{{ ctrans("All websites") }}</option>
+					<option v-for="shop in eventShops" :key="shop" :value="shop">{{ shop }}</option>
+				</select>
+			</div>
+			<div v-if="!visibleEvents.length" class="px-4 py-6 text-gray-500">{{ ctrans("No changes in this period") }}</div>
+			<ul v-else class="max-h-[32rem] divide-y overflow-y-auto">
+				<li v-for="event in visibleEvents" :key="`${event.datetime}-${event.type}-${event.field}-${event.subjects.join()}`" class="px-4 py-1.5">
+					<button type="button" class="flex w-full items-center gap-3 text-left" @click="expandedEvents[event.datetime + event.field] = !expandedEvents[event.datetime + event.field]">
+						<FontAwesomeIcon :icon="eventStyle[event.type].icon" :style="{ color: eventStyle[event.type].color }" fixed-width aria-hidden="true" />
+						<span class="w-40 shrink-0 text-xs text-gray-500">{{ useFormatTime(event.datetime, { formatTime: "PPp" }) }}</span>
+						<span class="flex-1">{{ eventLabel(event) }}</span>
+						<span class="text-xs text-gray-500">{{ shopsLabel(event) }}</span>
+						<span class="w-40 truncate text-right text-xs text-gray-500">{{ event.user ?? ctrans("System") }}</span>
+						<FontAwesomeIcon v-if="event.changes > 1" :icon="expandedEvents[event.datetime + event.field] ? faChevronDown : faChevronRight" class="text-gray-400" fixed-width aria-hidden="true" />
+					</button>
+					<ul v-if="event.changes > 1 && expandedEvents[event.datetime + event.field]" class="ml-9 mt-1 space-y-0.5 text-xs text-gray-600">
+						<li v-for="(detail, index) in event.details" :key="index" class="tabular-nums">
+							<span class="font-medium">{{ detail.subject }}</span>
+							<span v-if="detail.shop" class="text-gray-500"> · {{ detail.shop }}</span>
+							<span v-if="detail.old !== null || detail.new !== null">: {{ detail.old ?? "—" }} → {{ detail.new ?? "—" }}</span>
+						</li>
+						<li v-if="event.changes > event.details.length" class="text-gray-400">… +{{ event.changes - event.details.length }}</li>
+					</ul>
+				</li>
+			</ul>
+		</div>
+	</div>
+</template>

@@ -118,6 +118,10 @@ class ShowMasterFamily extends OrgAction
                 fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value))
                 : Inertia::optional(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value))),
 
+            MasterFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterFamilyTabsEnum::SALES_ANALYSIS->value ?
+                fn () => GetMasterFamilySalesAnalysis::run($masterFamily, $request->only(['from', 'to', 'compareFrom', 'compareTo']))
+                : Inertia::optional(fn () => GetMasterFamilySalesAnalysis::run($masterFamily, $request->only(['from', 'to', 'compareFrom', 'compareTo']))),
+
             'salesData' => $this->tab === MasterFamilyTabsEnum::SHOWCASE->value ?
                 fn () => GetMasterProductCategoryTimeSeriesData::run($masterFamily)
                 : Inertia::optional(fn () => GetMasterProductCategoryTimeSeriesData::run($masterFamily)),

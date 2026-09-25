@@ -70,6 +70,7 @@ use App\Models\Masters\MasterAssetStats;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionOrderingStats;
 use App\Models\Masters\MasterCollectionStats;
+use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
@@ -518,6 +519,33 @@ test('UI Show Master Family in Department', function (MasterProductCategory $mas
             ->has('breadcrumbs')
             ->has('pageHead', fn (AssertableInertia $head) => $head->has('subNavigation')->etc())
             ->has('tabs');
+    });
+})->depends('create master family');
+
+test('UI Show Master Family sales analysis tab', function (MasterProductCategory $masterFamily) {
+    $response = get(
+        route('grp.masters.master_departments.show.master_families.show', [
+            'masterDepartment' => $masterFamily->masterDepartment->slug,
+            'masterFamily'     => $masterFamily->slug,
+            'tab'              => MasterFamilyTabsEnum::SALES_ANALYSIS->value,
+            'from'             => '2026-01-01',
+            'to'               => '2026-03-31',
+            'compareFrom'      => '2025-01-01',
+            'compareTo'        => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.totals.current', fn (AssertableInertia $totals) => $totals->where('sales', 0)->where('stock_outs', 0)->etc())
+            ->has('sales_analysis.shops')
+            ->has('sales_analysis.products')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events');
     });
 })->depends('create master family');
 
