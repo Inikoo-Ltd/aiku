@@ -10,14 +10,14 @@ import axios from "axios"
 import Multiselect from "@vueform/multiselect"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import GoogleAdsCampaignTimeline from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsCampaignTimeline.vue"
+import MailshotJourney from "@/Components/Navigation/MailshotJourney.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
-import { campaignTypeLabel } from "@/Composables/googleAdsCampaignType"
 import { PageHeadingTypes } from "@/types/PageHeading"
-import { trans } from "laravel-vue-i18n"
+import { routeType } from "@/types/route"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faGoogle)
 
@@ -34,13 +34,7 @@ library.add(faGoogle)
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    state: {
-        current: string
-        label: string
-        description: string
-        last_error: string | null
-        timeline: { key: string; label: string; tooltip: string; icon: string; timestamp: string | null }[]
-    }
+    journey: { key: string; label: string; current: boolean; done?: boolean; disabled?: boolean; route: routeType }[]
     campaign: { slug: string; name: string; channel_type: string; data: Record<string, any> }
     currency: string
     campaign_types: { value: string; label: string; description: string }[]
@@ -105,11 +99,11 @@ const save = () =>
    is the wrong shape for a square one, and Google checks when the campaign is published. */
 const imageRoles = computed(() =>
     [
-        !isSearch.value ? { key: "marketing_images", label: trans("Landscape images, 1.91 to 1"), hint: trans("Roughly 1200 by 628") } : null,
+        !isSearch.value ? { key: "marketing_images", label: ctrans("Landscape images, 1.91 to 1"), hint: ctrans("Roughly 1200 by 628") } : null,
         isPmax.value || isDisplay.value
-            ? { key: "square_marketing_images", label: trans("Square images"), hint: trans("Roughly 1200 by 1200") }
+            ? { key: "square_marketing_images", label: ctrans("Square images"), hint: ctrans("Roughly 1200 by 1200") }
             : null,
-        !isSearch.value ? { key: "logos", label: trans("Logo, square"), hint: trans("Roughly 1200 by 1200") } : null,
+        !isSearch.value ? { key: "logos", label: ctrans("Logo, square"), hint: ctrans("Roughly 1200 by 1200") } : null,
     ].filter(Boolean) as { key: string; label: string; hint: string }[]
 )
 
@@ -163,7 +157,7 @@ const upload = async (event: Event) => {
         uploadError.value =
             failure?.response?.data?.errors?.image?.[0] ??
             failure?.response?.data?.message ??
-            trans("That image could not be uploaded.")
+            ctrans("That image could not be uploaded.")
     } finally {
         uploading.value = false
         input.value = ""
@@ -184,39 +178,21 @@ const toggleImage = (role: string, id: number) => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #afterTitle2>
+            <MailshotJourney :steps="journey" class="ml-4" />
+        </template>
+    </PageHeading>
 
     <div class="grid grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-3">
-        <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
-            <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("Where this campaign stands") }}
-                <span class="font-normal text-gray-500">· {{ campaignTypeLabel(form.channel_type) }}</span>
-            </h2>
-
-            <div class="mt-4">
-                <GoogleAdsCampaignTimeline :state="state" />
-            </div>
-
-            <div v-if="missing.length" class="mt-4 text-xs text-gray-600">
-                <p class="text-gray-500">{{ trans("Still needed before Google will create this") }}</p>
-                <ul class="mt-1 list-inside list-disc">
-                    <li v-for="item in missing" :key="item">{{ item }}</li>
-                </ul>
-            </div>
-
-            <p v-else class="mt-4 text-xs text-[#006300]">
-                {{ trans("Everything Google needs is here. Publish it from the button above; it arrives paused.") }}
-            </p>
-        </section>
-
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-2">
-            <h2 class="text-sm font-medium text-gray-800">{{ trans("The campaign") }}</h2>
+            <h2 class="text-sm font-medium text-gray-800">{{ ctrans("The campaign") }}</h2>
 
             <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <fieldset class="sm:col-span-2">
                     <legend class="text-xs text-gray-500">
-                        {{ trans("What kind of campaign") }}
-                        <HelpTip :text="trans('It decides everything asked below, so the page changes with it. Changeable until the campaign is published; after that Google will not turn one type into another.')" />
+                        {{ ctrans("What kind of campaign") }}
+                        <HelpTip :text="ctrans('It decides everything asked below, so the page changes with it. Changeable until the campaign is published; after that Google will not turn one type into another.')" />
                     </legend>
 
                     <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -234,44 +210,44 @@ const toggleImage = (role: string, id: number) => {
                     </div>
 
                     <p class="mt-2 text-xs text-gray-500">
-                        {{ trans("Video and Shopping are missing on purpose. Google's API refuses to create a Video campaign, and a Shopping campaign needs a Merchant Center feed, so both are still built in Google Ads itself.") }}
+                        {{ ctrans("Video and Shopping are missing on purpose. Google's API refuses to create a Video campaign, and a Shopping campaign needs a Merchant Center feed, so both are still built in Google Ads itself.") }}
                     </p>
                 </fieldset>
 
                 <div class="sm:col-span-2">
-                    <label for="c-name" class="block text-xs text-gray-500">{{ trans("Campaign name") }}</label>
+                    <label for="c-name" class="block text-xs text-gray-500">{{ ctrans("Campaign name") }}</label>
                     <input id="c-name" v-model="form.name" type="text" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                     <p v-if="form.errors.name" class="mt-1 text-xs text-[#d03b3b]">{{ form.errors.name }}</p>
                 </div>
 
                 <div>
-                    <label for="c-budget" class="block text-xs text-gray-500">{{ trans("Daily budget") }} ({{ currency }})</label>
+                    <label for="c-budget" class="block text-xs text-gray-500">{{ ctrans("Daily budget") }} ({{ currency }})</label>
                     <input id="c-budget" v-model="form.budget_amount" type="number" step="0.01" min="0.01" class="mt-1 w-full rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500" />
                     <p v-if="form.errors.budget_amount" class="mt-1 text-xs text-[#d03b3b]">{{ form.errors.budget_amount }}</p>
                 </div>
 
                 <div v-if="isSearch || isDisplay">
                     <label for="c-cpc" class="block text-xs text-gray-500">
-                        {{ isSearch ? trans("Highest cost per click, optional") : trans("Cost per click bid") }}
+                        {{ isSearch ? ctrans("Highest cost per click, optional") : ctrans("Cost per click bid") }}
                     </label>
                     <input id="c-cpc" v-model="form.max_cpc" type="number" step="0.01" min="0.01" class="mt-1 w-full rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500" />
                 </div>
 
                 <div v-if="isDemandGen">
-                    <label for="c-cpa" class="block text-xs text-gray-500">{{ trans("Target cost per conversion") }} ({{ currency }})</label>
+                    <label for="c-cpa" class="block text-xs text-gray-500">{{ ctrans("Target cost per conversion") }} ({{ currency }})</label>
                     <input id="c-cpa" v-model="form.target_cpa" type="number" step="0.01" min="0.01" class="mt-1 w-full rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500" />
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label for="c-url" class="block text-xs text-gray-500">{{ trans("Landing page") }}</label>
+                    <label for="c-url" class="block text-xs text-gray-500">{{ ctrans("Landing page") }}</label>
                     <input id="c-url" v-model="form.final_url" type="url" placeholder="https://" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                     <p v-if="form.errors.final_url" class="mt-1 text-xs text-[#d03b3b]">{{ form.errors.final_url }}</p>
                 </div>
 
                 <div>
                     <label for="c-countries" class="block text-xs text-gray-500">
-                        {{ trans("Show ads in") }}
-                        <HelpTip :text="trans('Left empty the campaign shows everywhere Google can reach, which is rarely what anyone wants.')" />
+                        {{ ctrans("Show ads in") }}
+                        <HelpTip :text="ctrans('Left empty the campaign shows everywhere Google can reach, which is rarely what anyone wants.')" />
                     </label>
                     <Multiselect
                         id="c-countries"
@@ -284,7 +260,7 @@ const toggleImage = (role: string, id: number) => {
 
                 <div>
                     <label :for="isPmax ? 'c-asset-group' : 'c-ad-group'" class="block text-xs text-gray-500">
-                        {{ isPmax ? trans("Asset group name") : trans("Ad group name") }}
+                        {{ isPmax ? ctrans("Asset group name") : ctrans("Ad group name") }}
                     </label>
                     <input
                         :id="isPmax ? 'c-asset-group' : 'c-ad-group'"
@@ -294,64 +270,74 @@ const toggleImage = (role: string, id: number) => {
                 </div>
 
                 <div v-if="!isSearch" class="sm:col-span-2">
-                    <label for="c-business" class="block text-xs text-gray-500">{{ trans("Business name, up to 25 characters") }}</label>
+                    <label for="c-business" class="block text-xs text-gray-500">{{ ctrans("Business name, up to 25 characters") }}</label>
                     <input id="c-business" v-model="form.business_name" type="text" maxlength="25" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                 </div>
             </div>
         </section>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200">
-            <h2 class="text-sm font-medium text-gray-800">{{ trans("Saving") }}</h2>
+            <h2 class="text-sm font-medium text-gray-800">{{ ctrans("Saving") }}</h2>
             <p class="mt-2 text-xs text-gray-600">
-                {{ trans("Nothing on this page reaches Google. Save as often as you like and come back to it.") }}
+                {{ ctrans("Nothing on this page reaches Google. Save as often as you like and come back to it.") }}
             </p>
 
-            <Button class="mt-4" :label="trans('Save the campaign')" :loading="form.processing" size="s" @click="save" />
+            <Button class="mt-4" :label="ctrans('Save the campaign')" :loading="form.processing" size="s" @click="save" />
 
-            <p v-if="form.recentlySuccessful" class="mt-3 text-xs text-[#006300]">{{ trans("Saved.") }}</p>
+            <p v-if="form.recentlySuccessful" class="mt-3 text-xs text-[#006300]">{{ ctrans("Saved.") }}</p>
+
+            <div v-if="missing.length" class="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-600">
+                <p class="text-gray-500">{{ ctrans("Still needed before Google will accept it") }}</p>
+                <ul class="mt-1 list-inside list-disc">
+                    <li v-for="item in missing" :key="item">{{ item }}</li>
+                </ul>
+            </div>
+            <p v-else class="mt-4 border-t border-gray-100 pt-3 text-xs text-[#006300]">
+                {{ ctrans("Everything Google needs is here. Review it next, from the button at the top.") }}
+            </p>
         </section>
 
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
-                {{ trans("What the ad says") }}
-                <HelpTip :text="trans('One per line. Google mixes headlines and descriptions itself rather than showing them in the order written, so each line has to read on its own. Headlines are capped at 30 characters and descriptions at 90.')" />
+                {{ ctrans("What the ad says") }}
+                <HelpTip :text="ctrans('One per line. Google mixes headlines and descriptions itself rather than showing them in the order written, so each line has to read on its own. Headlines are capped at 30 characters and descriptions at 90.')" />
             </h2>
 
             <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div>
-                    <label for="c-headlines" class="block text-xs text-gray-500">{{ trans("Headlines, one per line") }}</label>
+                    <label for="c-headlines" class="block text-xs text-gray-500">{{ ctrans("Headlines, one per line") }}</label>
                     <textarea id="c-headlines" v-model="form.headlines" rows="6" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                 </div>
 
                 <div>
-                    <label for="c-descriptions" class="block text-xs text-gray-500">{{ trans("Descriptions, one per line") }}</label>
+                    <label for="c-descriptions" class="block text-xs text-gray-500">{{ ctrans("Descriptions, one per line") }}</label>
                     <textarea id="c-descriptions" v-model="form.descriptions" rows="6" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                 </div>
 
                 <div v-if="needsLongHeadline">
-                    <label for="c-long" class="block text-xs text-gray-500">{{ trans("Long headline, up to 90 characters") }}</label>
+                    <label for="c-long" class="block text-xs text-gray-500">{{ ctrans("Long headline, up to 90 characters") }}</label>
                     <input id="c-long" v-model="form.long_headline" type="text" maxlength="90" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                 </div>
 
                 <template v-if="isSearch">
                     <div>
-                        <label for="c-keywords" class="block text-xs text-gray-500">{{ trans("Keywords, one per line") }}</label>
+                        <label for="c-keywords" class="block text-xs text-gray-500">{{ ctrans("Keywords, one per line") }}</label>
                         <textarea id="c-keywords" v-model="form.keywords" rows="6" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                     </div>
                     <div>
-                        <label for="c-match" class="block text-xs text-gray-500">{{ trans("Match type") }}</label>
+                        <label for="c-match" class="block text-xs text-gray-500">{{ ctrans("Match type") }}</label>
                         <select id="c-match" v-model="form.match_type" class="mt-1 rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="BROAD">{{ trans("Broad") }}</option>
-                            <option value="PHRASE">{{ trans("Phrase") }}</option>
-                            <option value="EXACT">{{ trans("Exact") }}</option>
+                            <option value="BROAD">{{ ctrans("Broad") }}</option>
+                            <option value="PHRASE">{{ ctrans("Phrase") }}</option>
+                            <option value="EXACT">{{ ctrans("Exact") }}</option>
                         </select>
                     </div>
                 </template>
 
                 <div v-if="isPmax">
                     <label for="c-themes" class="block text-xs text-gray-500">
-                        {{ trans("Search themes, one per line, up to 25") }}
-                        <HelpTip :text="trans('Phrases telling Google what someone looking for this would type. They steer its targeting rather than restricting it, so they are hints and not keywords.')" />
+                        {{ ctrans("Search themes, one per line, up to 25") }}
+                        <HelpTip :text="ctrans('Phrases telling Google what someone looking for this would type. They steer its targeting rather than restricting it, so they are hints and not keywords.')" />
                     </label>
                     <textarea id="c-themes" v-model="form.search_themes" rows="6" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                 </div>
@@ -359,23 +345,23 @@ const toggleImage = (role: string, id: number) => {
         </section>
 
         <section v-if="imageRoles.length" class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
-            <h2 class="text-sm font-medium text-gray-800">{{ trans("Images") }}</h2>
+            <h2 class="text-sm font-medium text-gray-800">{{ ctrans("Images") }}</h2>
             <p class="mt-1 max-w-3xl text-xs text-gray-600">
-                {{ trans("Pick images already in Aiku, or upload new ones. Each is sent to Google once and reused by later campaigns. Google checks the shape of an image against the slot it fills.") }}
+                {{ ctrans("Pick images already in Aiku, or upload new ones. Each is sent to Google once and reused by later campaigns. Google checks the shape of an image against the slot it fills.") }}
             </p>
 
             <div class="mt-3 flex flex-wrap items-end gap-3">
                 <div>
-                    <label for="c-image-search" class="sr-only">{{ trans("Search images in Aiku") }}</label>
+                    <label for="c-image-search" class="sr-only">{{ ctrans("Search images in Aiku") }}</label>
                     <input
                         id="c-image-search"
                         v-model="imageSearch"
                         type="search"
-                        :placeholder="trans('Search images in Aiku')"
+                        :placeholder="ctrans('Search images in Aiku')"
                         class="w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-72"
                         @keyup.enter="searchImages" />
                 </div>
-                <Button :label="trans('Search')" size="s" :style="'tertiary'" :loading="searching" @click="searchImages" />
+                <Button :label="ctrans('Search')" size="s" :style="'tertiary'" :loading="searching" @click="searchImages" />
             </div>
 
             <input ref="fileInput" type="file" accept="image/jpeg,image/png" class="hidden" @change="upload" />
@@ -394,7 +380,7 @@ const toggleImage = (role: string, id: number) => {
                             <span class="text-xs font-medium text-gray-700">
                                 {{ role.label }}
                                 <span class="font-normal" :class="(form[role.key] as number[]).length ? 'text-gray-500' : 'text-[#a15c00]'">
-                                    · {{ (form[role.key] as number[]).length }} {{ trans("chosen") }}
+                                    · {{ (form[role.key] as number[]).length }} {{ ctrans("chosen") }}
                                 </span>
                             </span>
                             <span class="flex items-center gap-3 text-xs text-gray-500">
@@ -404,7 +390,7 @@ const toggleImage = (role: string, id: number) => {
                                     :disabled="uploading"
                                     class="rounded px-2 py-1 text-indigo-600 underline-offset-2 transition hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-40"
                                     @click="chooseFile(role.key)">
-                                    {{ uploading ? trans("Uploading") : trans("Upload an image") }}
+                                    {{ uploading ? ctrans("Uploading") : ctrans("Upload an image") }}
                                 </button>
                             </span>
                         </div>
@@ -427,8 +413,8 @@ const toggleImage = (role: string, id: number) => {
 
                 <p v-else class="mt-4 text-xs text-gray-500">
                     {{ imageSearch
-                        ? trans("No image in Aiku matches that. Clear the search, or upload one.")
-                        : trans("No images in Aiku for this shop's group yet. Upload one to advertise with.") }}
+                        ? ctrans("No image in Aiku matches that. Clear the search, or upload one.")
+                        : ctrans("No images in Aiku for this shop's group yet. Upload one to advertise with.") }}
                 </p>
             </Deferred>
         </section>
@@ -436,7 +422,7 @@ const toggleImage = (role: string, id: number) => {
 
     <div class="px-4 pb-6">
         <Link :href="route(index_route.name, index_route.parameters)" class="primaryLink text-sm">
-            {{ trans("Back to campaigns") }}
+            {{ ctrans("Back to campaigns") }}
         </Link>
     </div>
 </template>

@@ -9,12 +9,17 @@ namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\OrgAction;
 use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSourceCampaign;
+use App\Models\SysAdmin\Organisation;
 use App\Services\GoogleAds\GoogleAdsClient;
 use App\Services\GoogleAds\GoogleAdsException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Creates at Google the campaign that until now existed only in Aiku.
@@ -89,9 +94,16 @@ class PublishGoogleAdsCampaign extends OrgAction
         return $campaign->refresh();
     }
 
-    public function asController(TrafficSourceCampaign $trafficSourceCampaign, ActionRequest $request): TrafficSourceCampaign
+    public function asController(Organisation $organisation, Shop $shop, TrafficSourceCampaign $trafficSourceCampaign, ActionRequest $request): TrafficSourceCampaign
     {
-        $this->initialisationFromShop($trafficSourceCampaign->trafficSource->shop, $request);
+        if (
+            $trafficSourceCampaign->trafficSource->shop_id !== $shop->id
+            || $trafficSourceCampaign->trafficSource->type !== TrafficSourcesTypeEnum::GOOGLE_ADS->value
+        ) {
+            throw new NotFoundHttpException();
+        }
+
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($trafficSourceCampaign);
     }
@@ -99,5 +111,14 @@ class PublishGoogleAdsCampaign extends OrgAction
     public function rules(): array
     {
         return [];
+    }
+
+    public function htmlResponse(TrafficSourceCampaign $campaign): RedirectResponse
+    {
+        return redirect()->route('grp.org.shops.show.marketing.google_ads.show', [
+            'organisation'          => $this->organisation->slug,
+            'shop'                  => $this->shop->slug,
+            'trafficSourceCampaign' => $campaign->slug,
+        ]);
     }
 }

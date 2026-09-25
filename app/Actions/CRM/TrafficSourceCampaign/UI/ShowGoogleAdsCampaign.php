@@ -12,7 +12,6 @@ use App\Actions\CRM\TrafficSource\GetTrafficSourceAudienceMix;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\GetGoogleAdsSearchTerms;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\StoreGoogleAdsImage;
-use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\UpdateInProcessGoogleAdsCampaign;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Models\Helpers\Media;
 use App\Actions\OrgAction;
@@ -33,6 +32,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class ShowGoogleAdsCampaign extends OrgAction
 {
     use WithGoogleAdsInterval;
+    use WithGoogleAdsCampaignJourney;
 
     public function handle(TrafficSourceCampaign $trafficSourceCampaign): TrafficSourceCampaign
     {
@@ -173,11 +173,12 @@ class ShowGoogleAdsCampaign extends OrgAction
     }
 
     /**
-     * The in process page: what has been written so far, and the one button that commits it.
+     * The in process page, the compose step: what has been written so far, and the way on to review it.
      */
     private function inProcessResponse(TrafficSourceCampaign $campaign, ActionRequest $request): Response
     {
         $parameters = $request->route()->originalParameters();
+        $missing    = $this->missingForGoogle($campaign);
 
         return Inertia::render(
             'Org/Shop/CRM/GoogleAdsCampaignInProcess',
@@ -185,24 +186,26 @@ class ShowGoogleAdsCampaign extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($campaign, $parameters),
                 'title'       => $campaign->name,
                 'pageHead'    => [
-                    'title'   => $campaign->name,
-                    'icon'    => ['icon' => ['fab', 'fa-google'], 'title' => __('Google Ads campaign')],
-                    'model'   => __('In process'),
-                    'actions' => [
+                    'title'      => $campaign->name,
+                    'model'      => __('Campaign:'),
+                    'modelStyle' => 'text-sm',
+                    'titleStyle' => 'font-normal text-lg',
+                    'icon'       => ['icon' => ['fab', 'fa-google'], 'title' => __('Google Ads campaign')],
+                    'actions'    => [
                         [
-                            'type'  => 'button',
-                            'style' => 'save',
-                            'label' => __('Publish to Google Ads'),
-                            'icon'  => ['fal', 'fa-cloud-upload'],
-                            'route' => [
-                                'name'       => 'grp.models.org.shop.google_ads.campaign.publish',
-                                'parameters' => ['organisation' => $this->organisation->id, 'shop' => $this->shop->id, 'trafficSourceCampaign' => $campaign->id],
-                                'method'     => 'post',
+                            'type'      => 'button',
+                            'style'     => 'primary',
+                            'icon'      => false,
+                            'iconRight' => 'fal fa-arrow-right',
+                            'label'     => __('Review'),
+                            'route'     => [
+                                'name'       => 'grp.org.shops.show.marketing.google_ads.review',
+                                'parameters' => $parameters,
                             ],
                         ],
                     ],
                 ],
-                'state'    => $this->stateProps($campaign),
+                'journey'  => $this->getGoogleAdsCampaignJourney($campaign, 'compose'),
                 'campaign' => [
                     'slug'         => $campaign->slug,
                     'name'         => $campaign->name,
@@ -215,10 +218,7 @@ class ShowGoogleAdsCampaign extends OrgAction
                    for as long as nothing has been published: every field below it depends on it. */
                 'campaign_types' => StoreGoogleAdsCampaign::campaignTypes(),
 
-                /* What Google still needs before it would create this, so the page can say why the
-                   publish button will refuse rather than leaving somebody to guess which box is
-                   empty. */
-                'missing'       => UpdateInProcessGoogleAdsCampaign::missing((string) $campaign->channel_type, $campaign->data ?? []),
+                'missing'       => $missing,
                 'countries'     => collect(GetCountriesOptions::run())
                     ->map(fn (array $country) => ['value' => $country['code'], 'label' => $country['label']])
                     ->sortBy('label')

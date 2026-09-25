@@ -52,6 +52,12 @@ class UpdateGoogleAdsCampaign extends OrgAction
      */
     public function handle(TrafficSourceCampaign $campaign, array $modelData): TrafficSourceCampaign
     {
+        if ($campaign->state->isInProcess()) {
+            throw ValidationException::withMessages([
+                'status' => __('This campaign is not at Google yet. Publish it first.'),
+            ]);
+        }
+
         $shop   = $campaign->trafficSource->shop;
         $client = GoogleAdsClient::forShop($shop);
 

@@ -8,11 +8,16 @@
 namespace App\Actions\CRM\TrafficSourceCampaign\GoogleAds;
 
 use App\Actions\OrgAction;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSourceCampaign;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Saves what has been filled in on a campaign that is still only in Aiku.
@@ -91,14 +96,15 @@ class UpdateInProcessGoogleAdsCampaign extends OrgAction
         }
 
         $labels = [
-            'headlines'    => __('headlines'),
-            'descriptions' => __('descriptions'),
-            'keywords'     => __('keywords'),
+            'headlines'    => [__('a headline'), __(':count headlines')],
+            'descriptions' => [__('a description'), __(':count descriptions')],
+            'keywords'     => [__('a keyword'), __(':count keywords')],
         ];
 
         foreach (Arr::get(self::REQUIRED_TEXT, $channelType, []) as $key => $least) {
             if (count(array_filter((array) Arr::get($data, $key, []))) < $least) {
-                $missing[] = __(':count :thing', ['count' => $least, 'thing' => $labels[$key]]);
+                [$one, $many] = $labels[$key];
+                $missing[]    = $least === 1 ? $one : str_replace(':count', (string) $least, $many);
             }
         }
 
@@ -117,9 +123,16 @@ class UpdateInProcessGoogleAdsCampaign extends OrgAction
         return $missing;
     }
 
-    public function asController(TrafficSourceCampaign $trafficSourceCampaign, ActionRequest $request): TrafficSourceCampaign
+    public function asController(Organisation $organisation, Shop $shop, TrafficSourceCampaign $trafficSourceCampaign, ActionRequest $request): TrafficSourceCampaign
     {
-        $this->initialisationFromShop($trafficSourceCampaign->trafficSource->shop, $request);
+        if (
+            $trafficSourceCampaign->trafficSource->shop_id !== $shop->id
+            || $trafficSourceCampaign->trafficSource->type !== TrafficSourcesTypeEnum::GOOGLE_ADS->value
+        ) {
+            throw new NotFoundHttpException();
+        }
+
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($trafficSourceCampaign, $this->validatedData);
     }
@@ -169,5 +182,10 @@ class UpdateInProcessGoogleAdsCampaign extends OrgAction
             'logos'                     => ['sometimes', 'array', 'max:5'],
             'logos.*'                   => ['integer'],
         ];
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }
