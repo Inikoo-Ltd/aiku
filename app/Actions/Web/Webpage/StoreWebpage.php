@@ -38,6 +38,7 @@ use App\Models\Web\Redirect;
 use App\Models\Web\Website;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
+use App\Rules\NotReservedIrisPath;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -299,6 +300,7 @@ class StoreWebpage extends OrgAction
                 'lowercase',
                 'max:255',
                 new AlphaDashSlash(),
+                new NotReservedIrisPath(),
                 new IUnique(
                     table: 'webpages',
                     extraConditions: [
@@ -350,6 +352,7 @@ class StoreWebpage extends OrgAction
                 'lowercase',
                 'max:255',
                 new AlphaDashSlash(),
+                new NotReservedIrisPath(),
                 new IUnique(
                     table: 'webpages',
                     extraConditions: [

@@ -31,6 +31,8 @@ use App\Actions\Web\Webpage\Iris\ShowIrisCatalogue;
 use App\Actions\Iris\Reviews\ShowIrisFamilyReview;
 use App\Actions\Iris\Reviews\ShowIrisProductReview;
 use App\Actions\Iris\Reviews\ShowIrisReviews;
+use App\Actions\Iris\Docs\ShowIrisDoc;
+use App\Actions\Iris\Docs\ShowIrisDocs;
 use Laravel\Nightwatch\Http\Middleware\Sample;
 
 Route::get('robots.txt', ShowIrisRobotsTxt::class)->name('iris_robots');
@@ -107,6 +109,8 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
         Route::get('/david-aw-news', ShowIrisNewslettersDashboard::class)->name('iris_newsletters');
         Route::get('/product-guides', ShowIrisProductGuidesDashboard::class)->name('iris_product_guides');
+        Route::get('/docs', ShowIrisDocs::class)->name('iris_docs');
+        Route::get('/docs/{slug}', ShowIrisDoc::class)->name('iris_doc')->where('slug', '[a-z0-9-]+');
         Route::get('/business-tips', ShowIrisBusinessTipsDashboard::class)->name('iris_business_tips');
         Route::get('/integrations-guides', ShowIrisIntegrationsGuidesDashboard::class)->name('iris_integrations_guides');
         Route::get('/dropshipping-guides', ShowIrisDropshippingGuidesDashboard::class)->name('iris_dropshipping_guides');

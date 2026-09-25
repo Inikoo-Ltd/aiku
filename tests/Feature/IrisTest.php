@@ -6,6 +6,17 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Iris\Docs\ShowIrisDoc;
+use App\Actions\Iris\Docs\ShowIrisDocs;
+use App\Actions\UI\AikuPublic\BlogPosts;
+use App\Actions\Web\Webpage\StoreWebpage;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Helpers\Language;
+use App\Models\Web\Webpage;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareUrl;
 use App\Http\Middleware\DetectIrisWebsite;
@@ -518,4 +529,82 @@ test('iris invoice pdf is not served on another shop website', function () {
 
     $this->get('http://'.$otherWebsite->domain.'/invoice/'.$invoice->ulid)->assertNotFound();
     $this->get('http://'.$this->website->domain.'/invoice/'.$invoice->ulid)->assertOk();
+});
+
+function writeDropshippingDoc(string $slug, array $meta, string $body): string
+{
+    $directory = resource_path('markdown/'.BlogPosts::DROPSHIPPING_DOCS);
+    @mkdir($directory, 0777, true);
+    $frontMatter = collect(array_merge(['title' => $slug, 'summary' => 'Summary of '.$slug, 'date' => '2026-09-01'], $meta))
+        ->map(fn ($value, $key) => $key.': '.$value)
+        ->implode("\n");
+    file_put_contents($directory.'/'.$slug.'.md', "---\n".$frontMatter."\n---\n".$body);
+
+    return $directory.'/'.$slug.'.md';
+}
+
+function asDropshippingWebsite(Website $website, string $shopSlug, string $languageCode): Website
+{
+    $shop = $website->shop->replicate();
+    $shop->type = ShopTypeEnum::DROPSHIPPING;
+    $shop->slug = $shopSlug;
+    $shop->setRelation('language', (new Language())->forceFill(['code' => $languageCode]));
+    $website->setRelation('shop', $shop);
+
+    return $website;
+}
+
+test('dropshipping docs are listed in the website language and only for their shops', function () {
+    $files = [
+        writeDropshippingDoc('zz-pest-connecting', ['category' => 'sales-channels', 'shops' => 'zz-pest-dse, zz-pest-awd'], 'See [the other guide](/docs/zz-pest-other).'),
+        writeDropshippingDoc('zz-pest-connecting-es', ['category' => 'sales-channels', 'title' => 'Conectar', 'source_date' => '2026-09-01'], 'Hola'),
+        writeDropshippingDoc('zz-pest-other', ['category' => 'products'], 'Other'),
+        writeDropshippingDoc('zz-pest-other-es', ['category' => 'products', 'title' => 'Otra', 'source_date' => '2026-09-01'], 'Otra'),
+        writeDropshippingDoc('zz-pest-uk-only', ['shops' => 'zz-pest-awd'], 'UK'),
+    ];
+
+    try {
+        $website = asDropshippingWebsite($this->website, 'zz-pest-dse', 'es');
+
+        $slugs = collect(ShowIrisDocs::make()->handle($website))->pluck('slug')->filter(fn (string $slug) => str_starts_with($slug, 'zz-pest-'))->values()->all();
+        expect($slugs)->toEqualCanonicalizing(['zz-pest-connecting-es', 'zz-pest-other-es']);
+
+        $page = ShowIrisDoc::make()->handle($website, 'zz-pest-connecting');
+        expect($page['doc']['html'])->toContain('href="/docs/zz-pest-other-es"')
+            ->and(collect($page['translations'])->pluck('lang')->all())->toBe(['en', 'es']);
+
+        expect(fn () => ShowIrisDoc::make()->handle($website, 'zz-pest-uk-only'))->toThrow(NotFoundHttpException::class);
+    } finally {
+        array_map('unlink', $files);
+    }
+});
+
+test('docs are not served on a website that is not dropshipping', function () {
+    $this->get('http://'.$this->website->domain.'/docs')->assertNotFound();
+});
+
+test('a webpage can not take the docs address', function () {
+    expect(fn () => StoreWebpage::make()->action($this->website, array_merge(Webpage::factory()->definition(), [
+        'url'      => 'docs',
+        'type'     => WebpageTypeEnum::CONTENT->value,
+        'sub_type' => WebpageSubTypeEnum::CONTENT->value,
+    ])))->toThrow(ValidationException::class);
+});
+
+test('dropshipping docs fill in the website own company, address and blocked countries', function () {
+    $website = asDropshippingWebsite($this->website, 'zz-pest-dse', 'es');
+    $website->shop->company_name = 'Pest & Co';
+    $website->shop->banned_country_regions = [
+        'GB' => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => null],
+        'FR' => ['billing' => false, 'delivery' => true, 'ip_block' => false, 'postcode' => '/^20/'],
+        'DE' => ['billing' => true, 'delivery' => false, 'ip_block' => false, 'postcode' => null],
+    ];
+
+    $html = ShowIrisDocs::make()->fillPlaceholders('{company_name}|{blocked_delivery_countries}', $website, isHtml: true);
+
+    expect($html)->toContain('Pest &amp; Co|')
+        ->toContain('<li>Reino Unido</li>')
+        ->toContain('<li>Francia (')
+        ->not->toContain('Alemania')
+        ->and(ShowIrisDocs::make()->fillPlaceholders('{company_name}', $website))->toBe('Pest & Co');
 });

@@ -69,7 +69,34 @@ class BlogPosts
             'notice' => 'Přeloženo pro pohodlí. V případě rozdílů platí anglická verze.',
             'stale'  => 'Anglický originál se od tohoto překladu změnil. Platí anglická verze.',
         ],
+        'de' => [
+            'name'   => 'Deutsch',
+            'notice' => 'Zur besseren Lesbarkeit übersetzt. Bei Abweichungen gilt die englische Fassung.',
+            'stale'  => 'Das englische Original wurde seit dieser Übersetzung geändert. Es gilt die englische Fassung.',
+        ],
+        'fr' => [
+            'name'   => 'Français',
+            'notice' => 'Traduit pour plus de commodité. En cas de différence, la version anglaise fait foi.',
+            'stale'  => 'L’original anglais a changé depuis cette traduction. La version anglaise fait foi.',
+        ],
+        'pt' => [
+            'name'   => 'Português',
+            'notice' => 'Traduzido para sua comodidade. Em caso de diferença, prevalece a versão em inglês.',
+            'stale'  => 'O original em inglês mudou desde esta tradução. Prevalece a versão em inglês.',
+        ],
+        'it' => [
+            'name'   => 'Italiano',
+            'notice' => 'Tradotto per comodità. In caso di differenze, prevale la versione inglese.',
+            'stale'  => 'L’originale inglese è cambiato dopo questa traduzione. Prevale la versione inglese.',
+        ],
+        'nl' => [
+            'name'   => 'Nederlands',
+            'notice' => 'Vertaald voor het gemak. Bij verschillen geldt de Engelse versie.',
+            'stale'  => 'Het Engelse origineel is na deze vertaling gewijzigd. De Engelse versie geldt.',
+        ],
     ];
+
+    public const string DROPSHIPPING_DOCS = 'dropshipping/docs';
 
     /**
      * @return Collection<int, array{slug:string,title:string,summary:string,date:Carbon,tags:array<int,string>,body:string,html:string}>
@@ -86,7 +113,7 @@ class BlogPosts
      */
     public static function everything(string $dir = 'blog'): Collection
     {
-        return collect(File::glob(resource_path("markdown/aiku-public/{$dir}/*.md")))
+        return collect(File::glob(self::directory($dir).'/*.md'))
             ->map(fn (string $path) => self::parse($path))
             ->reject(fn (array $post) => $post['date']->isFuture())
             ->sortByDesc('date')
@@ -108,7 +135,7 @@ class BlogPosts
 
     public static function find(string $slug, string $dir = 'blog'): ?array
     {
-        $path = resource_path("markdown/aiku-public/{$dir}/{$slug}.md");
+        $path = self::directory($dir)."/{$slug}.md";
 
         $post = preg_match('/^[a-z0-9-]+$/', $slug) && File::isFile($path) ? self::parse($path) : null;
 
@@ -158,6 +185,11 @@ class BlogPosts
         return max(1, (int) round($minutes));
     }
 
+    private static function directory(string $dir): string
+    {
+        return str_contains($dir, '/') ? resource_path("markdown/{$dir}") : resource_path("markdown/aiku-public/{$dir}");
+    }
+
     private static function parse(string $path): array
     {
         $raw = File::get($path);
@@ -182,6 +214,7 @@ class BlogPosts
             'date' => Carbon::parse($meta['date']),
             'tags' => array_map('trim', explode(',', $meta['tags'] ?? '')),
             'help_routes' => array_values(array_filter(array_map('trim', explode(',', $meta['help_routes'] ?? '')))),
+            'shops' => array_values(array_filter(array_map('trim', explode(',', $meta['shops'] ?? '')))),
             'category' => $meta['category'] ?? null,
             'audience' => $meta['audience'] ?? null,
             'series' => $meta['series'] ?? null,
