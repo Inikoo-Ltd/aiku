@@ -53,6 +53,9 @@ const findEntityBySlug = (slug: string) =>
     layout.organisations.data.find((org: any) => org.slug === slug) ||
     layout.agents.data.find((agent: any) => agent.slug === slug)
 
+const getOrganisationColour = (slug?: string): string | null =>
+    slug ? layout.app.organisation_colours?.[slug] ?? null : null
+
 const resolveRouteOrFallback = (routeName: string, routeParams: Record<string, string>, fallbackHref: string): string => {
     try {
         return route(routeName, routeParams)
@@ -377,17 +380,20 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                                 : 'text-slate-600 hover:bg-slate-200/75',
                     ]"
                     class="group flex gap-x-2 w-full justify-between items-center rounded pl-2 pr-2 py-2 text-sm cursor-pointer"
-                    :style="item.slug == layout.currentParams?.organisation
-                            ? {
-                                backgroundColor: `color-mix(in srgb, ${themeColor} 40%, transparent)`,
-                                color: `color-mix(in srgb, ${themeColor} 80%, black)`,
-                            }
-                            : hoveredOrgSlug === item.slug && hasShopsOrFulfilments(item)
+                        :style="[
+                            item.slug == layout.currentParams?.organisation
                                 ? {
-                                    backgroundColor: `color-mix(in srgb, ${themeColor} 15%, transparent)`,
+                                    backgroundColor: `color-mix(in srgb, ${themeColor} 40%, transparent)`,
                                     color: `color-mix(in srgb, ${themeColor} 80%, black)`,
+                                }
+                                : hoveredOrgSlug === item.slug && hasShopsOrFulfilments(item)
+                                    ? {
+                                        backgroundColor: `color-mix(in srgb, ${themeColor} 15%, transparent)`,
+                                        color: `color-mix(in srgb, ${themeColor} 80%, black)`,
                                     }
-                                : {}"
+                                    : {},
+                            { borderLeft: `6px solid ${getOrganisationColour(item.slug) ?? 'transparent'}` }
+                        ]"
                 >
                     <div class="flex items-center gap-x-2 flex-1 min-w-0">
                         <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50 flex-shrink-0">
@@ -400,6 +406,7 @@ const navigateToSubOrg = (sub: typeof sortedShowareList.value[number], typeSub: 
                             <div v-if="isMobile && item.slug == layout.currentParams?.organisation && currentPlaceLabel" class="truncate text-xs font-normal opacity-80">{{ currentPlaceLabel }}</div>
                         </div>
                     </div>
+
                     <FontAwesomeIcon
                         v-if="hasShopsOrFulfilments(item)"
                         icon="fal fa-chevron-right"
