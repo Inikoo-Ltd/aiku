@@ -10,6 +10,7 @@ use App\Actions\Accounting\Payment\PastPay\PayOrderWithPastpay;
 use App\Actions\Accounting\TopUpPaymentApiPoint\StoreTopUpPaymentApiPoint;
 use App\Actions\Dropshipping\Aiku\CloneMultipleManualPortfolios;
 use App\Actions\Dropshipping\Aiku\StoreRetinaManualPlatform;
+use App\Actions\Dropshipping\Allegro\Product\MatchRetinaPortfolioToCurrentAllegroProduct;
 use App\Actions\Dropshipping\Allegro\Product\StoreRetinaNewProductToCurrentAllegro;
 use App\Actions\Dropshipping\Wix\Product\MatchRetinaPortfolioToCurrentWixProduct;
 use App\Actions\Dropshipping\Wix\Product\StoreRetinaNewProductToCurrentWix;
@@ -491,6 +492,7 @@ Route::post('portfolio/{portfolio:id}/store-new-tiktok-product', StoreRetinaNewP
 Route::post('portfolio/{portfolio:id}/match-to-existing-tiktok-product', MatchRetinaPortfolioToCurrentTiktokProduct::class)->name('portfolio.match_to_existing_tiktok_product')->whereNumber('portfolio');
 
 Route::post('portfolio/{portfolio:id}/store-new-allegro-product', StoreRetinaNewProductToCurrentAllegro::class)->name('portfolio.store_new_allegro_product')->withoutScopedBindings()->whereNumber('portfolio');
+Route::post('portfolio/{portfolio:id}/match-to-existing-allegro-product', MatchRetinaPortfolioToCurrentAllegroProduct::class)->name('portfolio.match_to_existing_allegro_product')->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/store-new-wix-product', StoreRetinaNewProductToCurrentWix::class)->name('portfolio.store_new_wix_product')->withoutScopedBindings()->whereNumber('portfolio');
 Route::post('portfolio/{portfolio:id}/match-to-existing-wix-product', MatchRetinaPortfolioToCurrentWixProduct::class)->name('portfolio.match_to_existing_wix_product')->withoutScopedBindings()->whereNumber('portfolio');
 
