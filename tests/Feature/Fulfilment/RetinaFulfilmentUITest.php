@@ -84,7 +84,7 @@ beforeEach(function () {
     }
     $this->rentalAgreement = $rentalAgreement;
 
-    $palletDelivery = PalletDelivery::first();
+    $palletDelivery = PalletDelivery::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->oldest('id')->first();
     if (!$palletDelivery) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletDeliveryStateEnum::IN_PROCESS);
@@ -97,7 +97,7 @@ beforeEach(function () {
 
     $this->palletDelivery = $palletDelivery;
 
-    $pallet = Pallet::first();
+    $pallet = Pallet::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->oldest('id')->first();
     if (!$pallet) {
         data_set($storeData, 'type', PalletTypeEnum::PALLET);
         data_set($storeData, 'customer_reference', 'ref');
@@ -115,7 +115,7 @@ beforeEach(function () {
 
     $this->pallet->refresh();
 
-    $palletReturn = PalletReturn::first();
+    $palletReturn = PalletReturn::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->oldest('id')->first();
     if (!$palletReturn) {
         data_set($storeData, 'warehouse_id', $this->warehouse->id);
         data_set($storeData, 'state', PalletReturnStateEnum::IN_PROCESS);
@@ -128,7 +128,7 @@ beforeEach(function () {
 
     $this->palletReturn = $palletReturn;
 
-    $storedItem = StoredItem::first();
+    $storedItem = StoredItem::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->oldest('id')->first();
     if (!$storedItem) {
         data_set($storeData, 'reference', 'stored-item-ref');
 
@@ -166,7 +166,7 @@ beforeEach(function () {
     }
     $this->rentalAgreement = $rentalAgreement;
 
-    $recurringBill = RecurringBill::first();
+    $recurringBill = RecurringBill::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->oldest('id')->first();
     if (!$recurringBill) {
         data_set($storeData, 'start_date', now());
 
@@ -194,7 +194,7 @@ beforeEach(function () {
 
     $this->rental = $rental;
 
-    $space = Space::first();
+    $space = Space::where('fulfilment_customer_id', $this->customer->fulfilmentCustomer->id)->oldest('id')->first();
     if (!$space) {
         $space = StoreSpace::make()->action(
             $this->customer->fulfilmentCustomer,

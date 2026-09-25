@@ -320,7 +320,7 @@ function createWarehouse(): Warehouse
  */
 function createCustomer(Shop $shop): Customer
 {
-    $customer = $shop->customers()->first();
+    $customer = $shop->customers()->oldest('id')->first();
     if (!$customer) {
         $customer = StoreCustomer::make()->action(
             $shop,
