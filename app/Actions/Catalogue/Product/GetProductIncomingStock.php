@@ -22,25 +22,24 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * Goods already turned into a stock delivery are counted there; a purchase order line is only
  * counted while no stock delivery past its draft holds that same org stock, so nothing is listed
  * twice and the rest of a partly delivered order stays visible.
+ *
+ * The date is only ever one staff typed: the delivery's estimated receiving date, else its
+ * purchase orders'. Nothing is guessed, so goods without a typed date are listed with no date.
  */
 class GetProductIncomingStock
 {
     use AsObject;
 
-    /**
-     * ponytail: days-to-arrive per delivery state is a constant table; swap for measured
-     * per-supplier transit times once stock deliveries carry their own expected date
-     */
-    private const array DAYS_TO_ARRIVE = [
-        StockDeliveryStateEnum::CONFIRMED->value     => 21,
-        StockDeliveryStateEnum::READY_TO_SHIP->value => 14,
-        StockDeliveryStateEnum::DISPATCHED->value    => 7,
-        StockDeliveryStateEnum::RECEIVED->value      => 3,
-        StockDeliveryStateEnum::CHECKED->value       => 2,
-        StockDeliveryStateEnum::BOOKING_IN->value    => 1,
+    private const array INCOMING_STOCK_DELIVERY_STATES = [
+        StockDeliveryStateEnum::CONFIRMED,
+        StockDeliveryStateEnum::READY_TO_SHIP,
+        StockDeliveryStateEnum::DISPATCHED,
+        StockDeliveryStateEnum::RECEIVED,
+        StockDeliveryStateEnum::CHECKED,
+        StockDeliveryStateEnum::BOOKING_IN,
     ];
 
-    private const int DEFAULT_LEAD_TIME_DAYS = 14;
+    private const string PURCHASE_ORDER_TYPED_DATE = "coalesce(purchase_orders.estimated_received_at::date, nullif(purchase_orders.data->>'estimated_receiving_date', '')::date)";
 
     /**
      * @return array<int, array{type: string, reference: string, slug: string, org_stock_id: int, org_stock_code: string, org_stock_name: string, state: string, state_label: string, quantity: float, eta: string|null, organisation_slug: string}>
@@ -129,12 +128,18 @@ class GetProductIncomingStock
             ->whereIn('stock_delivery_items.org_stock_id', $orgStockIds)
             ->whereNull('stock_delivery_items.deleted_at')
             ->whereNull('stock_deliveries.deleted_at')
-            ->whereIn('stock_deliveries.state', array_keys(self::DAYS_TO_ARRIVE))
+            ->whereIn('stock_deliveries.state', self::INCOMING_STOCK_DELIVERY_STATES)
             ->select([
                 'stock_deliveries.reference',
                 'stock_deliveries.slug',
                 'stock_deliveries.state',
-                'stock_deliveries.dispatched_at',
+                DB::raw("coalesce(
+                    nullif(stock_deliveries.data->>'estimated_receiving_date', '')::date,
+                    (select min(".self::PURCHASE_ORDER_TYPED_DATE.")
+                        from purchase_order_stock_delivery
+                        join purchase_orders on purchase_orders.id = purchase_order_stock_delivery.purchase_order_id
+                        where purchase_order_stock_delivery.stock_delivery_id = stock_deliveries.id)
+                ) as typed_eta"),
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
@@ -153,7 +158,7 @@ class GetProductIncomingStock
                 'state'             => $row->state,
                 'state_label'       => StockDeliveryStateEnum::labels()[$row->state],
                 'quantity'          => (float) $row->quantity,
-                'eta'               => now()->addDays(self::DAYS_TO_ARRIVE[$row->state])->toDateString(),
+                'eta'               => $this->eta($row->typed_eta),
                 'organisation_slug' => $row->organisation_slug,
             ])
             ->values()
@@ -202,12 +207,10 @@ class GetProductIncomingStock
                 'purchase_orders.reference',
                 'purchase_orders.slug',
                 'purchase_orders.delivery_state',
-                'purchase_orders.submitted_at',
-                'purchase_orders.estimated_received_at',
+                DB::raw(self::PURCHASE_ORDER_TYPED_DATE.' as typed_eta'),
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
-                'org_stocks.measured_lead_time_days',
                 'organisations.slug as organisation_slug',
                 DB::raw('(coalesce(purchase_order_transactions.quantity_ordered, 0) - coalesce(purchase_order_transactions.quantity_cancelled, 0)) as quantity'),
             ])
@@ -223,7 +226,7 @@ class GetProductIncomingStock
                 'state'             => $row->delivery_state,
                 'state_label'       => PurchaseOrderDeliveryStateEnum::labels()[$row->delivery_state],
                 'quantity'          => (float) $row->quantity,
-                'eta'               => $this->purchaseOrderEta($row),
+                'eta'               => $this->eta($row->typed_eta),
                 'organisation_slug' => $row->organisation_slug,
             ])
             ->values()
@@ -231,21 +234,14 @@ class GetProductIncomingStock
     }
 
     /**
-     * The date the office typed in, otherwise the submission date plus the lead time we have
-     * measured for that stock. Anything already overdue is reported as tomorrow.
+     * A typed date already past is reported as tomorrow: the goods are late, not gone.
      */
-    private function purchaseOrderEta(object $row): ?string
+    private function eta(?string $typedEta): ?string
     {
-        $eta = $row->estimated_received_at
-            ? Carbon::parse($row->estimated_received_at)
-            : ($row->submitted_at
-                ? Carbon::parse($row->submitted_at)->addDays((int) ($row->measured_lead_time_days ?? self::DEFAULT_LEAD_TIME_DAYS))
-                : null);
-
-        if (!$eta) {
+        if (!$typedEta) {
             return null;
         }
 
-        return $eta->max(now()->addDay())->toDateString();
+        return Carbon::parse($typedEta)->max(now()->addDay())->toDateString();
     }
 }

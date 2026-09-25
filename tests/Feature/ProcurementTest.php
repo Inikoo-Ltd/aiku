@@ -5442,13 +5442,24 @@ test('incoming stock tells the customer when an out of stock product is expected
     $product->load('orgStocks');
 
     $incoming = GetProductIncomingStock::run($product);
-    $expectedEta = now()->addDays(7)->toDateString();
 
     expect($incoming)->toHaveCount(1)
         ->and($incoming[0]['type'])->toBe('stock_delivery')
         ->and($incoming[0]['reference'])->toBe('ETA-DEL-1')
         ->and($incoming[0]['quantity'])->toBe(120.0)
-        ->and($incoming[0]['eta'])->toBe($expectedEta)
+        ->and($incoming[0]['eta'])->toBeNull()
+        ->and(GetProductIncomingStock::make()->earliestEta($product))->toBeNull();
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $purchaseOrder->update(['data' => array_merge($purchaseOrder->data ?? [], ['estimated_receiving_date' => now()->addDays(30)->toDateString()])]);
+    $stockDelivery->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
+
+    expect(GetProductIncomingStock::make()->earliestEta($product))->toBe(now()->addDays(30)->toDateString());
+
+    $expectedEta = now()->addDays(9)->toDateString();
+    $stockDelivery->update(['data' => array_merge($stockDelivery->data ?? [], ['estimated_receiving_date' => $expectedEta])]);
+
+    expect(GetProductIncomingStock::run($product)[0]['eta'])->toBe($expectedEta)
         ->and(GetProductIncomingStock::make()->earliestEta($product))->toBe($expectedEta)
         ->and(GetProductIncomingStock::make()->earliestEtaByProduct([$product->id]))->toBe([$product->id => $expectedEta]);
 
