@@ -67,7 +67,7 @@ class UpdateOrderStateToHandling extends OrgAction
                             'gross_amount'    => $gross,
                             'net_amount'      => $net,
                             'org_net_amount'  => $net * $transaction->org_exchange,
-                            'grp_net_amount'  => $net * $transaction->org_exchange,
+                            'grp_net_amount'  => $net * $transaction->grp_exchange,
                         ]
                     );
                 }
