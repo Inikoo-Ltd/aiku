@@ -83,7 +83,7 @@ class AnswerWhatsappCall
         ];
     }
 
-    public function asController(MetaChatCall $metaChatCall, ActionRequest $request): array
+    public function asController(string $organisation, MetaChatCall $metaChatCall, ActionRequest $request): array
     {
         $user = Auth::user();
 

@@ -115,7 +115,7 @@ const buildAnswer = async (offerSdp: string): Promise<string> => {
         }
     }
 
-    await peer.setRemoteDescription({ type: "offer", sdp: offerSdp })
+    await peer.setRemoteDescription({ type: "offer", sdp: offerSdp.trimEnd() + "\r\n" })
 
     const answer = await peer.createAnswer()
     await peer.setLocalDescription(answer)
@@ -189,6 +189,7 @@ export const useWhatsappCall = () => {
 
             startTicker()
         } catch (error) {
+            console.log(error)
             teardownMedia()
             notify({
                 title: ctrans("Something went wrong"),
