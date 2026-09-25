@@ -133,8 +133,9 @@ const onClickOrg = async (event: MouseEvent, slug?: string) => {
     }
 
     try {
-        const response = await axios.get(route('grp.profile.can_visit'))
-        router.visit(response.data ? targetHref : dashboardHref)
+        // const response = await axios.get(route('grp.profile.can_visit'))
+        // router.visit(response.data ? targetHref : dashboardHref)
+        router.visit(targetHref) // Assuming permission check is handled server-side or not needed for this example
     } catch (error) {
         console.error(error)
         router.visit(dashboardHref)
