@@ -299,13 +299,16 @@ const canIgnore = computed(() =>
 
 const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value)
 
-// Ending a conversation nobody ever answered is rude: from the other side it reads as being
+// Ending a live chat nobody ever answered is rude: from the other side it reads as being
 // shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
+// An email customer is never told it was closed, and is often already being helped on a chat.
 const hasBeenAnswered = computed(() =>
     messagesLocal.value.some((message) => message.sender_type === "agent")
 )
 
-const canEndChat = computed(() => hasBeenAnswered.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+const canEndChat = computed(() =>
+    (hasBeenAnswered.value || (props.session as any)?.channel === "email") && !isClosed.value && !isTrashed.value && !props.readOnly
+)
 
 // The reason is picked, never typed: clearing an imported mailbox is a bulk job, and what has
 // to be written becomes blank or inconsistent within a day. Picked from a list it can be counted.
