@@ -5895,6 +5895,37 @@ test('customer service edits the courier domains in the group chat settings, sub
     $group->update(['settings' => $settings]);
 });
 
+test('a supervisor moves a conversation to Couriers, which adds the sender domain and files its open conversations', function () {
+    actingAs($this->user);
+    $group    = $this->organisation->group;
+    $settings = $group->settings;
+    $move     = fn (ChatSession $session) => $this->patchJson(route('grp.org.chat.agents.sessions.couriers', [$this->organisation->slug, $session->ulid]));
+
+    $courier = noiseTestEmailSession($this->shop, 'Bookings@Parcels-Move.example', 'Pickup', 'Pickup booked for tomorrow.');
+    $sibling = noiseTestEmailSession($this->shop, 'tracking@eu.parcels-move.example', 'Tracking', 'Parcel in transit.');
+    $gmail   = noiseTestEmailSession($this->shop, 'driver@gmail.com', 'Pickup', 'I am outside.');
+    $other   = noiseTestEmailSession($this->shop, 'someone@example.com', 'Hello', 'Do you ship to Israel?');
+
+    expect(\App\Actions\Chat\ChatSession\MoveChatSessionToCouriers::make()->userMayMove($this->user, $courier))->toBeTrue()
+        ->and(\App\Actions\Chat\ChatSession\MoveChatSessionToCouriers::make()->userMayMove($this->user, $gmail))->toBeFalse();
+
+    $move($courier)->assertOk()->assertJsonPath('data.filed', 2);
+
+    expect(data_get($group->fresh()->settings, 'chat.carrier_domains'))->toContain('parcels-move.example', 'gls-spain.es')
+        ->and($courier->fresh()->is_carrier)->toBeTrue()
+        ->and($sibling->fresh()->is_carrier)->toBeTrue()
+        ->and($other->fresh()->is_carrier)->toBeFalse();
+
+    $move($courier)->assertUnprocessable();
+    $move($gmail)->assertUnprocessable();
+
+    actingAs(User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]));
+    $move($other)->assertForbidden();
+
+    ChatSession::whereIn('id', [$courier->id, $sibling->id, $gmail->id, $other->id])->delete();
+    $group->update(['settings' => $settings]);
+});
+
 test('a thanks after we answered closes the conversation quietly, but never a first message, an attachment or an open ticket', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();

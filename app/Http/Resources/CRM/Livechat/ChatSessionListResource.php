@@ -162,6 +162,7 @@ class ChatSessionListResource extends JsonResource
             ])->values()->all() : [],
 
             'can_dispose'    => \App\Actions\Chat\CanDisposeOfChat::run($request->user(), $this->resource),
+            'can_move_to_couriers' => \App\Actions\Chat\ChatSession\MoveChatSessionToCouriers::make()->userMayMove($request->user(), $this->resource),
 
             'assigned_agent' => $activeAssignment ? [
                 'id'      => $activeAssignment->chatAgent?->id,

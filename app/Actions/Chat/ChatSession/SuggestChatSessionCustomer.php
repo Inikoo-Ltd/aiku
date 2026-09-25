@@ -39,7 +39,7 @@ class SuggestChatSessionCustomer
     public const string BASIS_MANUAL = 'manual';
     public const string BASIS_PREVIOUS_LINK = 'previous_link';
 
-    private const array FREE_MAIL_DOMAINS = [
+    public const array FREE_MAIL_DOMAINS = [
         'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'live.com', 'live.co.uk', 'msn.com',
         'yahoo.com', 'yahoo.co.uk', 'yahoo.de', 'yahoo.fr', 'yahoo.es', 'icloud.com', 'me.com', 'aol.com', 'btinternet.com',
         'sky.com', 'talktalk.net', 'virginmedia.com', 'protonmail.com', 'proton.me', 'gmx.de', 'gmx.net', 'web.de',

@@ -15,6 +15,7 @@ use App\Actions\Chat\ChatSession\ForwardChatSessionToColleague;
 use App\Actions\Chat\ChatSession\GetChatMessageSlackSettings;
 use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsRubbish;
+use App\Actions\Chat\ChatSession\MoveChatSessionToCouriers;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsSpam;
 use App\Actions\Chat\ChatSession\RedactChatMessage;
 use App\Actions\Chat\ChatSession\ReleaseChatSession;
@@ -94,6 +95,7 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/sessions/{chatSession:ulid}/not-spam', UnmarkChatSessionAsSpam::class)->name('sessions.not_spam');
     Route::patch('/sessions/{chatSession:ulid}/rubbish', MarkChatSessionAsRubbish::class)->name('sessions.rubbish');
     Route::patch('/sessions/{chatSession:ulid}/not-rubbish', [MarkChatSessionAsRubbish::class, 'unmark'])->name('sessions.not_rubbish');
+    Route::patch('/sessions/{chatSession:ulid}/couriers', MoveChatSessionToCouriers::class)->name('sessions.couriers');
     Route::patch('/sessions/{chatSession:ulid}/priority', SetChatSessionPriority::class)->name('sessions.priority');
     Route::patch('/sessions/{chatSession:ulid}/highlight', ToggleChatSessionHighlight::class)->name('sessions.highlight');
     Route::delete('/sessions/{chatSession:ulid}/trash', TrashChatSession::class)->name('sessions.trash');

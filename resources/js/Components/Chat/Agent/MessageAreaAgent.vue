@@ -22,6 +22,7 @@ import {
     faCircle,
     faShare,
     faListCheck,
+    faTruck,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -325,6 +326,26 @@ const markRubbish = async (rubbish: boolean, reason?: string) => {
             reason ? { reason } : {},
             { withCredentials: true }
         )
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to update"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
+}
+
+const moveToCouriers = async () => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+    isMenuOpen.value = false
+    isSpamMarking.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const response = await axios.patch(route("grp.org.chat.agents.sessions.couriers", [organisation, props.session.ulid]), {}, { withCredentials: true })
+        notify({ title: ctrans("Moved to Couriers"), text: response.data?.message, type: "success" })
         emit("spam-success")
     } catch (e: any) {
         notify({
@@ -1460,6 +1481,12 @@ const handleClickOutside = (e: MouseEvent) => {
 
                         <button class="menu-item" @click="openSlackModal">
                             <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width /> {{ ctrans("Share to Slack") }}
+                        </button>
+
+                        <button v-if="(session as any)?.can_move_to_couriers" class="menu-item" :disabled="isSpamMarking"
+                            v-tooltip="ctrans('Adds the sender\'s domain to the courier list, and moves its open conversations to the Couriers folder')"
+                            @click="moveToCouriers">
+                            <FontAwesomeIcon :icon="faTruck" class="text-gray-600" fixed-width /> {{ ctrans("Move to Couriers") }}
                         </button>
 
                     </template>
