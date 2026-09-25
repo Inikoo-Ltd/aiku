@@ -105,7 +105,7 @@ class StorePurchaseOrder extends OrgAction
             'reference'      => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string'
+                $this->strict ? 'alpha_dash:ascii' : 'string'
             ],
             'state'          => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
             'delivery_state' => ['sometimes', 'required', Rule::enum(PurchaseOrderDeliveryStateEnum::class)],

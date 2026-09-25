@@ -942,6 +942,16 @@ test('suppliers set to receive purchase orders by email get an email button on t
     UpdateSupplier::make()->action($orgSupplier->supplier, ['po_by_email' => false]);
 });
 
+test('purchase order page has an edit button to change its reference', function () {
+    $purchaseOrder = $this->purchaseOrder;
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions', fn ($actions) => collect($actions)->contains(
+                fn ($action) => ($action['style'] ?? null) === 'edit' && $action['route']['name'] === 'grp.org.procurement.purchase_orders.edit'
+            )));
+});
+
 test('delete purchase order', function () {
     $supplier    = StoreSupplier::make()->action(
         parent: $this->group,
@@ -1047,6 +1057,15 @@ test('stock deliveries are numbered with the org supplier delivery format, skipp
 
     expect($orgSupplier->serialReferences()->where('model', SerialReferenceModelEnum::STOCK_DELIVERY)->exists())->toBeFalse();
 });
+
+test('procurement number formats and typed references only take letters, numbers, - and _', function (string $badFormat) {
+    $orgSupplier = $this->purchaseOrder->parent;
+
+    expect(fn () => UpdateOrgSupplier::make()->action($orgSupplier, ['purchase_order_reference_format' => $badFormat]))
+        ->toThrow(ValidationException::class)
+        ->and(fn () => UpdatePurchaseOrder::make()->action($this->purchaseOrder, ['reference' => sprintf($badFormat, 1)]))
+        ->toThrow(ValidationException::class);
+})->with(['PO %04d', 'PO/%04d', 'PO-%04d URGENT', 'PÖ-%04d']);
 
 test('update quantity items to 0 in purchase order', function ($purchaseOrder) {
     $item = $purchaseOrder->purchaseOrderTransactions()->first();

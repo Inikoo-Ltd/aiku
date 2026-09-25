@@ -56,7 +56,7 @@ class StoreStockDelivery extends OrgAction
             'reference' => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string',
+                $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
         ];
 

@@ -27,7 +27,7 @@ trait WithProcurementSerialReferences
     {
         $rules = [];
         foreach ([SerialReferenceModelEnum::PURCHASE_ORDER, SerialReferenceModelEnum::STOCK_DELIVERY] as $model) {
-            $rules[$model->value.'_reference_format'] = ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[^%]*%\d*d[^%]*$/'];
+            $rules[$model->value.'_reference_format'] = ['sometimes', 'nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_-]*%\d*d[A-Za-z0-9_-]*$/'];
             $rules[$model->value.'_last_number']      = ['sometimes', 'required', 'integer', 'min:0'];
         }
 
@@ -195,7 +195,7 @@ trait WithProcurementSerialReferences
                 $model->value.'_reference_format' => [
                     'type'               => 'input',
                     'label'              => $formatLabel,
-                    'information'        => __('Put %04d where the number goes, e.g. :example. Leave empty to use the organisation numbers.', ['example' => $example]),
+                    'information'        => __('Put %04d where the number goes, e.g. :example. Only letters, numbers, - and _. Leave empty to use the organisation numbers.', ['example' => $example]),
                     'value'              => $serialReference?->format,
                     'updateRoute'        => $updateRoute,
                     'revisit_after_save' => true,

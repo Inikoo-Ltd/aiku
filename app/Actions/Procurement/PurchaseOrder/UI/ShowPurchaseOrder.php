@@ -154,13 +154,16 @@ class ShowPurchaseOrder extends OrgAction
                     'afterTitle' => [
                         'label' => $purchaseOrder->reference,
                     ],
-                    'edit' => $this->canEdit ? [
-                        'route' => [
-                            'name'       => 'grp.org.procurement.purchase_orders.edit',
-                            'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
-                        ],
-                    ] : false,
                     'actions' => [
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => 'grp.org.procurement.purchase_orders.edit',
+                                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+                            ],
+                        ] : false,
                         [
                             'type'   => 'button',
                             'style'  => 'tertiary',
