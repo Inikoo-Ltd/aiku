@@ -78,10 +78,13 @@ class HTMLSanitizer
             // refuses to start when asked to allow them.
         ]);
 
+        // data is how a small inline picture is written into the body; the purifier only lets
+        // through png, gif and jpeg that decode as images.
         $config->set('URI.AllowedSchemes', [
             'http'   => true,
             'https'  => true,
             'mailto' => true,
+            'data'   => true,
         ]);
 
         $config->set('HTML.SafeIframe', false);

@@ -8704,6 +8704,58 @@ test('an inline picture in an inbound email is shown inside the body where the s
     expect(collect($resource['attachments'])->pluck('original_url')->all())->toBe([$media->getUrl()]);
 });
 
+test('a small inline picture in an inbound email is written into the body instead of being lost', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    $png    = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                               => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/c2/attachments/att1' => \Illuminate\Support\Facades\Http::response(['data' => $encode($png)]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/c2*'             => \Illuminate\Support\Facades\Http::response([
+            'id'       => 'c2',
+            'threadId' => 'tc2',
+            'payload'  => [
+                'mimeType' => 'multipart/related',
+                'headers'  => [
+                    ['name' => 'From', 'value' => 'Montana <montana@example.com>'],
+                    ['name' => 'Subject', 'value' => 'Two invoices missing'],
+                ],
+                'parts'    => [
+                    ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('Here are the two invoice numbers')]],
+                    ['mimeType' => 'text/html', 'filename' => '', 'body' => ['data' => $encode('<p>Here are the two invoice numbers</p><img src="cid:shot@open-xchange.com">')]],
+                    [
+                        'mimeType' => 'image/png',
+                        'filename' => 'image.png',
+                        'headers'  => [
+                            ['name' => 'Content-Disposition', 'value' => 'inline; filename="image.png"'],
+                            ['name' => 'Content-ID', 'value' => '<shot@open-xchange.com>'],
+                        ],
+                        'body'     => ['attachmentId' => 'att1', 'size' => 1652],
+                    ],
+                ],
+            ],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels' => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c2');
+
+    expect($message->attachedFiles())->toBeEmpty()
+        ->and($message->html_body)->toContain('src="data:image/png;base64,'.base64_encode($png).'"')
+        ->and($message->html_body)->not->toContain('cid:');
+});
+
 test('forwarding a conversation to a colleague opens one staff thread and optionally mails them', function () {
     \Illuminate\Support\Facades\Notification::fake();
 

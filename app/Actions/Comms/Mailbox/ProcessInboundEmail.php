@@ -182,7 +182,12 @@ class ProcessInboundEmail
         ]);
 
         $html = app(HTMLSanitizer::class)->cleanEmail(
-            $this->resolveInlineImages($rawHtml, $message, $contentIds)
+            $this->resolveInlineImages(
+                $rawHtml,
+                $message,
+                $contentIds,
+                ImportPendingGmailAttachments::make()->smallInlineImages($client, $gmailMessageId, $raw)
+            )
         );
 
         if ($html !== '') {
@@ -254,27 +259,28 @@ class ProcessInboundEmail
      * The stored files are in the order they were downloaded, so position is what matches them.
      *
      * @param  array<int, string|null>  $contentIds
+     * @param  array<string, string>  $smallInlineImages
      */
-    private function resolveInlineImages(?string $html, ChatMessage $message, array $contentIds): ?string
+    private function resolveInlineImages(?string $html, ChatMessage $message, array $contentIds, array $smallInlineImages): ?string
     {
-        if (! $html || ! array_filter($contentIds)) {
+        if (! $html) {
             return $html;
         }
 
-        $files = $message->attachedFiles();
+        $sources = $smallInlineImages;
 
-        foreach ($contentIds as $index => $contentId) {
-            $media = $files[$index] ?? null;
+        if (array_filter($contentIds)) {
+            $files = $message->attachedFiles();
 
-            if (! $contentId || ! $media) {
-                continue;
+            foreach ($contentIds as $index => $contentId) {
+                if ($contentId && isset($files[$index])) {
+                    $sources[$contentId] = $files[$index]->getUrl();
+                }
             }
+        }
 
-            $html = str_ireplace(
-                ['cid:'.$contentId, 'cid:'.rawurlencode($contentId)],
-                $media->getUrl(),
-                $html
-            );
+        foreach ($sources as $contentId => $source) {
+            $html = str_ireplace(['cid:'.$contentId, 'cid:'.rawurlencode($contentId)], $source, $html);
         }
 
         return $html;
