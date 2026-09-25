@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Models\Helpers\Ticket;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
@@ -785,7 +786,7 @@ class GetShopNavigation
                         ],
                     ],
                     [
-                        "label" => __("List"),
+                        "label" => __("Ticket List"),
                         "icon"  => ["fal", "fa-list"],
                         "root"  => "grp.org.shops.show.tickets.list",
                         "route" => [
@@ -793,6 +794,15 @@ class GetShopNavigation
                             "parameters" => [$shop->organisation->slug, $shop->slug],
                         ],
                     ],
+                    ...(Ticket::canCheckQa($user) ? [[
+                        "label" => __("QA List"),
+                        "icon"  => ["fal", "fa-vial"],
+                        "root"  => "grp.org.shops.show.tickets.qa_list",
+                        "route" => [
+                            "name"       => "grp.org.shops.show.tickets.qa_list",
+                            "parameters" => [$shop->organisation->slug, $shop->slug],
+                        ],
+                    ]] : []),
                     [
                         "label" => __("Board"),
                         "icon"  => ["fal", "fa-columns"],

@@ -237,6 +237,9 @@ onMounted(() => {
 		}
 
 		if (!param) {
+			if (props.elements[scope]?.default) {
+				selectedFilters[scope] = props.elements[scope].default.split(",")
+			}
 			return
 		}
 

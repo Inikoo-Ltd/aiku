@@ -25,11 +25,11 @@ import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faToolbox, faUserHeadset, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle } from "@fal"
+import { faVial, faShieldCheck, faShield, faForward, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faLifeRing, faToolbox, faUserHeadset, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle } from "@fal"
 
 import { faArrowDown as faSolidArrowDown, faArrowUp as faSolidArrowUp, faMinus as faSolidMinus, faExclamationTriangle as faSolidExclamationTriangle } from "@fas"
 
-library.add(faLifeRing, faToolbox, faUserHeadset, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle)
+library.add(faVial, faShieldCheck, faShield, faForward, faLifeRing, faToolbox, faUserHeadset, faPlay, faQuestionCircle, faCheck, faBan, faChevronDown, faUser, faStop, faUndo, faSpinner, faUsers, faSolidArrowDown, faSolidArrowUp, faSolidMinus, faSolidExclamationTriangle, faCommentDots, faCircle, faUserCheck, faClock, faRocket, faCheckCircle)
 
 type Option<Value> = { label: string; value: Value }
 
@@ -40,6 +40,8 @@ const props = defineProps<{
     createdIntervals: Record<string, string>
     createdInterval: string
     searchHelp: string[]
+    listTip?: string | null
+    listTipTitle?: string | null
     updateRoute: string
     can_assign: boolean
     can_manage?: boolean
@@ -72,6 +74,13 @@ const statusActionsFor = (item: { status: string; assignee_id: number | null }):
 const canEditKind = (item: any) => canEditRow(item) && item.type === "help" && item.kind !== "escalation"
 
 const canEditModule = (item: any) => canEditRow(item) && item.type === "help"
+
+const qaBadgeClasses: Record<string, string> = {
+    gray: "bg-gray-100 text-gray-700",
+    green: "bg-green-100 text-green-700",
+    amber: "bg-amber-100 text-amber-700",
+    red: "bg-red-100 text-red-700",
+}
 
 const selectableKinds = computed(() => props.options.kinds.filter((kind) => kind.value !== "escalation"))
 
@@ -213,6 +222,9 @@ watch(
             {{ option.label }}
         </button>
     </div>
+    <p v-if="listTip" class="mx-4 mt-2 text-xs text-gray-500">
+        <span class="font-medium">{{ listTipTitle }}:</span> {{ listTip }}
+    </p>
     <div class="mx-4 mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-400">
         <span class="mr-1">{{ ctrans("Search tips") }}:</span>
         <code v-for="tip in searchHelp" :key="tip" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">{{ tip }}</code>
@@ -238,6 +250,12 @@ watch(
             <template #cell(subject)="{ item }">
                 <span class="block w-56 truncate md:w-auto" :title="item.subject">{{ item.subject }}</span>
                 <span v-if="item.search_snippet" class="block w-56 truncate md:w-auto text-xs text-gray-500 [&_mark]:rounded [&_mark]:bg-yellow-200 [&_mark]:px-0.5" v-html="item.search_snippet" />
+            </template>
+            <template #cell(qa_status)="{ item }">
+                <span v-if="item.qa_status_icon" v-tooltip="item.qa_status_icon.tooltip" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-sm font-medium" :class="qaBadgeClasses[item.qa_status_icon.color]">
+                    <FontAwesomeIcon :icon="item.qa_status_icon.icon" fixed-width />{{ item.qa_status_label }}
+                </span>
+                <span v-else class="text-gray-300">-</span>
             </template>
             <template #cell(priority)="{ item }">
                 <button

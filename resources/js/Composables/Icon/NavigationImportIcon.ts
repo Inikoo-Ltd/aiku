@@ -7,12 +7,13 @@
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faArrowSquareLeft, faHouseLeave } from "@fas"
-import { faColumns, faInfoCircle, faSignInAlt, faHome, faCalendarMinus, faClock, faInbox, faAd } from "@fal"
+import { faColumns, faVial, faInfoCircle, faSignInAlt, faHome, faCalendarMinus, faClock, faInbox, faAd } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 library.add(
 	faArrowSquareLeft,
 	faHouseLeave,
 	faColumns,
+	faVial,
 	faInfoCircle,
 	faSignInAlt,
 	faHome,
