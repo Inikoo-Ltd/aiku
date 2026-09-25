@@ -2926,7 +2926,10 @@ test('an agent sees and prints only the published labels of the SKOs it buys for
     $foreignStock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
     $foreignOrgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $foreignStock);
 
-    $layout   = ['orientation' => 'portrait', 'columns' => 1, 'rows' => 1, 'page_margin' => 5, 'gap' => 0, 'fields' => []];
+    $layout   = ['orientation' => 'portrait', 'columns' => 1, 'rows' => 1, 'page_margin' => 5, 'gap' => 0, 'fields' => [
+        ['source' => 'batch_code', 'text' => 'EXAMPLE-1', 'x' => 0.1, 'y' => 0.1, 'font_size' => 8, 'color' => '#000000'],
+        ['source' => 'expiry_date', 'text' => '01/01/2030', 'x' => 0.1, 'y' => 0.3, 'font_size' => 8, 'color' => '#000000'],
+    ]];
     $newLabel = fn ($orgStock, string $name, string $state) => \App\Models\Production\ArtefactLabel::create([
         'group_id'        => $orgStock->group_id,
         'organisation_id' => $orgStock->organisation_id,
@@ -2951,11 +2954,14 @@ test('an agent sees and prints only the published labels of the SKOs it buys for
         ->assertInertia(function (AssertableInertia $page) use ($orgStock, $published) {
             $page->component('Org/Procurement/AgentLabels')
                 ->where('data.org_stocks', fn ($orgStocks) => collect($orgStocks)->pluck('id')->contains($orgStock->id)
-                    && collect(collect($orgStocks)->firstWhere('id', $orgStock->id)['labels'])->pluck('id')->all() === [$published->id]);
+                    && collect(collect($orgStocks)->firstWhere('id', $orgStock->id)['labels'])->pluck('id')->all() === [$published->id]
+                    && collect($orgStocks)->firstWhere('id', $orgStock->id)['labels'][0]['run_sources'] === ['batch_code', 'expiry_date']);
         });
 
     get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7', 'expiry_date' => '2027-09-24']))
         ->assertOk();
+    get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $orgStock->id, $published->id, 'batch_code' => 'B-7']))
+        ->assertStatus(422);
     get(route('grp.org.procurement.agent_labels.pdf', [$agentOrganisation->slug, $foreignOrgStock->id, $foreign->id]))
         ->assertNotFound();
     get(route('grp.org.procurement.agent_labels.index', $this->organisation->slug))

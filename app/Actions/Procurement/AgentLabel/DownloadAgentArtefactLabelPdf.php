@@ -20,7 +20,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * An agent prints the published labels of the SKOs it buys, with the batch code and expiry date of
- * the goods in front of it. It can print them, never change them.
+ * the goods in front of it. It can print them, never change them, and never without the batch code
+ * and expiry date the label carries.
  */
 class DownloadAgentArtefactLabelPdf extends OrgAction
 {
@@ -44,7 +45,14 @@ class DownloadAgentArtefactLabelPdf extends OrgAction
         );
 
         $download = DownloadArtefactLabelPdf::make();
+        $runTexts = $download->getRunTexts($request);
 
-        return $download->handle($orgStock, $label, $download->getRunTexts($request));
+        abort_if(
+            array_diff(DownloadArtefactLabelPdf::getRunSources($label), array_keys($runTexts)),
+            422,
+            __('Type the batch code and the expiry date of the goods before printing, the label would otherwise print the example of its design.')
+        );
+
+        return $download->handle($orgStock, $label, $runTexts);
     }
 }

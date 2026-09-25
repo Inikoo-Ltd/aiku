@@ -28,6 +28,8 @@ class DownloadArtefactLabelPdf extends OrgAction
 
     private const PDF_MIME_TYPE = 'application/pdf';
 
+    public const RUN_SOURCES = ['batch_code', 'expiry_date'];
+
     /**
      * @param  array<string, string>  $runTexts  keyed by field source, replacing what the design holds
      *
@@ -105,6 +107,19 @@ class DownloadArtefactLabelPdf extends OrgAction
             'batch_code'  => trim((string) $request->query('batch_code')),
             'expiry_date' => $this->getRunExpiryDate($request->query('expiry_date')),
         ], fn (string $text) => $text !== '');
+    }
+
+    /**
+     * The texts of a label that change with every run, batch code and expiry date, when the label
+     * carries them.
+     *
+     * @return array<int, string>
+     */
+    public static function getRunSources(ArtefactLabel $artefactLabel): array
+    {
+        $placed = array_map(fn (array $field) => $field['source'] ?? 'batch_code', Arr::get($artefactLabel->layout, 'fields', []) ?? []);
+
+        return array_values(array_intersect(self::RUN_SOURCES, $placed));
     }
 
     /**
