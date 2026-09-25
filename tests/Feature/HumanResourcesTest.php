@@ -3162,3 +3162,41 @@ test('pickers handle returns in goods in without seeing stock deliveries', funct
     $userWithoutReturns = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
     $this->actingAs($userWithoutReturns)->get($returnsRoute)->assertForbidden();
 });
+
+test('an admin holds no other position below them, so a customer service position does not make them a chat agent', function () {
+    [$organisation, , $shop] = createShop();
+    setPermissionsTeamId($organisation->group_id);
+
+    $positionIds = $organisation->group->jobPositions()
+        ->where(fn ($query) => $query->where('organisation_id', $organisation->id)->whereIn('code', ['org-admin', 'cus-m', 'hr-c'])->orWhere('code', 'group-admin'))
+        ->pluck('id', 'code');
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+    ]);
+    $user = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+    $user->employees()->attach($employee->id, ['status' => true, 'group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $positionIds['org-admin'] => [],
+        $positionIds['cus-m']     => ['Shop' => [$shop->id]],
+        $positionIds['hr-c']      => ['Organisation' => [$organisation->id]],
+    ]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    $roles = $user->fresh()->roles()->pluck('name');
+
+    expect($roles)->toContain("org-admin-$organisation->id", "shop-admin-$shop->id")
+        ->not->toContain("customer-service-supervisor-$shop->id", "human-resources-clerk-$organisation->id")
+        ->and($user->fresh()->hasPermissionTo("chat.$shop->id"))->toBeFalse();
+
+    SyncEmployeeJobPositions::make()->handle($employee->fresh(), [
+        $positionIds['group-admin'] => [],
+        $positionIds['cus-m']       => ['Shop' => [$shop->id]],
+    ]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    $roles = $user->fresh()->roles()->pluck('name');
+
+    expect($roles)->toContain('group-admin', "org-admin-$organisation->id", "shop-admin-$shop->id")
+        ->not->toContain("customer-service-supervisor-$shop->id");
+});
