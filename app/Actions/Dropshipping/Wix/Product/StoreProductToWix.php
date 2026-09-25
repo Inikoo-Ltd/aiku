@@ -126,7 +126,7 @@ class StoreProductToWix extends RetinaAction
 
         $imageUrls = [];
 
-        foreach ($item->images as $image) {
+        foreach ($item->orderedImages() as $image) {
             if ($imageUrl = UploadProductImageToWix::run($image)) {
                 $imageUrls[] = $imageUrl;
             }

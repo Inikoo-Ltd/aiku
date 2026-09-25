@@ -91,7 +91,7 @@ class ProductZipExport
             $products = $parent->getProducts();
         } elseif ($parent instanceof Product) {
             $product = $parent;
-            foreach ($product->images as $image) {
+            foreach ($product->orderedImages() as $image) {
                 $imagesData[$image->id] = [
                     'filename' => strtolower($product->code) . '_' . $image->id . '.' . $image->extension,
                     'image'    => $image
@@ -107,7 +107,7 @@ class ProductZipExport
         foreach ($products as $product) {
             /** @var Product $product */
             $product = $product;
-            foreach ($product->images as $image) {
+            foreach ($product->orderedImages() as $image) {
                 $imagesData[$image->id] = [
                     'filename' => strtolower($product->code) . '_' . $image->id . '.' . $image->extension,
                     'image'    => $image

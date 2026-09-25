@@ -12,6 +12,7 @@ use App\Actions\Helpers\Images\GetPictureSources;
 use App\Models\Helpers\Media;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Collection;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 trait HasImage
@@ -21,6 +22,22 @@ trait HasImage
     public function images(): MorphToMany
     {
         return $this->morphToMany(Media::class, 'model', 'model_has_media')->withTimestamps()->withPivot('scope', 'caption', 'sub_scope', 'is_public', 'is_caption_reviewed', 'source_caption');
+    }
+
+    /**
+     * The order a marketplace or a download should show the pictures in: the main image first,
+     * because the first one sent becomes the listing's main picture, then as arranged on the
+     * product. The relation alone has no order, so the database returns them however it likes.
+     *
+     * @return Collection<int, Media>
+     */
+    public function orderedImages(): Collection
+    {
+        return $this->images()
+            ->orderByRaw('model_has_media.media_id = ? desc', [$this->image_id ?? 0])
+            ->orderByPivot('position')
+            ->orderBy('media.id')
+            ->get();
     }
 
     public function image(): HasOne

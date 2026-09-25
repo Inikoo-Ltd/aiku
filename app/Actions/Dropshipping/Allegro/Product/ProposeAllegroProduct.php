@@ -43,7 +43,7 @@ class ProposeAllegroProduct
         $product = $portfolio->item;
 
         $productImages = [];
-        foreach ($product->images as $image) {
+        foreach ($product->orderedImages() as $image) {
             $image = UploadProductImageToAllegro::run($allegroUser, $image);
             $productImages[] = [
                 'url' => Arr::get($image, 'location')

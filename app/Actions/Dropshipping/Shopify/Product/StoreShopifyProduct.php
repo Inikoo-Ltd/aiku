@@ -98,7 +98,7 @@ class StoreShopifyProduct extends RetinaAction
 
         $media = [];
 
-        foreach ($product->images as $image) {
+        foreach ($product->orderedImages() as $image) {
             $media[] = [
                 'originalSource'   => GetImgProxyUrl::run($image->getImage()->extension('jpg')),
                 'mediaContentType' => 'IMAGE'

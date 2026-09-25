@@ -56,7 +56,7 @@ class StoreWooCommerceProduct extends RetinaAction
 
             $images = [];
             if (app()->isProduction()) {
-                foreach ($product->images as $image) {
+                foreach ($product->orderedImages() as $image) {
                     $images[] = [
                         'src' => GetImgProxyUrl::run($image->getImage()->extension('jpg'))
                     ];

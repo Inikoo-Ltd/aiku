@@ -255,6 +255,37 @@ test('add 2nd image to product', function () {
         ->and($this->product->images->count())->toBe(2);
 });
 
+test('pictures go to marketplaces main image first, then in the order arranged on the product', function () {
+    $product = $this->product;
+    $media   = collect(range(1, 3))->map(fn (int $i) => Media::create([
+        'group_id'              => $product->group_id,
+        'ulid'                  => \Illuminate\Support\Str::ulid(),
+        'name'                  => "order-$i",
+        'file_name'             => "order-$i.jpg",
+        'disk'                  => 'public',
+        'collection_name'       => 'default',
+        'size'                  => 1,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]));
+
+    $product->images()->attach([
+        $media[2]->id => ['position' => 1, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
+        $media[0]->id => ['position' => 3, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
+        $media[1]->id => ['position' => 2, 'scope' => 'photo', 'group_id' => $product->group_id, 'data' => '{}'],
+    ]);
+    $previousImageId = $product->image_id;
+    $product->update(['image_id' => $media[1]->id]);
+
+    expect($product->orderedImages()->pluck('id')->intersect($media->pluck('id'))->values()->all())
+        ->toBe([$media[1]->id, $media[2]->id, $media[0]->id]);
+
+    $product->images()->detach($media->pluck('id')->all());
+    $product->update(['image_id' => $previousImageId]);
+});
+
 test('get product 1s1 images', function () {
     $media1 = $this->product->images->first();
     expect($media1)->toBeInstanceOf(Media::class);

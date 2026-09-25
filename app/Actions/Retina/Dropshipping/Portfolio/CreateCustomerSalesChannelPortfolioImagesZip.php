@@ -127,7 +127,7 @@ class CreateCustomerSalesChannelPortfolioImagesZip
                 /** @var Product $product */
                 $product = $portfolio->item;
 
-                foreach ($product->images as $image) {
+                foreach ($product->orderedImages() as $image) {
                     $imagesData[$image->id] = [
                         'filename' => strtolower($product->code) . '__' . $image->id . '.' . $image->extension,
                         'image'    => $image,
