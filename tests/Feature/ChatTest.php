@@ -8748,7 +8748,26 @@ test('forwarding a conversation to a colleague opens one staff thread and option
         ->and($conversation->messages()->first()->body)->toContain('This one is for you to decide')
         ->and($conversation->messages()->first()->body)->toContain('Invoice for October');
 
-    \Illuminate\Support\Facades\Notification::assertSentTo($management, \App\Notifications\ForwardedChatSessionNotification::class);
+    $mailedTo = fn (string $address) => \Illuminate\Support\Facades\Notification::assertSentOnDemand(
+        \App\Notifications\ForwardedChatSessionNotification::class,
+        fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === $address
+    );
+
+    $mailedTo('management@example.com');
+
+    // Staff with no address on their login are mailed at the work email on their employee record;
+    // the personal one is never used, and whoever has no work email is named back to the sender.
+    $employeeOnly = User::factory()->create(['group_id' => $this->organisation->group_id, 'email' => null]);
+    $employee     = Employee::factory()->create(['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id, 'work_email' => 'alvaro@example.es', 'email' => 'alvaro@gmail.test']);
+    \Illuminate\Support\Facades\DB::table('user_has_models')->insert(['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id, 'user_id' => $employeeOnly->id, 'model_type' => 'Employee', 'model_id' => $employee->id]);
+    $noAddress = User::factory()->create(['group_id' => $this->organisation->group_id, 'email' => null, 'contact_name' => 'Nobody Mailable']);
+
+    $forward = \App\Actions\Chat\ChatSession\ForwardChatSessionToColleague::make();
+    $forward->handle($session, $agent, ['user_ids' => [$employeeOnly->id, $noAddress->id], 'also_email' => true]);
+
+    $mailedTo('alvaro@example.es');
+    \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(\App\Notifications\ForwardedChatSessionNotification::class, 2);
+    expect($forward->notEmailed)->toBe(['Nobody Mailable']);
 
     // The second colleague joins the thread that already exists instead of getting a bare new one,
     // and asking for no mail sends none.
@@ -8758,8 +8777,8 @@ test('forwarding a conversation to a colleague opens one staff thread and option
     ]);
 
     expect($again->id)->toBe($conversation->id)
-        ->and($again->messages()->count())->toBe(2)
-        ->and($again->participants()->count())->toBe(3);
+        ->and($again->messages()->count())->toBe(3)
+        ->and($again->participants()->count())->toBe(5);
 
     \Illuminate\Support\Facades\Notification::assertNotSentTo($warehouse, \App\Notifications\ForwardedChatSessionNotification::class);
 
@@ -8777,7 +8796,8 @@ test('forwarding a conversation to a colleague opens one staff thread and option
             'also_email' => true,
         ])
         ->assertOk()
-        ->assertJsonPath('data.staff_conversation_id', $conversation->id);
+        ->assertJsonPath('data.staff_conversation_id', $conversation->id)
+        ->assertJsonPath('data.not_emailed', []);
 });
 
 test('an agent can hand a conversation to another named agent', function () {

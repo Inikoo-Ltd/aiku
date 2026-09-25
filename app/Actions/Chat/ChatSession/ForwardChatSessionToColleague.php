@@ -32,6 +32,9 @@ class ForwardChatSessionToColleague
 
     public const TRANSCRIPT_MESSAGES = 20;
 
+    /** @var array<int, string> */
+    public array $notEmailed = [];
+
     /**
      * @param array{user_ids: array<int, int>, note?: string|null, also_email?: bool} $modelData
      */
@@ -72,18 +75,26 @@ class ForwardChatSessionToColleague
 
         // The colleague reads and answers this inside Aiku; the mail is a nudge for whoever does
         // not live in the inbox, so it carries the conversation with it and still points back here.
-        if (Arr::get($modelData, 'also_email')) {
-            $emailable = $recipients->filter(fn (User $user) => filled($user->email));
+        $this->notEmailed = [];
 
-            if ($emailable->isNotEmpty()) {
-                Notification::send($emailable, new ForwardedChatSessionNotification(
-                    title: $this->title($chatSession),
-                    forwardedBy: $agent->user->contact_name ?? $agent->user->username,
-                    note: $note,
-                    transcript: $this->transcript($chatSession),
-                    url: $this->sessionUrl($chatSession),
-                    replyTo: $agent->user->email,
-                ));
+        if (Arr::get($modelData, 'also_email')) {
+            $notification = new ForwardedChatSessionNotification(
+                title: $this->title($chatSession),
+                forwardedBy: $agent->user->contact_name ?? $agent->user->username,
+                note: $note,
+                transcript: $this->transcript($chatSession),
+                url: $this->sessionUrl($chatSession),
+                replyTo: $this->workEmail($agent->user),
+            );
+
+            foreach ($recipients as $recipient) {
+                $address = $this->workEmail($recipient);
+
+                if ($address) {
+                    Notification::route('mail', $address)->notify($notification);
+                } else {
+                    $this->notEmailed[] = $recipient->contact_name ?? $recipient->username;
+                }
             }
         }
 
@@ -104,6 +115,15 @@ class ForwardChatSessionToColleague
         );
 
         return $conversation;
+    }
+
+    /**
+     * Many staff have no address on their login, only on their employee record. A personal
+     * address is never used: the mail carries the customer's conversation.
+     */
+    private function workEmail(User $user): ?string
+    {
+        return $user->email ?: $user->employees()->whereNotNull('work_email')->value('work_email');
     }
 
     private function title(ChatSession $chatSession): string
@@ -184,7 +204,7 @@ class ForwardChatSessionToColleague
         return response()->json([
             'success' => true,
             'message' => __('Forwarded'),
-            'data'    => ['staff_conversation_id' => $conversation->id],
+            'data'    => ['staff_conversation_id' => $conversation->id, 'not_emailed' => $this->notEmailed],
         ]);
     }
 }
