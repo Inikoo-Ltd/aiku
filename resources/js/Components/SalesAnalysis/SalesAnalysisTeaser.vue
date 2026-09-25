@@ -26,8 +26,7 @@ const props = defineProps<{
 		sales: Array<{ date: string; sales: number }>
 		compare_sales: Array<{ date: string; sales: number }>
 		totals: { current: Totals; previous: Totals }
-		shops: Array<{ shop_code: string; sales: number; previous_sales: number }>
-		products: Array<{ code: string; sales: number; previous_sales: number }>
+		shop_count: number
 	}
 }>()
 
@@ -75,7 +74,7 @@ const chartOptions = {
 		<div class="mb-2 flex items-center gap-2">
 			<FontAwesomeIcon :icon="faChartLine" class="text-gray-400" fixed-width aria-hidden="true" />
 			<span class="whitespace-nowrap font-semibold">{{ ctrans("Last 12 months") }}</span>
-			<span class="text-xs text-gray-500">{{ ctrans("vs year before, all websites") }}</span>
+			<span class="text-xs text-gray-500">{{ teaser && teaser.shop_count > 1 ? ctrans("vs year before, all websites") : ctrans("vs year before") }}</span>
 			<Link :href="analysisUrl" class="ml-auto flex items-center gap-1 text-xs text-indigo-600 hover:underline">
 				{{ ctrans("Sales analysis") }}
 				<FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" />

@@ -17,6 +17,7 @@ enum OrgStockTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case TRADE_UNITS = 'trade_units';
     case HISTORY = 'history';
     case IMAGES = 'images';
@@ -28,6 +29,11 @@ enum OrgStockTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
+            OrgStockTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
+            ],
+
             OrgStockTabsEnum::HISTORY => [
                 'align' => 'right',
                 'title' => __('History'),

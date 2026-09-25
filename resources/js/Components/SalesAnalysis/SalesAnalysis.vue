@@ -84,13 +84,15 @@ const props = defineProps<{
 		sales: Array<{ date: string; sales: number; orders: number }>
 		compare_sales: Array<{ date: string; sales: number; orders: number }>
 		totals: { current: Totals; previous: Totals }
-		shops: Array<{ shop_id: number; shop_code: string; shop_name: string; shop_state: string; organisation_id: number; family_state: string; sales: number; previous_sales: number; orders: number; previous_orders: number; stock_out_days: number }>
-		products: Array<{ id: number; code: string; name: string; slug: string | null; status: boolean; is_for_sale: boolean; created_at: string | null; discontinued_at: string | null; sales: number; previous_sales: number; websites: number; websites_out_of_stock: number; stock_outs: number; stock_out_days: number; lost_sales: number }>
+		shops: Array<{ shop_id: number; shop_code: string; shop_name: string; shop_state: string; organisation_id: number; node_state: string | null; sales: number; previous_sales: number; orders: number; previous_orders: number; stock_out_days: number }>
+		breakdown_label: string | null
+		breakdown: Array<{ id: number; code: string; name: string; slug: string | null; status: boolean; is_for_sale: boolean; created_at: string | null; discontinued_at: string | null; sales: number; previous_sales: number; websites: number; websites_out_of_stock: number; stock_outs: number; stock_out_days: number; lost_sales: number }>
 		stock_outs: StockOut[]
 		skos: number
 		traffic: Array<{ date: string; visitors: number; page_views: number; add_to_baskets: number }>
 		events: ChangeEvent[]
 	}
+	breakdownRoute?: (row: { id: number; slug: string | null }) => string | null
 }>()
 
 const moneyFormatter = computed(() => new Intl.NumberFormat(undefined, { style: "currency", currency: props.data.currency, maximumFractionDigits: 0 }))
@@ -410,16 +412,14 @@ const orderRoute = (stockOut: StockOut) =>
 			? route("grp.org.procurement.stock_deliveries.show", [stockOut.organisation_slug, stockOut.order.slug])
 			: null
 
-const productRoute = (slug: string | null) => {
-	const params = route().params
-	return slug && params.masterShop && params.masterFamily ? route("grp.masters.master_shops.show.master_families.master_products.show", [params.masterShop, params.masterFamily, slug]) : null
-}
+const breakdownLink = (row: { id: number; slug: string | null }) => (row.id && props.breakdownRoute ? props.breakdownRoute(row) : null)
+const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 </script>
 
 <template>
 	<div class="relative space-y-4 px-4 py-4 text-sm text-gray-700">
 		<div class="flex flex-wrap items-center gap-2">
-			<div class="flex items-center gap-1" data-organisation-capsules>
+			<div v-if="data.filters.organisations.length > 1" class="flex items-center gap-1" data-organisation-capsules>
 				<FontAwesomeIcon :icon="faBuilding" class="text-gray-400" fixed-width aria-hidden="true" />
 				<button
 					type="button"
@@ -440,7 +440,7 @@ const productRoute = (slug: string | null) => {
 				</button>
 			</div>
 
-			<div class="relative" data-shop-capsule>
+			<div v-if="hasManyShops" class="relative" data-shop-capsule>
 				<button
 					type="button"
 					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs"
@@ -531,8 +531,8 @@ const productRoute = (slug: string | null) => {
 			</div>
 		</div>
 
-		<div class="grid gap-6 xl:grid-cols-2">
-			<div class="rounded-lg border border-gray-200 bg-white">
+		<div v-if="hasManyShops || data.breakdown.length" class="grid gap-6" :class="hasManyShops && data.breakdown.length ? 'xl:grid-cols-2' : ''">
+			<div v-if="hasManyShops" class="rounded-lg border border-gray-200 bg-white">
 				<div class="border-b px-4 py-2 font-semibold">{{ ctrans("Websites") }}</div>
 				<table class="w-full text-xs tabular-nums">
 					<thead class="text-gray-600">
@@ -550,7 +550,7 @@ const productRoute = (slug: string | null) => {
 							<td class="px-4 py-1.5">
 								<span class="font-medium">{{ shop.shop_code }}</span>
 								<span class="ml-1 text-gray-500">{{ shop.shop_name }}</span>
-								<span v-if="shop.shop_state !== 'open' || shop.family_state !== 'active'" class="ml-1 text-gray-400">({{ shop.shop_state !== "open" ? shop.shop_state : shop.family_state }})</span>
+								<span v-if="shop.shop_state !== 'open' || (shop.node_state && shop.node_state !== 'active')" class="ml-1 text-gray-400">({{ shop.shop_state !== "open" ? shop.shop_state : shop.node_state }})</span>
 							</td>
 							<td class="px-2 py-1.5 text-right">{{ money(shop.previous_sales) }}</td>
 							<td class="px-2 py-1.5 text-right">{{ money(shop.sales) }}</td>
@@ -564,13 +564,13 @@ const productRoute = (slug: string | null) => {
 				</table>
 			</div>
 
-			<div class="rounded-lg border border-gray-200 bg-white">
-				<div class="border-b px-4 py-2 font-semibold">{{ ctrans("Products") }}</div>
+			<div v-if="data.breakdown.length" class="rounded-lg border border-gray-200 bg-white">
+				<div class="border-b px-4 py-2 font-semibold">{{ data.breakdown_label }}</div>
 				<div class="max-h-[32rem] overflow-y-auto">
 					<table class="w-full text-xs tabular-nums">
 						<thead class="sticky top-0 bg-white text-gray-600">
 							<tr class="border-b">
-								<th class="px-4 py-2 text-left font-normal">{{ ctrans("Product") }}</th>
+								<th class="px-4 py-2 text-left font-normal">{{ data.breakdown_label }}</th>
 								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Before") }}</th>
 								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Now") }}</th>
 								<th class="px-2 py-2 text-right font-normal">{{ ctrans("Change") }}</th>
@@ -579,9 +579,9 @@ const productRoute = (slug: string | null) => {
 							</tr>
 						</thead>
 						<tbody class="divide-y">
-							<tr v-for="product in data.products" :key="product.id">
+							<tr v-for="product in data.breakdown" :key="product.id">
 								<td class="px-4 py-1.5">
-									<Link v-if="productRoute(product.slug)" :href="productRoute(product.slug)" class="font-medium hover:underline">{{ product.code }}</Link>
+									<Link v-if="breakdownLink(product)" :href="breakdownLink(product)" class="font-medium hover:underline">{{ product.code }}</Link>
 									<span v-else class="font-medium">{{ product.code }}</span>
 									<span v-if="product.discontinued_at || !product.status" class="ml-1 rounded bg-gray-100 px-1 text-gray-500">{{ ctrans("discontinued") }}</span>
 									<span v-else-if="!product.is_for_sale" class="ml-1 rounded bg-gray-100 px-1 text-gray-500">{{ ctrans("not for sale") }}</span>

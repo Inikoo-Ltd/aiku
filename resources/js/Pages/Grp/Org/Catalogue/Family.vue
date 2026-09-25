@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBullhorn, faCameraRetro, faCube, faFolder, faMedal, faMoneyBillWave, faProjectDiagram, faStarfighter, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft, faAtomAlt} from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMedal, faMoneyBillWave, faProjectDiagram, faStarfighter, faTag, faUser, faBrowser, faFolderDownload, faQuoteLeft, faAtomAlt, faChartLine} from "@fal"
 import { faExclamationTriangle, faThumbtack } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -15,7 +15,7 @@ import { capitalize } from "@/Composables/capitalize"
 import FamilyShowcase from "@/Components/Showcases/Grp/FamilyShowcase.vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { routeType } from "@/types/route"
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
@@ -33,6 +33,7 @@ import ModalCreateMixAndMatchOffer from '@/Components/Offers/ModalCreateMixAndMa
 import ModalCreateCategoryReviews from "@/Components/Reviews/ModalCreateCategoryReviews.vue"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faFolder,
@@ -50,7 +51,8 @@ library.add(
     faThumbtack,
     faMedal,
     faStarfighter,
-    faAtomAlt
+    faAtomAlt,
+    faChartLine
 )
 
 
@@ -76,6 +78,8 @@ const props = defineProps<{
     masterProductCategoryId?: number
     images?: object
     sales?: any
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     content?: {}
     salesData?: object
     variants?: {}
@@ -99,8 +103,28 @@ const props = defineProps<{
 
 const currentTab = ref(props.tabs.current)
 
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+
 const handleTabUpdate = (tabSlug: string) => {
-    useTabChange(tabSlug, currentTab)
+    useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
+}
+
+const breakdownRoute = (row: { slug: string | null }) => {
+    if (!row.slug) {
+        return null
+    }
+    const params = route().params as Record<string, string>
+
+    switch (route().current()) {
+        case "grp.org.shops.show.catalogue.families.show":
+            return route("grp.org.shops.show.catalogue.families.show.products.show", [params.organisation, params.shop, params.family, row.slug])
+        case "grp.org.shops.show.catalogue.departments.show.families.show":
+            return route("grp.org.shops.show.catalogue.departments.show.families.show.products.show", [params.organisation, params.shop, params.department, params.family, row.slug])
+        case "grp.org.shops.show.catalogue.sub_departments.show.families.show":
+            return route("grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show", [params.organisation, params.shop, params.subDepartment, params.family, row.slug])
+        default:
+            return null
+    }
 }
 
 const component = computed(() => {
@@ -112,6 +136,7 @@ const component = computed(() => {
         history: TableHistories,
         images: ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
         content: ProductCategoryContent,
         variants: TableVariants,
         offers: TableOffers,
@@ -217,7 +242,7 @@ const showDialog = ref(false)
 
     <Message v-if="is_orphan" severity="warn" class="m-4 mb-2">
         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
-        {{ trans("This family is not assigned to any department. You can add it in edit section.") }}
+        {{ ctrans("This family is not assigned to any department. You can add it in edit section.") }}
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
@@ -250,7 +275,7 @@ const showDialog = ref(false)
         :customers="reviewCustomers"
         :rating_labels="reviewRatingLabels"
     />
-    <component v-else :is="component" :data="currentTabData" :tab="currentTab" :salesData="salesData" />
+    <component v-else :is="component" :data="currentTabData" :tab="currentTab" :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute" />
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

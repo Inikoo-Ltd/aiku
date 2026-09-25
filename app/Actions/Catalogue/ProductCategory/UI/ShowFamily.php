@@ -10,6 +10,8 @@ namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
 use App\Actions\Catalogue\ProductCategory\RelatedProducts\GetRelatedProducts;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\Variant\IndexVariant;
 use App\Actions\Catalogue\WithFamilySubNavigation;
@@ -188,6 +190,14 @@ class ShowFamily extends OrgAction
             FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                 fn () => GetProductCategoryShowcase::run($family)
                 : Inertia::optional(fn () => GetProductCategoryShowcase::run($family)),
+
+            FamilyTabsEnum::SALES_ANALYSIS->value => $this->tab == FamilyTabsEnum::SALES_ANALYSIS->value ?
+                fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($family), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($family), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+
+            'sales_analysis_teaser' => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
+                Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($family)), 'sales_analysis_teaser')
+                : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($family))),
 
             FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))

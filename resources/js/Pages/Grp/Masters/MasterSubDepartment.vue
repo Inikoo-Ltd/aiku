@@ -11,7 +11,7 @@ import {
     faBullhorn,
     faCameraRetro,
     faCube,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faFolderDownload
+    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faFolderDownload, faChartLine
 } from "@fal"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -25,7 +25,7 @@ import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import MasterSubDepartmentShowcase from "@/Components/Showcases/Grp/MasterSubDepartmentShowcase.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -38,6 +38,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faFolder,
@@ -49,7 +50,7 @@ library.add(
     faUser,
     faMoneyBillWave,
     faDiagramNext,
-    faFolderDownload
+    faFolderDownload, faChartLine
 )
 
 
@@ -78,6 +79,8 @@ const props = defineProps<{
     images?: object
     sales?: object
     salesData?: object
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     related_product_category? : object
     mini_breadcrumbs: any
     delete_route?: routeType;
@@ -88,7 +91,8 @@ const props = defineProps<{
 }>()
 
 let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 
 const component: Component = computed(() => {
     const components = {
@@ -101,6 +105,7 @@ const component: Component = computed(() => {
         history: TableHistories,
         images: ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
         related_product_category: RelatedProductCategory,
     }
     return components[currentTab.value]
@@ -117,15 +122,15 @@ async function deleteItem() {
         },
         onSuccess: () => {
             notify({
-                title: trans('Success'),
-                text: trans('Successfully deleted Master Department'),
+                title: ctrans('Success'),
+                text: ctrans('Successfully deleted Master Department'),
                 type: 'error'
             })
         },
         onError: () => {
             notify({
-                title: trans('Error'),
-                text: trans('Failed to delete bundle'),
+                title: ctrans('Error'),
+                text: ctrans('Failed to delete bundle'),
                 type: 'error'
             })
         },
@@ -143,13 +148,13 @@ async function deleteItem() {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-add-master-family>
-            <Button :label="trans('Master family')" @click="showDialog = true" :style="'create'" />
+            <Button :label="ctrans('Master family')" @click="showDialog = true" :style="'create'" />
         </template>
 
         <template #other>
             <ModalConfirmationDelete
                 @onYes="deleteItem"
-                :title="trans('Are you sure you want to delete this Master Sub Department?')"
+                :title="ctrans('Are you sure you want to delete this Master Sub Department?')"
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">
@@ -184,7 +189,7 @@ async function deleteItem() {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser"></component>
     <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="storeRoute"
                             @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData" />
 </template>

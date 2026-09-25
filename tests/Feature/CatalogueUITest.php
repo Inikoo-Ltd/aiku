@@ -12,6 +12,8 @@ use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
@@ -26,6 +28,9 @@ use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\UI\Catalogue\DepartmentTabsEnum;
+use App\Enums\UI\Catalogue\FamilyTabsEnum;
+use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Service;
@@ -181,6 +186,33 @@ test('UI show department', function () {
     });
 });
 
+test('UI show department sales analysis tab', function () {
+    $response = get(route('grp.org.shops.show.catalogue.departments.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        'tab'         => DepartmentTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/Department')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($this->department));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+});
+
 test('UI create department', function () {
     $response = get(route('grp.org.shops.show.catalogue.departments.create', [$this->organisation->slug, $this->shop->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
@@ -248,6 +280,34 @@ test('UI show family in department', function () {
             )
             ->has('tabs');
     });
+});
+
+test('UI show family sales analysis tab', function () {
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.families.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        $this->family->slug,
+        'tab'         => FamilyTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/Family')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($this->family));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test('UI edit family in department', function () {
@@ -512,6 +572,34 @@ test('UI show product in department', function () {
 });
 
 
+test('UI show product sales analysis tab', function () {
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.products.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        $this->product->slug,
+        'tab'         => ProductTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/Product')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProduct($this->product));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+});
+
 test('UI Index catalogue sub department inside department', function () {
     $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.index', [$this->organisation->slug, $this->shop->slug, $this->department->slug]));
 
@@ -549,6 +637,34 @@ test('UI show sub department in department', function () {
             )
             ->has('tabs');
     });
+});
+
+test('UI show sub department sales analysis tab', function () {
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        $this->subDepartment->slug,
+        'tab'         => DepartmentTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Catalogue/SubDepartment')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($this->subDepartment));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test('UI edit sub department in department', function () {

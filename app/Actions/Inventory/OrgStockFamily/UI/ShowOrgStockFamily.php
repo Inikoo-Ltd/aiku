@@ -8,6 +8,8 @@
 
 namespace App\Actions\Inventory\OrgStockFamily\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
@@ -118,6 +120,14 @@ class ShowOrgStockFamily extends OrgAction
                 OrgStockFamilyTabsEnum::SHOWCASE->value => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)
                     : Inertia::optional(fn () => GetOrgStockFamilyShowcase::run($orgStockFamily)),
+
+                OrgStockFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab == OrgStockFamilyTabsEnum::SALES_ANALYSIS->value ?
+                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forOrgStockFamily($orgStockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forOrgStockFamily($orgStockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+
+                'sales_analysis_teaser' => $this->tab == OrgStockFamilyTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStockFamily($orgStockFamily)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStockFamily($orgStockFamily))),
 
                 OrgStockFamilyTabsEnum::SALES->value => $this->tab == OrgStockFamilyTabsEnum::SALES->value ?
                     fn () => OrgStockFamilyTimeSeriesResource::collection(IndexOrgStockFamilyTimeSeries::run($orgStockFamily, OrgStockFamilyTabsEnum::SALES->value))

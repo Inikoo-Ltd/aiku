@@ -15,7 +15,7 @@ import {
     faCameraRetro,
     faPaperclip,
     faCube,
-    faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign
+    faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faChartLine
 } from '@fal';
 import { computed, defineAsyncComponent, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
@@ -27,6 +27,7 @@ import TableOrgStocks from "@/Components/Tables/Grp/Org/Inventory/TableOrgStocks
 import { Tabs as TSTabs } from "@/types/Tabs"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 library.add(
     faInventory,
     faBox,
@@ -39,6 +40,7 @@ library.add(
     faPoop,
     faScanner,
     faDollarSign,
+    faChartLine,
 
 );
 
@@ -49,18 +51,22 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     showcase?: object,
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     org_stocks?: object
     trade_units?: object
 
 }>()
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? []);
 
 const component = computed(() => {
 
     const components = {
         showcase: StockShowcase,
+        sales_analysis: SalesAnalysis,
         supplier_products: TableSupplierProducts,
         org_stocks: TableOrgStocks,
         trade_units: TableTradeUnits,
@@ -77,5 +83,5 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesAnalysisTeaser="sales_analysis_teaser"></component>
 </template>

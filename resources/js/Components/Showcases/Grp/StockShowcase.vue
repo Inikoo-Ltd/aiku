@@ -31,6 +31,8 @@ import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmDialog from "primevue/confirmdialog"
+import SalesAnalysisTeaser from "@/Components/SalesAnalysis/SalesAnalysisTeaser.vue"
+import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.vue"
 library.add(faExclamationTriangle, faFireAlt, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus, faStopCircle, faFilePdf, faWeightHanging, faRulerCombined)
 
 const props = defineProps < {
@@ -130,6 +132,7 @@ const props = defineProps < {
         transfer: [],
     }
     org_stock_id: number
+    salesAnalysisTeaser?: object
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -307,6 +310,9 @@ const saveBarcode = (value: string | null) => {
     <div class="grid md:grid-cols-4 gap-6 p-6">
         <!-- Section: Trade Units -->
         <div class="md:col-span-2">
+            <SalesAnalysisTeaser v-if="salesAnalysisTeaser !== undefined" :teaser="salesAnalysisTeaser" class="mb-4" />
+            <SalesAnalysisMovers v-if="salesAnalysisTeaser !== undefined" :teaser="salesAnalysisTeaser" class="mb-4" />
+
             <!-- Header: Unit label + Product name -->
             <div class="flex items-center gap-2 border-b pb-3 mb-4">
                 <ProductUnitLabel v-if="data?.trade_units?.[0]?.units"

@@ -11,7 +11,8 @@ import {
     faBullhorn,
     faCameraRetro,
     faCube,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload
+    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload,
+    faChartLine
 } from '@fal'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -26,7 +27,7 @@ import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Modal from '@/Components/Utils/Modal.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import { notify } from '@kyvg/vue3-notification'
 import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
@@ -43,6 +44,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOffers.vue'
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faFolder,
@@ -55,7 +57,8 @@ library.add(
     faMoneyBillWave,
     faDiagramNext,
     faBrowser,
-    faFolderDownload
+    faFolderDownload,
+    faChartLine
 )
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -84,6 +87,8 @@ const props = defineProps<{
     history?: {}
     images?: object
     sales?: object
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     salesData?: object
     product_category_id?: number
     shop_data: {
@@ -99,7 +104,17 @@ const props = defineProps<{
 }>()
 
 let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
+
+const breakdownRoute = (row: { slug: string | null }) => {
+    const params = route().params
+    return row.slug && params.organisation && params.shop && params.subDepartment
+        ? route("grp.org.shops.show.catalogue.sub_departments.show.families.show", [params.organisation, params.shop, params.subDepartment, row.slug])
+        : null
+}
 
 const component: Component = computed(() => {
     const components = {
@@ -111,6 +126,7 @@ const component: Component = computed(() => {
         history: TableHistories,
         images: ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
         offers: TableOffers,
         related_product_category: RelatedProductCategory,
 
@@ -139,8 +155,8 @@ const onSubmitAddItem = async (idProduct: number[]) => {
         onSuccess: () => {
             router.reload({only: ['data']})
             notify({
-                title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
+                title: ctrans("Success!"),
+                text: ctrans("Successfully added portfolios"),
                 type: "success"
             })
             isOpenModalPortfolios.value = false
@@ -155,12 +171,12 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button @click="() => isOpenModalPortfolios = true" :label="trans('Add families')" icon="fas fa-plus" />
+            <Button @click="() => isOpenModalPortfolios = true" :label="ctrans('Add families')" icon="fas fa-plus" />
         </template>
 
         <template #afterTitle>
            <div class="whitespace-nowrap">
-            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="ctrans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon
                     :icon="faOctopusDeploy"
                     color="#4B0082" fixed-width
@@ -195,11 +211,11 @@ const onSubmitAddItem = async (idProduct: number[]) => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute"></component>
 
     <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
-            :headLabel="trans('Add Family to portfolios')"
+            :headLabel="ctrans('Add Family to portfolios')"
             :route-fetch="routes.fetch_families"
             :isLoadingSubmit
             @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id))"
@@ -208,13 +224,13 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                 <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                 <div class="flex flex-col justify-between">
                     <div class="w-fit">
-                        <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                        <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
-                        <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
-                        <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
+                        <div v-tooltip="ctrans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                        <div v-if="!item.no_code" v-tooltip="ctrans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
+                        <div v-if="item.reference" v-tooltip="ctrans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
+                        <div v-if="item.gross_weight" v-tooltip="ctrans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
                     </div>
-                    <div v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
-                        {{ locale?.number(item.number_current_products || 0) }} {{ trans("products") }}
+                    <div v-tooltip="ctrans('Price')" class="w-fit text-xs text-gray-x500">
+                        {{ locale?.number(item.number_current_products || 0) }} {{ ctrans("products") }}
                     </div>
                 </div>
             </template>

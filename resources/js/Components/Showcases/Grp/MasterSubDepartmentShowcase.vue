@@ -4,13 +4,15 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, provide } from 'vue'
 import { Image as ImageTS } from '@/types/Image'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
 import { Message } from "primevue"
 import { Link, router } from "@inertiajs/vue3";
 import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue"
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue'
+import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.vue'
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
@@ -34,6 +36,7 @@ const props = defineProps<{
         shopsData: any
     },
     salesData?: object
+    salesAnalysisTeaser?: object
 }>()
 
 const isModalOpen = ref(false)
@@ -77,15 +80,15 @@ const openFamilyModal = () => {
                 </template>
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">
-                        <span v-if="!data.subDepartment.description_title">{{ trans("Description Title is missing")
+                        <span v-if="!data.subDepartment.description_title">{{ ctrans("Description Title is missing")
                             }}.</span>
-                        <span v-if="!data.subDepartment.description">{{ trans("Description is missing") }}.</span>
-                        <span v-if="!data.subDepartment.description_extra">{{ trans("Extra description is missing")
+                        <span v-if="!data.subDepartment.description">{{ ctrans("Description is missing") }}.</span>
+                        <span v-if="!data.subDepartment.description_extra">{{ ctrans("Extra description is missing")
                             }}.</span>
                     </div>
-                    {{ trans("Please") }}
+                    {{ ctrans("Please") }}
                     <Link @click="navigateTo()" class="underline font-bold">
-                    {{ trans("add missing description fields") }}
+                    {{ ctrans("add missing description fields") }}
                     </Link>.
                 </div>
             </Message>
@@ -96,7 +99,8 @@ const openFamilyModal = () => {
                   <ProductCategoryCard :data="data.subDepartment" />
             </div>
             <div class="col-span-1 md:col-span-2 lg:col-span-4">
-                <!-- Spacing / Content area -->
+                <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+                <SalesAnalysisMovers :teaser="salesAnalysisTeaser" />
             </div>
             <div class="col-span-1 md:col-span-3 lg:col-span-2 space-y-4">
                 <!-- Sales Analytics Compact -->

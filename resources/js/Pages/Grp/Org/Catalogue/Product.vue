@@ -11,6 +11,7 @@ import {
     faBadgePercent,
     faTools,
     faGem,
+    faChartLine,
 } from '@fal'
 import { ref, computed, inject } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -53,6 +54,7 @@ import axios from 'axios'
 import ModalCreateGiftOffers from '@/Components/Offers/ModalCreateGiftOffers.vue'
 import ModalCreateStepDiscountProduct from '@/Components/Offers/ModalCreateStepDiscountProduct.vue'
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faFolder,
@@ -78,7 +80,8 @@ library.add(
     faMagnifyingGlass,
     faBadgePercent,
     faTools,
-    faGem
+    faGem,
+    faChartLine
 )
 
 const props = defineProps<{
@@ -122,6 +125,8 @@ const props = defineProps<{
         keep_route: routeType
     } | null
     sales?: {}
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     salesData?: object
     is_single_trade_unit?: boolean
     reminders?: {}
@@ -144,7 +149,8 @@ const props = defineProps<{
 }>()
 
 const currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 const isOpenDialog = ref(false)
 const reviewPayload = ref(null)
 const openDialog = () => {
@@ -170,6 +176,7 @@ const component = computed(() => {
         translation: ProductTranslation,
         attachments: AttachmentManagement,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
         content: ProductContent,
         offers: TableOffers,
         reviews: TableReviews,
@@ -433,7 +440,7 @@ const saveProductReview = async () => {
         </div>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :handleTabUpdate :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :showSalesAnalysis="true" />
 
 
      <Dialog v-model:visible="isOpenDialog" modal header="Product Review" :style="{ width: '60rem' }" :breakpoints="{

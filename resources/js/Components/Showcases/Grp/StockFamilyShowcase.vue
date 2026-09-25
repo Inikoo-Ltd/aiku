@@ -5,35 +5,17 @@
   -->
 
 <script setup lang="ts">
-import ShowcaseStats from '@/Components/ShowcaseStats.vue'
-import ShowcaseContactCard from "@/Components/ShowcaseContactCard.vue";
+import SalesAnalysisTeaser from "@/Components/SalesAnalysis/SalesAnalysisTeaser.vue"
+import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.vue"
 
-const props = defineProps<{
-  data: {
-    contactCard: {
-    },
-    stats: [{
-      label: string,
-      value: number,
-    }],
-  },
-
+defineProps<{
+	salesAnalysisTeaser?: object
 }>()
 </script>
 
-<template >
-  <div class="grid text-gray-600  grid-flow-col grid-cols-2 px-4 pt-4">
-    <!-- Section 1 -->
-    <div class="">
-      <ShowcaseContactCard :data="data.contactCard" />
-    </div>
-
-    <!-- Section 2: Statistic -->
-    <div class="pl-6">
-      <ShowcaseStats :data="data.stats" />
-    </div>
-
-
-  </div>
+<template>
+	<div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+		<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" />
+		<SalesAnalysisMovers :teaser="salesAnalysisTeaser" />
+	</div>
 </template>
-

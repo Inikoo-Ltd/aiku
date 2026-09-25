@@ -6,21 +6,26 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterProductCategory\UI;
+namespace App\Actions\Catalogue\SalesAnalysis;
 
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
-use App\Models\Masters\MasterProductCategory;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetMasterFamilySalesAnalysis
+/**
+ * Sales of a scope (a master or shop category, a product, a trade unit, a stock...) over a period
+ * compared with another, with what can explain the difference: stock outs, changes and traffic.
+ * Sales come from invoice lines, leaving out invoices to our own organisations (partners).
+ */
+class GetSalesAnalysis
 {
     use AsAction;
 
@@ -30,16 +35,33 @@ class GetMasterFamilySalesAnalysis
     private const array CONTENT_KEYS = ['name', 'description', 'description_extra', 'description_title', 'code'];
     private const array STATUS_KEYS = ['status', 'state', 'is_for_sale'];
 
-    private Collection $shopFamilies;
+    private SalesAnalysisScope $scope;
     private Collection $shops;
-    private Collection $familyProducts;
-    private bool $isFiltered = false;
+    private Collection $products;
+    private array $shopIds = [];
+    private array $groupedSales = [];
+    private string $unit = 'week';
 
     /**
      * @param array{from?: string|null, to?: string|null, compareFrom?: string|null, compareTo?: string|null, organisations?: array|string|null, shops?: array|string|null} $modelData
      */
-    public function handle(MasterProductCategory $masterFamily, array $modelData, bool $withDetails = true): array
+    public function handle(SalesAnalysisScope $scope, array $modelData, bool $withDetails = true): array
     {
+        if (!$scope->cacheKey) {
+            return $this->analyse($scope, $modelData, $withDetails);
+        }
+
+        return Cache::remember(
+            'sales-analysis:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']), $withDetails, now()->toDateString()])),
+            now()->endOfDay(),
+            fn () => $this->analyse($scope, $modelData, $withDetails)
+        );
+    }
+
+    private function analyse(SalesAnalysisScope $scope, array $modelData, bool $withDetails): array
+    {
+        $this->scope = $scope;
+
         $to   = Carbon::parse(Arr::get($modelData, 'to') ?? now()->subDay()->toDateString())->startOfDay();
         $from = Carbon::parse(Arr::get($modelData, 'from') ?? $to->copy()->subYear()->addDay()->toDateString())->startOfDay();
         if ($from->gt($to)) {
@@ -51,20 +73,24 @@ class GetMasterFamilySalesAnalysis
             [$compareFrom, $compareTo] = [$compareTo, $compareFrom];
         }
 
-        $frequency = $this->frequency($from, $to);
+        $frequency          = $this->frequency($from, $to);
+        $this->unit         = $this->bucketUnit($frequency);
+        $this->groupedSales = [];
 
-        $allShopFamilies = DB::table('product_categories')
-            ->where('master_product_category_id', $masterFamily->id)
-            ->select(['id', 'shop_id', 'organisation_id', 'state', 'webpage_id'])
+        $allProducts = DB::table('products')
+            ->whereRaw('id = any(?::int[])', [$this->intArray($scope->productIds)])
+            ->whereNotNull('asset_id')
+            ->select(['id', 'asset_id', 'shop_id', 'webpage_id', 'code', 'state', 'status', 'created_at'])
             ->get();
+
         $this->shops = DB::table('shops')
-            ->whereIn('id', $allShopFamilies->pluck('shop_id'))
+            ->whereIn('id', $allProducts->pluck('shop_id')->merge(array_keys($scope->shopNodeStates))->unique())
             ->select(['id', 'code', 'name', 'slug', 'organisation_id', 'state'])
             ->orderBy('code')
             ->get()
             ->keyBy('id');
         $organisations = DB::table('organisations')
-            ->whereIn('id', $allShopFamilies->pluck('organisation_id')->unique())
+            ->whereIn('id', $this->shops->pluck('organisation_id')->unique())
             ->select(['id', 'slug', 'code', 'name'])
             ->orderBy('id')
             ->get();
@@ -75,29 +101,23 @@ class GetMasterFamilySalesAnalysis
             ->when($selectedOrganisations->isNotEmpty(), fn (Collection $shops) => $shops->whereIn('organisation_id', $selectedOrganisations->pluck('id')))
             ->values();
 
-        $this->isFiltered   = $selectedOrganisations->isNotEmpty() || $selectedShops->isNotEmpty();
-        $this->shopFamilies = $allShopFamilies
-            ->when($selectedOrganisations->isNotEmpty(), fn (Collection $families) => $families->whereIn('organisation_id', $selectedOrganisations->pluck('id')))
-            ->when($selectedShops->isNotEmpty(), fn (Collection $families) => $families->whereIn('shop_id', $selectedShops->pluck('id')))
-            ->values();
+        $this->shopIds = $this->shops
+            ->when($selectedOrganisations->isNotEmpty(), fn (Collection $shops) => $shops->whereIn('organisation_id', $selectedOrganisations->pluck('id')))
+            ->when($selectedShops->isNotEmpty(), fn (Collection $shops) => $shops->whereIn('id', $selectedShops->pluck('id')))
+            ->keys()
+            ->all();
+        $this->products = $allProducts->whereIn('shop_id', $this->shopIds)->values();
 
-        $this->familyProducts = DB::table('products')
-            ->whereIn('id', GetMasterFamilyStockOuts::familyProductIds($masterFamily))
-            ->whereIn('shop_id', $this->filteredShopIds())
-            ->whereNotNull('asset_id')
-            ->select(['id', 'asset_id', 'shop_id', 'master_product_id'])
-            ->get();
-
-        $stockOuts        = $this->filterStockOuts(GetMasterFamilyStockOuts::run($masterFamily, $from, $to));
-        $compareStockOuts = $withDetails ? $this->filterStockOuts(GetMasterFamilyStockOuts::run($masterFamily, $compareFrom, $compareTo)) : [];
+        $productIds       = $this->products->pluck('id')->all();
+        [$stockOuts, $compareStockOuts] = GetSalesAnalysisStockOuts::make()->handlePeriods($productIds, [[$from, $to], [$compareFrom, $compareTo]], $scope->amountColumn);
 
         return [
-            'filters'        => [
+            'filters'         => [
                 'organisations'          => $organisations->map(fn ($organisation) => [
                     'slug' => $organisation->slug,
                     'code' => $organisation->code,
                     'name' => $organisation->name,
-                ])->all(),
+                ])->values()->all(),
                 'shops'                  => $this->shops->map(fn ($shop) => [
                     'slug'              => $shop->slug,
                     'code'              => $shop->code,
@@ -108,13 +128,13 @@ class GetMasterFamilySalesAnalysis
                 'selected_organisations' => $selectedOrganisations->pluck('slug')->all(),
                 'selected_shops'         => $selectedShops->pluck('slug')->all(),
             ],
-            'period'         => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
-            'compare_period' => ['from' => $compareFrom->toDateString(), 'to' => $compareTo->toDateString()],
-            'frequency'      => $frequency->value,
-            'currency'       => $masterFamily->group->currency->code,
-            'sales'          => $this->salesSeries($frequency, $from, $to),
-            'compare_sales'  => $this->salesSeries($frequency, $compareFrom, $compareTo),
-            'totals'         => [
+            'period'          => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
+            'compare_period'  => ['from' => $compareFrom->toDateString(), 'to' => $compareTo->toDateString()],
+            'frequency'       => $frequency->value,
+            'currency'        => $scope->currency,
+            'sales'           => $this->salesSeries($frequency, $from, $to),
+            'compare_sales'   => $this->salesSeries($frequency, $compareFrom, $compareTo),
+            'totals'          => [
                 'current'  => [
                     ...$this->salesTotals($from, $to),
                     ...$this->stockOutTotals($stockOuts),
@@ -124,26 +144,28 @@ class GetMasterFamilySalesAnalysis
                     ...$this->stockOutTotals($compareStockOuts),
                 ],
             ],
-            'shops'          => $this->byShop($from, $to, $compareFrom, $compareTo, $stockOuts),
-            'products'       => $this->byProduct($masterFamily, $from, $to, $compareFrom, $compareTo, $stockOuts),
-            'stock_outs'     => $stockOuts,
-            'skos'           => $this->stockKeepingUnitCount(),
-            'traffic'        => $withDetails ? $this->traffic($masterFamily, $frequency, $from, $to) : [],
-            'events'         => $withDetails ? $this->events($masterFamily, $from, $to) : [],
+            'shops'           => $this->byShop($from, $to, $compareFrom, $compareTo, $stockOuts),
+            'breakdown_label' => $scope->breakdownLabel,
+            'breakdown'       => $this->byBreakdown($from, $to, $compareFrom, $compareTo, $stockOuts),
+            'stock_outs'      => $stockOuts,
+            'skos'            => $this->stockKeepingUnitCount(),
+            'traffic'         => $withDetails ? $this->traffic($frequency, $from, $to) : [],
+            'events'          => $withDetails ? $this->events($from, $to) : [],
         ];
     }
 
     /**
-     * @return array{period: array, compare_period: array, currency: string, frequency: string, sales: array, compare_sales: array, totals: array, shops: array, products: array}
+     * The last 12 months against the year before, for the Overview tab.
      */
-    public function teaser(MasterProductCategory $masterFamily): array
+    public function teaser(SalesAnalysisScope $scope): array
     {
-        $analysis = $this->handle($masterFamily, [], withDetails: false);
+        $analysis = $this->handle($scope, [], withDetails: false);
 
         return [
-            ...Arr::only($analysis, ['period', 'compare_period', 'currency', 'frequency', 'sales', 'compare_sales', 'totals']),
-            'shops'    => $this->movers($analysis['shops']),
-            'products' => $this->movers(array_filter($analysis['products'], fn ($product) => $product['id'] !== 0)),
+            ...Arr::only($analysis, ['period', 'compare_period', 'currency', 'frequency', 'sales', 'compare_sales', 'totals', 'breakdown_label']),
+            'shop_count' => count($analysis['filters']['shops']),
+            'shops'     => $this->movers($analysis['shops']),
+            'breakdown' => $this->movers(array_filter($analysis['breakdown'], fn ($row) => $row['id'] !== 0)),
         ];
     }
 
@@ -166,30 +188,19 @@ class GetMasterFamilySalesAnalysis
         return array_values(array_filter(array_map('strval', $value ?? [])));
     }
 
-    private function filterStockOuts(array $stockOuts): array
+    private function intArray(array $ids): string
     {
-        if (!$this->isFiltered) {
-            return $stockOuts;
-        }
-
-        $organisationIds = $this->shopFamilies->pluck('organisation_id')->unique()->all();
-
-        return array_values(array_filter($stockOuts, fn ($stockOut) => in_array($stockOut['organisation_id'], $organisationIds)));
+        return '{'.implode(',', array_map('intval', $ids)).'}';
     }
 
     private function stockKeepingUnitCount(): int
     {
         return DB::table('product_has_org_stocks')
             ->join('org_stocks', 'org_stocks.id', 'product_has_org_stocks.org_stock_id')
-            ->whereIn('product_has_org_stocks.product_id', $this->familyProducts->pluck('id'))
+            ->whereRaw('product_has_org_stocks.product_id = any(?::int[])', [$this->intArray($this->products->pluck('id')->all())])
             ->whereNotIn('org_stocks.state', [OrgStockStateEnum::DISCONTINUED->value, OrgStockStateEnum::DISCONTINUING->value])
             ->distinct()
             ->count('product_has_org_stocks.org_stock_id');
-    }
-
-    private function filteredShopIds(): array
-    {
-        return $this->shopFamilies->pluck('shop_id')->unique()->values()->all();
     }
 
     private function frequency(Carbon $from, Carbon $to): TimeSeriesFrequencyEnum
@@ -216,17 +227,8 @@ class GetMasterFamilySalesAnalysis
 
     private function salesSeries(TimeSeriesFrequencyEnum $frequency, Carbon $from, Carbon $to): array
     {
-        $unit = match ($frequency) {
-            TimeSeriesFrequencyEnum::DAILY => 'day',
-            TimeSeriesFrequencyEnum::WEEKLY => 'week',
-            default => 'month',
-        };
-
-        $rows = $this->invoiceLines($from, $to)
-            ->groupByRaw('1')
-            ->selectRaw("date_trunc('$unit', invoice_transactions.date)::date::text as date, sum(invoice_transactions.grp_net_amount)::float as sales, count(distinct invoice_transactions.order_id) as orders")
-            ->get()
-            ->keyBy('date');
+        $unit  = $this->bucketUnit($frequency);
+        $sales = $this->groupedSales($from, $to)->groupBy('bucket')->map(fn (Collection $rows) => $rows->sum('sales'));
 
         $bucket = match ($unit) {
             'day' => $from->copy(),
@@ -238,9 +240,8 @@ class GetMasterFamilySalesAnalysis
         while ($bucket->lte($to)) {
             $date     = $bucket->toDateString();
             $series[] = [
-                'date'   => $date,
-                'sales'  => round($rows[$date]->sales ?? 0, 2),
-                'orders' => (int)($rows[$date]->orders ?? 0),
+                'date'  => $date,
+                'sales' => round($sales[$date] ?? 0, 2),
             ];
             $bucket->addUnit($unit);
         }
@@ -248,15 +249,38 @@ class GetMasterFamilySalesAnalysis
         return $series;
     }
 
+    private function bucketUnit(TimeSeriesFrequencyEnum $frequency): string
+    {
+        return match ($frequency) {
+            TimeSeriesFrequencyEnum::DAILY => 'day',
+            TimeSeriesFrequencyEnum::WEEKLY => 'week',
+            default => 'month',
+        };
+    }
+
+    /**
+     * One query per period: sales by time bucket, shop and asset, which the chart, the websites
+     * and the breakdown are all summed from.
+     */
+    private function groupedSales(Carbon $from, Carbon $to): Collection
+    {
+        $key = $from->toDateString().'|'.$to->toDateString();
+
+        return $this->groupedSales[$key] ??= $this->invoiceLines($from, $to)
+            ->groupByRaw('1, 2, 3')
+            ->selectRaw("date_trunc('{$this->unit}', invoice_transactions.date)::date::text as bucket, invoice_transactions.shop_id, invoice_transactions.asset_id, sum(invoice_transactions.{$this->scope->amountColumn})::float as sales")
+            ->get();
+    }
+
     private function salesTotals(Carbon $from, Carbon $to): array
     {
         $totals = $this->invoiceLines($from, $to)
             ->selectRaw(
-                'coalesce(sum(invoice_transactions.grp_net_amount), 0)::float as sales,
+                "coalesce(sum(invoice_transactions.{$this->scope->amountColumn}), 0)::float as sales,
                 count(distinct invoice_transactions.order_id) as orders,
                 count(distinct invoice_transactions.invoice_id) filter (where invoices.type = ?) as invoices,
                 count(distinct invoice_transactions.invoice_id) filter (where invoices.type = ?) as refunds,
-                count(distinct invoice_transactions.customer_id) as customers',
+                count(distinct invoice_transactions.customer_id) as customers",
                 [InvoiceTypeEnum::INVOICE->value, InvoiceTypeEnum::REFUND->value]
             )
             ->first();
@@ -274,23 +298,18 @@ class GetMasterFamilySalesAnalysis
     {
         return DB::table('invoice_transactions')
             ->join('invoices', 'invoices.id', 'invoice_transactions.invoice_id')
-            ->whereRaw('invoice_transactions.asset_id = any(?::int[])', ['{'.$this->familyProducts->pluck('asset_id')->unique()->implode(',').'}'])
+            ->whereRaw('invoice_transactions.asset_id = any(?::int[])', [$this->intArray($this->products->pluck('asset_id')->unique()->all())])
             ->whereNull('invoice_transactions.deleted_at')
             ->whereNull('invoices.deleted_at')
             ->whereNull('invoices.as_organisation_id')
             ->whereBetween('invoice_transactions.date', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
     }
 
-    /**
-     * @return Collection<int|string, object{sales: float, orders: int}>
-     */
     private function salesBy(string $column, Carbon $from, Carbon $to): Collection
     {
-        return $this->invoiceLines($from, $to)
-            ->groupBy("invoice_transactions.$column")
-            ->selectRaw("invoice_transactions.$column as key, coalesce(sum(invoice_transactions.grp_net_amount), 0)::float as sales, count(distinct invoice_transactions.order_id) as orders")
-            ->get()
-            ->keyBy('key');
+        return $this->groupedSales($from, $to)
+            ->groupBy($column)
+            ->map(fn (Collection $rows) => (object)['key' => $rows->first()->$column, 'sales' => $rows->sum('sales')]);
     }
 
     private function stockOutTotals(array $stockOuts): array
@@ -312,24 +331,22 @@ class GetMasterFamilySalesAnalysis
 
         $stockOutDaysByOrganisation = collect($stockOuts)->where('cause', '!=', 'discontinued')->groupBy('organisation_id')->map->sum('days');
 
-        return $this->shopFamilies
-            ->map(function ($family) use ($sales, $previousSales, $stockOutDaysByOrganisation) {
-                $shop     = $this->shops[$family->shop_id] ?? null;
-                $row      = $sales[$family->shop_id] ?? null;
-                $previous = $previousSales[$family->shop_id] ?? null;
+        return collect($this->shopIds)
+            ->map(function ($shopId) use ($sales, $previousSales, $stockOutDaysByOrganisation) {
+                $shop     = $this->shops[$shopId];
+                $row      = $sales[$shopId] ?? null;
+                $previous = $previousSales[$shopId] ?? null;
 
                 return [
-                    'shop_id'         => $family->shop_id,
-                    'shop_code'       => $shop?->code,
-                    'shop_name'       => $shop?->name,
-                    'shop_state'      => $shop?->state,
-                    'organisation_id' => $family->organisation_id,
-                    'family_state'    => $family->state,
+                    'shop_id'         => $shopId,
+                    'shop_code'       => $shop->code,
+                    'shop_name'       => $shop->name,
+                    'shop_state'      => $shop->state,
+                    'organisation_id' => $shop->organisation_id,
+                    'node_state'      => $this->scope->shopNodeStates[$shopId] ?? null,
                     'sales'           => round($row?->sales ?? 0, 2),
                     'previous_sales'  => round($previous?->sales ?? 0, 2),
-                    'orders'          => (int)($row?->orders ?? 0),
-                    'previous_orders' => (int)($previous?->orders ?? 0),
-                    'stock_out_days'  => $stockOutDaysByOrganisation[$family->organisation_id] ?? 0,
+                    'stock_out_days'  => $stockOutDaysByOrganisation[$shop->organisation_id] ?? 0,
                 ];
             })
             ->sortBy(fn ($row) => $row['sales'] - $row['previous_sales'])
@@ -337,72 +354,65 @@ class GetMasterFamilySalesAnalysis
             ->all();
     }
 
-    private function byProduct(MasterProductCategory $masterFamily, Carbon $from, Carbon $to, Carbon $compareFrom, Carbon $compareTo, array $stockOuts): array
+    private function byBreakdown(Carbon $from, Carbon $to, Carbon $compareFrom, Carbon $compareTo, array $stockOuts): array
     {
-        $masterAssets = DB::table('master_assets')
-            ->where('master_family_id', $masterFamily->id)
-            ->select(['id', 'code', 'name', 'slug', 'status', 'is_for_sale', 'created_at', 'discontinued_at'])
-            ->get();
+        if (!$this->scope->breakdownLabel) {
+            return [];
+        }
 
-        $masterAssetByAsset = $this->familyProducts->pluck('master_product_id', 'asset_id');
-        $sumByMasterAsset   = fn (Collection $rows) => $rows
-            ->groupBy(fn ($row) => $masterAssetByAsset[$row->key] ?? 0)
+        $rows         = $this->scope->breakdownRows;
+        $keyByProduct = array_map(fn ($key) => isset($rows[$key]) ? $key : 0, $this->scope->breakdownKeyByProduct);
+        $keyByAsset   = $this->products->mapWithKeys(fn ($product) => [$product->asset_id => $keyByProduct[$product->id] ?? 0]);
+        $sumByKey     = fn (Collection $rows) => $rows
+            ->groupBy(fn ($row) => $keyByAsset[$row->key] ?? 0)
             ->map(fn (Collection $group) => $group->sum('sales'));
 
-        $sales         = $sumByMasterAsset($this->salesBy('asset_id', $from, $to));
-        $previousSales = $sumByMasterAsset($this->salesBy('asset_id', $compareFrom, $compareTo));
+        $sales         = $sumByKey($this->salesBy('asset_id', $from, $to));
+        $previousSales = $sumByKey($this->salesBy('asset_id', $compareFrom, $compareTo));
 
-        $listings = DB::table('products')
-            ->whereIn('master_product_id', $masterAssets->pluck('id'))
-            ->when($this->isFiltered, fn ($query) => $query->whereIn('shop_id', $this->filteredShopIds()))
-            ->groupBy('master_product_id')
-            ->selectRaw("master_product_id, count(*) filter (where state = 'active') as active, count(*) filter (where status = ?) as out_of_stock", [ProductStatusEnum::OUT_OF_STOCK->value])
-            ->get()
-            ->keyBy('master_product_id');
+        $productsByKey = $this->products->groupBy(fn ($product) => $keyByProduct[$product->id] ?? 0);
 
-        $stockOutsByCode = collect($stockOuts)->where('cause', '!=', 'discontinued')->groupBy(fn ($stockOut) => strtolower($stockOut['code']));
+        $keysByOrgStock = DB::table('product_has_org_stocks')
+            ->whereRaw('product_id = any(?::int[])', [$this->intArray($this->products->pluck('id')->all())])
+            ->get(['product_id', 'org_stock_id'])
+            ->groupBy('org_stock_id')
+            ->map(fn (Collection $links) => $links->map(fn ($link) => $keyByProduct[$link->product_id] ?? 0)->unique()->values());
+        $stockOutsByKey = collect($stockOuts)
+            ->where('cause', '!=', 'discontinued')
+            ->flatMap(fn ($stockOut) => $keysByOrgStock->get($stockOut['org_stock_id'], collect())->map(fn ($key) => ['key' => $key, 'stock_out' => $stockOut]))
+            ->groupBy('key')
+            ->map(fn (Collection $rows) => $rows->pluck('stock_out'));
 
-        return $masterAssets
-            ->map(function ($masterAsset) use ($sales, $previousSales, $listings, $stockOutsByCode) {
-                $stockOuts = $stockOutsByCode->get(strtolower($masterAsset->code), collect());
+        $row = function (int|string $key, array $meta) use ($sales, $previousSales, $productsByKey, $stockOutsByKey) {
+            $products  = $productsByKey->get($key, collect());
+            $stockOuts = $stockOutsByKey->get($key, collect());
 
-                return [
-                    'id'                  => $masterAsset->id,
-                    'code'                => $masterAsset->code,
-                    'name'                => $masterAsset->name,
-                    'slug'                => $masterAsset->slug,
-                    'status'              => (bool)$masterAsset->status,
-                    'is_for_sale'         => (bool)$masterAsset->is_for_sale,
-                    'created_at'          => $masterAsset->created_at ? Carbon::parse($masterAsset->created_at)->toDateString() : null,
-                    'discontinued_at'     => $masterAsset->discontinued_at ? Carbon::parse($masterAsset->discontinued_at)->toDateString() : null,
-                    'sales'               => round($sales[$masterAsset->id] ?? 0, 2),
-                    'previous_sales'      => round($previousSales[$masterAsset->id] ?? 0, 2),
-                    'websites'            => (int)($listings[$masterAsset->id]->active ?? 0),
-                    'websites_out_of_stock' => (int)($listings[$masterAsset->id]->out_of_stock ?? 0),
-                    'stock_outs'          => $stockOuts->count(),
-                    'stock_out_days'      => $stockOuts->sum('days'),
-                    'lost_sales'          => round($stockOuts->sum('lost_sales'), 2),
-                ];
-            })
+            return [
+                ...$meta,
+                'id'                    => $key,
+                'sales'                 => round($sales[$key] ?? 0, 2),
+                'previous_sales'        => round($previousSales[$key] ?? 0, 2),
+                'websites'              => $products->where('state', 'active')->pluck('shop_id')->unique()->count(),
+                'websites_out_of_stock' => $products->where('status', ProductStatusEnum::OUT_OF_STOCK->value)->pluck('shop_id')->unique()->count(),
+                'stock_outs'            => $stockOuts->count(),
+                'stock_out_days'        => $stockOuts->sum('days'),
+                'lost_sales'            => round($stockOuts->sum('lost_sales'), 2),
+            ];
+        };
+
+        return collect($this->scope->breakdownRows)
+            ->map(fn ($meta, $key) => $row($key, $meta))
             ->when(
                 ($sales[0] ?? 0) || ($previousSales[0] ?? 0),
-                fn (Collection $rows) => $rows->push([
-                    'id'                    => 0,
-                    'code'                  => __('Other'),
-                    'name'                  => __('Products in these families not linked to a master product'),
-                    'slug'                  => null,
-                    'status'                => true,
-                    'is_for_sale'           => true,
-                    'created_at'            => null,
-                    'discontinued_at'       => null,
-                    'sales'                 => round($sales[0] ?? 0, 2),
-                    'previous_sales'        => round($previousSales[0] ?? 0, 2),
-                    'websites'              => 0,
-                    'websites_out_of_stock' => 0,
-                    'stock_outs'            => 0,
-                    'stock_out_days'        => 0,
-                    'lost_sales'            => 0,
-                ])
+                fn (Collection $rows) => $rows->push($row(0, [
+                    'code'            => __('Other'),
+                    'name'            => __('Not linked to any of the rows above'),
+                    'slug'            => null,
+                    'status'          => true,
+                    'is_for_sale'     => true,
+                    'created_at'      => null,
+                    'discontinued_at' => null,
+                ]))
             )
             ->sortBy([
                 fn ($a, $b) => (!$a['sales'] && !$a['previous_sales']) <=> (!$b['sales'] && !$b['previous_sales']),
@@ -412,26 +422,23 @@ class GetMasterFamilySalesAnalysis
             ->all();
     }
 
-    private function traffic(MasterProductCategory $masterFamily, TimeSeriesFrequencyEnum $frequency, Carbon $from, Carbon $to): array
+    private function webpageShops(): Collection
     {
-        $webpageIds = $this->shopFamilies->pluck('webpage_id')->filter()
-            ->merge(
-                DB::table('products')
-                    ->whereIn('master_product_id', DB::table('master_assets')->where('master_family_id', $masterFamily->id)->select('id'))
-                    ->when($this->isFiltered, fn ($query) => $query->whereIn('shop_id', $this->filteredShopIds()))
-                    ->whereNotNull('webpage_id')
-                    ->pluck('webpage_id')
-            )
-            ->unique()
-            ->values();
+        return collect($this->scope->webpageShops)
+            ->union($this->products->filter(fn ($product) => $product->webpage_id)->pluck('shop_id', 'webpage_id'))
+            ->filter(fn ($shopId) => in_array($shopId, $this->shopIds));
+    }
 
+    private function traffic(TimeSeriesFrequencyEnum $frequency, Carbon $from, Carbon $to): array
+    {
+        $webpageIds = $this->webpageShops()->keys();
         if ($webpageIds->isEmpty()) {
             return [];
         }
 
         return DB::table('webpage_time_series_records as records')
             ->join('webpage_time_series as series', 'series.id', 'records.webpage_time_series_id')
-            ->whereIn('series.webpage_id', $webpageIds)
+            ->whereRaw('series.webpage_id = any(?::int[])', [$this->intArray($webpageIds->all())])
             ->where('series.frequency', $frequency->value)
             ->where('records.frequency', $this->recordFrequencyCode($frequency))
             ->where('records.to', '>=', $from->toDateString())
@@ -443,24 +450,21 @@ class GetMasterFamilySalesAnalysis
             ->all();
     }
 
-    private function events(MasterProductCategory $masterFamily, Carbon $from, Carbon $to): array
+    private function events(Carbon $from, Carbon $to): array
     {
         $end = $to->copy()->endOfDay();
 
-        $masterAssets = DB::table('master_assets')->where('master_family_id', $masterFamily->id)->pluck('code', 'id');
-        $products     = DB::table('products')
-            ->whereIn('id', $this->familyProducts->pluck('id'))
-            ->select(['id', 'code', 'shop_id', 'created_at', 'master_product_id'])
-            ->get()
-            ->keyBy('id');
+        $events = collect();
+        foreach ($this->scope->audits as $audit) {
+            $labels = $audit['shops'] === null
+                ? $audit['labels']
+                : array_filter($audit['labels'], fn ($id) => in_array($audit['shops'][$id] ?? null, $this->shopIds), ARRAY_FILTER_USE_KEY);
+            $events = $events->concat($this->auditEvents($audit['type'], $labels, $audit['shops'], $from, $end));
+        }
 
-        $events = collect()
-            ->concat($this->auditEvents('MasterProductCategory', [$masterFamily->id => $masterFamily->code], null, $from, $end))
-            ->concat($this->auditEvents('MasterAsset', $masterAssets->all(), null, $from, $end))
-            ->concat($this->auditEvents('ProductCategory', $this->shopFamilies->pluck('id', 'id')->map(fn () => $masterFamily->code)->all(), $this->shopFamilies->pluck('shop_id', 'id')->all(), $from, $end))
-            ->concat($this->auditEvents('Product', $products->pluck('code', 'id')->all(), $products->pluck('shop_id', 'id')->all(), $from, $end))
-            ->concat($this->launchEvents($products, $from, $end))
-            ->concat($this->offerEvents($products->keys()->all(), $from, $end))
+        $events = $events
+            ->concat($this->launchEvents($from, $end))
+            ->concat($this->offerEvents($from, $end))
             ->concat($this->publishEvents($from, $end));
 
         return $this->groupEvents($events)->sortByDesc('datetime')->take(self::MAX_EVENTS)->values()->all();
@@ -474,7 +478,7 @@ class GetMasterFamilySalesAnalysis
 
         return DB::table('audits')
             ->where('auditable_type', $auditableType)
-            ->whereIn('auditable_id', array_keys($labels))
+            ->whereRaw('auditable_id = any(?::int[])', [$this->intArray(array_keys($labels))])
             ->whereBetween('created_at', [$from, $end])
             ->where('event', 'updated')
             ->select(['auditable_id', 'old_values', 'new_values', 'user_type', 'user_id', 'created_at'])
@@ -537,9 +541,9 @@ class GetMasterFamilySalesAnalysis
         return (string)($value ?? '—');
     }
 
-    private function launchEvents(Collection $products, Carbon $from, Carbon $end): Collection
+    private function launchEvents(Carbon $from, Carbon $end): Collection
     {
-        return $products
+        return $this->products
             ->filter(fn ($product) => $product->created_at && Carbon::parse($product->created_at)->between($from, $end))
             ->map(fn ($product) => [
                 'datetime' => Carbon::parse($product->created_at),
@@ -554,16 +558,23 @@ class GetMasterFamilySalesAnalysis
             ->values();
     }
 
-    private function offerEvents(array $productIds, Carbon $from, Carbon $end): Collection
+    private function offerEvents(Carbon $from, Carbon $end): Collection
     {
+        $productIds = $this->products->pluck('id')->all();
+        $triggers   = collect($this->scope->offerTriggers)
+            ->map(fn ($ids, $type) => $type === 'Product' ? array_values(array_intersect($ids, $productIds)) : $ids)
+            ->filter();
+        if ($triggers->isEmpty()) {
+            return collect();
+        }
+
         return DB::table('offers')
             ->whereNull('deleted_at')
-            ->where(function ($query) use ($productIds) {
-                $query->where(function ($query) {
-                    $query->where('trigger_type', 'ProductCategory')->whereIn('trigger_id', $this->shopFamilies->pluck('id'));
-                })->orWhere(function ($query) use ($productIds) {
-                    $query->where('trigger_type', 'Product')->whereIn('trigger_id', $productIds);
-                });
+            ->whereIn('shop_id', $this->shopIds)
+            ->where(function ($query) use ($triggers) {
+                foreach ($triggers as $type => $ids) {
+                    $query->orWhere(fn ($query) => $query->where('trigger_type', $type)->whereRaw('trigger_id = any(?::int[])', [$this->intArray($ids)]));
+                }
             })
             ->where(function ($query) use ($from, $end) {
                 $query->whereBetween('start_at', [$from, $end])->orWhereBetween('end_at', [$from, $end]);
@@ -587,7 +598,7 @@ class GetMasterFamilySalesAnalysis
 
     private function publishEvents(Carbon $from, Carbon $end): Collection
     {
-        $shopByWebpage = $this->shopFamilies->filter(fn ($family) => $family->webpage_id)->pluck('shop_id', 'webpage_id');
+        $shopByWebpage = collect($this->scope->webpageShops)->filter(fn ($shopId) => in_array($shopId, $this->shopIds));
         if ($shopByWebpage->isEmpty()) {
             return collect();
         }
@@ -607,7 +618,7 @@ class GetMasterFamilySalesAnalysis
                 'old'      => null,
                 'new'      => null,
                 'shop_id'  => $shopByWebpage[$snapshot->parent_id],
-                'user_id'  => $snapshot->publisher_type === 'User' ? $snapshot->publisher_id : null,
+                'user_id'  => $snapshot->publisher_id,
             ]);
     }
 

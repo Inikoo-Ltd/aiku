@@ -70,8 +70,12 @@ use App\Models\Masters\MasterAssetStats;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionOrderingStats;
 use App\Models\Masters\MasterCollectionStats;
-use App\Actions\Masters\MasterProductCategory\UI\GetMasterFamilySalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
+use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
+use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
+use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterProductCategoryStats;
 use App\Models\Masters\MasterShop;
@@ -487,6 +491,35 @@ test('UI Show Master Department', function (MasterProductCategory $masterDepartm
     });
 })->depends('create master department');
 
+test('UI Show Master Department sales analysis tab', function (MasterProductCategory $masterDepartment) {
+    $response = get(
+        route('grp.masters.master_departments.show', [
+            'masterDepartment' => $masterDepartment->slug,
+            'tab'              => MasterDepartmentTabsEnum::SALES_ANALYSIS->value,
+            'from'             => '2026-01-01',
+            'to'               => '2026-03-31',
+            'compareFrom'      => '2025-01-01',
+            'compareTo'        => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterDepartment')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events')
+            ->has('sales_analysis.filters.organisations');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterDepartment));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+})->depends('create master department');
+
 test('create master family', function (MasterProductCategory $masterDepartment) {
     $masterFamily = StoreMasterProductCategory::make()->action(
         $masterDepartment,
@@ -544,16 +577,16 @@ test('UI Show Master Family sales analysis tab', function (MasterProductCategory
             ->where('sales_analysis.frequency', 'daily')
             ->has('sales_analysis.totals.current', fn (AssertableInertia $totals) => $totals->where('sales', 0)->where('stock_outs', 0)->etc())
             ->has('sales_analysis.shops')
-            ->has('sales_analysis.products')
+            ->has('sales_analysis.breakdown')
             ->has('sales_analysis.stock_outs')
             ->has('sales_analysis.events')
             ->where('sales_analysis.filters.selected_organisations', [])
             ->has('sales_analysis.filters.organisations');
     });
 
-    $teaser = GetMasterFamilySalesAnalysis::make()->teaser($masterFamily);
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterFamily));
 
-    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'products'])
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown'])
         ->and($teaser['totals']['current']['sales'])->toEqual(0);
 })->depends('create master family');
 
@@ -941,6 +974,36 @@ test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubD
             )
             ->has("tabs");
     });
+})->depends('create master sub department');
+
+test('UI Show Master SubDepartment sales analysis tab', function (MasterProductCategory $masterSubDepartment) {
+    $response = get(
+        route('grp.masters.master_departments.show.master_sub_departments.show', [
+            'masterDepartment'    => $masterSubDepartment->parent->slug,
+            'masterSubDepartment' => $masterSubDepartment->slug,
+            'tab'                 => MasterSubDepartmentTabsEnum::SALES_ANALYSIS->value,
+            'from'                => '2026-01-01',
+            'to'                  => '2026-03-31',
+            'compareFrom'         => '2025-01-01',
+            'compareTo'           => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterSubDepartment')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events')
+            ->has('sales_analysis.filters.organisations');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterSubDepartment));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 })->depends('create master sub department');
 
 test('master hydrator', function () {
@@ -1500,6 +1563,36 @@ test('UI Edit Master Product Composition', function (MasterAsset $masterAsset) {
                     ->etc()
             );
     });
+})->depends('create master asset');
+
+test('UI Show Master Product sales analysis tab', function (MasterAsset $masterAsset) {
+    $response = get(
+        route('grp.masters.master_shops.show.master_products.show', [
+            'masterShop'    => $masterAsset->masterShop->slug,
+            'masterProduct' => $masterAsset->slug,
+            'tab'           => MasterAssetTabsEnum::SALES_ANALYSIS->value,
+            'from'          => '2026-01-01',
+            'to'            => '2026-03-31',
+            'compareFrom'   => '2025-01-01',
+            'compareTo'     => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterProduct')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events')
+            ->has('sales_analysis.filters.organisations');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 })->depends('create master asset');
 
 test('UI Index Master Products bulk edit tab lists products with their tax preset', function () {

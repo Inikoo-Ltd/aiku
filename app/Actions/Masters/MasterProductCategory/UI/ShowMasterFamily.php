@@ -11,6 +11,8 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
@@ -119,12 +121,12 @@ class ShowMasterFamily extends OrgAction
                 : Inertia::optional(fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value))),
 
             MasterFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterFamilyTabsEnum::SALES_ANALYSIS->value ?
-                fn () => GetMasterFamilySalesAnalysis::run($masterFamily, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
-                : Inertia::optional(fn () => GetMasterFamilySalesAnalysis::run($masterFamily, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+                fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
 
             'sales_analysis_teaser' => $this->tab === MasterFamilyTabsEnum::SHOWCASE->value ?
-                Inertia::defer(fn () => GetMasterFamilySalesAnalysis::make()->teaser($masterFamily), 'sales_analysis_teaser')
-                : Inertia::optional(fn () => GetMasterFamilySalesAnalysis::make()->teaser($masterFamily)),
+                Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterFamily)), 'sales_analysis_teaser')
+                : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterFamily))),
 
             'salesData' => $this->tab === MasterFamilyTabsEnum::SHOWCASE->value ?
                 fn () => GetMasterProductCategoryTimeSeriesData::run($masterFamily)

@@ -42,7 +42,7 @@ import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 import MasterFamilyWebpageLockButton from "@/Components/CMS/Webpage/MasterFamilyWebpageLockButton.vue"
-import MasterFamilySalesAnalysis from "@/Components/Master/MasterFamilySalesAnalysis.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faFolder,
@@ -104,6 +104,13 @@ const isModalUploadOpen = ref(false)
 
 const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
 
+const breakdownRoute = (row: { slug: string | null }) => {
+    const params = route().params
+    return row.slug && params.masterShop && params.masterFamily
+        ? route("grp.masters.master_shops.show.master_families.master_products.show", [params.masterShop, params.masterFamily, row.slug])
+        : null
+}
+
 const handleTabUpdate = (tabSlug: string) => {
     useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 }
@@ -118,7 +125,7 @@ const component = computed(() => {
         history: TableHistories,
         images : ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
-        sales_analysis: MasterFamilySalesAnalysis,
+        sales_analysis: SalesAnalysis,
         variants: TableMasterVariants,
         related_products: ProductCategoryRecomendation,
         related_product_category: RelatedProductCategory,
@@ -208,7 +215,7 @@ const showDialog = ref(false);
         </Message>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward"/>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward"/>
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

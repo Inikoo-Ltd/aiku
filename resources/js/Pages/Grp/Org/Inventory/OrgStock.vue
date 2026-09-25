@@ -57,6 +57,7 @@ import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
 library.add(
     faInventory,
@@ -89,6 +90,8 @@ const props = defineProps<{
     tabs: TSTabs
     mini_breadcrumbs? : any[]
     showcase?: object
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     supplier_products?: object
     locations?: object
     purchase_orders?: {}
@@ -112,7 +115,8 @@ const props = defineProps<{
 const isDiscontinuePreviewOpen = ref(false)
 
 let currentTab = ref(props.tabs.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 
 const locale = inject("locale", aikuLocaleStructure)
 const stocksManagement = computed(() => (props.showcase as any)?.stocks_management)
@@ -127,6 +131,7 @@ const component = computed(() => {
         supplier_products: TableOrgStockSupplierProducts,
         products: TableProducts,
         trade_units: TableTradeUnits,
+        sales_analysis: SalesAnalysis,
         stock_history: TableOrgStockMovements,
         purchase_history: TableOrgStockMovements,
         details: ModelDetails,
@@ -228,7 +233,7 @@ const component = computed(() => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :reasons :org_stock_id></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :reasons :org_stock_id :salesAnalysisTeaser="sales_analysis_teaser"></component>
 
     <OrgStockDiscontinuePreviewModal
         :isOpen="isDiscontinuePreviewOpen"

@@ -9,6 +9,8 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\RelatedProductCategories\GetRelatedProductCategories;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
@@ -204,6 +206,14 @@ class ShowDepartment extends OrgAction
                 'salesData' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryTimeSeriesData::run($department)
                     : Inertia::optional(fn () => GetProductCategoryTimeSeriesData::run($department)),
+
+                DepartmentTabsEnum::SALES_ANALYSIS->value => $this->tab == DepartmentTabsEnum::SALES_ANALYSIS->value ?
+                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($department), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($department), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+
+                'sales_analysis_teaser' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($department)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forProductCategory($department))),
 
                 DepartmentTabsEnum::SALES->value => $this->tab == DepartmentTabsEnum::SALES->value ?
                     fn () => ProductCategoryTimeSeriesResource::collection(IndexProductCategoryTimeSeries::run($department, DepartmentTabsEnum::SALES->value))

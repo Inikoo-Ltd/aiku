@@ -6,18 +6,17 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterProductCategory\UI;
+namespace App\Actions\Catalogue\SalesAnalysis;
 
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Models\Masters\MasterProductCategory;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetMasterFamilyStockOuts
+class GetSalesAnalysisStockOuts
 {
     use AsAction;
 
@@ -30,70 +29,109 @@ class GetMasterFamilyStockOuts
     private const string PURCHASE_HISTORY_FROM = '2016-10-01';
 
     /**
+     * @param array<int, int> $productIds
      * @return array<int, array{org_stock_id: int, code: string, organisation: string, organisation_id: int, started_on: string, back_in_on: string|null, days: int, approximate: bool, cause: string, order: array|null, days_to_order: int|null, lost_sales: float, websites: int}>
      */
-    public function handle(MasterProductCategory $masterFamily, Carbon $from, Carbon $to): array
+    public function handle(array $productIds, Carbon $from, Carbon $to, string $amountColumn = 'grp_net_amount'): array
     {
-        $orgStocks = $this->orgStocks($masterFamily);
-        if ($orgStocks->isEmpty()) {
-            return [];
+        return $this->handlePeriods($productIds, [[$from, $to]], $amountColumn)[0];
+    }
+
+    /**
+     * The stock outs of several periods read in one pass over the stock history.
+     *
+     * @param array<int, int> $productIds
+     * @param array<int, array{0: Carbon, 1: Carbon}> $periods
+     * @return array<int, array> stock outs of each period, in the order of $periods
+     */
+    public function handlePeriods(array $productIds, array $periods, string $amountColumn = 'grp_net_amount'): array
+    {
+        $results = array_fill(0, count($periods), []);
+        if (!$productIds) {
+            return $results;
         }
 
-        $orgStockIds  = $orgStocks->keys()->all();
-        $firstStocked = $this->firstStocked($orgStockIds);
-        $orders       = $this->orders($orgStockIds);
-        $deliveries   = $this->deliveries($orgStockIds);
-        $dailySales   = $this->dailySales($masterFamily, $orgStockIds, $from->copy()->subDays(self::SALES_RATE_DAYS), $to);
+        $orgStocks = $this->orgStocks($productIds);
+        if ($orgStocks->isEmpty()) {
+            return $results;
+        }
 
-        $stockOuts = [];
-        foreach ($this->runs($orgStockIds, $from, $to) as $run) {
-            $orgStock = $orgStocks[$run->org_stock_id];
-            $started  = Carbon::parse($run->started_on);
-            $backIn   = $run->back_in_on ? Carbon::parse($run->back_in_on) : null;
-            $days     = (int)$started->diffInDays($backIn ?? $to->copy()->addDay());
+        $start = collect($periods)->map(fn ($period) => $period[0])->min();
+        $end   = collect($periods)->map(fn ($period) => $period[1])->max();
 
-            $neverStocked = !isset($firstStocked[$run->org_stock_id]) || $firstStocked[$run->org_stock_id] > $run->started_on;
-            if ($neverStocked || $days < self::MINIMUM_DAYS) {
+        $orgStockIds = $orgStocks->keys()->all();
+        $orders      = $this->orders($orgStockIds);
+        $deliveries  = $this->deliveries($orgStockIds);
+        $dailySales  = $this->dailySales($productIds, $orgStockIds, $start->copy()->subDays(self::SALES_RATE_DAYS), $end, match ($amountColumn) {
+            'net_amount' => 'sales_external',
+            'org_net_amount' => 'sales_org_currency_external',
+            default => 'sales_grp_currency_external',
+        });
+
+        $runs          = $this->runs($orgStockIds, $start, $end);
+        $stockedBefore = $this->stockedBefore(collect($runs)->where('starts_at_period_start', true)->pluck('org_stock_id')->unique()->all(), $start);
+
+        foreach ($runs as $run) {
+            if ($run->starts_at_period_start && !isset($stockedBefore[$run->org_stock_id])) {
                 continue;
             }
 
+            $orgStock       = $orgStocks[$run->org_stock_id];
+            $started        = Carbon::parse($run->started_on);
+            $backIn         = $run->back_in_on ? Carbon::parse($run->back_in_on) : null;
             $isDiscontinued = !$backIn && in_array($orgStock->state, [OrgStockStateEnum::DISCONTINUED->value, OrgStockStateEnum::DISCONTINUING->value]);
+            $dailyRate      = $isDiscontinued ? 0.0 : $this->averageDailySales($dailySales->get($run->org_stock_id, []), $started);
+            $cause          = null;
 
-            [$cause, $order, $daysToOrder] = $isDiscontinued
-                ? ['discontinued', null, null]
-                : $this->cause(
-                    $orders->get($run->org_stock_id.'-'.$run->organisation_id, collect()),
-                    $deliveries->get($run->org_stock_id.'-'.$run->organisation_id, collect()),
-                    $started,
-                    $backIn ?? $to
-                );
+            foreach ($periods as $index => [$from, $to]) {
+                $periodEnd = $to->copy()->addDay();
+                if ($started->gte($periodEnd) || ($backIn && $backIn->lte($from))) {
+                    continue;
+                }
 
-            $stockOuts[] = [
-                'org_stock_id'    => $run->org_stock_id,
-                'code'            => $orgStock->code,
-                'organisation'    => $orgStock->organisation_name,
-                'organisation_id' => $run->organisation_id,
-                'organisation_slug' => $orgStock->organisation_slug,
-                'started_on'      => $started->toDateString(),
-                'back_in_on'      => $backIn?->toDateString(),
-                'days'            => $days,
-                'approximate'     => (bool)$run->approximate,
-                'cause'           => $cause,
-                'order'           => $order,
-                'days_to_order'   => $daysToOrder,
-                'lost_sales'      => $isDiscontinued ? 0.0 : round($this->averageDailySales($dailySales->get($run->org_stock_id, []), $started) * min($days, self::MAX_LOST_SALES_DAYS), 2),
-                'websites'        => $orgStock->websites,
-            ];
+                $days = (int)$started->copy()->max($from)->diffInDays($backIn && $backIn->lt($periodEnd) ? $backIn : $periodEnd);
+                if ($days < self::MINIMUM_DAYS) {
+                    continue;
+                }
+
+                $cause ??= $isDiscontinued
+                    ? ['discontinued', null, null]
+                    : $this->cause(
+                        $orders->get($run->org_stock_id.'-'.$run->organisation_id, collect()),
+                        $deliveries->get($run->org_stock_id.'-'.$run->organisation_id, collect()),
+                        $started,
+                        $backIn ?? $end
+                    );
+
+                $results[$index][] = [
+                    'org_stock_id'      => $run->org_stock_id,
+                    'code'              => $orgStock->code,
+                    'organisation'      => $orgStock->organisation_name,
+                    'organisation_id'   => $run->organisation_id,
+                    'organisation_slug' => $orgStock->organisation_slug,
+                    'started_on'        => $started->toDateString(),
+                    'back_in_on'        => $backIn && $backIn->lt($periodEnd) ? $backIn->toDateString() : null,
+                    'days'              => $days,
+                    'approximate'       => (bool)$run->approximate,
+                    'cause'             => $cause[0],
+                    'order'             => $cause[1],
+                    'days_to_order'     => $cause[2],
+                    'lost_sales'        => round($dailyRate * min($days, self::MAX_LOST_SALES_DAYS), 2),
+                    'websites'          => $orgStock->websites,
+                ];
+            }
         }
 
-        usort($stockOuts, fn ($a, $b) => $b['started_on'] <=> $a['started_on']);
+        return array_map(function (array $stockOuts) {
+            usort($stockOuts, fn ($a, $b) => $b['started_on'] <=> $a['started_on']);
 
-        return $stockOuts;
+            return $stockOuts;
+        }, $results);
     }
 
-    private function orgStocks(MasterProductCategory $masterFamily): Collection
+    private function orgStocks(array $productIds): Collection
     {
-        $websites = $this->familyProductOrgStocks($masterFamily)
+        $websites = $this->productOrgStocks($productIds)
             ->where('products.state', 'active')
             ->groupBy('product_has_org_stocks.org_stock_id')
             ->selectRaw('product_has_org_stocks.org_stock_id, count(distinct products.shop_id) as websites')
@@ -101,7 +139,7 @@ class GetMasterFamilyStockOuts
 
         return DB::table('org_stocks')
             ->join('organisations', 'organisations.id', 'org_stocks.organisation_id')
-            ->whereIn('org_stocks.id', $this->familyProductOrgStocks($masterFamily)->select('product_has_org_stocks.org_stock_id'))
+            ->whereIn('org_stocks.id', $this->productOrgStocks($productIds)->select('product_has_org_stocks.org_stock_id'))
             ->select([
                 'org_stocks.id',
                 'org_stocks.code',
@@ -114,26 +152,11 @@ class GetMasterFamilyStockOuts
             ->keyBy('id');
     }
 
-    private function familyProductOrgStocks(MasterProductCategory $masterFamily): Builder
+    private function productOrgStocks(array $productIds): Builder
     {
         return DB::table('product_has_org_stocks')
             ->join('products', 'products.id', 'product_has_org_stocks.product_id')
-            ->whereIn('products.id', self::familyProductIds($masterFamily));
-    }
-
-    /**
-     * @return array<int, int>
-     */
-    public static function familyProductIds(MasterProductCategory $masterFamily): array
-    {
-        $masterAssetIds = DB::table('master_assets')->where('master_family_id', $masterFamily->id)->pluck('id');
-        $shopFamilyIds  = DB::table('product_categories')->where('master_product_category_id', $masterFamily->id)->pluck('id');
-
-        return DB::table('products')->whereIn('master_product_id', $masterAssetIds)->pluck('id')
-            ->merge(DB::table('products')->whereIn('family_id', $shopFamilyIds)->pluck('id'))
-            ->unique()
-            ->values()
-            ->all();
+            ->whereRaw('products.id = any(?::int[])', ['{'.implode(',', $productIds).'}']);
     }
 
     private function runs(array $orgStockIds, Carbon $from, Carbon $to): array
@@ -141,7 +164,8 @@ class GetMasterFamilyStockOuts
         return DB::select(
             <<<'SQL'
             select org_stock_id, organisation_id, min(date) as started_on, max(next_date) filter (where is_last) as back_in_on,
-                   bool_or(next_date - date > 1 or date - previous_date > 1) as approximate
+                   bool_or(next_date - date > 1 or date - previous_date > 1) as approximate,
+                   bool_or(previous_date is null) as starts_at_period_start
             from (
                 select *, lead(is_out) over w is distinct from true as is_last
                 from (
@@ -161,14 +185,19 @@ class GetMasterFamilyStockOuts
         );
     }
 
-    private function firstStocked(array $orgStockIds): array
+    private function stockedBefore(array $orgStockIds, Carbon $from): array
     {
+        if (!$orgStockIds) {
+            return [];
+        }
+
         return DB::table('org_stock_histories')
-            ->whereIn('org_stock_id', $orgStockIds)
+            ->whereRaw('org_stock_id = any(?::int[])', ['{'.implode(',', $orgStockIds).'}'])
+            ->where('date', '<', $from->toDateString())
             ->where('quantity_in_locations', '>', 0)
-            ->groupBy('org_stock_id')
-            ->selectRaw('org_stock_id, min(date)::text as first_stocked')
-            ->pluck('first_stocked', 'org_stock_id')
+            ->distinct()
+            ->pluck('org_stock_id')
+            ->flip()
             ->all();
     }
 
@@ -290,9 +319,9 @@ class GetMasterFamilyStockOuts
         ];
     }
 
-    private function dailySales(MasterProductCategory $masterFamily, array $orgStockIds, Carbon $from, Carbon $to): Collection
+    private function dailySales(array $productIds, array $orgStockIds, Carbon $from, Carbon $to, string $salesColumn): Collection
     {
-        return $this->familyProductOrgStocks($masterFamily)
+        return $this->productOrgStocks($productIds)
             ->join('asset_time_series', function ($join) {
                 $join->on('asset_time_series.asset_id', 'products.asset_id')->where('asset_time_series.frequency', 'daily');
             })
@@ -303,7 +332,7 @@ class GetMasterFamilyStockOuts
             })
             ->whereIn('product_has_org_stocks.org_stock_id', $orgStockIds)
             ->groupBy('product_has_org_stocks.org_stock_id', 'asset_time_series_records.from')
-            ->selectRaw('product_has_org_stocks.org_stock_id, asset_time_series_records.from::text as date, sum(asset_time_series_records.sales_grp_currency_external) as sales')
+            ->selectRaw("product_has_org_stocks.org_stock_id, asset_time_series_records.from::text as date, sum(asset_time_series_records.$salesColumn) as sales")
             ->get()
             ->groupBy('org_stock_id')
             ->map(fn (Collection $rows) => $rows->pluck('sales', 'date')->all());

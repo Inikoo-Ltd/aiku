@@ -18,6 +18,7 @@ enum TradeUnitFamilyTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case TRADE_UNITS = 'trade_units';
     case ATTACHMENTS = 'attachments';
     case HISTORY = 'history';
@@ -29,6 +30,10 @@ enum TradeUnitFamilyTabsEnum: string
             TradeUnitFamilyTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            TradeUnitFamilyTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             TradeUnitFamilyTabsEnum::TRADE_UNITS => [
                 'title' => __('Trade units'),

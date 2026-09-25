@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\StockFamily\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Goods\Stock\UI\IndexStocks;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -86,6 +88,12 @@ class ShowStockFamily extends OrgAction
                 StockFamilyTabsEnum::SHOWCASE->value => $this->tab == StockFamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetStockFamilyShowcase::run($stockFamily)
                     : Inertia::optional(fn () => GetStockFamilyShowcase::run($stockFamily)),
+                'sales_analysis_teaser' => $this->tab == StockFamilyTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily))),
+                StockFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === StockFamilyTabsEnum::SALES_ANALYSIS->value ?
+                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStockFamily($stockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStockFamily($stockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
                 StockFamilyTabsEnum::STOCKS->value    => $this->tab == StockFamilyTabsEnum::STOCKS->value
                     ?
                     fn () => StocksResource::collection(

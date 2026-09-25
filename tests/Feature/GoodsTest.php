@@ -8,6 +8,8 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Goods\Ingredient\Json\ParseIngredientsList;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
@@ -260,6 +262,34 @@ test("UI Show Stock Family", function () {
     });
 });
 
+test("UI Show Stock Family sales analysis tab", function () {
+    $stockFamily = StockFamily::first();
+
+    $response = get(route('grp.goods.stock-families.show', [
+        'stockFamily' => $stockFamily->slug,
+        'tab'         => \App\Enums\UI\SupplyChain\StockFamilyTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/StockFamily')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events')
+            ->has('sales_analysis.filters.organisations');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+});
+
 test("UI Index Stocks", function () {
     $this->withoutExceptionHandling();
     $response = get(
@@ -290,6 +320,34 @@ test("UI Show Stocks", function () {
             )
             ->has("tabs");
     });
+});
+
+test("UI Show Stocks sales analysis tab", function () {
+    $stock = Stock::first();
+
+    $response = get(route('grp.goods.stocks.show', [
+        'stock'       => $stock->slug,
+        'tab'         => \App\Enums\UI\SupplyChain\StockTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/Stock')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events')
+            ->has('sales_analysis.filters.organisations');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStock($stock));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test("UI show stock navigation follows the bucket and sort", function () {
@@ -382,6 +440,44 @@ test("UI Show TradeUnit", function () {
             )
             ->has("tabs");
     });
+});
+
+test("UI Show TradeUnit sales analysis tab", function () {
+    $tradeUnit = TradeUnit::first();
+    if (!$tradeUnit) {
+        $tradeUnit = TradeUnit::factory()->create([
+            'group_id' => $this->group->id,
+            'code'     => 'TU-'.uniqid(),
+            'name'     => 'Sample TU',
+        ]);
+    }
+    if (!$tradeUnit->stats) {
+        $tradeUnit->stats()->create();
+    }
+
+    $response = get(route('grp.trade_units.units.show', [
+        'tradeUnit'   => $tradeUnit->slug,
+        'tab'         => \App\Enums\UI\SupplyChain\TradeUnitTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnit')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events')
+            ->has('sales_analysis.filters.organisations');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnit($tradeUnit));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test("UI show trade unit navigation stays in the bucket and the group", function () {
@@ -709,6 +805,39 @@ test('UI Show Trade Unit Family page loads', function () {
             })
             ->has('tabs.current');
     });
+});
+
+test('UI Show Trade Unit Family sales analysis tab', function () {
+    $group = createGroup();
+
+    $family = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-'.uniqid(),
+        'name' => 'Sales Analysis Family',
+    ]);
+
+    $response = get(route('grp.trade_units.families.show', [
+        'tradeUnitFamily' => $family->slug,
+        'tab'             => \App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum::SALES_ANALYSIS->value,
+        'from'            => '2026-01-01',
+        'to'              => '2026-03-31',
+        'compareFrom'     => '2025-01-01',
+        'compareTo'       => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnitFamily')
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events')
+            ->has('sales_analysis.filters.organisations');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnitFamily($family));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test('UI Edit Trade Unit Family page loads', function () {

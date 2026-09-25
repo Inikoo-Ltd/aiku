@@ -11,6 +11,8 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
@@ -194,6 +196,14 @@ class ShowMasterSubDepartment extends OrgAction
                 MasterSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)
                     : Inertia::optional(fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)),
+
+                MasterSubDepartmentTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterSubDepartmentTabsEnum::SALES_ANALYSIS->value ?
+                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterSubDepartment), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterSubDepartment), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+
+                'sales_analysis_teaser' => $this->tab === MasterSubDepartmentTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterSubDepartment)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterSubDepartment))),
 
                 // MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value => $this->tab == MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value ?
                 //     fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))

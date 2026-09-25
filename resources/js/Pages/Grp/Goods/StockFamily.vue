@@ -20,7 +20,8 @@ import {
     faPoop,
     faCubes,
     faCube,
-    faCameraRetro
+    faCameraRetro,
+    faChartLine
 } from '@fal';
 import { computed, defineAsyncComponent, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
@@ -31,6 +32,8 @@ import { capitalize } from "@/Composables/capitalize"
 import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue";
 import { Link } from "@inertiajs/vue3"
 import Button from '@/Components/Elements/Buttons/Button.vue';
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import StockFamilyShowcase from "@/Components/Showcases/Grp/StockFamilyShowcase.vue"
 
 library.add(
     faInventory,
@@ -40,7 +43,8 @@ library.add(
     faCubes,
     faCube,
     faCameraRetro,
-    faX
+    faX,
+    faChartLine
 );
 
 const locale = useLocaleStore();
@@ -55,6 +59,8 @@ const props = defineProps<{
         navigation: object;
     }
     stocks?: object
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     createStockRoute: {
         name: string;
         parameters?: {
@@ -64,12 +70,19 @@ const props = defineProps<{
 }>()
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? []);
+
+const breakdownRoute = (row: { slug: string | null }) => {
+    return row.slug ? route("grp.goods.stocks.show", [row.slug]) : null
+}
 
 const component = computed(() => {
 
     const components = {
+        showcase: StockFamilyShowcase,
         stocks: TableStocks,
+        sales_analysis: SalesAnalysis,
         details: ModelDetails,
         history: ModelChangelog,
     };
@@ -90,5 +103,5 @@ const component = computed(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :breakdownRoute="breakdownRoute" :salesAnalysisTeaser="sales_analysis_teaser"></component>
 </template>

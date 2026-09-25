@@ -11,6 +11,8 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
@@ -274,6 +276,14 @@ class ShowMasterProduct extends OrgAction
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductShowcase::run($masterAsset)
                     : Inertia::optional(fn () => GetMasterProductShowcase::run($masterAsset)),
+
+                MasterAssetTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterAssetTabsEnum::SALES_ANALYSIS->value ?
+                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+
+                'sales_analysis_teaser' => $this->tab === MasterAssetTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset))),
 
                 'salesData' => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductTimeSeriesData::run($masterAsset)

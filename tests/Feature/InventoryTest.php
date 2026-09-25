@@ -10,6 +10,10 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
+use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
+use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
@@ -849,6 +853,37 @@ test("UI show org stock", function (OrgStock $orgStock) {
     $orgStock->update(['is_on_demand' => false]);
 })->depends('create org stock');
 
+test("UI show org stock sales analysis tab", function (OrgStock $orgStock) {
+    $warehouse = $this->organisation->warehouses->first();
+
+    $response = get(
+        route("grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show", [
+            $this->organisation->slug,
+            $warehouse->slug,
+            $orgStock->slug,
+            'tab'         => OrgStockTabsEnum::SALES_ANALYSIS->value,
+            'from'        => '2026-01-01',
+            'to'          => '2026-03-31',
+            'compareFrom' => '2025-01-01',
+            'compareTo'   => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Inventory/OrgStock")
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStock($orgStock));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+})->depends('create org stock');
+
 test("UI show org stock navigation follows the bucket and sort", function () {
     $warehouse = $this->organisation->warehouses->first() ?? createWarehouse();
     $this->withoutExceptionHandling();
@@ -1072,6 +1107,37 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
             )
             ->has("tabs");
     });
+})->depends('create org stock family');
+
+test("UI Show Org Stock Family sales analysis tab", function (OrgStockFamily $orgStockFamily) {
+    $warehouse = Warehouse::first();
+
+    $response = get(
+        route("grp.org.warehouses.show.inventory.org_stock_families.show", [
+            $this->organisation->slug,
+            $warehouse->slug,
+            $orgStockFamily->slug,
+            'tab'         => OrgStockFamilyTabsEnum::SALES_ANALYSIS->value,
+            'from'        => '2026-01-01',
+            'to'          => '2026-03-31',
+            'compareFrom' => '2025-01-01',
+            'compareTo'   => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Inventory/OrgStockFamily")
+            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+            ->where('sales_analysis.frequency', 'daily')
+            ->has('sales_analysis.breakdown')
+            ->has('sales_analysis.stock_outs')
+            ->has('sales_analysis.events');
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStockFamily($orgStockFamily));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 })->depends('create org stock family');
 
 test("UI Index Stock Families", function () {

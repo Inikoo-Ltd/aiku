@@ -19,6 +19,8 @@ import { faImage } from "@far"
 import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 import ImagePrime from "primevue/image"
+import SalesAnalysisTeaser from "@/Components/SalesAnalysis/SalesAnalysisTeaser.vue"
+import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.vue"
 
 library.add(
 	faCircle,
@@ -60,6 +62,7 @@ const props = defineProps<{
 		}
 		properties?: any
 	}
+	salesAnalysisTeaser?: object
 }>()
 
 /* ---------------------------------------
@@ -106,6 +109,10 @@ console.log
 				{{ data.tradeUnit.name }}
 			</span>
 		</span>
+	</div>
+	<div class="mx-3 lg:mx-0 mt-2">
+		<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+		<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
 	</div>
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 

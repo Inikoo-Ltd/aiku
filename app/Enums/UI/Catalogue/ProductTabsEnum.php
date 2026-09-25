@@ -17,6 +17,7 @@ enum ProductTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case CONTENT = 'content';
     case IMAGES = 'images';
     case SALES = 'sales';
@@ -44,6 +45,10 @@ enum ProductTabsEnum: string
             ProductTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            ProductTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             ProductTabsEnum::ORDERS => [
                 'title' => __('Orders'),

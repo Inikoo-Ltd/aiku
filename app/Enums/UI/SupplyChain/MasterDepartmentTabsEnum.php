@@ -17,6 +17,7 @@ enum MasterDepartmentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case CONTENT = 'content';
     case IMAGES = 'images';
     case RELATED_PRODUCT_CATEGORY = 'related_product_category';
@@ -31,6 +32,10 @@ enum MasterDepartmentTabsEnum: string
             MasterDepartmentTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            MasterDepartmentTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             // MasterDepartmentTabsEnum::DEPARTMENTS => [
             //     'title' => __('Departments in shop'),

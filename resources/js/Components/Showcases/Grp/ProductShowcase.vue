@@ -25,6 +25,7 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue'
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
@@ -109,6 +110,8 @@ const props = defineProps<{
 	}
 	handleTabUpdate?: Function
 	salesData?: object
+	salesAnalysisTeaser?: object
+	showSalesAnalysis?: boolean
 }>()
 
 
@@ -271,6 +274,8 @@ const getTooltips = () => {
 
 		<!-- Product Summary -->
 		<div class="min-w-0 flex-1 max-w-2xl">
+			<SalesAnalysisTeaser v-if="showSalesAnalysis" :teaser="salesAnalysisTeaser" class="mb-4" />
+
 			<ProductSummary
 				:noTradeUnit="!data?.product?.data?.picking_factor?.length"
 				:data="{...data.product.data, tags: data.tags, brands: data.brands}"

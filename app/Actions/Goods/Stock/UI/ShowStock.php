@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\Stock\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInStock;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
@@ -119,6 +121,14 @@ class ShowStock extends OrgAction
                 StockTabsEnum::SHOWCASE->value => $this->tab == StockTabsEnum::SHOWCASE->value ?
                     fn () => GetStockShowcase::run($stock)
                     : Inertia::optional(fn () => GetStockShowcase::run($stock)),
+
+                StockTabsEnum::SALES_ANALYSIS->value => $this->tab === StockTabsEnum::SALES_ANALYSIS->value ?
+                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStock($stock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStock($stock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+
+                'sales_analysis_teaser' => $this->tab === StockTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStock($stock)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStock($stock))),
 
                 StockTabsEnum::ORG_STOCKS->value => $this->tab == StockTabsEnum::ORG_STOCKS->value ?
                     fn () => OrgStocksResource::collection(IndexOrgStocksInStock::run($stock, StockTabsEnum::ORG_STOCKS->value))

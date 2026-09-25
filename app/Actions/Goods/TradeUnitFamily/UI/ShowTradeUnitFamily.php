@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -107,6 +109,14 @@ class ShowTradeUnitFamily extends OrgAction
                 TradeUnitFamilyTabsEnum::SHOWCASE->value => $this->tab == TradeUnitFamilyTabsEnum::SHOWCASE->value ?
                 fn () => $this->getShowcase($tradeUnitFamily)
                 : Inertia::optional(fn () => $this->getShowcase($tradeUnitFamily)),
+
+                TradeUnitFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === TradeUnitFamilyTabsEnum::SALES_ANALYSIS->value ?
+                fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnitFamily($tradeUnitFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
+                : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnitFamily($tradeUnitFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+
+                'sales_analysis_teaser' => $this->tab === TradeUnitFamilyTabsEnum::SHOWCASE->value ?
+                Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnitFamily($tradeUnitFamily)), 'sales_analysis_teaser')
+                : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnitFamily($tradeUnitFamily))),
 
                 TradeUnitFamilyTabsEnum::TRADE_UNITS->value => $this->tab == TradeUnitFamilyTabsEnum::TRADE_UNITS->value ?
                 fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))

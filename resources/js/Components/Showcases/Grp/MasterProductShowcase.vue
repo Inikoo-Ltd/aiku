@@ -35,6 +35,8 @@ import { useLayoutStore } from "@/Stores/layout"
 import { provide } from "vue"
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue'
+import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.vue'
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 import CompositionTriangle from '@/Components/Goods/CompositionTriangle.vue'
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
@@ -71,6 +73,7 @@ const props = defineProps<{
 	currency: string,
 	handleTabUpdate: Function
 	salesData?: any
+	salesAnalysisTeaser?: object
 	anomalies?: {
 		items: {
 			issues: string[]
@@ -417,6 +420,11 @@ const isModalProductForSale = ref(false)
 				/>
 			</span>
 		</div>
+	</div>
+
+	<div class="mx-3 mt-2 lg:mx-0">
+		<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+		<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
 	</div>
 
 	<!-- The right sidebar (prices, analytics) always keeps its width; the content area

@@ -14,8 +14,10 @@ interface Mover {
 const props = defineProps<{
 	teaser?: {
 		currency: string
+		shop_count: number
+		breakdown_label: string | null
 		shops: Array<{ shop_code: string; sales: number; previous_sales: number }>
-		products: Array<{ code: string; sales: number; previous_sales: number }>
+		breakdown: Array<{ code: string; sales: number; previous_sales: number }>
 	}
 }>()
 
@@ -26,7 +28,7 @@ const formatPercent = (value: number | null) => (value === null ? ctrans("new") 
 
 const rows = computed<Mover[]>(() => [
 	...(props.teaser?.shops ?? []).map((row) => ({ label: row.shop_code, kind: "website" as const, sales: row.sales, previous_sales: row.previous_sales })),
-	...(props.teaser?.products ?? []).map((row) => ({ label: row.code, kind: "product" as const, sales: row.sales, previous_sales: row.previous_sales })),
+	...(props.teaser?.breakdown ?? []).map((row) => ({ label: row.code, kind: "product" as const, sales: row.sales, previous_sales: row.previous_sales })),
 ])
 
 const byPercent = (a: Mover, b: Mover) => (percentChange(a) ?? Infinity) - (percentChange(b) ?? Infinity)
@@ -58,9 +60,11 @@ const tooltip = (row: Mover) => (unit.value === "money" ? formatPercent(percentC
 
 const columns = computed(() =>
 	[
-		{ kind: "website" as const, label: ctrans("Websites"), icon: faStore },
-		{ kind: "product" as const, label: ctrans("Products"), icon: faCube },
-	].map((column) => {
+		{ kind: "website" as const, label: ctrans("Websites"), icon: faStore, isShown: (props.teaser?.shop_count ?? 0) > 1 },
+		{ kind: "product" as const, label: props.teaser?.breakdown_label ?? "", icon: faCube, isShown: !!props.teaser?.breakdown_label },
+	]
+		.filter((column) => column.isShown)
+		.map((column) => {
 		const movers = rows.value.filter((row) => row.kind === column.kind)
 		return {
 			...column,
@@ -69,13 +73,14 @@ const columns = computed(() =>
 		}
 	})
 )
+const gridColumns = computed(() => ({ gridTemplateColumns: `repeat(${Math.max(1, columns.value.length)}, minmax(0, 1fr))` }))
 const isAnythingGrowing = computed(() => columns.value.some((column) => column.growing.length))
 </script>
 
 <template>
 	<div class="grid grid-rows-[auto_1fr_auto_1fr] rounded-lg border border-gray-200 bg-white text-xs text-gray-700 shadow-sm">
 		<template v-if="teaser">
-			<div class="grid grid-cols-2 gap-4 border-b border-gray-200 px-3 py-2 text-gray-500">
+			<div class="grid gap-4 border-b border-gray-200 px-3 py-2 text-gray-500" :style="gridColumns">
 				<div v-for="(column, index) in columns" :key="column.kind" class="flex items-center gap-1.5">
 					<FontAwesomeIcon :icon="column.icon" fixed-width aria-hidden="true" />
 					{{ column.label }}
@@ -93,7 +98,7 @@ const isAnythingGrowing = computed(() => columns.value.some((column) => column.g
 				</div>
 			</div>
 
-			<div v-if="isAnythingGrowing" class="grid grid-cols-2 gap-4 px-3 pt-2">
+			<div v-if="isAnythingGrowing" class="grid gap-4 px-3 pt-2" :style="gridColumns">
 				<div v-for="column in columns" :key="column.kind" class="min-w-0">
 					<div v-for="row in column.growing" :key="row.label" v-tooltip="tooltip(row)" class="flex items-center gap-1.5 py-0.5 tabular-nums">
 						<FontAwesomeIcon :icon="faArrowUp" class="text-green-600" fixed-width aria-hidden="true" />
@@ -110,7 +115,7 @@ const isAnythingGrowing = computed(() => columns.value.some((column) => column.g
 
 			<div class="mx-3 my-1 border-t border-gray-100" />
 
-			<div class="grid grid-cols-2 gap-4 px-3 pb-2">
+			<div class="grid gap-4 px-3 pb-2" :style="gridColumns">
 				<div v-for="column in columns" :key="column.kind" class="min-w-0">
 					<div v-for="row in column.falling" :key="row.label" v-tooltip="tooltip(row)" class="flex items-center gap-1.5 py-0.5 tabular-nums">
 						<FontAwesomeIcon :icon="faArrowDown" class="text-red-600" fixed-width aria-hidden="true" />
@@ -121,7 +126,7 @@ const isAnythingGrowing = computed(() => columns.value.some((column) => column.g
 				</div>
 			</div>
 		</template>
-		<div v-else class="grid grid-cols-2 gap-4 p-3">
+		<div v-else class="grid gap-4 p-3">
 			<div class="h-32 animate-pulse rounded bg-gray-100" />
 			<div class="h-32 animate-pulse rounded bg-gray-100" />
 		</div>

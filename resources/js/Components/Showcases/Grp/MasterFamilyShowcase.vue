@@ -8,8 +8,8 @@ import { faAlbumCollection, faEdit } from "@fal";
 import { faPlus } from "@far";
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue';
-import MasterFamilySalesTeaser from '@/Components/Master/MasterFamilySalesTeaser.vue';
-import MasterFamilySalesMovers from '@/Components/Master/MasterFamilySalesMovers.vue';
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue';
+import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.vue';
 import ProductCategoryStats from '@/Components/Product/ProductCategoryStats.vue';
 import { ctrans } from "@/Composables/useTrans"
 import Dialog from 'primevue/dialog';
@@ -138,11 +138,11 @@ const saveGROffer = () => {
             </div>
 
             <div class="col-span-1 md:col-span-2 lg:col-span-4">
-                <MasterFamilySalesTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+                <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
 
                 <div class="flex flex-col gap-4 lg:flex-row">
                     <SalesAnalyticsCompact v-if="salesData" :salesData="salesData" class="lg:max-w-[23rem]" />
-                    <MasterFamilySalesMovers :teaser="salesAnalysisTeaser" class="min-w-0 flex-1" />
+                    <SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="min-w-0 flex-1" />
                 </div>
 
                 <MasterFamilyBestSellers v-if="data.bestSellers" :data="data.bestSellers" class="mt-4" />

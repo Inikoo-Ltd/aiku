@@ -18,6 +18,7 @@ enum TradeUnitTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case COMPOSITION = 'composition';
     case IMAGES = 'images';
     case MASTER_PRODUCTS = 'master_products';
@@ -56,6 +57,10 @@ enum TradeUnitTabsEnum: string
             TradeUnitTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            TradeUnitTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             TradeUnitTabsEnum::COMPOSITION => [
                 'title' => __('Composition'),

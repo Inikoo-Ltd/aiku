@@ -11,7 +11,8 @@ import {
     faBullhorn,
     faCameraRetro, faClock,
     faCube, faCubes,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling, faFolderDownload
+    faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling, faFolderDownload,
+    faChartLine
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -27,7 +28,6 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
-import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route";
@@ -40,6 +40,8 @@ import ModalCreateCategoryOffers from '@/Components/Offers/ModalCreateCategoryOf
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
 import ButtonExportWebsiteStructure from "@/Components/Catalogue/ButtonExportWebsiteStructure.vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(
     faFolder,
@@ -53,10 +55,11 @@ library.add(
     faMoneyBillWave,
     faDiagramNext,
     faCubes,
-    faFolders, 
+    faFolders,
     faBrowser,
     faSeedling,
-    faFolderDownload
+    faFolderDownload,
+    faChartLine
 );
 
 
@@ -77,6 +80,8 @@ const props = defineProps<{
     url_master?:routeType
     images?:object
     sales?: object
+    sales_analysis?: object
+    sales_analysis_teaser?: object
     salesData?: object
     product_category_id?: number
     shop_data: {
@@ -92,7 +97,17 @@ const props = defineProps<{
 }>();
 
 let currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? []);
+
+const breakdownRoute = (row: { slug: string | null }) => {
+    const params = route().params
+    return row.slug && params.organisation && params.shop && params.department
+        ? route("grp.org.shops.show.catalogue.departments.show.families.show", [params.organisation, params.shop, params.department, row.slug])
+        : null
+}
 
 const component = computed(() => {
     const components = {
@@ -105,6 +120,7 @@ const component = computed(() => {
         history: TableHistories,
         images: ImagesManagement,
         sales: ProductCategoryTimeSeriesTable,
+        sales_analysis: SalesAnalysis,
         offers: TableOffers,
         related_product_category: RelatedProductCategory,
     };
@@ -135,7 +151,7 @@ const component = computed(() => {
                     name: propx.action.route.name,
                     parameters: propx.action.route.parameters,
                 }"
-                :title="trans('Are you sure you want to delete department') + '?'"
+                :title="ctrans('Are you sure you want to delete department') + '?'"
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">
@@ -148,7 +164,7 @@ const component = computed(() => {
 
          <template #afterTitle>
            <div class="whitespace-nowrap">
-            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="ctrans('Go to Master')" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon
                     :icon="faOctopusDeploy"
                     color="#4B0082" fixed-width
@@ -183,7 +199,7 @@ const component = computed(() => {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute"></component>
 </template>
 
 <style scoped>
