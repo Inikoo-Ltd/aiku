@@ -131,10 +131,12 @@ class StoreInvoice extends OrgAction
         }
 
         /** An invoice is a fixed document: a collection order keeps the address it was collected from,
-         * it must not follow the shop's address if that changes later (HELP-3102) */
-        if (!$deliveryAddressData && $parent instanceof Order && $parent->collection_address_id) {
-            $deliveryAddressData = collect([$parent->collectionAddress, $parent->shop->collectionAddress])
-                ->first(fn ($address) => $address?->hasAnyLine());
+         * it must not follow the shop's address if that changes later (HELP-3102); any other order keeps
+         * the address it was shipped to, which is what its tax category follows (HELP-3433) */
+        if (!$deliveryAddressData && $parent instanceof Order) {
+            $deliveryAddressData = $parent->collection_address_id
+                ? collect([$parent->collectionAddress, $parent->shop->collectionAddress])->first(fn ($address) => $address?->hasAnyLine())
+                : ($parent->deliveryAddress?->country_id ? $parent->deliveryAddress : null);
         }
 
 

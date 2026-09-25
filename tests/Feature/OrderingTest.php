@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
@@ -1705,7 +1706,14 @@ test('invoice from overpaid order credits excess to customer balance', function 
         ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)->count();
 
     expect($invoice)->toBeInstanceOf(Invoice::class)
-        ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1);
+        ->and($excessCreditsAfter)->toBe($excessCreditsBefore + 1)
+        ->and($invoice->delivery_country_id)->toBe($order->deliveryAddress->country_id)
+        ->and($invoice->deliveryAddress->postal_code)->toBe($order->deliveryAddress->postal_code);
+
+    $refund = StoreRefund::make()->action($invoice, []);
+
+    expect($refund->delivery_address_id)->toBe($invoice->delivery_address_id)
+        ->and($refund->delivery_country_id)->toBe($invoice->delivery_country_id);
 });
 
 test('invoice from overpaid order paid by bank transfer credits excess to customer balance', function () {
