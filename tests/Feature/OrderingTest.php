@@ -3836,8 +3836,6 @@ test('export flag follows the customs territory of the organisation', function (
 test('an order with no billing address is held instead of going to the warehouse', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
@@ -3856,7 +3854,6 @@ test('an order with no billing address is held instead of going to the warehouse
 test('a collection invoice stores the collection address it was issued with', function () {
     $customer = createCustomer($this->shop);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
 
     $collectionAddress = \App\Models\Helpers\Address::create(array_merge(
@@ -3877,8 +3874,6 @@ test('a collection invoice stores the collection address it was issued with', fu
 test('a held order goes to the warehouse once its address is put on it', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
@@ -3906,8 +3901,6 @@ test('a held order goes to the warehouse once its address is put on it', functio
 test('the warehouse can be sent an order without an address on purpose', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
@@ -3927,8 +3920,6 @@ test('the warehouse can be sent an order without an address on purpose', functio
 test('send anyway only shows on an order missing an address', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
     $order->refresh();
@@ -3965,8 +3956,6 @@ function orderForAFreshCustomerWithNoBillingAddress(\App\Models\Catalogue\Shop $
 {
     $customer = freshCustomerLike($shop, $template);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $historicAsset, Transaction::factory()->definition());
 
     if ($separateDeliveryAddress) {
@@ -4078,8 +4067,6 @@ test('an order with its own delivery address keeps it when the customer is fixed
 test('a submitted order whose street sits in the town box is left alone when the customer changes address', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about addresses, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
 
@@ -4128,7 +4115,6 @@ function customerWithANeverDeliveredDefault(\App\Models\Catalogue\Shop $shop, \A
     $customer = freshCustomerLike($shop, $template);
 
     $lastDelivered = StoreOrder::make()->action($customer, Order::factory()->definition());
-    $lastDelivered->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $deliveredTo = \App\Models\Helpers\Address::create(heldOrderAddressLike($template, [
         'address_line_1' => '19 Periwinkle Gardens '.fake()->unique()->numberBetween(1, 9999999),
         'postal_code'    => 'NN14 2AH',
@@ -4137,7 +4123,6 @@ function customerWithANeverDeliveredDefault(\App\Models\Catalogue\Shop $shop, \A
     $lastDelivered->forceFill(['state' => OrderStateEnum::DISPATCHED, 'delivery_address_id' => $deliveredTo->id])->saveQuietly();
 
     $basket = StoreOrder::make()->action($customer->refresh(), Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
 
     return [$customer, $lastDelivered->refresh(), $basket->refresh()];
 }
@@ -4204,7 +4189,6 @@ test('a customer can send the order to the address their last order went to in o
 test('retina basket lines resolve their webpage and image without a query per line', function () {
     createWebsite($this->shop);
     $basket   = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $webpages = [];
     [, $bulk] = createProduct($this->shop);
     foreach (range(1, 3) as $quantity) {
@@ -4248,7 +4232,6 @@ test('retina basket lines resolve their webpage and image without a query per li
 
 test('a basket line may exceed stock, is zeroed while out of stock and restored when back, never blocking the order', function () {
     $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     [, $bulk] = createProduct($this->shop);
     $lowStock = StoreProduct::make()->action($bulk->family, array_merge(
         Product::factory()->definition(),
@@ -4340,7 +4323,6 @@ test('a customer cannot raise a basket line of an out of stock product, nor chan
     $website->update(['status' => true]);
     $webUser = createWebUser($this->customer);
     $basket  = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     [, $bulk] = createProduct($this->shop);
     $product  = StoreProduct::make()->action($bulk->family, array_merge(
         Product::factory()->definition(),
@@ -4422,7 +4404,6 @@ test('a customer cannot raise a basket line of an out of stock product, nor chan
 
 test('a product that is not for sale cannot be added to a basket', function () {
     $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $this->customer->update(['current_order_in_basket_id' => $basket->id]);
     [, $bulk] = createProduct($this->shop);
     $product  = StoreProduct::make()->action($bulk->family, array_merge(
@@ -4446,7 +4427,6 @@ test('an exclusive product can be added only by its own customer, and only while
     $other = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     foreach ([$owner, $other] as $customer) {
         $basket = StoreOrder::make()->action($customer, Order::factory()->definition());
-        $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
         $customer->update(['current_order_in_basket_id' => $basket->id]);
     }
     [, $bulk]  = createProduct($this->shop);
@@ -4488,12 +4468,10 @@ test('discontinued products are removed from baskets only when run live, submitt
     };
 
     $basket = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $basket->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $discontinuedLine = $addLine($basket, $discontinued);
     $keptLine         = $addLine($basket, $this->product);
 
     $submitted = StoreOrder::make()->action($this->customer, Order::factory()->definition());
-    $submitted->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     $submittedLine = $addLine($submitted, $discontinued);
     $submitted->update(['state' => OrderStateEnum::SUBMITTED]);
 
@@ -4512,8 +4490,6 @@ test('discontinued products are removed from baskets only when run live, submitt
 test('a packed order shipped by us offers the invoice button once the packer recorded parcels', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
-    /** These tests are about the invoice button, not shipping: the zones earlier tests in this file create are random */
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
     StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
     SubmitOrder::make()->action($order);
     $order->refresh();
@@ -4601,7 +4577,6 @@ test('org and group amounts of orders and invoices use the whole exchange rate',
     data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
     data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
     $order = StoreOrder::make()->action($this->customer, $modelData);
-    $order->update(['shipping_engine' => \App\Enums\Ordering\Order\OrderShippingEngineEnum::MANUAL]);
 
     $transaction = StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
     $order->transactions()->whereNot('id', $transaction->id)->delete();
