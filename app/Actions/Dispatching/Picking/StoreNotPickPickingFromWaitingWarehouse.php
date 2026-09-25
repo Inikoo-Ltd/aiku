@@ -14,6 +14,7 @@ use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
@@ -38,6 +39,8 @@ class StoreNotPickPickingFromWaitingWarehouse extends OrgAction
 
 
         return DB::transaction(function () use ($deliveryNoteItem, $modelData, $user) {
+            DeliveryNote::whereKey($deliveryNoteItem->delivery_note_id)->lockForUpdate()->first();
+            $deliveryNoteItem = DeliveryNoteItem::whereKey($deliveryNoteItem->id)->lockForUpdate()->firstOrFail();
             /*
              * Only what is actually parked here can be taken out of it. Asking for the larger of the
              * two drained the bucket past empty and left it negative, and a negative bucket is added

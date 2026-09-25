@@ -454,6 +454,27 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ];
+
+            if (request()->user()?->authTo([
+                "supervisor-dispatching.$deliveryNote->warehouse_id",
+                "org-admin.$deliveryNote->organisation_id",
+            ])) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'tertiary',
+                    'icon'    => 'fal fa-undo-alt',
+                    'tooltip' => __('Give the items waiting for the warehouse back to the picker'),
+                    'label'   => __('Back to picking'),
+                    'key'     => 'undo-waiting',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.undo_waiting',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ],
+                ];
+            }
         }
 
         return $actions;
