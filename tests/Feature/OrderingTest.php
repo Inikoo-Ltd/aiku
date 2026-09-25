@@ -227,6 +227,10 @@ beforeEach(function () {
     actingAs($this->user);
 });
 
+afterEach(function () {
+    $this->shop->update(['shipping_zone_schema_id' => null]);
+});
+
 test('store shipping country action', function () {
     $countryId = Country::where('iso3', 'FRA')->first()->id;
     // Ensure migration exists (in case snapshot DB was loaded)
@@ -2332,6 +2336,7 @@ test('submit order skips upcoming transaction when product has no current histor
         ->and($order->transactions()->where('is_follow_on', true)->count())->toBe(0)
         ->and($upcomingTransaction->refresh()->state)->toBe(UpcomingTransactionStateEnum::READY);
 
+    $upcomingTransaction->delete();
     $this->product->update(['current_historic_asset_id' => $originalHistoricAssetId]);
 });
 
@@ -2679,6 +2684,8 @@ test('shipping zone with territories wins over a catch all zone placed above it'
 });
 
 test('a step priced TBC leaves the shipping to be confirmed instead of free', function (Order $order) {
+    $this->shop->update(['shipping_zone_schema_id' => $order->shipping_zone_schema_id]);
+
     UpdateShippingZone::make()->action(ShippingZone::find($order->shipping_zone_id), [
         'price' => [
             'type'  => 'Step Order Items Net Amount',
@@ -2747,6 +2754,8 @@ test('repricing a basket picks up a shipping price that changed since it was cre
 });
 
 test('repricing skips an order that is no longer a basket', function (Order $order) {
+    $this->shop->update(['shipping_zone_schema_id' => $order->shipping_zone_schema_id]);
+
     SubmitOrder::make()->action($order);
 
     UpdateShippingZone::make()->action(ShippingZone::find($order->shipping_zone_id), [
