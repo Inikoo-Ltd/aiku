@@ -60,7 +60,33 @@ class MonitorStockLocationIntegrity
      */
     protected function locationsNotMatchingTheirMovements(int $days): array
     {
-        $rows = DB::connection('aiku_no_sticky')->select(
+        $rows = $this->locationsOutOfStep($days);
+
+        if (!$rows) {
+            return [];
+        }
+
+        $issues = [count($rows).' locations hold a quantity that does not match their last audit plus movements:'];
+        foreach (array_slice($rows, 0, self::MAX_LISTED) as $row) {
+            $issues[] = sprintf(
+                '- %s %s @ %s: location %s, movements %s',
+                $row->organisation,
+                $row->code,
+                $row->location,
+                $this->formatQuantity($row->quantity),
+                $this->formatQuantity($row->expected)
+            );
+        }
+
+        return $issues;
+    }
+
+    /**
+     * @return array<int, object{location_org_stock_id: int, organisation: string, code: string, location: string, quantity: string, expected: string}>
+     */
+    public function locationsOutOfStep(int $days, ?int $organisationId = null): array
+    {
+        return DB::connection('aiku_no_sticky')->select(
             <<<'SQL'
             with touched as (
                 select los.id, los.org_stock_id, los.location_id, los.quantity
@@ -68,6 +94,7 @@ class MonitorStockLocationIntegrity
                 join organisations o on o.id = los.organisation_id and o.is_aiku_stock_control
                 where los.updated_at > now() - make_interval(days => ?)
                   and los.updated_at < now() - interval '5 minutes'
+                  and (?::int is null or los.organisation_id = ?::int)
             ),
             seeded as (
                 select touched.*, helper.date as seeded_at, coalesce(helper.audited_quantity, 0) as seed
@@ -89,7 +116,7 @@ class MonitorStockLocationIntegrity
                 ), 0) as expected
                 from seeded
             )
-            select o.slug as organisation, os.code, l.code as location, ledger.quantity, ledger.expected
+            select ledger.id as location_org_stock_id, o.slug as organisation, os.code, l.code as location, ledger.quantity, ledger.expected
             from ledger
             join org_stocks os on os.id = ledger.org_stock_id
             join organisations o on o.id = os.organisation_id
@@ -97,26 +124,8 @@ class MonitorStockLocationIntegrity
             where abs(ledger.quantity - ledger.expected) > 0.001
             order by abs(ledger.quantity - ledger.expected) desc
             SQL,
-            [$days]
+            [$days, $organisationId, $organisationId]
         );
-
-        if (!$rows) {
-            return [];
-        }
-
-        $issues = [count($rows).' locations hold a quantity that does not match their last audit plus movements:'];
-        foreach (array_slice($rows, 0, self::MAX_LISTED) as $row) {
-            $issues[] = sprintf(
-                '- %s %s @ %s: location %s, movements %s',
-                $row->organisation,
-                $row->code,
-                $row->location,
-                $this->formatQuantity($row->quantity),
-                $this->formatQuantity($row->expected)
-            );
-        }
-
-        return $issues;
     }
 
     /**

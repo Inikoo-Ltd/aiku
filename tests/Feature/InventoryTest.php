@@ -1451,6 +1451,23 @@ test('stock location integrity monitor reports a location that no longer matches
     expect($label())->toContain('location 5, movements 7');
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request['content'], 'Stock leaking from locations'));
 
+    $repair         = \App\Actions\Maintenance\Inventory\LocationOrgStock\RepairLocationOrgStockQuantityFromMovements::make();
+    $movementsCount = $orgStock->orgStockMovements()->count();
+    expect($repair->handle($slot->id, false))->toBeNull();
+
+    DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->update(['created_at' => now()->subHour()]);
+
+    expect($repair->handle($slot->id, false))->toBe([5.0, 7.0])
+        ->and((float)$slot->refresh()->quantity)->toBe(5.0)
+        ->and($repair->handle($slot->id, true))->toBe([5.0, 7.0])
+        ->and((float)$slot->refresh()->quantity)->toBe(7.0)
+        ->and($repair->handle($slot->id, true))->toBeNull()
+        ->and($orgStock->orgStockMovements()->count())->toBe($movementsCount);
+
+    $slot->timestamps = false;
+    $slot->forceFill(['updated_at' => now()->subHour()])->save();
+    expect($label())->toBeNull();
+
     $this->organisation->update(['is_aiku_stock_control' => $wasAikuStockControl]);
 });
 
