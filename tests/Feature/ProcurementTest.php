@@ -24,6 +24,7 @@ use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrder
 use App\Enums\SupplyChain\AgentSupplierPurchaseOrders\AgentSupplierPurchaseOrderStateEnum;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\User;
+use App\Actions\Transfers\Aurora\RepairAuroraPurchaseOrderBuyers;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
@@ -496,6 +497,53 @@ test('PO journey board marks stages on an agent supplier purchase order and keep
     $this->patch($route, ['stage' => 'clean_handover', 'date' => null])->assertRedirect();
     expect($agentSupplierPurchaseOrder->refresh()->handed_over_at)->toBeNull();
 })->depends('create agent supplier purchase order');
+
+test('aurora purchase order buyers are filled from the Aurora main buyer', function (PurchaseOrder $purchaseOrder) {
+    $employee = StoreEmployee::make()->action($this->organisation, [
+        'worker_number'   => 'po-buyer',
+        'alias'           => 'po-buyer',
+        'contact_name'    => 'Po Buyer',
+        'state'           => EmployeeStateEnum::WORKING,
+        'type'            => EmployeeTypeEnum::EMPLOYEE,
+        'employment_type' => EmploymentTypeEnum::FULL_TIME,
+    ]);
+    $employee->updateQuietly(['source_id' => $this->organisation->id.':4242']);
+    $buyer = StoreUser::make()->action($employee, [
+        'username'       => 'po-buyer',
+        'password'       => Str::random(32),
+        'status'         => true,
+        'reset_password' => false,
+    ]);
+    $director = $this->adminGuest->getUser();
+
+    $purchaseOrder->updateQuietly(['buyer_id' => null, 'source_id' => $this->organisation->id.':9001']);
+
+    $repairFor = fn (int $staffKey) => new class ($staffKey, $director->username) extends RepairAuroraPurchaseOrderBuyers {
+        public function __construct(private readonly int $staffKey, private readonly string $directorUsername)
+        {
+        }
+
+        protected function auroraBuyers(Organisation $organisation): array
+        {
+            return ['9001' => ['staff_key' => $this->staffKey, 'name' => 'Someone']];
+        }
+
+        protected function auroraUserHandles(Organisation $organisation): array
+        {
+            return [77 => strtoupper($this->directorUsername)];
+        }
+    };
+
+    expect($repairFor(4242)->handle($this->organisation, dryRun: true)['filled'])->toBe(1)
+        ->and($purchaseOrder->fresh()->buyer_id)->toBeNull();
+
+    $repairFor(4242)->handle($this->organisation);
+    expect($purchaseOrder->fresh()->buyer_id)->toBe($buyer->id);
+
+    PurchaseOrder::whereKey($purchaseOrder->id)->update(['buyer_id' => null]);
+    $repairFor(77)->handle($this->organisation);
+    expect($purchaseOrder->fresh()->buyer_id)->toBe($director->id);
+})->depends('create purchase order independent supplier');
 
 test('update agent supplier purchase order', function (AgentSupplierPurchaseOrder $agentSupplierPurchaseOrder) {
     $updated = UpdateAgentSupplierPurchaseOrder::make()->action(
