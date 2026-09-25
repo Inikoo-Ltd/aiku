@@ -453,7 +453,7 @@ watch(
     { deep: true }
 )
 
-console.log("Layout :", layout)
+
 </script>
 
 <template>
