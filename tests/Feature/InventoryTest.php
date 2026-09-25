@@ -2009,7 +2009,7 @@ test('UI Show org stock labels and compliance tabs', function () {
     get($route('labels'))->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Inventory/OrgStockLabels')
             ->where('labels.store_route.name', 'grp.models.org_stock.labels.store')
-            ->has('labels.information_options', 21)
+            ->has('labels.information_options', 24)
             ->has('labels.labels');
     });
     get($route('compliance'))->assertInertia(function (AssertableInertia $page) {

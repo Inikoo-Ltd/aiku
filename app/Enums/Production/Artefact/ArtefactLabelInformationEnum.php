@@ -35,6 +35,9 @@ enum ArtefactLabelInformationEnum: string
     case CE_MARKING            = 'ce_marking';
     case UKCA_MARKING          = 'ukca_marking';
     case WEEE_SYMBOL           = 'weee_symbol';
+    case PERIOD_AFTER_OPENING  = 'period_after_opening';
+    case SORTING_INFORMATION   = 'sorting_information';
+    case FREE_TEXT             = 'free_text';
 
     public const LANGUAGE_SEPARATOR = ':';
 
@@ -62,6 +65,9 @@ enum ArtefactLabelInformationEnum: string
             'ce_marking'            => __('CE marking'),
             'ukca_marking'          => __('UKCA marking'),
             'weee_symbol'           => __('WEEE symbol'),
+            'period_after_opening'  => __('Period after opening'),
+            'sorting_information'   => __('Sorting information (France)'),
+            'free_text'             => __('Free text'),
         ];
     }
 
@@ -70,7 +76,7 @@ enum ArtefactLabelInformationEnum: string
      */
     public function isIcon(): bool
     {
-        return in_array($this, [self::HAZARD_PICTOGRAMS, self::PACKAGING_MATERIALS, self::CE_MARKING, self::UKCA_MARKING, self::WEEE_SYMBOL], true);
+        return in_array($this, [self::HAZARD_PICTOGRAMS, self::PACKAGING_MATERIALS, self::CE_MARKING, self::UKCA_MARKING, self::WEEE_SYMBOL, self::PERIOD_AFTER_OPENING, self::SORTING_INFORMATION], true);
     }
 
     /**
@@ -78,7 +84,7 @@ enum ArtefactLabelInformationEnum: string
      */
     public function isTranslated(): bool
     {
-        return in_array($this, [self::WARNINGS, self::DIRECTIONS_FOR_USE], true);
+        return in_array($this, [self::PRODUCT_NAME, self::WARNINGS, self::DIRECTIONS_FOR_USE], true);
     }
 
     public static function inLanguage(self $information, string $languageCode): string

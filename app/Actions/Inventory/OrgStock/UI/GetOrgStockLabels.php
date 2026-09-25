@@ -84,7 +84,7 @@ class GetOrgStockLabels
                     'value'        => $source,
                     'label'        => ArtefactLabelInformationEnum::label($source, $languageNames),
                     'is_icon'      => $option->isIcon(),
-                    'can_be_typed' => $languageCode !== null,
+                    'can_be_typed' => $languageCode !== null || $option === ArtefactLabelInformationEnum::FREE_TEXT,
                 ];
             },
             array_keys($information)

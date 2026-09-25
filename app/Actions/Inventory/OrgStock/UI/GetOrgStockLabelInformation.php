@@ -34,6 +34,7 @@ class GetOrgStockLabelInformation
     ];
 
     private const TRANSLATIONS = [
+        'product_name'       => 'name_i8n',
         'warnings'           => 'gpsr_warnings_i8n',
         'directions_for_use' => 'gpsr_manual_i8n',
     ];
@@ -70,6 +71,14 @@ class GetOrgStockLabelInformation
             ArtefactLabelInformationEnum::CE_MARKING->value            => $this->hasLabelInfo($tradeUnits, 'ce_marking') ? GetArtefactLabelIconSource::CE_MARKING : '',
             ArtefactLabelInformationEnum::UKCA_MARKING->value          => $this->hasLabelInfo($tradeUnits, 'ukca_marking') ? GetArtefactLabelIconSource::UKCA_MARKING : '',
             ArtefactLabelInformationEnum::WEEE_SYMBOL->value           => $this->hasLabelInfo($tradeUnits, 'weee_symbol') ? GetArtefactLabelIconSource::WEEE_SYMBOL : '',
+            ArtefactLabelInformationEnum::PERIOD_AFTER_OPENING->value  => implode(',', array_filter(
+                $this->getLabelInfoList($tradeUnits, 'best_before'),
+                fn (string $bestBefore) => GetArtefactLabelIconSource::isPeriodAfterOpening($bestBefore)
+            )),
+            ArtefactLabelInformationEnum::SORTING_INFORMATION->value   => $this->hasLabelInfo($tradeUnits, 'sorting_recycling_information')
+                ? GetArtefactLabelIconSource::TRIMAN.','.GetArtefactLabelIconSource::INFO_TRI
+                : '',
+            ArtefactLabelInformationEnum::FREE_TEXT->value             => '',
         ], $this->getTranslations($orgStock, $tradeUnits));
     }
 
