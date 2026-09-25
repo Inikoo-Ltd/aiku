@@ -33,7 +33,7 @@ const props = defineProps<{
         headlines: string[]
         existing_headlines: string[]
         is_draft: boolean
-        draft_route: { name: string; parameters: Record<string, unknown> } | null
+        draft_route: { name: string; parameters: Record<string, unknown>; payload: Record<string, unknown> } | null
         apply_route: { name: string; parameters: Record<string, unknown> }
         dismiss_route: { name: string; parameters: Record<string, unknown> }
     }
@@ -226,6 +226,9 @@ const dismiss = () =>
             <Link
                 v-if="proposal.is_draft && proposal.draft_route"
                 :href="route(proposal.draft_route.name, proposal.draft_route.parameters)"
+                method="post"
+                :data="proposal.draft_route.payload"
+                as="button"
                 class="rounded-md bg-indigo-600 px-3 py-1.5 text-xs text-white transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1">
                 {{ trans("Review and build it") }}
             </Link>
