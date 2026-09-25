@@ -230,6 +230,7 @@ beforeEach(function () {
 afterEach(function () {
     $this->shop->update(['shipping_zone_schema_id' => null]);
     $this->organisation->update(['settings' => Arr::except($this->organisation->settings, 'fulfilment_gate')]);
+    $this->product->orgStocks()->update(['quantity_available' => 0]);
 });
 
 test('store shipping country action', function () {
@@ -3454,8 +3455,6 @@ test('fulfilment gate lets paid fully coverable order straight to warehouse', fu
     expect($deliveryNote)->toBeInstanceOf(DeliveryNote::class)
         ->and($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
         ->and($order->at_gate_at)->toBeNull();
-
-    $this->product->orgStocks()->update(['quantity_available' => 0]);
 });
 
 test('fulfilment gate auto releases paid order when stock arrives', function () {
@@ -3492,8 +3491,6 @@ test('fulfilment gate auto releases paid order when stock arrives', function () 
     expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
         ->and($order->at_gate_at)->toBeNull()
         ->and($order->deliveryNotes()->count())->toBe(1);
-
-    $this->product->orgStocks()->update(['quantity_available' => 0]);
 });
 
 test('make queue ranks paid blocked stock with suggested quantity', function () {
