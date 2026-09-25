@@ -24,7 +24,8 @@ class SendEmployeeBulkEmailToEmployee
             $name,
             $employeeBulkEmail->organisation->name,
             $employeeBulkEmail->attachments ?? [],
-            $employeeBulkEmail->sender?->email
+            $employeeBulkEmail->sender?->email,
+            $employeeBulkEmail->organisation->email
         ));
 
         self::markRecipientDone($employeeBulkEmail);

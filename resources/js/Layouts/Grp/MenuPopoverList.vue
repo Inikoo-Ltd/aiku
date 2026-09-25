@@ -188,7 +188,7 @@ const navigateToShoware = (showare: typeof sortedShowareList.value[number]) => {
 <style lang="scss" scoped>
 .navigationDropdownActive {
     @apply rounded-r cursor-pointer;
-    border-left: v-bind('`3px solid ${layout.app.theme[0]}`');
+    // border-left: v-bind('`3px solid ${layout.app.theme[0]}`');
     background-color: v-bind('`${layout.app.theme[0]}22`');
     color: v-bind('`${layout.app.theme[0]}`');
 }

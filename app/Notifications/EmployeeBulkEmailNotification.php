@@ -15,7 +15,7 @@ class EmployeeBulkEmailNotification extends Notification
     /**
      * @param array<int, array{path: string, name: string}> $attachments
      */
-    public function __construct(public string $subject, public string $body, public string $recipientName, public string $organisationName, public array $attachments = [], public ?string $replyToEmail = null)
+    public function __construct(public string $subject, public string $body, public string $recipientName, public string $organisationName, public array $attachments = [], public ?string $replyToEmail = null, public ?string $fromEmail = null)
     {
     }
 
@@ -33,7 +33,7 @@ class EmployeeBulkEmailNotification extends Notification
             ->line(new HtmlString($this->body));
 
         if (app()->isProduction()) {
-            $message->mailer('ses')->from('hello@aiku.io', $this->organisationName);
+            $message->mailer('ses')->from($this->fromEmail ?: 'help@aiku.io', $this->organisationName);
         }
 
         if ($this->replyToEmail) {
