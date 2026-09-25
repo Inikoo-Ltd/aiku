@@ -55,7 +55,7 @@ class RepairOrgStocksPackedIn
         $progressBar->finish();
         $command->newLine();
         $command->info("Updated packed_in for $count org stocks.");
-        return $count;
+        return 0;
     }
 
     public function getCommandSignature(): string

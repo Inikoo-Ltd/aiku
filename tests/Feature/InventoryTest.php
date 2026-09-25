@@ -1252,7 +1252,7 @@ test('org stock hydrator', function () {
     expect($orgStock->fresh()->packed_in)->toBe(4321);
 
     $orgStock->updateQuietly(['packed_in' => null]);
-    $this->artisan('repair:org-stocks-packed-in');
+    $this->artisan('repair:org-stocks-packed-in')->assertExitCode(0);
     expect($orgStock->fresh()->packed_in)->toBe(1);
 });
 
