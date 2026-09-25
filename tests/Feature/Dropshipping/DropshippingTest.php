@@ -59,6 +59,14 @@ use App\Models\Helpers\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Arr;
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
+use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Models\SysAdmin\Guest;
+use Spatie\Permission\Models\Permission;
+use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Enums\Web\Website\WebsiteStateEnum;
+use App\Enums\CRM\Customer\CustomerStatusEnum;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -1279,4 +1287,93 @@ test('a channel pricing rule that would take a price to zero or below leaves new
     $portfolio = StorePortfolio::make()->action($channel->refresh(), $this->product, []);
 
     expect((float) $portfolio->customer_price)->toBe(10.0);
+});
+
+test('letter of authorisation stays a draft until an admin uploads the signature', function () {
+    $shop = UpdateShop::make()->action($this->shop, [
+        'letter_of_authorisation_enabled'      => true,
+        'letter_of_authorisation_company_name' => 'Ancient Wisdom Marketing Ltd',
+        'letter_of_authorisation_body'         => '<p>{supplier} supplies <strong>{company}</strong> ({reference})</p>',
+        'letter_of_authorisation_footer'       => '<p>Company Reg. No. 04108870</p>',
+        'letter_of_authorisation_signatory'    => 'Jane Doe, Director',
+    ]);
+    $customer = $this->customer;
+
+    expect(PdfCustomerLetterOfAuthorisation::isAvailable($shop))->toBeFalse();
+    get(route('grp.org.shops.show.crm.customers.show.letter_of_authorisation.pdf', [$this->organisation->slug, $shop->slug, $customer->slug]))->assertNotFound();
+
+    setPermissionsTeamId($this->group->id);
+    $shopAdmin = StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $shopAdmin->givePermissionTo(Permission::findByName("shop-admin.$shop->id"));
+    $shopAdmin->refresh();
+
+    actingAs($shopAdmin)->post(route('grp.models.org.shop.update', ['organisation' => $shop->organisation_id, 'shop' => $shop->id]), [
+        '_method'                           => 'patch',
+        'letter_of_authorisation_signature' => UploadedFile::fake()->image('signature.png', 300, 100),
+    ])->assertForbidden();
+    expect(PdfCustomerLetterOfAuthorisation::isSigned($shop->refresh()))->toBeFalse();
+
+    actingAs($this->user)->post(route('grp.models.org.shop.update', ['organisation' => $shop->organisation_id, 'shop' => $shop->id]), [
+        '_method'                           => 'patch',
+        'letter_of_authorisation_signature' => UploadedFile::fake()->image('signature.png', 300, 100),
+    ])->assertRedirect();
+    $shop->refresh();
+    $signatureMediaId = Arr::get($shop->settings, 'letter_of_authorisation.signature_media_id');
+
+    expect(PdfCustomerLetterOfAuthorisation::isAvailable($shop))->toBeTrue()
+        ->and($shop->getMedia('letter_of_authorisation_signature')->pluck('id')->all())->toBe([$signatureMediaId]);
+
+    $shop = UpdateShop::make()->action($shop, [
+        'letter_of_authorisation_signature' => UploadedFile::fake()->image('new-signature.png', 320, 100),
+        'letter_of_authorisation_logo'      => UploadedFile::fake()->image('logo.png', 400, 100),
+    ]);
+
+    expect(Arr::get($shop->settings, 'letter_of_authorisation.signature_media_id'))->not->toBe($signatureMediaId)
+        ->and($shop->getMedia('letter_of_authorisation_signature'))->toHaveCount(1)
+        ->and($shop->getMedia('letter_of_authorisation_logo'))->toHaveCount(1);
+
+    $customer->update(['company_name' => 'Bird & <Co> Ltd']);
+    expect(PdfCustomerLetterOfAuthorisation::make()->body($customer->refresh()))
+        ->toBe('<p>Ancient Wisdom Marketing Ltd supplies <strong>Bird &amp; &lt;Co&gt; Ltd</strong> ('.$customer->reference.')</p>');
+
+    $response = get(route('grp.org.shops.show.crm.customers.show.letter_of_authorisation.pdf', [$this->organisation->slug, $shop->slug, $customer->slug]));
+    $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    expect(substr($response->getContent(), 0, 4))->toBe('%PDF');
+
+    get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $shop->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where(
+            'formData.blueprint',
+            fn ($blueprint) => collect($blueprint)->contains(fn ($section) => isset($section['fields']['letter_of_authorisation_signature']))
+        ));
+});
+
+test('customer downloads the signed letter of authorisation from account settings', function () {
+    $website = createWebsite($this->shop);
+    if ($website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($website);
+    }
+    $customer = createCustomer($this->shop);
+    $customer->update(['status' => CustomerStatusEnum::APPROVED]);
+    $webUser = createWebUser($customer);
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->with('localhost')->andReturn($website);
+    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Retina')]);
+
+    $shop = $webUser->customer->shop;
+    UpdateShop::make()->action($shop, ['letter_of_authorisation_enabled' => false]);
+
+    actingAs($webUser, 'retina');
+    $this->get(route('retina.sysadmin.letter_of_authorisation.pdf'))->assertForbidden();
+    $this->get(route('retina.sysadmin.settings.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions', []));
+
+    UpdateShop::make()->action($shop, ['letter_of_authorisation_enabled' => true]);
+    $this->get(route('retina.sysadmin.letter_of_authorisation.pdf'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
+    $this->get(route('retina.sysadmin.settings.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.name', 'retina.sysadmin.letter_of_authorisation.pdf'));
 });

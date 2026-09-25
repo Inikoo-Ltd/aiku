@@ -8,6 +8,7 @@
 
 use App\Actions\Retina\SysAdmin\DeleteRetinaLeaflet;
 use App\Actions\Retina\SysAdmin\DownloadRetinaLeaflet;
+use App\Actions\Retina\SysAdmin\PdfRetinaLetterOfAuthorisation;
 use App\Actions\Retina\SysAdmin\UpdateRetinaLeaflet;
 use App\Actions\Retina\SysAdmin\UpdateRetinaPackagingPreferences;
 use App\Actions\Retina\SysAdmin\UploadRetinaLeaflet;
@@ -28,6 +29,7 @@ Route::get('', ShowRetinaSysAdminDashboard::class)->name('dashboard');
 
 Route::get('/vat-validation-history', IndexRetinaVATValidationHistory::class)->name('vat-validation-history');
 Route::get('/settings', ShowRetinaAccountManagement::class)->name('settings.edit');
+Route::get('/letter-of-authorisation', PdfRetinaLetterOfAuthorisation::class)->name('letter_of_authorisation.pdf');
 Route::get('/email', ShowRetinaEmailManagement::class)->name('email.edit');
 Route::get('/packaging-preferences', ShowRetinaPackagingPreferences::class)->name('packaging-preferences.show');
 Route::post('/packaging-preferences', UpdateRetinaPackagingPreferences::class)->name('packaging-preferences.update');

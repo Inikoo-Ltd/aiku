@@ -8,12 +8,14 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Iris\Docs\PurgeIrisDocsFromVarnish;
 use App\Actions\Catalogue\Product\DiscontinueProductsInClosedShop;
 use App\Actions\Ordering\Order\CancelOrdersInClosedShop;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
+use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateShops;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateShops;
@@ -33,6 +35,7 @@ use App\Enums\Comms\Ses\SesRegionEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\SerialReference;
 use App\Models\Inventory\Warehouse;
 use App\Models\Reviews\ReviewRatingLabel;
@@ -40,6 +43,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -131,6 +135,13 @@ class UpdateShop extends OrgAction
                 imageData: $imageData,
                 scope: 'avatar'
             );
+        }
+
+        foreach (['signature', 'logo'] as $letterImage) {
+            if (Arr::has($modelData, "letter_of_authorisation_$letterImage")) {
+                $this->saveLetterOfAuthorisationImage($shop, $letterImage, Arr::pull($modelData, "letter_of_authorisation_$letterImage"));
+                $shop->refresh();
+            }
         }
 
         $bannedCountriesUpdated = false;
@@ -304,6 +315,11 @@ class UpdateShop extends OrgAction
                     'meta_ads_access_token' => 'settings.meta_ads.access_token',
                     'meta_ads_campaign_name_prefix' => 'settings.meta_ads.campaign_name_prefix',
                     'mailbox_sender_name' => 'settings.gmail.sender_name',
+                    'letter_of_authorisation_enabled' => 'settings.letter_of_authorisation.enabled',
+                    'letter_of_authorisation_company_name' => 'settings.letter_of_authorisation.company_name',
+                    'letter_of_authorisation_body' => 'settings.letter_of_authorisation.body',
+                    'letter_of_authorisation_footer' => 'settings.letter_of_authorisation.footer',
+                    'letter_of_authorisation_signatory' => 'settings.letter_of_authorisation.signatory',
                     'enable_chat' => 'settings.chat.enable_chat',
                     'portal_link' => 'settings.portal.link',
                     'review_rating_labels' => 'settings.reviews.rating_labels',
@@ -349,6 +365,11 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'meta_ads_access_token');
         data_forget($modelData, 'meta_ads_campaign_name_prefix');
         data_forget($modelData, 'mailbox_sender_name');
+        data_forget($modelData, 'letter_of_authorisation_enabled');
+        data_forget($modelData, 'letter_of_authorisation_company_name');
+        data_forget($modelData, 'letter_of_authorisation_body');
+        data_forget($modelData, 'letter_of_authorisation_footer');
+        data_forget($modelData, 'letter_of_authorisation_signatory');
         data_forget($modelData, 'portal_link');
         data_forget($modelData, 'bank_transfer_instructions_for_email');
         data_forget($modelData, 'review_rating_labels');
@@ -693,6 +714,31 @@ class UpdateShop extends OrgAction
         return $shop;
     }
 
+    protected function saveLetterOfAuthorisationImage(Shop $shop, string $letterImage, UploadedFile $file): void
+    {
+        $previousMediaId = Arr::get($shop->settings, "letter_of_authorisation.{$letterImage}_media_id");
+
+        $media = StoreMediaFromFile::run(
+            $shop,
+            [
+                'path'         => $file->getPathname(),
+                'originalName' => $file->getClientOriginalName(),
+                'extension'    => $file->getClientOriginalExtension(),
+                'checksum'     => md5_file($file->getPathname()),
+            ],
+            "letter_of_authorisation_$letterImage"
+        );
+
+        $settings = $shop->settings ?? [];
+        data_set($settings, "letter_of_authorisation.{$letterImage}_media_id", $media->id);
+        $shop->settings = $settings;
+        $shop->save();
+
+        if ($previousMediaId && $previousMediaId != $media->id) {
+            Media::find($previousMediaId)?->delete();
+        }
+    }
+
     public function updateInvoiceSerialReferences(Shop $shop, array $modelData): Shop
     {
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
@@ -872,6 +918,13 @@ class UpdateShop extends OrgAction
             'meta_ads_access_token'                                   => ['sometimes', 'nullable', 'string'],
             'meta_ads_campaign_name_prefix'                           => ['sometimes', 'nullable', 'string'],
             'mailbox_sender_name'                                     => ['sometimes', 'nullable', 'string', 'max:128'],
+            'letter_of_authorisation_enabled'                         => ['sometimes', 'boolean'],
+            'letter_of_authorisation_company_name'                    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'letter_of_authorisation_body'                            => ['sometimes', 'nullable', 'string', 'max:20000'],
+            'letter_of_authorisation_signatory'                       => ['sometimes', 'nullable', 'string', 'max:255'],
+            'letter_of_authorisation_footer'                          => ['sometimes', 'nullable', 'string', 'max:5000'],
+            'letter_of_authorisation_logo'                            => ['sometimes', File::image()->types(['png', 'jpg', 'jpeg'])->max(4 * 1024)],
+            'letter_of_authorisation_signature'                       => ['sometimes', File::image()->types(['png', 'jpg', 'jpeg'])->max(2 * 1024)],
             'enable_chat'                                             => ['sometimes', 'boolean'],
             'chat_slack_token'                                        => ['sometimes', 'nullable', 'string'],
             'chat_slack_channels'                                     => ['sometimes', 'nullable', 'array'],
@@ -1007,6 +1060,9 @@ class UpdateShop extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->shop = $shop;
+        if ($request->hasFile('letter_of_authorisation_signature') && !PdfCustomerLetterOfAuthorisation::canSign($request->user(), $shop)) {
+            abort(403, __('Only an organisation or group admin can upload the signature.'));
+        }
         $this->initialisation($organisation, $request);
 
         return $this->handle($shop, $this->validatedData);

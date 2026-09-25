@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -157,6 +158,17 @@ class ShowCustomer extends OrgAction
                         $webUsersMeta
                     ]),
                     'actions'       => array_values(array_filter([
+                        PdfCustomerLetterOfAuthorisation::isAvailable($customer->shop) && $request->route()->getName() == 'grp.org.shops.show.crm.customers.show' ? [
+                            'type'    => 'button',
+                            'style'   => 'tertiary',
+                            'label'   => __('Letter of authorisation'),
+                            'icon'    => 'fal fa-file-pdf',
+                            'target'  => '_blank',
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.crm.customers.show.letter_of_authorisation.pdf',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : null,
                         [
                             'key'     => 'edit_customer',
                             'type'    => 'button',

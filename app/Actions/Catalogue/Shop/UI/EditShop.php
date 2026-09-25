@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
@@ -63,6 +64,9 @@ class EditShop extends OrgAction
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
         $mergedBannedCountryRegions = $shop->banned_country_regions;
+
+        $signature  = PdfCustomerLetterOfAuthorisation::media($shop, 'signature');
+        $letterLogo = PdfCustomerLetterOfAuthorisation::media($shop, 'logo');
 
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
             ->where('container_type', 'Shop')
@@ -539,6 +543,61 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
+                ...(PdfCustomerLetterOfAuthorisation::isOffered($shop) ? [[
+                    'label'       => __('Letter of authorisation'),
+                    'icon'        => 'fal fa-file-signature',
+                    'information' => PdfCustomerLetterOfAuthorisation::isSigned($shop)
+                        ? __('Customers download this letter from their account settings to show marketplaces they are an authorised reseller. Staff can download it from the customer page.')
+                        : __('Draft: customers cannot download this letter until an organisation or group admin uploads the signature, even when switched on.'),
+                    'fields'      => array_filter([
+                        'letter_of_authorisation_enabled'      => [
+                            'type'  => 'toggle',
+                            'label' => __('Customers can download it'),
+                            'value' => PdfCustomerLetterOfAuthorisation::isEnabled($shop),
+                        ],
+                        'letter_of_authorisation_logo'         => [
+                            'type'        => 'file_upload',
+                            'label'       => __('Letterhead logo'),
+                            'information' => __('Without one the shop logo is used.'),
+                            'accept'      => 'image/png,image/jpeg',
+                            'value'       => $letterLogo?->name,
+                            'media_ulid'  => $letterLogo?->ulid,
+                        ],
+                        'letter_of_authorisation_company_name' => [
+                            'type'        => 'input',
+                            'label'       => __('Company name on the letter'),
+                            'placeholder' => $shop->organisation->name,
+                            'value'       => Arr::get($shop->settings, 'letter_of_authorisation.company_name', ''),
+                        ],
+                        'letter_of_authorisation_body'         => [
+                            'type'        => 'textEditor',
+                            'label'       => __('Text'),
+                            'information' => __('These are replaced with the account details: :placeholders', ['placeholders' => implode(' ', PdfCustomerLetterOfAuthorisation::PLACEHOLDERS)]),
+                            'full'        => true,
+                            'value'       => Arr::get($shop->settings, 'letter_of_authorisation.body') ?: PdfCustomerLetterOfAuthorisation::defaultBody($shop),
+                        ],
+                        'letter_of_authorisation_footer'       => [
+                            'type'  => 'textEditor',
+                            'label' => __('Footer'),
+                            'full'  => true,
+                            'value' => Arr::get($shop->settings, 'letter_of_authorisation.footer') ?: PdfCustomerLetterOfAuthorisation::defaultFooter($shop),
+                        ],
+                        'letter_of_authorisation_signatory'    => [
+                            'type'        => 'input',
+                            'label'       => __('Signed by'),
+                            'placeholder' => __('Name, position'),
+                            'value'       => Arr::get($shop->settings, 'letter_of_authorisation.signatory', ''),
+                        ],
+                        'letter_of_authorisation_signature'    => PdfCustomerLetterOfAuthorisation::canSign($request->user(), $shop) ? [
+                            'type'       => 'file_upload',
+                            'label'      => __('Signature'),
+                            'required'   => true,
+                            'accept'     => 'image/png,image/jpeg',
+                            'value'      => $signature?->name,
+                            'media_ulid' => $signature?->ulid,
+                        ] : null,
+                    ]),
+                ]] : []),
                 [
                     'label'       => __('Bank Transfer Instructions for Email'),
                     'icon'        => 'fa-light fa-envelope',
