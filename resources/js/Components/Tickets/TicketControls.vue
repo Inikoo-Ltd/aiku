@@ -17,6 +17,7 @@ import TicketAskReporterDialog from "@/Components/Tickets/TicketAskReporterDialo
 import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.vue"
 import TicketComposer from "@/Components/Tickets/TicketComposer.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
+import TicketQaTarget from "@/Components/Tickets/TicketQaTarget.vue"
 import TicketBody from "@/Components/Tickets/TicketBody.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -188,6 +189,8 @@ const qaVerdictCopy = computed(() => ({
     failed: { header: ctrans("QA failed"), prompt: ctrans("What is still wrong?"), placeholder: ctrans("e.g. the total is still wrong when the order has a voucher"), label: ctrans("Fail"), icon: "fal fa-shield", type: "negative" },
     skipped: { header: ctrans("QA skipped"), prompt: ctrans("Why does this not need a QA check?"), placeholder: ctrans("e.g. copy change only, nothing to test"), label: ctrans("Skip"), icon: "fal fa-forward", type: "secondary" },
 }[qaVerdict.value]))
+
+const showQaTarget = computed(() => props.ticket.qa_status === "requested" || Boolean(props.ticket.qa_user))
 
 const canAskQa = computed(() => props.can_request_qa && (["in_progress", "waiting", "pending_deploy"].includes(props.ticket.status) || isResolvedWithinADay.value) && props.ticket.qa_status !== "requested")
 
@@ -426,9 +429,12 @@ const saveDeployComment = () => {
                 <div v-if="can_qa || ticket.qa_status || canAskQa">
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("QA") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
-                        <span v-if="ticket.qa_status" v-tooltip="ticket.qa_user ? `${ticket.qa_status_label} · ${ticket.qa_user}` : ticket.qa_status_label" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.qa_status_icon.color]">
-                            <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
-                            {{ ticket.qa_status_label }}
+                        <span v-if="ticket.qa_status" v-tooltip="ticket.qa_status_icon.tooltip" class="relative inline-flex items-center">
+                            <span class="inline-flex items-center gap-1.5 rounded-md py-1 pl-2 text-sm font-medium" :class="[statusBadgeClasses[ticket.qa_status_icon.color], showQaTarget ? 'pr-5' : 'pr-2']">
+                                <FontAwesomeIcon :icon="ticket.qa_status_icon.icon" fixed-width />
+                                {{ ticket.qa_status_label }}
+                            </span>
+                            <TicketQaTarget v-if="showQaTarget" class="-ml-3" :name="ticket.qa_user" :avatar="ticket.qa_user_avatar" size="sm" />
                         </span>
                         <button v-if="canAskQa" v-tooltip="ticket.qa_status ? ctrans('Ask QA to check again') : ctrans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
                         <button v-if="can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>

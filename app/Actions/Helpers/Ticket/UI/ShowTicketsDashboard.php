@@ -69,13 +69,19 @@ class ShowTicketsDashboard extends OrgAction
         }
 
         if ($canQa) {
-            $qaBase = fn (): Builder => (clone $base)->visibleTo($user);
+            /* The three verdict counts cover Done and Waiting for deployment, the same two the QA
+               list defaults to, so the tiles and the list agree: counting every open and cancelled
+               ticket as "not checked" made the number large enough to say nothing. The urgent
+               count stays on every status, because it is the length of the queue listed below it
+               and the two disagreeing would be worse. */
+            $qaBase   = fn (): Builder => (clone $base)->visibleTo($user)->whereIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY]);
+            $qaUrgent = fn (): Builder => (clone $base)->visibleTo($user);
 
             $data['qa_stats'] = [
                 'not_checked' => $qaBase()->whereNull('qa_status')->count(),
                 'passed'      => $qaBase()->where('qa_status', TicketQaStatusEnum::PASSED)->count(),
                 'failed'      => $qaBase()->where('qa_status', TicketQaStatusEnum::FAILED)->count(),
-                'requested'   => $qaBase()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count(),
+                'requested'   => $qaUrgent()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count(),
             ];
         }
 

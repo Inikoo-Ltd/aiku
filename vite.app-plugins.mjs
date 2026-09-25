@@ -128,8 +128,10 @@ export const faPerIconImports = () => {
 
 /*
  * The per-icon files live outside node_modules, which is the only place rollup converts
- * commonjs by default, so faPerIconImports needs this alongside it.
+ * commonjs by default, so faPerIconImports needs this alongside it. CI links private/fa to a
+ * shared artifacts/fa checkout and rollup matches the resolved real path, so the pattern keys
+ * on the pack directory names rather than on private/fa.
  */
 export const FA_COMMONJS_OPTIONS = {
-    include: [/node_modules/, /private[\\/]fa[\\/]/]
+    include: [/node_modules/, /[\\/]fa[\\/]pro-[a-z]+-svg-icons[\\/]/]
 };

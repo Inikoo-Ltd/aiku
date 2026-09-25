@@ -271,6 +271,7 @@ class IndexTickets extends OrgAction
             );
         }
 
+        $this->restrictRows($queryBuilder);
         $this->pinToTop($queryBuilder);
 
         return $queryBuilder
@@ -283,6 +284,10 @@ class IndexTickets extends OrgAction
     }
 
     protected function pinToTop($queryBuilder): void
+    {
+    }
+
+    protected function restrictRows($queryBuilder): void
     {
     }
 
