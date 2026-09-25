@@ -218,11 +218,16 @@ interface CustomerProfile {
         is_claim: boolean
         order: { id: number, reference: string, state: string, named: boolean }
         photos: number
-        lines: { id: number, code: string | null, name: string | null, ordered: number, dispatched: number, mentioned: boolean }[]
+        lines: { id: number, transaction_id: number | null, code: string | null, name: string | null, ordered: number, dispatched: number, mentioned: boolean }[]
         reason: string
         reasons: { value: string, label: string }[]
         replacement: { name: string, parameters: Record<string, any> }
         replacements: string[]
+        invoiced: Record<number, number>
+        tax_ratio: number
+        currency: string | null
+        refunds: string[]
+        refund: { name: string, parameters: Record<string, any> } | null
     } | null
     erasure?: {
         orders: number
@@ -397,6 +402,42 @@ const toggleClaimLine = (line: { id: number, ordered: number }) => {
         picked[line.id] = line.ordered
     }
     claimPicked.value = picked
+}
+
+const isRefunding = ref(false)
+
+const claimRefundAmount = computed(() => {
+    const claim = customerProfile.value.claim
+    if (!claim) return 0
+    const shares: Record<number, number> = {}
+    for (const line of claim.lines) {
+        const quantity = Number(claimPicked.value[line.id] ?? 0)
+        if (!line.transaction_id || !quantity || !line.ordered) continue
+        shares[line.transaction_id] = Math.max(shares[line.transaction_id] ?? 0, Math.min(1, quantity / line.ordered))
+    }
+    const net = Object.entries(shares).reduce((sum, [transactionId, share]) => sum + (claim.invoiced[Number(transactionId)] ?? 0) * share, 0)
+
+    return Math.round(net * claim.tax_ratio * 100) / 100
+})
+
+const refundClaimToBalance = async () => {
+    const claim = customerProfile.value.claim
+    const items = Object.entries(claimPicked.value).filter(([, quantity]) => Number(quantity) > 0)
+    if (!claim?.refund || !items.length || isRefunding.value || !claimRefundAmount.value) return
+    if (!window.confirm(ctrans("Refund about :amount :currency to the customer's balance for :count lines of :order? A refund invoice is made and paid out as credit.", { amount: claimRefundAmount.value.toFixed(2), currency: claim.currency ?? "", count: String(items.length), order: claim.order.reference }))) return
+    isRefunding.value = true
+    try {
+        const res = await axios.post(route(claim.refund.name, claim.refund.parameters), {
+            delivery_note_items: items.map(([id, quantity]) => ({ id: Number(id), quantity: Number(quantity) })),
+        })
+        notify({ title: ctrans("Refunded to balance"), text: `${res.data.reference}: ${Number(res.data.amount).toFixed(2)} ${res.data.currency ?? ""}`, type: "success" })
+        profileLoaded.value = false
+        await loadCustomerProfile()
+    } catch (error: any) {
+        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("The refund could not be made"), type: "error" })
+    } finally {
+        isRefunding.value = false
+    }
 }
 
 const createReplacement = async () => {
@@ -934,6 +975,7 @@ const copyChatId = async () => {
                         <p class="text-gray-500">
                             <span v-if="customerProfile.claim.photos">{{ ctrans(":count photos sent", { count: String(customerProfile.claim.photos) }) }} · </span>
                             <span v-if="customerProfile.claim.replacements.length" class="text-amber-700">{{ ctrans("Already replaced") }}: {{ customerProfile.claim.replacements.join(", ") }}</span>
+                            <span v-if="customerProfile.claim.refunds.length" class="text-amber-700"> {{ ctrans("Already refunded") }}: {{ customerProfile.claim.refunds.join(", ") }}</span>
                             <span v-else>{{ ctrans("Tick what to send again") }}</span>
                         </p>
                         <div class="max-h-56 space-y-1 overflow-y-auto">
@@ -957,6 +999,13 @@ const copyChatId = async () => {
                                 :style="{ backgroundColor: themePrimary }"
                                 :disabled="isReplacing || !Object.keys(claimPicked).length" @click="createReplacement">
                                 {{ isReplacing ? ctrans("Creating…") : ctrans("Create replacement") }}
+                            </button>
+                        </div>
+                        <div v-if="customerProfile.claim.refund" class="flex items-center justify-end gap-2">
+                            <span class="text-gray-500">{{ ctrans("or refund") }} <span class="font-medium tabular-nums text-gray-800">{{ claimRefundAmount.toFixed(2) }} {{ customerProfile.claim.currency }}</span></span>
+                            <button type="button" class="shrink-0 rounded border border-gray-300 px-2 py-1 font-medium text-gray-700 hover:bg-white disabled:opacity-40"
+                                :disabled="isRefunding || !claimRefundAmount" @click="refundClaimToBalance">
+                                {{ isRefunding ? ctrans("Refunding…") : ctrans("Refund to balance") }}
                             </button>
                         </div>
                     </template>

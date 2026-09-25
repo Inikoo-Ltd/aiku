@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
@@ -53,6 +54,7 @@ class GetChatClaimCase
 
                 return [
                     'id'         => $item->id,
+                    'transaction_id' => $item->transaction_id,
                     'code'       => $code,
                     'name'       => $item->transaction?->asset?->name ?? $item->orgStock?->name,
                     'ordered'    => (float) $item->quantity_required,
@@ -79,6 +81,31 @@ class GetChatClaimCase
                 ->all(),
             'replacement'     => ['name' => 'grp.models.order.replacement_delivery_note.store', 'parameters' => ['order' => $order->id]],
             'replacements'    => $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::REPLACEMENT)->pluck('reference')->all(),
+            ...$this->refund($order),
+        ];
+    }
+
+    /**
+     * What refunding to balance needs: the invoice the lines are refunded from, what each
+     * claimable line was invoiced at, and the refunds already made. The button is offered only
+     * to CRM editors of the shop.
+     *
+     * @return array<string, mixed>
+     */
+    private function refund(Order $order): array
+    {
+        $invoice = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->where(fn ($query) => $query->where('in_process', false)->orWhereNull('in_process'))->latest('id')->first();
+
+        return [
+            'invoiced'  => $invoice ? $invoice->invoiceTransactions()->whereNotNull('transaction_id')->with('transactionRefunds')->get()
+                ->mapWithKeys(fn ($line) => [$line->transaction_id => max(0, round((float) $line->net_amount - abs((float) $line->transactionRefunds->where('in_process', false)->sum('net_amount')), 2))])
+                ->all() : [],
+            'tax_ratio' => $invoice && (float) $invoice->net_amount != 0.0 ? round((float) $invoice->total_amount / (float) $invoice->net_amount, 4) : 1,
+            'currency'  => $order->currency?->code,
+            'refunds'   => $order->invoices()->where('type', InvoiceTypeEnum::REFUND)->pluck('reference')->all(),
+            'refund'    => $invoice && request()->user()?->authTo("crm.{$order->shop_id}.edit")
+                ? ['name' => 'grp.models.order.claim_refund_to_balance', 'parameters' => ['order' => $order->id]]
+                : null,
         ];
     }
 
