@@ -3851,4 +3851,18 @@ describe('out of stock forecast', function () {
             ->and($stats->forecast_source)->toBe('croston')
             ->and((float) $stats->predicted_daily_usage)->toBeGreaterThan(0.0);
     });
+
+    test('dispatches from the coming quarter last year do not revive the forecast of an item that stopped selling', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $deliveryNoteItem->update(['quantity_dispatched' => 30]);
+        DB::table('delivery_note_items')->where('id', $deliveryNoteItem->id)
+            ->update(['created_at' => now()->subYear()->addDays(20)]);
+
+        OrgStockHydrateOutOfStockForecast::run($deliveryNoteItem->orgStock);
+        $stats = $deliveryNoteItem->orgStock->stats->refresh();
+
+        expect($stats->forecast_source)->toBeNull()
+            ->and($stats->predicted_daily_usage)->toBeNull()
+            ->and($stats->recommended_order_quantity)->toBeNull();
+    });
 });
