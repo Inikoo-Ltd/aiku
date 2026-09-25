@@ -142,6 +142,7 @@ const props = defineProps<{
             is_premium_dispatch: boolean
             has_extra_packing: boolean
             has_insurance: boolean
+            has_gift_message: boolean
         }
     }
 
@@ -149,6 +150,7 @@ const props = defineProps<{
         premium_dispatch: OrderCharge | null
         extra_packing: OrderCharge | null
         insurance: OrderCharge | null
+        gift_message: OrderCharge | null
     }
 
     pageHead: PageHeadingTypes
@@ -927,17 +929,20 @@ const isOrderAmountsProvisional = computed(() => ['in_warehouse', 'handling', 'h
 const isLoadingPriorityDispatch = ref(false)
 const isLoadingExtraPacking = ref(false)
 const isLoadingInsurance = ref(false)
+const isLoadingGiftMessage = ref(false)
 
 const chargeToggles = ref({
     is_premium_dispatch: props.data?.data?.is_premium_dispatch ?? false,
     has_extra_packing: props.data?.data?.has_extra_packing ?? false,
     has_insurance: props.data?.data?.has_insurance ?? false,
+    has_gift_message: props.data?.data?.has_gift_message ?? false,
 })
 
 watch(() => props.data?.data, (orderData) => {
     chargeToggles.value.is_premium_dispatch = orderData?.is_premium_dispatch ?? false
     chargeToggles.value.has_extra_packing = orderData?.has_extra_packing ?? false
     chargeToggles.value.has_insurance = orderData?.has_insurance ?? false
+    chargeToggles.value.has_gift_message = orderData?.has_gift_message ?? false
 }, { deep: true })
 
 const updateOrderCharge = (
@@ -1012,6 +1017,17 @@ const onChangeInsurance = (val: boolean) => {
         isLoadingInsurance,
         val ? ctrans("The order has insurance!") : ctrans("The order no longer has insurance."),
         ctrans("Failed to update insurance, try again.")
+    )
+}
+
+const onChangeGiftMessage = (val: boolean) => {
+    updateOrderCharge(
+        'grp.models.order.update_gift_message',
+        'has_gift_message',
+        val,
+        isLoadingGiftMessage,
+        val ? ctrans("The order is changed to gift message!") : ctrans("The order is no longer on gift message."),
+        ctrans("Failed to update gift message, try again.")
     )
 }
 
@@ -1823,6 +1839,8 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                 icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
             <FontAwesomeIcon v-if="data?.data.has_insurance" v-tooltip="ctrans('Insurance')" icon="fas fa-shield-alt"
                 class="text-yellow-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data?.data.has_gift_message" v-tooltip="ctrans('Gift message')" icon="fas fa-gift"
+                class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
 
             <span v-if="data?.data.is_dropshipping"
                 v-tooltip="ctrans('Dropshipping order, came in through a customer sales channel')"
@@ -2571,13 +2589,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         </Modal>
                     </div>
 
-                    <!-- Section: Order charges (priority dispatch, extra packing, insurance) -->
-                    <div v-if="charges?.premium_dispatch || charges?.extra_packing || charges?.insurance"
+                    <!-- Section: Order charges (priority dispatch, extra packing, insurance, gift message) -->
+                    <div v-if="charges?.premium_dispatch || charges?.extra_packing || charges?.insurance || charges?.gift_message"
                         class="border-b border-gray-300 mb-2 pb-2 space-y-1.5 pr-2">
                         <div v-for="charge in [
                                 { key: 'premium_dispatch', data: charges?.premium_dispatch, active: chargeToggles.is_premium_dispatch, loading: isLoadingPriorityDispatch, onChange: onChangePriorityDispatch },
                                 { key: 'extra_packing', data: charges?.extra_packing, active: chargeToggles.has_extra_packing, loading: isLoadingExtraPacking, onChange: onChangeExtraPacking },
                                 { key: 'insurance', data: charges?.insurance, active: chargeToggles.has_insurance, loading: isLoadingInsurance, onChange: onChangeInsurance },
+                                { key: 'gift_message', data: charges?.gift_message, active: chargeToggles.has_gift_message, loading: isLoadingGiftMessage, onChange: onChangeGiftMessage },
                             ]"
                             :key="charge.key">
                             <dl v-if="charge.data" class="flex items-center justify-between gap-x-2">

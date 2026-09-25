@@ -846,6 +846,22 @@ const stopSocketListener = () => {
 				class="text-yellow-500 animate-bounce"
 				fixed-width
 				aria-hidden="true" />
+			<FontAwesomeIcon
+				v-if="delivery_note.has_gift_message"
+				v-tooltip="ctrans('Gift message')"
+				icon="fas fa-gift"
+				class="text-yellow-500 animate-bounce"
+				fixed-width
+				aria-hidden="true" />
+			<a
+				v-if="delivery_note.has_gift_message && delivery_note.gift_message_print_route"
+				:href="route(delivery_note.gift_message_print_route.name, delivery_note.gift_message_print_route.parameters)"
+				target="_blank"
+				v-tooltip="ctrans('Print gift message')"
+				class="ml-2 text-sm text-indigo-500 hover:underline"
+			>
+				{{ ctrans('Print gift message') }}
+			</a>
 		</template>
 		
 		<template #button-finalise-and-dispatch="{ action }">

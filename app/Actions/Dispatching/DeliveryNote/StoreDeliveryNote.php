@@ -82,6 +82,7 @@ class StoreDeliveryNote extends OrgAction
                 $deliveryNote->update([
                     'is_premium_dispatch' => $order->is_premium_dispatch,
                     'has_extra_packing'   => $order->has_extra_packing,
+                    'has_gift_message'    => $order->has_gift_message,
                     'packaging_id'        => $order->packaging_id,
                 ]);
 

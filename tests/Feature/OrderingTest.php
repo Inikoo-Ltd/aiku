@@ -71,6 +71,8 @@ use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
+use App\Actions\Ordering\Order\UpdateOrderGiftMessage;
+use App\Actions\Ordering\Order\PdfOrderGiftMessage;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Actions\Ordering\Order\UpdateOrderShippingTBCAmount;
 use App\Actions\Billables\Service\StoreService;
@@ -187,6 +189,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessagePdf;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Queue;
@@ -3564,6 +3568,171 @@ test('repair order charge flags sets premium flag from orphan charge line', func
 
     $this->artisan('repair:order_charge_flags --commit')->assertSuccessful();
     expect($order->refresh()->is_premium_dispatch)->toBeTrue();
+})->depends('create order');
+
+function clearActiveGiftMessageCharges(Order $order): void
+{
+    $order->shop->charges()
+        ->where('type', ChargeTypeEnum::GIFT_MESSAGE)
+        ->where('state', ChargeStateEnum::ACTIVE)
+        ->get()
+        ->each(fn ($charge) => UpdateCharge::make()->action($charge, ['state' => ChargeStateEnum::DISCONTINUED]));
+}
+
+test('store charge with gift message type gets selected by customer trigger', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::IN_PROCESS,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+    ]);
+
+    expect($charge->trigger)->toBe(ChargeTriggerEnum::SELECTED_BY_CUSTOMER);
+})->depends('create order');
+
+test('toggling gift message on an order adds and removes its charge transaction', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE-TOGGLE',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+        'settings'    => ['amount' => 1],
+    ]);
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => true]);
+
+    $giftMessageTransaction = DB::table('transactions')
+        ->where('order_id', $order->id)
+        ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
+        ->where('model_type', 'Charge')
+        ->where('charges.type', ChargeTypeEnum::GIFT_MESSAGE->value)
+        ->value('transactions.id');
+
+    expect($giftMessageTransaction)->not->toBeNull();
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => false]);
+
+    $giftMessageTransaction = DB::table('transactions')
+        ->where('order_id', $order->id)
+        ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
+        ->where('model_type', 'Charge')
+        ->where('charges.type', ChargeTypeEnum::GIFT_MESSAGE->value)
+        ->value('transactions.id');
+
+    expect($giftMessageTransaction)->toBeNull();
+})->depends('create order');
+
+test('updating the gift message charge amount changes the amount added to the basket', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE-AMOUNT',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+        'settings'    => ['amount' => 1],
+    ]);
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => true]);
+    $transaction = Transaction::where('order_id', $order->id)->where('model_id', $charge->id)->where('model_type', 'Charge')->first();
+    expect((float) $transaction->gross_amount)->toBe(1.0);
+
+    UpdateCharge::make()->action($charge, ['amount' => 3]);
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => true]);
+
+    $transaction->refresh();
+    expect((float) $transaction->gross_amount)->toBe(3.0);
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => false]);
+})->depends('create order');
+
+test('switching the gift message charge off removes it from the basket charges', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    $charge = StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE-STATE',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+        'settings'    => ['amount' => 1],
+    ]);
+
+    expect($order->shop->charges()->where('type', ChargeTypeEnum::GIFT_MESSAGE)->where('state', ChargeStateEnum::ACTIVE)->first()?->id)->toBe($charge->id);
+
+    UpdateCharge::make()->action($charge, ['state' => ChargeStateEnum::DISCONTINUED]);
+
+    expect($order->shop->charges()->where('type', ChargeTypeEnum::GIFT_MESSAGE)->where('state', ChargeStateEnum::ACTIVE)->first())->toBeNull();
+})->depends('create order');
+
+test('gift message text saves and is cleared when the toggle is switched off', function (Order $order) {
+    clearActiveGiftMessageCharges($order);
+
+    StoreCharge::make()->action($order->shop, [
+        'code'        => 'GIFT-MESSAGE-TEXT',
+        'name'        => 'Gift message',
+        'description' => 'gift message',
+        'state'       => ChargeStateEnum::ACTIVE,
+        'type'        => ChargeTypeEnum::GIFT_MESSAGE,
+        'settings'    => ['amount' => 1],
+    ]);
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => true]);
+    $order->update(['gift_message' => 'Happy Birthday!']);
+    expect($order->refresh()->gift_message)->toBe('Happy Birthday!');
+
+    UpdateOrderGiftMessage::make()->handle($order, ['has_gift_message' => false]);
+    expect($order->refresh()->gift_message)->toBeNull();
+})->depends('create order');
+
+test('gift message pdf upload accepts a pdf and rejects a non pdf file', function (Order $order) {
+    $pdf = UpdateRetinaOrderGiftMessagePdf::make()->handle($order, [
+        'gift_message_pdf' => UploadedFile::fake()->create('message.pdf', 100, 'application/pdf'),
+    ]);
+
+    expect($pdf->attachments()->wherePivot('scope', 'GiftMessage')->exists())->toBeTrue();
+
+    $validator = validator(
+        ['gift_message_pdf' => UploadedFile::fake()->image('message.jpg')],
+        UpdateRetinaOrderGiftMessagePdf::make()->rules()
+    );
+
+    expect($validator->fails())->toBeTrue();
+})->depends('create order');
+
+test('iris exposes the gift message text and pdf routes on the retina order gift message actions', function () {
+    expect(\Illuminate\Support\Facades\Route::has('iris.models.order.update_gift_message_text'))->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Route::has('iris.models.order.update_gift_message_pdf'))->toBeTrue();
+
+    $textRoute = \Illuminate\Support\Facades\Route::getRoutes()->getByName('iris.models.order.update_gift_message_text');
+    $pdfRoute  = \Illuminate\Support\Facades\Route::getRoutes()->getByName('iris.models.order.update_gift_message_pdf');
+
+    expect($textRoute->getActionName())->toContain(\App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder::class)
+        ->and($pdfRoute->getActionName())->toContain(UpdateRetinaOrderGiftMessagePdf::class);
+});
+
+test('the generated gift message card pdf route returns a pdf for a text message', function (Order $order) {
+    $order->update(['gift_message' => 'Happy Birthday!']);
+
+    $response = PdfOrderGiftMessage::make()->handle($order);
+
+    expect($response->headers->get('Content-Type'))->toContain('application/pdf');
+})->depends('create order');
+
+test('checkout is blocked when the gift message toggle is on without a message or pdf', function (Order $order) {
+    foreach ($order->attachments()->wherePivot('scope', 'GiftMessage')->get() as $attachment) {
+        $order->attachments()->detach($attachment->id);
+    }
+    $order->update(['has_gift_message' => true, 'gift_message' => null]);
+
+    expect(fn () => SubmitOrder::make()->handle($order))->toThrow(ValidationException::class);
 })->depends('create order');
 
 test('submitting an order stamps the customer permanent shipping label note unless the order has its own', function () {

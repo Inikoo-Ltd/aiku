@@ -40,6 +40,7 @@ class UpdateRetinaOrder extends RetinaAction
     {
         return [
             'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'gift_message'          => ['sometimes', 'nullable', 'string', 'max:500'],
             'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')]
         ];

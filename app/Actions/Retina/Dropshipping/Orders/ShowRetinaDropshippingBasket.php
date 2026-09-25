@@ -75,6 +75,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $premiumDispatch = $charges['premium_dispatch'];
         $extraPacking    = $charges['extra_packing'];
         $insurance       = $charges['insurance'];
+        $giftMessage     = $charges['gift_message'];
 
         \Sentry\traceMetrics()->count('visit.basket.ds', 1, ['shop' => $this->shop->slug]);
 
@@ -199,6 +200,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
                     'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
                     'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
+                    'gift_message'    => $giftMessage ? ChargeResource::make($giftMessage)->toArray(request()) : null,
                 ],
 
                 'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),

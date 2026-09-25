@@ -80,10 +80,12 @@ class ShowRetinaEcomBasket extends RetinaAction
             $premiumDispatch = $charges['premium_dispatch'];
             $extraPacking    = $charges['extra_packing'];
             $insurance       = $charges['insurance'];
+            $giftMessage     = $charges['gift_message'];
         } else {
             $premiumDispatch = null;
             $extraPacking    = null;
             $insurance       = null;
+            $giftMessage     = null;
         }
 
         $grGifts = [
@@ -237,6 +239,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
                     'extra_packing'    => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
                     'insurance'        => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
+                    'gift_message'     => $giftMessage ? ChargeResource::make($giftMessage)->toArray(request()) : null,
                 ],
 
                 'upcoming_transactions' => UpcomingTransactionsResource::collection(IndexRetinaUpcomingTransactions::run($this->customer)),

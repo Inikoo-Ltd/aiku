@@ -23,6 +23,7 @@ import Image from "@common/Components/Image.vue"
 import Discount from '@/Components/Utils/Label/Discount.vue'
 import { getBestOffer } from '@/Composables/useOffers'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import GiftMessagePanel from '@/Components/Order/GiftMessagePanel.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import EligibleGift from '@/Components/Order/EligibleGift.vue'
@@ -719,6 +720,16 @@ onUnmounted(() => {
                                     </template>
                                 </ToggleSwitch>
                             </div>
+                        </div>
+                        <div v-if="charge.key_db === 'has_gift_message' && dataSideBasket?.order_data?.has_gift_message" class="mt-1">
+                            <GiftMessagePanel
+                                ref="giftMessagePanel"
+                                :giftMessage="dataSideBasket?.order_data?.gift_message"
+                                :hasGiftMessagePdf="dataSideBasket?.order_data?.has_gift_message_pdf"
+                                :textRoute="{ name: 'iris.models.order.update_gift_message_text', parameters: dataSideBasket?.order_data?.id }"
+                                :pdfRoute="{ name: 'iris.models.order.update_gift_message_pdf', parameters: dataSideBasket?.order_data?.id }"
+                                @uploaded="() => fetchDataSideBasket(true)"
+                            />
                         </div>
                     </template>
                 </div>

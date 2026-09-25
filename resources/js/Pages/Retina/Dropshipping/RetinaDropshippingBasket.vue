@@ -47,6 +47,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import GiftMessagePanel from '@/Components/Order/GiftMessagePanel.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import RetinaTableOrderProduct from '@/Components/Tables/Retina/RetinaTableOrderProduct.vue'
 
@@ -69,6 +70,9 @@ const props = defineProps<{
             is_premium_dispatch: boolean
             has_extra_packing: boolean
             has_insurance: boolean
+            has_gift_message: boolean
+            gift_message: string | null
+            has_gift_message_pdf: boolean
             id: number
             slug: string
             reference: string
@@ -134,6 +138,7 @@ const props = defineProps<{
         premium_dispatch?: ChargeResource
         extra_packing?: ChargeResource
         insurance?: ChargeResource
+        gift_message?: ChargeResource
     }
     is_forbidden_delivery: boolean
     is_forbidden_billing?: boolean
@@ -391,6 +396,54 @@ const onChangeExtraPacking = async (val: boolean) => {
     )
 }
 
+// Section: Gift Message
+const isLoadingGiftMessage = ref(false)
+const onChangeGiftMessage = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_gift_message', props.data.data?.id),
+        {
+            has_gift_message: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingGiftMessage.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to gift message!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on gift message."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update gift message, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingGiftMessage.value = false
+            },
+        }
+    )
+}
+
+const giftMessagePanel = ref<InstanceType<typeof GiftMessagePanel> | null>(null)
+const isGiftMessageMissing = computed(() =>
+    !!props.data.data?.has_gift_message && !!giftMessagePanel.value?.isMissing
+)
+
 // Section: Insurance
 const isLoadingInsurance = ref(false)
 const onChangeInsurance = async (val: boolean) => {
@@ -557,6 +610,42 @@ const onChangeInsurance = async (val: boolean) => {
                     </ToggleSwitch>
                 </div>
             </div>
+
+            <!-- Section: Charge Gift Message -->
+            <div v-if="charges.gift_message" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                    <InformationIcon :information="charges.gift_message?.description" />
+                    {{ charges.gift_message?.label ?? charges.gift_message?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.gift_message?.currency_code, charges.gift_message?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="data?.data?.has_gift_message"
+                        @update:modelValue="(e) => (onChangeGiftMessage(e))"
+                        xdisabled="isLoadingGiftMessage"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingGiftMessage" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+
+            <!-- Section: Gift Message panel -->
+            <div v-if="data?.data?.has_gift_message" class="my-4 pr-2 md:pr-6">
+                <GiftMessagePanel
+                    ref="giftMessagePanel"
+                    :giftMessage="data?.data?.gift_message"
+                    :hasGiftMessagePdf="data?.data?.has_gift_message_pdf"
+                    :textRoute="{ name: 'retina.models.order.update', parameters: props.data.data?.id }"
+                    :pdfRoute="{ name: 'retina.models.order.update_gift_message_pdf', parameters: props.data.data?.id }"
+                    @uploaded="() => router.reload({ only: ['data'] })"
+                />
+            </div>
         </template>
       </div>
 
@@ -646,7 +735,8 @@ const onChangeInsurance = async (val: boolean) => {
                     :routeTarget="routes?.pay_with_balance"
                     class="w-full"
                     full
-                    :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                    :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                        || isGiftMessageMissing"
                 >
                 </ButtonWithLink>
 
@@ -673,16 +763,24 @@ const onChangeInsurance = async (val: boolean) => {
                 full
                 :tooltip="insertsWithoutArtwork.length
                     ? trans('Upload the file for :inserts before checking out', { inserts: insertsWithoutArtwork.join(', ') })
-                    : undefined"
+                    : (isGiftMessageMissing ? ctrans('Write a gift message or upload a PDF before checking out.') : undefined)"
                 :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
-                    || insertsWithoutArtwork.length > 0"
+                    || insertsWithoutArtwork.length > 0
+                    || isGiftMessageMissing"
             />
 
-            
+
             <div v-if="insertsWithoutArtwork.length" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
                 <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
                 <div class="leading-5">
                     {{ trans("Upload the file for :inserts before checking out.", { inserts: insertsWithoutArtwork.join(', ') }) }}
+                </div>
+            </div>
+
+            <div v-if="isGiftMessageMissing" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
+                <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
+                <div class="leading-5">
+                    {{ ctrans("Write a gift message or upload a PDF before checking out.") }}
                 </div>
             </div>
         </div>

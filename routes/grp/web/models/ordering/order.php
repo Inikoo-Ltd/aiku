@@ -33,6 +33,7 @@ use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderExtraPacking;
+use App\Actions\Ordering\Order\UpdateOrderGiftMessage;
 use App\Actions\Ordering\Order\UpdateOrderInsurance;
 use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Actions\Ordering\Order\UpdateOrderReCalculateVAT;
@@ -82,6 +83,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledIn
     Route::patch('update', UpdateOrder::class)->name('update');
     Route::patch('update-premium-dispatch', UpdateOrderPremiumDispatch::class)->name('update_premium_dispatch');
     Route::patch('update-extra-packing', UpdateOrderExtraPacking::class)->name('update_extra_packing');
+    Route::patch('update-gift-message', UpdateOrderGiftMessage::class)->name('update_gift_message');
     Route::patch('update-insurance', UpdateOrderInsurance::class)->name('update_insurance');
     Route::post('update-faire', UpdateFaireOrder::class)->name('update_faire');
     Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');

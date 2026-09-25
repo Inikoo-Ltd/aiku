@@ -21,6 +21,7 @@ enum ChargeTypeEnum: string
     case PAYMENT = 'payment';
     case COD = 'cod';
     case PACKING = 'packing';
+    case GIFT_MESSAGE = 'gift_message';
     case MARKETPLACE_FEE = 'marketplace_fee';
     case COLLECTION = 'collection';
     case DISCRETIONARY = 'discretionary';
@@ -36,6 +37,7 @@ enum ChargeTypeEnum: string
             'cod'             => __('Charge on delivery'),
             'payment'         => __('Payment'),
             'packing'         => __('Packing'),
+            'gift_message'    => __('Gift message'),
             'other'           => __('Other'),
             'marketplace_fee' => __('Marketplace fee'),
             'collection'      => __('Collection'),

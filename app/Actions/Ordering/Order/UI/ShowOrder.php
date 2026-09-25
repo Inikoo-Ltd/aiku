@@ -191,8 +191,21 @@ class ShowOrder extends OrgAction
 
     public function getOrderNotes(Order $order): array
     {
+        $noteList = [];
+
+        if ($order->has_gift_message) {
+            $noteList[] = [
+                "label"       => __("Gift message"),
+                "note"        => $order->gift_message ?: __("PDF uploaded"),
+                "information" => __("The gift message the customer asked to be printed with the order."),
+                "editable"    => false,
+                "field"       => "gift_message",
+            ];
+        }
+
         return [
             "note_list" => [
+                ...$noteList,
                 [
                     "label"       => NotesEnum::SHIPPING_LABEL->label(),
                     "note"        => $order->shipping_notes ?? '',

@@ -38,6 +38,7 @@ use Illuminate\Support\Arr;
  * @property mixed $waiting_crm_count
  * @property mixed $is_premium_dispatch
  * @property mixed $has_extra_packing
+ * @property mixed $has_gift_message
  * @property mixed $customer_notes
  * @property mixed $internal_notes
  * @property mixed $public_notes
@@ -123,6 +124,7 @@ class DeliveryNotesResource extends JsonResource
             'handled_in_aurora'           => (bool)$this->handled_in_aurora,
             'is_customer_vip'             => $this->is_customer_vip,
             'has_extra_packing'           => $this->has_extra_packing,
+            'has_gift_message'            => $this->has_gift_message,
             'picking_sessions_count'      => $this->picking_sessions_count,
             'picking_session_ids'         => $this->picking_session_ids,
             'waiting_warehouse_count'     => (int) $this->waiting_warehouse_count,

@@ -33,6 +33,13 @@ class DeliveryNoteResource extends JsonResource
             'created_at'                     => $deliverNote->created_at,
             'is_premium_dispatch'            => $deliverNote->is_premium_dispatch,
             'has_extra_packing'              => $deliverNote->has_extra_packing,
+            'has_gift_message'               => $deliverNote->has_gift_message,
+            'gift_message_print_route'       => $deliverNote->has_gift_message ? [
+                'name'       => 'grp.pdfs.order-gift-message',
+                'parameters' => [
+                    'order' => $deliverNote->orders()->first()?->id
+                ]
+            ] : null,
             'updated_at'                     => $deliverNote->updated_at,
             'is_cash_on_delivery'            => $deliverNote->is_cash_on_delivery,
             'number_items_waiting_warehouse' => $deliverNote->number_items_waiting_warehouse,

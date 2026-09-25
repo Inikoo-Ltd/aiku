@@ -82,6 +82,12 @@ class SubmitOrder extends OrgAction
             ]);
         }
 
+        if ($order->has_gift_message && !$order->gift_message && !$order->attachments()->wherePivot('scope', 'GiftMessage')->exists()) {
+            throw ValidationException::withMessages([
+                'gift_message' => __('Write a gift message or upload a PDF before placing the order.'),
+            ]);
+        }
+
         $modelData = [
             'state'          => OrderStateEnum::SUBMITTED,
             'status'         => OrderStatusEnum::PROCESSING,

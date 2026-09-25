@@ -73,7 +73,9 @@ class StoreCharge extends OrgAction
             ChargeTypeEnum::PREMIUM,
             ChargeTypeEnum::PREMIUM->value,
             ChargeTypeEnum::INSURANCE,
-            ChargeTypeEnum::INSURANCE->value
+            ChargeTypeEnum::INSURANCE->value,
+            ChargeTypeEnum::GIFT_MESSAGE,
+            ChargeTypeEnum::GIFT_MESSAGE->value
         ])) {
             data_set($modelData, 'trigger', ChargeTriggerEnum::SELECTED_BY_CUSTOMER);
         } elseif (in_array($type, [

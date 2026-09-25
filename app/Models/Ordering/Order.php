@@ -145,6 +145,8 @@ use App\Audits\Transformer\RelationTransformer;
  * @property OrderPayDetailedStatusEnum|null $pay_detailed_status
  * @property bool $is_premium_dispatch
  * @property bool|null $has_extra_packing
+ * @property bool|null $has_gift_message
+ * @property string|null $gift_message
  * @property array<array-key, mixed>|null $post_submit_modification_data
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
@@ -374,6 +376,7 @@ class Order extends Model implements HasMedia, Auditable
         'is_premium_dispatch',
         'has_extra_packing',
         'has_insurance',
+        'has_gift_message',
         'is_shipping_tbc',
         'is_shipping_by_external',
         'with_replacement',
@@ -384,6 +387,7 @@ class Order extends Model implements HasMedia, Auditable
 
         // Notes
         'customer_notes',
+        'gift_message',
         'public_notes',
         'internal_notes',
         'shipping_notes',

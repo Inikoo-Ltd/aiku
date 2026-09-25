@@ -13,6 +13,7 @@ import { faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import GiftMessagePanel from "@/Components/Order/GiftMessagePanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
@@ -65,6 +66,9 @@ const props = defineProps<{
         customer_slug: string
         customer_name: string
         slug: string
+        has_gift_message?: boolean
+        gift_message?: string | null
+        has_gift_message_pdf?: boolean
     }
     upcoming_transactions: {
         data: {
@@ -127,6 +131,7 @@ const props = defineProps<{
         premium_dispatch?: ChargeResource
         extra_packing?: ChargeResource
         insurance?: ChargeResource
+        gift_message?: ChargeResource
     }
     gr_gifts: {
         is_eligible: boolean
@@ -585,6 +590,55 @@ const onChangeExtraPacking = async (val: boolean) => {
 }
 
 
+// Section: Charge Gift Message
+const isLoadingGiftMessage = ref(false)
+const onChangeGiftMessage = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_gift_message', props.order.id),
+        {
+            has_gift_message: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingGiftMessage.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("The order is changed to gift message!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: ctrans("Success"),
+                        text: ctrans("The order is no longer on gift message."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to update gift message, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingGiftMessage.value = false
+            },
+        }
+    )
+}
+
+const giftMessagePanel = ref<InstanceType<typeof GiftMessagePanel> | null>(null)
+const isGiftMessageMissing = computed(() =>
+    !!(props.order as any)?.has_gift_message && !!giftMessagePanel.value?.isMissing
+)
+
+
 // Section: Charge Insurance
 const isLoadingInsurance = ref(false)
 const onChangeInsurance = async (val: boolean) => {
@@ -858,9 +912,45 @@ const onChangeInsurance = async (val: boolean) => {
                             </ToggleSwitch>
                         </div>
                     </div>
+
+                    <!-- Section: Charge Gift Message -->
+                    <div v-if="charges.gift_message" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
+                        <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                            <InformationIcon v-if="charges.gift_message?.description" :information="charges.gift_message.description ?? ''" />
+                            {{ charges.gift_message?.label ? ctrans(charges.gift_message.label) : ctrans(charges.gift_message?.name ?? '') }}
+                            <span class="text-gray-400">({{ locale.currencyFormat(charges.gift_message?.currency_code, charges.gift_message?.amount) }})</span>
+                        </div>
+                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                            <ToggleSwitch
+                                :modelValue="order?.has_gift_message"
+                                @update:modelValue="(e) => (onChangeGiftMessage(e))"
+                                xdisabled="isLoadingGiftMessage"
+                            >
+                                <template #handle="{ checked }">
+                                    <LoadingIcon v-if="isLoadingGiftMessage" xclass="text-sm text-gray-500" />
+                                    <template v-else>
+                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </template>
+                            </ToggleSwitch>
+                        </div>
+                    </div>
+
+                    <!-- Section: Gift Message panel -->
+                    <div v-if="order?.has_gift_message" class="my-4 pr-2 md:pr-6">
+                        <GiftMessagePanel
+                            ref="giftMessagePanel"
+                            :giftMessage="order?.gift_message"
+                            :hasGiftMessagePdf="order?.has_gift_message_pdf"
+                            :textRoute="{ name: 'retina.models.order.update', parameters: props.order.id }"
+                            :pdfRoute="{ name: 'retina.models.order.update_gift_message_pdf', parameters: props.order.id }"
+                            @uploaded="() => router.reload({ only: ['order'] })"
+                        />
+                    </div>
                 </div>
             </div>
-            
+
             <div v-if="stock_issues?.out_of_stock?.length || stock_issues?.low_stock?.length" class="px-4 md:px-8 pb-4 space-y-3">
                 <BasketStockIssues :stock_issues />
             </div>
@@ -877,7 +967,8 @@ const onChangeInsurance = async (val: boolean) => {
                             full
                             :size="screenType === 'mobile' ? 'xl' : undefined"
                             :key="screenType + 'pay_with_balance'"
-                            :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                            :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                                || isGiftMessageMissing"
                         >
                         </ButtonWithLink>
                         <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
@@ -902,8 +993,12 @@ const onChangeInsurance = async (val: boolean) => {
                         full
                         :size="screenType === 'mobile' ? 'xl' : undefined"
                         :key="screenType + 'go_to_checkout'"
-                        :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length"
+                        :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
+                            || isGiftMessageMissing"
                     />
+                    <div v-if="isGiftMessageMissing" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
+                        {{ ctrans("Write a gift message or upload a PDF before checking out.") }}
+                    </div>
                 </div>
                 <div v-else class="w-72 pt-5 text-sm">
                     <div v-if="is_forbidden_billing" class="text-red-500">*{{ ctrans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}</div>

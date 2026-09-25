@@ -9,7 +9,9 @@
 
 use App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PdfPackingList;
+use App\Actions\Ordering\Order\PdfOrderGiftMessage;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/delivery-notes/{deliveryNote}', PdfDeliveryNote::class)->name('delivery-notes');
 Route::get('/packing-lists/{deliveryNote}', PdfPackingList::class)->name('packing-lists');
+Route::get('/order-gift-message/{order}', PdfOrderGiftMessage::class)->name('order-gift-message');
