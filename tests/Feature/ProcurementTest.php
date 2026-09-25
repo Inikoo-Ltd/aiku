@@ -468,17 +468,25 @@ test('agent login can propose a ready date but not set management-only clean han
     actingAs($agentUser);
     $this->get(route('grp.org.procurement.agent_supplier_purchase_orders.edit', [$organisation->slug, $agentSupplierPurchaseOrder->slug]))
         ->assertInertia(fn ($page) => $page
-            ->missing('formData.blueprint.1.fields.proposed_ready_at.readonly')
-            ->where('formData.blueprint.1.fields.approved_ready_at.readonly', true));
+            ->missing('formData.blueprint.1.fields.produced_at.readonly')
+            ->missing('formData.blueprint.1.fields.sample_approved_at.readonly')
+            ->missing('formData.blueprint.2.fields.proposed_ready_at.readonly')
+            ->where('formData.blueprint.2.fields.approved_ready_at.readonly', true));
 
     $this->patch(route('grp.models.agent_supplier_purchase_order.update', $agentSupplierPurchaseOrder->id), [
-        'proposed_ready_at' => '2026-10-01',
-        'approved_ready_at' => '2026-10-02',
+        'proposed_ready_at'  => '2026-10-01',
+        'approved_ready_at'  => '2026-10-02',
+        'sample_approved_at' => '2026-09-10',
+        'produced_at'        => '2026-09-28',
     ])->assertRedirect();
 
     $agentSupplierPurchaseOrder->refresh();
     expect($agentSupplierPurchaseOrder->proposed_ready_at->toDateString())->toBe('2026-10-01')
-        ->and($agentSupplierPurchaseOrder->approved_ready_at)->toBeNull();
+        ->and($agentSupplierPurchaseOrder->approved_ready_at)->toBeNull()
+        ->and($agentSupplierPurchaseOrder->sample_approved_at->toDateString())->toBe('2026-09-10')
+        ->and($agentSupplierPurchaseOrder->produced_at->toDateString())->toBe('2026-09-28');
+
+    $agentSupplierPurchaseOrder->update(['sample_approved_at' => null, 'produced_at' => null]);
 
     actingAs($this->adminGuest->getUser());
 })->depends('create agent supplier purchase order');
