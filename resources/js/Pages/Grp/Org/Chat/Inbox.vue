@@ -190,6 +190,19 @@ const setClosedPeriod = (period: string) => {
     afterSelectionChanged()
 }
 
+const dsKinds: { key: "" | "integration" | "documents"; label: string }[] = [
+    { key: "", label: ctrans("All") },
+    { key: "integration", label: ctrans("Integration") },
+    { key: "documents", label: ctrans("Documents") },
+]
+
+const dsKind = ref<"" | "integration" | "documents">("")
+
+const setDsKind = (kind: "" | "integration" | "documents") => {
+    dsKind.value = kind
+    afterSelectionChanged()
+}
+
 // Nobody is waiting on a colleague's chat, so the team view drops that state and keeps
 // whatever else was picked, falling back to active rather than to nothing.
 const dropWaitingInTeamView = (): boolean => {
@@ -609,6 +622,7 @@ const buildParams = (page: number) => ({
                             ? { carrier: 1, statuses: selectedStatuses.value }
                             : { statuses: selectedStatuses.value }),
     ...(isStatusOn("closed") ? { closed_period: closedPeriod.value } : {}),
+    ...(showDsKinds.value && dsKind.value ? { ds_kind: dsKind.value } : {}),
     ...(listIsMine.value && !unclaimedView.value ? { assigned_to_me: myAgentId } : {}),
     ...(selectedAgentIds.value.length ? { agent_ids: selectedAgentIds.value } : {}),
     page,
@@ -850,6 +864,11 @@ const filteredContacts = computed(() => {
 
 const selectedInbox = computed(() =>
     props.inboxes?.find((i) => i.id === selectedShopId.value) ?? props.inboxes?.[0] ?? null
+)
+
+const showDsKinds = computed(() =>
+    selectedShopId.value !== null && selectedInbox.value?.type === "dropshipping"
+    && !agentView.value && !spamView.value && !trashView.value && !rubbishView.value && !carrierView.value && !unclaimedView.value
 )
 
 // Writing a fresh email needs one shop, its mailbox, and the right to answer on it.
@@ -2365,6 +2384,17 @@ onUnmounted(() => {
                         {{ period.label }}
                     </button>
                 </div>
+
+                <div v-if="showDsKinds" class="mt-1.5 flex items-center gap-1 text-[10px] text-gray-500">
+                    <span class="uppercase tracking-wide text-gray-400">{{ ctrans("Kind") }}</span>
+                    <button v-for="kind in dsKinds" :key="kind.key" type="button"
+                        class="px-1.5 py-0.5 rounded transition-colors"
+                        :class="dsKind === kind.key ? 'font-semibold text-white' : 'hover:bg-gray-100'"
+                        :style="dsKind === kind.key ? { backgroundColor: 'var(--theme-color-4)' } : {}"
+                        @click="setDsKind(kind.key)">
+                        {{ kind.label }}
+                    </button>
+                </div>
             </div>
 
             <!-- List (flat, for the selected inbox) -->
@@ -2441,6 +2471,14 @@ onUnmounted(() => {
                                         v-tooltip="ctrans(':reference for :who', { reference: task.reference, who: task.who })"
                                         class="shrink-0 max-w-full truncate rounded bg-amber-50 px-1 font-medium text-amber-700">
                                         {{ ctrans("Waiting") }}: {{ task.subject }}
+                                    </span>
+                                    <span v-if="c.metadata?.ds_kind === 'integration'" v-tooltip="ctrans('Needs technical help with their store or marketplace connection')"
+                                        class="shrink-0 truncate rounded bg-sky-50 px-1 font-medium text-sky-700">
+                                        {{ ctrans("Integration") }}
+                                    </span>
+                                    <span v-else-if="c.metadata?.ds_kind === 'documents'" v-tooltip="ctrans('Asks for a compliance document, an invoice or customs paperwork')"
+                                        class="shrink-0 truncate rounded bg-violet-50 px-1 font-medium text-violet-700">
+                                        {{ ctrans("Documents") }}
                                     </span>
                                     <span v-if="c.urgent" v-tooltip="ctrans('Asks to cancel an order or change its delivery address. First in the queue until answered.')"
                                         class="shrink-0 truncate rounded bg-red-600 px-1 font-semibold text-white">

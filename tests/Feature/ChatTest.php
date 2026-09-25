@@ -5737,6 +5737,60 @@ test('a request to cancel or change the delivery address goes first in the queue
         ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($urgent->refresh()))->toBeNull();
 });
 
+test('a dropshipping conversation is labelled integration or documents from the same check, and can be listed by that kind', function () {
+    \Illuminate\Support\Facades\Http::fake();
+
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+
+        $integration = noiseTestEmailSession($this->shop, 'shopify@example.com', 'Shopify', 'My Shopify store says the channel is not connected');
+        $documents   = noiseTestEmailSession($this->shop, 'cpsr@example.com', 'CPSR', 'Please send the CPSR for EO-01');
+        $ordinary    = noiseTestEmailSession($this->shop, 'parcel@example.com', 'Parcel', 'Where is my parcel?');
+
+        \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()
+            ->withArgs(fn (string $prompt) => str_contains($prompt, '"kind"'))
+            ->andReturn('{"request": "none", "only_thanks": false, "kind": "integration"}');
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($integration);
+
+        \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('{"request": "none", "only_thanks": false, "kind": "documents"}');
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($documents);
+
+        \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('{"request": "none", "only_thanks": false, "kind": "cs"}');
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($ordinary);
+
+        $list = fn (string $kind) => collect(GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'statuses' => ['waiting'], 'ds_kind' => $kind])->items())->pluck('id')->all();
+
+        expect(data_get($integration->refresh()->metadata, 'ds_kind'))->toBe('integration')
+            ->and(data_get($documents->refresh()->metadata, 'ds_kind'))->toBe('documents')
+            ->and(data_get($ordinary->refresh()->metadata, 'ds_kind'))->toBeNull()
+            ->and($list('integration'))->toContain($integration->id)->not->toContain($documents->id)->not->toContain($ordinary->id)
+            ->and($list('documents'))->toContain($documents->id)->not->toContain($integration->id);
+
+        $integration->messages()->first()->update(['created_at' => now()->subMinute()]);
+        $integration->update(['last_agent_message_at' => now()->subSeconds(30)]);
+        $integration->messages()->create(['message_text' => 'And where is my parcel?', 'message_type' => 'text', 'sender_type' => 'user']);
+
+        \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('{"request": "none", "only_thanks": false, "kind": "cs"}');
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($integration->refresh());
+
+        expect(data_get($integration->refresh()->metadata, 'ds_kind'))->toBe('integration');
+
+        $this->shop->update(['type' => $originalType]);
+        $otherShop = noiseTestEmailSession($this->shop, 'b2b@example.com', 'Shopify', 'My Shopify store is not connected');
+
+        \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()
+            ->withArgs(fn (string $prompt) => !str_contains($prompt, '"kind"'))
+            ->andReturn('{"request": "none", "only_thanks": false, "kind": "integration"}');
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($otherShop);
+
+        expect(data_get($otherShop->refresh()->metadata, 'ds_kind'))->toBeNull();
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
 test('when the model cannot be asked, words in the customer\'s language decide what is urgent', function () {
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn(null);
     $flag = \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::make();
