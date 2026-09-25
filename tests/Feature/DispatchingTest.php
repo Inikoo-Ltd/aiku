@@ -4826,3 +4826,21 @@ test('sending the order again reuses the goods left on its cancellation return i
         ->and($returnItem->is_handled)->toBeFalse()
         ->and((float)$locationOrgStock->refresh()->quantity)->toBe($shelfAfterFirstPick);
 });
+
+test('a return cannot be put back without a location, so no stock goes missing (HELP-3398)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 1]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+
+    actingAs($this->user);
+
+    $this->patchJson(route('grp.models.return_delivery_note_item.upsert_returned', $returnItem->id), ['quantity' => 1])
+        ->assertJsonValidationErrors('message');
+    $this->patchJson(route('grp.models.return_delivery_note_item.set_all_returned', $returnItem->id))
+        ->assertJsonValidationErrors('message');
+
+    expect($returnItem->sowings()->count())->toBe(0);
+});

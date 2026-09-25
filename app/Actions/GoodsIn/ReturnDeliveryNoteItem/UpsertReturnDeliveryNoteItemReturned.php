@@ -23,6 +23,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 class UpsertReturnDeliveryNoteItemReturned extends OrgAction
 {
     use WithReturnsAuthorisation;
+    use WithReturnedItemLocation;
     use AsAction;
     use WithAttributes;
 
@@ -41,6 +42,12 @@ class UpsertReturnDeliveryNoteItemReturned extends OrgAction
     public function afterValidator(Validator $validator, ActionRequest $request)
     {
         $returnDeliveryNoteItem = $request->returnDeliveryNoteItem;
+
+        if (!$request->input('location_org_stock_id')) {
+            $validator->errors()->add('message', $this->missingLocationMessage($returnDeliveryNoteItem));
+
+            return;
+        }
 
         $maxQty = $returnDeliveryNoteItem->total_expected_qty - (
             $returnDeliveryNoteItem->total_item_damaged +
