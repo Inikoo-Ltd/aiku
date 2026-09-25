@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
+use App\Actions\Goods\Barcode\SyncBarcodeToMasterAsset;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Catalogue\Product\TranslateProductGpsrText;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -33,9 +34,8 @@ use App\Actions\Traits\WithLineTaxCategories;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\Catalogue\Product;
+use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
@@ -398,6 +398,8 @@ class UpdateMasterAsset extends OrgAction
         }
 
         if ($masterAsset->wasChanged('barcode')) {
+            SyncBarcodeToMasterAsset::run($masterAsset);
+
             /** A child that has had its own barcode chosen keeps it, like every other override. */
             foreach ($masterAsset->products()->where('products.independent_barcode', false)->get() as $product) {
                 UpdateProduct::run($product, [
@@ -489,13 +491,7 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
-            'barcode'                       => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:255',
-                Rule::exists('barcodes', 'number')->whereNull('deleted_at')
-            ],
+            'barcode'                       => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         if (!$this->strict) {
@@ -541,33 +537,21 @@ class UpdateMasterAsset extends OrgAction
             $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
         }
 
-        $this->validateBarcodeNotOnOtherListings($validator, Arr::get($validator->getData(), 'barcode'));
+        $this->validateBarcodeIsFree($validator, Arr::get($validator->getData(), 'barcode'));
     }
 
     /**
-     * The master's barcode is written to its products in every shop, so it gets the same
-     * one listing per shop rule UpdateProduct applies: WooCommerce and Wix refuse a GTIN
-     * already on another listing, and marketplaces merge the two items.
+     * A master's own GTIN identifies the bundle, so it comes from the pool and nobody else may
+     * carry it: a member trade unit's barcode would publish the cap as the tester.
      */
-    private function validateBarcodeNotOnOtherListings(Validator $validator, ?string $barcode): void
+    private function validateBarcodeIsFree(Validator $validator, ?string $barcode): void
     {
         if (blank($barcode) || $barcode === $this->masterAsset->barcode) {
             return;
         }
 
-        $listings = Product::where('barcode', $barcode)
-            ->whereIn('shop_id', $this->masterAsset->products()->select('products.shop_id'))
-            ->where(fn ($query) => $query->whereNull('master_product_id')->orWhere('master_product_id', '<>', $this->masterAsset->id))
-            ->where('is_main', true)
-            ->whereNull('exclusive_for_customer_id')
-            ->where('state', '<>', ProductStateEnum::DISCONTINUED->value)
-            ->with('shop:id,code')
-            ->limit(5)
-            ->get()
-            ->map(fn (Product $product) => $product->code.' ('.$product->shop->code.')');
-
-        if ($listings->isNotEmpty()) {
-            $validator->errors()->add('barcode', __('This barcode is already on :listings. A shop accepts a barcode on one listing only, so this product needs its own barcode.', ['listings' => $listings->implode(', ')]));
+        if (!Barcode::where('group_id', $this->masterAsset->group_id)->where('number', $barcode)->free()->exists()) {
+            $validator->errors()->add('barcode', __('This barcode is not free in the barcode pool. Generate a new one.'));
         }
     }
 

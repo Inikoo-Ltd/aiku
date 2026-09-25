@@ -29,7 +29,7 @@ class ProductHydrateBarcodeFromTradeUnit implements ShouldBeUnique
     public function handle(Product $product): void
     {
         /** A barcode chosen by hand on the master, or on this product, is never overwritten here. */
-        if ($product->independent_barcode || !$product->is_single_trade_unit) {
+        if ($product->independent_barcode || !$product->is_single_trade_unit || $product->masterProduct?->independent_barcode) {
             return;
         }
 

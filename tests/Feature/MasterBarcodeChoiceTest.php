@@ -11,7 +11,10 @@ use App\Actions\Catalogue\Product\UI\EditProduct;
 use App\Actions\Catalogue\Product\UI\IndexProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
+use App\Actions\Goods\Barcode\AssignNextBarcodeToTradeUnit;
+use App\Actions\Goods\Barcode\Json\GetNextFreeBarcode;
 use App\Actions\Goods\Barcode\StoreBarcode;
+use App\Actions\Maintenance\Goods\RepairBarcodesStatus;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProductComposition;
@@ -25,6 +28,7 @@ use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Enums\Helpers\Barcode\BarcodeTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Goods\ModelHasBarcode;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
@@ -77,6 +81,9 @@ beforeEach(function () {
         ]);
     };
 
+    $this->poolBarcode = '20'.str_pad((string)random_int(0, 99999999999), 11, '0', STR_PAD_LEFT);
+    $storeBarcode($this->poolBarcode);
+
     $this->lampBarcode    = '5056368359705';
     $this->fittingBarcode = '5055796574049';
     $this->bundleBarcode  = '5056368348006';
@@ -124,16 +131,14 @@ beforeEach(function () {
         ->update(['barcode' => null]);
 });
 
-test('the composition view offers every member barcode labelled with its trade unit', function () {
+test('the composition view of a bundle takes its barcode from the pool, not from a member', function () {
     $blueprint = EditMasterProductComposition::make()->getBlueprint($this->masterAsset);
 
     $barcodeField = collect($blueprint)->firstWhere('label', __('Barcode'))['fields']['barcode'];
 
     expect($barcodeField['type'])->toBe('barcode_choice')
-        ->and(collect($barcodeField['options']['options'])->pluck('value')->all())
-        ->toEqualCanonicalizing([$this->lampBarcode, $this->fittingBarcode])
-        ->and(collect($barcodeField['options']['options'])->pluck('name')->all())
-        ->toContain('Salt Lamp Fittings - UK');
+        ->and($barcodeField['options']['options'])->toBe([])
+        ->and($barcodeField['options']['nextFreeRoute']['name'])->toBe('grp.json.barcodes.next_free');
 });
 
 test('a master built from one trade unit is offered no choice', function () {
@@ -148,12 +153,92 @@ test('a master built from one trade unit is offered no choice', function () {
     expect(collect($blueprint)->firstWhere('label', __('Barcode')))->toBeNull();
 });
 
-test('the barcode chosen on the master reaches its products and is marked hand set', function () {
-    UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->lampBarcode]);
+test('a master selling a fraction of one trade unit gets its own pool barcode that the hydrator keeps', function () {
+    $this->lamp->updateQuietly(['is_divisible' => true]);
 
-    expect($this->masterAsset->refresh()->barcode)->toBe($this->lampBarcode)
+    UpdateMasterAsset::make()->action($this->masterAsset, [
+        'trade_units' => [
+            ['id' => $this->lamp->id, 'quantity' => 0.01],
+        ],
+    ]);
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($this->product, [
+        ['id' => $this->lamp->id, 'quantity' => 0.01],
+    ]);
+
+    $barcodeSection = collect(EditMasterProductComposition::make()->getBlueprint($this->masterAsset->refresh()))->firstWhere('label', __('Barcode'));
+
+    expect($barcodeSection['fields']['barcode']['options']['nextFreeRoute']['name'])->toBe('grp.json.barcodes.next_free');
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->poolBarcode]);
+    \App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit::run($this->product->refresh());
+
+    expect($this->product->refresh()->barcode)->toBe($this->poolBarcode);
+});
+
+test('the barcode chosen on the master reaches its products and is marked hand set', function () {
+    UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->poolBarcode]);
+
+    expect($this->masterAsset->refresh()->barcode)->toBe($this->poolBarcode)
         ->and($this->masterAsset->independent_barcode)->toBeTrue()
-        ->and($this->product->refresh()->barcode)->toBe($this->lampBarcode);
+        ->and($this->product->refresh()->barcode)->toBe($this->poolBarcode);
+});
+
+test('a pool barcode saved on a master is booked to it and stays used when removed', function () {
+    UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->poolBarcode]);
+
+    $barcode = Barcode::where('group_id', $this->group->id)->where('number', $this->poolBarcode)->first();
+
+    expect($barcode->status)->toBe(BarcodeStatusEnum::USED)
+        ->and(ModelHasBarcode::where('barcode_id', $barcode->id)->where('model_type', 'MasterAsset')->where('model_id', $this->masterAsset->id)->value('status'))->toBeTrue();
+
+    UpdateMasterAsset::make()->action($this->masterAsset->refresh(), ['barcode' => null]);
+
+    expect($barcode->refresh()->status)->toBe(BarcodeStatusEnum::USED)
+        ->and(ModelHasBarcode::where('barcode_id', $barcode->id)->where('status', true)->exists())->toBeFalse()
+        ->and(Barcode::where('id', $barcode->id)->free()->exists())->toBeFalse();
+});
+
+test('a member trade unit barcode is refused as the bundle GTIN', function () {
+    UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->fittingBarcode]);
+})->throws(Illuminate\Validation\ValidationException::class);
+
+test('the next free barcode skips a number a trade unit carries even when marked available', function () {
+    Barcode::where('group_id', $this->group->id)->where('number', $this->lampBarcode)->update(['status' => BarcodeStatusEnum::AVAILABLE]);
+
+    $next = GetNextFreeBarcode::make()->handle($this->group);
+
+    expect($next)->not->toBeNull()
+        ->and($next->number)->not->toBe($this->lampBarcode)
+        ->and(Barcode::where('group_id', $this->group->id)->where('number', $this->lampBarcode)->free()->exists())->toBeFalse()
+        ->and(Barcode::where('group_id', $this->group->id)->where('number', $this->poolBarcode)->free()->exists())->toBeTrue();
+});
+
+test('a trade unit without a barcode is given the next free one from the pool', function () {
+    $tradeUnit = StoreTradeUnit::make()->action(group(), array_merge(TradeUnit::factory()->definition(), [
+        'code' => 'Pool-'.substr(uniqid(), -6),
+        'name' => 'Needs a barcode',
+    ]));
+
+    $expected = GetNextFreeBarcode::make()->handle($this->group);
+
+    $barcode = AssignNextBarcodeToTradeUnit::make()->action($tradeUnit);
+
+    expect($barcode->number)->toBe($expected->number)
+        ->and($barcode->refresh()->status)->toBe(BarcodeStatusEnum::USED)
+        ->and($tradeUnit->refresh()->barcode)->toBe($barcode->number)
+        ->and($tradeUnit->barcode_id)->toBe($barcode->id);
+
+    expect(fn () => AssignNextBarcodeToTradeUnit::make()->action($tradeUnit))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+});
+
+test('the status repair marks a carried barcode used and leaves a free one available', function () {
+    Barcode::where('group_id', $this->group->id)->where('number', $this->lampBarcode)->update(['status' => BarcodeStatusEnum::AVAILABLE]);
+
+    RepairBarcodesStatus::make()->handle($this->group, true);
+
+    expect(Barcode::where('group_id', $this->group->id)->where('number', $this->lampBarcode)->value('status'))->toBe(BarcodeStatusEnum::USED)
+        ->and(Barcode::where('group_id', $this->group->id)->where('number', $this->poolBarcode)->value('status'))->toBe(BarcodeStatusEnum::AVAILABLE);
 });
 
 test('a bundle GTIN we do not own is refused', function () {
@@ -166,7 +251,7 @@ test('a product that has chosen its own barcode ignores the master', function ()
         'independent_barcode' => true,
     ]);
 
-    UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->lampBarcode]);
+    UpdateMasterAsset::make()->action($this->masterAsset, ['barcode' => $this->poolBarcode]);
 
     expect($this->product->refresh()->barcode)->toBe($this->bundleBarcode);
 });
@@ -260,7 +345,7 @@ test('a person choosing no barcode keeps the hydrator away from that listing', f
         ->and($this->product->independent_barcode)->toBeTrue();
 });
 
-test('a trade unit without a barcode is still listed so staff see why it cannot be picked', function () {
+test('a trade unit without a barcode is still listed on the product edit screen so staff see why it cannot be picked', function () {
     $cap = StoreTradeUnit::make()->action(group(), array_merge(TradeUnit::factory()->definition(), [
         'code'    => 'Cap-'.substr(uniqid(), -6),
         'name'    => 'Bottle cap',
@@ -268,15 +353,13 @@ test('a trade unit without a barcode is still listed so staff see why it cannot 
     ]));
     $cap->updateQuietly(['barcode' => null]);
 
-    UpdateMasterAsset::make()->action($this->masterAsset, [
-        'trade_units' => [
-            ['id' => $this->lamp->id, 'quantity' => 1],
-            ['id' => $cap->id, 'quantity' => 1],
-        ],
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($this->product, [
+        ['id' => $this->lamp->id, 'quantity' => 1],
+        ['id' => $cap->id, 'quantity' => 1],
     ]);
 
-    $barcodeField = collect(EditMasterProductComposition::make()->getBlueprint($this->masterAsset->refresh()))
-        ->firstWhere('label', __('Barcode'))['fields']['barcode'];
+    $barcodeField = collect(EditProduct::make()->getBlueprint($this->product->refresh()))
+        ->firstWhere('label', __('Properties'))['fields']['barcode'];
 
     expect(collect($barcodeField['options']['withoutBarcode'])->pluck('code')->all())->toBe([$cap->code]);
 });

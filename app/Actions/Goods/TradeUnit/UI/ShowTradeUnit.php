@@ -99,6 +99,20 @@ class ShowTradeUnit extends OrgAction
                         'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
                     ],
                     'actions'    => [
+                        $this->canEdit && blank($tradeUnit->barcode) ? [
+                            'type'    => 'button',
+                            'style'   => 'secondary',
+                            'icon'    => 'fal fa-barcode',
+                            'label'   => __('Assign barcode'),
+                            'tooltip' => __('Takes the next free barcode of the pool'),
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.trade-unit.assign_next_barcode',
+                                'parameters' => [
+                                    'tradeUnit' => $tradeUnit->id,
+                                ],
+                            ],
+                        ] : false,
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',

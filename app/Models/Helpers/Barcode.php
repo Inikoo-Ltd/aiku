@@ -52,6 +52,7 @@ use App\Models\Traits\HasSearch;
  * @property-read Collection<int, Stock> $stocks
  * @property-read Collection<int, TradeUnit> $tradeUnits
  * @property-read Collection<int, TradeUnit> $tradeUnitsActive
+ * @method static Builder<static>|Barcode free()
  * @method static Builder<static>|Barcode newModelQuery()
  * @method static Builder<static>|Barcode newQuery()
  * @method static Builder<static>|Barcode onlyTrashed()
@@ -134,6 +135,25 @@ class Barcode extends Model implements Auditable
     public function modelHasBarcodes(): HasMany
     {
         return $this->hasMany(ModelHasBarcode::class, 'barcode_id', 'id');
+    }
+
+    /**
+     * The status column drifts (Aurora never kept it), so a barcode is only free when it is
+     * marked available and no trade unit, master, product, stock or SKO carries its number.
+     */
+    public function scopeFree(Builder $query): Builder
+    {
+        $carriedBy = fn (string $table, string $column) => fn ($holders) => $holders->selectRaw('1')->from($table)->whereColumn("$table.$column", 'barcodes.number');
+
+        return $query->where('barcodes.status', BarcodeStatusEnum::AVAILABLE)
+            ->whereNull('barcodes.deleted_at')
+            ->whereNotExists($carriedBy('trade_units', 'barcode'))
+            ->whereNotExists($carriedBy('master_assets', 'barcode'))
+            ->whereNotExists($carriedBy('products', 'barcode'))
+            ->whereNotExists($carriedBy('stocks', 'barcode'))
+            ->whereNotExists($carriedBy('org_stocks', 'barcode'))
+            ->whereNotExists($carriedBy('org_stocks', 'unit_barcode'))
+            ->whereNotExists(fn ($links) => $links->selectRaw('1')->from('model_has_barcodes')->whereColumn('model_has_barcodes.barcode_id', 'barcodes.id')->where('model_has_barcodes.status', true));
     }
 
     public function toSearchableArray(): array

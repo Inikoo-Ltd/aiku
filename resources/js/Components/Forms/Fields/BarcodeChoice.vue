@@ -2,9 +2,12 @@
 import { computed, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck } from "@fas"
+import { faBarcode } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ctrans } from "@/Composables/useTrans"
-library.add(faCheck)
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import axios from "axios"
+library.add(faCheck, faBarcode)
 
 const props = defineProps<{
     form: any
@@ -13,6 +16,7 @@ const props = defineProps<{
         options: { value: string; code: string; name: string; proposed: boolean }[]
         withoutBarcode?: { code: string; name: string }[]
         hasChoice: boolean
+        nextFreeRoute?: { name: string; parameters?: Record<string, unknown> }
     }
     fieldData?: {
         readonly?: boolean
@@ -39,6 +43,27 @@ const pickOther = () => {
     props.form.errors[props.fieldName] = null
 }
 
+const isGenerating = ref(false)
+
+const generateFromPool = async () => {
+    if (!props.options.nextFreeRoute) {
+        return
+    }
+    isGenerating.value = true
+    try {
+        const response = await axios.get(route(props.options.nextFreeRoute.name, props.options.nextFreeRoute.parameters ?? {}))
+        if (response.data.number) {
+            pick(response.data.number)
+        } else {
+            props.form.errors[props.fieldName] = ctrans("The barcode pool has no free barcodes left")
+        }
+    } catch {
+        props.form.errors[props.fieldName] = ctrans("Could not get a barcode from the pool")
+    } finally {
+        isGenerating.value = false
+    }
+}
+
 const setOther = (value: string) => {
     otherBarcode.value = value
     props.form[props.fieldName] = value || null
@@ -47,7 +72,29 @@ const setOther = (value: string) => {
 </script>
 
 <template>
-    <div class="space-y-1">
+    <div v-if="options.nextFreeRoute" class="space-y-2">
+        <div class="flex items-center gap-x-3 px-2 py-1.5">
+            <span v-if="current" class="font-mono text-sm text-gray-900">{{ current }}</span>
+            <span v-else class="text-sm text-gray-500">{{ ctrans("No barcode") }}</span>
+            <template v-if="!fieldData?.readonly">
+                <Button
+                    v-if="!current"
+                    :label="ctrans('Generate barcode')"
+                    icon="fal fa-barcode"
+                    type="secondary"
+                    size="xs"
+                    :loading="isGenerating"
+                    @click="generateFromPool" />
+                <Button v-else :label="ctrans('Remove')" type="tertiary" size="xs" @click="pick(null)" />
+            </template>
+        </div>
+        <p class="px-2 text-xs text-gray-500">
+            {{ ctrans("Takes the next free barcode of the pool. Save to keep it; a removed barcode is not handed out again.") }}
+        </p>
+        <p v-if="form.errors[fieldName]" class="mt-2 text-sm text-red-600">{{ form.errors[fieldName] }}</p>
+    </div>
+
+    <div v-else class="space-y-1">
         <label
             v-for="option in options.options"
             :key="option.value"
