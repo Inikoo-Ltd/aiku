@@ -45,8 +45,6 @@ class StoreShopifyUser extends RetinaAction
 
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'username', Str::random(4));
-        data_set($modelData, 'password', Str::random(8));
         data_set($modelData, 'platform_id', $platform->id);
 
 
@@ -65,6 +63,9 @@ class StoreShopifyUser extends RetinaAction
 
                 $shopifyUser = $this->update($shopifyUser, $modelData);
             } else {
+                data_set($modelData, 'username', Str::random(4));
+                data_set($modelData, 'password', Str::random(8));
+
                 /** @var ShopifyUser $shopifyUser */
                 $shopifyUser = $customer->shopifyUser()->create($modelData);
             }
@@ -151,13 +152,6 @@ class StoreShopifyUser extends RetinaAction
         }
     }
 
-    public function jsonResponse(ShopifyUser $shopifyUser): string
-    {
-        return route('pupil.authenticate', [
-            'shop' => $shopifyUser->name
-        ]);
-    }
-
     public function rules(): array
     {
         return [
@@ -187,7 +181,7 @@ class StoreShopifyUser extends RetinaAction
         $nameInput = trim($nameInput);
 
 
-        $this->set('name', $this->permanentHandle($nameInput));
+        $this->set('name', Str::lower($this->permanentHandle($nameInput)));
     }
 
     /**
@@ -214,13 +208,10 @@ class StoreShopifyUser extends RetinaAction
         return $matches[1];
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function asController(ActionRequest $request): ShopifyUser
+    public function asController(ActionRequest $request): string
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer, $this->validatedData);
+        return ClaimShopifyUser::make()->authenticateUrl($this->customer, Str::lower($this->validatedData['name'].'.'.config('shopify-app.my_shopify_domain')));
     }
 }

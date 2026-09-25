@@ -26,6 +26,13 @@ use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Maintenance\Dropshipping\RepairShopifyChannelReconnects;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
+use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
+use App\Actions\Dropshipping\Shopify\Webhook\SetupShopifyAccount;
+use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
+use Osiset\ShopifyApp\Actions\AuthenticateShop;
+use Osiset\ShopifyApp\Objects\Values\ShopId;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\PlatformOutboundGuard;
 use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
@@ -213,12 +220,167 @@ test('a shopify store typed by its name is connected under its permanent handle,
 
     expect($shopifyUser->id)->toBe($waiting->id)
         ->and($shopifyUser->customer_id)->toBe($customer->id)
+        ->and($shopifyUser->password)->toBe('shpat_installed_token')
         ->and($shopifyUser->customerSalesChannel->reference)->toBe('hekqes-nt');
 
     $retry = StoreShopifyUser::make()->handle($customer, ['name' => 'hekqes-nt']);
 
     expect($retry->id)->toBe($waiting->id)
         ->and($customer->customerSalesChannels()->where('reference', 'hekqes-nt')->count())->toBe(1);
+});
+
+function shopifyInstallCompletes(bool $completes, int $shopifyUserId): void
+{
+    $shopId = ShopId::fromNative($shopifyUserId);
+    app()->instance(AuthenticateShop::class, Mockery::mock(AuthenticateShop::class, function ($mock) use ($completes, $shopId) {
+        $mock->shouldReceive('__invoke')->andReturn($completes
+            ? [['completed' => true, 'url' => null, 'shop_id' => $shopId], true]
+            : [['completed' => false, 'url' => 'https://store.myshopify.com/admin/oauth/authorize', 'shop_id' => $shopId], false]);
+    }));
+}
+
+function signedShopifyCallback(string $shopDomain, ?int $timestamp = null): string
+{
+    $query = ['code' => 'x', 'shop' => $shopDomain, 'timestamp' => (string) ($timestamp ?? now()->timestamp)];
+    ksort($query);
+    $query['hmac'] = hash_hmac('sha256', urldecode(http_build_query($query)), config('shopify-app.api_secret'));
+
+    return route('pupil.authenticate', $query);
+}
+
+function waitingShopifyUser(Customer $customer, string $name, string $password, ?int $customerId = null): ShopifyUser
+{
+    return ShopifyUser::create([
+        'group_id'        => $customer->group_id,
+        'organisation_id' => $customer->organisation_id,
+        'platform_id'     => Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first()->id,
+        'customer_id'     => $customerId,
+        'name'            => $name,
+        'username'        => Str::random(8),
+        'password'        => $password,
+    ]);
+}
+
+test('typing the name of a store installed by someone else neither links it nor touches its token, it only sends the customer to shopify', function () {
+    Http::fake(['*' => Http::response(['myshopify_domain' => 'installed-store.myshopify.com'])]);
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    actingAs(StoreWebUser::make()->action($customer, ['username' => 'claimer-'.Str::random(6), 'email' => Str::random(6).'@testmail.com', 'password' => 'test']), 'retina');
+    $installed = waitingShopifyUser($customer, 'installed-store.myshopify.com', 'shpat_merchant_token');
+    $channels  = $customer->customerSalesChannels()->count();
+
+    $url = $this->postJson(route('retina.dropshipping.platform.shopify_user.store'), ['name' => 'installed-store'])->assertOk()->getContent();
+
+    $installed->refresh();
+    expect($url)->toStartWith(route('pupil.authenticate'))->toContain('shop=installed-store.myshopify.com')->toContain('claim=')
+        ->and($installed->customer_id)->toBeNull()
+        ->and($installed->password)->toBe('shpat_merchant_token')
+        ->and($customer->customerSalesChannels()->count())->toBe($channels);
+});
+
+test('a store another customer owns is refused even when typed with capitals, instead of getting a second row for it', function () {
+    Http::fake(['*/meta.json' => Http::response('', 404), '*' => Http::response('ok')]);
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    $owner    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    waitingShopifyUser($owner, 'perfume.myshopify.com', 'shpat_owner', $owner->id);
+    actingAs(StoreWebUser::make()->action($customer, ['username' => 'typer-'.Str::random(6), 'email' => Str::random(6).'@testmail.com', 'password' => 'test']), 'retina');
+
+    $this->postJson(route('retina.dropshipping.platform.shopify_user.store'), ['name' => 'Perfume'])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.name.0', 'Shopify shop perfume already exists, please use other name');
+});
+
+test('a store is linked only when the customer who asked for it completes shopify oauth and comes back logged in as themselves', function () {
+    $website  = LaunchWebsite::make()->action(createWebsite($this->shop));
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $other    = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $row      = waitingShopifyUser($customer, 'proven-store.myshopify.com', 'shpat_merchant_token');
+    $otherChannels = $other->customerSalesChannels()->count();
+    Config::set('shopify-app.api_secret', 'test-secret');
+
+    shopifyInstallCompletes(true, $row->id);
+    $this->get(signedShopifyCallback('proven-store.myshopify.com'))->assertRedirectContains('/');
+    expect($row->fresh()->customer_id)->toBeNull();
+
+    $claimUrl = ClaimShopifyUser::make()->authenticateUrl($customer, 'proven-store.myshopify.com');
+    parse_str(parse_url($claimUrl, PHP_URL_QUERY), $claimQuery);
+
+    shopifyInstallCompletes(false, $row->id);
+    $this->get($claimUrl)->assertOk();
+
+    shopifyInstallCompletes(true, $row->id);
+    $proofUrl = $this->get(signedShopifyCallback('proven-store.myshopify.com'))->assertRedirect()->headers->get('Location');
+
+    expect($proofUrl)->toStartWith('https://'.$website->domain.'/app/dropshipping/platform/shopify-user/claim?proof=')
+        ->and($row->fresh()->customer_id)->toBeNull();
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($website);
+    CheckShopifyChannel::mock()->shouldReceive('handle')->andReturnUsing(fn ($channel) => $channel);
+    StoreFulfilmentService::mock()->shouldReceive('handle');
+
+    actingAs(StoreWebUser::make()->action($other, ['username' => 'other-'.Str::random(6), 'email' => Str::random(6).'@testmail.com', 'password' => 'test']), 'retina');
+    $this->get($proofUrl)->assertForbidden();
+
+    actingAs(StoreWebUser::make()->action($customer, ['username' => 'owner-'.Str::random(6), 'email' => Str::random(6).'@testmail.com', 'password' => 'test']), 'retina');
+    $this->get(Str::before($proofUrl, '?').'?'.http_build_query(['proof' => $claimQuery['claim']]))->assertForbidden();
+    $this->get($proofUrl)->assertRedirectContains('/app/dropshipping/channels/');
+
+    $row->refresh();
+    expect($row->customer_id)->toBe($customer->id)
+        ->and($row->password)->toBe('shpat_merchant_token')
+        ->and($row->customerSalesChannel->customer_id)->toBe($customer->id)
+        ->and($row->customerSalesChannel->reference)->toBe('proven-store')
+        ->and($other->customerSalesChannels()->count())->toBe($otherChannels);
+});
+
+test('a store someone typed but never authorised is retired with its channel when shopify really installs it, even when they started the flow', function () {
+    Config::set('shopify-app.api_secret', 'test-secret');
+    $squatter = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $row      = StoreShopifyUser::make()->handle($squatter, ['name' => 'squatted-store']);
+    $channel  = $row->customerSalesChannel;
+    $proven   = waitingShopifyUser($squatter, 'proven-owner.myshopify.com', 'shpat_owner_token', $squatter->id);
+
+    shopifyInstallCompletes(true, $row->id);
+    $this->get(route('pupil.authenticate', ['shop' => 'squatted-store.myshopify.com', 'code' => 'forged']));
+    $this->get(route('pupil.authenticate', ['shop' => 'squatted-store.myshopify.com', 'id_token' => 'forged']));
+    $this->get(signedShopifyCallback('squatted-store.myshopify.com', now()->subHour()->timestamp));
+    $this->post(signedShopifyCallback('attacker-own.myshopify.com'), ['shop' => 'squatted-store.myshopify.com', 'code' => 'x']);
+
+    expect($row->fresh()->name)->toBe('squatted-store.myshopify.com')
+        ->and($row->fresh()->customer_id)->toBe($squatter->id);
+
+    $this->get(signedShopifyCallback('squatted-store.myshopify.com'));
+    $this->get(signedShopifyCallback('proven-owner.myshopify.com'));
+
+    $retired = ShopifyUser::withTrashed()->find($row->id);
+    expect($retired->trashed())->toBeTrue()
+        ->and($retired->name)->not->toBe('squatted-store.myshopify.com')
+        ->and(ShopifyUser::where('name', 'squatted-store.myshopify.com')->exists())->toBeFalse()
+        ->and($channel->fresh()->status)->toBe(CustomerSalesChannelStatusEnum::CLOSED)
+        ->and($channel->fresh()->user)->toBeNull()
+        ->and($proven->fresh()->customer_id)->toBe($squatter->id);
+
+    $owner  = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $ownRow = waitingShopifyUser($owner, 'own-store.myshopify.com', 'Rand0mPw', $owner->id);
+    shopifyInstallCompletes(false, $ownRow->id);
+    $this->get(ClaimShopifyUser::make()->authenticateUrl($owner, 'own-store.myshopify.com'));
+    shopifyInstallCompletes(true, $ownRow->id);
+
+    expect($this->get(signedShopifyCallback('own-store.myshopify.com'))->headers->get('Location'))->toContain('/shopify-user/claim?proof=')
+        ->and(ShopifyUser::withTrashed()->find($ownRow->id)->trashed())->toBeTrue();
+});
+
+test('a shopify store logged in to pupil cannot set up an account on the row of another store', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $own      = waitingShopifyUser($customer, 'own-pupil.myshopify.com', 'shpat_own');
+    $other    = waitingShopifyUser($customer, 'other-pupil.myshopify.com', 'shpat_other');
+
+    actingAs($own, 'pupil');
+
+    expect(fn () => SetupShopifyAccount::make()->asController($other, ActionRequest::createFrom(request())))
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class)
+        ->and($other->fresh()->customer_id)->toBeNull();
 });
 
 test('reconnecting a shopify store reopens its closed channel with the portfolio instead of creating another', function () {

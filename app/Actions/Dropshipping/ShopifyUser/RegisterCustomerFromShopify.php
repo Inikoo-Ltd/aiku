@@ -22,6 +22,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -38,7 +39,7 @@ class RegisterCustomerFromShopify extends OrgAction
         data_set($modelData, 'contact_name', $shopifyUser->name);
         data_set($modelData, 'company_name', $shopifyUser->name);
         data_set($modelData, 'email', $shopifyUser->email);
-        data_set($modelData, 'password', $shopifyUser->name);
+        data_set($modelData, 'password', Str::random(32));
         data_set($modelData, 'phone', '81234567890');
         data_set($modelData, 'contact_address', $fulfilment->shop->address->toArray());
         data_set($modelData, 'interest', ['dropshipping', 'items_storage', 'pallets_storage']);

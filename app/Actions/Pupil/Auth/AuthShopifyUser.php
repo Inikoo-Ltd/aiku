@@ -10,6 +10,7 @@
 
 namespace App\Actions\Pupil\Auth;
 
+use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -43,6 +44,10 @@ class AuthShopifyUser extends AuthController
             $request['shop'] = $shopDomain->toNative();
         }
 
+        ClaimShopifyUser::make()->rememberClaim($request, $shopDomain->toNative());
+
+        ClaimShopifyUser::make()->retireUnprovenOwner($request, $shopDomain->toNative());
+
         // Run the action
         [$result, $status] = $authShop($request);
 
@@ -73,6 +78,11 @@ class AuthShopifyUser extends AuthController
                 ]
             );
         } else {
+            $proofUrl = ClaimShopifyUser::make()->proofUrl($request, $shopDomain->toNative());
+            if ($proofUrl) {
+                return Redirect::away($proofUrl);
+            }
+
             return Redirect::route(
                 Util::getShopifyConfig('route_names.home'),
                 [
