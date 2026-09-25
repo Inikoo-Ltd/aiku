@@ -5159,3 +5159,18 @@ test('an open pack goes back into stock as the packets that came back (HELP-3449
         ->and(round((float) $returnItem->total_item_not_returned * 12))->toBe(1.0)
         ->and(round((float) $returnItem->sowings()->first()->orgStockMovement->quantity * 12))->toBe(23.0);
 });
+
+test('a second worker reaching picked with a stale note leaves the already picked note alone', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $staleDeliveryNote = DeliveryNote::find($deliveryNote->id);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
+    $pickedAt = $deliveryNote->picked_at;
+
+    $this->travel(5)->minutes();
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($staleDeliveryNote);
+    $this->travelBack();
+
+    expect($deliveryNote->fresh()->picked_at->equalTo($pickedAt))->toBeTrue();
+});
