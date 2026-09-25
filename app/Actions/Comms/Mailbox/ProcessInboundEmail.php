@@ -49,7 +49,10 @@ class ProcessInboundEmail
      */
     private const int GONE_TTL_DAYS = 7;
 
-    private const array MACHINE_SENDER_DOMAINS = ['luigisbox.com', 'email-abuse.amazonses.com'];
+    private const array MACHINE_SENDER_DOMAINS = [
+        'luigisbox.com', 'email-abuse.amazonses.com',
+        'brand.faire.com', 'e.faire.com', 'reply.ebay.co.uk', 'service.tiktok.com', 'shop.tiktok.com',
+    ];
 
     /**
      * The row carrying the gmail id is what stops a message being taken in twice, but it is only
@@ -134,6 +137,15 @@ class ProcessInboundEmail
         $blocked = Arr::get($shop->settings, 'gmail.blocked_senders', []);
         if ($from['address'] && in_array(strtolower($from['address']), array_map('strtolower', $blocked), true)) {
             $client->fileAway($gmailMessageId, 'aiku/spam', Arr::get($raw, 'labelIds', []));
+
+            return null;
+        }
+
+        // Order, shipping and payout notices from the marketplaces are work for whoever runs those
+        // portals, not a conversation. They wait unread under their own label in Gmail. Buyers'
+        // messages come from another address and still reach the inbox.
+        if (self::isMarketplaceNotice($from['address'])) {
+            $client->fileAway($gmailMessageId, 'Marketplaces', Arr::get($raw, 'labelIds', []), markRead: false);
 
             return null;
         }
@@ -569,6 +581,13 @@ class ProcessInboundEmail
     /**
      * @param  array{address: ?string, name: ?string}  $from
      */
+    public static function isMarketplaceNotice(?string $address): bool
+    {
+        $domain = mb_strtolower((string) substr(strrchr((string) $address, '@') ?: '', 1));
+
+        return $domain !== '' && in_array($domain, config('chat.marketplace_notice_domains', []), true);
+    }
+
     /**
      * A courier writing about a delivery: its domain, or any subdomain of it, is on the list.
      */

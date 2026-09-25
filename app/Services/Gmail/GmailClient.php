@@ -241,7 +241,7 @@ final class GmailClient
      * @param  array<int, string>  $priorLabelIds  the message's labels as they were read, so a
      *                                             wrong import can be undone from the log
      */
-    public function fileAway(string $messageId, string $labelName, array $priorLabelIds = []): void
+    public function fileAway(string $messageId, string $labelName, array $priorLabelIds = [], bool $markRead = true): void
     {
         $labelId = $this->labelId($labelName);
 
@@ -260,7 +260,7 @@ final class GmailClient
             ->throw()
             ->post(self::API_BASE_URL."users/me/messages/$messageId/modify", [
                 'addLabelIds'    => [$labelId],
-                'removeLabelIds' => ['INBOX', 'UNREAD'],
+                'removeLabelIds' => $markRead ? ['INBOX', 'UNREAD'] : ['INBOX'],
             ]);
     }
 

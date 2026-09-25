@@ -5874,6 +5874,53 @@ test('a fact drawer opens only what is on the menu and only for the customer who
     \App\Actions\Chat\UpdateShopChatPolicies::make()->handle($this->shop, ['policies' => '']);
 });
 
+test('marketplace notices wait unread under their own gmail label, their marketing is filtered, and buyers relayed by the marketplace still reach the inbox', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode  = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    $message = fn (string $id, string $from, string $subject) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => "t$id",
+        'labelIds' => ['INBOX', 'UNREAD'],
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [['name' => 'From', 'value' => $from], ['name' => 'Subject', 'value' => $subject]],
+            'body'     => ['data' => $encode('Hola')],
+        ],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/mk1*' => $message('mk1', 'Faire <updates@info.faire.com>', 'Nuevo pedido al por mayor de mira belle (8BTZCY7KH4)'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/mk2*' => $message('mk2', 'Faire <sales+awartisan@brand.faire.com>', '15% OFF en nuestras marcas'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/mk3*' => $message('mk3', 'Orderchamp <service@mg.orderchamp.com>', 'Has recibido un mensaje de Charlotte'),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [
+            ['id' => 'LM', 'name' => 'Marketplaces'],
+            ['id' => 'LF', 'name' => 'aiku/filtered'],
+            ['id' => 'LU', 'name' => 'aiku/unmatched'],
+        ]]),
+        'gmail.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mk1'))->toBeNull()
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mk2'))->toBeNull()
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mk3'))->toBeInstanceOf(ChatMessage::class);
+
+    $filed = fn (string $id) => \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), "messages/$id/modify"))
+        ->map(fn ($pair) => $pair[0]->data())->first();
+
+    expect($filed('mk1'))->toBe(['addLabelIds' => ['LM'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('mk2'))->toBe(['addLabelIds' => ['LF'], 'removeLabelIds' => ['INBOX', 'UNREAD']]);
+});
+
 test('an email from a courier is filed in the Couriers folder and in no other list', function () {
     \Illuminate\Support\Facades\Http::fake();
 
