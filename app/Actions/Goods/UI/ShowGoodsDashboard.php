@@ -195,8 +195,14 @@ class ShowGoodsDashboard extends OrgAction
         return compact('dataset', 'period', 'inView', 'filtered');
     }
 
-    // ponytail: the whole catalogue lives in one gzipped cache entry; move to a table if the catalogue grows tenfold
-    private function dataset(): array
+    /**
+     * The decoded, cached catalogue this page is built from: one row per group stock with its
+     * conditions, sales and organisation cells. ShowGoodsAnalysis reuses this instead of duplicating
+     * the query so exceptions, urgent actions and promotion candidates always agree with this page.
+     *
+     * ponytail: the whole catalogue lives in one gzipped cache entry; move to a table if it grows tenfold
+     */
+    public function dataset(): array
     {
         return json_decode(gzuncompress(Cache::remember(
             self::cacheKey($this->group->id),
