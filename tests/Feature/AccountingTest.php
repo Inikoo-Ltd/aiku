@@ -3467,3 +3467,19 @@ test('balance increase for compensation issues a settled credit note', function 
     expect($plain->payment_id)->toBeNull()
         ->and(Invoice::where('customer_id', $customer->id)->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(1);
 });
+
+test('credit transaction exchange rates keep their precision below four decimals', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $creditTransaction = StoreCreditTransaction::make()->action($customer, [
+        'amount'       => 30784.30,
+        'type'         => CreditTransactionTypeEnum::PAYMENT->value,
+        'org_exchange' => 0.0026650912,
+        'grp_exchange' => 0.0023071834,
+    ], strict: false, notifyCustomer: false)->refresh();
+
+    expect($creditTransaction->org_exchange)->toBe('0.0026650912')
+        ->and($creditTransaction->grp_exchange)->toBe('0.0023071834')
+        ->and((float)$creditTransaction->org_amount)->toBe(82.04)
+        ->and((float)$creditTransaction->grp_amount)->toBe(71.03);
+});
