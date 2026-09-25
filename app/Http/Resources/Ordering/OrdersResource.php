@@ -52,6 +52,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $internal_notes
  * @property mixed $public_notes
  * @property mixed $shipping_notes
+ * @property mixed $private_warehouse_note
  * @property mixed $to_be_paid_by
  * @property mixed $has_insurance
  * @property mixed $tracking
@@ -140,6 +141,7 @@ class OrdersResource extends JsonResource
             'internal_notes'              => $this->internal_notes,
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
+            'private_warehouse_note'      => $this->private_warehouse_note,
             'shipping_data'               => $this->shipping_data,
             'with_replacement'            => $this->with_replacement,
             'platform_milestones'         => data_get($this->data, 'platform_milestones'),

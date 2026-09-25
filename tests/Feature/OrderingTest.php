@@ -4746,6 +4746,27 @@ test('the shop orders list flags a partner order and the channel filter separate
         ->and($directOnly->has($partnerOrder->reference))->toBeFalse();
 });
 
+test('the shop orders list sends the warehouse note so its icon shows next to the order', function () {
+    $adminGuest = createAdminGuest($this->group);
+    actingAs($adminGuest->getUser());
+
+    $this->shop->update(['state' => ShopStateEnum::OPEN]);
+
+    $order = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+    $order->updateQuietly(['private_warehouse_note' => 'Fragile, pack twice']);
+
+    $response = get(route('grp.org.shops.show.ordering.orders.index', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+    ]));
+    $response->assertOk();
+
+    $warehouseNotes = collect($response->viewData('page')['props']['data']['data'])
+        ->pluck('private_warehouse_note', 'reference');
+
+    expect($warehouseNotes->get($order->reference))->toBe('Fragile, pack twice');
+});
+
 test('org and group amounts of orders and invoices use the whole exchange rate', function () {
     $orgExchange = 0.0025371234;
     $grpExchange = 0.0021456789;

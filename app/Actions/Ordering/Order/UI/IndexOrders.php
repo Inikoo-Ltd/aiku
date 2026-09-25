@@ -158,6 +158,7 @@ class IndexOrders extends OrgAction
                 'orders.internal_notes',
                 'orders.public_notes',
                 'orders.shipping_notes',
+                'orders.private_warehouse_note',
                 'orders.to_be_paid_by',
                 'orders.tracking_number',
                 'orders.shipping_data',
