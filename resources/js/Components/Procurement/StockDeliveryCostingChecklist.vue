@@ -54,6 +54,7 @@ const props = defineProps<{
         }
     }
     canEdit: boolean
+    canEditPayments: boolean
 }>()
 
 const selectedDepositId = ref<number | null>(null)
@@ -222,7 +223,7 @@ const removeExtra = (row: CostRow) => {
                     <span>{{ application.reference || application.id }}</span>
                     <span>{{ application.amount }} {{ costing.currency }}</span>
                     <button
-                        v-if="canEdit && application.deleteRoute"
+                        v-if="canEditPayments && application.deleteRoute"
                         type="button"
                         class="text-gray-400 hover:text-red-500"
                         :title="ctrans('Un-apply deposit (audited)')"
@@ -247,7 +248,7 @@ const removeExtra = (row: CostRow) => {
                     </div>
                 </div>
 
-                <div v-if="canEdit && costing.deposits.available.length" class="mt-2 flex items-center gap-2">
+                <div v-if="canEditPayments && costing.deposits.available.length" class="mt-2 flex items-center gap-2">
                     <select v-model="selectedDepositId" class="h-7 rounded border-gray-300 text-sm">
                         <option :value="null">{{ ctrans("Select a paid deposit") }}</option>
                         <option v-for="deposit in costing.deposits.available" :key="deposit.id" :value="deposit.id">

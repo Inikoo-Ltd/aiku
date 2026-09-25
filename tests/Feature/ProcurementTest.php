@@ -3493,6 +3493,63 @@ describe('supplier deposits', function () {
             ->and((float) $delivery->depositApplications()->sum('amount'))->toBe(150.0)
             ->and(\App\Models\GoodsIn\StockDeliveryDepositApplication::withTrashed()->where('aspo_deposit_id', $deposit->id)->count())->toBe(2);
     });
+
+    test('accounting clerk gets view-only procurement access, and edit access only on supplier/agent payments (HELP-3437)', function () {
+        $deposit = \App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit::make()->action($this->depositAspo, ['amount' => 300]);
+        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
+
+        $delivery = StoreStockDelivery::make()->action($this->orgSupplier, [
+            'reference' => 'DEP-ACC-CLERK-'.StockDelivery::count(),
+            'date'      => date('Y-m-d'),
+        ], strict: false);
+        $delivery->update(['agent_id' => $this->agent->id]);
+
+        setPermissionsTeamId($this->group->id);
+
+        $accCode  = JobPosition::where('organisation_id', $this->organisation->id)->where('code', 'acc-c')->firstOrFail();
+        $employee = StoreEmployee::make()->action($this->organisation, [
+            'worker_number'   => 'acc-clerk',
+            'alias'           => 'acc-clerk',
+            'contact_name'    => 'Accounting Clerk',
+            'state'           => EmployeeStateEnum::WORKING,
+            'type'            => EmployeeTypeEnum::EMPLOYEE,
+            'employment_type' => EmploymentTypeEnum::FULL_TIME,
+            'positions'       => [['slug' => $accCode->slug, 'scopes' => []]],
+        ]);
+        $accountingClerk = StoreUser::make()->action($employee, [
+            'username'       => 'acc-clerk',
+            'password'       => Str::random(32),
+            'status'         => true,
+            'reset_password' => false,
+        ]);
+
+        expect($accountingClerk->authTo("procurement.{$this->organisation->id}.view"))->toBeTrue()
+            ->and($accountingClerk->authTo("procurement.{$this->organisation->id}.edit"))->toBeFalse();
+
+        actingAs($accountingClerk);
+
+        $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug]))
+            ->assertOk();
+
+        $this->patch(route('grp.models.purchase-order.update', $this->purchaseOrder->id), [
+            'payment_terms' => '30 days',
+        ])->assertForbidden();
+
+        $this->post(route('grp.models.stock-delivery.deposit.apply', $delivery->id), [
+            'aspo_deposit_id' => $deposit->id,
+            'amount'          => 100,
+        ])->assertRedirect();
+
+        expect((float) $delivery->depositApplications()->sum('amount'))->toBe(100.0);
+
+        $this->withoutVite();
+        $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $delivery->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('costing.can_edit', false)
+                ->where('costing.can_edit_payments', true));
+
+        actingAs($this->adminGuest->getUser());
+    });
 });
 
 describe('org supplier sub pages navigation', function () {

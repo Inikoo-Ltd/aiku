@@ -133,6 +133,7 @@ const props = defineProps<{
 	costing: {
 		is_costed: boolean
 		can_edit: boolean
+		can_edit_payments: boolean
 		currency: string | null
 		checklist: any[]
 		agent_invoice_missing: boolean
@@ -777,6 +778,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		v-if="!['in_process', 'confirmed', 'ready_to_ship', 'cancelled', 'not_received'].includes(stock_delivery.state)"
 		:costing="costing"
 		:canEdit="costing.can_edit"
+		:canEditPayments="costing.can_edit_payments"
 	/>
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

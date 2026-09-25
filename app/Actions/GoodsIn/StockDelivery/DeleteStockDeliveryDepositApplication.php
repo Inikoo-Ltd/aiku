@@ -9,14 +9,23 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Models\GoodsIn\StockDeliveryDepositApplication;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteStockDeliveryDepositApplication extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo([
+            "procurement.{$this->organisation->id}.edit",
+            "accounting.{$this->organisation->id}.edit",
+        ]);
+    }
 
     public function handle(StockDeliveryDepositApplication $stockDeliveryDepositApplication): StockDeliveryDepositApplication
     {

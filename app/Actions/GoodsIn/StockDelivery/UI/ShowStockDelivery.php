@@ -50,11 +50,13 @@ class ShowStockDelivery extends OrgAction
     use WithStockDeliveryWeightAndVolume;
     use WithAgentOrganisation;
 
-    public function authorize(): bool
-    {
-        $this->canEdit = true;
+    private bool $canEditPayments = false;
 
-        // TODO: Need to think of this
+    public function authorize(ActionRequest $request): bool
+    {
+        $this->canEdit         = $request->user()->authTo("procurement.{$this->organisation->id}.edit");
+        $this->canEditPayments = $this->canEdit || $request->user()->authTo("accounting.{$this->organisation->id}.edit");
+
         return true;
     }
 
@@ -80,7 +82,8 @@ class ShowStockDelivery extends OrgAction
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($organisation, $request)->withTab($this->getTabs($stockDelivery));
         $this->authorizeProcurementRecord($stockDelivery);
-        $this->canEdit = false;
+        $this->canEdit         = false;
+        $this->canEditPayments = false;
 
         return $this->handle($stockDelivery);
     }
@@ -603,6 +606,7 @@ class ShowStockDelivery extends OrgAction
             'is_costed'                  => $stockDelivery->is_costed,
             'is_partner'                 => $stockDelivery->parent_type === 'OrgPartner',
             'can_edit'                   => $this->canEdit,
+            'can_edit_payments'          => $this->canEditPayments,
             'currency'                   => $stockDelivery->currency?->code,
             'checklist'                  => $checklist,
             'agent_invoice_missing'      => !$agentInvoice?->received_at,
@@ -635,7 +639,7 @@ class ShowStockDelivery extends OrgAction
                 'amount' => $application->amount,
                 'aspo_deposit_id' => $application->aspo_deposit_id,
                 'reference' => $application->aspoDeposit?->reference,
-                'deleteRoute' => $this->canEdit ? [
+                'deleteRoute' => $this->canEditPayments ? [
                     'name'       => 'grp.models.stock-delivery-deposit-application.delete',
                     'parameters' => ['stockDeliveryDepositApplication' => $application->id],
                     'method'     => 'delete',

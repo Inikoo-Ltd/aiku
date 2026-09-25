@@ -328,7 +328,8 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::ACCOUNTING_EDIT,
                 OrganisationPermissionsEnum::ORG_REPORTS,
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
-                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
+                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW,
+                OrganisationPermissionsEnum::PROCUREMENT_VIEW
             ],
             RolesEnum::ACCOUNTING_SUPERVISOR => [
                 OrganisationPermissionsEnum::ACCOUNTING,
@@ -337,7 +338,8 @@ enum RolesEnum: string
                 OrganisationPermissionsEnum::SUPERVISOR_ACCOUNTING,
                 OrganisationPermissionsEnum::ORG_REPORTS,
                 OrganisationPermissionsEnum::INVENTORY_VIEW,
-                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW
+                OrganisationPermissionsEnum::HUMAN_RESOURCES_VIEW,
+                OrganisationPermissionsEnum::PROCUREMENT_VIEW
             ],
             RolesEnum::PROCUREMENT_SUPERVISOR => [
                 OrganisationPermissionsEnum::PROCUREMENT,
