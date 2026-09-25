@@ -13,6 +13,7 @@ use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\UI\ShowGoodsAnalysis;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use Illuminate\Support\Facades\Cache;
@@ -1244,5 +1245,119 @@ describe('Product Command & Control extras', function () {
         $searchResult = ShowGoodsDashboard::make()->forGroup($this->group)->handle(['family' => 'GDCCFAM', 'search' => 'GDCC-RET']);
 
         expect(collect($searchResult['rows'])->pluck('code'))->toContain('GDCC-RET');
+    });
+});
+
+describe('Product analysis view', function () {
+    beforeEach(function () {
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->group->id));
+        foreach (['month', 'quarter', 'year'] as $granularity) {
+            Cache::forget(ShowGoodsAnalysis::cacheKey($this->group->id, $granularity));
+        }
+    });
+
+    test('page renders with the expected props for each granularity', function (string $granularity) {
+        $response = get(route('grp.goods.analysis', ['granularity' => $granularity]));
+
+        $response->assertOk()->assertInertia(function (AssertableInertia $page) use ($granularity) {
+            $page
+                ->component('Goods/ProductAnalysis')
+                ->has('breadcrumbs')
+                ->where('granularity', $granularity)
+                ->has('summary')
+                ->has('series')
+                ->has('families_table')
+                ->has('organisations_table')
+                ->has('products_table')
+                ->has('stock_trend')
+                ->has('exceptions')
+                ->has('urgent_actions')
+                ->has('promotion_candidates')
+                ->has('status_history')
+                ->has('inbound');
+        });
+    })->with(['month', 'quarter', 'year']);
+
+    test('filters are echoed back', function () {
+        $family = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GAFAM']));
+
+        $response = get(route('grp.goods.analysis', [
+            'organisation' => $this->organisation->code,
+            'family'       => $family->code,
+            'search'       => 'gizmo',
+            'granularity'  => 'quarter',
+        ]));
+
+        $response->assertOk()->assertInertia(function (AssertableInertia $page) use ($family) {
+            $page
+                ->where('filters.organisation', $this->organisation->code)
+                ->where('filters.family', $family->code)
+                ->where('filters.search', 'gizmo')
+                ->where('filters.granularity', 'quarter');
+        });
+    });
+
+    test('comparisons compute current vs previous vs last year correctly on fixture time series records', function () {
+        [$stock] = createStocks($this->group);
+        [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+
+        $timeSeriesId = DB::table('org_stock_time_series')->insertGetId([
+            'org_stock_id' => $orgStock->id,
+            'frequency'    => 'monthly',
+            'from'         => now()->subYears(2)->startOfYear(),
+            'to'           => now(),
+            'data'         => '{}',
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
+
+        $currentFrom  = now()->startOfMonth();
+        $previousFrom = now()->copy()->subMonthNoOverflow()->startOfMonth();
+        $lastYearFrom = now()->copy()->subYearNoOverflow()->startOfMonth();
+
+        foreach ([[$currentFrom, 100], [$previousFrom, 40], [$lastYearFrom, 25]] as [$from, $sales]) {
+            DB::table('org_stock_time_series_records')->insert([
+                'org_stock_time_series_id'    => $timeSeriesId,
+                'frequency'                   => 'M',
+                'sales_grp_currency_external' => $sales,
+                'from'                        => $from,
+                'to'                          => $from->copy()->endOfMonth(),
+                'created_at'                  => now(),
+                'updated_at'                  => now(),
+            ]);
+        }
+
+        $result = ShowGoodsAnalysis::make()->forGroup($this->group)->handle(['granularity' => 'month', 'search' => $stock->code]);
+
+        expect($result['summary']['current'])->toBe(100.0)
+            ->and($result['summary']['previous'])->toBe(40.0)
+            ->and($result['summary']['last_year'])->toBe(25.0)
+            ->and($result['summary']['change_vs_previous'])->toBe(150.0)
+            ->and($result['summary']['change_vs_last_year'])->toBe(300.0)
+            ->and($result['product'])->not->toBeNull()
+            ->and($result['product']['code'])->toBe($stock->code);
+    });
+
+    test('promotion candidates and urgent actions come from the command view dataset', function () {
+        $family = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GAPROMO']));
+
+        $stockSell = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GA-SELL']));
+        $stockOff  = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GA-OFF']));
+
+        DB::table('stocks')->whereIn('id', [$stockSell->id, $stockOff->id])->update(['stock_family_id' => $family->id]);
+
+        [$orgStockSell, $orgStockOff] = createOrgStocks($this->organisation, [$stockSell, $stockOff]);
+
+        $orgStockSell->update(['state' => OrgStockStateEnum::DISCONTINUING, 'quantity_available' => 5, 'quantity_in_locations' => 5]);
+        $orgStockOff->update(['quantity_available' => 10, 'quantity_in_locations' => 10, 'is_on_demand' => false]);
+
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->group->id));
+        Cache::forget(ShowGoodsAnalysis::cacheKey($this->group->id, 'month'));
+
+        $result = ShowGoodsAnalysis::make()->forGroup($this->group)->handle(['family' => $family->code]);
+
+        expect(collect($result['promotion_candidates'])->pluck('code'))->toContain('GA-SELL')
+            ->and(collect($result['urgent_actions']['offline_with_stock'])->pluck('code'))->toContain('GA-OFF')
+            ->and(collect($result['exceptions']['offline'])->pluck('code'))->toContain('GA-OFF');
     });
 });

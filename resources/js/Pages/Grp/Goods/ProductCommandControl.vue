@@ -10,6 +10,7 @@ import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import OrgStockDiscontinuePreviewModal from "@/Components/Warehouse/Inventory/OrgStockDiscontinuePreviewModal.vue"
 import ProductDetailDrawer from "@/Components/Goods/ProductDetailDrawer.vue"
+import GoodsViewToggle from "@/Components/Goods/GoodsViewToggle.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
@@ -349,6 +350,7 @@ function openDrawer(row: Row): void {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <GoodsViewToggle active="command" :organisation="filters.organisation" :family="filters.family" :search="filters.search" />
 
     <div class="mx-4 mt-1 text-sm text-gray-500">{{ ctrans("Every product, every organisation, one operational view") }}</div>
 

@@ -128,6 +128,8 @@ class FetchAuroraArtefacts extends FetchAuroraAction
             return;
         }
 
+        $batchSize = max(1, (int) $artefact->recommended_batch_size);
+
         foreach ($bridgeRows as $bridgeRow) {
             $rawMaterial = RawMaterial::where(
                 'source_id',
@@ -144,12 +146,14 @@ class FetchAuroraArtefacts extends FetchAuroraAction
                     'raw_material_id'               => $rawMaterial->id,
                 ],
                 [
-                    'quantity_per_unit' => $bridgeRow->{'Production Part Raw Material Ratio'},
+                    'quantity_per_unit' => round($bridgeRow->{'Production Part Raw Material Ratio'} / $batchSize, 6),
                     'group_id'          => $artefact->group_id,
                     'organisation_id'   => $artefact->organisation_id,
                 ]
             );
         }
+
+        $artefact->update(['data' => array_merge($artefact->data ?? [], ['recipe_quantities_normalised_at' => now()->toIso8601String()])]);
     }
 
     /**
