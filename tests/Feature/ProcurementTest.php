@@ -81,6 +81,7 @@ use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransact
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
+use App\Actions\Maintenance\GoodsIn\RepairStockDeliveryPurchaseOrderLinks;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Production\PartnerShippingList\CherryPickPartnerShoppingListItems;
@@ -5631,4 +5632,62 @@ test('undoing a put away from a delivery takes the stock out at the value it wen
     expect((float) $purchase->org_amount)->toBeGreaterThan(0)
         ->and((float) $reversal->quantity)->toBe(-4.0)
         ->and((float) $reversal->org_amount)->toBe(-(float) $purchase->org_amount);
+});
+
+test('a fetched delivery linked to its purchase order by their shared aurora line is counted as on its way once', function () {
+    $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $supplier           = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
+    $orgSupplier        = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'LINK-01',
+        'name'             => 'Linked asset',
+        'cost'             => 100,
+        'stock_id'         => $orgStock->stock_id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100,
+    ]);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+
+    $auroraLineSourceId = $this->organisation->id.':'.random_int(900000000, 999999999);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action(
+        $purchaseOrder,
+        $supplierProduct->historicSupplierProduct,
+        $orgStock,
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 80])
+    )->update(['source_id' => $auroraLineSourceId]);
+    UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder);
+
+    $stockDelivery = StoreStockDelivery::make()->action($orgSupplier, [
+        'reference' => 'LINK-DEL-1',
+        'date'      => date('Y-m-d'),
+    ]);
+    StoreStockDeliveryItem::make()->action(
+        $stockDelivery,
+        $orgSupplierProduct->supplierProduct->historicSupplierProduct,
+        $orgStock,
+        array_merge(StockDeliveryItem::factory()->definition(), ['unit_quantity' => 80])
+    )->update(['source_id' => $auroraLineSourceId]);
+
+    [, $product] = createProduct(StoreShop::run($this->organisation, Shop::factory()->definition()));
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+    $product->load('orgStocks');
+
+    RepairStockDeliveryPurchaseOrderLinks::run();
+
+    expect($stockDelivery->purchaseOrders()->pluck('purchase_orders.id')->all())->toBe([$purchaseOrder->id])
+        ->and($stockDelivery->refresh()->number_purchase_orders)->toBe(1)
+        ->and(RepairStockDeliveryPurchaseOrderLinks::run())->toBe(0)
+        ->and(collect(GetProductIncomingStock::run($product))->pluck('type')->all())->toBe(['purchase_order']);
+
+    DispatchStockDelivery::make()->action($stockDelivery);
+
+    $incoming = GetProductIncomingStock::run($product);
+
+    expect($incoming)->toHaveCount(1)
+        ->and($incoming[0]['type'])->toBe('stock_delivery')
+        ->and($incoming[0]['quantity'])->toBe(80.0);
 });
