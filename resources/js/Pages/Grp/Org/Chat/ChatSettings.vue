@@ -18,10 +18,10 @@ import WhatsappTemplatesTable from "@/Components/Chat/WhatsappTemplatesTable.vue
 import { useCurrentTab, useTabChange } from "@/Composables/tab-change"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faHeadset, faMoon, faSlidersH } from "@fal"
+import { faExternalLink, faHeadset, faMoon, faSlidersH, faTruck } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faWhatsapp)
+library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faTruck, faWhatsapp)
 
 const props = defineProps<{
     title: string
@@ -48,6 +48,11 @@ const props = defineProps<{
     } | null
     policies: {
         text: string
+        update_route: { name: string; parameters: Record<string, any> }
+    } | null
+    couriers: {
+        domains: { domain: string; sessions: number }[]
+        can_edit: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
     agents?: any
@@ -95,6 +100,24 @@ const savePolicies = () => {
     policiesForm.patch(route(props.policies.update_route.name, props.policies.update_route.parameters), {
         preserveScroll: true,
         onSuccess: () => policiesForm.defaults(),
+    })
+}
+
+const couriersForm = useForm({
+    domains: props.couriers?.domains.map((row) => row.domain).join("\n") ?? "",
+})
+
+const saveCouriers = () => {
+    if (!props.couriers) {
+        return
+    }
+
+    couriersForm.patch(route(props.couriers.update_route.name, props.couriers.update_route.parameters), {
+        preserveScroll: true,
+        onSuccess: () => {
+            couriersForm.domains = props.couriers?.domains.map((row) => row.domain).join("\n") ?? ""
+            couriersForm.defaults()
+        },
     })
 }
 </script>
@@ -165,6 +188,47 @@ const savePolicies = () => {
             :loading="policiesForm.processing"
             :disabled="!policiesForm.isDirty"
             @click="savePolicies" />
+    </div>
+
+    <div v-else-if="currentTab === 'couriers' && couriers" class="max-w-4xl space-y-5 p-6">
+        <p class="text-sm text-gray-500">
+            {{ ctrans("Emails from these domains, or from any of their subdomains, go to the Couriers folder of the inbox instead of the customers' queue. One domain per line, for example gls-spain.es.") }}
+        </p>
+
+        <div class="grid gap-6 md:grid-cols-2">
+            <div>
+                <label for="courier-domains" class="block text-sm font-medium text-gray-700">{{ ctrans("Courier email domains") }}</label>
+                <Textarea
+                    id="courier-domains"
+                    v-model="couriersForm.domains"
+                    rows="14"
+                    autoResize
+                    :disabled="!couriers.can_edit"
+                    class="mt-1 w-full font-mono text-sm"
+                    placeholder="gls-spain.es" />
+                <p v-if="couriersForm.errors.domains" class="mt-1 text-sm text-red-600">{{ couriersForm.errors.domains }}</p>
+                <p v-if="!couriers.can_edit" class="mt-1 text-sm text-gray-500">{{ ctrans("Only a chat supervisor can change the list.") }}</p>
+            </div>
+
+            <div>
+                <div class="text-sm font-medium text-gray-700">{{ ctrans("Open conversations filed in the last 30 days") }}</div>
+                <table class="mt-1 w-full text-sm">
+                    <tbody>
+                        <tr v-for="row in couriers.domains" :key="row.domain" class="border-b border-gray-100">
+                            <td class="py-1 font-mono">{{ row.domain }}</td>
+                            <td class="py-1 text-right tabular-nums" :class="row.sessions ? 'text-gray-900' : 'text-gray-400'">{{ row.sessions }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <Button
+            v-if="couriers.can_edit"
+            :label="ctrans('Save')"
+            :loading="couriersForm.processing"
+            :disabled="!couriersForm.isDirty"
+            @click="saveCouriers" />
     </div>
 
     <template v-else-if="currentTab === 'whatsapp_templates'">

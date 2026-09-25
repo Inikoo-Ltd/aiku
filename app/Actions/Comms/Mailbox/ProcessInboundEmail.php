@@ -27,6 +27,7 @@ use App\Models\CRM\Customer;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\Group;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use App\Services\HTMLSanitizer;
@@ -553,7 +554,7 @@ class ProcessInboundEmail
                 'name'  => $from['name'] ?? $from['address'],
                 'email' => $from['address'],
             ]),
-            'is_carrier' => $session->is_carrier || (!$session->web_user_id && self::isCarrierAddress($from['address'])),
+            'is_carrier' => $session->is_carrier || (!$session->web_user_id && self::isCarrierAddress($from['address'], $session->shop?->group)),
         ]);
 
         return $session;
@@ -565,12 +566,23 @@ class ProcessInboundEmail
     /**
      * A courier writing about a delivery: its domain, or any subdomain of it, is on the list.
      */
-    public static function isCarrierAddress(?string $address): bool
+    public static function isCarrierAddress(?string $address, ?Group $group = null): bool
     {
         $domain = mb_strtolower((string) substr(strrchr((string) $address, '@') ?: '', 1));
 
-        return $domain !== '' && collect(config('chat.carrier_domains', []))
+        return $domain !== '' && collect(self::carrierDomains($group))
             ->contains(fn (string $carrier) => $domain === $carrier || str_ends_with($domain, '.'.$carrier));
+    }
+
+    /**
+     * Customer service keeps the list in the chat settings. Until they first save it the group
+     * reads the list we shipped with, so an empty saved list really means no couriers.
+     *
+     * @return array<int, string>
+     */
+    public static function carrierDomains(?Group $group): array
+    {
+        return data_get($group?->settings, 'chat.carrier_domains') ?? config('chat.carrier_domains', []);
     }
 
     private function createSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
@@ -592,7 +604,7 @@ class ProcessInboundEmail
                 'name'            => $from['name'] ?? $from['address'],
                 'email'           => $from['address'],
             ]),
-            'is_carrier' => !$webUser && self::isCarrierAddress($from['address']),
+            'is_carrier' => !$webUser && self::isCarrierAddress($from['address'], $shop->group),
         ]);
 
         return $session;

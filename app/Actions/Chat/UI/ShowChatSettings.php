@@ -9,7 +9,10 @@ namespace App\Actions\Chat\UI;
 
 use App\Actions\Chat\Agent\UI\IndexAgent;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatScopeNavigation;
+use App\Actions\Comms\Mailbox\ProcessInboundEmail;
+use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
 use App\Actions\Chat\Whatsapp\Templates\UI\IndexWhatsappMessageTemplates;
 use App\Actions\OrgAction;
@@ -18,6 +21,7 @@ use App\Http\Resources\Chat\MetaMessageTemplatesResource;
 use App\Http\Resources\CRM\Livechat\ChatAgentResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,6 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowChatSettings extends OrgAction
 {
     use WithChatScopeNavigation;
+    use WithChatAgentAuthorisation;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -96,7 +101,7 @@ class ShowChatSettings extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigation() : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::POLICIES]),
+                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::COURIERS]) : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::POLICIES]),
                 ],
                 'settingsRoute'  => $this->chatRoute('settings'),
                 'templatesTable' => $isShop ? $this->getShopTemplatesTableProps() : null,
@@ -108,6 +113,7 @@ class ShowChatSettings extends OrgAction
                         'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
                     ],
                 ] : null,
+                'couriers'       => $isShop ? null : $this->getCouriersProps($request),
 
                 $agentsTab => $this->tab == $agentsTab ? $agents : Inertia::lazy($agents),
 
@@ -170,6 +176,35 @@ class ShowChatSettings extends OrgAction
                     'name'       => 'grp.org.shops.show.chat.whatsapp_templates.sync',
                     'parameters' => $shopParameters,
                 ],
+            ],
+        ];
+    }
+
+    private function getCouriersProps(ActionRequest $request): array
+    {
+        $domains = ProcessInboundEmail::carrierDomains($this->group);
+
+        $sessionsBySenderDomain = DB::table('chat_sessions')
+            ->join('shops', 'shops.id', '=', 'chat_sessions.shop_id')
+            ->where('shops.group_id', $this->group->id)
+            ->where('chat_sessions.is_carrier', true)
+            ->where('chat_sessions.status', '!=', ChatSessionStatusEnum::CLOSED->value)
+            ->where('chat_sessions.created_at', '>=', now()->subDays(30))
+            ->selectRaw("lower(split_part(chat_sessions.metadata->>'email_from', '@', 2)) as domain, count(*) as sessions")
+            ->groupBy('domain')
+            ->pluck('sessions', 'domain');
+
+        return [
+            'domains'      => collect($domains)->map(fn (string $domain) => [
+                'domain'   => $domain,
+                'sessions' => $sessionsBySenderDomain
+                    ->filter(fn ($count, $senderDomain) => $senderDomain === $domain || str_ends_with((string) $senderDomain, '.'.$domain))
+                    ->sum(),
+            ])->all(),
+            'can_edit'     => $this->userSupervisesChatOnOrganisation($request->user(), $this->organisation),
+            'update_route' => [
+                'name'       => 'grp.org.chat.settings.carrier_domains.update',
+                'parameters' => ['organisation' => $this->organisation->slug],
             ],
         ];
     }

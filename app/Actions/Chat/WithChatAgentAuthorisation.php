@@ -110,6 +110,21 @@ trait WithChatAgentAuthorisation
             || $user->authTo(["org-admin.{$shop->organisation_id}"]);
     }
 
+    protected function userSupervisesChatOnOrganisation(User $user, Organisation $organisation): bool
+    {
+        if (!$user->status) {
+            return false;
+        }
+
+        $permissions = $organisation->shops()->pluck('shops.id')
+            ->map(fn ($shopId) => "chat-m.{$shopId}")
+            ->merge($organisation->fulfilments()->pluck('fulfilments.id')->map(fn ($id) => "fulfilment-chat-m.{$id}"))
+            ->push("org-admin.{$organisation->id}")
+            ->all();
+
+        return $user->authTo($permissions);
+    }
+
     /**
      * Working chat means being an agent: in the routing pool, in the rota, in the figures.
      */

@@ -19,6 +19,7 @@ enum ChatSettingsTabsEnum: string
     case WHATSAPP_TEMPLATES = 'whatsapp_templates';
     case OUT_OF_HOURS = 'out_of_hours';
     case POLICIES = 'policies';
+    case COURIERS = 'couriers';
 
     public function blueprint(): array
     {
@@ -38,6 +39,10 @@ enum ChatSettingsTabsEnum: string
             ChatSettingsTabsEnum::POLICIES => [
                 'title' => __('Facts for AI replies'),
                 'icon'  => 'fal fa-book',
+            ],
+            ChatSettingsTabsEnum::COURIERS => [
+                'title' => __('Couriers'),
+                'icon'  => 'fal fa-truck',
             ],
         };
     }

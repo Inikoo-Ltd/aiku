@@ -5853,6 +5853,48 @@ test('an email from a courier is filed in the Couriers folder and in no other li
         ->and($queue([]))->not->toContain($courier->id);
 });
 
+test('customer service edits the courier domains in the group chat settings, subdomains included', function () {
+    actingAs($this->user);
+    $group    = $this->organisation->group;
+    $settings = $group->settings;
+    $update   = route('grp.org.chat.settings.carrier_domains.update', [$this->organisation->slug]);
+    $isCourier = fn (string $address) => \App\Actions\Comms\Mailbox\ProcessInboundEmail::isCarrierAddress($address, $group->fresh());
+
+    expect($isCourier('ops@gls-spain.es'))->toBeTrue()
+        ->and($isCourier('bookings@newcourier.example'))->toBeFalse();
+
+    get(route('grp.org.chat.settings', [$this->organisation->slug]).'?tab=couriers')->assertInertia(fn (AssertableInertia $page) => $page
+        ->has('tabs.navigation.couriers')
+        ->where('couriers.domains.0.domain', config('chat.carrier_domains')[0])
+        ->where('couriers.update_route.name', 'grp.org.chat.settings.carrier_domains.update'));
+
+    get(route('grp.org.shops.show.chat.settings', [$this->organisation->slug, $this->shop->slug]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->missing('tabs.navigation.couriers')
+        ->where('couriers', null));
+
+    patch($update, ['domains' => "NewCourier.example\nhttps://www.dsv.com/contact\n@gls-spain.es\n\nnewcourier.example"])->assertRedirect()->assertSessionHasNoErrors();
+
+    expect(data_get($group->fresh()->settings, 'chat.carrier_domains'))->toBe(['dsv.com', 'gls-spain.es', 'newcourier.example'])
+        ->and($isCourier('bookings@newcourier.example'))->toBeTrue()
+        ->and($isCourier('bookings@eu.newcourier.example'))->toBeTrue()
+        ->and($isCourier('bookings@notnewcourier.example'))->toBeFalse()
+        ->and($isCourier('care@mail.tnt.com'))->toBeFalse();
+
+    $courier = noiseTestEmailSession($this->shop, 'bookings@eu.newcourier.example', 'Pickup', 'Pickup booked.');
+    $courier->update(['is_carrier' => true]);
+    get(route('grp.org.chat.settings', [$this->organisation->slug]).'?tab=couriers')->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('couriers.domains.2', ['domain' => 'newcourier.example', 'sessions' => 1]));
+
+    patch($update, ['domains' => "dsv.com\nnot a domain\nlocalhost"])->assertSessionHasErrors('domains');
+    expect(data_get($group->fresh()->settings, 'chat.carrier_domains'))->toBe(['dsv.com', 'gls-spain.es', 'newcourier.example']);
+
+    actingAs(User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id]));
+    patch($update, ['domains' => 'hijack.example'])->assertForbidden();
+
+    $courier->delete();
+    $group->update(['settings' => $settings]);
+});
+
 test('a thanks after we answered closes the conversation quietly, but never a first message, an attachment or an open ticket', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();
