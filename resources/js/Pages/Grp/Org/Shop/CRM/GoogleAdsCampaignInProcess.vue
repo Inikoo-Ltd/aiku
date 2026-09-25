@@ -12,6 +12,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import MailshotJourney from "@/Components/Navigation/MailshotJourney.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
+import GoogleAdsTextList from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsTextList.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
@@ -62,10 +63,10 @@ const form = useForm({
     business_name: data.business_name ?? "",
     long_headline: data.long_headline ?? "",
     match_type: data.match_type ?? "PHRASE",
-    headlines: (data.headlines ?? []).join("\n"),
-    descriptions: (data.descriptions ?? []).join("\n"),
-    keywords: (data.keywords ?? []).join("\n"),
-    search_themes: (data.search_themes ?? []).join("\n"),
+    headlines: [...(data.headlines ?? [])] as string[],
+    descriptions: [...(data.descriptions ?? [])] as string[],
+    keywords: [...(data.keywords ?? [])] as string[],
+    search_themes: [...(data.search_themes ?? [])] as string[],
     marketing_images: (data.marketing_images ?? []) as number[],
     square_marketing_images: (data.square_marketing_images ?? []) as number[],
     logos: (data.logos ?? []) as number[],
@@ -79,21 +80,106 @@ const isDisplay = computed(() => form.channel_type === "DISPLAY")
 const isDemandGen = computed(() => form.channel_type === "DEMAND_GEN")
 const needsLongHeadline = computed(() => isPmax.value || isDisplay.value)
 
-const lines = (value: string): string[] => value.split("\n").map((line) => line.trim()).filter(Boolean)
+const filled = (rows: string[]): string[] => rows.map((row) => row.trim()).filter(Boolean)
 
-const save = () =>
+const isBlank = (value: unknown) => value === null || value === undefined || String(value).trim() === ""
+
+/* Google's own limits, the same ones the server holds, checked as each field is typed so a wrong value
+   is marked where it was entered rather than after a round trip. */
+const LIST_LIMITS = {
+    headlines: { maxLength: 30, maxItems: 15 },
+    descriptions: { maxLength: 90, maxItems: 5 },
+    keywords: { maxLength: 80, maxItems: 100 },
+    search_themes: { maxLength: 80, maxItems: 25 },
+} as const
+
+const moneyProblem = (value: unknown): string | undefined => {
+    if (isBlank(value)) {
+        return undefined
+    }
+
+    const amount = Number(value)
+
+    if (Number.isNaN(amount) || amount < 0.01) {
+        return ctrans("At least 0.01")
+    }
+
+    if (amount > 1000000) {
+        return ctrans("At most 1,000,000")
+    }
+
+    return undefined
+}
+
+const urlProblem = (value: string): string | undefined => {
+    if (isBlank(value)) {
+        return undefined
+    }
+
+    try {
+        const url = new URL(value.trim())
+
+        return ["http:", "https:"].includes(url.protocol) && url.hostname.includes(".")
+            ? undefined
+            : ctrans("A full web address, starting with https://")
+    } catch {
+        return ctrans("A full web address, starting with https://")
+    }
+}
+
+const problems = computed<Record<string, string | undefined>>(() => ({
+    name: isBlank(form.name) ? ctrans("The campaign needs a name") : form.name.length > 255 ? ctrans("Up to 255 characters") : undefined,
+    budget_amount: moneyProblem(form.budget_amount),
+    max_cpc: isSearch.value || isDisplay.value ? moneyProblem(form.max_cpc) : undefined,
+    target_cpa: isDemandGen.value ? moneyProblem(form.target_cpa) : undefined,
+    final_url: urlProblem(form.final_url),
+    business_name: !isSearch.value && form.business_name.length > 25 ? ctrans("Up to 25 characters") : undefined,
+    long_headline: needsLongHeadline.value && form.long_headline.length > 90 ? ctrans("Up to 90 characters") : undefined,
+    ...Object.fromEntries(
+        (Object.keys(LIST_LIMITS) as (keyof typeof LIST_LIMITS)[]).map((key) => [
+            key,
+            form[key].some((row: string) => row.trim().length > LIST_LIMITS[key].maxLength) ? ctrans("Too long") : undefined,
+        ])
+    ),
+}))
+
+const hasProblems = computed(() => Object.values(problems.value).some(Boolean))
+
+const errorFor = (key: string): string | undefined => problems.value[key] ?? form.errors[key]
+
+const fieldClass = (key: string) =>
+    errorFor(key)
+        ? "border-[#d03b3b] focus:border-[#d03b3b] focus:ring-[#d03b3b]"
+        : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+
+/* A message from the last save stops being true the moment the field is changed. */
+const clearServerErrors = (key: string) => {
+    const stale = Object.keys(form.errors).filter((field) => field === key || field.startsWith(`${key}.`))
+
+    if (stale.length) {
+        form.clearErrors(...(stale as (keyof typeof form.errors)[]))
+    }
+}
+
+const save = () => {
+    if (hasProblems.value) {
+        return
+    }
+
     form
         .transform((payload) => ({
             ...payload,
-            headlines: lines(payload.headlines),
-            descriptions: lines(payload.descriptions),
-            keywords: lines(payload.keywords),
-            search_themes: lines(payload.search_themes),
-            budget_amount: payload.budget_amount === "" ? null : payload.budget_amount,
-            max_cpc: payload.max_cpc === "" ? null : payload.max_cpc,
-            target_cpa: payload.target_cpa === "" ? null : payload.target_cpa,
+            headlines: filled(payload.headlines),
+            descriptions: filled(payload.descriptions),
+            keywords: filled(payload.keywords),
+            search_themes: filled(payload.search_themes),
+            final_url: payload.final_url.trim(),
+            budget_amount: isBlank(payload.budget_amount) ? null : payload.budget_amount,
+            max_cpc: isBlank(payload.max_cpc) ? null : payload.max_cpc,
+            target_cpa: isBlank(payload.target_cpa) ? null : payload.target_cpa,
         }))
         .patch(route(props.update_route.name, props.update_route.parameters), { preserveScroll: true })
+}
 
 /* The image slots this type fills. Each is its own list because an image that works as a wide banner
    is the wrong shape for a square one, and Google checks when the campaign is published. */
@@ -216,32 +302,81 @@ const toggleImage = (role: string, id: number) => {
 
                 <div class="sm:col-span-2">
                     <label for="c-name" class="block text-xs text-gray-500">{{ ctrans("Campaign name") }}</label>
-                    <input id="c-name" v-model="form.name" type="text" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                    <p v-if="form.errors.name" class="mt-1 text-xs text-[#d03b3b]">{{ form.errors.name }}</p>
+                    <input
+                        id="c-name"
+                        v-model="form.name"
+                        type="text"
+                        :aria-invalid="!!errorFor('name')"
+                        aria-describedby="c-name-error"
+                        class="mt-1 w-full rounded-md text-sm"
+                        :class="fieldClass('name')"
+                        @input="clearServerErrors('name')" />
+                    <p v-if="errorFor('name')" id="c-name-error" class="mt-1 text-xs text-[#d03b3b]">{{ errorFor("name") }}</p>
                 </div>
 
                 <div>
                     <label for="c-budget" class="block text-xs text-gray-500">{{ ctrans("Daily budget") }} ({{ currency }})</label>
-                    <input id="c-budget" v-model="form.budget_amount" type="number" step="0.01" min="0.01" class="mt-1 w-full rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500" />
-                    <p v-if="form.errors.budget_amount" class="mt-1 text-xs text-[#d03b3b]">{{ form.errors.budget_amount }}</p>
+                    <input
+                        id="c-budget"
+                        v-model="form.budget_amount"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        :aria-invalid="!!errorFor('budget_amount')"
+                        aria-describedby="c-budget-error"
+                        class="mt-1 w-full rounded-md text-sm tabular-nums"
+                        :class="fieldClass('budget_amount')"
+                        @input="clearServerErrors('budget_amount')" />
+                    <p v-if="errorFor('budget_amount')" id="c-budget-error" class="mt-1 text-xs text-[#d03b3b]">{{ errorFor("budget_amount") }}</p>
                 </div>
 
                 <div v-if="isSearch || isDisplay">
                     <label for="c-cpc" class="block text-xs text-gray-500">
                         {{ isSearch ? ctrans("Highest cost per click, optional") : ctrans("Cost per click bid") }}
                     </label>
-                    <input id="c-cpc" v-model="form.max_cpc" type="number" step="0.01" min="0.01" class="mt-1 w-full rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500" />
+                    <input
+                        id="c-cpc"
+                        v-model="form.max_cpc"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        :aria-invalid="!!errorFor('max_cpc')"
+                        aria-describedby="c-cpc-error"
+                        class="mt-1 w-full rounded-md text-sm tabular-nums"
+                        :class="fieldClass('max_cpc')"
+                        @input="clearServerErrors('max_cpc')" />
+                    <p v-if="errorFor('max_cpc')" id="c-cpc-error" class="mt-1 text-xs text-[#d03b3b]">{{ errorFor("max_cpc") }}</p>
                 </div>
 
                 <div v-if="isDemandGen">
                     <label for="c-cpa" class="block text-xs text-gray-500">{{ ctrans("Target cost per conversion") }} ({{ currency }})</label>
-                    <input id="c-cpa" v-model="form.target_cpa" type="number" step="0.01" min="0.01" class="mt-1 w-full rounded-md border-gray-300 text-sm tabular-nums focus:border-indigo-500 focus:ring-indigo-500" />
+                    <input
+                        id="c-cpa"
+                        v-model="form.target_cpa"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        :aria-invalid="!!errorFor('target_cpa')"
+                        aria-describedby="c-cpa-error"
+                        class="mt-1 w-full rounded-md text-sm tabular-nums"
+                        :class="fieldClass('target_cpa')"
+                        @input="clearServerErrors('target_cpa')" />
+                    <p v-if="errorFor('target_cpa')" id="c-cpa-error" class="mt-1 text-xs text-[#d03b3b]">{{ errorFor("target_cpa") }}</p>
                 </div>
 
                 <div class="sm:col-span-2">
                     <label for="c-url" class="block text-xs text-gray-500">{{ ctrans("Landing page") }}</label>
-                    <input id="c-url" v-model="form.final_url" type="url" placeholder="https://" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                    <p v-if="form.errors.final_url" class="mt-1 text-xs text-[#d03b3b]">{{ form.errors.final_url }}</p>
+                    <input
+                        id="c-url"
+                        v-model="form.final_url"
+                        type="url"
+                        placeholder="https://"
+                        :aria-invalid="!!errorFor('final_url')"
+                        aria-describedby="c-url-error"
+                        class="mt-1 w-full rounded-md text-sm"
+                        :class="fieldClass('final_url')"
+                        @input="clearServerErrors('final_url')" />
+                    <p v-if="errorFor('final_url')" id="c-url-error" class="mt-1 text-xs text-[#d03b3b]">{{ errorFor("final_url") }}</p>
                 </div>
 
                 <div>
@@ -270,8 +405,20 @@ const toggleImage = (role: string, id: number) => {
                 </div>
 
                 <div v-if="!isSearch" class="sm:col-span-2">
-                    <label for="c-business" class="block text-xs text-gray-500">{{ ctrans("Business name, up to 25 characters") }}</label>
-                    <input id="c-business" v-model="form.business_name" type="text" maxlength="25" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                    <label for="c-business" class="flex justify-between text-xs text-gray-500">
+                        {{ ctrans("Business name") }}
+                        <span class="tabular-nums" :class="form.business_name.length > 25 ? 'text-[#d03b3b]' : 'text-gray-400'">{{ form.business_name.length }}/25</span>
+                    </label>
+                    <input
+                        id="c-business"
+                        v-model="form.business_name"
+                        type="text"
+                        :aria-invalid="!!errorFor('business_name')"
+                        aria-describedby="c-business-error"
+                        class="mt-1 w-full rounded-md text-sm"
+                        :class="fieldClass('business_name')"
+                        @input="clearServerErrors('business_name')" />
+                    <p v-if="errorFor('business_name')" id="c-business-error" class="mt-1 text-xs text-[#d03b3b]">{{ errorFor("business_name") }}</p>
                 </div>
             </div>
         </section>
@@ -282,9 +429,10 @@ const toggleImage = (role: string, id: number) => {
                 {{ ctrans("Nothing on this page reaches Google. Save as often as you like and come back to it.") }}
             </p>
 
-            <Button class="mt-4" :label="ctrans('Save the campaign')" :loading="form.processing" size="s" @click="save" />
+            <Button class="mt-4" :label="ctrans('Save the campaign')" :loading="form.processing" :disabled="hasProblems" size="s" @click="save" />
 
-            <p v-if="form.recentlySuccessful" class="mt-3 text-xs text-[#006300]">{{ ctrans("Saved.") }}</p>
+            <p v-if="hasProblems" class="mt-3 text-xs text-[#d03b3b]">{{ ctrans("Fix what is marked in red to save.") }}</p>
+            <p v-else-if="form.recentlySuccessful" class="mt-3 text-xs text-[#006300]">{{ ctrans("Saved.") }}</p>
 
             <div v-if="missing.length" class="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-600">
                 <p class="text-gray-500">{{ ctrans("Still needed before Google will accept it") }}</p>
@@ -300,30 +448,61 @@ const toggleImage = (role: string, id: number) => {
         <section class="rounded-xl bg-white p-5 ring-1 ring-gray-200 lg:col-span-3">
             <h2 class="text-sm font-medium text-gray-800">
                 {{ ctrans("What the ad says") }}
-                <HelpTip :text="ctrans('One per line. Google mixes headlines and descriptions itself rather than showing them in the order written, so each line has to read on its own. Headlines are capped at 30 characters and descriptions at 90.')" />
+                <HelpTip :text="ctrans('Google mixes headlines and descriptions itself rather than showing them in the order written, so each one has to read on its own. Enter starts the next one, and a pasted list fills one box per line.')" />
             </h2>
 
-            <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div>
-                    <label for="c-headlines" class="block text-xs text-gray-500">{{ ctrans("Headlines, one per line") }}</label>
-                    <textarea id="c-headlines" v-model="form.headlines" rows="6" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
-                </div>
+            <div class="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                <GoogleAdsTextList
+                    id="c-headlines"
+                    v-model="form.headlines"
+                    name="headlines"
+                    :label="ctrans('Headlines')"
+                    :add-label="ctrans('Add a headline')"
+                    :max-length="LIST_LIMITS.headlines.maxLength"
+                    :max-items="LIST_LIMITS.headlines.maxItems"
+                    :errors="form.errors"
+                    @edited="clearServerErrors('headlines')" />
 
-                <div>
-                    <label for="c-descriptions" class="block text-xs text-gray-500">{{ ctrans("Descriptions, one per line") }}</label>
-                    <textarea id="c-descriptions" v-model="form.descriptions" rows="6" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
-                </div>
+                <GoogleAdsTextList
+                    id="c-descriptions"
+                    v-model="form.descriptions"
+                    name="descriptions"
+                    :label="ctrans('Descriptions')"
+                    :add-label="ctrans('Add a description')"
+                    :max-length="LIST_LIMITS.descriptions.maxLength"
+                    :max-items="LIST_LIMITS.descriptions.maxItems"
+                    :errors="form.errors"
+                    @edited="clearServerErrors('descriptions')" />
 
                 <div v-if="needsLongHeadline">
-                    <label for="c-long" class="block text-xs text-gray-500">{{ ctrans("Long headline, up to 90 characters") }}</label>
-                    <input id="c-long" v-model="form.long_headline" type="text" maxlength="90" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                    <label for="c-long" class="flex justify-between text-xs text-gray-500">
+                        {{ ctrans("Long headline") }}
+                        <span class="tabular-nums" :class="form.long_headline.length > 90 ? 'text-[#d03b3b]' : 'text-gray-400'">{{ form.long_headline.length }}/90</span>
+                    </label>
+                    <input
+                        id="c-long"
+                        v-model="form.long_headline"
+                        type="text"
+                        :aria-invalid="!!errorFor('long_headline')"
+                        aria-describedby="c-long-error"
+                        class="mt-1 w-full rounded-md text-sm"
+                        :class="fieldClass('long_headline')"
+                        @input="clearServerErrors('long_headline')" />
+                    <p v-if="errorFor('long_headline')" id="c-long-error" class="mt-1 text-xs text-[#d03b3b]">{{ errorFor("long_headline") }}</p>
                 </div>
 
                 <template v-if="isSearch">
-                    <div>
-                        <label for="c-keywords" class="block text-xs text-gray-500">{{ ctrans("Keywords, one per line") }}</label>
-                        <textarea id="c-keywords" v-model="form.keywords" rows="6" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
-                    </div>
+                    <GoogleAdsTextList
+                        id="c-keywords"
+                        v-model="form.keywords"
+                        name="keywords"
+                        :label="ctrans('Keywords')"
+                        :add-label="ctrans('Add a keyword')"
+                        :max-length="LIST_LIMITS.keywords.maxLength"
+                        :max-items="LIST_LIMITS.keywords.maxItems"
+                        :errors="form.errors"
+                        @edited="clearServerErrors('keywords')" />
+
                     <div>
                         <label for="c-match" class="block text-xs text-gray-500">{{ ctrans("Match type") }}</label>
                         <select id="c-match" v-model="form.match_type" class="mt-1 rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -335,11 +514,19 @@ const toggleImage = (role: string, id: number) => {
                 </template>
 
                 <div v-if="isPmax">
-                    <label for="c-themes" class="block text-xs text-gray-500">
-                        {{ ctrans("Search themes, one per line, up to 25") }}
-                        <HelpTip :text="ctrans('Phrases telling Google what someone looking for this would type. They steer its targeting rather than restricting it, so they are hints and not keywords.')" />
-                    </label>
-                    <textarea id="c-themes" v-model="form.search_themes" rows="6" class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                    <GoogleAdsTextList
+                        id="c-themes"
+                        v-model="form.search_themes"
+                        name="search_themes"
+                        :label="ctrans('Search themes')"
+                        :add-label="ctrans('Add a search theme')"
+                        :max-length="LIST_LIMITS.search_themes.maxLength"
+                        :max-items="LIST_LIMITS.search_themes.maxItems"
+                        :errors="form.errors"
+                        @edited="clearServerErrors('search_themes')" />
+                    <p class="mt-1 text-xs text-gray-500">
+                        {{ ctrans("Phrases telling Google what someone looking for this would type. They steer its targeting rather than restricting it, so they are hints and not keywords.") }}
+                    </p>
                 </div>
             </div>
         </section>
