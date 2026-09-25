@@ -28,6 +28,7 @@ use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
 use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
+use Illuminate\Database\Eloquent\Builder;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -1417,17 +1418,23 @@ test('the dashboard shows QA details to QA, and the urgent check lands on reques
 
     $requested = StoreTicket::make()->action($this->group, ['subject' => 'Urgent check']);
     $passed    = StoreTicket::make()->action($this->group, ['subject' => 'Checked fine']);
+    $hidden    = StoreTicket::make()->action($this->group, ['subject' => 'Not for QA eyes']);
     Ticket::whereKey($requested->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED]);
     Ticket::whereKey($passed->id)->update(['qa_status' => TicketQaStatusEnum::PASSED]);
+    Ticket::whereKey($hidden->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'is_confidential' => true]);
 
     actingAs($engineer);
     get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->missing('qa_stats'));
 
     actingAs($qa);
+    $visible = fn (): Builder => Ticket::where('group_id', $this->group->id)->visibleTo($qa);
+
+    expect($visible()->whereKey($hidden->id)->exists())->toBeFalse();
+
     get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page
-        ->where('qa_stats.requested', Ticket::where('qa_status', TicketQaStatusEnum::REQUESTED)->count())
-        ->where('qa_stats.passed', Ticket::where('qa_status', TicketQaStatusEnum::PASSED)->count())
-        ->where('qa_stats.not_checked', Ticket::whereNull('qa_status')->count()));
+        ->where('qa_stats.requested', $visible()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count())
+        ->where('qa_stats.passed', $visible()->where('qa_status', TicketQaStatusEnum::PASSED)->count())
+        ->where('qa_stats.not_checked', $visible()->whereNull('qa_status')->count()));
 
     get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => ''], 'filter' => ['qa_requested' => 1], 'perPage' => 1000]))
         ->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('qa_status')->unique()->values()->all())->toBe(['requested']));

@@ -63,6 +63,7 @@ return [
             'prefix'         => '',
             'prefix_indexes' => true,
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
+            'timezone'       => env('DB_TIMEZONE'),
             'sslmode'        => 'prefer',
         ],
         'aiku_no_sticky' => [
@@ -86,6 +87,7 @@ return [
             'prefix'         => '',
             'prefix_indexes' => true,
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
+            'timezone'       => env('DB_TIMEZONE'),
             'sslmode'        => 'prefer',
         ],
         'aiku_read_only' => [
@@ -106,6 +108,7 @@ return [
             'prefix'         => '',
             'prefix_indexes' => true,
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
+            'timezone'       => env('DB_TIMEZONE'),
             'sslmode'        => 'prefer',
         ],
         'archive'  => [
