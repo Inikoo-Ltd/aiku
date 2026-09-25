@@ -45,6 +45,7 @@ use App\Models\Fulfilment\RentalAgreement;
 use App\Models\Fulfilment\Space;
 use App\Models\Fulfilment\StoredItem;
 use App\Models\Fulfilment\StoredItemAudit;
+use Illuminate\Auth\SessionGuard;
 use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
@@ -1280,10 +1281,19 @@ test('only the main user manages the customer web users, and the main user can n
     $this->delete(route('retina.models.web-users.delete', $mainUser->id))->assertSessionHasErrors('web_user');
     expect(WebUser::find($mainUser->id))->not->toBeNull();
 
-    actingAs($staffUser->fresh(), 'retina');
-    $this->get(route('retina.dashboard.show'))->assertRedirect(route('retina.login.show'));
-    expect(auth('retina')->check())->toBeFalse();
+    $retinaSessionKey = 'login_retina_'.sha1(SessionGuard::class);
+    $fromStorefront   = ['Referer' => 'http://localhost/app'];
 
+    auth()->forgetGuards();
+    $this->withSession([$retinaSessionKey => $mainUser->id])->get(route('retina.dashboard.show'))->assertOk();
+
+    auth()->forgetGuards();
+    $this->withSession([$retinaSessionKey => $staffUser->id])->get(route('retina.dashboard.show'))->assertRedirect(route('retina.login.show'));
+
+    auth()->forgetGuards();
+    $this->withSession([$retinaSessionKey => $staffUser->id])->getJson(route('retina.api.profile'), $fromStorefront)->assertUnauthorized();
+
+    auth()->forgetGuards();
     actingAs($mainUser, 'retina');
     $this->delete(route('retina.models.web-users.delete', $staffUser->id))->assertRedirect(route('retina.sysadmin.web-users.index'));
     expect(WebUser::withTrashed()->find($staffUser->id))->toBeNull();

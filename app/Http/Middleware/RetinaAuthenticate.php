@@ -8,25 +8,14 @@
 
 namespace App\Http\Middleware;
 
-use App\Actions\Traits\WithIrisAuthCookie;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
 
 class RetinaAuthenticate extends Middleware
 {
-    use WithIrisAuthCookie;
-
     public function handle($request, \Closure $next, ...$guards)
     {
 
         $this->authenticate($request, $guards);
-
-        if ($request->user()?->status === false) {
-            $this->auth->guard()->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            $this->forgetIrisAuthCookie();
-            $this->unauthenticated($request, $guards);
-        }
 
         return $next($request);
     }
