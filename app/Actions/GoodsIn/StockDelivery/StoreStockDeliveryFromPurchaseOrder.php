@@ -40,6 +40,22 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             abort(422, __('Only confirmed purchase orders can create a stock delivery'));
         }
 
+        $openAuroraStockDelivery = $purchaseOrder->stockDeliveries()
+            ->whereNotNull('source_id')
+            ->whereNotIn('state', [
+                StockDeliveryStateEnum::BOOKED_IN,
+                StockDeliveryStateEnum::PLACED,
+                StockDeliveryStateEnum::CANCELLED,
+                StockDeliveryStateEnum::NOT_RECEIVED,
+            ])
+            ->first();
+
+        if ($openAuroraStockDelivery) {
+            throw ValidationException::withMessages([
+                'purchase_order_transaction_ids' => __('This purchase order already has the stock delivery :reference, book the goods in on it', ['reference' => $openAuroraStockDelivery->reference]),
+            ]);
+        }
+
         $purchaseOrderTransactionsQuery = $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
             ->with(['historicSupplierProduct', 'orgStock']);

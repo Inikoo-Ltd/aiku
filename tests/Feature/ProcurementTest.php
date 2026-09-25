@@ -1597,6 +1597,17 @@ test('create stock delivery from purchase order', function () {
     return $stockDelivery;
 });
 
+test('purchase order with an open aurora stock delivery refuses a second one', function (StockDelivery $stockDelivery) {
+    $stockDelivery->update(['source_id' => '1:999999', 'state' => StockDeliveryStateEnum::DISPATCHED]);
+    $purchaseOrder = $stockDelivery->purchaseOrders()->first();
+
+    expect(fn () => StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh()))
+        ->toThrow(ValidationException::class)
+        ->and($purchaseOrder->stockDeliveries()->count())->toBe(1);
+
+    $stockDelivery->update(['source_id' => null, 'state' => StockDeliveryStateEnum::IN_PROCESS]);
+})->depends('create stock delivery from purchase order');
+
 
 test('hydrate agents', function () {
     $agent = Agent::first();

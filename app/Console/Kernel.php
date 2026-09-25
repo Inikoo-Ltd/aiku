@@ -463,17 +463,6 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
-            foreach (['aw' => '4:05', 'sk' => '4:15', 'es' => '4:25', 'aroma' => '4:35'] as $organisationSlug => $scheduledAt) {
-                $this->logSchedule(
-                    $schedule->command('org_stock_movement:get_cost_per_sku_from_aurora '.$organisationSlug)->dailyAt($scheduledAt)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                        monitorSlug: 'GetOrgStockMovementCostPerSkuFromAurora'.ucfirst($organisationSlug),
-                    ),
-                    name: 'GetOrgStockMovementCostPerSkuFromAurora'.ucfirst($organisationSlug),
-                    type: 'command',
-                    scheduledAt: now()->format('H:i')
-                );
-            }
-
             foreach (['aw' => '5:05', 'sk' => '5:15', 'es' => '5:25', 'aroma' => '5:35'] as $organisationSlug => $scheduledAt) {
                 $this->logSchedule(
                     $schedule->command('org_stock_movement:calculate_running_values '.$organisationSlug.' --days=2')->dailyAt($scheduledAt)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
@@ -808,30 +797,12 @@ class Kernel extends ConsoleKernel
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
+
             $this->logSchedule(
                 $schedule->command('dispatched-email:clean-provider-dispatch-id')->dailyAt('3:30')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'CleanProviderDispatchID',
                 ),
                 name: 'CleanProviderDispatchID',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-
-            $this->logSchedule(
-                $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
-                    monitorSlug: 'FetchDispatchedEmails',
-                ),
-                name: 'FetchDispatchedEmails',
-                type: 'command',
-                scheduledAt: now()->format('H:i')
-            );
-
-            $this->logSchedule(
-                $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(4, 17)->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
-                    monitorSlug: 'FetchEmailTrackingEvents',
-                ),
-                name: 'FetchEmailTrackingEvents',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
