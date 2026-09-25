@@ -14,11 +14,11 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,19 +34,23 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class GetOrgStockDiscontinuePreview extends OrgAction
 {
+    /** @var array<string, Organisation|null> */
+    private array $organisationCache = [];
+
     /**
      * @param  Collection<int, OrgStock>  $orgStocks
      * @return array<int, array<string, mixed>>
      */
-    public function handle(Collection $orgStocks): array
+    public function handle(Collection $orgStocks, ?User $user = null): array
     {
-        return $orgStocks->map(fn (OrgStock $orgStock) => $this->previewFor($orgStock))->values()->all();
+        return $orgStocks->map(fn (OrgStock $orgStock) => $this->previewFor($orgStock, $user))->values()->all();
     }
 
-    private function previewFor(OrgStock $orgStock): array
+    private function previewFor(OrgStock $orgStock, ?User $user): array
     {
         $orgStock->loadMissing('stats');
         $productIds = DB::table('product_has_org_stocks')->where('org_stock_id', $orgStock->id)->pluck('product_id')->all();
+        $organisations = $this->siblingStates($orgStock);
 
         return [
             'id'              => $orgStock->id,
@@ -55,8 +59,9 @@ class GetOrgStockDiscontinuePreview extends OrgAction
             'name'            => $orgStock->name,
             'state'           => $orgStock->state->value,
             'state_label'     => $orgStock->state->labels()[$orgStock->state->value],
+            'organisation'    => $orgStock->organisation->code,
             'updated_at'      => $orgStock->updated_at?->toIso8601String(),
-            'organisations'   => $this->siblingStates($orgStock),
+            'organisations'   => $organisations,
             'quantity'        => (float) $orgStock->quantity_in_locations,
             'days_of_cover'   => $orgStock->stats?->week_of_cover === null ? null : round($orgStock->stats->week_of_cover * 7),
             'number_products' => count($productIds),
@@ -69,7 +74,22 @@ class GetOrgStockDiscontinuePreview extends OrgAction
             'mailshots'        => ['known' => false, 'reason' => __('Mailshots are not linked to products in aiku')],
             'orders'           => $this->openOrders($productIds),
             'is_exclusive'     => $this->isExclusive($productIds),
+            'can_change_group' => $user ? DiscontinueOrgStocks::canChangeGroupStatus($user) : false,
+            'changeable_organisations' => $user ? $this->changeableOrganisationCodes(array_keys($organisations), $user) : [],
         ];
+    }
+
+    /**
+     * @param  array<int, string>  $codes
+     * @return array<int, string>
+     */
+    private function changeableOrganisationCodes(array $codes, User $user): array
+    {
+        return collect($codes)->filter(function (string $code) use ($user) {
+            $organisation = $this->organisationCache[$code] ??= Organisation::where('code', $code)->first();
+
+            return $organisation && DiscontinueOrgStocks::canChangeStatus($user, $organisation);
+        })->values()->all();
     }
 
     private function siblingStates(OrgStock $orgStock): array
@@ -234,7 +254,7 @@ class GetOrgStockDiscontinuePreview extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
+        return DiscontinueOrgStocks::canChangeStatus($request->user(), $this->organisation);
     }
 
     public function rules(): array
@@ -254,14 +274,14 @@ class GetOrgStockDiscontinuePreview extends OrgAction
     {
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($this->orgStocksFromIds($this->validatedData['org_stock_ids']));
+        return $this->handle($this->orgStocksFromIds($this->validatedData['org_stock_ids']), $request->user());
     }
 
-    public function action(Organisation $organisation, array $orgStockIds): array
+    public function action(Organisation $organisation, array $orgStockIds, ?User $user = null): array
     {
         $this->asAction = true;
         $this->initialisation($organisation, ['org_stock_ids' => $orgStockIds]);
 
-        return $this->handle($this->orgStocksFromIds($this->validatedData['org_stock_ids']));
+        return $this->handle($this->orgStocksFromIds($this->validatedData['org_stock_ids']), $user);
     }
 }

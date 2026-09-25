@@ -8,10 +8,10 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
-use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInOrgStock;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStockFamily\UI\ShowOrgStockFamily;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\OrgAction;
@@ -67,7 +67,7 @@ class ShowOrgStock extends OrgAction
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
-        $canDiscontinue = $request->user()->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
+        $canDiscontinue = DiscontinueOrgStocks::canChangeStatus($request->user(), $this->organisation);
         $hasMaster     = $orgStock->stock;
         $subNavigation = $this->getOrgStockSubNavigation($orgStock, $request);
 

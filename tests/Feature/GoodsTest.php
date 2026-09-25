@@ -13,6 +13,10 @@ use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\UI\ShowGoodsDashboard;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
@@ -1126,4 +1130,119 @@ test('tariff codes index lists rows and the export name is editable', function (
         ->and($fetch->normaliseCode('902300000'))->toBe('0902300000')
         ->and($fetch->normaliseCode('9021000'))->toBe('09021000')
         ->and($fetch->normaliseCode('3406000000'))->toBe('3406000000');
+});
+
+describe('Product Command & Control extras', function () {
+    beforeEach(function () {
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->group->id));
+    });
+
+    test('dashboard page carries period, rates, editable_organisations and can_change_group', function () {
+        $response = get(route('grp.goods.dashboard'));
+
+        $response->assertOk()->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Goods/ProductCommandControl')
+                ->where('period', '90d')
+                ->has('periods')
+                ->has('rates')
+                ->has('editable_organisations')
+                ->has('can_change_group');
+        });
+    });
+
+    test('export streams a CSV with the expected header row', function () {
+        $response = get(route('grp.goods.export'));
+
+        $content   = $response->streamedContent();
+        $firstLine = strtok($content, "\n");
+
+        expect($response->headers->get('content-type'))->toContain('text/csv')
+            ->and($firstLine)->toContain('Code')
+            ->and($firstLine)->toContain('Group status');
+    });
+
+    test('product detail route returns the per organisation and status history structure', function () {
+        [$stock] = createStocks($this->group);
+        createOrgStocks($this->organisation, [$stock]);
+
+        $response = get(route('grp.goods.products.show', ['stock' => $stock->slug]));
+
+        $response->assertOk()->assertJsonStructure([
+            'id', 'code', 'name', 'group_state', 'all_retired',
+            'organisations' => [
+                '*' => [
+                    'organisation', 'name', 'on_hand', 'available', 'allocated', 'inbound',
+                    'next_expected_at', 'inbound_lines', 'days_of_cover', 'state', 'differs_from_group', 'shops', 'monthly_sales',
+                ],
+            ],
+            'status_history',
+        ]);
+    });
+
+    test('ns, off, raw-material and retired conditions are classified correctly', function () {
+        $family = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GDCCFAM']));
+
+        $stockNs  = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GDCC-NS']));
+        $stockOff = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GDCC-OFF']));
+        $stockRaw = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GDCC-RAW']));
+        $stockRet = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GDCC-RET']));
+
+        DB::table('stocks')->whereIn('id', [$stockNs->id, $stockOff->id, $stockRaw->id, $stockRet->id])->update(['stock_family_id' => $family->id]);
+
+        [$orgStockNs, $orgStockOff, $orgStockRaw, $orgStockRet] = createOrgStocks($this->organisation, [$stockNs, $stockOff, $stockRaw, $stockRet]);
+
+        $orgStockNs->update(['quantity_available' => 0, 'quantity_in_locations' => 0, 'is_on_demand' => false]);
+        $orgStockOff->update(['quantity_available' => 10, 'quantity_in_locations' => 10, 'is_on_demand' => false]);
+        $orgStockRaw->update(['quantity_available' => 10, 'quantity_in_locations' => 10, 'is_on_demand' => false]);
+        $orgStockRet->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+
+        $productionId = DB::table('productions')->insertGetId([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'slug'            => 'gdcc-test-production',
+            'code'            => 'GDCCPROD',
+            'name'            => 'GDCC test production',
+            'settings'        => '{}',
+            'data'            => '{}',
+            'sources'         => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+
+        DB::table('raw_materials')->insert([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'slug'            => 'gdcc-test-raw-material',
+            'type'            => 'ingredient',
+            'production_id'   => $productionId,
+            'org_stock_id'    => $orgStockRaw->id,
+            'code'            => 'GDCCRAW',
+            'description'     => 'GDCC test raw material',
+            'unit_cost'       => 1,
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->group->id));
+
+        $familyResult = ShowGoodsDashboard::make()->forGroup($this->group)->handle(['family' => 'GDCCFAM']);
+        $familyRows   = collect($familyResult['rows'])->keyBy('code');
+
+        expect($familyRows->get('GDCC-NS')['organisations'][$this->organisation->code]['condition'])->toBe('ns')
+            ->and($familyRows->get('GDCC-OFF')['organisations'][$this->organisation->code]['condition'])->toBe('off')
+            ->and($familyRows->get('GDCC-RAW')['organisations'][$this->organisation->code]['condition'])->not->toBe('off')
+            ->and($familyRows->has('GDCC-RET'))->toBeFalse();
+
+        $retiredResult = ShowGoodsDashboard::make()->forGroup($this->group)->handle(['family' => 'GDCCFAM', 'state' => OrgStockStateEnum::DISCONTINUED->value]);
+        $retiredRows   = collect($retiredResult['rows'])->keyBy('code');
+
+        expect($retiredRows->get('GDCC-RET')['organisations'][$this->organisation->code]['condition'])->toBe('ret')
+            ->and($retiredRows->get('GDCC-RET')['all_retired'])->toBeTrue();
+
+        $searchResult = ShowGoodsDashboard::make()->forGroup($this->group)->handle(['family' => 'GDCCFAM', 'search' => 'GDCC-RET']);
+
+        expect(collect($searchResult['rows'])->pluck('code'))->toContain('GDCC-RET');
+    });
 });

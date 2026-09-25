@@ -41,11 +41,13 @@ class GetProductionStockCoverBuckets
 
     private function bucketExpression(int $leadDays): string
     {
+        $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $leadDays)";
+
         return "case
             when os.id is null then 'never'
             when os.quantity_available <= 0 then 'out'
             when s.days_of_cover <= $leadDays then 'w1'
-            when s.days_of_cover <= 2 * $leadDays then 'w2'
+            when s.days_of_cover <= $understock then 'w2'
             when s.days_of_cover <= 3 * $leadDays then 'w3'
             when s.days_of_cover <= 4 * $leadDays then 'w4'
             when coalesce(s.predicted_daily_usage, 0) = 0 and s.stock_value > 0 then 'dead'
@@ -63,6 +65,8 @@ class GetProductionStockCoverBuckets
                     ->where('os.state', OrgStockStateEnum::ACTIVE->value);
             })
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
+            ->leftJoin('stocks', 'stocks.id', 'os.stock_id')
+            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('a.production_id', $production->id)
             ->whereNull('a.deleted_at')
             ->whereRaw('coalesce(os.is_on_demand, false) = false');

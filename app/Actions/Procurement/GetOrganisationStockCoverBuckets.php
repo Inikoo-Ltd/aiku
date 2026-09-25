@@ -69,18 +69,34 @@ class GetOrganisationStockCoverBuckets
         return 'coalesce(org_stocks.measured_lead_time_days, org_stocks.estimated_lead_time_days, sp.measured_lead_time_days, sp.estimated_lead_time_days, '.GetSupplierLeadTime::DEFAULT_DAYS.')';
     }
 
+    /**
+     * Per-family overrides live in stock_families.data->stock_cover, keyed understock_days and
+     * overstock_days; a caller's join must be aliased exactly "stock_families" for these to resolve.
+     */
+    public function understockDaysExpression(string $lead): string
+    {
+        return "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
+    }
+
+    public function overstockDaysExpression(): string
+    {
+        return "coalesce((stock_families.data->'stock_cover'->>'overstock_days')::int, ".self::EXCESS_DAYS.')';
+    }
+
     public function bucketExpression(): string
     {
-        $lead = $this->leadTimeExpression();
+        $lead       = $this->leadTimeExpression();
+        $understock = $this->understockDaysExpression($lead);
+        $overstock  = $this->overstockDaysExpression();
 
         return "case
             when org_stocks.quantity_available <= 0 then 'out'
             when org_stock_stats.days_of_cover <= $lead then 'w1'
-            when org_stock_stats.days_of_cover <= 2 * $lead then 'w2'
+            when org_stock_stats.days_of_cover <= $understock then 'w2'
             when org_stock_stats.days_of_cover <= 3 * $lead then 'w3'
             when org_stock_stats.days_of_cover <= 4 * $lead then 'w4'
             when coalesce(org_stock_stats.predicted_daily_usage, 0) = 0 and org_stock_stats.stock_value > 0 then 'dead'
-            when org_stock_stats.days_of_cover >= ".self::EXCESS_DAYS." then 'excess'
+            when org_stock_stats.days_of_cover >= $overstock then 'excess'
             else 'ok' end";
     }
 
@@ -89,6 +105,8 @@ class GetOrganisationStockCoverBuckets
         return $query
             ->leftJoinLateral($this->primarySupplierProduct(), 'sp')
             ->leftJoin('org_stock_stats', 'org_stock_stats.org_stock_id', 'org_stocks.id')
+            ->leftJoin('stocks', 'stocks.id', 'org_stocks.stock_id')
+            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('org_stocks.organisation_id', $organisation->id)
             ->where('org_stocks.state', OrgStockStateEnum::ACTIVE->value)
             ->whereRaw('coalesce(org_stocks.is_on_demand, false) = false')

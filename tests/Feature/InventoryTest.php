@@ -12,6 +12,10 @@ namespace Tests\Feature;
 
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
+use App\Actions\Goods\StockFamily\UpdateStockFamily;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Mcp\Servers\AikuServer;
+use App\Mcp\Tools\OrgStockDiscontinueTool;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
@@ -157,6 +161,8 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Mockery;
+use RuntimeException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -416,6 +422,33 @@ test('update org stock route needs stock edit permission', function (OrgStock $o
     $this->patchJson($url, ['name' => 'Renamed by stock controller'])->assertOk();
     expect($orgStock->refresh()->name)->toBe('Renamed by stock controller');
 
+    $reset($originalRoles);
+})->depends('update org stock');
+
+test('changing an org stock state through update needs the status permission', function (OrgStock $orgStock) {
+    $warehouse = $this->organisation->warehouses()->first() ?? createWarehouse();
+    $user      = $this->guest->getUser();
+
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $reset         = function (array $roles) use ($user) {
+        setPermissionsTeamId($user->group_id);
+        $user->syncRoles($roles);
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+    };
+    $url = route('grp.org.warehouses.show.inventory.org_stocks.update', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]);
+
+    $reset([RolesEnum::getRoleName('stock-controller', $warehouse)]);
+    $this->patchJson($url, ['state' => OrgStockStateEnum::DISCONTINUING->value])->assertForbidden();
+    expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+
+    $reset([RolesEnum::getRoleName('stock-controller', $warehouse), RolesEnum::getRoleName('supply-chain', $this->group)]);
+    $this->patchJson($url, ['state' => OrgStockStateEnum::DISCONTINUING->value])->assertOk();
+    expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
+
+    UpdateOrgStock::make()->action($orgStock, ['state' => OrgStockStateEnum::ACTIVE->value]);
     $reset($originalRoles);
 })->depends('update org stock');
 
@@ -3857,6 +3890,183 @@ describe('discontinue confirm', function () {
         $after = $row();
         expect($after['state'])->toBe('discontinuing')
             ->and($after['organisations']['other']['condition'])->toBe('sell');
+    });
+});
+
+describe('discontinue authorisation', function () {
+    beforeEach(function () {
+        $stocks = array_map(
+            fn () => StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])),
+            range(1, 2)
+        );
+        $this->authOrgStocks = createOrgStocks($this->organisation, $stocks);
+
+        $otherOrganisation = Organisation::where('code', 'other')->first();
+        if (!$otherOrganisation) {
+            $otherOrganisation = StoreOrganisation::make()->action(
+                $this->group,
+                array_merge(Organisation::factory()->definition(), ['code' => 'other', 'type' => OrganisationTypeEnum::SHOP])
+            );
+        }
+        $this->authOtherOrganisation = $otherOrganisation;
+        $this->authOtherOrgStocks    = createOrgStocks($otherOrganisation, $stocks);
+
+        ensureFirstWarehouseHasCountry($this->organisation);
+
+        $this->authUser          = $this->guest->getUser();
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authOriginalRoles = $this->authUser->roles->pluck('name')->toArray();
+    });
+
+    afterEach(function () {
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles($this->authOriginalRoles);
+        $this->authUser->update(['can_use_mcp_discontinue' => false]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    });
+
+    test('a user with the group supply-chain permission can change status group wide', function () {
+        $orgStock      = $this->authOrgStocks[0];
+        $otherOrgStock = $this->authOtherOrgStocks[0];
+
+        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'reason'        => 'group wide change',
+        ], $this->authUser);
+
+        expect($stats['changed'])->toBeGreaterThanOrEqual(1)
+            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
+    });
+
+    test('a buyer can change status in their own organisation but is refused group scope and organisation overrides', function () {
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles([RolesEnum::getRoleName(RolesEnum::PROCUREMENT_CLERK->value, $this->organisation)]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $orgStock      = $this->authOrgStocks[0];
+        $otherOrgStock = $this->authOtherOrgStocks[0];
+
+        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'scope'         => 'organisation',
+            'reason'        => 'buyer scoped change',
+        ], $this->authUser);
+
+        expect($stats['changed'])->toBe(1)
+            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::ACTIVE->value,
+        ], $this->authUser))->toThrow(ValidationException::class);
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$orgStock->id],
+            'state'               => OrgStockStateEnum::DISCONTINUING->value,
+            'scope'               => 'organisation',
+            'organisation_states' => ['other' => OrgStockStateEnum::ACTIVE->value],
+            'reason'              => 'attempted override',
+        ], $this->authUser))->toThrow(ValidationException::class);
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->authOtherOrganisation, [
+            'org_stock_ids' => [$otherOrgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'scope'         => 'organisation',
+            'reason'        => 'wrong organisation',
+        ], $this->authUser))->toThrow(ValidationException::class);
+    });
+
+    test('a user with neither permission is refused by the action and the controller', function () {
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles([]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $orgStock  = $this->authOrgStocks[0];
+        $warehouse = $this->organisation->warehouses()->first() ?? createWarehouse();
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'scope'         => 'organisation',
+            'reason'        => 'no permission',
+        ], $this->authUser))->toThrow(ValidationException::class);
+
+        actingAs($this->authUser->refresh());
+        $this->post(route('grp.org.warehouses.show.inventory.org_stocks.discontinue', [$this->organisation->slug, $warehouse->slug]), [
+            'org_stock_ids' => [$orgStock->id], 'state' => 'discontinuing', 'reason' => 'no',
+        ])->assertForbidden();
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+    });
+
+    test('the mcp discontinue tool applies the central permission check on top of mcp enrolment', function () {
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles([]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->authUser->update(['can_use_mcp_discontinue' => true]);
+
+        $orgStock = $this->authOrgStocks[0];
+
+        AikuServer::actingAs($this->authUser)->tool(OrgStockDiscontinueTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code],
+            'state'        => 'discontinuing',
+            'reason'       => 'no permission via mcp',
+            'request_text' => 'please discontinue',
+        ])->assertHasErrors(['Changing every organisation needs the Supply Chain Manager permission']);
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+    });
+
+    test('a group-wide change is atomic: a failure partway through rolls back every organisation', function () {
+        $orgStock      = $this->authOrgStocks[0];
+        $otherOrgStock = $this->authOtherOrgStocks[0];
+
+        $mock = Mockery::mock(UpdateOrgStock::class);
+        $mock->shouldReceive('action')->andReturnUsing(function (OrgStock $target, array $data) {
+            if ($target->organisation->code === 'other') {
+                throw new RuntimeException('boom mid loop');
+            }
+            $target->update(['state' => $data['state']]);
+
+            return $target;
+        });
+        app()->instance(UpdateOrgStock::class, $mock);
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'reason'        => 'atomic test',
+        ]))->toThrow(RuntimeException::class);
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+    });
+});
+
+describe('stock cover thresholds per family', function () {
+    test('a per-family overstock_days override changes the bucket', function () {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'estimated_lead_time_days' => 10, 'quantity_available' => 50]);
+        $orgStock->stats->update(['days_of_cover' => 50, 'predicted_daily_usage' => 1, 'stock_value' => 100]);
+
+        $buckets = GetOrganisationStockCoverBuckets::make();
+        expect($buckets->bucketOf($orgStock->fresh()))->toBe('ok');
+
+        $stockFamily = StoreStockFamily::make()->action($this->group, StockFamily::factory()->definition());
+        UpdateStock::make()->action($stock, ['stock_family_id' => $stockFamily->id]);
+        UpdateStockFamily::make()->action($stockFamily, ['overstock_days' => 40]);
+
+        expect($buckets->bucketOf($orgStock->fresh()))->toBe('excess');
     });
 });
 

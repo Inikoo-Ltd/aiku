@@ -148,6 +148,10 @@ class UpdateOrgStock extends OrgAction
             return true;
         }
 
+        if ($request->has('state') && !DiscontinueOrgStocks::canChangeStatus($request->user(), $this->organisation)) {
+            return false;
+        }
+
         return $request->user()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation));
     }
 

@@ -51,14 +51,15 @@ class GetAgentStockCoverBuckets
      */
     private function bucketExpression(int $leadDays): string
     {
-        $lead = "coalesce(sp.measured_lead_time_days, sp.estimated_lead_time_days, $leadDays)";
+        $lead       = "coalesce(sp.measured_lead_time_days, sp.estimated_lead_time_days, $leadDays)";
+        $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
 
         return "case
             when os.id is null then 'never'
             when os.state <> '".OrgStockStateEnum::ACTIVE->value."' then 'gone'
             when os.quantity_available <= 0 then 'out'
             when s.days_of_cover <= $lead then 'w1'
-            when s.days_of_cover <= 2 * $lead then 'w2'
+            when s.days_of_cover <= $understock then 'w2'
             when s.days_of_cover <= 3 * $lead then 'w3'
             when s.days_of_cover <= 4 * $lead then 'w4'
             when coalesce(s.predicted_daily_usage, 0) = 0 and s.stock_value > 0 then 'dead'
@@ -82,7 +83,7 @@ class GetAgentStockCoverBuckets
             ->where('link.status', true)
             ->orderBy('link.local_priority')
             ->orderByRaw("(org_stocks.state = '".OrgStockStateEnum::ACTIVE->value."') desc, org_stocks.quantity_available desc nulls last")
-            ->select(['org_stocks.id', 'org_stocks.state', 'org_stocks.quantity_available', 'org_stocks.health_rank'])
+            ->select(['org_stocks.id', 'org_stocks.stock_id', 'org_stocks.state', 'org_stocks.quantity_available', 'org_stocks.health_rank'])
             ->limit(1);
     }
 
@@ -92,6 +93,8 @@ class GetAgentStockCoverBuckets
             ->join('supplier_products as sp', 'sp.id', 'osp.supplier_product_id')
             ->leftJoinLateral(self::bestOrgStock(), 'os')
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
+            ->leftJoin('stocks', 'stocks.id', 'os.stock_id')
+            ->leftJoin('stock_families', 'stock_families.id', 'stocks.stock_family_id')
             ->where('osp.org_agent_id', $orgAgent->id)
             ->where('osp.state', OrgSupplierProductStateEnum::ACTIVE->value)
             ->where('osp.is_available', true)

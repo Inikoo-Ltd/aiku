@@ -19,7 +19,9 @@ use App\Actions\Goods\StockFamily\UI\CreateStockFamily;
 use App\Actions\Goods\StockFamily\UI\EditStockFamily;
 use App\Actions\Goods\StockFamily\UI\IndexStockFamilies;
 use App\Actions\Goods\StockFamily\UI\ShowStockFamily;
+use App\Actions\Goods\UI\ExportGoodsDashboard;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
+use App\Actions\Goods\UI\ShowGoodsProductDetail;
 use App\Actions\Helpers\TariffCode\UI\IndexTariffCodes;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +30,8 @@ require_once __DIR__ . '/common/trade_units.php';
 require_once __DIR__ . '/common/trade_unit_families.php';
 
 Route::get('/', ShowGoodsDashboard::class)->name('dashboard');
+Route::get('/export', ExportGoodsDashboard::class)->name('export');
+Route::get('/products/{stock}', ShowGoodsProductDetail::class)->name('products.show');
 Route::get('tariff-codes', IndexTariffCodes::class)->name('tariff_codes.index');
 
 Route::prefix('stocks')->as('stocks.')->group(function () {

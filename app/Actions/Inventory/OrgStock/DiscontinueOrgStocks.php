@@ -12,6 +12,7 @@ use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Enums\SysAdmin\Authorisation\OrganisationPermissionsEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -21,8 +22,10 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -53,6 +56,8 @@ class DiscontinueOrgStocks extends OrgAction
      */
     public function handle(Collection $orgStocks, array $modelData): array
     {
+        $this->assertCanChangeStatus($orgStocks, $modelData);
+
         $targetState = OrgStockStateEnum::from($modelData['state']);
         $overrides   = Arr::get($modelData, 'organisation_states', []);
         $effectiveAt = Arr::get($modelData, 'effective_at') ? Carbon::parse($modelData['effective_at']) : now();
@@ -62,47 +67,95 @@ class DiscontinueOrgStocks extends OrgAction
 
         $set = Arr::get($modelData, 'scope', 'group') === 'group' ? $this->groupSet($orgStocks) : $orgStocks->load('organisation');
 
-        foreach ($set as $orgStock) {
-            $organisationCode = $orgStock->organisation->code;
-            $state            = OrgStockStateEnum::from(Arr::get($overrides, $organisationCode, $targetState->value));
+        DB::transaction(function () use ($set, $overrides, $targetState, $effectiveAt, $scheduled, $modelData, &$stats): void {
+            foreach ($set as $orgStock) {
+                $organisationCode = $orgStock->organisation->code;
+                $state            = OrgStockStateEnum::from(Arr::get($overrides, $organisationCode, $targetState->value));
 
-            $record = [
-                'from_state'    => $orgStock->state->value,
-                'to_state'      => $state->value,
-                'scope'         => Arr::get($modelData, 'scope', 'group'),
-                'group_state'   => $targetState->value,
-                'overrides'     => (object) $overrides,
-                'reason'        => Arr::get($modelData, 'reason'),
-                'effective_at'  => $effectiveAt->toIso8601String(),
-                'source'        => Arr::get($modelData, 'source', 'ui'),
-                'request_text'  => Arr::get($modelData, 'request_text'),
-                'requested_by'  => $this->user?->username,
-            ];
+                $record = [
+                    'from_state'    => $orgStock->state->value,
+                    'to_state'      => $state->value,
+                    'scope'         => Arr::get($modelData, 'scope', 'group'),
+                    'group_state'   => $targetState->value,
+                    'overrides'     => (object) $overrides,
+                    'reason'        => Arr::get($modelData, 'reason'),
+                    'effective_at'  => $effectiveAt->toIso8601String(),
+                    'source'        => Arr::get($modelData, 'source', 'ui'),
+                    'request_text'  => Arr::get($modelData, 'request_text'),
+                    'requested_by'  => $this->user?->username,
+                ];
 
-            if ($scheduled) {
-                $orgStock->update(['data' => array_merge($orgStock->data, [self::SCHEDULED_KEY => $record])]);
-                $this->audit($orgStock, 'schedule_state_change', $record);
-                $stats['scheduled']++;
-                continue;
+                if ($scheduled) {
+                    $orgStock->update(['data' => array_merge($orgStock->data, [self::SCHEDULED_KEY => $record])]);
+                    $this->audit($orgStock, 'schedule_state_change', $record);
+                    $stats['scheduled']++;
+                    continue;
+                }
+
+                if (Arr::has($orgStock->data, self::SCHEDULED_KEY)) {
+                    $orgStock->update(['data' => Arr::except($orgStock->data, [self::SCHEDULED_KEY])]);
+                }
+
+                if ($orgStock->state === $state) {
+                    $stats['unchanged']++;
+                    continue;
+                }
+
+                UpdateOrgStock::make()->action($orgStock, ['state' => $state->value]);
+                $this->audit($orgStock, 'state_change', $record);
+                $stats['changed']++;
             }
-
-            if (Arr::has($orgStock->data, self::SCHEDULED_KEY)) {
-                $orgStock->update(['data' => Arr::except($orgStock->data, [self::SCHEDULED_KEY])]);
-            }
-
-            if ($orgStock->state === $state) {
-                $stats['unchanged']++;
-                continue;
-            }
-
-            UpdateOrgStock::make()->action($orgStock, ['state' => $state->value]);
-            $this->audit($orgStock, 'state_change', $record);
-            $stats['changed']++;
-        }
+        });
 
         Cache::forget(ShowGoodsDashboard::cacheKey($this->organisation->group_id));
 
         return $stats;
+    }
+
+    /**
+     * The scheduled sweep runs with no user because it only executes a request that was already
+     * authorised when it was made; every other door carries a user and goes through here.
+     */
+    private function assertCanChangeStatus(Collection $orgStocks, array $modelData): void
+    {
+        if (!$this->user) {
+            return;
+        }
+
+        $scope = Arr::get($modelData, 'scope', 'group');
+
+        if ($scope === 'group') {
+            if (!self::canChangeGroupStatus($this->user)) {
+                throw ValidationException::withMessages([
+                    'scope' => __('Changing every organisation needs the Supply Chain Manager permission'),
+                ]);
+            }
+        } else {
+            foreach ($orgStocks->load('organisation')->pluck('organisation')->unique('id') as $organisation) {
+                if (!self::canChangeStatus($this->user, $organisation)) {
+                    throw ValidationException::withMessages([
+                        'scope' => __('You can change SKOs in :organisation only', ['organisation' => $organisation->code]),
+                    ]);
+                }
+            }
+        }
+
+        if (Arr::get($modelData, 'organisation_states', []) && !self::canChangeGroupStatus($this->user)) {
+            throw ValidationException::withMessages([
+                'organisation_states' => __('Changing every organisation needs the Supply Chain Manager permission'),
+            ]);
+        }
+    }
+
+    public static function canChangeGroupStatus(User $user): bool
+    {
+        return $user->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
+    }
+
+    public static function canChangeStatus(User $user, Organisation $organisation): bool
+    {
+        return self::canChangeGroupStatus($user)
+            || $user->authTo(OrganisationPermissionsEnum::getPermissionName(OrganisationPermissionsEnum::PROCUREMENT->value, $organisation));
     }
 
     /**
@@ -137,7 +190,7 @@ class DiscontinueOrgStocks extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([GroupPermissionsEnum::SUPPLY_CHAIN->value, GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value]);
+        return self::canChangeStatus($request->user(), $this->organisation);
     }
 
     public function rules(): array
