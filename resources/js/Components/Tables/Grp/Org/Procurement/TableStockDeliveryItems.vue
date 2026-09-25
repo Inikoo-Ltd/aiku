@@ -357,6 +357,20 @@ async function distributeExtraCost(type: 'equally' | 'by_value') {
                     {{ ctrans('Packed in') }} {{ formatQuantity(Number(item.units_per_pack) || 1) }}s ,
                     {{ ctrans('sko/C') }}: {{ formatQuantity(skosPerCarton(item)) }}
                 </div>
+                <div v-if="item.locations?.length" class="mt-1 w-fit min-w-40 divide-y divide-gray-100 border-t border-gray-100 text-xs">
+                    <div v-for="location in item.locations" :key="location.id" class="flex justify-between gap-x-6 py-0.5">
+                        <Link
+                            v-if="sowingLocationRoute(location, item)"
+                            :href="sowingLocationRoute(location, item)"
+                            class="secondaryLink"
+                        >
+                            {{ location.location_code }}
+                        </Link>
+                        <span v-else>{{ location.location_code }}</span>
+                        <span class="text-gray-500">{{ formatQuantity(Number(location.quantity)) }}</span>
+                    </div>
+                </div>
+                <div v-else-if="item.org_stock_id" class="mt-1 text-xs italic text-red-500">{{ ctrans('No location yet') }}</div>
             </div>
         </template>
 

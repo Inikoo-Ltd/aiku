@@ -3565,7 +3565,7 @@ test('SKO labels are the compliance team\'s: workers draft, supervisors publish,
         ->assertNotFound();
 });
 
-test('compliance labels place icons, wrapped texts and a text per language taken from the product record', function () {
+test('compliance labels place icons, wrapped texts, free texts and a text per language taken from the product record', function () {
     \App\Actions\SysAdmin\Group\Seeders\SeedGroupPermissions::run($this->group);
     $orgStock  = labelTestOrgStock($this->organisation, $this->group);
     $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
@@ -3574,8 +3574,10 @@ test('compliance labels place icons, wrapped texts and a text per language taken
         'label_info'          => [
             'markets'                  => ['uk'],
             'languages'                => ['de'],
-            'ce_marking'               => true,
-            'packaging_material_codes' => ['show' => true, 'value' => ['pet_1', 'pap_21']],
+            'ce_marking'                    => true,
+            'best_before'                   => 'pao_12m',
+            'sorting_recycling_information' => true,
+            'packaging_material_codes'      => ['show' => true, 'value' => ['pet_1', 'pap_21']],
         ],
     ]);
     $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
@@ -3587,7 +3589,15 @@ test('compliance labels place icons, wrapped texts and a text per language taken
         ->and($information['ukca_marking'])->toBe('')
         ->and($information['eu_responsible_person'])->toBe('')
         ->and($information['warnings:de'])->toBe('')
-        ->and($information['directions_for_use:de'])->toBe('');
+        ->and($information['directions_for_use:de'])->toBe('')
+        ->and($information['product_name:de'])->toBe('')
+        ->and($information['period_after_opening'])->toBe('pao_12m')
+        ->and($information['sorting_information'])->toBe('triman,info_tri')
+        ->and($information['free_text'])->toBe('');
+
+    foreach (['pao_12m', 'triman', 'info_tri'] as $icon) {
+        expect(\App\Actions\Production\Artefact\Label\GetArtefactLabelIconSource::run($icon))->toStartWith('data:image/svg+xml;base64,');
+    }
 
     $userWithRole = function (string $role) {
         $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
@@ -3597,9 +3607,9 @@ test('compliance labels place icons, wrapped texts and a text per language taken
     };
 
     actingAs($userWithRole('compliance-manager'));
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['product_name:de']])
+    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['ingredients:de']])
         ->assertUnprocessable();
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['warnings:de', 'packaging_materials']])
+    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['warnings:de', 'packaging_materials', 'product_name:de', 'period_after_opening']])
         ->assertOk();
 
     $layout = [
@@ -3611,6 +3621,10 @@ test('compliance labels place icons, wrapped texts and a text per language taken
         'fields'      => [
             ['source' => 'packaging_materials', 'text' => 'pet_1,pap_21', 'x' => 0.05, 'y' => 0.05, 'font_size' => 8, 'color' => '#000000', 'icon_size' => 0.25],
             ['source' => 'warnings:de', 'text' => "Nicht verschlucken.\nAußer Reichweite von Kindern aufbewahren.", 'x' => 0.05, 'y' => 0.5, 'font_size' => 6, 'color' => '#000000', 'box_width' => 0.8, 'height' => 6.2, 'rotation' => 90],
+            ['source' => 'product_name:de', 'text' => 'Magnesium-Badesalz', 'x' => 0.05, 'y' => 0.3, 'font_size' => 7, 'color' => '#000000'],
+            ['source' => 'period_after_opening', 'text' => 'pao_12m', 'x' => 0.6, 'y' => 0.05, 'font_size' => 8, 'color' => '#000000', 'icon_size' => 0.2],
+            ['source' => 'sorting_information', 'text' => 'triman,info_tri', 'x' => 0.6, 'y' => 0.3, 'font_size' => 8, 'color' => '#000000', 'icon_size' => 0.2],
+            ['source' => 'free_text', 'text' => 'Weight / Peso / Gewicht', 'x' => 0.05, 'y' => 0.9, 'font_size' => 6, 'color' => '#000000'],
         ],
     ];
 
@@ -3621,6 +3635,7 @@ test('compliance labels place icons, wrapped texts and a text per language taken
     $label = \App\Models\Production\ArtefactLabel::find($labelId);
 
     expect($label->layout['fields'][0]['icon_size'])->toBe(0.25)
+        ->and($label->layout['fields'][5]['text'])->toBe('Weight / Peso / Gewicht')
         ->and($label->layout['fields'][1]['box_width'])->toBe(0.8)
         ->and($label->layout['fields'][1]['height'])->toBe(6.2)
         ->and($label->missingMandatoryInformation())->toBe([]);

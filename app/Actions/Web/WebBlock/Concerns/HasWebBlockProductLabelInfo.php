@@ -10,6 +10,7 @@
 namespace App\Actions\Web\WebBlock\Concerns;
 
 use App\Actions\Goods\TradeUnit\GetLabelInfoLanguages;
+use App\Actions\Production\Artefact\Label\GetArtefactLabelIconSource;
 use App\Enums\Goods\TradeUnit\TradeUnitBestBeforeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitPackagingMaterialEnum;
@@ -47,9 +48,9 @@ trait HasWebBlockProductLabelInfo
             'safety_icons'                  => $this->presenceItem(__('Safety Icons'), $labelInfo, 'safety_icons'),
             'net_quantity'                  => $this->getNetQuantity($product),
             'packaging_material_codes'      => $this->labelInfoItem(__('Packaging Material Codes'), $packagingMaterialCodesData['show'], $packagingMaterialCodesData['value']),
-            'ce_marking'                    => $this->presenceItem(__('CE Markings'), $labelInfo, 'ce_marking'),
+            'ce_marking'                    => $this->markItem(__('CE Markings'), $labelInfo, 'ce_marking', GetArtefactLabelIconSource::CE_MARKING),
             'ukca_marking'                  => $this->presenceItem(__('UKCA Marking'), $labelInfo, 'ukca_marking'),
-            'weee_symbol'                   => $this->presenceItem(__('WEEE Symbol'), $labelInfo, 'weee_symbol'),
+            'weee_symbol'                   => $this->markItem(__('WEEE Symbol'), $labelInfo, 'weee_symbol', GetArtefactLabelIconSource::WEEE_SYMBOL),
             'ip_rating'                     => $this->presenceItem(__('IP Rating'), $labelInfo, 'ip_rating'),
             'sorting_recycling_information' => $this->presenceItem(__('Sorting / Recycling Information'), $labelInfo, 'sorting_recycling_information'),
         ];
@@ -74,6 +75,14 @@ trait HasWebBlockProductLabelInfo
         $isPresent = data_get($labelInfo, $field, false) === true;
 
         return $this->labelInfoItem($label, $isPresent, $isPresent);
+    }
+
+    private function markItem(string $label, ?array $labelInfo, string $field, string $icon): array
+    {
+        return [
+            ...$this->presenceItem($label, $labelInfo, $field),
+            'mark' => GetArtefactLabelIconSource::run($icon),
+        ];
     }
 
     private function textItem(string $label, ?string $value): array
