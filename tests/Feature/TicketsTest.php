@@ -29,6 +29,7 @@ use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
 use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -80,7 +81,13 @@ beforeAll(function () {
     loadDB();
 });
 
+/* Laravel writes datetimes as naive UTC strings, so a Postgres session on any other zone
+   stores them shifted and hands them back shifted: a waiting_at written a second ago reads
+   hours old, and a fixture written at 11:48 comes back at another time entirely. Pinned for
+   this file only, and put back afterwards so no other suite inherits it. */
 beforeEach(function () {
+    DB::statement("set time zone 'UTC'");
+
     list($this->organisation, $this->user, $this->shop) = createShop();
     $this->group    = $this->organisation->group;
     $this->website  = createWebsite($this->shop);
@@ -94,6 +101,10 @@ beforeEach(function () {
     $this->user->forgetWildcardPermissionIndex();
     Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
+});
+
+afterEach(function () {
+    DB::statement('set time zone default');
 });
 
 test('help ticket gets a HELP reference and defaults', function () {
