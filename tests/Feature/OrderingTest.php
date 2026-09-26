@@ -4819,3 +4819,85 @@ test('org and group amounts of orders and invoices use the whole exchange rate',
         ->and((float) $transaction->grp_net_amount)->toBe(round((float) $transaction->net_amount * $grpExchange, 2))
         ->and((float) $transaction->org_net_amount)->toBe(round((float) $transaction->net_amount * $orgExchange, 2));
 });
+
+test('b2b dashboard insights show the customer spend, their regular products and when each is due again', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    [, $product] = createProduct($this->shop);
+    $product->update(['status' => ProductStatusEnum::FOR_SALE, 'price' => 10, 'available_quantity' => 1000]);
+
+    foreach ([30, 10] as $daysAgo) {
+        $order = StoreOrder::make()->action($customer, Order::factory()->definition());
+        StoreTransaction::make()->action($order, $product->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 4]));
+        $order->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays($daysAgo), 'net_amount' => 40]);
+    }
+
+    $insights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh());
+    $regular  = collect($insights['regulars'])->firstWhere('id', $product->id);
+
+    expect($insights['kpis']['orders'])->toBe(2)
+        ->and($insights['kpis']['spend'])->toEqual(80)
+        ->and($insights['kpis']['average_order'])->toEqual(40)
+        ->and($insights['kpis']['days_since_last'])->toBe(10)
+        ->and($insights['monthly'])->toHaveCount(12)
+        ->and($insights['recent_orders'])->toHaveCount(2)
+        ->and($regular['orders'])->toBe(2)
+        ->and($regular['average_quantity'])->toBe(4)
+        ->and($regular['reorder_every_days'])->toBe(20)
+        ->and($regular['days_until_due'])->toBe(10)
+        ->and($regular['stock_status'])->toBe('in_stock')
+        ->and($regular['is_purchasable'])->toBeTrue();
+});
+
+test('b2b dashboard insights work for a customer who never ordered and for one who stopped ordering', function () {
+    $newCustomer = freshCustomerLike($this->shop, $this->customer);
+    $newInsights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($newCustomer);
+
+    expect($newInsights['kpis']['orders'])->toBe(0)
+        ->and($newInsights['kpis']['last_order_at'])->toBeNull()
+        ->and($newInsights['kpis']['is_lapsed'])->toBeFalse()
+        ->and($newInsights['regulars'])->toBe([])
+        ->and($newInsights['recent_orders'])->toBe([])
+        ->and($newInsights['recommendations_source'])->toBe('shop_best_sellers');
+
+    $lostCustomer = freshCustomerLike($this->shop, $this->customer);
+    [, $product] = createProduct($this->shop);
+    $product->update(['status' => ProductStatusEnum::FOR_SALE, 'price' => 10, 'available_quantity' => 1000]);
+    $order = StoreOrder::make()->action($lostCustomer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $product->currentHistoricProduct, Transaction::factory()->definition());
+    $order->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays(900), 'net_amount' => 50]);
+
+    $lostInsights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($lostCustomer->fresh());
+
+    expect($lostInsights['kpis']['orders'])->toBe(0)
+        ->and($lostInsights['kpis']['days_since_last'])->toBe(900)
+        ->and($lostInsights['kpis']['is_lapsed'])->toBeTrue()
+        ->and(collect($lostInsights['regulars'])->pluck('id')->all())->toBe([$product->id])
+        ->and($lostInsights['recent_orders'])->toHaveCount(1)
+        ->and($lostInsights['recommendations_source'])->toBe('bought_together');
+});
+
+test('ordering a past order again fills the basket once, however many times it is pressed', function () {
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    [, $product] = createProduct($this->shop);
+    $product->update(['status' => ProductStatusEnum::FOR_SALE, 'price' => 10, 'available_quantity' => 1000]);
+
+    $pastOrder = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($pastOrder, $product->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 6]));
+    $pastOrder->update(['state' => OrderStateEnum::DISPATCHED]);
+
+    $first  = \App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder);
+    $second = \App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder);
+
+    $basket = $customer->fresh()->orderInBasket;
+    $line   = $basket->transactions()->where('model_type', 'Product')->where('model_id', $product->id)->first();
+
+    expect($first)->toBe(['added' => 1, 'skipped' => []])
+        ->and($second['added'])->toBe(1)
+        ->and($pastOrder->fresh()->state)->toBe(OrderStateEnum::DISPATCHED)
+        ->and($basket->id)->not->toBe($pastOrder->id)
+        ->and((float) $line->quantity_ordered)->toEqual(6.0);
+
+    $product->update(['status' => ProductStatusEnum::DISCONTINUED]);
+    expect(\App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder)['skipped'])
+        ->toBe([['code' => $product->code, 'name' => $product->name]]);
+});

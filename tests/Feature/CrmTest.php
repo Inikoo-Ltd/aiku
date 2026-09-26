@@ -793,6 +793,27 @@ test('UI show customer showcase tab has stats for KPI cards', function () {
     });
 });
 
+test('UI show customer mirrors the dashboard the customer sees in retina', function () {
+    $customer = createCustomer($this->shop);
+    $response = get(route('grp.org.shops.show.crm.customers.show', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $customer->slug,
+        'tab' => 'retina_dashboard',
+    ]));
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Org/Shop/CRM/Customer')
+            ->where('tabs.current', 'retina_dashboard')
+            ->has('tabs.navigation.retina_dashboard')
+            ->has('retina_dashboard.kpis')
+            ->has('retina_dashboard.monthly', 12)
+            ->has('retina_dashboard.regulars')
+            ->has('retina_dashboard.recent_orders')
+            ->has('retina_dashboard.recommendations');
+    });
+});
+
 test('UI show customer timeline tab', function () {
     $customer = Customer::first();
     $response = get(route('grp.org.shops.show.crm.customers.show', [

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, inject } from 'vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faBuilding, faEnvelope, faPhone, faTags, faMedal as fasMedal, faGlobeEurope, faIslandTropical, faIdCard } from "@fas"
 import { faMedal } from "@fal"
 import { faMedal as fadMedal } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "@inertiajs/vue3";
+import { Link, Deferred } from "@inertiajs/vue3";
+import B2BDashboardInsights from "@/Components/Retina/Dashboard/B2BDashboardInsights.vue"
 import GoldReward from '@/Components/Utils/GoldReward.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { textReplaceVariables } from "@/Composables/Workshop"
@@ -17,9 +18,8 @@ library.add(faUser, faMedal, fasMedal, fadMedal,faBuilding, faEnvelope, faPhone,
 const props = defineProps<{
     data: {}
     welcome_message: string
+    insights?: Record<string, any>
 }>()
-
-console.log('RetinaB2BDashboard', props)
 const layout = inject('layout', retinaLayoutStructure)
 
 const showBanner = ref(false);
@@ -36,12 +36,32 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
 </script>
 
 <template>
-    <div class="p-8">
+    <div class="p-4 sm:p-8">
+        <div class="mb-6">
+            <h1 class="text-2xl font-semibold tracking-tight text-gray-900">
+                {{ ctrans("Hello") }}<template v-if="data?.customer?.contact_name">, {{ data.customer.contact_name }}</template>
+            </h1>
+            <p class="mt-1 text-sm text-gray-500">{{ ctrans("Here is how your business with us is going.") }}</p>
+        </div>
+
+        <Deferred data="insights">
+            <template #fallback>
+                <div class="mb-8 space-y-6 animate-pulse" aria-hidden="true">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <div v-for="n in 4" :key="n" class="h-28 rounded-xl bg-gray-100" />
+                    </div>
+                    <div class="h-72 rounded-xl bg-gray-100" />
+                    <div class="h-56 rounded-xl bg-gray-100" />
+                </div>
+            </template>
+            <B2BDashboardInsights v-if="insights" :insights="insights" class="mb-8" />
+        </Deferred>
+
         <!-- Customer Contact Information -->
         <div v-if="data?.customer" class="relative mb-8 p-4  rounded-lg border "
             :class="layout.offer_data?.type === 'gr' ? 'bg-yellow-50/30 border-yellow-300' : 'bg-gray-50 border-gray-200'"
         >
-            <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ trans("Customer Information") }}</h2>
+            <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ ctrans("Customer Information") }}</h2>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Left Column: Customer Information -->
@@ -50,7 +70,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-user"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Contact Name')" fixed-width
+                            v-tooltip="ctrans('Contact Name')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.contact_name }}</span>
                     </div>
@@ -58,7 +78,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-building"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Company Name')" fixed-width
+                            v-tooltip="ctrans('Company Name')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.company_name }}</span>
                     </div>
@@ -66,7 +86,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-envelope"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Email')" fixed-width
+                            v-tooltip="ctrans('Email')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.email }}</span>
                     </div>
@@ -74,7 +94,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-phone"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Phone')" fixed-width
+                            v-tooltip="ctrans('Phone')" fixed-width
                         />
                         <span class="text-gray-900">{{ data.customer.phone }}</span>
                     </div>
@@ -82,7 +102,7 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
                         <FontAwesomeIcon
                             icon="fas fa-tags"
                             class="text-gray-600 mr-2 w-4 h-4"
-                            v-tooltip="trans('Interests')" fixed-width
+                            v-tooltip="ctrans('Interests')" fixed-width
                         />
                         <div class="flex items-center gap-2 w-full">
                             <span
@@ -187,9 +207,9 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
         </div>
 
         <!-- <div>
-            <h1 class="text-4xl mb-4">{{ trans("Hello") }}, <span class="font-bold">{{ data?.customer?.contact_name }}</span>!</h1>
+            <h1 class="text-4xl mb-4">{{ ctrans("Hello") }}, <span class="font-bold">{{ data?.customer?.contact_name }}</span>!</h1>
             <p>
-                {{ trans("Welcome to the E-commerce dashboard. Here you can manage your business-to-business operations.") }}
+                {{ ctrans("Welcome to the E-commerce dashboard. Here you can manage your business-to-business operations.") }}
             </p>
         </div> -->
         <div v-if="welcome_message" v-html="textReplaceVariables(welcome_message, layout.iris_variables)"></div>
@@ -199,10 +219,10 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
         <div class="flex items-center gap-x-6 bg-yellow-600 px-6 py-2.5 sm:px-3.5 sm:before:flex-1 rounded-b-md">
             <p class="truncate text-sm/6 text-white">
                 <Link :href="route('retina.sysadmin.settings.edit', { section: 1 })" class="underline font-semibold">
-                    {{ trans("Help us personalize your experience!") }}
+                    {{ ctrans("Help us personalize your experience!") }}
                 </Link>
                 <span class="mx-2">—</span>
-                {{ trans("Please fill in your interests to get relevant offers and recommendations.") }}
+                {{ ctrans("Please fill in your interests to get relevant offers and recommendations.") }}
             </p>
             <div class="flex flex-1 justify-end">
                 <button type="button" @click="showBanner = false" class="-m-3 p-3 focus-visible:-outline-offset-4">

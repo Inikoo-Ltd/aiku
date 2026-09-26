@@ -56,7 +56,12 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
         $preferCheaper  = ($modelData['prefer_cheaper'] ?? true) !== false;
         $referencePrice = $preferCheaper ? $this->getBasketReferencePrice($shop, $basketProductIds) : 0.0;
 
-        $candidates = $this->getScoredCandidates($shop, $basketProductIds, $referencePrice, $preferCheaper);
+        $excludedProductIds = array_values(array_unique(array_merge(
+            $basketProductIds,
+            array_map('intval', $modelData['exclude_product_ids'] ?? [])
+        )));
+
+        $candidates = $this->getScoredCandidates($shop, $basketProductIds, $excludedProductIds, $referencePrice, $preferCheaper);
 
         return $this->diversifyByFamily($candidates);
     }
@@ -95,6 +100,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
     private function getScoredCandidates(
         Shop $shop,
         array $basketProductIds,
+        array $excludedProductIds,
         float $referencePrice,
         bool $preferCheaper
     ): Collection {
@@ -116,7 +122,7 @@ class GetRetinaProductBasketRecommendations extends RetinaAction
             ->where('products.has_live_webpage', true)
             ->where('products.available_quantity', '>', 0)
             ->where('products.price', '>', 0)
-            ->whereNotIn('products.id', $basketProductIds)
+            ->whereNotIn('products.id', $excludedProductIds)
             ->where(function ($query) {
                 $query->where(function ($subQuery) {
                     $subQuery->where('products.is_minion_variant', false)

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Traits;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -21,7 +22,7 @@ trait HasBasketTransactions
         }
 
         $order = Order::find($customer->current_order_in_basket_id);
-        if (! $order) {
+        if (! $order || $order->state != OrderStateEnum::CREATING) {
             return [];
         }
 

@@ -94,6 +94,7 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTran
 use App\Actions\Retina\Dropshipping\Orders\UpdateOrderGrGift;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Ecom\Basket\SelectRetinaOrderShipper;
+use App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessage;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessagePdf;
@@ -315,6 +316,7 @@ Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(f
     Route::post('remove-voucher', RemoveRetinaOrderVoucher::class)->name('remove_voucher');
     Route::delete('delete-basket', DeleteRetinaBasket::class)->name('delete_basket');
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
+    Route::post('repeat', RepeatRetinaEcomOrder::class)->name('repeat');
     Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
     Route::post('pay-with-balance-after-submitted', PayRetinaOrderWithBalanceAfterSubmitted::class)->name('pay_with_balance_after_submitted');
 
