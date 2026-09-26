@@ -3400,3 +3400,18 @@ test('a checker claims a ticket, it leaves every other checker\'s QA list, and o
     actingAs($otherQa);
     get(route('grp.tickets.show', $askedOfOther->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true)->where('qa_held_by_another', false));
 });
+
+test('an engineer writes an incident post-mortem on a ticket and customers cannot', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Side basket empty']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'Root cause: null charge', 'post_mortem' => true])->assertOk()->assertSee('"commented":true');
+
+    $postMortem = $ticket->comments()->latest('id')->first();
+    expect($postMortem->type)->toBe(\App\Enums\Helpers\Ticket\TicketCommentTypeEnum::POST_MORTEM)
+        ->and(\App\Http\Resources\Helpers\TicketCommentResource::make($postMortem)->resolve()['type'])->toBe('post_mortem')
+        ->and(StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'plain'], false)->type)->toBe(\App\Enums\Helpers\Ticket\TicketCommentTypeEnum::COMMENT);
+
+    expect(fn () => StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'mine', 'type' => 'post_mortem'], false))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+});

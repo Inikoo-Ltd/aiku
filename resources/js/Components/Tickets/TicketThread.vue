@@ -38,7 +38,7 @@ const qaVerdictIcon: Record<string, string> = {
 
 const props = withDefaults(defineProps<{
     ticket: { id?: number; subject: string; description: string | null; reporter: string | null; reporter_roles?: { key: string; label: string }[]; reporter_avatar?: Record<string, string> | null; reporter_username?: string | null; reporter_key?: string | null; reporter_profile_url?: string | null; is_from_slack?: boolean; reference_url?: string | null; created_at: string; images?: Record<string, string>[] }
-    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; has_qa_verdict?: string | null; qa_verdict_label?: string | null; author_avatar?: Record<string, string> | null; author_username?: string | null; author_key?: string | null; author_profile_url?: string | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
+    comments: { id: number; body: string; is_internal: boolean; is_lead_only?: boolean; type?: string; has_qa_verdict?: string | null; qa_verdict_label?: string | null; author_avatar?: Record<string, string> | null; author_username?: string | null; author_key?: string | null; author_profile_url?: string | null; author_roles?: { key: string; label: string }[]; can_toggle_visibility?: boolean; is_staff: boolean; author: string | null; created_at: string; images?: Record<string, string>[]; attachments?: { name: string; url: string }[]; can_edit?: boolean; can_delete?: boolean }[]
     commentRoute: { name: string; parameters: Record<string, unknown> }
     mentionable?: { username: string; name: string | null; suggested?: boolean; is_customer?: boolean }[]
     commentsNewestFirst?: boolean
@@ -51,7 +51,7 @@ const emit = defineEmits<{
     (e: "update:commentsNewestFirst", value: boolean): void
 }>()
 
-const form = useForm<{ body: string; images: File[]; is_internal: boolean }>({ body: "", images: [], is_internal: false })
+const form = useForm<{ body: string; images: File[]; is_internal: boolean; type: string }>({ body: "", images: [], is_internal: false, type: "comment" })
 
 const composer = ref<{ appendMention: (username: string) => void } | null>(null)
 
@@ -154,7 +154,7 @@ const submit = () => {
 
         <slot name="after-description" />
 
-        <form class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
+        <form class="space-y-3 rounded-lg border p-4 transition duration-200" :class="form.type === 'post_mortem' ? 'border-red-300 bg-red-50' : form.is_internal ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'" @submit.prevent="submit">
             <TicketComposer ref="composer" v-model:body="form.body" v-model:images="form.images" :rows="4" :mentionable="form.is_internal ? mentionable?.filter((person) => !person.is_customer) : mentionable" :placeholder="ctrans('Write a comment, paste a screenshot or drop images')" />
             <p v-if="form.errors.body || form.errors.images" class="text-xs text-red-600">{{ form.errors.body || form.errors.images }}</p>
             <div class="flex flex-wrap items-center justify-end gap-3">
@@ -162,6 +162,10 @@ const submit = () => {
                     <input v-model="form.is_internal" type="checkbox" class="cursor-pointer rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
                     {{ ctrans("Engineering note") }}
                     <span class="text-xs font-normal text-gray-400">{{ ctrans("staff only, shown collapsed") }}</span>
+                </label>
+                <label v-if="canCommentInternally" class="flex cursor-pointer select-none items-center gap-2 text-sm transition duration-200" :class="form.type === 'post_mortem' ? 'font-semibold text-red-700' : 'text-gray-500 hover:text-gray-700'">
+                    <input v-model="form.type" type="checkbox" true-value="post_mortem" false-value="comment" class="cursor-pointer rounded border-gray-300 text-red-500 focus:ring-red-400" />
+                    {{ ctrans("Incident post-mortem") }}
                 </label>
                 <Button :label="form.is_internal ? ctrans('Add engineering note') : ctrans('Comment')" :loading="form.processing" :disabled="!form.body.trim() && !form.images.length" @click="submit" />
             </div>
@@ -178,7 +182,7 @@ const submit = () => {
                 v-for="comment in sortedComments"
                 :key="comment.id"
                 class="rounded-md border px-3 py-2 text-sm"
-                :class="comment.has_qa_verdict ? 'bg-purple-50 border-purple-200' : comment.is_lead_only ? 'bg-rose-50 border-rose-200' : comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
+                :class="comment.type === 'post_mortem' ? 'bg-red-50 border-red-200' : comment.has_qa_verdict ? 'bg-purple-50 border-purple-200' : comment.is_lead_only ? 'bg-rose-50 border-rose-200' : comment.is_internal ? 'bg-amber-50 border-amber-200' : comment.is_staff ?'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'"
             >
                 <div class="text-xs text-gray-500 mb-1 flex items-center gap-2">
                     <span v-if="comment.author" class="flex items-center gap-1.5 font-medium text-gray-700">
@@ -199,6 +203,7 @@ const submit = () => {
                         <FontAwesomeIcon :icon="qaVerdictIcon[comment.has_qa_verdict] ?? 'fal fa-vial'" fixed-width />
                         {{ ctrans("QA") }} · {{ comment.qa_verdict_label ?? comment.has_qa_verdict }}
                     </span>
+                    <span v-if="comment.type === 'post_mortem'" class="px-1.5 py-0.5 rounded bg-red-200 text-red-900 text-[10px] font-medium">{{ ctrans("Incident post-mortem") }}</span>
                     <span v-if="comment.is_internal" class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-medium">{{ ctrans("Engineering note") }}</span>
                     <span v-if="comment.is_lead_only" class="px-1.5 py-0.5 rounded bg-rose-200 text-rose-900 text-[10px] font-medium">{{ ctrans("Lead engineers only") }}</span>
                     <span class="ml-auto flex gap-1">

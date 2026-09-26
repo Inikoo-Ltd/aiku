@@ -13,6 +13,7 @@ use App\Actions\Helpers\Ticket\StoreTicketComment;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\UpdateTicketComment;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Enums\Helpers\Ticket\TicketCommentTypeEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\Helpers\Ticket;
@@ -41,6 +42,7 @@ class TicketWriteTool extends Tool
             'comment'     => ['sometimes', 'string'],
             'comment_id'  => ['sometimes', 'integer'],
             'internal'    => ['sometimes', 'boolean'],
+            'post_mortem' => ['sometimes', 'boolean'],
             'status'      => ['sometimes', 'in:open,in_progress,waiting,resolved,pending_deploy,cancelled'],
             'priority'    => ['sometimes', 'in:low,normal,high,urgent'],
             'assignee'    => ['sometimes', 'nullable', 'string'],
@@ -103,6 +105,9 @@ class TicketWriteTool extends Tool
         }
         if ($request->has('tags') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the people working on the ticket can change its tags. You can comment on it.');
+        }
+        if ($request->boolean('post_mortem') && !$ticket->canContributeBy($user)) {
+            return Response::error('Only the assignee, collaborators and lead engineers can write incident post-mortems.');
         }
         if ($request->boolean('internal') && !$ticket->canContributeBy($user)) {
             return Response::error('Only the assignee, collaborators and lead engineers can write internal notes.');
@@ -171,6 +176,7 @@ class TicketWriteTool extends Tool
             StoreTicketComment::make()->action($ticket, $user, [
                 'body'        => $request->string('comment')->toString(),
                 'is_internal' => $request->boolean('internal'),
+                'type'        => $request->boolean('post_mortem') ? TicketCommentTypeEnum::POST_MORTEM->value : TicketCommentTypeEnum::COMMENT->value,
                 'images'      => $attachments,
             ]);
         }
@@ -210,6 +216,7 @@ class TicketWriteTool extends Tool
             'comment'     => $schema->string()->description('Comment to add to the ticket, posted as you. With comment_id, the text that replaces that comment'),
             'comment_id'  => $schema->integer()->description('Id of one of your own comments on this ticket: its text is replaced by comment, rather than a new comment being added. Use it to correct something you already posted instead of following it with a correction'),
             'internal'    => $schema->boolean()->description('true = internal comment, visible to the help desk only. Use it for technical notes (ids repaired, commands run, root cause) so the public thread stays readable for the reporter'),
+            'post_mortem' => $schema->boolean()->description('true = the comment is an incident post-mortem (what broke, who was affected, root cause, fix, how it is prevented), shown highlighted in red on the ticket. Combine with internal for a help-desk-only post-mortem'),
             'status'      => $schema->string()->description('open, in_progress, waiting, resolved, pending_deploy or cancelled. pending_deploy = close after next deployment (fix already on main): the comment is held and posted when the deployment closes the ticket. Pass commit too'),
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),

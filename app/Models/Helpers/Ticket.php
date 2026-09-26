@@ -211,7 +211,7 @@ class Ticket extends Model implements Auditable, HasMedia
 
     public function comments(): HasMany
     {
-        return $this->hasMany(TicketComment::class)->where('type', TicketCommentTypeEnum::COMMENT);
+        return $this->hasMany(TicketComment::class)->whereIn('type', [TicketCommentTypeEnum::COMMENT, TicketCommentTypeEnum::POST_MORTEM]);
     }
 
     public function deployComment(): HasOne
