@@ -34,23 +34,19 @@ class ShowRetinaDashboard extends RetinaAction
             $inertiaPage = 'Dashboard/PupilFulfilmentDashboard';
         }
 
-        $props = [
-            'breadcrumbs' => $this->getBreadcrumbs(),
-            'data'        => match ($this->shop->type) {
-                ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($this->fulfilmentCustomer, $request),
-                ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($this->customer),
-                ShopTypeEnum::B2B => GetRetinaB2BHomeData::run($this->customer),
-                default => []
-            },
-            'welcome_message' => Arr::get($this->website->settings, 'welcome_message'),
-        ];
-
-        if ($this->shop->type === ShopTypeEnum::B2B && !$this->asPupil) {
-            $customer          = $this->customer;
-            $props['insights'] = Inertia::defer(fn () => GetRetinaB2BDashboardInsights::run($customer));
-        }
-
-        return Inertia::render($inertiaPage, $props);
+        return Inertia::render(
+            $inertiaPage,
+            [
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'data'        => match ($this->shop->type) {
+                    ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($this->fulfilmentCustomer, $request),
+                    ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($this->customer),
+                    ShopTypeEnum::B2B => GetRetinaB2BHomeData::run($this->customer),
+                    default => []
+                },
+                'welcome_message' => Arr::get($this->website->settings, 'welcome_message'),
+            ]
+        );
     }
 
     public function asController(ActionRequest $request): Response
