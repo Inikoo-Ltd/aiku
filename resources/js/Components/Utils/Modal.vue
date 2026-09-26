@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, inject, ref } from 'vue'
+import { ctrans } from '@/Composables/useTrans'
 library.add(faTimes)
 
 const props = withDefaults(defineProps<{
@@ -50,10 +51,10 @@ const closeModal = () => {
                             :style="dialogStyle"
                         >
                             <!-- Button: Close -->
-                            <div v-if="closeButton" @click="emits('onClose')" class="group px-1 absolute text-white/70 hover:text-white text-lg -right-10 top-2 cursor-pointer">
+                            <button v-if="closeButton" type="button" :aria-label="ctrans('Close')" @click="emits('onClose')" class="group z-10 px-1 absolute text-lg cursor-pointer right-3 top-3 text-gray-400 hover:text-gray-600 md:-right-10 md:top-2 md:text-white/70 md:hover:text-white">
                                 <FontAwesomeIcon icon='fal fa-times' class='' fixed-width
                                     aria-hidden='true' />
-                            </div>
+                            </button>
                             <slot />
                         </DialogPanel>
                     </TransitionChild>

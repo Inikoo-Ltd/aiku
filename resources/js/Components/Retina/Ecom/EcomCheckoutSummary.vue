@@ -1,16 +1,17 @@
 <script setup lang="ts">
     
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import { faClipboard, faDollarSign, faSortNumericDown, faWeight, faMapPin } from "@fal"
+import { faSortNumericDown, faWeight, faMapPin, faChevronDown, faBadgePercent } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { computed, inject, ref } from "vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import NeedToPayV2Retina from "@/Components/Utils/NeedToPayV2Retina.vue"
-import Toggle from "@/Components/Pure/Toggle.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { get, set } from "lodash"
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
@@ -86,11 +87,25 @@ const chooseDeliveryAddress = (choice: string, action: routeType) => {
         preserveScroll: true,
         onStart: () => { choosingDeliveryAddress.value = choice },
         onFinish: () => { choosingDeliveryAddress.value = null },
-        onError: () => notify({ title: trans("Something went wrong"), text: trans("Please try again or contact support."), type: "error" }),
+        onError: () => notify({ title: ctrans("Something went wrong"), text: ctrans("Please try again or contact support."), type: "error" }),
     })
 }
 
 const locale = inject('locale', {})
+const isSummaryExpanded = ref(false)
+const isCollection = computed(() => !!get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)))
+const billingAddressLine = computed(() => (props.summary?.customer?.addresses?.billing?.formatted_address ?? '')
+    .replace(/<br\s*\/?>/gi, ', ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .replace(/(\s*,\s*)+/g, ', ')
+    .replace(/^,\s*|,\s*$/g, '')
+    .trim())
+const orderTotal = computed(() => {
+    const summaryGroups = Object.values(props.summary?.order_summary ?? {}).filter(Array.isArray) as { price_total?: string | number }[][]
+    return summaryGroups.at(-1)?.at(-1)?.price_total ?? 0
+})
 const layout = inject('layout', retinaLayoutStructure)
 
 const isModalShippingAddress = ref(false)
@@ -131,8 +146,8 @@ const updateCollection = (value: boolean) => {
                 onError: (error) => {
                     console.error(error)
                     notify({
-                        title: trans("Something went wrong."),
-                        text: trans("Failed to update to collection"),
+                        title: ctrans("Something went wrong."),
+                        text: ctrans("Failed to update to collection"),
                         type: "error",
                     })
                 },
@@ -144,109 +159,85 @@ const updateCollection = (value: boolean) => {
 
 <template>
     <div class="py-4 grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-6 px-4">
-        <div class="col-span-2 grid grid-cols-2 gap-y-4">
-            <!-- Section: Billing Address -->
+        <div class="col-span-2 grid grid-cols-1 gap-y-4">
             <div class="">
-                <div class="font-semibold">
-                    <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Billing Address") }}
-                </div>
-                <div v-if="summary?.customer?.addresses?.billing?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.billing?.formatted_address">
-            
-                </div>
-                <div v-else class="text-gray-400 italic pl-6 pr-3">
-                    {{ trans("No billing address") }}
-                </div>
-
-                <div v-if="is_forbidden_billing" class="text-red-500 mt-3 text-xs">
-                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}
-                </div>
-            </div>
-            
-            <div class="">
-                <!-- Field: Collection (toggle) -->
-                <template v-if="isInBasket">
-                    <dl class="mt-1 mb-2 flex items-center w-full flex-none gap-x-1.5">
-                        <dt v-tooltip="trans('Collection')" class="flex-none">
-                            <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
-                        </dt>
-                        <dd class="text-gray-500 flex items-center gap-x-2" xv-tooltip="trans('Estimated weight of all products')">
-                            <Toggle
-                                :modelValue="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false))"
-                                @update:model-value="(e) => (set(props.order, ['new_is_collection'], e), updateCollection(e))"
-                                :loading="isLoadingCollection"
-                                :disabled="!props.isInBasket || !props.updateRoute?.name"
-                            />
-                            <span class="text-sm"
-                                :class="get(props.order, ['new_is_collection'], get(props.order, ['is_collection'], false)) ? 'text-green-600' : 'text-gray-500'"
-                            >
-                                {{ trans("Collection") }}
-                                <InformationIcon :information="trans('Select this if you want to come to our premisses to collect the order')" class="align-middle" />
-                            </span>
-                        </dd>
-                    </dl>
-                </template>
-                
-                <div v-else-if="get(props.order, ['is_collection'], false)" class="bg-gray-50 w-full text-center py-2 border border-gray-300 rounded">
-                    <FontAwesomeIcon :icon="faMapPin" class="text-gray-500" fixed-width aria-hidden="true"/>
-                    {{ trans("This order is for collection only") }}.
+                <div v-if="!isInBasket && get(props.order, ['is_collection'], false)" class="bg-gray-50 w-full text-center py-2 border border-gray-300 rounded">
+                    <FontAwesomeIcon :icon="faMapPin" class="text-gray-600" fixed-width aria-hidden="true"/>
+                    {{ ctrans("This order is for collection only") }}.
                 </div>
                 <!-- Section: Delivery Address -->
-                <div v-if="!get(props.order, ['is_collection'], false)" class="">
+                <div v-if="isInBasket || !isCollection" class="flow-root">
+                <div v-if="props.isInBasket" class="float-right ml-3 mb-2 flex flex-col divide-y divide-gray-200 rounded-md border border-gray-200 text-sm">
+                    <button v-if="address_management?.address_update_route" type="button" @click="isModalShippingAddress = true"
+                        class="px-3 py-2 text-left leading-tight text-gray-800 hover:text-gray-900 hover:bg-gray-50">
+                        {{ ctrans("Edit") }}
+                    </button>
+                </div>
                     <div class="font-semibold">
-                        <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
-                        {{ trans("Delivery Address") }}
+                        {{ isCollection ? ctrans("Collection") : ctrans("Delivery Address") }}
                     </div>
-                    <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
+                    <div v-if="isCollection" class="pr-3 text-gray-600">
+                        {{ ctrans("You will collect this order from :shop", { shop: layout?.iris?.shop?.name ?? '' }) }}.
                     </div>
-                    <div v-else class="text-gray-400 italic pl-6 pr-3">
-                        {{ trans("No delivery address") }}
+                    <template v-else>
+                    <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pr-3 leading-snug text-gray-600" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
                     </div>
-                    <div v-if="props.isInBasket && address_management?.address_update_route" @click="isModalShippingAddress = true"
-                        class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
-                        {{ trans("Edit") }}
-                        <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
+                    <div v-else class="text-gray-400 italic pr-3">
+                        {{ ctrans("No delivery address") }}
                     </div>
+                    </template>
+                    <div class="clear-both mt-3 rounded-md border border-gray-200 px-3 py-2 text-xs text-gray-600 leading-snug">
+                        <span class="font-medium">{{ ctrans("Billing address") }}:</span>
+                        {{ billingAddressLine || ctrans("No billing address") }}
+                        <Link :href="route('retina.sysadmin.settings.edit')" class="ml-1 whitespace-nowrap underline hover:text-gray-800">
+                            {{ ctrans("Edit") }}
+                        </Link>
+                    </div>
+                    <div v-if="is_forbidden_billing" class="text-red-500 mt-2 text-xs">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ ctrans("Your current billing address (:_country) is marked as forbidden, please update the address or contact support.", { _country: summary?.customer?.addresses?.billing?.country?.name }) }}
+                    </div>
+                    <template v-if="!isCollection">
                 
-                    <div v-if="earlierDeliveryAddress && !earlierDeliveryAddress.confirmed" class="ml-6 mr-3 mt-2 text-xs text-yellow-800 bg-yellow-50 border border-yellow-300 rounded px-2.5 py-2">
+                    <div v-if="earlierDeliveryAddress && !earlierDeliveryAddress.confirmed" class="mr-3 mt-2 text-xs text-yellow-800 bg-yellow-50 border border-yellow-300 rounded px-2.5 py-2">
                         <div>
-                            <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("Your last order went to:") }}
+                            <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ ctrans("Your last order went to:") }}
                         </div>
                         <div class="mt-1 pl-5" v-html="earlierDeliveryAddress.previous_address"></div>
                         <div v-if="earlierDeliveryAddress.actions" class="mt-2 pl-5 flex flex-col gap-y-1.5">
                             <div class="block w-full text-center cursor-pointer rounded-md border border-yellow-400 bg-yellow-100 px-3 py-1.5 font-medium hover:bg-yellow-200"
                                 :class="choosingDeliveryAddress ? 'pointer-events-none opacity-50' : ''"
                                 @click="chooseDeliveryAddress('confirm', earlierDeliveryAddress.actions.confirm_route)">
-                                {{ trans("Yes, deliver to :_address", { _address: earlierDeliveryAddress.current_address_line }) }}
+                                {{ ctrans("Yes, deliver to :_address", { _address: earlierDeliveryAddress.current_address_line }) }}
                             </div>
                             <div class="block w-full text-center cursor-pointer rounded-md border border-yellow-400 bg-yellow-100 px-3 py-1.5 font-medium hover:bg-yellow-200"
                                 :class="choosingDeliveryAddress ? 'pointer-events-none opacity-50' : ''"
                                 @click="chooseDeliveryAddress('previous', earlierDeliveryAddress.actions.use_previous_route)">
-                                {{ trans("Deliver to :_address instead", { _address: earlierDeliveryAddress.previous_address_line }) }}
+                                {{ ctrans("Deliver to :_address instead", { _address: earlierDeliveryAddress.previous_address_line }) }}
                             </div>
                             <Link v-if="changeAddressRoute?.name" :href="route(changeAddressRoute.name, changeAddressRoute.parameters)"
                                 class="block w-full text-center cursor-pointer rounded-md border border-yellow-400 bg-yellow-100 px-3 py-1.5 font-medium hover:bg-yellow-200">
-                                {{ trans("Use another address (in your basket)") }}
+                                {{ ctrans("Use another address (in your basket)") }}
                             </Link>
                         </div>
                     </div>
 
-                    <div v-if="is_forbidden_delivery" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
-                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
+                    <div v-if="is_forbidden_delivery" class="pr-4 text-red-500 mt-2 text-xs">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ ctrans("We cannot deliver to :_country, please update the address or contact support.", { _country: summary?.customer?.addresses?.delivery?.country?.name }) }}
                     </div>
+                    </template>
                 </div>
             </div>
 
 
             <!-- Section: Offer meters (free gift, etc)-->
-            <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-4 col-span-2 px-1">
+            <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-6 col-span-full px-1 flex flex-col gap-y-3">
                 <template v-for="(offer, offerIndex) in layout?.offer_meters" :key="offerIndex">
-                    <div v-if="isShowAllOffersMeter || isOfferFulfilled(offer)" class="grid grid-cols-2 mb-3 gap-x-4">
+                    <div v-if="isShowAllOffersMeter || isOfferFulfilled(offer)" class="grid grid-cols-2 gap-x-4">
                         <!-- Title: is gift -->
                         <div v-if="offer.is_gift" :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                             class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
                         >
-                            <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon icon='fal fa-gift' class='opacity-60 mr-1 shrink-0' fixed-width aria-hidden='true' />
                             <span class="font-bold">{{ ctrans('Gift') }}</span>:
 
                             <InformationIcon v-if="offer.information" :information="offer.information" class="ml-1" />
@@ -260,10 +251,11 @@ const updateCollection = (value: boolean) => {
                         <div v-else :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                             class="flex items-center whitespace-nowrap text-ellipsis truncate w-full"
                         >
-                            <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-base text-ellipsis truncate">
+                            <FontAwesomeIcon :icon="faBadgePercent" class="opacity-60 mr-1 shrink-0" fixed-width aria-hidden="true" />
+                            <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)" v-tooltip="offer.label" class="text-ellipsis truncate">
                                 {{ offer.label}}
                             </div>
-                            <div v-else v-tooltip="offer.label_got ?? offer.label" class="text-base text-green-600 text-ellipsis truncate">
+                            <div v-else v-tooltip="offer.label_got ?? offer.label" class="text-green-600 text-ellipsis truncate">
                                 {{ offer.label_got ?? offer.label}}
                             </div>
 
@@ -329,7 +321,7 @@ const updateCollection = (value: boolean) => {
             <div v-else-if="order?.state === 'cancelled'" class="mb-2.5">
                 <div class="text-yellow-600 border-yellow-500 bg-yellow-200 border rounded-md px-3 py-2">
                     <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Order cancelled, any payments made have been returned to your balance") }}
+                    {{ ctrans("Order cancelled, any payments made have been returned to your balance") }}
                 </div>
             </div>
 
@@ -364,20 +356,37 @@ const updateCollection = (value: boolean) => {
                 </div>
             </template>
 
-            <div>
+            <div class="hidden md:block">
                 <!-- Field: weight -->
                 <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                     <dt v-tooltip="ctrans('Weight')" class="flex-none pl-1">
-                        <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-gray-500" />
+                        <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-gray-600" />
                     </dt>
-                    <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
+                    <dd class="text-gray-600 sep" v-tooltip="ctrans('Estimated weight of all products')">
                         {{ summary?.order_properties?.weight || 0 }}
                     </dd>
                 </dl>
             </div>
 
-            <div class="border border-gray-200 p-2 rounded">
+            <button
+                type="button"
+                class="md:hidden w-full flex items-center justify-between border border-gray-200 rounded px-3 py-2.5 text-sm font-medium focus:outline-none"
+                :class="isSummaryExpanded ? 'rounded-b-none border-b-0' : ''"
+                :aria-expanded="isSummaryExpanded"
+                @click="isSummaryExpanded = !isSummaryExpanded"
+            >
+                <span class="flex items-baseline gap-x-2">
+                    {{ ctrans("Total") }}
+                    <span class="text-xs font-normal text-gray-600 underline decoration-dotted underline-offset-2">
+                        {{ isSummaryExpanded ? ctrans("Hide breakdown") : ctrans("Show breakdown") }}
+                        <FontAwesomeIcon :icon="faChevronDown" class="transition-transform" :class="isSummaryExpanded ? '' : 'rotate-180'" fixed-width aria-hidden="true" />
+                    </span>
+                </span>
+                <span class="text-base font-semibold">{{ locale.currencyFormat(layout?.iris?.currency?.code, orderTotal) }}</span>
+            </button>
+            <div class="border border-gray-200 p-2 rounded" :class="isSummaryExpanded ? 'rounded-t-none' : 'hidden md:block'">
                 <OrderSummary
+                    class="!text-gray-600"
                     :order_summary="summary.order_summary"
                     :currency_code="layout?.iris?.currency?.code"
                 >
@@ -390,6 +399,11 @@ const updateCollection = (value: boolean) => {
                                     {{ fieldSummary.label }}
                                 </span>
 
+                                <span v-tooltip="ctrans('Estimated weight of all products')" class="md:hidden ml-1.5 text-gray-400 flex items-center gap-x-0.5 whitespace-nowrap">
+                                    <FontAwesomeIcon :icon="faWeight" fixed-width aria-hidden="true" class="text-xs" />
+                                    {{ summary?.order_properties?.weight || 0 }}
+                                </span>
+
                                 <FontAwesomeLayers v-if="fieldSummary.data.discounted_shipping_offer_id" v-tooltip="ctrans('Shipping discount')" class="ml-1 me-2 text-green-500">
                                     <FontAwesomeIcon fixed-width icon="fal fa-truck"/>
                                     <FontAwesomeIcon fixed-width icon="fas fa-percent" style="left: unset; right: 6px; bottom: 2px; width: 30%;"/>
@@ -398,7 +412,7 @@ const updateCollection = (value: boolean) => {
                                 <!-- qq{{ fieldSummary.data.discounted_shipping_offer_id }}ww -->
                                 <FontAwesomeIcon v-if="fieldSummary.information_icon" icon='fal fa-question-circle'
                                     v-tooltip="fieldSummary.information_icon"
-                                    class='ml-1 cursor-pointer text-gray-400 hover:text-gray-500' fixed-width
+                                    class='ml-1 cursor-pointer text-gray-400 hover:text-gray-600' fixed-width
                                     aria-hidden='true'
                                 />
                                 
@@ -412,8 +426,8 @@ const updateCollection = (value: boolean) => {
             </div>
         </div>
         <!-- Section: Upcoming transactions (gift, follow on) -->
-        <div class="col-span-3">
-            <EcomUpcomingTransactions v-if="upcoming_transactions" :upcomingTransactions="upcoming_transactions" />
+        <div v-if="upcoming_transactions?.data?.length" class="col-span-2 md:col-span-3">
+            <EcomUpcomingTransactions :upcomingTransactions="upcoming_transactions" />
         </div>
         <!-- Section: Edit Delivery address -->
         <Modal v-if="address_management"
@@ -422,7 +436,21 @@ const updateCollection = (value: boolean) => {
             width="w-full max-w-lg"
             closeButton
         >
+            <label v-if="isInBasket" class="mb-5 mr-6 flex items-center gap-x-3 rounded-md border px-3 py-3 cursor-pointer select-none transition-colors"
+                :class="isCollection ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:bg-gray-50'">
+                <input
+                    type="checkbox"
+                    class="size-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    :checked="isCollection"
+                    :disabled="isLoadingCollection || !props.updateRoute?.name"
+                    @change="(event) => { const isChecked = (event.target as HTMLInputElement).checked; set(props.order, ['new_is_collection'], isChecked); updateCollection(isChecked) }"
+                />
+                <span class="font-medium text-gray-800">{{ ctrans("I want to collect this order from your warehouse") }}</span>
+                <LoadingIcon v-if="isLoadingCollection" class="ml-auto" />
+            </label>
+            <Button v-if="isCollection" :label="ctrans('Done')" full @click="() => (isModalShippingAddress = false)" />
             <AddressEditModal
+                v-else
                 :addresses="address_management.addresses"
                 :address="summary?.customer?.addresses?.delivery"
                 :updateRoute="address_management.address_update_route"
@@ -431,13 +459,13 @@ const updateCollection = (value: boolean) => {
                 :copyAddress="contact_address"
             >
                 <template #copy_address="{ address, isEqual }">
-                    <div v-if="isEqual" class="text-gray-500 text-sm">
-                        {{ trans("Same as the contact address") }}
-                        <FontAwesomeIcon v-if="isEqual" v-tooltip="trans('Same as contact address')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <div v-if="isEqual" class="text-gray-600 text-sm">
+                        {{ ctrans("Same as the contact address") }}
+                        <FontAwesomeIcon v-if="isEqual" v-tooltip="ctrans('Same as contact address')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                     </div>
 
-                    <div v-else class="underline text-sm text-gray-500 hover:text-blue-700 cursor-pointer">
-                        {{ trans("Copy from contact address") }}
+                    <div v-else class="underline text-sm text-gray-600 hover:text-blue-700 cursor-pointer">
+                        {{ ctrans("Copy from contact address") }}
                     </div>
                 </template>
             </AddressEditModal>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeMount, onMounted, onBeforeUnmount, defineAsyncComponent, nextTick } from "vue"
+import { ref, computed, inject, watch, onBeforeMount, onMounted, onBeforeUnmount, defineAsyncComponent, nextTick } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
+import { useSidePanel, websiteThemeVariables } from "@/Iris/Composables/useSidePanel"
+import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDrag"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -73,52 +75,25 @@ onMounted(() => {
     isMounted.value = true
 })
 
-// The floating button can be dragged vertically to uncover content beneath it;
-// the position sticks per device
-const FAB_POSITION_KEY = 'iris-search-fab-bottom'
-const fabBottom = ref<number | null>(null)
-let dragStartY = 0
-let dragStartBottom = 0
-let dragMoved = false
-
-const clampFabBottom = (value: number): number =>
-    Math.min(Math.max(value, 16), window.innerHeight - 140)
-
-onBeforeMount(() => {
-    const saved = Number(localStorage.getItem(FAB_POSITION_KEY))
-    if (saved) {
-        fabBottom.value = saved
+const layout: any = inject('layout', {})
+const sidePanel = useSidePanel()
+const isChatEnabled = !!usePage().props?.use_chat
+const floatingButtonsDrag = useFloatingButtonsDrag(layout)
+const fabStyle = computed(() => {
+    const buttonsBelow = (isChatEnabled && !sidePanel?.isOpen.value ? 1 : 0)
+        + (sidePanel?.isAvailable.value && sidePanel.canShowBasketPanel.value && !sidePanel.isOpen.value ? 1 : 0)
+    return {
+        ...websiteThemeVariables(layout),
+        bottom: `${24 + 64 * buttonsBelow + floatingButtonsDrag.offset.value}px`,
     }
 })
-
-const onFabTouchStart = (event: TouchEvent) => {
-    dragMoved = false
-    dragStartY = event.touches[0].clientY
-    dragStartBottom = fabBottom.value ?? clampFabBottom(88)
-}
-
-const onFabTouchMove = (event: TouchEvent) => {
-    const delta = dragStartY - event.touches[0].clientY
-    if (!dragMoved && Math.abs(delta) < 8) {
-        return
-    }
-    dragMoved = true
-    fabBottom.value = clampFabBottom(dragStartBottom + delta)
-}
-
-const onFabTouchEnd = () => {
-    if (dragMoved && fabBottom.value !== null) {
-        localStorage.setItem(FAB_POSITION_KEY, String(Math.round(fabBottom.value)))
-    }
-}
 
 const onTopBarClick = () => {
     openIrisSearchMobile('mobile_top_bar')
 }
 
 const onFabClick = () => {
-    if (dragMoved) {
-        dragMoved = false
+    if (floatingButtonsDrag.wasJustDragged()) {
         return
     }
     openIrisSearchMobile('mobile_floating_button')
@@ -297,8 +272,8 @@ const visitSearchPage = () => {
         <!-- Always-present floating search button in the thumb zone; drag it up or down -->
         <div
             v-if="!isOverlayOpen"
-            class="md:hidden fixed right-6 bottom-[calc(env(safe-area-inset-bottom)+13rem)] z-40 w-14 h-14"
-            :style="fabBottom !== null ? { bottom: `${fabBottom}px` } : undefined"
+            class="md:hidden fixed right-3 z-40 w-12 h-12"
+            :style="fabStyle"
         >
             <Transition
                 enter-active-class="transition-opacity duration-75"
@@ -325,18 +300,16 @@ const visitSearchPage = () => {
                 type="button"
                 xid="id || 'inputIrisSearchMobile'"
                 :aria-label="trans('Search')"
-                class="w-14 h-14 rounded-full bg-[var(--theme-color-0)] text-[var(--theme-color-1)] shadow-lg flex items-center justify-center opacity-60 focus-visible:opacity-100 active:opacity-100 active:scale-95 transition-[opacity,transform] touch-none"
-                @pointerdown="showDragHint"
-                @pointerup="hideDragHintSoon"
-                @pointercancel="hideDragHintSoon"
+                class="side-action-button rounded-full shadow-lg touch-none"
+                style="width: 3rem; height: 3rem;"
+                @pointerdown="(event) => { showDragHint(); floatingButtonsDrag.onPointerDown(event) }"
+                @pointermove="floatingButtonsDrag.onPointerMove"
+                @pointerup="() => { floatingButtonsDrag.onPointerUp(); hideDragHintSoon() }"
+                @pointercancel="() => { floatingButtonsDrag.onPointerUp(); hideDragHintSoon() }"
                 @pointerleave="hideDragHintSoon"
                 @click="onFabClick"
-                @touchstart.passive="onFabTouchStart"
-                @touchmove.prevent="onFabTouchMove"
-                @touchend="onFabTouchEnd"
-                @touchcancel="onFabTouchEnd"
             >
-                <FontAwesomeIcon icon="far fa-search" class="text-xl" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="far fa-search" class="text-base" fixed-width aria-hidden="true" />
             </button>
         </div>
 

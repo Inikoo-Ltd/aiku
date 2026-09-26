@@ -8,16 +8,15 @@ import { faLaptopCode, faLayerGroup } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
-import { router } from "@inertiajs/vue3"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
-import { clearIrisSession } from "@/Composables/clearIrisSession"
-import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
+import { useOpenBasketPanelOnClick } from "@/Iris/Composables/useSidePanel"
+import { useIrisLogout } from "@/Iris/Composables/useIrisLogout"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck, faLayerGroup, faSpinnerThird, faCog)
 
@@ -72,35 +71,8 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject("layout", {})
 
 // Section: Logout
-const isLoadingLogout = ref(false)
-let restoreIrisSession: (() => void) | null = null
-const onClickLogout = () => {
-    router.post(
-        '/app/logout',
-        {
-            
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => {
-                isLoadingLogout.value = true
-                restoreIrisSession = clearIrisSession(layout)
-            },
-            onError: errors => {
-                restoreIrisSession?.()
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to logout"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingLogout.value = false
-            },
-        }
-    )
-}
+const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
+const openBasketPanelOnClick = useOpenBasketPanelOnClick()
 
 const buttonClass = ref(getStyles(model.value?.button?.container?.properties, screenTypeInject, false))
 const buttonHoverClass = ref(getStyles(model.value?.button?.hover?.container?.properties, screenTypeInject,false))
@@ -282,6 +254,7 @@ const goToBundle = () => {
 
             <!-- Section: Basket (cart) -->
             <LinkIris v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')" href="/app/basket" :type="'internal'" v-slot="{ isLoading } = { isLoading: false }">
+                <span class="contents" @click="openBasketPanelOnClick">
                 <Button
                     
                     v-tooltip="ctrans('Cart count and amount')"  
@@ -301,6 +274,7 @@ const goToBundle = () => {
                         </span>
                     </template>
                 </Button>
+                </span>
             </LinkIris>
 
             <!-- Section: Register -->

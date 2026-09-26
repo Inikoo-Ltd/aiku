@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { inject, ref, watch, onMounted, onUnmounted } from 'vue'
+import { inject, ref, watch } from 'vue'
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { debounce, get, set } from 'lodash-es'
-import { faChevronRight, faTrashAlt, faPlusCircle } from "@fal"
-import { faCheckCircle, faExclamationTriangle } from "@fas"
+import { faChevronRight, faChevronDown, faTrashAlt, faPlusCircle, faGift, faImage, faTimes, faBadgePercent } from "@fal"
+import { faCheckCircle, faExclamationTriangle, faPlus as fasPlus } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '@/Iris/Components/LinkIris.vue'
-import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ToggleSwitch } from 'primevue'
@@ -31,7 +31,7 @@ import MissedOfferFOB from '@/Components/Iris/Offers/MissedOffers/MissedOfferFOB
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import LabelOfAvailableDiscountInRightBasket from '@/Components/Utils/Iris/Label/LabelOfAvailableDiscountInRightBasket.vue'
-library.add(faMinus, faArrowRight, faPlus, faCheck, faChevronRight, faTrashAlt, faCheckCircle, faExclamationTriangle, faPlusCircle)
+library.add(faMinus, faArrowRight, faPlus, fasPlus, faCheck, faChevronRight, faChevronDown, faTrashAlt, faCheckCircle, faExclamationTriangle, faPlusCircle, faGift, faImage, faTimes)
 
 interface DataSideBasket {
     order_summary: any
@@ -65,15 +65,6 @@ const layout = inject('layout', retinaLayoutStructure)
 
 const open = ref(true)
 
-// Set the rightbasket value to local storage
-const handleToggleLeftBar = () => {
-    const xxx = layout.rightbasket?.show ?? false
-    if (typeof window !== "undefined") {
-        localStorage.setItem("rightbasket", (!xxx).toString())
-    }
-
-    set(layout, 'rightbasket.show', !xxx)
-}
 
 // const dummyOrderSummary = { "0": [ { "label": "Елементи", "quantity": 1, "price_base": "Multiple", "price_total": "55.20" } ], "1": [ { "label": "Такси", "information": "", "price_total": "0.00" }, { "label": "Доставяне", "information": "", "price_total": "9.95" } ], "2": [ { "label": "Нетно", "information": "", "price_total": "65.15" }, { "label": "Данък (ДДС 20%)", "information": "", "price_total": "13.03" } ], "3": [ { "label": "Общо", "price_total": "78.18" } ], "currency": { "data": { "id": 49, "code": "EUR", "name": "Euro", "symbol": "€" } } } 
 
@@ -106,8 +97,8 @@ const fetchDataSideBasket = async (isWithoutSkeleton?: boolean) => {
     } catch (error: any) {
         console.log('errorzzzzz', error)
         // notify({
-        //     title: trans("Something went wrong"),
-        //     text: error.message || trans("Please try again or contact administrator"),
+        //     title: ctrans("Something went wrong"),
+        //     text: error.message || ctrans("Please try again or contact administrator"),
         //     type: 'error'
         // })
     } finally {
@@ -210,8 +201,8 @@ const onRemoveFromBasket = (product) => {
             // onError: errors => {
             //     setStatus('error')
             //     notify({
-            //         title: trans("Something went wrong"),
-            //         text: errors.message || trans("Failed to update product quantity in basket"),
+            //         title: ctrans("Something went wrong"),
+            //         text: errors.message || ctrans("Failed to update product quantity in basket"),
             //         type: "error"
             //     })
             // },
@@ -270,8 +261,8 @@ const onChangeCharge = async (key_db: string, val: boolean, routeUpdate: routeTy
     } catch (error: any) {
         console.log('eerr charge', error)
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update, try again."),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update, try again."),
             type: "error"
         })
     } finally {
@@ -284,30 +275,6 @@ const idxProductLoading = ref<number | null>(null)
 
 const basketContainer = ref<HTMLElement | null>(null)
 
-const topPosition = ref(360)
-const dragging = ref(false)
-const offsetY = ref(0)
-
-const startDrag = (e: MouseEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    offsetY.value = e.clientY - rect.top
-    dragging.value = true
-}
-
-const onDrag = (e: MouseEvent) => {
-    if (!dragging.value) return
-
-    const newTop = e.clientY - offsetY.value
-
-    const min = 0
-    const max = window.innerHeight - 40 // tinggi tombol ±40px
-
-    topPosition.value = Math.min(Math.max(newTop, min), max)
-}
-
-const stopDrag = () => {
-    dragging.value = false
-}
 
 const basketRef = ref<HTMLElement | null>(null)
 
@@ -323,6 +290,8 @@ const basketRef = ref<HTMLElement | null>(null)
  */
 
 const isLoadingVoucher = ref(false)
+const isVoucherInputOpen = ref(false)
+const isSummaryExpanded = ref(false)
 const voucherCode = ref('')
 const isModalVoucherNotFound = ref(false)
 const voucherNotFoundMessage = ref('')
@@ -342,8 +311,8 @@ const onApplyVoucher = async () => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Voucher added to your basket."),
+                    title: ctrans("Success"),
+                    text: ctrans("Voucher added to your basket."),
                     type: "success"
                 })
 
@@ -358,8 +327,8 @@ const onApplyVoucher = async () => {
                 }
 
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to add the voucher, try again."),
+                    title: ctrans("Something went wrong"),
+                    text: ctrans("Failed to add the voucher, try again."),
                     type: "error"
                 })
             },
@@ -370,42 +339,16 @@ const onApplyVoucher = async () => {
     )
 }
 
-onMounted(() => {
-    window.addEventListener('mousemove', onDrag)
-    window.addEventListener('mouseup', stopDrag)
-    /*   document.addEventListener('mousedown', handleClickOutside) */
-})
-
-onUnmounted(() => {
-    window.removeEventListener('mousemove', onDrag)
-    window.removeEventListener('mouseup', stopDrag)
-    /* document.removeEventListener('mousedown', handleClickOutside) */
-})
 
 
 </script>
 
 <template>
-    <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl" ref="basketRef">
-        <!-- Toggle: collapse-expand right basket -->
-        <div @click="handleToggleLeftBar" class="z-[60] w-8 aspect-square rounded-full
-         flex items-center justify-center cursor-pointer
-         hover:bg-[color-mix(in_srgb,var(--theme-color-0)75%,black)]
-         bg-[var(--theme-color-0)]" :class="layout.rightbasket?.show
-            ? 'absolute -left-4'
-            : 'fixed right-4'" :style="{
-                top: layout.rightbasket?.show ? '50%' : topPosition + 'px',
-                color: layout.app.theme[1]
-            }">
-            <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" fixed-width />
-
-            <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width class="cursor-grab"
-                @mousedown.stop="startDrag" />
-        </div>
-        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 ">
+    <div class="flex h-full flex-col overflow-hidden bg-white" ref="basketRef">
+        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
-                    {{ trans("Your Basket (:xxx items)", { xxx: layout.iris_variables?.cart_count ?? 0 }) }}
+                    {{ ctrans("Your Basket (:xxx items)", { xxx: layout.iris_variables?.cart_count ?? 0 }) }}
                 </div>
 
                 <div class="relative overflow-hidden">
@@ -430,7 +373,7 @@ onUnmounted(() => {
             <!-- Section: Bonus list (meter) -->
             <div class="text-xs">
                 <div v-if="dataSideBasket?.order_data?.reference" class="-ml-2 bg-gray-200 px-2 mb-3">
-                    {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
+                    {{ ctrans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
                 </div>
 
                 <div v-for="offer in layout.offer_meters" class="grid grid-cols-2 mb-3 gap-x-3">
@@ -447,6 +390,7 @@ onUnmounted(() => {
                     </div>
                     <div v-else :class="convertToFloat2(offer.metadata?.current) >= convertToFloat2(offer.metadata?.target) ? 'text-green-700' : ''"
                         class="flex items-center whitespace-nowrap text-ellipsis truncate w-full">
+                        <FontAwesomeIcon :icon="faBadgePercent" class="opacity-60 mr-1 shrink-0" fixed-width aria-hidden="true" />
                         <div v-if="convertToFloat2(offer.metadata?.current) < convertToFloat2(offer.metadata?.target)"
                             v-tooltip="offer.label" class="text-ellipsis truncate text-base">
                             {{ offer.label }}
@@ -610,11 +554,11 @@ onUnmounted(() => {
         <!-- Section: Voucher Code -->
         <!-- <div class="px-6 mb-4">
             <div>
-                <div class="text-gray-500 text-sm mb-1">{{ trans("Voucher Code") }} :</div>
+                <div class="text-gray-500 text-sm mb-1">{{ ctrans("Voucher Code") }} :</div>
                 <div class="flex gap-x-4">
-                    <PureInput v-model="voucherCode" :placeholder="trans('Enter voucher code')" :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }" />
+                    <PureInput v-model="voucherCode" :placeholder="ctrans('Enter voucher code')" :styleInput="{ paddingTop: '5px', paddingBottom: '5px' }" />
                     <Button
-                        :label="trans('Add voucher')"
+                        :label="ctrans('Add voucher')"
                         class="shrink-0"
                             size="xs"
                         icon="fas fa-plus"
@@ -653,8 +597,14 @@ onUnmounted(() => {
         </Transition>
 
         <!-- Section: Voucher Code -->
+        <div v-if="layout.retina.type == 'b2b' && !isVoucherInputOpen && !dataSideBasket?.voucher" class="px-4 sm:px-6 py-1.5 border-t border-gray-200">
+            <button type="button" class="text-xs text-gray-500 hover:text-gray-800 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-300" @click="isVoucherInputOpen = true">
+                <FontAwesomeIcon icon="far fa-plus" fixed-width aria-hidden="true" />
+                {{ ctrans("Add voucher code") }}
+            </button>
+        </div>
         <InputVoucherInBasket
-            v-if="layout.retina.type == 'b2b'"
+            v-else-if="layout.retina.type == 'b2b'"
             :voucher="dataSideBasket?.voucher"
             :order="dataSideBasket?.order_data"
             :routes="{
@@ -675,13 +625,23 @@ onUnmounted(() => {
         />
 
         <!-- Section: Order Summary -->
-        <div class="px-4 pt-3 pb-6 sm:px-6"
+        <div class="px-4 pt-2 pb-3 sm:px-6"
             :class="layout.retina.type == 'b2b' ? '' : 'border-t border-gray-200 '"
         >
             <div class="relative isolate">
-                <OrderSummary :order_summary="dataSideBasket?.order_summary"
+                <button type="button" class="w-full flex items-center justify-between text-sm font-medium py-1 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-300" :aria-expanded="isSummaryExpanded" @click="isSummaryExpanded = !isSummaryExpanded">
+                    <span class="flex items-baseline gap-x-2">
+                        {{ ctrans("Total") }}
+                        <span class="text-xs font-normal text-gray-500 underline decoration-dotted underline-offset-2 hover:text-gray-800">
+                            {{ isSummaryExpanded ? ctrans("Hide breakdown") : ctrans("Show breakdown") }}
+                            <FontAwesomeIcon icon="fal fa-chevron-down" class="transition-transform" :class="isSummaryExpanded ? '' : 'rotate-180'" fixed-width aria-hidden="true" />
+                        </span>
+                    </span>
+                    <span class="text-base font-semibold">{{ locale.currencyFormat(layout.iris?.currency?.code, layout.iris_variables?.cart_amount) }}</span>
+                </button>
+                <OrderSummary v-if="isSummaryExpanded" :order_summary="dataSideBasket?.order_summary"
                     :currency_code="layout.iris?.currency?.code" size="sm" />
-                <div class="pt-3 border-t border-gray-200 space-y-2.5">
+                <div class="pt-2 mt-1 border-t border-gray-200 space-y-2">
                     <!-- Section: Eligible Gift -->
                     <div v-if="dataSideBasket?.gr_gifts?.status" class="text-xs flex justify-end pr-2 xmt-4">
                         <EligibleGift :routeUpdate="{
@@ -707,16 +667,9 @@ onUnmounted(() => {
                             <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
                                 <ToggleSwitch :modelValue="dataSideBasket?.order_data?.[charge.key_db]"
                                     @update:modelValue="(e) => onChangeCharge(charge.key_db, e, charge.route_update)"
-                                    xdisabled="isLoadingPriorityDispatch" size="small">
-                                    <template #handle="{ checked }">
-                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)"
-                                            xclass="text-xs text-gray-500" />
-                                        <template v-else>
-                                            <FontAwesomeIcon v-if="checked" icon="far fa-check"
-                                                class="text-xs text-green-500" fixed-width aria-hidden="true" />
-                                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-xs text-red-500"
-                                                fixed-width aria-hidden="true" />
-                                        </template>
+                                    :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }">
+                                    <template #handle>
+                                        <LoadingIcon v-if="listLoadingCharges.includes(charge.key_db)" class="text-[8px] text-gray-500" />
                                     </template>
                                 </ToggleSwitch>
                             </div>
@@ -735,14 +688,14 @@ onUnmounted(() => {
                 </div>
 
 
-                <div v-if="isLoadingFetch" class="absolute inset-0 h-52">
+                <div v-if="isLoadingFetch" class="absolute inset-0">
                     <div class="inset-0 h-full w-full skeleton z-10" />
                 </div>
             </div>
 
-            <div class="mt-4">
+            <div class="mt-3">
                 <LinkIris href="/app/checkout">
-                    <Button full :label="trans('Checkout')" iconRight="far fa-arrow-right" key="1" />
+                    <Button full :label="ctrans('Checkout')" iconRight="far fa-arrow-right" key="1" />
                 </LinkIris>
             </div>
 
@@ -751,7 +704,7 @@ onUnmounted(() => {
                     {{ 'or' }}
                     <LinkIris href="/app/basket" class="font-medium text-indigo-600 hover:text-indigo-500"
                         @click="open = false">
-                        {{ trans("Open basket") }}
+                        {{ ctrans("Open basket") }}
                         <span aria-hidden="true"> &rarr;</span>
                     </LinkIris>
                 </p>
@@ -764,12 +717,12 @@ onUnmounted(() => {
                 <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-red-500" fixed-width aria-hidden="true" />
                 </div>
-                <h3 class="mt-4 text-lg font-semibold text-gray-900">{{ trans("Voucher not found") }}</h3>
+                <h3 class="mt-4 text-lg font-semibold text-gray-900">{{ ctrans("Voucher not found") }}</h3>
                 <p class="mt-2 text-sm text-gray-500">
-                    {{ voucherNotFoundMessage || trans("The voucher code you entered was not found or is no longer available.") }}
+                    {{ voucherNotFoundMessage || ctrans("The voucher code you entered was not found or is no longer available.") }}
                 </p>
                 <div class="mt-6 flex justify-center">
-                    <Button :label="trans('OK')" @click="isModalVoucherNotFound = false" />
+                    <Button :label="ctrans('OK')" @click="isModalVoucherNotFound = false" />
                 </div>
             </div>
         </Modal>

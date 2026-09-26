@@ -31,7 +31,7 @@ const isStaging = layout.app.environment === 'staging'
 </script>
 
 <template>
-    <div class="-z-[1] fixed inset-0 bg-slate-100" />
+    <div class="-z-[1] fixed inset-0 bg-gray-100" />
     <div class="xformodalupload_isolate relative min-h-full transition-all"
         :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'mr-44' : 'mr-0']">
     
@@ -60,7 +60,7 @@ const isStaging = layout.app.environment === 'staging'
                 isStaging ? 'pt-14 md:pt-[75px]' : ' pt-14 md:pt-[52px]',
             ]"
         >
-            <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col pb-6 text-gray-700">
+            <div class="bg-white shadow-lg rounded h-full overflow-y-auto relative flex flex-col pb-6 text-gray-800">
                 <!-- Section: Breadcrumbs -->
                 <div class="mt-1">
                     <Breadcrumbs

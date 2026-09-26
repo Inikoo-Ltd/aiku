@@ -32,6 +32,88 @@ class GetRetinaEcomNavigation
             ]
         ];
 
+        $groupNavigation['basket'] = [
+            'label'   => __('Basket'),
+            'icon'    => ['fal', 'fa-shopping-cart'],
+            'root'    => 'retina.ecom.basket.',
+            'route'   => [
+                'name' => 'retina.ecom.basket.show'
+            ],
+            'topMenu' => [
+
+            ]
+        ];
+
+        $groupNavigation['orders'] = [
+            'label' => __('Orders'),
+            'icon'  => ['fal', 'fa-shopping-basket'],
+            'root'  => 'retina.ecom.orders.',
+            'route' => [
+                'name' => 'retina.ecom.orders.index'
+            ],
+        ];
+
+        $groupNavigation['invoices'] = [
+            'label' => __('Invoices'),
+            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+            'root'  => 'retina.ecom.invoices.',
+            'route' => [
+                'name' => 'retina.ecom.invoices.index'
+            ],
+        ];
+
+
+        $groupNavigation['sysadmin'] = [
+            'label'   => __('Settings'),
+            'icon'    => ['fal', 'fa-cog'],
+            'root'    => 'retina.sysadmin.',
+            'route'   => [
+                'name' => 'retina.sysadmin.settings.edit',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('account settings'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.sysadmin.settings.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.settings.edit',
+
+                        ]
+                    ],
+                    [
+                        'label' => __('Email management'),
+                        'icon'  => ['fal', 'fa-envelope'],
+                        'root'  => 'retina.sysadmin.email.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.email.edit',
+
+                        ]
+                    ],
+                    [
+                        'label' => __('users'),
+                        'icon'  => ['fal', 'fa-user-circle'],
+                        'root'  => 'retina.sysadmin.web-users.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.web-users.index',
+
+                        ]
+                    ],
+                    [
+                        'label' => __('History'),
+                        'icon'  => ['fal', 'fa-history'],
+                        'type'  => 'icon',
+                        'align' => 'right',
+                        'root'  => 'retina.sysadmin.vat-validation-history',
+                        'route' => [
+                            'name' => 'retina.sysadmin.vat-validation-history',
+
+                        ]
+                    ],
+                ]
+            ]
+        ];
+
         $groupNavigation['catalogue'] = [
             'label'   => __('Catalogue'),
             'icon'    => ['fal', 'fa-books'],
@@ -108,27 +190,6 @@ class GetRetinaEcomNavigation
             ];
         }
 
-        $groupNavigation['basket'] = [
-            'label'   => __('Basket'),
-            'icon'    => ['fal', 'fa-shopping-cart'],
-            'root'    => 'retina.ecom.basket.',
-            'route'   => [
-                'name' => 'retina.ecom.basket.show'
-            ],
-            'topMenu' => [
-
-            ]
-        ];
-
-        $groupNavigation['orders'] = [
-            'label' => __('Orders'),
-            'icon'  => ['fal', 'fa-shopping-basket'],
-            'root'  => 'retina.ecom.orders.',
-            'route' => [
-                'name' => 'retina.ecom.orders.index'
-            ],
-        ];
-
         $groupNavigation['interest'] = [
             'label'   => __('My Interests'),
             'icon'    => ['fal', 'fa-heart'],
@@ -168,67 +229,6 @@ class GetRetinaEcomNavigation
                         'root'  => 'retina.ecom.interest.new_arrivals.',
                         'route' => [
                             'name' => 'retina.ecom.interest.new_arrivals.index'
-                        ]
-                    ],
-                ]
-            ]
-        ];
-
-        $groupNavigation['invoices'] = [
-            'label' => __('Invoices'),
-            'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'root'  => 'retina.ecom.invoices.',
-            'route' => [
-                'name' => 'retina.ecom.invoices.index'
-            ],
-        ];
-
-
-        $groupNavigation['sysadmin'] = [
-            'label'   => __('manage account'),
-            'icon'    => ['fal', 'fa-users-cog'],
-            'root'    => 'retina.sysadmin.',
-            'route'   => [
-                'name' => 'retina.sysadmin.settings.edit',
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label' => __('account settings'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'retina.sysadmin.settings.',
-                        'route' => [
-                            'name' => 'retina.sysadmin.settings.edit',
-
-                        ]
-                    ],
-                    [
-                        'label' => __('Email management'),
-                        'icon'  => ['fal', 'fa-envelope'],
-                        'root'  => 'retina.sysadmin.email.',
-                        'route' => [
-                            'name' => 'retina.sysadmin.email.edit',
-
-                        ]
-                    ],
-                    [
-                        'label' => __('users'),
-                        'icon'  => ['fal', 'fa-user-circle'],
-                        'root'  => 'retina.sysadmin.web-users.',
-                        'route' => [
-                            'name' => 'retina.sysadmin.web-users.index',
-
-                        ]
-                    ],
-                    [
-                        'label' => __('History'),
-                        'icon'  => ['fal', 'fa-history'],
-                        'type'  => 'icon',
-                        'align' => 'right',
-                        'root'  => 'retina.sysadmin.vat-validation-history',
-                        'route' => [
-                            'name' => 'retina.sysadmin.vat-validation-history',
-
                         ]
                     ],
                 ]

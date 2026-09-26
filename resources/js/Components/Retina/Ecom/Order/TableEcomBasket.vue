@@ -19,7 +19,8 @@ import Discount from "@/Components/Utils/Label/Discount.vue"
 import GridProducts from "@/Components/Product/GridProducts/GridProducts.vue"
 import { pushGtmEvent, buildGtmProductPayload } from "@/Composables/useGtm"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faInfoCircle } from "@fal"
+import { faInfoCircle, faTrashAlt } from "@fal"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
 library.add(faInfoCircle)
@@ -138,7 +139,11 @@ const isOffersData = (offersData: any): boolean => {
 
 
 <template>
-    <Table :resource="data" :name="tab" class="hidden lg:block">
+    <Table :resource="data" :name="tab" class="hidden md:block">
+        <template #tableExtraAction>
+            <slot name="tableHeaderActions" />
+        </template>
+
         <!-- Column: Image -->
         <template #cell(image)="{ item }">
             <div class="flex relative w-20 aspect-square overflow-hidden">
@@ -151,7 +156,7 @@ const isOffersData = (offersData: any): boolean => {
             <div class="text-right">
                 <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
                     <span v-if="item.gross_amount != item.net_amount"
-                        class="text-gray-500 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code,
+                        class="text-gray-600 line-through mr-1 opacity-70">{{ locale.currencyFormat(item.currency_code,
                         item.gross_amount) }}</span>
                     <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
                 </p>
@@ -172,7 +177,7 @@ const isOffersData = (offersData: any): boolean => {
                         }}x</span>{{ item.asset_name }}</div>
                 <div v-if="!item.available_quantity">
                     <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
-                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-500 italic ml-1">{{ ctrans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
+                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-600 italic ml-1">{{ ctrans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
                 </div>
                 <div v-else-if="Number(item.quantity_ordered) > Number(item.available_quantity)" v-tooltip="lowStockTooltip(item)">
                     <Tag :label="ctrans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
@@ -189,7 +194,19 @@ const isOffersData = (offersData: any): boolean => {
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
             <div class="px-2 relative text-right w-full">
-                <div class="w-fit ml-auto">
+                <div class="w-fit ml-auto flex items-stretch">
+                    <Link
+                        :href="item.deleteRoute?.name ? route(item.deleteRoute.name, item.deleteRoute.parameters) : '#'"
+                        as="button" :method="item.deleteRoute.method"
+                        :aria-label="ctrans('Remove from basket')"
+                        class="-mr-1.5 flex items-center justify-start self-stretch w-10 pl-2.5 rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-400 opacity-60 transition hover:opacity-100 hover:text-red-500 hover:bg-red-50"
+                        @start="() => isLoading = 'unselect' + item.id"
+                        @finish="() => isLoading = false"
+                        @success="() => { pushRemoveFromBasket(item); layout.reload_handle() }"
+                        v-tooltip="ctrans('Remove from basket')" :preserveScroll="true">
+                        <LoadingIcon v-if="isLoading === 'unselect' + item.id" />
+                        <FontAwesomeIcon v-else :icon="faTrashAlt" fixed-width aria-hidden="true" />
+                    </Link>
                     <NumberWithButtonSave
                         :key="`${item.id}-${refusedQuantityCount[item.id] ?? 0}`"
                         :modelValue="item.quantity_ordered"
@@ -212,38 +229,32 @@ const isOffersData = (offersData: any): boolean => {
             </div>
         </template>
 
-        <!-- Column: Action -->
-        <template #cell(actions)="{ item }">
-            <div class="flex gap-2 px-2">
-                <Link :href="item.deleteRoute?.name ? route(item.deleteRoute.name, item.deleteRoute.parameters) : '#'"
-                    as="button" :method="item.deleteRoute.method" @start="() => isLoading = 'unselect' + item.id"
-                    @finish="() => isLoading = false"
-                    @success="() => { pushRemoveFromBasket(item); layout.reload_handle() }"
-                    v-tooltip="ctrans('Unselect this product')" :preserveScroll="true">
-                    <Button icon="fal fa-times" type="negative" size="xs"
-                        :loading="isLoading === 'unselect' + item.id" />
-                </Link>
-            </div>
-        </template>
     </Table>
 
 
-    <GridProducts :resource="data" :showHeader="false" :preserve-scroll="true" class="mt-5 block lg:hidden"
+    <GridProducts :resource="data" :showHeader="false" :preserve-scroll="true" class="mt-5 block md:hidden"
         gridClass="lg:grid-cols-1 xl:grid-cols-1 grid grid-cols-1">
+
+        <template #headerActions>
+            <slot name="gridHeaderActions" />
+        </template>
 
         <template #card="{ item }">
             <li class="flex py-1 relative border-b">
                 <div v-if="item?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
 
-                <div class="relative group">
-                    <div :href="item.canonical_url"
-                        class="flex justify-center items-center font-medium hover:underline min-w-14 min-h-14 size-14 shrink-0 overflow-hidden rounded-md border border-gray-200">
-                        <Image :src="item.image?.source"
-                            class="size-14 flex justify-center items-center group-hover:scale-110 transition-all" />
+                <div class="flex flex-col items-center">
+                    <div class="relative group">
+                        <div :href="item.canonical_url"
+                            class="flex justify-center items-center font-medium hover:underline min-w-14 min-h-14 size-14 shrink-0 overflow-hidden rounded-md border border-gray-200"
+                            :class="item.image?.source ? '' : 'opacity-20'">
+                            <Image :src="item.image?.source"
+                                class="size-14 flex justify-center items-center group-hover:scale-110 transition-all" />
+                        </div>
                     </div>
                 </div>
 
-                <div class="ml-4 flex justify-between gap-x-4 w-full text-xs">
+                <div class="ml-3 flex justify-between gap-x-4 w-full text-sm">
                     <div class="flex flex-1 flex-col">
                         <Discount v-if="isOffersData(item.offers_data)" :offers_data="item.offers_data"
                             class="text-xxs" />
@@ -256,53 +267,56 @@ const isOffersData = (offersData: any): boolean => {
                                     </span>
                                     {{ item.asset_name }}
                                 </a>
-                                <div class="text-xxs text-gray-400">{{ item.asset_code }}</div>
-                                <div v-if="!item.available_quantity">
-                                    <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
-                    <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-500 italic ml-1">{{ ctrans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
-                                </div>
-                                <div v-else-if="Number(item.quantity_ordered) > Number(item.available_quantity)" v-tooltip="lowStockTooltip(item)">
-                                    <Tag :label="ctrans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
-                                    <FontAwesomeIcon icon="fal fa-info-circle" class="text-amber-500 ml-1 text-xs" fixed-width aria-hidden="true" />
-                                </div>
-                                <div v-else class="text-gray-400 italic text-xs">
-                                     {{ ctrans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ ctrans('available') }}
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                    <div class="text-xs text-gray-400">{{ item.asset_code }}</div>
+                                    <div v-if="!item.available_quantity">
+                                        <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
+                        <span v-if="Number(item.held_quantity) > 0" v-tooltip="outOfStockTooltip(item)" class="text-xs text-gray-600 italic ml-1">{{ ctrans(':count kept, restored when back in stock', { count: locale.number(Number(item.held_quantity)) }) }}</span>
+                                    </div>
+                                    <div v-else-if="Number(item.quantity_ordered) > Number(item.available_quantity)" v-tooltip="lowStockTooltip(item)">
+                                        <Tag :label="ctrans('Only :count in stock', { count: locale.number(item.available_quantity) })" no-hover-color :theme="8" size="xxs" />
+                                        <FontAwesomeIcon icon="fal fa-info-circle" class="text-amber-500 ml-1 text-xs" fixed-width aria-hidden="true" />
+                                    </div>
+                                    <div v-else class="text-gray-400 italic text-xs">
+                                         {{ ctrans('Stock') }}  {{ locale.number(item.available_quantity || 0) }} {{ ctrans('available') }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col justify-between pt-3">
+                        <div class="flex items-center justify-between gap-x-3 pt-2">
                             <div class="flex gap-x-2 h-fit items-center">
-                                <div>
-                                    <div class="w-fit ml-auto">
-                                        <NumberWithButtonSave :key="`${item.id}-${refusedQuantityCount[item.id] ?? 0}`" :modelValue="item.quantity_ordered" @update:modelValue="(value: number) => {
-                                            item.quantity_ordered != value ? debounceUpdateQuantity(item, value) : null
-                                        }" :routeSubmit="item.updateRoute" key-submit="quantity_ordered"
-                                            isWithRefreshModel noSaveButton noUndoButton :min="1"
-                                                                :denominator="item.quantity_ordered % 1 !== 0 ? Number(item.units) : undefined"
-                                            :disableInput="item.quantity_ordered % 1 !== 0" />
-                                    </div>
-
-                                    <ConditionIcon class="absolute ml-1 top-[65%] right-[40%] -translate-y-1/2 text-base"
-                                        :state="get(listState, [item.id, 'quantity'], null)" />
-                                </div>
-
-                                <div class="">
+                                <div class="flex items-stretch -ml-[4.25rem]">
                                     <Link
                                         :href="item.deleteRoute?.name ? route(item.deleteRoute.name, item.deleteRoute.parameters) : '#'"
                                         as="button" :method="item.deleteRoute.method"
+                                        :aria-label="ctrans('Remove from basket')"
+                                        class="-mr-1.5 flex items-center justify-start self-stretch w-[4.625rem] pl-[1.125rem] rounded-l-md border border-r-0 border-gray-200 bg-white text-gray-400 opacity-60 transition hover:opacity-100 hover:text-red-500 hover:bg-red-50"
                                         @start="() => isLoading = 'unselect' + item.id"
                                         @finish="() => isLoading = false"
                                         @success="() => { pushRemoveFromBasket(item); layout.reload_handle() }"
-                                        v-tooltip="ctrans('Unselect this product')" :preserveScroll="true">
-                                        <Button icon="fal fa-times" type="negative" size="xs"
-                                            :loading="isLoading === 'unselect' + item.id" />
+                                        v-tooltip="ctrans('Remove from basket')" :preserveScroll="true">
+                                        <LoadingIcon v-if="isLoading === 'unselect' + item.id" />
+                                        <FontAwesomeIcon v-else :icon="faTrashAlt" fixed-width aria-hidden="true" />
                                     </Link>
+                                    <div>
+                                        <div class="w-fit ml-auto">
+                                            <NumberWithButtonSave :key="`${item.id}-${refusedQuantityCount[item.id] ?? 0}`" :modelValue="item.quantity_ordered" @update:modelValue="(value: number) => {
+                                                item.quantity_ordered != value ? debounceUpdateQuantity(item, value) : null
+                                            }" :routeSubmit="item.updateRoute" key-submit="quantity_ordered"
+                                                isWithRefreshModel noSaveButton noUndoButton :min="1"
+                                                :denominator="item.quantity_ordered % 1 !== 0 ? Number(item.units) : undefined"
+                                                :disableInput="item.quantity_ordered % 1 !== 0" />
+                                        </div>
+
+                                        <ConditionIcon class="absolute ml-1 top-[65%] right-[40%] -translate-y-1/2 text-base"
+                                            :state="get(listState, [item.id, 'quantity'], null)" />
+                                    </div>
                                 </div>
                             </div>
-                            <div class="mt-3">
-                                <p class="" :class="item.gross_amount != item.net_amount ? 'text-green-500' : ''">
+                            <div class="ml-auto text-right">
+                                <p class="flex flex-col items-end whitespace-nowrap leading-tight text-base font-medium" :class="item.gross_amount != item.net_amount ? 'text-green-600' : ''">
                                     <span v-if="item.gross_amount != item.net_amount"
-                                        class="text-gray-500 line-through mr-1 opacity-70">{{
+                                        class="text-xs font-normal text-gray-400 line-through">{{
                                             locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                                     <span>{{ locale.currencyFormat(item.currency_code || '', item.net_amount) }}</span>
                                 </p>

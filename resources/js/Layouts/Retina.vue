@@ -11,7 +11,7 @@ import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
 import { faPlug, faStoreAltSlash, faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSnooze, faSkull } from '@fal'
-import { defineAsyncComponent, onBeforeMount, onMounted, provide, ref, watch } from 'vue'
+import { defineAsyncComponent, onBeforeMount, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 const RetinaLayoutFulfilment = defineAsyncComponent(() => import("./RetinaLayoutFulfilment.vue"))
 const RetinaLayoutDs = defineAsyncComponent(() => import("./RetinaLayoutDs.vue"))
@@ -33,7 +33,8 @@ import { faSearch, faBell, faPlus, faLayerGroup } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle, faMedal as fadMedal, faSave as fadSave } from '@fad'
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
 import { setColorStyleRoot } from "@/Composables/useApp"
-const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
+import { createSidePanel } from '@/Iris/Composables/useSidePanel'
+import SidePanel from '@/Iris/Components/SidePanel.vue'
 import { pushServerGtmEvent, pushServerGtmEventOnce } from "@/Composables/useGtm"
 import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from 'vue'
@@ -199,20 +200,20 @@ watch(
 // Section: Screen Type
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const checkScreenType = () => {
-    const width = screen.width
+    const width = window.innerWidth
     if (width < 640) screenType.value = 'mobile'
     else if (width >= 640 && width < 1024) screenType.value = 'tablet'
     else screenType.value = 'desktop'
 }
 provide('screenType', screenType)
+createSidePanel(layout, screenType, !!useChat)
 onMounted(() => {
     checkScreenType()
-
-    // window.addEventListener('resize', checkScreenType)
+    window.addEventListener('resize', checkScreenType)
 })
-// onBeforeUnmount(() => {
-//     window.removeEventListener('resize', checkScreenType)
-// })
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', checkScreenType)
+})
 
 
 const getTextColorDependsOnStatus = (status: string) => {
@@ -369,7 +370,7 @@ useAppAccentVariables(() => safeTheme.value)
         </template>
     </notifications>
 
-     <ChatButton data="null" v-if="useChat" />
+    <SidePanel :isChatEnabled="!!useChat" />
 </template>
 
 <style lang="scss">

@@ -31,12 +31,11 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
-import { router } from "@inertiajs/vue3";
-import { notify } from "@kyvg/vue3-notification"
-import { clearIrisSession } from "@/Composables/clearIrisSession"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { faUserPlus } from "@far";
 import GoldReward from "@/Components/Utils/GoldReward.vue"
+import { useOpenBasketPanelOnClick } from "@/Iris/Composables/useSidePanel"
+import { useIrisLogout } from "@/Iris/Composables/useIrisLogout"
 
 library.add(
 	faPresentation,
@@ -58,6 +57,7 @@ library.add(
 	faFileAlt
 )
 
+const openBasketPanelOnClick = useOpenBasketPanelOnClick()
 const props = defineProps<{
 	fieldValue: {
 		headerText: string
@@ -87,33 +87,7 @@ const isShopB2B = computed(() => layout?.retina?.type === 'b2b')
 const displayUsername = computed(() => layout?.user?.username?.split('@')[0] || '')
 const loginUrl = computed(() => urlLoginWithRedirect())
 const loadingRedirect = ref(false)
-const isLoadingLogout = ref(false)
-let restoreIrisSession: (() => void) | null = null
-
-const onClickLogout = () => {
-	router.post(
-		'/app/logout',
-		{},
-		{
-			preserveScroll: true,
-			onStart: () => {
-				isLoadingLogout.value = true
-				restoreIrisSession = clearIrisSession(layout)
-			},
-			onError: () => {
-				restoreIrisSession?.()
-				notify({
-					title: ctrans("Something went wrong"),
-					text: ctrans("Failed to logout"),
-					type: "error"
-				})
-			},
-			onFinish: () => {
-				isLoadingLogout.value = false
-			},
-		}
-	)
-}
+const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
 
 
 </script>
@@ -175,7 +149,7 @@ const onClickLogout = () => {
 					v-slot="{ isLoading } = { isLoading: false }">
 					<button
 						class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-60 disabled:cursor-wait"
-						:disabled="isLoading" v-tooltip="ctrans('Cart count and amount')">
+						:disabled="isLoading" v-tooltip="ctrans('Cart count and amount')" @click="openBasketPanelOnClick">
 						<span class="button whitespace-nowrap"
 							v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
 						</span>

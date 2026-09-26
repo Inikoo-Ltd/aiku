@@ -507,6 +507,7 @@ watch(
 				</div>
 
 				<div class="flex flex-wrap items-center gap-2 sm:gap-3">
+					<slot name="headerActions" />
 					<div v-if="showHeader" class="flex items-center gap-2 min-w-0">
 						<label
 							:for="`grid-${name}-sort`"

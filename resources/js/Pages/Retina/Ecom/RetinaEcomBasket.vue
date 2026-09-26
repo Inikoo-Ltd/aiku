@@ -9,7 +9,7 @@ import axios from "axios"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTag, faStar, faBoxHeart, faShieldAlt,faExclamationTriangle } from "@fas"
-import { faCheck } from "@far"
+import { faCheck, faPlus as farPlus } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
@@ -297,6 +297,8 @@ onMounted(async () => {
 // Section: Submit Note
 const noteToSubmit = ref(props?.order?.customer_notes || '')
 const deliveryInstructions = ref(props?.order?.shipping_notes || '')
+const isDeliveryInstructionsOpen = ref(!!deliveryInstructions.value)
+const isOtherInstructionsOpen = ref(!!noteToSubmit.value)
 const recentlySuccessNote = ref<string[]>([])
 const recentlyErrorNote = ref(false)
 const isLoadingNote = ref<string[]>([])
@@ -687,7 +689,7 @@ const onChangeInsurance = async (val: boolean) => {
     <Head :title="ctrans('Basket')" />
     <PageHeading :data="pageHead">
         <template #other>
-            <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
+            <div v-if="screenType !== 'mobile'" class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
                 <Button
                     v-if="upload_spreadsheet"
                     @click="() => isModalUploadSpreadsheet = true"
@@ -735,7 +737,28 @@ const onChangeInsurance = async (val: boolean) => {
             <TableEcomBasket
                 :data="transactions"
                 :updateRoute="routes.update_route"
-            />
+            >
+                <template #tableHeaderActions>
+                    <Button
+                        @click="() => isModalProductListOpen = true"
+                        :label="ctrans('Add products')"
+                        type="tertiary"
+                        icon="fas fa-plus"
+                        size="s"
+                    />
+                </template>
+                <template #gridHeaderActions>
+                    <Button
+                        v-if="screenType === 'mobile'"
+                        @click="() => isModalProductListOpen = true"
+                        :label="ctrans('Add products')"
+                        type="tertiary"
+                        icon="fas fa-plus"
+                        size="s"
+                        class="h-7 !py-0"
+                    />
+                </template>
+            </TableEcomBasket>
 
             <div v-if="shipping_options" class="mx-3 md:mx-6 my-4 border border-gray-200 rounded-md p-3">
                 <div class="font-medium mb-2">{{ ctrans('Shipping method') }}</div>
@@ -756,7 +779,7 @@ const onChangeInsurance = async (val: boolean) => {
                             />
                             <span>{{ option.name }}</span>
                         </span>
-                        <span class="text-gray-500">
+                        <span class="text-gray-600">
                             {{ option.is_tbc ? ctrans('To be confirmed') : locale.currencyFormat(order?.currency_code, option.amount) }}
                         </span>
                     </label>
@@ -765,14 +788,23 @@ const onChangeInsurance = async (val: boolean) => {
 
             <div class="grid md:grid-cols-2 gap-x-8 py-4">
                 <!-- Section: Instructions (delivery and other) -->
-                <div class="w-full md:px-4">
+                <div class="w-full">
                     <div v-if="total_products > 0" class="flex flex-col md:flex-row xjustify-end px-3 md:px-6 gap-x-4">
                         <div class="grid md:grid-cols-2 gap-y-4 gap-x-4 w-full">
                             <!-- <div></div> -->
                 
                             <!-- Input text: Delivery instructions -->
-                            <div class="">
-                                <div class="text-sm text-gray-500">
+                            <button
+                                v-if="screenType === 'mobile' && !isDeliveryInstructionsOpen"
+                                type="button"
+                                class="w-fit text-sm text-gray-600 hover:text-gray-800"
+                                @click="isDeliveryInstructionsOpen = true"
+                            >
+                                <FontAwesomeIcon :icon="farPlus" fixed-width aria-hidden="true" />
+                                {{ ctrans("Add delivery instructions") }}
+                            </button>
+                            <div v-else class="">
+                                <div class="text-sm text-gray-600">
                                     <FontAwesomeIcon style="color: #93C5FD" icon="fal fa-truck" fixed-width aria-hidden="true"/>
                                     {{ ctrans("Delivery Instructions") }}
                                     :
@@ -790,8 +822,17 @@ const onChangeInsurance = async (val: boolean) => {
                                 />
                             </div>
                             <!-- Input text: Other instructions -->
-                            <div class="">
-                                <div class="text-sm text-gray-500">
+                            <button
+                                v-if="screenType === 'mobile' && !isOtherInstructionsOpen"
+                                type="button"
+                                class="w-fit text-sm text-gray-600 hover:text-gray-800"
+                                @click="isOtherInstructionsOpen = true"
+                            >
+                                <FontAwesomeIcon :icon="farPlus" fixed-width aria-hidden="true" />
+                                {{ ctrans("Add other instructions") }}
+                            </button>
+                            <div v-else class="">
+                                <div class="text-sm text-gray-600">
                                     <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
                                     {{ ctrans("Other Instructions") }}:
                                 </div>
@@ -830,7 +871,7 @@ const onChangeInsurance = async (val: boolean) => {
                     />
 
                     <!-- Section: Eligible Gifts -->
-                    <div v-if="gr_gifts.status" class="flex justify-end pr-2 md:pr-6 mt-4">
+                    <div v-if="gr_gifts.status" class="flex justify-end px-3 md:px-6 mt-4">
                         <EligibleGift
                             :routeUpdate="{
                                 name: 'retina.models.order.update_gr_gift',
@@ -844,94 +885,86 @@ const onChangeInsurance = async (val: boolean) => {
                     </div>
                 
                     <!-- Section: Charge Premium Dispatch -->
-                    <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                        <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                    <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end px-3 md:px-6">
+                        <div class="flex items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                             <InformationIcon v-if="charges.premium_dispatch?.description" :information="charges.premium_dispatch.description ?? ''" />
                             {{ charges.premium_dispatch?.label ? ctrans(charges.premium_dispatch.label) : ctrans(charges.premium_dispatch?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
                         </div>
-                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                        <div class="flex justify-end items-center relative" xstyle="width: 200px;">
                             <ToggleSwitch
                                 :modelValue="order?.is_premium_dispatch"
                                 @update:modelValue="(e) => (onChangePriorityDispatch(e))"
                                 xdisabled="isLoadingPriorityDispatch"
+                            
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }"
                             >
-                                <template #handle="{ checked }">
-                                    <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
-                                    <template v-else>
-                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                                    </template>
+                                <template #handle>
+                                    <LoadingIcon v-if="isLoadingPriorityDispatch" class="text-[8px] text-gray-600" />
                                 </template>
                             </ToggleSwitch>
                         </div>
                     </div>
                     <!-- Section: Charge Extra Packing -->
-                    <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                        <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
+                    <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end px-3 md:px-6">
+                        <div class="flex items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
                             <InformationIcon v-if="charges.extra_packing?.description" :information="charges.extra_packing.description ?? ''" />
                             {{ charges.extra_packing?.label ? ctrans(charges.extra_packing.label) : ctrans(charges.extra_packing?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
                         </div>
-                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                        <div class="flex justify-end items-center relative" xstyle="width: 200px;">
                             <ToggleSwitch
                                 :modelValue="order?.has_extra_packing"
                                 @update:modelValue="(e) => (onChangeExtraPacking(e))"
+                            
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }"
                             >
-                                <template #handle="{ checked }">
-                                    <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
-                                    <template v-else>
-                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                                    </template>
+                                <template #handle>
+                                    <LoadingIcon v-if="isLoadingExtraPacking" class="text-[8px] text-gray-600" />
                                 </template>
                             </ToggleSwitch>
                         </div>
                     </div>
                 
                     <!-- Section: Charge Insurance -->
-                    <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                        <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                    <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end px-3 md:px-6">
+                        <div class="flex items-center gap-x-1 relative">
                             <InformationIcon v-if="charges.insurance?.description" :information="charges.insurance.description ?? ''" />
                             {{ charges.insurance?.label ? ctrans(charges.insurance.label) : ctrans(charges.insurance?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
                         </div>
-                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                        <div class="flex justify-end items-center relative" xstyle="width: 200px;">
                             <ToggleSwitch
                                 :modelValue="order?.has_insurance"
                                 @update:modelValue="(e) => (onChangeInsurance(e))"
                                 xdisabled="isLoadingInsurance"
+                            
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }"
                             >
-                                <template #handle="{ checked }">
-                                    <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
-                                    <template v-else>
-                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                                    </template>
+                                <template #handle>
+                                    <LoadingIcon v-if="isLoadingInsurance" class="text-[8px] text-gray-600" />
                                 </template>
                             </ToggleSwitch>
                         </div>
                     </div>
 
                     <!-- Section: Charge Gift Message -->
-                    <div v-if="charges.gift_message" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
-                        <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                    <div v-if="charges.gift_message" class="flex gap-4 my-4 justify-between md:justify-end px-3 md:px-6">
+                        <div class="flex items-center gap-x-1 relative">
                             <InformationIcon v-if="charges.gift_message?.description" :information="charges.gift_message.description ?? ''" />
                             {{ charges.gift_message?.label ? ctrans(charges.gift_message.label) : ctrans(charges.gift_message?.name ?? '') }}
                             <span class="text-gray-400">({{ locale.currencyFormat(charges.gift_message?.currency_code, charges.gift_message?.amount) }})</span>
                         </div>
-                        <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                        <div class="flex justify-end items-center relative" xstyle="width: 200px;">
                             <ToggleSwitch
                                 :modelValue="order?.has_gift_message"
                                 @update:modelValue="(e) => (onChangeGiftMessage(e))"
                                 xdisabled="isLoadingGiftMessage"
+                            
+                                :dt="{ root: { width: '2rem', height: '1.125rem', checkedBackground: '#22c55e', checkedHoverBackground: '#16a34a' }, handle: { size: '0.75rem' } }"
                             >
-                                <template #handle="{ checked }">
-                                    <LoadingIcon v-if="isLoadingGiftMessage" xclass="text-sm text-gray-500" />
-                                    <template v-else>
-                                        <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                                        <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
-                                    </template>
+                                <template #handle>
+                                    <LoadingIcon v-if="isLoadingGiftMessage" class="text-[8px] text-gray-600" />
                                 </template>
                             </ToggleSwitch>
                         </div>
@@ -971,7 +1004,7 @@ const onChangeInsurance = async (val: boolean) => {
                                 || isGiftMessageMissing"
                         >
                         </ButtonWithLink>
-                        <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
+                        <div class="text-xs text-gray-600 mt-2 italic flex items-start gap-x-1">
                             <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
                             <div class="leading-5">
                                 {{ ctrans("This is your final confirmation. You can pay totally with your current balance.") }}
