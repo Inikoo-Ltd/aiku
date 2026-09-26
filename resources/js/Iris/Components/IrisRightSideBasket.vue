@@ -721,7 +721,7 @@ onUnmounted(() => {
                                 </ToggleSwitch>
                             </div>
                         </div>
-                        <div v-if="charge.key_db === 'has_gift_message' && dataSideBasket?.order_data?.has_gift_message" class="mt-1">
+                        <div v-if="charge?.key_db === 'has_gift_message' && dataSideBasket?.order_data?.has_gift_message" class="mt-1">
                             <GiftMessagePanel
                                 ref="giftMessagePanel"
                                 :giftMessage="dataSideBasket?.order_data?.gift_message"
