@@ -20,7 +20,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Departments and sub-departments cover thousands of products and take seconds to analyse, so
- * their Overview teaser and default Sales analysis are worked out overnight and cached for the day.
+ * their default Sales analysis, which the Overview teaser also reads, is worked out overnight and
+ * cached for the day. Families and below take well under a second and are left to the first visit.
  */
 class WarmSalesAnalysis implements ShouldBeUnique
 {
@@ -44,7 +45,6 @@ class WarmSalesAnalysis implements ShouldBeUnique
             return;
         }
 
-        GetSalesAnalysis::make()->teaser($scope);
         GetSalesAnalysis::make()->handle($scope, []);
     }
 

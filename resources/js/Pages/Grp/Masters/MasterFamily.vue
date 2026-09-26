@@ -102,7 +102,7 @@ const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
 
-const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
 
 const breakdownRoute = (row: { slug: string | null }) => {
     const params = route().params

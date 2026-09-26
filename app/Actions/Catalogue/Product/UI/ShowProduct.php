@@ -353,7 +353,7 @@ class ShowProduct extends OrgAction
                 : Inertia::optional(fn () => GetProductTimeSeriesData::run($product)),
 
             ProductTabsEnum::SALES_ANALYSIS->value => $this->tab == ProductTabsEnum::SALES_ANALYSIS->value ?
-                fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProduct($product), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProduct($product), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
                 : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProduct($product), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
 
             'sales_analysis_teaser' => $this->tab == ProductTabsEnum::SHOWCASE->value ?

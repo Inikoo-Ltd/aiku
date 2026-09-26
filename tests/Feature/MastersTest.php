@@ -506,13 +506,18 @@ test('UI Show Master Department sales analysis tab', function (MasterProductCate
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Masters/MasterDepartment')
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events')
-            ->has('sales_analysis.filters.organisations');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterDepartment));
@@ -589,16 +594,21 @@ test('UI Show Master Family sales analysis tab', function (MasterProductCategory
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Masters/MasterFamily')
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.totals.current', fn (AssertableInertia $totals) => $totals->where('sales', 0)->where('stock_outs', 0)->etc())
-            ->has('sales_analysis.shops')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events')
-            ->where('sales_analysis.filters.selected_organisations', [])
-            ->has('sales_analysis.filters.organisations');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.totals.current', fn (AssertableInertia $totals) => $totals->where('sales', 0)->where('stock_outs', 0)->etc())
+                ->has('sales_analysis.shops')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->where('sales_analysis.filters.selected_organisations', [])
+                ->has('sales_analysis.filters.organisations')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterFamily));
@@ -1009,13 +1019,18 @@ test('UI Show Master SubDepartment sales analysis tab', function (MasterProductC
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Masters/MasterSubDepartment')
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events')
-            ->has('sales_analysis.filters.organisations');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterCategory($masterSubDepartment));
@@ -1598,13 +1613,18 @@ test('UI Show Master Product sales analysis tab', function (MasterAsset $masterA
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Masters/MasterProduct')
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events')
-            ->has('sales_analysis.filters.organisations');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.compare_period', ['from' => '2025-01-01', 'to' => '2025-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset));

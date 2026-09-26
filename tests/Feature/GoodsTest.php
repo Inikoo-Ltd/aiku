@@ -277,12 +277,17 @@ test("UI Show Stock Family sales analysis tab", function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Goods/StockFamily')
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events')
-            ->has('sales_analysis.filters.organisations');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily));
@@ -337,12 +342,17 @@ test("UI Show Stocks sales analysis tab", function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Goods/Stock')
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events')
-            ->has('sales_analysis.filters.organisations');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStock($stock));
@@ -467,12 +477,17 @@ test("UI Show TradeUnit sales analysis tab", function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Goods/TradeUnit')
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events')
-            ->has('sales_analysis.filters.organisations');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnit($tradeUnit));
@@ -827,12 +842,17 @@ test('UI Show Trade Unit Family sales analysis tab', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Goods/TradeUnitFamily')
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events')
-            ->has('sales_analysis.filters.organisations');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnitFamily($family));

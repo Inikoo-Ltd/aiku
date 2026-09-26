@@ -872,11 +872,16 @@ test("UI show org stock sales analysis tab", function (OrgStock $orgStock) {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component("Org/Inventory/OrgStock")
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStock($orgStock));
@@ -1128,11 +1133,16 @@ test("UI Show Org Stock Family sales analysis tab", function (OrgStockFamily $or
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component("Org/Inventory/OrgStockFamily")
-            ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
-            ->where('sales_analysis.frequency', 'daily')
-            ->has('sales_analysis.breakdown')
-            ->has('sales_analysis.stock_outs')
-            ->has('sales_analysis.events');
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+            );
     });
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStockFamily($orgStockFamily));

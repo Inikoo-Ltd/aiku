@@ -39,26 +39,26 @@ class GetSalesAnalysis
     private Collection $products;
     private array $shopIds = [];
     private bool $includePartners = false;
-    private array $groupedSales = [];
+    private array $periodSales = [];
     private string $unit = 'week';
 
     /**
      * @param array{from?: string|null, to?: string|null, compareFrom?: string|null, compareTo?: string|null, organisations?: array|string|null, shops?: array|string|null} $modelData
      */
-    public function handle(SalesAnalysisScope $scope, array $modelData, bool $withDetails = true): array
+    public function handle(SalesAnalysisScope $scope, array $modelData): array
     {
         if (!$scope->cacheKey) {
-            return $this->analyse($scope, $modelData, $withDetails);
+            return $this->analyse($scope, $modelData);
         }
 
         return Cache::remember(
-            'sales-analysis:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), $withDetails, now()->toDateString()])),
+            'sales-analysis:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
             now()->endOfDay(),
-            fn () => $this->analyse($scope, $modelData, $withDetails)
+            fn () => $this->analyse($scope, $modelData)
         );
     }
 
-    private function analyse(SalesAnalysisScope $scope, array $modelData, bool $withDetails): array
+    private function analyse(SalesAnalysisScope $scope, array $modelData): array
     {
         $this->scope           = $scope;
         $this->includePartners = (bool)Arr::get($modelData, 'partners');
@@ -76,7 +76,7 @@ class GetSalesAnalysis
 
         $frequency          = $this->frequency($from, $to);
         $this->unit         = $this->bucketUnit($frequency);
-        $this->groupedSales = [];
+        $this->periodSales  = [];
 
         $allProducts = DB::table('products')
             ->whereRaw('id = any(?::int[])', [$this->intArray($scope->productIds)])
@@ -151,17 +151,18 @@ class GetSalesAnalysis
             'breakdown'       => $this->byBreakdown($from, $to, $compareFrom, $compareTo, $stockOuts),
             'stock_outs'      => $stockOuts,
             'skos'            => $this->stockKeepingUnitCount(),
-            'traffic'         => $withDetails ? $this->traffic($frequency, $from, $to) : [],
-            'events'          => $withDetails ? $this->events($from, $to) : [],
+            'traffic'         => $this->traffic($frequency, $from, $to),
+            'events'          => $this->events($from, $to),
         ];
     }
 
     /**
-     * The last 12 months against the year before, for the Overview tab.
+     * The last 12 months against the year before, for the Overview tab: read from the same cached
+     * analysis as the default Sales analysis tab, so opening the tab afterwards is instant.
      */
     public function teaser(SalesAnalysisScope $scope): array
     {
-        $analysis = $this->handle($scope, [], withDetails: false);
+        $analysis = $this->handle($scope, []);
 
         return [
             ...Arr::only($analysis, ['period', 'compare_period', 'currency', 'frequency', 'sales', 'compare_sales', 'totals', 'breakdown_label']),
@@ -230,7 +231,7 @@ class GetSalesAnalysis
     private function salesSeries(TimeSeriesFrequencyEnum $frequency, Carbon $from, Carbon $to): array
     {
         $unit  = $this->bucketUnit($frequency);
-        $sales = $this->groupedSales($from, $to)->groupBy('bucket')->map(fn (Collection $rows) => $rows->sum('sales'));
+        $sales = $this->periodSales($from, $to)['bucket'];
 
         $bucket = match ($unit) {
             'day' => $from->copy(),
@@ -261,30 +262,52 @@ class GetSalesAnalysis
     }
 
     /**
-     * One query per period: sales by time bucket, shop and asset, which the chart, the websites
-     * and the breakdown are all summed from.
+     * One pass over the invoice lines of a period: the sales by time bucket, by shop and by asset,
+     * which the chart, the websites and the breakdown are read from, and the totals.
+     *
+     * @return array{bucket: array<string, float>, shop: array<int, float>, asset: array<int, float>, totals: object}
      */
-    private function groupedSales(Carbon $from, Carbon $to): Collection
+    private function periodSales(Carbon $from, Carbon $to): array
     {
         $key = $from->toDateString().'|'.$to->toDateString();
+        if (isset($this->periodSales[$key])) {
+            return $this->periodSales[$key];
+        }
 
-        return $this->groupedSales[$key] ??= $this->invoiceLines($from, $to)
-            ->groupByRaw('1, 2, 3')
-            ->selectRaw("date_trunc('{$this->unit}', invoice_transactions.date)::date::text as bucket, invoice_transactions.shop_id, invoice_transactions.asset_id, sum(invoice_transactions.{$this->scope->amountColumn})::float as sales")
-            ->get();
+        $lines = $this->invoiceLines($from, $to)->selectRaw(
+            "date_trunc('{$this->unit}', invoice_transactions.date)::date::text as bucket, invoice_transactions.shop_id, invoice_transactions.asset_id,
+            invoice_transactions.{$this->scope->amountColumn} as amount, invoice_transactions.order_id, invoice_transactions.invoice_id,
+            invoice_transactions.is_refund, invoice_transactions.customer_id"
+        );
+
+        $rows = DB::select(
+            "with lines as materialized ({$lines->toSql()})
+            select 'bucket' as dimension, bucket as key, sum(amount)::float as sales, null::bigint as orders, null::bigint as invoices, null::bigint as refunds, null::bigint as customers from lines group by bucket
+            union all
+            select 'shop', shop_id::text, sum(amount)::float, null, null, null, null from lines group by shop_id
+            union all
+            select 'asset', asset_id::text, sum(amount)::float, null, null, null, null from lines group by asset_id
+            union all
+            select 'totals', null, coalesce(sum(amount), 0)::float, count(distinct order_id), count(distinct invoice_id) filter (where not is_refund),
+                   count(distinct invoice_id) filter (where is_refund), count(distinct customer_id) from lines",
+            $lines->getBindings()
+        );
+
+        $sales = ['bucket' => [], 'shop' => [], 'asset' => [], 'totals' => null];
+        foreach ($rows as $row) {
+            if ($row->dimension === 'totals') {
+                $sales['totals'] = $row;
+            } else {
+                $sales[$row->dimension][$row->key] = $row->sales;
+            }
+        }
+
+        return $this->periodSales[$key] = $sales;
     }
 
     private function salesTotals(Carbon $from, Carbon $to): array
     {
-        $totals = $this->invoiceLines($from, $to)
-            ->selectRaw(
-                "coalesce(sum(invoice_transactions.{$this->scope->amountColumn}), 0)::float as sales,
-                count(distinct invoice_transactions.order_id) as orders,
-                count(distinct invoice_transactions.invoice_id) filter (where not invoice_transactions.is_refund) as invoices,
-                count(distinct invoice_transactions.invoice_id) filter (where invoice_transactions.is_refund) as refunds,
-                count(distinct invoice_transactions.customer_id) as customers"
-            )
-            ->first();
+        $totals = $this->periodSales($from, $to)['totals'];
 
         return [
             'sales'     => round($totals->sales, 2),
@@ -304,13 +327,6 @@ class GetSalesAnalysis
             ->whereBetween('invoice_transactions.date', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
     }
 
-    private function salesBy(string $column, Carbon $from, Carbon $to): Collection
-    {
-        return $this->groupedSales($from, $to)
-            ->groupBy($column)
-            ->map(fn (Collection $rows) => (object)['key' => $rows->first()->$column, 'sales' => $rows->sum('sales')]);
-    }
-
     private function stockOutTotals(array $stockOuts): array
     {
         $counted = collect($stockOuts)->where('cause', '!=', 'discontinued');
@@ -325,16 +341,14 @@ class GetSalesAnalysis
 
     private function byShop(Carbon $from, Carbon $to, Carbon $compareFrom, Carbon $compareTo, array $stockOuts): array
     {
-        $sales         = $this->salesBy('shop_id', $from, $to);
-        $previousSales = $this->salesBy('shop_id', $compareFrom, $compareTo);
+        $sales         = $this->periodSales($from, $to)['shop'];
+        $previousSales = $this->periodSales($compareFrom, $compareTo)['shop'];
 
         $stockOutDaysByOrganisation = collect($stockOuts)->where('cause', '!=', 'discontinued')->groupBy('organisation_id')->map->sum('days');
 
         return collect($this->shopIds)
             ->map(function ($shopId) use ($sales, $previousSales, $stockOutDaysByOrganisation) {
-                $shop     = $this->shops[$shopId];
-                $row      = $sales[$shopId] ?? null;
-                $previous = $previousSales[$shopId] ?? null;
+                $shop = $this->shops[$shopId];
 
                 return [
                     'shop_id'         => $shopId,
@@ -343,8 +357,8 @@ class GetSalesAnalysis
                     'shop_state'      => $shop->state,
                     'organisation_id' => $shop->organisation_id,
                     'node_state'      => $this->scope->shopNodeStates[$shopId] ?? null,
-                    'sales'           => round($row?->sales ?? 0, 2),
-                    'previous_sales'  => round($previous?->sales ?? 0, 2),
+                    'sales'           => round($sales[$shopId] ?? 0, 2),
+                    'previous_sales'  => round($previousSales[$shopId] ?? 0, 2),
                     'stock_out_days'  => $stockOutDaysByOrganisation[$shop->organisation_id] ?? 0,
                 ];
             })
@@ -361,13 +375,19 @@ class GetSalesAnalysis
 
         $rows         = $this->scope->breakdownRows;
         $keyByProduct = array_map(fn ($key) => isset($rows[$key]) ? $key : 0, $this->scope->breakdownKeyByProduct);
-        $keyByAsset   = $this->products->mapWithKeys(fn ($product) => [$product->asset_id => $keyByProduct[$product->id] ?? 0]);
-        $sumByKey     = fn (Collection $rows) => $rows
-            ->groupBy(fn ($row) => $keyByAsset[$row->key] ?? 0)
-            ->map(fn (Collection $group) => $group->sum('sales'));
+        $keyByAsset   = $this->products->mapWithKeys(fn ($product) => [$product->asset_id => $keyByProduct[$product->id] ?? 0])->all();
+        $sumByKey     = function (array $salesByAsset) use ($keyByAsset) {
+            $sales = [];
+            foreach ($salesByAsset as $assetId => $amount) {
+                $key         = $keyByAsset[$assetId] ?? 0;
+                $sales[$key] = ($sales[$key] ?? 0) + $amount;
+            }
 
-        $sales         = $sumByKey($this->salesBy('asset_id', $from, $to));
-        $previousSales = $sumByKey($this->salesBy('asset_id', $compareFrom, $compareTo));
+            return $sales;
+        };
+
+        $sales         = $sumByKey($this->periodSales($from, $to)['asset']);
+        $previousSales = $sumByKey($this->periodSales($compareFrom, $compareTo)['asset']);
 
         $productsByKey = $this->products->groupBy(fn ($product) => $keyByProduct[$product->id] ?? 0);
 
@@ -466,7 +486,7 @@ class GetSalesAnalysis
             ->concat($this->offerEvents($from, $end))
             ->concat($this->publishEvents($from, $end));
 
-        return $this->groupEvents($events)->sortByDesc('datetime')->take(self::MAX_EVENTS)->values()->all();
+        return $this->groupEvents($events)->all();
     }
 
     private function auditEvents(string $auditableType, array $labels, ?array $shopIds, Carbon $from, Carbon $end): Collection
@@ -475,32 +495,41 @@ class GetSalesAnalysis
             return collect();
         }
 
-        return DB::table('audits')
+        $audits = DB::table('audits')
             ->where('auditable_type', $auditableType)
             ->whereRaw('auditable_id = any(?::int[])', [$this->intArray(array_keys($labels))])
             ->whereBetween('created_at', [$from, $end])
             ->where('event', 'updated')
             ->select(['auditable_id', 'old_values', 'new_values', 'user_type', 'user_id', 'created_at'])
             ->orderBy('id')
-            ->get()
-            ->flatMap(function ($audit) use ($labels, $shopIds) {
-                $old = json_decode($audit->old_values ?? '[]', true) ?: [];
-                $new = json_decode($audit->new_values ?? '[]', true) ?: [];
+            ->get();
 
-                return collect($new)
-                    ->filter(fn ($value, $key) => $this->auditType((string)$key, $value, $old[$key] ?? null) !== null)
-                    ->map(fn ($value, $key) => [
-                        'datetime' => Carbon::parse($audit->created_at),
-                        'type'     => $this->auditType((string)$key, $value, $old[$key] ?? null),
-                        'subject'  => $labels[$audit->auditable_id],
-                        'field'    => (string)$key,
-                        'old'      => $this->displayValue($old[$key] ?? null),
-                        'new'      => $this->displayValue($value),
-                        'shop_id'  => $shopIds[$audit->auditable_id] ?? null,
-                        'user_id'  => $audit->user_type === 'User' ? $audit->user_id : null,
-                    ])
-                    ->values();
-            });
+        $events = [];
+        foreach ($audits as $audit) {
+            $old = json_decode($audit->old_values ?? '[]', true) ?: [];
+            $new = json_decode($audit->new_values ?? '[]', true) ?: [];
+
+            foreach ($new as $key => $value) {
+                $key  = (string)$key;
+                $type = $this->auditType($key, $value, $old[$key] ?? null);
+                if ($type === null) {
+                    continue;
+                }
+
+                $events[] = [
+                    'datetime' => $audit->created_at,
+                    'type'     => $type,
+                    'subject'  => $labels[$audit->auditable_id],
+                    'field'    => $key,
+                    'old'      => $this->displayValue($old[$key] ?? null),
+                    'new'      => $this->displayValue($value),
+                    'shop_id'  => $shopIds[$audit->auditable_id] ?? null,
+                    'user_id'  => $audit->user_type === 'User' ? $audit->user_id : null,
+                ];
+            }
+        }
+
+        return collect($events);
     }
 
     private function auditType(string $key, mixed $value, mixed $old): ?string
@@ -545,7 +574,7 @@ class GetSalesAnalysis
         return $this->products
             ->filter(fn ($product) => $product->created_at && Carbon::parse($product->created_at)->between($from, $end))
             ->map(fn ($product) => [
-                'datetime' => Carbon::parse($product->created_at),
+                'datetime' => $product->created_at,
                 'type'     => 'launch',
                 'subject'  => $product->code,
                 'field'    => 'launch',
@@ -581,8 +610,8 @@ class GetSalesAnalysis
             ->select(['name', 'shop_id', 'start_at', 'end_at'])
             ->get()
             ->flatMap(fn ($offer) => collect([
-                $offer->start_at && Carbon::parse($offer->start_at)->between($from, $end) ? ['field' => 'offer_started', 'datetime' => Carbon::parse($offer->start_at)] : null,
-                $offer->end_at && Carbon::parse($offer->end_at)->between($from, $end) ? ['field' => 'offer_ended', 'datetime' => Carbon::parse($offer->end_at)] : null,
+                $offer->start_at && Carbon::parse($offer->start_at)->between($from, $end) ? ['field' => 'offer_started', 'datetime' => $offer->start_at] : null,
+                $offer->end_at && Carbon::parse($offer->end_at)->between($from, $end) ? ['field' => 'offer_ended', 'datetime' => $offer->end_at] : null,
             ])->filter()->map(fn ($moment) => [
                 'datetime' => $moment['datetime'],
                 'type'     => 'offer',
@@ -610,7 +639,7 @@ class GetSalesAnalysis
             ->select(['parent_id', 'published_at', 'comment', 'publisher_type', 'publisher_id'])
             ->get()
             ->map(fn ($snapshot) => [
-                'datetime' => Carbon::parse($snapshot->published_at),
+                'datetime' => $snapshot->published_at,
                 'type'     => 'publish',
                 'subject'  => $snapshot->comment ?: '',
                 'field'    => 'publish',
@@ -621,25 +650,41 @@ class GetSalesAnalysis
             ]);
     }
 
+    /**
+     * Changes of the same kind made in the same hour are shown as one. Dates stay as read from the
+     * database (Y-m-d H:i:s...) until grouped, as there can be tens of thousands of changes.
+     */
     private function groupEvents(Collection $events): Collection
     {
-        $users = DB::table('users')->whereIn('id', $events->pluck('user_id')->filter()->unique())->pluck('contact_name', 'id');
-
-        return $events
-            ->groupBy(fn ($event) => implode('|', [
+        $groups = [];
+        foreach ($events as $event) {
+            $groups[implode('|', [
                 $event['type'],
                 $event['field'],
                 $event['type'] === 'price' || $event['type'] === 'launch' || $event['type'] === 'publish' ? '' : $event['subject'],
                 $event['type'] === 'price' ? '' : $event['new'],
-                $event['datetime']->format('Y-m-d H'),
-            ]))
-            ->map(function (Collection $group) use ($users) {
-                $first   = $group->first();
-                $shopIds = $group->pluck('shop_id')->filter()->unique()->values();
+                substr($event['datetime'], 0, 13),
+            ])][] = $event;
+        }
+
+        $groups = collect($groups)
+            ->map(fn (array $group) => ['datetime' => Carbon::parse($group[0]['datetime']), 'events' => $group])
+            ->sortByDesc(fn (array $group) => $group['datetime']->toIso8601String())
+            ->take(self::MAX_EVENTS);
+        $users = DB::table('users')
+            ->whereIn('id', $groups->flatMap(fn (array $group) => array_column($group['events'], 'user_id'))->filter()->unique())
+            ->pluck('contact_name', 'id');
+
+        return $groups
+            ->map(function (array $grouped) use ($users) {
+                $group    = collect($grouped['events']);
+                $first    = $group->first();
+                $datetime = $grouped['datetime'];
+                $shopIds  = $group->pluck('shop_id')->filter()->unique()->values();
 
                 return [
-                    'datetime' => $first['datetime']->toIso8601String(),
-                    'date'     => $first['datetime']->toDateString(),
+                    'datetime' => $datetime->toIso8601String(),
+                    'date'     => $datetime->toDateString(),
                     'type'     => $first['type'],
                     'field'    => $first['field'],
                     'subjects' => $group->pluck('subject')->filter()->unique()->values()->all(),

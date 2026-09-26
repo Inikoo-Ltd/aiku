@@ -123,7 +123,7 @@ class ShowStock extends OrgAction
                     : Inertia::optional(fn () => GetStockShowcase::run($stock)),
 
                 StockTabsEnum::SALES_ANALYSIS->value => $this->tab === StockTabsEnum::SALES_ANALYSIS->value ?
-                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStock($stock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStock($stock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
                     : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStock($stock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
 
                 'sales_analysis_teaser' => $this->tab === StockTabsEnum::SHOWCASE->value ?

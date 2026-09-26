@@ -208,7 +208,7 @@ class ShowDepartment extends OrgAction
                     : Inertia::optional(fn () => GetProductCategoryTimeSeriesData::run($department)),
 
                 DepartmentTabsEnum::SALES_ANALYSIS->value => $this->tab == DepartmentTabsEnum::SALES_ANALYSIS->value ?
-                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($department), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($department), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
                     : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forProductCategory($department), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
 
                 'sales_analysis_teaser' => $this->tab == DepartmentTabsEnum::SHOWCASE->value ?

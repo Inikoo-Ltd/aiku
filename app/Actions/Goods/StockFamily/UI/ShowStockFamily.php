@@ -92,7 +92,7 @@ class ShowStockFamily extends OrgAction
                     Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily)), 'sales_analysis_teaser')
                     : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily))),
                 StockFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === StockFamilyTabsEnum::SALES_ANALYSIS->value ?
-                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStockFamily($stockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStockFamily($stockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
                     : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forStockFamily($stockFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
                 StockFamilyTabsEnum::STOCKS->value    => $this->tab == StockFamilyTabsEnum::STOCKS->value
                     ?

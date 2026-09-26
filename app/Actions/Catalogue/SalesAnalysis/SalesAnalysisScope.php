@@ -20,7 +20,10 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
+use Closure;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use ReflectionClass;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -65,6 +68,73 @@ final class SalesAnalysisScope
 
     public static function forMasterCategory(MasterProductCategory $category): self
     {
+        return self::lazy('MasterProductCategory:'.$category->id, fn () => self::buildMasterCategory($category));
+    }
+
+    public static function forMasterAsset(MasterAsset $masterAsset): self
+    {
+        return self::lazy('MasterAsset:'.$masterAsset->id, fn () => self::buildMasterAsset($masterAsset));
+    }
+
+    public static function forProductCategory(ProductCategory $category): self
+    {
+        return self::lazy('ProductCategory:'.$category->id, fn () => self::buildProductCategory($category));
+    }
+
+    public static function forProduct(Product $product): self
+    {
+        return self::lazy('Product:'.$product->id, fn () => self::buildProduct($product));
+    }
+
+    public static function forTradeUnit(TradeUnit $tradeUnit): self
+    {
+        return self::lazy('TradeUnit:'.$tradeUnit->id, fn () => self::buildTradeUnit($tradeUnit));
+    }
+
+    public static function forTradeUnitFamily(TradeUnitFamily $tradeUnitFamily): self
+    {
+        return self::lazy('TradeUnitFamily:'.$tradeUnitFamily->id, fn () => self::buildTradeUnitFamily($tradeUnitFamily));
+    }
+
+    public static function forStock(Stock $stock): self
+    {
+        return self::lazy('Stock:'.$stock->id, fn () => self::buildStock($stock));
+    }
+
+    public static function forStockFamily(StockFamily $stockFamily): self
+    {
+        return self::lazy('StockFamily:'.$stockFamily->id, fn () => self::buildStockFamily($stockFamily));
+    }
+
+    public static function forOrgStock(OrgStock $orgStock): self
+    {
+        return self::lazy('OrgStock:'.$orgStock->id, fn () => self::buildOrgStock($orgStock));
+    }
+
+    public static function forOrgStockFamily(OrgStockFamily $orgStockFamily): self
+    {
+        return self::lazy('OrgStockFamily:'.$orgStockFamily->id, fn () => self::buildOrgStockFamily($orgStockFamily));
+    }
+
+    /**
+     * Building a scope reads every product of a department, so it is built only when the analysis
+     * is not cached yet: the cache key is set upfront and the rest is read on first use.
+     */
+    private static function lazy(string $cacheKey, Closure $build): self
+    {
+        $reflector = new ReflectionClass(self::class);
+        $scope     = $reflector->newLazyGhost(function (self $scope) use ($build) {
+            foreach (Arr::except(get_object_vars($build()), 'cacheKey') as $property => $value) {
+                $scope->$property = $value;
+            }
+        });
+        $reflector->getProperty('cacheKey')->setRawValueWithoutLazyInitialization($scope, $cacheKey);
+
+        return $scope;
+    }
+
+    private static function buildMasterCategory(MasterProductCategory $category): self
+    {
         [$masterColumn, $shopColumn] = match ($category->type) {
             MasterProductCategoryTypeEnum::DEPARTMENT => ['master_department_id', 'department_id'],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => ['master_sub_department_id', 'sub_department_id'],
@@ -104,11 +174,10 @@ final class SalesAnalysisScope
             offerTriggers: ['ProductCategory' => $shopCategories->pluck('id')->all(), 'Product' => $productIds],
             webpageShops: $shopCategories->filter(fn ($row) => $row->webpage_id)->pluck('shop_id', 'webpage_id')->all(),
             shopNodeStates: $shopCategories->pluck('state', 'shop_id')->all(),
-            cacheKey: 'MasterProductCategory:'.$category->id,
         );
     }
 
-    public static function forMasterAsset(MasterAsset $masterAsset): self
+    private static function buildMasterAsset(MasterAsset $masterAsset): self
     {
         $productIds = DB::table('products')->where('master_product_id', $masterAsset->id)->pluck('id')->all();
 
@@ -120,11 +189,10 @@ final class SalesAnalysisScope
             offerTriggers: ['Product' => $productIds],
             webpageShops: self::productWebpages($productIds),
             shopNodeStates: DB::table('products')->whereIn('id', $productIds)->pluck('state', 'shop_id')->all(),
-            cacheKey: 'MasterAsset:'.$masterAsset->id,
         );
     }
 
-    public static function forProductCategory(ProductCategory $category): self
+    private static function buildProductCategory(ProductCategory $category): self
     {
         $column = match ($category->type) {
             ProductCategoryTypeEnum::DEPARTMENT => 'department_id',
@@ -149,11 +217,10 @@ final class SalesAnalysisScope
             offerTriggers: ['ProductCategory' => [$category->id], 'Product' => $productIds],
             webpageShops: $category->webpage_id ? [$category->webpage_id => $category->shop_id] : [],
             shopNodeStates: [$category->shop_id => $category->state?->value],
-            cacheKey: 'ProductCategory:'.$category->id,
         );
     }
 
-    public static function forProduct(Product $product): self
+    private static function buildProduct(Product $product): self
     {
         return new self(
             currency: $product->shop->currency->code,
@@ -163,11 +230,10 @@ final class SalesAnalysisScope
             offerTriggers: ['Product' => [$product->id]],
             webpageShops: $product->webpage_id ? [$product->webpage_id => $product->shop_id] : [],
             shopNodeStates: [$product->shop_id => $product->state?->value],
-            cacheKey: 'Product:'.$product->id,
         );
     }
 
-    public static function forTradeUnit(TradeUnit $tradeUnit): self
+    private static function buildTradeUnit(TradeUnit $tradeUnit): self
     {
         $productIds = self::tradeUnitProducts([$tradeUnit->id])->pluck('model_id')->unique()->values()->all();
 
@@ -178,11 +244,10 @@ final class SalesAnalysisScope
             audits: [self::audit('TradeUnit', [$tradeUnit->id => $tradeUnit->code]), self::productAudit($productIds)],
             offerTriggers: ['Product' => $productIds],
             webpageShops: self::productWebpages($productIds),
-            cacheKey: 'TradeUnit:'.$tradeUnit->id,
         );
     }
 
-    public static function forTradeUnitFamily(TradeUnitFamily $tradeUnitFamily): self
+    private static function buildTradeUnitFamily(TradeUnitFamily $tradeUnitFamily): self
     {
         $tradeUnitIds = DB::table('trade_units')->where('trade_unit_family_id', $tradeUnitFamily->id)->pluck('id')->all();
         $links        = self::tradeUnitProducts($tradeUnitIds);
@@ -202,11 +267,10 @@ final class SalesAnalysisScope
             ],
             offerTriggers: ['Product' => $productIds],
             webpageShops: self::productWebpages($productIds),
-            cacheKey: 'TradeUnitFamily:'.$tradeUnitFamily->id,
         );
     }
 
-    public static function forStock(Stock $stock): self
+    private static function buildStock(Stock $stock): self
     {
         $orgStockIds = DB::table('org_stocks')->where('stock_id', $stock->id)->pluck('id')->all();
         $productIds  = self::orgStockProducts($orgStockIds)->pluck('product_id')->unique()->values()->all();
@@ -218,11 +282,10 @@ final class SalesAnalysisScope
             audits: [self::audit('Stock', [$stock->id => $stock->code]), self::productAudit($productIds)],
             offerTriggers: ['Product' => $productIds],
             webpageShops: self::productWebpages($productIds),
-            cacheKey: 'Stock:'.$stock->id,
         );
     }
 
-    public static function forStockFamily(StockFamily $stockFamily): self
+    private static function buildStockFamily(StockFamily $stockFamily): self
     {
         $stockIds = DB::table('stocks')->where('stock_family_id', $stockFamily->id)->pluck('id')->all();
         $links    = DB::table('product_has_org_stocks')
@@ -246,11 +309,10 @@ final class SalesAnalysisScope
             ],
             offerTriggers: ['Product' => $productIds],
             webpageShops: self::productWebpages($productIds),
-            cacheKey: 'StockFamily:'.$stockFamily->id,
         );
     }
 
-    public static function forOrgStock(OrgStock $orgStock): self
+    private static function buildOrgStock(OrgStock $orgStock): self
     {
         $productIds = self::orgStockProducts([$orgStock->id])->pluck('product_id')->unique()->values()->all();
 
@@ -261,11 +323,10 @@ final class SalesAnalysisScope
             audits: [self::audit('OrgStock', [$orgStock->id => $orgStock->code]), self::productAudit($productIds)],
             offerTriggers: ['Product' => $productIds],
             webpageShops: self::productWebpages($productIds),
-            cacheKey: 'OrgStock:'.$orgStock->id,
         );
     }
 
-    public static function forOrgStockFamily(OrgStockFamily $orgStockFamily): self
+    private static function buildOrgStockFamily(OrgStockFamily $orgStockFamily): self
     {
         $orgStockIds = DB::table('org_stocks')->where('org_stock_family_id', $orgStockFamily->id)->pluck('id')->all();
         $links       = self::orgStockProducts($orgStockIds);
@@ -285,7 +346,6 @@ final class SalesAnalysisScope
             ],
             offerTriggers: ['Product' => $productIds],
             webpageShops: self::productWebpages($productIds),
-            cacheKey: 'OrgStockFamily:'.$orgStockFamily->id,
         );
     }
 

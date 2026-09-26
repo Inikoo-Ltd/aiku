@@ -7,7 +7,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
-	sales_analysis: object
+	sales_analysis?: object
 }>()
 </script>
 

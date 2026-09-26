@@ -45,7 +45,7 @@ class ShowShopSalesAnalysis extends OrgAction
                 'model' => $shop->name,
                 'icon'  => ['icon' => ['fal', 'fa-chart-line'], 'title' => __('Sales analysis')],
             ],
-            'sales_analysis' => fn () => GetShopSalesAnalysis::run($shop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners'])),
+            'sales_analysis' => Inertia::defer(fn () => GetShopSalesAnalysis::run($shop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners'])), 'sales_analysis'),
         ]);
     }
 }

@@ -51,24 +51,23 @@ class GetSalesAnalysisStockOuts
             return $results;
         }
 
-        $orgStocks = $this->orgStocks($productIds);
-        if ($orgStocks->isEmpty()) {
-            return $results;
-        }
-
         $start = collect($periods)->map(fn ($period) => $period[0])->min();
         $end   = collect($periods)->map(fn ($period) => $period[1])->max();
 
-        $orgStockIds = $orgStocks->keys()->all();
-        $orders      = $this->orders($orgStockIds);
-        $deliveries  = $this->deliveries($orgStockIds);
-        $dailySales  = $this->dailySales($productIds, $orgStockIds, $start->copy()->subDays(self::SALES_RATE_DAYS), $end, match ($amountColumn) {
+        $runs = $this->runs($this->productOrgStocks($productIds)->distinct()->pluck('product_has_org_stocks.org_stock_id')->all(), $start, $end);
+        if (!$runs) {
+            return $results;
+        }
+
+        $orgStockIds   = array_values(array_unique(array_column($runs, 'org_stock_id')));
+        $orgStocks     = $this->orgStocks($productIds, $orgStockIds);
+        $orders        = $this->orders($orgStockIds);
+        $deliveries    = $this->deliveries($orgStockIds);
+        $dailySales    = $this->dailySales($productIds, $orgStockIds, $start->copy()->subDays(self::SALES_RATE_DAYS), $end, match ($amountColumn) {
             'net_amount' => 'sales_external',
             'org_net_amount' => 'sales_org_currency_external',
             default => 'sales_grp_currency_external',
         });
-
-        $runs          = $this->runs($orgStockIds, $start, $end);
         $stockedBefore = $this->stockedBefore(collect($runs)->where('starts_at_period_start', true)->pluck('org_stock_id')->unique()->all(), $start);
 
         foreach ($runs as $run) {
@@ -98,7 +97,7 @@ class GetSalesAnalysisStockOuts
                     ? ['discontinued', null, null]
                     : $this->cause(
                         $orders->get($run->org_stock_id.'-'.$run->organisation_id, collect()),
-                        $deliveries->get($run->org_stock_id.'-'.$run->organisation_id, collect()),
+                        $deliveries->get($run->org_stock_id.'-'.$run->organisation_id, []),
                         $started,
                         $backIn ?? $end
                     );
@@ -123,15 +122,16 @@ class GetSalesAnalysisStockOuts
         }
 
         return array_map(function (array $stockOuts) {
-            usort($stockOuts, fn ($a, $b) => $b['started_on'] <=> $a['started_on']);
+            usort($stockOuts, fn ($a, $b) => [$b['started_on'], $a['org_stock_id']] <=> [$a['started_on'], $b['org_stock_id']]);
 
             return $stockOuts;
         }, $results);
     }
 
-    private function orgStocks(array $productIds): Collection
+    private function orgStocks(array $productIds, array $orgStockIds): Collection
     {
         $websites = $this->productOrgStocks($productIds)
+            ->whereIn('product_has_org_stocks.org_stock_id', $orgStockIds)
             ->where('products.state', 'active')
             ->groupBy('product_has_org_stocks.org_stock_id')
             ->selectRaw('product_has_org_stocks.org_stock_id, count(distinct products.shop_id) as websites')
@@ -139,7 +139,7 @@ class GetSalesAnalysisStockOuts
 
         return DB::table('org_stocks')
             ->join('organisations', 'organisations.id', 'org_stocks.organisation_id')
-            ->whereIn('org_stocks.id', $this->productOrgStocks($productIds)->select('product_has_org_stocks.org_stock_id'))
+            ->whereIn('org_stocks.id', $orgStockIds)
             ->select([
                 'org_stocks.id',
                 'org_stocks.code',
@@ -159,29 +159,49 @@ class GetSalesAnalysisStockOuts
             ->whereRaw('products.id = any(?::int[])', ['{'.implode(',', $productIds).'}']);
     }
 
+    /**
+     * Runs of days out of stock (gaps and islands). Only the SKOs out of stock at some point are
+     * read, found through the partial index on out of stock days.
+     */
     private function runs(array $orgStockIds, Carbon $from, Carbon $to): array
     {
+        if (!$orgStockIds) {
+            return [];
+        }
+
+        $outOrgStockIds = DB::table('org_stock_histories')
+            ->whereRaw('org_stock_id = any(?::int[])', ['{'.implode(',', $orgStockIds).'}'])
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->whereRaw('quantity_in_locations <= 0')
+            ->distinct()
+            ->pluck('org_stock_id')
+            ->all();
+        if (!$outOrgStockIds) {
+            return [];
+        }
+
         return DB::select(
             <<<'SQL'
-            select org_stock_id, organisation_id, min(date) as started_on, max(next_date) filter (where is_last) as back_in_on,
+            select org_stock_id, min(organisation_id) as organisation_id, min(date) as started_on,
+                   max(next_date) filter (where next_is_out is distinct from true) as back_in_on,
                    bool_or(next_date - date > 1 or date - previous_date > 1) as approximate,
                    bool_or(previous_date is null) as starts_at_period_start
             from (
-                select *, lead(is_out) over w is distinct from true as is_last
+                select *, count(*) filter (where is_out is distinct from previous_is_out) over w as run
                 from (
                     select org_stock_id, organisation_id, date, quantity_in_locations <= 0 as is_out,
-                           lead(date) over w as next_date, lag(date) over w as previous_date,
-                           row_number() over w - row_number() over (partition by org_stock_id, organisation_id, quantity_in_locations <= 0 order by date) as run
+                           lag(quantity_in_locations <= 0) over w as previous_is_out, lead(quantity_in_locations <= 0) over w as next_is_out,
+                           lead(date) over w as next_date, lag(date) over w as previous_date
                     from org_stock_histories
                     where org_stock_id = any(?) and date between ? and ?
-                    window w as (partition by org_stock_id, organisation_id order by date)
+                    window w as (partition by org_stock_id order by date)
                 ) histories
-                window w as (partition by org_stock_id, organisation_id order by date)
+                window w as (partition by org_stock_id order by date)
             ) runs
             where is_out
-            group by org_stock_id, organisation_id, run
+            group by org_stock_id, run
             SQL,
-            ['{'.implode(',', $orgStockIds).'}', $from->toDateString(), $to->toDateString()]
+            ['{'.implode(',', $outOrgStockIds).'}', $from->toDateString(), $to->toDateString()]
         );
     }
 
@@ -237,6 +257,7 @@ class GetSalesAnalysisStockOuts
             ->get();
 
         return $purchaseOrders->concat($stockDeliveries)
+            ->each(fn ($order) => $order->ordered_timestamp = Carbon::parse($order->ordered_at)->getTimestamp())
             ->groupBy(fn ($order) => $order->org_stock_id.'-'.$order->organisation_id)
             ->map(fn (Collection $orders) => $orders->contains('kind', 'purchase_order') ? $orders->where('kind', 'purchase_order')->values() : $orders);
     }
@@ -252,13 +273,15 @@ class GetSalesAnalysisStockOuts
             ->select(['stock_delivery_items.org_stock_id', 'stock_delivery_items.organisation_id'])
             ->selectRaw('coalesce(stock_delivery_items.received_at, stock_deliveries.received_at, stock_deliveries.placed_at) as received_at')
             ->get()
-            ->groupBy(fn ($delivery) => $delivery->org_stock_id.'-'.$delivery->organisation_id);
+            ->groupBy(fn ($delivery) => $delivery->org_stock_id.'-'.$delivery->organisation_id)
+            ->map(fn (Collection $deliveries) => $deliveries->map(fn ($delivery) => Carbon::parse($delivery->received_at)->getTimestamp())->all());
     }
 
     /**
+     * @param array<int, int> $deliveries timestamps the SKO was received
      * @return array{0: string, 1: array|null, 2: int|null}
      */
-    private function cause(Collection $orders, Collection $deliveries, Carbon $started, Carbon $until): array
+    private function cause(Collection $orders, array $deliveries, Carbon $started, Carbon $until): array
     {
         if ($started->lt(Carbon::parse(self::PURCHASE_HISTORY_FROM))) {
             return ['unknown', null, null];
@@ -268,13 +291,21 @@ class GetSalesAnalysisStockOuts
             return ['restocked_directly', null, null];
         }
 
-        $openOrder = $orders
-            ->filter(function ($order) use ($started, $deliveries) {
-                $orderedAt = Carbon::parse($order->ordered_at);
+        $startedAt       = $started->getTimestamp();
+        $openOrdersSince = $started->copy()->subDays(self::OPEN_ORDER_DAYS)->getTimestamp();
 
-                return $orderedAt->lte($started)
-                    && $orderedAt->gte($started->copy()->subDays(self::OPEN_ORDER_DAYS))
-                    && !$deliveries->contains(fn ($delivery) => Carbon::parse($delivery->received_at)->between($orderedAt, $started));
+        $openOrder = $orders
+            ->filter(function ($order) use ($startedAt, $openOrdersSince, $deliveries) {
+                if ($order->ordered_timestamp > $startedAt || $order->ordered_timestamp < $openOrdersSince) {
+                    return false;
+                }
+                foreach ($deliveries as $receivedAt) {
+                    if ($receivedAt >= $order->ordered_timestamp && $receivedAt <= $startedAt) {
+                        return false;
+                    }
+                }
+
+                return true;
             })
             ->sortByDesc('ordered_at')
             ->first();
@@ -283,8 +314,9 @@ class GetSalesAnalysisStockOuts
             return [$this->expectedArrival($openOrder)->lt($started) ? 'supplier_late' : 'ordered_too_late', $this->orderData($openOrder), null];
         }
 
+        $untilAt    = $until->getTimestamp();
         $laterOrder = $orders
-            ->filter(fn ($order) => Carbon::parse($order->ordered_at)->between($started, $until))
+            ->filter(fn ($order) => $order->ordered_timestamp >= $startedAt && $order->ordered_timestamp <= $untilAt)
             ->sortBy('ordered_at')
             ->first();
 

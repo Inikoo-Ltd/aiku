@@ -42,18 +42,18 @@ class GetShopSalesAnalysis
     /**
      * @param array{from?: string|null, to?: string|null, compareFrom?: string|null, compareTo?: string|null, organisations?: array|string|null, shops?: array|string|null} $modelData
      */
-    public function handle(Shop|MasterShop $parent, array $modelData, bool $withDetails = true): array
+    public function handle(Shop|MasterShop $parent, array $modelData): array
     {
         return Cache::remember(
-            'sales-analysis:'.class_basename($parent).':'.$parent->id.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), $withDetails, now()->toDateString()])),
+            'sales-analysis:'.class_basename($parent).':'.$parent->id.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
             now()->endOfDay(),
-            fn () => $this->analyse($parent, $modelData, $withDetails)
+            fn () => $this->analyse($parent, $modelData)
         );
     }
 
     public function teaser(Shop|MasterShop $parent): array
     {
-        $analysis = $this->handle($parent, [], withDetails: false);
+        $analysis = $this->handle($parent, []);
 
         return [
             ...Arr::only($analysis, ['period', 'compare_period', 'currency', 'frequency', 'sales', 'compare_sales', 'totals', 'breakdown_label', 'stock_level']),
@@ -63,7 +63,7 @@ class GetShopSalesAnalysis
         ];
     }
 
-    private function analyse(Shop|MasterShop $parent, array $modelData, bool $withDetails): array
+    private function analyse(Shop|MasterShop $parent, array $modelData): array
     {
         $this->parent          = $parent;
         $isShop                = $parent instanceof Shop;
@@ -146,8 +146,8 @@ class GetShopSalesAnalysis
             'breakdown'            => $this->byDepartment($departments, $isShop, $from, $to, $compareFrom, $compareTo, $totals),
             'stock_outs'           => [],
             'skos'                 => $this->latestStockCount($to),
-            'traffic'              => $withDetails ? $this->traffic($from, $to) : [],
-            'events'               => $withDetails ? $this->events($departments, $isShop, $from, $to) : [],
+            'traffic'              => $this->traffic($from, $to),
+            'events'               => $this->events($departments, $isShop, $from, $to),
         ];
     }
 

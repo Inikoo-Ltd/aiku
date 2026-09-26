@@ -12,6 +12,8 @@ import type { Ref } from "vue"
  * A tab change is a partial visit, and Laravel leaves deferredProps out of a partial response, so
  * Inertia never goes and gets them: a prop the tab needs but does not own, such as the pagespeed
  * report of the webpage performance tab, has to be asked for once the tab itself has arrived.
+ * A tab whose own prop is deferred, such as a slow Sales analysis, opens at once with only the
+ * tabs and shows its placeholder while the prop is fetched.
  */
 export const useTabChange = (tabSlug: string, currentTab: Ref<string>, deferredProps: string[] = []) => {
     if (tabSlug === currentTab.value) {
@@ -34,7 +36,7 @@ export const useTabChange = (tabSlug: string, currentTab: Ref<string>, deferredP
         targetUrl,
         {},
         {
-            only: [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
+            only: deferredProps.includes(tabSlug) ? ['tabs'] : [tabSlug],  // Only reload the props with dynamic name tabSlug (i.e props.showcase, props.menu)
             preserveState: true,
             preserveScroll: true,
             onSuccess: () => {

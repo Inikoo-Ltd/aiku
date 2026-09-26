@@ -115,7 +115,7 @@ const props = defineProps<{
 const isDiscontinuePreviewOpen = ref(false)
 
 let currentTab = ref(props.tabs.current)
-const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 
 const locale = inject("locale", aikuLocaleStructure)

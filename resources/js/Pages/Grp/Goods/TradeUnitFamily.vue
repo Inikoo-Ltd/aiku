@@ -59,7 +59,7 @@ const props = defineProps<{
 }>()
 console.log(props)
 const currentTab = ref(props.tabs.current)
-const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"] }
+const deferredPropsOfTab: Record<string, string[]> = { showcase: ["sales_analysis_teaser"], sales_analysis: ["sales_analysis"] }
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, deferredPropsOfTab[tabSlug] ?? [])
 
 const breakdownRoute = (row: { slug: string | null }) => {

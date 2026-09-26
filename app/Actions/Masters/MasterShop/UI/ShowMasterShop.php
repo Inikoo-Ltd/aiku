@@ -87,7 +87,7 @@ class ShowMasterShop extends OrgAction
                 'organisations_list' => GetOrganisationOptions::run(),
 
                 MasterShopTabsEnum::SALES_ANALYSIS->value => $this->tab == MasterShopTabsEnum::SALES_ANALYSIS->value
-                    ? fn () => GetShopSalesAnalysis::run($masterShop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                    ? Inertia::defer(fn () => GetShopSalesAnalysis::run($masterShop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
                     : Inertia::optional(fn () => GetShopSalesAnalysis::run($masterShop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
                 'sales_analysis_teaser' => $this->tab == MasterShopTabsEnum::SHOWCASE->value
                     ? Inertia::defer(fn () => GetShopSalesAnalysis::make()->teaser($masterShop), 'sales_analysis_teaser')

@@ -111,7 +111,7 @@ class ShowTradeUnitFamily extends OrgAction
                 : Inertia::optional(fn () => $this->getShowcase($tradeUnitFamily)),
 
                 TradeUnitFamilyTabsEnum::SALES_ANALYSIS->value => $this->tab === TradeUnitFamilyTabsEnum::SALES_ANALYSIS->value ?
-                fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnitFamily($tradeUnitFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnitFamily($tradeUnitFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
                 : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnitFamily($tradeUnitFamily), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
 
                 'sales_analysis_teaser' => $this->tab === TradeUnitFamilyTabsEnum::SHOWCASE->value ?

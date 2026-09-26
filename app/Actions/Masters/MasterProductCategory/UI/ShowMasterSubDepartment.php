@@ -198,7 +198,7 @@ class ShowMasterSubDepartment extends OrgAction
                     : Inertia::optional(fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)),
 
                 MasterSubDepartmentTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterSubDepartmentTabsEnum::SALES_ANALYSIS->value ?
-                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterSubDepartment), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterSubDepartment), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
                     : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterCategory($masterSubDepartment), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
 
                 'sales_analysis_teaser' => $this->tab === MasterSubDepartmentTabsEnum::SHOWCASE->value ?
