@@ -54,6 +54,11 @@ class GetRetinaB2BDashboardInsights
 
     private const int SHOP_BEST_SELLERS_POOL = 60;
 
+    /**
+     * ponytail: the co-purchase search is most of the time spent here and suggestions need not be live.
+     */
+    private const int RECOMMENDATIONS_CACHE_HOURS = 6;
+
     public function handle(Customer $customer): array
     {
         $today       = now()->startOfDay();
@@ -79,7 +84,11 @@ class GetRetinaB2BDashboardInsights
             $productSales = $this->getProductSales($customer);
         }
 
-        [$recommendationsSource, $recommendations] = $this->getRecommendations($customer, $productSales);
+        [$recommendationsSource, $recommendations] = Cache::remember(
+            "retina_b2b_recommendations:$customer->id",
+            now()->addHours(self::RECOMMENDATIONS_CACHE_HOURS),
+            fn () => $this->getRecommendations($customer, $productSales)
+        );
 
         return [
             'currency_code'   => $customer->shop->currency->code,

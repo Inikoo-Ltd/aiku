@@ -3,8 +3,6 @@ import { computed, inject, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
-import { Bar } from "vue-chartjs"
-import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from "chart.js"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faArrowUp, faArrowDown, faRedoAlt, faShoppingBasket, faTruck, faExclamationTriangle, faClock, faStar, faLightbulb, faBoxOpen, faCalendarCheck, faPlus, faCheck } from "@fal"
@@ -13,7 +11,6 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
 library.add(faArrowUp, faArrowDown, faRedoAlt, faShoppingBasket, faTruck, faExclamationTriangle, faClock, faStar, faLightbulb, faBoxOpen, faCalendarCheck, faPlus, faCheck)
-ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 interface Regular {
     id: number
@@ -115,58 +112,14 @@ const rhythm = computed(() => {
     }
 })
 
-const chartData = computed(() => ({
-    labels: props.insights.monthly.map((m) => monthLabel(m.month)),
-    datasets: [
-        {
-            label: ctrans("Previous year"),
-            data: props.insights.monthly.map((m) => m.previous_spend),
-            backgroundColor: "#cbd5e1",
-            borderRadius: 4,
-            borderSkipped: "start" as const,
-            maxBarThickness: 18,
-        },
-        {
-            label: ctrans("Last 12 months"),
-            data: props.insights.monthly.map((m) => m.spend),
-            backgroundColor: "#4f46e5",
-            borderRadius: 4,
-            borderSkipped: "start" as const,
-            maxBarThickness: 18,
-        },
-    ],
-}))
+const monthlyMax = computed(() => Math.max(1, ...props.insights.monthly.flatMap((m) => [m.spend, m.previous_spend])))
 
-const chartOptions = computed(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: "index" as const, intersect: false },
-    plugins: {
-        legend: { position: "top" as const, align: "end" as const, labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, color: "#4b5563" } },
-        tooltip: {
-            callbacks: {
-                label: (context: any) => {
-                    const month = props.insights.monthly[context.dataIndex]
-                    const orders = context.datasetIndex === 0 ? month.previous_orders : month.orders
-                    return ` ${context.dataset.label}: ${money(context.parsed.y)} · ${ctrans(":count orders", { count: String(orders) })}`
-                },
-            },
-        },
-    },
-    scales: {
-        x: { grid: { display: false }, ticks: { color: "#6b7280" } },
-        y: {
-            beginAtZero: true,
-            grid: { color: "#f1f5f9" },
-            border: { display: false },
-            ticks: {
-                color: "#9ca3af",
-                maxTicksLimit: 5,
-                callback: (value: number) => new Intl.NumberFormat(languageCode.value, { notation: "compact", maximumFractionDigits: 1 }).format(value),
-            },
-        },
-    },
-}))
+const compact = (value: number) => new Intl.NumberFormat(languageCode.value, { notation: "compact", maximumFractionDigits: 1 }).format(value)
+
+const barHeight = (value: number) => `${value > 0 ? Math.max(2, (value / monthlyMax.value) * 100) : 0}%`
+
+const monthTooltip = (m: Insights["monthly"][number]) =>
+    `${monthLabel(m.month)}: ${money(m.spend)} · ${ctrans(":count orders", { count: String(m.orders) })}\n${ctrans("Previous year")}: ${money(m.previous_spend)} · ${ctrans(":count orders", { count: String(m.previous_orders) })}`
 
 const hasMonthlySales = computed(() => props.insights.monthly.some((m) => m.spend > 0 || m.previous_spend > 0))
 
@@ -343,9 +296,34 @@ const moreCount = (list: unknown[], shown: number) => Math.max(0, list.length - 
                     <h3 class="text-base font-semibold text-gray-900">{{ ctrans("Monthly spend") }}</h3>
                     <span class="text-xs text-gray-400">{{ ctrans("excl. VAT") }}</span>
                 </div>
-                <div class="mt-4 h-64">
-                    <Bar :data="chartData" :options="chartOptions" :aria-label="ctrans('Monthly spend, last 12 months compared with the year before')" role="img" />
+                <div class="mt-3 flex items-center justify-end gap-4 text-xs text-gray-600">
+                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-slate-300" />{{ ctrans("Previous year") }}</span>
+                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-indigo-600" />{{ ctrans("Last 12 months") }}</span>
                 </div>
+                <div class="relative mt-3 flex h-56 gap-1 border-b border-gray-200 pl-10 sm:gap-2" aria-hidden="true">
+                    <span class="absolute left-0 top-0 text-[10px] tabular-nums text-gray-400">{{ compact(monthlyMax) }}</span>
+                    <div class="pointer-events-none absolute inset-x-0 left-10 top-1/2 border-t border-dashed border-gray-100" />
+                    <div
+                        v-for="m in insights.monthly"
+                        :key="m.month"
+                        v-tooltip="monthTooltip(m)"
+                        class="group flex h-full flex-1 items-end justify-center gap-0.5 rounded-t hover:bg-gray-50"
+                    >
+                        <div class="w-full max-w-[14px] rounded-t bg-slate-300 transition-all" :style="{ height: barHeight(m.previous_spend) }" />
+                        <div class="w-full max-w-[14px] rounded-t bg-indigo-600 transition-all group-hover:bg-indigo-500" :style="{ height: barHeight(m.spend) }" />
+                    </div>
+                </div>
+                <div class="flex gap-1 pl-10 sm:gap-2" aria-hidden="true">
+                    <span v-for="m in insights.monthly" :key="m.month" class="flex-1 pt-1 text-center text-[10px] text-gray-500 sm:text-xs">{{ monthLabel(m.month) }}</span>
+                </div>
+                <table class="sr-only">
+                    <caption>{{ ctrans("Monthly spend, last 12 months compared with the year before") }}</caption>
+                    <tr v-for="m in insights.monthly" :key="m.month">
+                        <th scope="row">{{ monthLabel(m.month) }}</th>
+                        <td>{{ money(m.spend) }}</td>
+                        <td>{{ money(m.previous_spend) }}</td>
+                    </tr>
+                </table>
             </section>
 
             <section v-if="attentionCount" class="rounded-xl border border-gray-200 bg-white shadow-sm">
