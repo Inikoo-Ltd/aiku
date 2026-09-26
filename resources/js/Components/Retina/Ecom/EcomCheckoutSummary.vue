@@ -230,7 +230,7 @@ const updateCollection = (value: boolean) => {
 
 
             <!-- Section: Offer meters (free gift, etc)-->
-            <div v-if="Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-6 col-span-full px-1 flex flex-col gap-y-3">
+            <div v-if="!isInCheckout && Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-6 col-span-full px-1 flex flex-col gap-y-3">
                 <template v-for="(offer, offerIndex) in layout?.offer_meters" :key="offerIndex">
                     <div v-if="isShowAllOffersMeter || isOfferFulfilled(offer)" class="grid grid-cols-2 gap-x-4">
                         <!-- Title: is gift -->

@@ -30,6 +30,7 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Http\Resources\Sales\OrderResource;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -247,6 +248,15 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'contact_address'    => $order ? AddressResource::make($order->customer->address)->getArray() : null,
                 'address_management' => $order ? GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true) : [],
                 'balance'            => $this->customer->balance,
+                'whatsapp_newsletter' => [
+                    'is_subscribed' => (bool) $this->customer->comms?->is_subscribed_to_whatsapp_newsletter,
+                    'label'         => Arr::get($this->shop->settings, 'registration.whatsapp_newsletter_label')
+                        ?? __('Opt in to receive our newsletter and offers via WhatsApp.'),
+                    'update_route'  => [
+                        'name'       => 'retina.models.customer_comms.update',
+                        'parameters' => ['customerComms' => $this->customer->comms?->id],
+                    ],
+                ],
                 'shipping_options'   => $order ? GetOrderShippingOptions::run($order) : null,
                 'select_shipper_route' => $order ? [
                     'name'       => 'retina.models.order.select_shipper',

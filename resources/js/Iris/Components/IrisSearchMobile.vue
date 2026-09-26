@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, inject, watch, onBeforeMount, onMounted, onBeforeUnmount, defineAsyncComponent, nextTick } from "vue"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans as trans } from "@/Composables/useTrans"
 import { router, usePage } from "@inertiajs/vue3"
 import { useSidePanel, websiteThemeVariables } from "@/Iris/Composables/useSidePanel"
 import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDrag"
@@ -77,7 +77,9 @@ onMounted(() => {
 
 const layout: any = inject('layout', {})
 const sidePanel = useSidePanel()
-const isChatEnabled = !!usePage().props?.use_chat
+const page = usePage()
+const isChatEnabled = !!page.props?.use_chat
+const isOnCheckoutPage = computed(() => /^\/app\/checkout(\/|\?|$)/.test(page.url ?? ''))
 const floatingButtonsDrag = useFloatingButtonsDrag(layout)
 const fabStyle = computed(() => {
     const buttonsBelow = (isChatEnabled && !sidePanel?.isOpen.value ? 1 : 0)
@@ -271,7 +273,7 @@ const visitSearchPage = () => {
     <Teleport v-if="isMounted" to="body">
         <!-- Always-present floating search button in the thumb zone; drag it up or down -->
         <div
-            v-if="!isOverlayOpen"
+            v-if="!isOverlayOpen && !isOnCheckoutPage"
             class="md:hidden fixed right-3 z-40 w-12 h-12"
             :style="fabStyle"
         >

@@ -37,6 +37,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import InputVoucherInBasket from '@/Components/Retina/Ecom/Order/InputVoucherInBasket.vue'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import { UploadPallet } from '@/types/Pallet'
+import WhatsAppNewsletterOptIn from "@/Components/Retina/Ecom/WhatsAppNewsletterOptIn.vue"
 import { pushGtmEvent, buildGtmProductPayload } from '@/Composables/useGtm'
 library.add(faTag, faCheck, faExclamationTriangle)
 
@@ -113,6 +114,11 @@ const props = defineProps<{
         charges_amount: string
     }
     balance: string
+    whatsapp_newsletter?: {
+        is_subscribed: boolean
+        label: string
+        update_route: routeType
+    }
     total_to_pay: string
     cart_gross_amount: number
     routes: {
@@ -220,6 +226,7 @@ const onSelectShipper = async (shipperId: number) => {
 }
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
+const isWhatsAppOptInShown = !!props.whatsapp_newsletter && !props.whatsapp_newsletter.is_subscribed && !!props.whatsapp_newsletter.update_route.parameters.customerComms
 
 const isModalProductListOpen = ref(false)
 const isModalUploadSpreadsheet = ref(false)
@@ -1039,6 +1046,12 @@ const onChangeInsurance = async (val: boolean) => {
                 </div>
             </div>
         </div>
+
+        <WhatsAppNewsletterOptIn
+            v-if="isWhatsAppOptInShown"
+            :label="whatsapp_newsletter.label"
+            :updateRoute="whatsapp_newsletter.update_route"
+        />
     </template>
     
     <div v-else class="text-center w-full">
