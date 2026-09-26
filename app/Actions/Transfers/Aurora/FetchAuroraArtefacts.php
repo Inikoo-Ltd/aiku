@@ -82,6 +82,10 @@ class FetchAuroraArtefacts extends FetchAuroraAction
 
     protected function fetchRecipe(Artefact $artefact): void
     {
+        if (data_get($artefact->data, 'costings_recipe')) {
+            return;
+        }
+
         $sourceData = explode(':', $artefact->source_id);
         $bridgeRows = DB::connection('aurora')
             ->table('Production Part Raw Material Bridge')

@@ -40,6 +40,7 @@ class NormaliseAuroraRecipeQuantities extends Command
             ->where('source_id', 'not like', 'costings:%')
             ->where('recommended_batch_size', '>', 1)
             ->whereNull('data->recipe_quantities_normalised_at')
+            ->whereNull('data->costings_recipe')
             ->get();
 
         $normalised = 0;

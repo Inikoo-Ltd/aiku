@@ -2338,6 +2338,15 @@ test('aurora recipe quantities are divided by batch size exactly once', function
     $this->artisan('manufacture:normalise-aurora-recipes', ['production' => $this->production->slug, '--write' => true])->assertExitCode(0);
     expect((float)$step->rawMaterials()->first()->quantity_per_unit)->toBe(1.0)
         ->and($artefact->refresh()->data['recipe_quantities_normalised_at'])->not->toBeNull();
+
+    $costed = StoreArtefact::make()->action($this->production, ['code' => 'CST-AURORA3', 'name' => 'Costed product', 'source_id' => '4:99998', 'recommended_batch_size' => 10]);
+    $costed->update(['data' => ['costings_recipe' => ['imported_at' => now()->toDateTimeString()]]]);
+    $costed->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $costedStep = ArtefactManufactureTask::where('artefact_id', $costed->id)->first();
+    AttachRawMaterialToRecipeStep::make()->action($costedStep, ['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 0.4]);
+
+    $this->artisan('manufacture:normalise-aurora-recipes', ['production' => $this->production->slug, '--write' => true])->assertExitCode(0);
+    expect((float)$costedStep->rawMaterials()->first()->quantity_per_unit)->toBe(0.4);
 });
 
 test('an operative only sees the factory jobs page and nothing group or commercial', function () {
