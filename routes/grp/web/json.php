@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
@@ -253,6 +254,7 @@ Route::get('master-product-category/{masterProductCategory:id}/shops-content', G
 Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks');
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
+Route::get('purchase-order-transaction-recent-uploads/{purchaseOrder:id}', IndexRecentPurchaseOrderTransactionUploads::class)->name('purchase_order.transaction.recent_uploads');
 
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 

@@ -27,6 +27,7 @@ use App\Models\SysAdmin\User;
 use App\Actions\Transfers\Aurora\RepairAuroraPurchaseOrderBuyers;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
+use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
@@ -1694,6 +1695,59 @@ test('purchase order with an open aurora stock delivery refuses a second one', f
     $stockDelivery->update(['source_id' => null, 'state' => StockDeliveryStateEnum::IN_PROCESS]);
 })->depends('create stock delivery from purchase order');
 
+
+test('purchase order products are downloaded as excel and uploaded from a spreadsheet', function () {
+    $supplier    = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    SyncStockTradeUnits::run($stock, [$tradeUnit->id => ['quantity' => 1]]);
+
+    $supplierProduct    = StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'XLS-01',
+        'name'             => 'Spreadsheet product',
+        'cost'             => 10,
+        'trade_units'      => [$tradeUnit->id],
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10
+    ]);
+    StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, Arr::except(PurchaseOrder::factory()->definition(), 'reference'), strict: false);
+
+    $csv = tempnam(sys_get_temp_dir(), 'po-transactions').'.csv';
+    file_put_contents($csv, "code,quantity\nxls-01,7\nNOT-SUPPLIED,3\n");
+    $upload = ImportPurchaseOrderTransactions::make()->action($purchaseOrder, new \Illuminate\Http\UploadedFile($csv, 'po.csv', 'text/csv', null, true));
+
+    $line = $purchaseOrder->purchaseOrderTransactions()->where('supplier_product_id', $supplierProduct->id)->first();
+    expect($upload->number_success)->toBe(1)
+        ->and($upload->number_fails)->toBe(1)
+        ->and((float) $line->quantity_ordered)->toBe(7.0);
+
+    file_put_contents($csv, "code,quantity\nXLS-01,12\n");
+    ImportPurchaseOrderTransactions::make()->action($purchaseOrder, new \Illuminate\Http\UploadedFile($csv, 'po.csv', 'text/csv', null, true));
+
+    expect($purchaseOrder->purchaseOrderTransactions()->count())->toBe(1)
+        ->and((float) $line->fresh()->quantity_ordered)->toBe(12.0);
+
+    $export = new \App\Exports\Procurement\PurchaseOrderTransactionsExport($purchaseOrder);
+    $exportedRow = array_combine($export->headings(), $export->map($export->collection()->first()));
+    expect($exportedRow['code'])->toBe('XLS-01')
+        ->and($exportedRow['units_per_carton'])->toBe(10)
+        ->and($exportedRow['tariff_code'])->toBe($tradeUnit->tariff_code);
+
+    $this->get(route('grp.org.procurement.purchase_orders.transactions.export', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertOk()
+        ->assertDownload();
+
+    UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+
+    expect(fn () => ImportPurchaseOrderTransactions::make()->action($purchaseOrder->refresh(), new \Illuminate\Http\UploadedFile($csv, 'po.csv', 'text/csv', null, true)))
+        ->toThrow(ValidationException::class);
+});
 
 test('hydrate agents', function () {
     $agent = Agent::first();

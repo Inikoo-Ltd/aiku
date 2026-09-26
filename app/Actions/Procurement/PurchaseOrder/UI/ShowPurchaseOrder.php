@@ -103,6 +103,7 @@ class ShowPurchaseOrder extends OrgAction
 
         $showProductsTab = $purchaseOrder->state == PurchaseOrderStateEnum::IN_PROCESS
             && ($purchaseOrder->parent instanceof OrgAgent || $purchaseOrder->parent instanceof OrgSupplier);
+        $uploadExcel = $this->canEdit && $showProductsTab;
 
         $orderer = [];
         $productListRoute = [];
@@ -176,10 +177,12 @@ class ShowPurchaseOrder extends OrgAction
                                 'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
                             ],
                         ],
+                        ...($uploadExcel ? [] : [$this->downloadExcelAction($purchaseOrder)]),
                         ...($this->emailToSupplierAction($purchaseOrder) ?? []),
                         ...($this->canEdit ? $this->getActions($purchaseOrder, $showProductsTab) : []),
                     ],
                 ],
+                'upload_excel'             => $uploadExcel ? $this->uploadExcel($purchaseOrder) : null,
                 'data'                     => PurchaseOrderResource::make($purchaseOrder),
                 'timelines'                => $this->getTimeline($purchaseOrder),
                 'stock_delivery_timelines' => $this->getStockDeliveryTimelines($purchaseOrder),
@@ -287,6 +290,68 @@ class ShowPurchaseOrder extends OrgAction
         return new PurchaseOrderResource($purchaseOrder);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function downloadExcelAction(PurchaseOrder $purchaseOrder): array
+    {
+        return [
+            'type'    => 'button',
+            'style'   => 'tertiary',
+            'label'   => 'Excel',
+            'tooltip' => __('Download the products of this purchase order'),
+            'target'  => '_blank',
+            'icon'    => 'fal fa-download',
+            'key'     => 'excel',
+            'route'   => [
+                'name'       => 'grp.org.procurement.purchase_orders.transactions.export',
+                'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function uploadExcel(PurchaseOrder $purchaseOrder): array
+    {
+        return [
+            'title'               => [
+                'label'       => __('Upload products'),
+                'information' => __('Columns: code (the supplier product code) and quantity. Products already on the order get the new quantity.'),
+            ],
+            'progressDescription' => __('Adding products'),
+            'preview_template'    => [
+                'header' => ['code', 'quantity'],
+                'rows'   => [
+                    ['code' => 'Product-001', 'quantity' => '10'],
+                ],
+            ],
+            'upload_spreadsheet'  => [
+                'event'           => 'action-progress',
+                'channel'         => 'grp.personal.'.request()->user()->id,
+                'required_fields' => ['code', 'quantity'],
+                'template'        => [
+                    'label' => __('Download this order (.xlsx)'),
+                ],
+                'route'           => [
+                    'upload'   => [
+                        'name'       => 'grp.models.purchase-order.transaction.upload',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                    'history'  => [
+                        'name'       => 'grp.json.purchase_order.transaction.recent_uploads',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                    'download' => [
+                        'name'       => 'grp.org.procurement.purchase_orders.transactions.export',
+                        'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+                    ],
+                ],
+            ],
+        ];
+    }
+
     private function emailToSupplierAction(PurchaseOrder $purchaseOrder): ?array
     {
         $supplier = $purchaseOrder->parent instanceof OrgSupplier ? $purchaseOrder->parent->supplier : null;
@@ -331,6 +396,15 @@ class ShowPurchaseOrder extends OrgAction
                             'purchaseOrder' => $purchaseOrder->id,
                         ],
                     ],
+                ] : [],
+                $showProductsTab ? $this->downloadExcelAction($purchaseOrder) : [],
+                $showProductsTab ? [
+                    'label'   => __('Upload products'),
+                    'tooltip' => __('Add products, or change their quantities, from a spreadsheet'),
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-upload',
+                    'key'     => 'upload_products',
                 ] : [],
                 $purchaseOrder->purchaseOrderTransactions()
                     ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)

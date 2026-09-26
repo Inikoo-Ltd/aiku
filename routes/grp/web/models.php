@@ -422,6 +422,7 @@ use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\ProcurementNote\StoreProcurementNote;
@@ -1522,6 +1523,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('undo-confirm', RevertPurchaseOrderToSubmitted::class)->name('undo-confirm');
     Route::patch('cancel', UpdatePurchaseOrderStateToCancelled::class)->name('cancel');
     Route::post('stock-delivery', StoreStockDeliveryFromPurchaseOrder::class)->name('stock-delivery.store');
+    Route::post('transactions/upload', ImportPurchaseOrderTransactions::class)->name('transaction.upload');
     Route::post('transactions/{orgSupplierProduct:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/update', UpdatePurchaseOrderTransaction::class)->name('transaction.update')->withoutScopedBindings();
     Route::delete('transactions/{purchaseOrderTransaction:id}/delete', DeletePurchaseOrderTransaction::class)->name('transaction.delete')->withoutScopedBindings();
