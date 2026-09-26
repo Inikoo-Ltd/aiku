@@ -14,6 +14,7 @@ use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\GetChatMessages;
 use App\Actions\Chat\ChatSession\GetChatSessions;
+use App\Actions\Chat\ChatSession\GetChatAvailability;
 use App\Actions\Chat\ChatSession\GetChatStatus;
 use App\Actions\Chat\ChatSession\HandleChatRead;
 use App\Actions\Chat\ChatSession\HandleChatTyping;
@@ -65,6 +66,7 @@ Route::post('/sessions/{chatSession:ulid}/guest-profile', StoreGuestProfile::cla
 Route::post('/typing', HandleChatTyping::class)->name('typing');
 Route::post('/read', HandleChatRead::class)->name('read');
 Route::get('/status', GetChatStatus::class)->name('status');
+Route::get('/availability', GetChatAvailability::class)->name('availability');
 Route::get('chat/attachment/{ulid}', DownloadChatAttachment::class)->name('chat.attachment.download');
 Route::get('/languages', [GetLanguagesOptions::class, 'getLanguageJson'])->name('languages.index');
 Route::post('/messages/{chatMessage}/translate', TranslateSingleMessage::class)->name('messages.translate');

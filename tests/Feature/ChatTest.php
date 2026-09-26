@@ -9644,3 +9644,13 @@ test('a WhatsApp chat started from a Meta ad keeps the ad it came from', functio
     $message->metaChatSession->messages()->forceDelete();
     $message->metaChatSession->forceDelete();
 });
+
+test('chat availability answers offline for a shop without a website and needs a shop', function () {
+    $shop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
+
+    $this->getJson(route('grp.api.chats.availability', ['shop_id' => $shop->id]))
+        ->assertOk()
+        ->assertExactJson(['is_online' => false]);
+
+    $this->getJson(route('grp.api.chats.availability'))->assertUnprocessable();
+});
