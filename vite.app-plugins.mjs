@@ -35,7 +35,9 @@ export const langFilter = (moduleGraph) => {
             }
         };
         for (const file of moduleGraph.collectModules()) {
-            collect(fs.readFileSync(file, "utf8"));
+            if (fs.existsSync(file)) {
+                collect(fs.readFileSync(file, "utf8"));
+            }
         }
 
         return strings;
