@@ -15,6 +15,8 @@ interface Totals {
 	stock_out_days: number
 	lost_sales: number
 	stock_outs_no_order: number
+	registrations?: number
+	out_of_stock_percentage?: number
 }
 
 const props = defineProps<{
@@ -27,7 +29,9 @@ const props = defineProps<{
 		compare_sales: Array<{ date: string; sales: number }>
 		totals: { current: Totals; previous: Totals }
 		shop_count: number
+		stock_level?: "organisation"
 	}
+	analysisHref?: string
 }>()
 
 const money = (value: number) =>
@@ -36,6 +40,7 @@ const percentChange = (current: number, previous: number) => (previous ? Math.ro
 const formatChange = (value: number | null) => (value === null ? "—" : `${value > 0 ? "+" : ""}${value}%`)
 
 const analysisUrl = computed(() => {
+	if (props.analysisHref) return props.analysisHref
 	const url = new URL(window.location.href)
 	url.search = "?tab=sales_analysis"
 	return url.pathname + url.search
@@ -95,7 +100,11 @@ const chartOptions = {
 			</div>
 
 			<div class="mt-2 space-y-0.5 text-xs tabular-nums">
-				<div :class="teaser.totals.current.stock_out_days ? 'text-red-600' : 'text-gray-500'">
+				<div v-if="teaser.stock_level === 'organisation'" class="text-gray-500">
+					{{ teaser.totals.current.out_of_stock_percentage }}% {{ ctrans("of SKOs out of stock") }} ({{ ctrans("was") }} {{ teaser.totals.previous.out_of_stock_percentage }}%)
+					· {{ (teaser.totals.current.registrations ?? 0).toLocaleString() }} {{ ctrans("new registrations") }}
+				</div>
+				<div v-else :class="teaser.totals.current.stock_out_days ? 'text-red-600' : 'text-gray-500'">
 					{{ teaser.totals.current.stock_out_days.toLocaleString() }} {{ ctrans("days out of stock") }} ({{ teaser.totals.current.stock_outs }}×)
 					<span v-if="teaser.totals.current.lost_sales"> · ~{{ money(teaser.totals.current.lost_sales) }} {{ ctrans("lost") }}</span>
 					<span v-if="teaser.totals.current.stock_outs_no_order"> · {{ teaser.totals.current.stock_outs_no_order }} {{ ctrans("ran out with nothing ordered") }}</span>

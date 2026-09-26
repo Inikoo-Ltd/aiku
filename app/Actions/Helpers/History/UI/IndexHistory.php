@@ -29,7 +29,10 @@ class IndexHistory
 
     public string $model;
 
-    public function handle($model, $prefix = null, mixed $eventScopeFilter = null, mixed $excludeEventScopeFilter = null, mixed $userScopeFilter = null): LengthAwarePaginator|array|bool
+    /**
+     * @param array<int, array{type: string, labels: array<int, string>, shops: array<int, int>|null}> $auditScope
+     */
+    public function handle($model, $prefix = null, mixed $eventScopeFilter = null, mixed $excludeEventScopeFilter = null, mixed $userScopeFilter = null, array $auditScope = []): LengthAwarePaginator|array|bool
     {
         $this->model = class_basename($model);
 
@@ -52,8 +55,24 @@ class IndexHistory
         $queryBuilder = QueryBuilder::for(Audit::on($this->auditReadConnection($model)));
 
         $queryBuilder->orderBy('id', 'DESC');
-        $queryBuilder->where('auditable_type', $this->model);
         $queryBuilder->where('event', '!=', AuditEventEnum::CUSTOMER_NOTE->value);
+
+        if ($auditScope) {
+            $queryBuilder->where(function ($query) use ($auditScope) {
+                foreach ($auditScope as $scope) {
+                    $ids = array_map('intval', array_keys($scope['labels']));
+                    if (!$ids) {
+                        continue;
+                    }
+                    $query->orWhere(function ($query) use ($scope, $ids) {
+                        $query->where('auditable_type', $scope['type'])
+                            ->whereRaw('auditable_id = any(?::int[])', ['{'.implode(',', $ids).'}']);
+                    });
+                }
+            });
+        } else {
+            $queryBuilder->where('auditable_type', $this->model);
+        }
 
         if ($eventScopeFilter !== null) {
             $queryBuilder->when(
@@ -81,16 +100,50 @@ class IndexHistory
                 );
         }
 
-        if (isset($model->id)) {
+        if (!$auditScope && isset($model->id)) {
             $queryBuilder->where('auditable_id', $model->id);
         }
 
-        return $queryBuilder
+        $paginator = $queryBuilder
             ->defaultSort('audits.created_at')
             ->allowedSorts(['ip_address','auditable_id', 'auditable_type', 'user_type', 'url','created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        if ($auditScope) {
+            $this->attachRecordLabels($paginator, $auditScope);
+        }
+
+        return $paginator;
+    }
+
+    /**
+     * @param array<int, array{type: string, labels: array<int, string>, shops: array<int, int>|null}> $auditScope
+     */
+    private function attachRecordLabels(LengthAwarePaginator $paginator, array $auditScope): void
+    {
+        $shopIds = [];
+        foreach ($auditScope as $scope) {
+            if ($scope['shops']) {
+                $shopIds = array_merge($shopIds, array_values($scope['shops']));
+            }
+        }
+        $shopCodes = $shopIds ? DB::table('shops')->whereIn('id', array_unique($shopIds))->pluck('code', 'id') : collect();
+
+        $labels = [];
+        foreach ($auditScope as $scope) {
+            foreach ($scope['labels'] as $id => $code) {
+                $shopId = $scope['shops'][$id] ?? null;
+                $labels[$scope['type'].':'.$id] = ($shopId && $shopCodes->has($shopId))
+                    ? $code.' · '.$shopCodes->get($shopId)
+                    : $code;
+            }
+        }
+
+        $paginator->getCollection()->each(function (Audit $audit) use ($labels) {
+            $audit->record = $labels[$audit->auditable_type.':'.$audit->auditable_id] ?? $audit->auditable_type;
+        });
     }
 
     /**
@@ -141,9 +194,9 @@ class IndexHistory
         return $hasLiveAudits ? null : 'archive';
     }
 
-    public function tableStructure($prefix = null, ?array $exportLinks = null, $model = null): Closure
+    public function tableStructure($prefix = null, ?array $exportLinks = null, $model = null, bool $withRecordColumn = false): Closure
     {
-        return function (InertiaTable $table) use ($exportLinks, $prefix, $model) {
+        return function (InertiaTable $table) use ($exportLinks, $prefix, $model, $withRecordColumn) {
 
             if ($prefix) {
                 $table
@@ -166,7 +219,13 @@ class IndexHistory
                 ->withGlobalSearch()
                 ->withExportLinks($exportLinks)
                 ->column(key: 'datetime', label: __('Date'), canBeHidden: false, sortable: true)
-                ->column(key: 'user_name', label: __('User'), canBeHidden: false, sortable: true)
+                ->column(key: 'user_name', label: __('User'), canBeHidden: false, sortable: true);
+
+            if ($withRecordColumn) {
+                $table->column(key: 'record', label: __('Record'), canBeHidden: false, sortable: true);
+            }
+
+            $table
                 ->column(key: 'values', label: '', canBeHidden: false)
                 ->defaultSort('ip_address');
         };

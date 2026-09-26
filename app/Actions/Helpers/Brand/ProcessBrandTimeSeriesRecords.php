@@ -61,7 +61,7 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, [...$this->fullInvoiceTransactionSelects(), ...$this->partnerInvoiceTransactionSelects()])->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -78,9 +78,9 @@ class ProcessBrandTimeSeriesRecords implements ShouldBeUnique
                     'sales_external'              => $result->sales_external,
                     'sales_org_currency_external' => $result->sales_org_currency_external,
                     'sales_grp_currency_external' => $result->sales_grp_currency_external,
-                    'sales_internal'              => 0,
-                    'sales_org_currency_internal' => 0,
-                    'sales_grp_currency_internal' => 0,
+                    'sales_internal'              => $result->sales_internal,
+                    'sales_org_currency_internal' => $result->sales_org_currency_internal,
+                    'sales_grp_currency_internal' => $result->sales_grp_currency_internal,
                     'lost_revenue'                => $result->lost_revenue,
                     'lost_revenue_org_currency'   => $result->lost_revenue_org_currency,
                     'lost_revenue_grp_currency'   => $result->lost_revenue_grp_currency,

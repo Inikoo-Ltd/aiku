@@ -133,6 +133,10 @@ class UpdateInvoice extends OrgAction
 
         $invoice = $this->update($invoice, $modelData, ['data']);
 
+        if ($invoice->wasChanged('as_organisation_id')) {
+            InvoiceTransaction::where('invoice_id', $invoice->id)->update(['is_partner' => (bool)$invoice->as_organisation_id]);
+        }
+
         if ($updateTaxCategory) {
             $staleInvoice = clone $invoice;
 

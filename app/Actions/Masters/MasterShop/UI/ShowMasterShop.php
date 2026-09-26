@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterShop\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -84,6 +85,13 @@ class ShowMasterShop extends OrgAction
                     'navigation' => MasterShopTabsEnum::navigation()
                 ],
                 'organisations_list' => GetOrganisationOptions::run(),
+
+                MasterShopTabsEnum::SALES_ANALYSIS->value => $this->tab == MasterShopTabsEnum::SALES_ANALYSIS->value
+                    ? fn () => GetShopSalesAnalysis::run($masterShop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                    : Inertia::optional(fn () => GetShopSalesAnalysis::run($masterShop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+                'sales_analysis_teaser' => $this->tab == MasterShopTabsEnum::SHOWCASE->value
+                    ? Inertia::defer(fn () => GetShopSalesAnalysis::make()->teaser($masterShop), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetShopSalesAnalysis::make()->teaser($masterShop)),
 
                 MasterShopTabsEnum::SHOWCASE->value => $this->tab == MasterShopTabsEnum::SHOWCASE->value
                     ?

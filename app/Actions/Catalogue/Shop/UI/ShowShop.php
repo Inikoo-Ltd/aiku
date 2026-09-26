@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
@@ -123,6 +124,8 @@ class ShowShop extends OrgAction
             'title'            => __('Shop').' '.$shop->code,
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
             'dashboard'   => $dashboard,
+            'sales_analysis_url'    => route('grp.org.shops.show.dashboard.sales_analysis', [$this->organisation->slug, $shop->slug]),
+            'sales_analysis_teaser' => Inertia::defer(fn () => GetShopSalesAnalysis::make()->teaser($shop), 'sales_analysis_teaser'),
         ]);
     }
 

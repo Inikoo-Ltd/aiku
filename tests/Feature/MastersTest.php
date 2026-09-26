@@ -556,6 +556,23 @@ test('UI Show Master Family in Department', function (MasterProductCategory $mas
     });
 })->depends('create master family');
 
+test('UI Show Master Family history tab, all scope', function (MasterProductCategory $masterFamily) {
+    $response = get(
+        route('grp.masters.master_departments.show.master_families.show', [
+            'masterDepartment' => $masterFamily->masterDepartment->slug,
+            'masterFamily'     => $masterFamily->slug,
+            'tab'              => MasterFamilyTabsEnum::HISTORY->value,
+            'history_scope'    => 'all',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->has('history');
+    });
+})->depends('create master family');
+
 test('UI Show Master Family sales analysis tab', function (MasterProductCategory $masterFamily) {
     $response = get(
         route('grp.masters.master_departments.show.master_families.show', [

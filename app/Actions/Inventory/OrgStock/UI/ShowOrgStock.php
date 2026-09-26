@@ -202,8 +202,8 @@ class ShowOrgStock extends OrgAction
                     : Inertia::optional(fn () => GetOrgStockShowcase::run($this->warehouse, $orgStock)),
 
                 OrgStockTabsEnum::SALES_ANALYSIS->value => $this->tab == OrgStockTabsEnum::SALES_ANALYSIS->value ?
-                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forOrgStock($orgStock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
-                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forOrgStock($orgStock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forOrgStock($orgStock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forOrgStock($orgStock), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
 
                 'sales_analysis_teaser' => $this->tab == OrgStockTabsEnum::SHOWCASE->value ?
                     Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStock($orgStock)), 'sales_analysis_teaser')

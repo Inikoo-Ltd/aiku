@@ -278,8 +278,8 @@ class ShowMasterProduct extends OrgAction
                     : Inertia::optional(fn () => GetMasterProductShowcase::run($masterAsset)),
 
                 MasterAssetTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterAssetTabsEnum::SALES_ANALYSIS->value ?
-                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))
-                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']))),
+                    fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
 
                 'sales_analysis_teaser' => $this->tab === MasterAssetTabsEnum::SHOWCASE->value ?
                     Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forMasterAsset($masterAsset)), 'sales_analysis_teaser')

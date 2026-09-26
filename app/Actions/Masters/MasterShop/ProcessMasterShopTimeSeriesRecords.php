@@ -65,7 +65,7 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
             ->where('invoices.date', '<=', $to)
             ->whereNull('invoices.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: $this->masterShopInvoiceSelects())->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: [...$this->masterShopInvoiceSelects(), ...$this->partnerInvoiceSelects()])->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -80,6 +80,7 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
                     'from'                         => $periodFrom,
                     'to'                           => $periodTo,
                     'sales_grp_currency_external'  => $result->sales_grp_currency_external,
+                    'sales_grp_currency_internal'  => $result->sales_grp_currency_internal,
                     'lost_revenue_grp_currency'    => $result->lost_revenue_grp_currency,
                     'customers_invoiced'           => $result->customers_invoiced,
                     'invoices'                     => $result->invoices,
@@ -120,6 +121,7 @@ class ProcessMasterShopTimeSeriesRecords implements ShouldBeUnique
                     'from'                        => $periodData['from'],
                     'to'                          => $periodData['to'],
                     'sales_grp_currency_external' => 0,
+                    'sales_grp_currency_internal' => 0,
                     'lost_revenue_grp_currency'   => 0,
                     'customers_invoiced'          => 0,
                     'invoices'                    => 0,

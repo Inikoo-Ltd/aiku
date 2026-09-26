@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\SalesAnalysis;
 
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -39,6 +38,7 @@ class GetSalesAnalysis
     private Collection $shops;
     private Collection $products;
     private array $shopIds = [];
+    private bool $includePartners = false;
     private array $groupedSales = [];
     private string $unit = 'week';
 
@@ -52,7 +52,7 @@ class GetSalesAnalysis
         }
 
         return Cache::remember(
-            'sales-analysis:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops']), $withDetails, now()->toDateString()])),
+            'sales-analysis:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), $withDetails, now()->toDateString()])),
             now()->endOfDay(),
             fn () => $this->analyse($scope, $modelData, $withDetails)
         );
@@ -60,7 +60,8 @@ class GetSalesAnalysis
 
     private function analyse(SalesAnalysisScope $scope, array $modelData, bool $withDetails): array
     {
-        $this->scope = $scope;
+        $this->scope           = $scope;
+        $this->includePartners = (bool)Arr::get($modelData, 'partners');
 
         $to   = Carbon::parse(Arr::get($modelData, 'to') ?? now()->subDay()->toDateString())->startOfDay();
         $from = Carbon::parse(Arr::get($modelData, 'from') ?? $to->copy()->subYear()->addDay()->toDateString())->startOfDay();
@@ -128,6 +129,7 @@ class GetSalesAnalysis
                 'selected_organisations' => $selectedOrganisations->pluck('slug')->all(),
                 'selected_shops'         => $selectedShops->pluck('slug')->all(),
             ],
+            'include_partners' => $this->includePartners,
             'period'          => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
             'compare_period'  => ['from' => $compareFrom->toDateString(), 'to' => $compareTo->toDateString()],
             'frequency'       => $frequency->value,
@@ -278,10 +280,9 @@ class GetSalesAnalysis
             ->selectRaw(
                 "coalesce(sum(invoice_transactions.{$this->scope->amountColumn}), 0)::float as sales,
                 count(distinct invoice_transactions.order_id) as orders,
-                count(distinct invoice_transactions.invoice_id) filter (where invoices.type = ?) as invoices,
-                count(distinct invoice_transactions.invoice_id) filter (where invoices.type = ?) as refunds,
-                count(distinct invoice_transactions.customer_id) as customers",
-                [InvoiceTypeEnum::INVOICE->value, InvoiceTypeEnum::REFUND->value]
+                count(distinct invoice_transactions.invoice_id) filter (where not invoice_transactions.is_refund) as invoices,
+                count(distinct invoice_transactions.invoice_id) filter (where invoice_transactions.is_refund) as refunds,
+                count(distinct invoice_transactions.customer_id) as customers"
             )
             ->first();
 
@@ -297,11 +298,9 @@ class GetSalesAnalysis
     private function invoiceLines(Carbon $from, Carbon $to): Builder
     {
         return DB::table('invoice_transactions')
-            ->join('invoices', 'invoices.id', 'invoice_transactions.invoice_id')
             ->whereRaw('invoice_transactions.asset_id = any(?::int[])', [$this->intArray($this->products->pluck('asset_id')->unique()->all())])
             ->whereNull('invoice_transactions.deleted_at')
-            ->whereNull('invoices.deleted_at')
-            ->whereNull('invoices.as_organisation_id')
+            ->when(!$this->includePartners, fn ($query) => $query->where('invoice_transactions.is_partner', false))
             ->whereBetween('invoice_transactions.date', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
     }
 

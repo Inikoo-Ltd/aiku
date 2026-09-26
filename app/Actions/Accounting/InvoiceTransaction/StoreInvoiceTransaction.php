@@ -95,6 +95,8 @@ class StoreInvoiceTransaction extends OrgAction
             }
         }
 
+        $modelData['is_partner'] = (bool)$invoice->as_organisation_id;
+
         /** @var InvoiceTransaction $invoiceTransaction */
         $invoiceTransaction = $invoice->invoiceTransactions()->create($modelData);
 

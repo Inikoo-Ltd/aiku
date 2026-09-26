@@ -215,7 +215,7 @@ const showDialog = ref(false);
         </Message>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward"/>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master :salesData="salesData" :salesAnalysisTeaser="sales_analysis_teaser" :breakdownRoute="breakdownRoute" :product_category_id="props.masterProductCategoryId" :master_vol_gr_reward="props.vol_gr_reward" :historyScopeToggle="currentTab === 'history'"/>
 
     <FormCreateMasterProduct
         :showDialog="showDialog"

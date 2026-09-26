@@ -67,10 +67,14 @@ interface Totals {
 	stock_out_days: number
 	lost_sales: number
 	stock_outs_no_order: number
+	customers: number
+	registrations?: number
+	out_of_stock_percentage?: number
 }
 
 const props = defineProps<{
 	data: {
+		include_partners?: boolean
 		filters: {
 			organisations: Array<{ slug: string; code: string; name: string }>
 			shops: Array<{ slug: string; code: string; name: string; state: string; organisation_slug: string }>
@@ -89,6 +93,8 @@ const props = defineProps<{
 		breakdown: Array<{ id: number; code: string; name: string; slug: string | null; status: boolean; is_for_sale: boolean; created_at: string | null; discontinued_at: string | null; sales: number; previous_sales: number; websites: number; websites_out_of_stock: number; stock_outs: number; stock_out_days: number; lost_sales: number }>
 		stock_outs: StockOut[]
 		skos: number
+		stock_level?: "organisation"
+		stock_series?: Array<{ date: string; out_of_stock: number }>
 		traffic: Array<{ date: string; visitors: number; page_views: number; add_to_baskets: number }>
 		events: ChangeEvent[]
 	}
@@ -126,6 +132,7 @@ const compareRange = ref({ ...props.data.compare_period })
 const selectedOrganisations = ref<string[]>([...props.data.filters.selected_organisations])
 const selectedShops = ref<string[]>([...props.data.filters.selected_shops])
 const isShopMenuOpen = ref(false)
+const includePartners = ref(!!props.data.include_partners)
 const isLoading = ref(false)
 
 const reload = () => {
@@ -139,6 +146,7 @@ const reload = () => {
 			compareTo: compareRange.value.to,
 			organisations: selectedOrganisations.value.join(",") || undefined,
 			shops: selectedShops.value.join(",") || undefined,
+			partners: includePartners.value ? 1 : undefined,
 		},
 		only: ["sales_analysis"],
 	})
@@ -193,10 +201,19 @@ const applyPreset = (preset: (typeof presets)[number] | undefined) => {
 const current = computed(() => props.data.totals.current)
 const previous = computed(() => props.data.totals.previous)
 
+const isOrganisationStock = computed(() => props.data.stock_level === "organisation")
 const tiles = computed(() => [
 	{ key: "sales", icon: faMoneyBillWave, label: ctrans("Sales"), value: money(current.value.sales), previous: money(previous.value.sales), change: change(current.value.sales, previous.value.sales), good: "up" },
 	{ key: "orders", icon: faShoppingCart, label: ctrans("Orders"), value: current.value.orders.toLocaleString(), previous: previous.value.orders.toLocaleString(), change: change(current.value.orders, previous.value.orders), good: "up" },
 	{ key: "customers", icon: faUsers, label: ctrans("Customers"), value: current.value.customers.toLocaleString(), previous: previous.value.customers.toLocaleString(), change: change(current.value.customers, previous.value.customers), good: "up" },
+	...(isOrganisationStock.value
+		? [
+				{ key: "out_of_stock", icon: faBoxOpen, label: ctrans("SKOs out of stock"), value: `${current.value.out_of_stock_percentage ?? 0}%`, previous: `${previous.value.out_of_stock_percentage ?? 0}%`, change: change(current.value.out_of_stock_percentage ?? 0, previous.value.out_of_stock_percentage ?? 0), good: "down" },
+				{ key: "registrations", icon: faUsers, label: ctrans("New registrations"), value: (current.value.registrations ?? 0).toLocaleString(), previous: (previous.value.registrations ?? 0).toLocaleString(), change: change(current.value.registrations ?? 0, previous.value.registrations ?? 0), good: "up" },
+			]
+		: stockTiles.value),
+])
+const stockTiles = computed(() => [
 	{ key: "stock_out_days", icon: faBoxOpen, label: ctrans("Days out of stock"), value: `${current.value.stock_out_days.toLocaleString()} (${current.value.stock_outs}×)`, previous: `${previous.value.stock_out_days.toLocaleString()} (${previous.value.stock_outs}×)`, change: change(current.value.stock_out_days, previous.value.stock_out_days), good: "down" },
 	{ key: "lost_sales", icon: faExclamationTriangle, label: ctrans("Lost to stock outs"), value: money(current.value.lost_sales), previous: money(previous.value.lost_sales), change: change(current.value.lost_sales, previous.value.lost_sales), good: "down" },
 	{ key: "no_order", icon: faExclamationTriangle, label: ctrans("Ran out, nothing ordered"), value: current.value.stock_outs_no_order.toLocaleString(), previous: previous.value.stock_outs_no_order.toLocaleString(), change: change(current.value.stock_outs_no_order, previous.value.stock_outs_no_order), good: "down" },
@@ -216,6 +233,10 @@ const bucketIndex = (date: string) => {
 const markers = ref<Record<EventType, boolean>>({ price: false, offer: false, content: false, status: false, launch: false, publish: false })
 
 const stockOutsPerBucket = computed(() => {
+	if (props.data.stock_series) {
+		const byDate = Object.fromEntries(props.data.stock_series.map((row) => [row.date, row.out_of_stock]))
+		return labels.value.map((date) => byDate[date] ?? 0)
+	}
 	const counts = labels.value.map(() => 0)
 	const counted = props.data.stock_outs.filter((stockOut) => stockOut.cause !== "discontinued")
 	labels.value.forEach((bucketStart, index) => {
@@ -463,6 +484,16 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 				</div>
 			</div>
 
+			<button
+				type="button"
+				class="rounded-full border px-2.5 py-0.5 text-xs"
+				:class="includePartners ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+				v-tooltip="ctrans('Sales to our own organisations are left out unless this is on')"
+				data-partners-toggle
+				@click="includePartners = !includePartners; reload()">
+				{{ includePartners ? ctrans("Including partners") : ctrans("Without partners") }}
+			</button>
+
 			<div class="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
 				<input v-model="range.from" type="date" :max="range.to" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
 				<span class="text-gray-400">–</span>
@@ -607,7 +638,10 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 			</div>
 		</div>
 
-		<div class="rounded-lg border border-gray-200 bg-white">
+		<p v-if="isOrganisationStock" class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-500">
+			{{ ctrans("For a whole shop, stock is shown as the share of SKOs out of stock in the warehouses that supply it, which includes SKOs that are no longer stocked. Open a department, family or product to see each stock out and why it happened.") }}
+		</p>
+		<div v-else class="rounded-lg border border-gray-200 bg-white">
 			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2">
 				<span class="mr-2 font-semibold">{{ ctrans("Stock outs") }}</span>
 				<button

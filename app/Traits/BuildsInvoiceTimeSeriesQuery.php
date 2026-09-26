@@ -17,52 +17,64 @@ trait BuildsInvoiceTimeSeriesQuery
     protected function fullInvoiceSelects(bool $includeOrders = false): array
     {
         return [
-            DB::raw('SUM(net_amount) as sales_external'),
-            DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
-            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN net_amount ELSE 0 END) as lost_revenue'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-            DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-            ...($includeOrders ? [DB::raw('COUNT(DISTINCT order_id) as orders')] : []),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN net_amount ELSE 0 END) as sales_external'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN org_net_amount ELSE 0 END) as sales_org_currency_external'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN grp_net_amount ELSE 0 END) as sales_grp_currency_external'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN net_amount ELSE 0 END) as lost_revenue'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
+            DB::raw('COUNT(DISTINCT CASE WHEN invoices.as_organisation_id IS NULL THEN customer_id END) as customers_invoiced'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' AND invoices.as_organisation_id IS NULL THEN id END) as invoices'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN id END) as refunds'),
+            ...($includeOrders ? [DB::raw('COUNT(DISTINCT CASE WHEN invoices.as_organisation_id IS NULL THEN order_id END) as orders')] : []),
         ];
     }
 
     protected function masterShopInvoiceSelects(): array
     {
         return [
-            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-            DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-            DB::raw('COUNT(DISTINCT order_id) as orders'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN grp_net_amount ELSE 0 END) as sales_grp_currency_external'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
+            DB::raw('COUNT(DISTINCT CASE WHEN invoices.as_organisation_id IS NULL THEN customer_id END) as customers_invoiced'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' AND invoices.as_organisation_id IS NULL THEN id END) as invoices'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN id END) as refunds'),
+            DB::raw('COUNT(DISTINCT CASE WHEN invoices.as_organisation_id IS NULL THEN order_id END) as orders'),
         ];
     }
 
     protected function organisationInvoiceSelects(): array
     {
         return [
-            DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
-            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
-            DB::raw('SUM(CASE WHEN type = \'refund\' THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
-            DB::raw('COUNT(DISTINCT customer_id) as customers_invoiced'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' THEN id END) as invoices'),
-            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' THEN id END) as refunds'),
-            DB::raw('COUNT(DISTINCT order_id) as orders'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN org_net_amount ELSE 0 END) as sales_org_currency_external'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN grp_net_amount ELSE 0 END) as sales_grp_currency_external'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN org_net_amount ELSE 0 END) as lost_revenue_org_currency'),
+            DB::raw('SUM(CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN grp_net_amount ELSE 0 END) as lost_revenue_grp_currency'),
+            DB::raw('COUNT(DISTINCT CASE WHEN invoices.as_organisation_id IS NULL THEN customer_id END) as customers_invoiced'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' AND invoices.as_organisation_id IS NULL THEN id END) as invoices'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NULL THEN id END) as refunds'),
+            DB::raw('COUNT(DISTINCT CASE WHEN invoices.as_organisation_id IS NULL THEN order_id END) as orders'),
         ];
     }
 
     protected function platformInvoiceSelects(): array
     {
         return [
-            DB::raw('SUM(net_amount) as sales_external'),
-            DB::raw('SUM(org_net_amount) as sales_org_currency_external'),
-            DB::raw('SUM(grp_net_amount) as sales_grp_currency_external'),
-            DB::raw("COUNT(CASE WHEN type = 'invoice' THEN id END) as invoices"),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN net_amount ELSE 0 END) as sales_external'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN org_net_amount ELSE 0 END) as sales_org_currency_external'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NULL THEN grp_net_amount ELSE 0 END) as sales_grp_currency_external'),
+            DB::raw("COUNT(CASE WHEN type = 'invoice' AND invoices.as_organisation_id IS NULL THEN id END) as invoices"),
+        ];
+    }
+
+    /**
+     * Sales to our own organisations (partners), which the other selects leave out.
+     */
+    protected function partnerInvoiceSelects(): array
+    {
+        return [
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NOT NULL THEN net_amount ELSE 0 END) as sales_internal'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NOT NULL THEN org_net_amount ELSE 0 END) as sales_org_currency_internal'),
+            DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NOT NULL THEN grp_net_amount ELSE 0 END) as sales_grp_currency_internal'),
         ];
     }
 
