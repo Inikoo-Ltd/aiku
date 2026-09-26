@@ -49,13 +49,13 @@ class StartCustomerEmailChat extends OrgAction
         $rules = [
             'subject' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],
-            'email'         => ['sometimes', 'nullable', 'email'],
+            'email'         => ['sometimes', 'nullable', 'string', $this->addressListRule()],
             'attachments'   => ['sometimes', 'array', 'max:10'],
             'attachments.*' => [File::types(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx'])->max(20 * 1024)],
         ];
 
         if (!$this->customer) {
-            $rules['email']            = ['required', 'email'];
+            $rules['email']            = ['required', 'string', $this->addressListRule()];
             $rules['save_as_prospect'] = ['sometimes', 'boolean'];
             $rules['contact_name']     = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['company_name']     = ['sometimes', 'nullable', 'string', 'max:255'];
@@ -80,7 +80,8 @@ class StartCustomerEmailChat extends OrgAction
      */
     public function handle(Shop $shop, ?Customer $customer, array $modelData): ChatSession
     {
-        $recipient = Arr::get($modelData, 'email') ?: $customer?->email;
+        $addresses = self::splitAddresses((string) Arr::get($modelData, 'email'));
+        $recipient = array_shift($addresses) ?: $customer?->email;
 
         $customer ??= Customer::where('shop_id', $shop->id)->where('email', $recipient)->first();
 
@@ -115,6 +116,10 @@ class StartCustomerEmailChat extends OrgAction
                 'email_from_name' => $recipientName,
                 'name'            => $recipientName ?? $recipient,
                 'email'           => $recipient,
+                'email_participants' => collect($addresses)
+                    ->reject(fn (string $address) => strcasecmp($address, $recipient) === 0)
+                    ->mapWithKeys(fn (string $address) => [strtolower($address) => ['address' => $address, 'name' => null]])
+                    ->all(),
             ]),
         ]);
 
@@ -143,6 +148,28 @@ class StartCustomerEmailChat extends OrgAction
         ]);
 
         return $session;
+    }
+
+    /**
+     * Staff paste lists of addresses separated by commas, semicolons or spaces: the first is
+     * who the mail is to, the others are copied, and stay copied on every reply.
+     *
+     * @return array<int, string>
+     */
+    public static function splitAddresses(string $addresses): array
+    {
+        return array_values(array_unique(array_filter(array_map('trim', preg_split('/[\s,;]+/', $addresses)))));
+    }
+
+    private function addressListRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            foreach (self::splitAddresses((string) $value) as $address) {
+                if (!filter_var($address, FILTER_VALIDATE_EMAIL)) {
+                    $fail(__('":address" is not a valid email address.', ['address' => $address]));
+                }
+            }
+        };
     }
 
     /**

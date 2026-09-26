@@ -7838,6 +7838,53 @@ test('a new email from the customer record carries the files the agent attached'
     });
 });
 
+test('a new email to several addresses goes to the first and copies the rest', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
+
+    actingAs($this->user);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent11', 'threadId' => 't11']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->shop, [
+        'email'   => 'one@supplier.example.com; two@supplier.example.com, three@supplier.example.com',
+        'subject' => 'Samples',
+        'message' => 'Hello all',
+    ]);
+
+    expect(Arr::get($session->metadata, 'email_from'))->toBe('one@supplier.example.com')
+        ->and(array_keys(Arr::get($session->metadata, 'email_participants')))->toBe(['two@supplier.example.com', 'three@supplier.example.com']);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return str_contains($raw, 'To: one@supplier.example.com')
+            && str_contains($raw, 'two@supplier.example.com')
+            && str_contains($raw, 'three@supplier.example.com')
+            && str_contains($raw, 'Cc: ');
+    });
+
+    expect(fn () => \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->shop, [
+        'email'   => 'one@supplier.example.com, not-an-address',
+        'subject' => 'Samples',
+        'message' => 'Hello all',
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 test('a new email can go to an address the customer does not have on file, or to somebody saved there and then as a prospect', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
 
