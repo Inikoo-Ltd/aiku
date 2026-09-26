@@ -139,6 +139,7 @@ use App\Audits\Transformer\RelationTransformer;
  * @property OrderChargesEngineEnum $charges_engine
  * @property int|null $customer_sales_channel_id
  * @property string|null $platform_order_id
+ * @property \Illuminate\Support\Carbon|null $platform_order_created_at
  * @property string|null $shipping_notes
  * @property string|null $traffic_sources
  * @property int|null $master_shop_id
@@ -255,6 +256,7 @@ class Order extends Model implements HasMedia, Auditable
         'finalised_at'                  => 'datetime',
         'dispatched_at'                 => 'datetime',
         'cancelled_at'                  => 'datetime',
+        'platform_order_created_at'     => 'datetime',
         'settled_at'                    => 'datetime',
         'fetched_at'                    => 'datetime',
         'last_fetched_at'               => 'datetime',

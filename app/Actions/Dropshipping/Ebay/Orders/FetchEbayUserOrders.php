@@ -16,6 +16,7 @@ use App\Models\Dropshipping\EbayUser;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -44,9 +45,11 @@ class FetchEbayUserOrders extends OrgAction implements ShouldBeUnique
         $ebayOrders = Arr::get($response, 'orders', []);
 
         foreach ($ebayOrders as $ebayOrder) {
-            $ebayUser->debugWebhooks()->create([
-                'data' => $ebayOrder
-            ]);
+            if (Cache::add('ebay-order-logged:'.$ebayUser->id.':'.Arr::get($ebayOrder, 'orderId'), true, now()->addDays(30))) {
+                $ebayUser->debugWebhooks()->create([
+                    'data' => $ebayOrder
+                ]);
+            }
 
             if (Arr::get($ebayOrder, 'cancelStatus.cancelState') == 'CANCELED') {
                 continue;

@@ -487,6 +487,15 @@ class Kernel extends ConsoleKernel
 
 
             $this->logSchedule(
+                $schedule->job(FetchEbayOrders::makeJob(true))->everyFifteenMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FetchEbayOrdersActiveChannels',
+                ),
+                name: 'FetchEbayOrdersActiveChannels',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(FetchEbayOrders::makeJob())->hourly()->between('6:00', '17:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'FetchEbayOrders',
                 ),
@@ -496,7 +505,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->job(FetchEbayOrders::makeJob())->everyFourHours(30)->unlessBetween('6:00', '17:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->job(FetchEbayOrders::makeJob())->everyTwoHours(30)->unlessBetween('6:00', '17:00')->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'FetchEbayOrdersAfterHours',
                 ),
                 name: 'FetchEbayOrdersAfterHours',

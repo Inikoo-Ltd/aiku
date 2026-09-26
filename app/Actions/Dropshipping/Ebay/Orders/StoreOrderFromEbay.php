@@ -48,6 +48,7 @@ class StoreOrderFromEbay extends OrgAction
             'delivery_address'          => $modelData['delivery_address'],
             'billing_address'           => $modelData['billing_address'],
             'platform_order_id'         => Arr::get($ebayOrderData, 'orderId'),
+            'platform_order_created_at' => Arr::get($ebayOrderData, 'creationDate'),
             'data'                      => [
                 'ebay_order' => $ebayOrderData
             ]

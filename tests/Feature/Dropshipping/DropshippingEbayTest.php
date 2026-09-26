@@ -20,6 +20,8 @@ use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\CheckEbayUserAuthorized;
 use App\Actions\Dropshipping\Ebay\DeleteEbayUser;
+use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
+use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrdersOnCustomerActivity;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Ebay\Product\StoreBulkNewProductToCurrentEbay;
@@ -57,6 +59,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -201,6 +204,7 @@ function ebayOrder(array $overrides = []): array
     return array_replace_recursive([
         'orderId'                      => '12-'.random_int(10000, 99999).'-'.random_int(10000, 99999),
         'orderFulfillmentStatus'       => 'NOT_STARTED',
+        'creationDate'                 => '2026-09-10T05:02:11.000Z',
         'cancelStatus'                 => ['cancelState' => 'NONE_REQUESTED'],
         'buyer'                        => ['username' => 'jane_buyer'],
         'fulfillmentStartInstructions' => [
@@ -254,6 +258,7 @@ test('fetching orders creates the aiku order, its client and the address from th
         ->and($order->customer_reference)->toBe($ebayOrder['orderId'])
         ->and($order->state)->toBe(OrderStateEnum::SUBMITTED)
         ->and(Arr::get($order->data, 'ebay_order.orderId'))->toBe($ebayOrder['orderId'])
+        ->and($order->platform_order_created_at->toIso8601String())->toBe('2026-09-10T05:02:11+00:00')
         ->and($order->transactions()->count())->toBe(1);
 
     $transaction = $order->transactions()->first();
@@ -289,7 +294,58 @@ test('fetching the same eBay order twice does not create a second aiku order', f
     FetchEbayUserOrders::run($ebayUser);
 
     expect(Order::where('platform_order_id', $ebayOrder['orderId'])->count())->toBe(1)
-        ->and($ebayUser->customer->clients()->count())->toBe(1);
+        ->and($ebayUser->customer->clients()->count())->toBe(1)
+        ->and($ebayUser->debugWebhooks()->count())->toBe(1);
+});
+
+test('customer activity on the website fetches their eBay orders at most once every ten minutes', function () {
+    Queue::fake();
+
+    $ebayUser = ebayChannel($this);
+    $fetches  = fn ($action, array $parameters) => $parameters[0]->id === $ebayUser->id;
+
+    FetchEbayOrdersOnCustomerActivity::run($ebayUser->customer);
+
+    FetchEbayUserOrders::assertPushed(1, $fetches);
+
+    Queue::pushed(\Lorisleiva\Actions\Decorators\UniqueJobDecorator::class)
+        ->each(fn ($job) => (new \Illuminate\Bus\UniqueLock(Cache::driver()))->release($job));
+
+    FetchEbayOrdersOnCustomerActivity::run($ebayUser->customer);
+
+    FetchEbayUserOrders::assertPushed(1, $fetches);
+});
+
+test('channels with recent orders or newly connected are fetched apart from the rest', function () {
+    Queue::fake();
+
+    $recentOrders = ebayChannel($this);
+    $recentOrders->customerSalesChannel->update(['created_at' => now()->subYear(), 'last_order_created_at' => now()->subDays(3)]);
+
+    $newlyConnected = ebayChannel($this);
+
+    $quiet = ebayChannel($this);
+    $quiet->customerSalesChannel->update(['created_at' => now()->subYear(), 'last_order_created_at' => now()->subDays(60)]);
+
+    $neverOrdered = ebayChannel($this);
+    $neverOrdered->customerSalesChannel->update(['created_at' => now()->subYear(), 'last_order_created_at' => null]);
+
+    $fetches = fn (EbayUser $ebayUser) => fn ($action, array $parameters) => $parameters[0]->id === $ebayUser->id;
+
+    FetchEbayOrders::run(true);
+
+    FetchEbayUserOrders::assertPushed($fetches($recentOrders));
+    FetchEbayUserOrders::assertPushed($fetches($newlyConnected));
+    FetchEbayUserOrders::assertNotPushed($fetches($quiet));
+    FetchEbayUserOrders::assertNotPushed($fetches($neverOrdered));
+
+    Queue::fake();
+    FetchEbayOrders::run();
+
+    FetchEbayUserOrders::assertPushed($fetches($quiet));
+    FetchEbayUserOrders::assertPushed($fetches($neverOrdered));
+    FetchEbayUserOrders::assertNotPushed($fetches($recentOrders));
+    FetchEbayUserOrders::assertNotPushed($fetches($newlyConnected));
 });
 
 test('a second order from the same buyer reuses the customer client', function () {
