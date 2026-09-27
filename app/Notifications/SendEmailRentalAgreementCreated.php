@@ -33,12 +33,18 @@ class SendEmailRentalAgreementCreated extends Notification implements ShouldQueu
 
     public function toMail($notifiable): MailMessage
     {
-        return (new CustomMailMessage($notifiable))
+        $message = (new CustomMailMessage($notifiable))
                     ->line("Here is your credentials to login to {$notifiable->shop->name}.")
                     ->line("Username: $notifiable->username")
-                    ->line(!$this->password ? "Password: $this->password" : null)
+                    ->line($this->password ? "Password: $this->password" : null)
                     ->action('RetinaLogin', $notifiable->shop->website->domain.'/app/login')
                     ->line("Thank you for using {$notifiable->shop->name}.");
+
+        if (app()->isProduction()) {
+            $message->mailer('ses')->from($notifiable->shop->email ?: 'help@aiku.io', $notifiable->shop->name);
+        }
+
+        return $message;
     }
 
     public function toArray($notifiable): array
