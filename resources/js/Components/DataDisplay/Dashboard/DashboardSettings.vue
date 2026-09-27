@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue"
+import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import { readableTextOn } from "@/Composables/useAppAccent"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
 import { router } from "@inertiajs/vue3"
@@ -38,6 +38,14 @@ const accentTextColor = computed(() => readableTextOn(accentColor.value))
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 const isSectionVisible = ref(false)
+
+const showSettings = () => {
+    isSectionVisible.value = true
+    navElement.value?.scrollIntoView({ behavior: "smooth", block: "center" })
+}
+
+onMounted(() => window.addEventListener("open-dashboard-settings", showSettings))
+onUnmounted(() => window.removeEventListener("open-dashboard-settings", showSettings))
 
 // Overflow detection
 const navElement = ref<HTMLElement | null>(null)
