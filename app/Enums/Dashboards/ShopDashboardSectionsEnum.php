@@ -17,10 +17,12 @@ enum ShopDashboardSectionsEnum: string
     use EnumHelperTrait;
 
     case TARGET = 'target';
+    case SALES = 'sales';
+    case SALES_ANALYSIS = 'sales_analysis';
     case CUSTOMERS = 'customers';
     case SALES_CHANNELS = 'sales_channels';
     case PLATFORMS = 'platforms';
-    case TENDENCIES = 'tendencies';
+    case MARKETING = 'marketing';
 
     public function blueprint(): array
     {
@@ -28,6 +30,14 @@ enum ShopDashboardSectionsEnum: string
             ShopDashboardSectionsEnum::TARGET => [
                 'title' => __('Target'),
                 'icon'  => 'fal fa-bullseye-arrow',
+            ],
+            ShopDashboardSectionsEnum::SALES => [
+                'title' => __('Sales'),
+                'icon'  => 'fal fa-chart-bar',
+            ],
+            ShopDashboardSectionsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             ShopDashboardSectionsEnum::CUSTOMERS => [
                 'title' => __('Customers'),
@@ -41,9 +51,9 @@ enum ShopDashboardSectionsEnum: string
                 'title' => __('Platforms'),
                 'icon'  => 'fal fa-plug',
             ],
-            ShopDashboardSectionsEnum::TENDENCIES => [
-                'title' => __('Tendencies'),
-                'icon'  => 'fal fa-chart-line',
+            ShopDashboardSectionsEnum::MARKETING => [
+                'title' => __('Marketing'),
+                'icon'  => 'fal fa-bullhorn',
             ],
         };
     }
@@ -54,8 +64,8 @@ enum ShopDashboardSectionsEnum: string
     public static function forShop(Shop $shop): array
     {
         return $shop->type === ShopTypeEnum::DROPSHIPPING
-            ? [self::TARGET, self::SALES_CHANNELS, self::PLATFORMS, self::TENDENCIES]
-            : [self::TARGET, self::CUSTOMERS, self::TENDENCIES];
+            ? [self::TARGET, self::SALES, self::SALES_ANALYSIS, self::SALES_CHANNELS, self::PLATFORMS, self::MARKETING]
+            : [self::TARGET, self::SALES, self::SALES_ANALYSIS, self::CUSTOMERS, self::MARKETING];
     }
 
     public static function navigation(Shop $shop): array
@@ -65,10 +75,14 @@ enum ShopDashboardSectionsEnum: string
             ->all();
     }
 
-    public static function current(Shop $shop, array $userSettings): string
+    public static function current(Shop $shop, array $userSettings, ?string $requested = null): string
     {
-        $saved = $userSettings['shop_dashboard_section'] ?? null;
+        foreach ([$requested, $userSettings['shop_dashboard_section'] ?? null] as $candidate) {
+            if (in_array(self::tryFrom((string) $candidate), self::forShop($shop), true)) {
+                return $candidate;
+            }
+        }
 
-        return in_array(self::tryFrom((string) $saved), self::forShop($shop), true) ? $saved : self::TARGET->value;
+        return self::TARGET->value;
     }
 }

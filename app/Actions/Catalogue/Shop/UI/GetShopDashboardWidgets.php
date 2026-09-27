@@ -53,42 +53,52 @@ class GetShopDashboardWidgets extends OrgAction
 
     private string $recordFrequency = 'D';
 
-    public function handle(Shop $shop, DateIntervalEnum $interval, array $userSettings): array
+    public const array WIDGETS = ['channels', 'top_customers', 'top_products', 'top_families', 'out_of_stock', 'email', 'marketing', 'top_webpages', 'subscriptions'];
+
+    /**
+     * @param array<string>|null $only the widgets to compute; a tab asks only for its own, so the
+     *                                 marketing overview (the slow one) runs only on the Marketing tab
+     */
+    public function handle(Shop $shop, DateIntervalEnum $interval, array $userSettings, ?array $only = null): array
     {
         [$fromDate, $toDate] = $this->resolvePerformanceDates($interval, $userSettings);
         $this->from            = $fromDate ? Carbon::createFromFormat('Ymd', $fromDate)->startOfDay() : null;
         $this->to              = $toDate ? Carbon::createFromFormat('Ymd', $toDate)->endOfDay() : null;
         $this->recordFrequency = $this->from ? 'D' : 'Y';
 
-        $cacheKey = sprintf('dashboard:shop_widgets:%s:%s:%s:%s', $shop->id, $interval->value, $fromDate ?? 'null', $toDate ?? 'null');
+        $widgets = [
+            'channels'      => fn () => $this->salesByChannel($shop),
+            'top_customers' => fn () => $this->topCustomers($shop, $fromDate, $toDate),
+            'top_products'  => fn () => $this->topProducts($shop),
+            'top_families'  => fn () => $this->topFamilies($shop),
+            'out_of_stock'  => fn () => $this->outOfStockBestSellers($shop),
+            'email'         => fn () => Arr::only(GetShopEmailMarketingPerformance::run($shop, $this->from, $this->to, 5), ['totals', 'mailshots']),
+            'marketing'     => function () use ($shop) {
+                $marketing = GetShopMarketingOverview::run($shop, $this->from, $this->to);
 
-        return Cache::tags(["dashboard-shop-{$shop->id}"])->remember($cacheKey, now()->addSeconds(300), function () use ($shop, $interval, $fromDate, $toDate) {
-            $email     = GetShopEmailMarketingPerformance::run($shop, $this->from, $this->to, 5);
-            $marketing = GetShopMarketingOverview::run($shop, $this->from, $this->to);
-
-            return [
-                'interval'      => $interval->value,
-                'from'          => $this->from?->toDateString(),
-                'to'            => $this->to?->toDateString(),
-                'currency_code' => $shop->currency->code,
-                'channels'      => $this->salesByChannel($shop),
-                'top_customers' => $this->topCustomers($shop, $fromDate, $toDate),
-                'top_products'  => $this->topProducts($shop),
-                'top_families'  => $this->topFamilies($shop),
-                'out_of_stock'  => $this->outOfStockBestSellers($shop),
-                'email'         => [
-                    'totals'    => $email['totals'],
-                    'mailshots' => $email['mailshots'],
-                ],
-                'marketing'     => [
+                return [
                     'totals'   => $marketing['totals'],
                     'channels' => collect($marketing['channels'])->sortByDesc('revenue')->take(6)->values()->all(),
-                ],
-                'top_webpages'  => $this->topWebpages($shop),
-                'subscriptions' => $this->subscriptions($shop, (int) $email['totals']['unsubscribed']),
-                'routes'        => $this->routes($shop),
-            ];
-        });
+                ];
+            },
+            'top_webpages'  => fn () => $this->topWebpages($shop),
+            'subscriptions' => fn () => $this->subscriptions($shop, (int) GetShopEmailMarketingPerformance::run($shop, $this->from, $this->to, 5)['totals']['unsubscribed']),
+        ];
+
+        $data = [
+            'interval'      => $interval->value,
+            'from'          => $this->from?->toDateString(),
+            'to'            => $this->to?->toDateString(),
+            'currency_code' => $shop->currency->code,
+            'routes'        => $this->routes($shop),
+        ];
+
+        foreach (Arr::only($widgets, $only ?? self::WIDGETS) as $key => $compute) {
+            $cacheKey   = sprintf('dashboard:shop_widget:%s:%s:%s:%s:%s', $shop->id, $key, $interval->value, $fromDate ?? 'null', $toDate ?? 'null');
+            $data[$key] = Cache::tags(["dashboard-shop-{$shop->id}"])->remember($cacheKey, now()->addSeconds(300), $compute);
+        }
+
+        return $data;
     }
 
     private function salesByChannel(Shop $shop): array
@@ -304,6 +314,8 @@ class GetShopDashboardWidgets extends OrgAction
         $userSettings = $request->user()->settings;
         $interval     = DateIntervalEnum::tryFrom((string) $request->query('interval', Arr::get($userSettings, 'selected_interval', 'all'))) ?? DateIntervalEnum::ALL;
 
-        return response()->json($this->handle($shop, $interval, $userSettings));
+        $only = $request->query('only') ? array_intersect(explode(',', (string) $request->query('only')), self::WIDGETS) : null;
+
+        return response()->json($this->handle($shop, $interval, $userSettings, $only));
     }
 }

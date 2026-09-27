@@ -28,7 +28,7 @@ const fetchWidgets = async () => {
     isLoading.value = true
     try {
         const response = await axios.get(route(props.fetchRoute.name, props.fetchRoute.parameters), {
-            params: { interval: props.interval },
+            params: { interval: props.interval, only: props.only?.join(",") || undefined },
         })
         data.value = response.data
     } finally {

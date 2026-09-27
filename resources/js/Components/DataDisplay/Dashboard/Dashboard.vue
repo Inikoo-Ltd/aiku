@@ -2,7 +2,6 @@
 import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
-import ShopIntervalStats from "./ShopIntervalStats.vue"
 import ChannelHealthBadges from "./ChannelHealthBadges.vue"
 import ShopDashboardWidgets from "./ShopDashboardWidgets.vue"
 import { ref, provide, computed, onMounted } from "vue"
@@ -31,11 +30,15 @@ import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
 import axios from "axios"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { faBullseyeArrow, faUserFriends, faCodeBranch, faPlug, faChartLine } from "@fal"
-library.add(faBullseyeArrow, faUserFriends, faCodeBranch, faPlug, faChartLine, faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faTriangle, faArrowRight, faCopyright)
+import { faBullseyeArrow, faUserFriends, faCodeBranch, faPlug, faChartLine, faChartBar, faBullhorn } from "@fal"
+library.add(faBullseyeArrow, faUserFriends, faCodeBranch, faPlug, faChartLine, faChartBar, faBullhorn, faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faTriangle, faArrowRight, faCopyright)
 
 const props = defineProps<{
 	dashboard?: Dashboard
+}>()
+
+const emit = defineEmits<{
+    (e: "sectionChanged", section: string): void
 }>()
 
 const dashboardTabActive = ref('')
@@ -90,10 +93,9 @@ const inSection = (...keys: string[]) => !sections.value || keys.includes(curren
 const PLATFORMS_TABLE = "ds_platforms"
 
 const SECTION_WIDGETS: Record<string, string[]> = {
-    customers: ["subscriptions", "top_customers", "email"],
+    sales: ["top_products", "top_families", "out_of_stock"],
     sales_channels: ["channels", "top_customers"],
-    platforms: [],
-    tendencies: ["top_products", "top_families", "out_of_stock", "marketing", "top_webpages"],
+    marketing: ["marketing", "email", "subscriptions", "top_webpages"],
 }
 
 const sectionTableData = computed(() => {
@@ -114,7 +116,7 @@ const sectionTableData = computed(() => {
 
 const loadSectionTable = () => {
     const tableTab = sectionTableData.value?.current_tab
-    if (tableTab && inSection("platforms", "tendencies")) {
+    if (tableTab && inSection("platforms", "sales")) {
         fetchDashboardTabData(tableTab)
     }
 }
@@ -123,6 +125,7 @@ const onChangeSection = (section: string) => {
     currentSection.value = section
     axios.patch(route("grp.models.profile.update"), { settings: { shop_dashboard_section: section } })
     loadSectionTable()
+    emit("sectionChanged", section)
 }
 
 onMounted(() => {
@@ -145,9 +148,10 @@ onMounted(() => {
             <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
         </KeepAlive>
 
-        <slot v-if="inSection('tendencies')" name="afterTabsBox" />
+        <slot v-if="inSection('sales_analysis')" name="salesAnalysis" />
 
-        <ShopIntervalStats v-if="inSection('customers') && props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
+
+        <slot v-if="inSection('customers')" name="customers" />
 
         <ChannelHealthBadges
             v-if="inSection('sales_channels') && props.dashboard?.super_blocks?.[0]?.channel_health?.length"
@@ -155,7 +159,7 @@ onMounted(() => {
         />
 
 		<DashboardSettings
-            v-if="!sections || !inSection('target')"
+            v-if="!sections || !inSection('target', 'sales_analysis', 'customers')"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.current_tab"
@@ -163,7 +167,7 @@ onMounted(() => {
 		/>
 
 		<DashboardTable
-            v-if="inSection('platforms', 'tendencies') && sectionTableData && Object.keys(sectionTableData.tabs ?? {}).length"
+            v-if="inSection('platforms', 'sales') && sectionTableData && Object.keys(sectionTableData.tabs ?? {}).length"
             :key="currentSection"
 			class="border-t border-gray-200"
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
@@ -193,20 +197,20 @@ onMounted(() => {
 		/>
 
 		<DashboardWidget
-            v-if="inSection('tendencies') && props.dashboard?.super_blocks?.[0]?.blocks"
+            v-if="inSection('sales') && props.dashboard?.super_blocks?.[0]?.blocks"
 
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>
 
         <DashboardShopWidget
-            v-if="inSection('tendencies') && props.dashboard?.super_blocks?.[0]?.shop_blocks"
+            v-if="inSection('sales') && props.dashboard?.super_blocks?.[0]?.shop_blocks"
             :interval="props.dashboard?.super_blocks?.[0]?.intervals?.value"
             :data="props.dashboard?.super_blocks?.[0]?.shop_blocks"
         />
 
         <ShopDashboardWidgets
-            v-if="(!sections || !inSection('target', 'platforms')) && props.dashboard?.super_blocks?.[0]?.widgets_route"
+            v-if="(!sections || !inSection('target', 'sales_analysis', 'customers', 'platforms')) && props.dashboard?.super_blocks?.[0]?.widgets_route"
             :key="currentSection"
             :fetch-route="props.dashboard.super_blocks[0].widgets_route"
             :interval="widgetsInterval"
@@ -214,7 +218,7 @@ onMounted(() => {
         />
 
         <Link
-            v-if="inSection('tendencies') && props.dashboard?.super_blocks?.[0]?.brands_link"
+            v-if="inSection('sales') && props.dashboard?.super_blocks?.[0]?.brands_link"
             :href="route(props.dashboard.super_blocks[0].brands_link.route.name, props.dashboard.super_blocks[0].brands_link.route.parameters)"
             class="px-4 py-3 inline-flex items-center gap-1 text-sm opacity-60 hover:opacity-100"
         >

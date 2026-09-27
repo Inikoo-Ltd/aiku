@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\Hydrators;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Traits\Hydrators\WithHydrateInvoices;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -61,6 +62,8 @@ class CustomerHydrateInvoices implements ShouldBeUnique
         $customer->update($updateData);
 
         $customer->stats()->update($stats);
+
+        ShopHydrateCustomersDashboard::dispatchForCustomer($customer);
     }
 
 }

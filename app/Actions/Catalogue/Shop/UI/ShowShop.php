@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\CRM\Customer\GetShopCustomersDashboard;
 use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
@@ -84,7 +85,7 @@ class ShowShop extends OrgAction
                     ],
                     'sections'        => [
                         'navigation' => ShopDashboardSectionsEnum::navigation($shop),
-                        'current'    => ShopDashboardSectionsEnum::current($shop, $userSettings),
+                        'current'    => ShopDashboardSectionsEnum::current($shop, $userSettings, $request->query('section')),
                     ],
                     'month_target' => GetShopMonthSalesTarget::run($shop, $request->user()),
                     'shop_blocks' => [
@@ -132,8 +133,8 @@ class ShowShop extends OrgAction
             'title'            => __('Shop').' '.$shop->code,
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
             'dashboard'   => $dashboard,
-            'sales_analysis_url'    => route('grp.org.shops.show.dashboard.sales_analysis', [$this->organisation->slug, $shop->slug]),
-            'sales_analysis_teaser' => Inertia::defer(fn () => GetShopSalesAnalysis::make()->teaser($shop), 'sales_analysis_teaser'),
+            'customers_dashboard'   => Inertia::optional(fn () => GetShopCustomersDashboard::run($shop)),
+            'sales_analysis'        => Inertia::optional(fn () => GetShopSalesAnalysis::run($shop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners']))),
         ]);
     }
 

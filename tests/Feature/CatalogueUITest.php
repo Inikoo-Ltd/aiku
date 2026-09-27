@@ -16,6 +16,8 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\CRM\Customer\GetShopCustomersDashboard;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
@@ -32,6 +34,7 @@ use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\CRM\Customer\CustomerTradeStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\Dashboards\ShopDashboardSectionsEnum;
@@ -50,6 +53,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 
 uses()->group('ui');
@@ -1224,8 +1228,53 @@ test('dropshipping shops get sales channels and platforms, wholesale shops get c
     $dropshipping = Shop::factory()->make(['type' => ShopTypeEnum::DROPSHIPPING]);
     $wholesale    = Shop::factory()->make(['type' => ShopTypeEnum::B2B]);
 
-    expect(array_keys(ShopDashboardSectionsEnum::navigation($dropshipping)))->toBe(['target', 'sales_channels', 'platforms', 'tendencies'])
-        ->and(array_keys(ShopDashboardSectionsEnum::navigation($wholesale)))->toBe(['target', 'customers', 'tendencies'])
+    expect(array_keys(ShopDashboardSectionsEnum::navigation($dropshipping)))->toBe(['target', 'sales', 'sales_analysis', 'sales_channels', 'platforms', 'marketing'])
+        ->and(array_keys(ShopDashboardSectionsEnum::navigation($wholesale)))->toBe(['target', 'sales', 'sales_analysis', 'customers', 'marketing'])
         ->and(ShopDashboardSectionsEnum::current($wholesale, ['shop_dashboard_section' => 'platforms']))->toBe('target')
-        ->and(ShopDashboardSectionsEnum::current($dropshipping, ['shop_dashboard_section' => 'platforms']))->toBe('platforms');
+        ->and(ShopDashboardSectionsEnum::current($dropshipping, ['shop_dashboard_section' => 'platforms']))->toBe('platforms')
+        ->and(ShopDashboardSectionsEnum::current($wholesale, ['shop_dashboard_section' => 'customers'], 'sales_analysis'))->toBe('sales_analysis');
+});
+
+test('sales analysis lives in the shop dashboard sales analysis tab', function () {
+    get(route('grp.org.shops.show.dashboard.sales_analysis', [$this->organisation->slug, $this->shop->slug, 'from' => '2026-01-01']))
+        ->assertRedirect(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug, 'section' => 'sales_analysis', 'from' => '2026-01-01']));
+
+    get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug, 'section' => 'sales_analysis']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('dashboard.super_blocks.0.sections.current', 'sales_analysis')
+            ->missing('sales_analysis')
+            ->reloadOnly('sales_analysis', fn (AssertableInertia $reload) => $reload->has('sales_analysis')));
+});
+
+test('shop customers tab reads the hydrated snapshot and matches sister shop buyers by email', function () {
+    $otherShop = Shop::where('id', '!=', $this->shop->id)->where('group_id', $this->shop->group_id)->first()
+        ?? StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+
+    $this->customer->update(['email' => 'Twin.Buyer@example.com', 'trade_state' => CustomerTradeStateEnum::MANY]);
+    $twin = createCustomer($otherShop);
+    $twin->update(['email' => '  twin.buyer@EXAMPLE.com ', 'trade_state' => CustomerTradeStateEnum::ONE]);
+
+    $this->shop->crmStats()->update(['customers_dashboard' => null]);
+    expect(GetShopCustomersDashboard::run($this->shop->refresh()))->toBe(['pending' => true]);
+
+    ShopHydrateCustomersDashboard::run($this->shop);
+    $data = GetShopCustomersDashboard::run($this->shop->refresh());
+
+    expect($data['base'])->toHaveKeys(['ordered', 'active', 'losing', 'lost', 'never_ordered'])
+        ->and($data['this_month'])->toHaveKeys(['registrations', 'registrations_with_orders'])
+        ->and($data['sister_shops']['shared_buyers'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($data['sister_shops']['shops'])->pluck('code'))->toContain($otherShop->code);
+
+    get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug, 'section' => 'customers']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->missing('customers_dashboard')
+            ->reloadOnly('customers_dashboard', fn (AssertableInertia $reload) => $reload->has('customers_dashboard.sister_shops')));
+});
+
+test('shop dashboard widgets compute only the widgets a tab asks for', function () {
+    $response = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'only' => 'top_products,top_families']))
+        ->assertOk();
+
+    expect($response->json())->toHaveKeys(['top_products', 'top_families', 'routes'])
+        ->not->toHaveKeys(['marketing', 'email', 'channels']);
 });

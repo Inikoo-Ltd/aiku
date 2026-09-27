@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\RedoShopTimeSeries;
@@ -283,6 +284,10 @@ class UpdateCustomer extends OrgAction
         if (Arr::has($changes, 'email')) {
             $webUserWithOldEmail = $customer->webUsers()->where('email', Arr::get($staleData, 'email'))->first();
             $webUserWithOldEmail?->update(['email' => $customer->email]);
+        }
+
+        if (Arr::hasAny($changes, ['state', 'email'])) {
+            ShopHydrateCustomersDashboard::dispatchForCustomer($customer, Arr::get($staleData, 'email'));
         }
 
         if (Arr::has($changes, 'state')) {

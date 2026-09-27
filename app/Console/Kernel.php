@@ -992,6 +992,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('hydrate:shop-customers-dashboard')->dailyAt('02:20')->timezone('UTC')->onOneServer()->sentryMonitor(
+                    monitorSlug: 'HydrateShopCustomersDashboard',
+                ),
+                name: 'HydrateShopCustomersDashboard',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('hydrate:best_seller')->dailyAt('03:00')->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'HydrateBestSellerProduct',
                 ),

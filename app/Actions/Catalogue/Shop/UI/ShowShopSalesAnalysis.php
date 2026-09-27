@@ -8,44 +8,22 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
-use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\OrgAction;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowShopSalesAnalysis extends OrgAction
 {
-    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): RedirectResponse
     {
         $this->initialisationFromShop($shop, $request);
 
-        return Inertia::render('Org/Catalogue/ShopSalesAnalysis', [
-            'title'          => __('Sales analysis').' '.$shop->code,
-            'breadcrumbs'    => array_merge(
-                (new ShowShop())->getBreadcrumbs($request->route()->originalParameters()),
-                [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.dashboard.sales_analysis',
-                                'parameters' => $request->route()->originalParameters(),
-                            ],
-                            'label' => __('Sales analysis'),
-                            'icon'  => 'fal fa-chart-line',
-                        ],
-                    ],
-                ]
-            ),
-            'pageHead'       => [
-                'title' => __('Sales analysis'),
-                'model' => $shop->name,
-                'icon'  => ['icon' => ['fal', 'fa-chart-line'], 'title' => __('Sales analysis')],
-            ],
-            'sales_analysis' => Inertia::defer(fn () => GetShopSalesAnalysis::run($shop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners'])), 'sales_analysis'),
-        ]);
+        return redirect()->route('grp.org.shops.show.dashboard.show', array_merge(
+            [$organisation->slug, $shop->slug, 'section' => ShopDashboardSectionsEnum::SALES_ANALYSIS->value],
+            $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners'])
+        ));
     }
 }

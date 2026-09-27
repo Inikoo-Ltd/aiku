@@ -5,28 +5,43 @@
 -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
+import { Head, router } from "@inertiajs/vue3";
+import { onMounted } from "vue"
+import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import ShopCustomers from "@/Components/DataDisplay/Dashboard/ShopCustomers.vue"
 import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue";
-import SalesAnalysisTeaser from "@/Components/SalesAnalysis/SalesAnalysisTeaser.vue"
-import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.vue"
 
 const props = defineProps<{
     title: string,
     dashboard: any
-    sales_analysis_url?: string
-    sales_analysis_teaser?: object
+    sales_analysis?: object
+    customers_dashboard?: object
 }>();
+
+const lazySectionProps: Record<string, "sales_analysis" | "customers_dashboard"> = {
+    sales_analysis: "sales_analysis",
+    customers: "customers_dashboard",
+}
+
+const loadSectionData = (section: string) => {
+    const prop = lazySectionProps[section]
+    if (prop && !props[prop]) {
+        router.reload({ only: [prop] })
+    }
+}
+
+onMounted(() => loadSectionData(props.dashboard?.super_blocks?.[0]?.sections?.current))
 
 </script>
 
 <template>
     <Head :title="title" />
-    <Dashboard :dashboard="props.dashboard">
-        <template #afterTabsBox>
-            <div v-if="sales_analysis_url" class="grid gap-4 px-4 pt-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-                <SalesAnalysisTeaser :teaser="sales_analysis_teaser" :analysisHref="sales_analysis_url" />
-                <SalesAnalysisMovers :teaser="sales_analysis_teaser" />
-            </div>
+    <Dashboard :dashboard="props.dashboard" @sectionChanged="loadSectionData">
+        <template #customers>
+            <ShopCustomers :data="customers_dashboard" />
+        </template>
+        <template #salesAnalysis>
+            <SalesAnalysis :data="sales_analysis" />
         </template>
     </Dashboard>
 </template>
