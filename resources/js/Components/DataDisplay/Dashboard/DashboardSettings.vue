@@ -10,13 +10,14 @@ import { debounce } from 'lodash-es'
 import axios from "axios"
 import { RadioGroup, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCog, faChevronLeft, faChevronRight, faTrashAlt } from "@far"
+import { faCog, faChevronLeft, faChevronRight, faSyncAlt } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
 import DashboardCustomDateRange from "./DashboardCustomDateRange.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-library.add(faCog, faChevronLeft, faChevronRight, faTrashAlt)
+import DashboardSettingToggle from "./DashboardSettingToggle.vue"
+import DashboardSettingChoice from "./DashboardSettingChoice.vue"
+library.add(faCog, faChevronLeft, faChevronRight, faSyncAlt)
 
 const props = defineProps<{
     intervals: Intervals
@@ -158,11 +159,48 @@ const updateToggle = async (key: string, value: string, valLoading: string, isAx
     }
 }
 
+const updatePartnersType = async (value: string) => {
+    props.settings.partners_type.value = value
+    isLoadingToggle.value = 'left_partners_type'
+    isLoadingOnTable.value = true
+    try {
+        await axios.patch(route("grp.models.profile.update"), {
+            settings: {
+                partners_type: value,
+            },
+        })
+    } finally {
+        router.reload({
+            onFinish: () => {
+                isLoadingToggle.value = null
+                isLoadingOnTable.value = false
+            },
+        })
+    }
+}
+
+const isRefreshing = ref(false)
+
+const refreshDashboard = () => {
+    router.post(route("grp.models.dashboard.break_cache"), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onStart: () => {
+            isRefreshing.value = true
+            isLoadingOnTable.value = true
+        },
+        onFinish: () => {
+            isRefreshing.value = false
+            isLoadingOnTable.value = false
+        },
+    })
+}
+
 // Section: update currency_type (grp, org)
 const debStoreCurrencyType = debounce((value: string) => {
     axios.patch(route("grp.models.profile.update"), {
         settings: {
-            currency_type: value,
+            [props.settings.currency_type.id]: value,
         },
     })
 }, 1500)
@@ -267,7 +305,7 @@ const updateTopCustomersLimit = (value: number) => {
 
             <!-- Button: advanced settings -->
             <div
-                v-tooltip="trans('Open advanced settings')"
+                v-tooltip="ctrans('Open advanced settings')"
                 @click="isSectionVisible = !isSectionVisible"
                 class="cursor-pointer p-2 rounded border flex items-center justify-center flex-shrink-0 self-start sm:self-auto"
                 :class="isSectionVisible ? 'dashboard-accent-soft border-transparent' : 'border-gray-300 text-gray-400 hover:bg-gray-200'">
@@ -276,9 +314,9 @@ const updateTopCustomersLimit = (value: number) => {
         </div>
 
         <transition name="slide-to-right">
-            <div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-col lg:flex-row lg:flex-wrap justify-between lg:items-center gap-3 lg:gap-8 mb-2">
+            <div v-show="isSectionVisible" id="dashboard-settings" class="flex flex-wrap items-center gap-3 mb-2 text-sm">
 
-                <div class="flex items-center gap-x-2 sm:gap-x-4 text-xs sm:text-sm md:text-base overflow-x-auto">
+                <div class="flex flex-wrap items-center gap-3">
                     <!-- Toggle: model_state -->
                     <Transition name="slide-to-right">
                         <div v-if="settings.model_state_type && currentTab === 'shops'" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
@@ -297,29 +335,30 @@ const updateTopCustomersLimit = (value: number) => {
                             </p>
                         </div>
                     </Transition>
+
+                    <!-- Toggle: partners_type (external, all) -->
+                    <DashboardSettingToggle
+                        v-if="settings.partners_type"
+                        :label="ctrans('Include partners')"
+                        :tooltip="settings.partners_type.options[1]?.tooltip"
+                        :isOn="settings.partners_type.value === settings.partners_type.options[1]?.value"
+                        :isLoading="isLoadingToggle === 'left_partners_type'"
+                        @change="(isOn) => updatePartnersType(settings.partners_type.options[isOn ? 1 : 0].value)"
+                    />
                 </div>
 
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-x-4 lg:gap-x-8 text-xs sm:text-sm md:text-base">
+                <div class="flex flex-wrap items-center gap-3">
                     <!-- Toggle: data_display_type (minified, full) -->
-                    <div v-if="settings.data_display_type" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
-                        <p v-tooltip="settings.data_display_type.options[0].tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[0].value === settings.data_display_type.value ? 'font-semibold dashboard-accent-text underline' : 'opacity-50', ]">
-                            {{ settings.data_display_type.options[0].label }}
-                        </p>
-                        <ToggleSwitch
-                            :modelValue="settings.data_display_type.value"
-                            @update:modelValue="(value: any) => updateDataDisplayType(value)"
-                            :falseValue="settings.data_display_type.options[0].value"
-                            :trueValue="settings.data_display_type.options[1]?.value"
-                            :disabled="`left_data_display_type` === isLoadingToggle"
-                        />
-                        <p v-tooltip="settings.data_display_type.options[1]?.tooltip" class="whitespace-nowrap" :class="[ settings.data_display_type.options[1]?.value === settings.data_display_type.value ? 'font-semibold dashboard-accent-text underline' : 'opacity-50', ]">
-                            {{ settings.data_display_type.options[1]?.label }}
-                        </p>
-                    </div>
+                    <DashboardSettingChoice
+                        v-if="settings.data_display_type"
+                        :value="settings.data_display_type.value"
+                        :options="settings.data_display_type.options"
+                        @change="updateDataDisplayType"
+                    />
 
                     <!-- Selector: top_customers_limit (only on top_customers tab) -->
                     <div v-if="settings.top_customers_limit && currentTab === 'top_customers'" class="flex items-center gap-x-2 sm:gap-x-4 flex-shrink-0">
-                        <p class="whitespace-nowrap leading-none">{{ trans('Show top') }}</p>
+                        <p class="whitespace-nowrap leading-none">{{ ctrans('Show top') }}</p>
                         <RadioGroup class="relative"
                                     :modelValue="settings.top_customers_limit.value"
                                     @update:modelValue="(value: any) => updateTopCustomersLimit(Number(value))"
@@ -327,7 +366,7 @@ const updateTopCustomersLimit = (value: number) => {
                             <div v-if="`top_customers_limit` === isLoadingToggle" class="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center z-10">
                                 <LoadingIcon class="text-white text-xl m-auto" />
                             </div>
-                            <RadioGroupLabel class="sr-only">{{ trans('Top customers limit') }}</RadioGroupLabel>
+                            <RadioGroupLabel class="sr-only">{{ ctrans('Top customers limit') }}</RadioGroupLabel>
                             <div class="flex border border-gray-300 rounded-md overflow-hidden w-fit">
                                 <RadioGroupOption
                                     as="template" v-for="option in settings.top_customers_limit.options"
@@ -349,53 +388,20 @@ const updateTopCustomersLimit = (value: number) => {
                     </div>
 
                     <!-- Toggle: currency_type -->
-                    <div v-if="settings.currency_type" class="flex items-center gap-x-2 sm:gap-x-4 w-full sm:w-auto">
-                        <RadioGroup class="relative w-full sm:w-auto"
-                                    :modelValue="settings.currency_type.value"
-                                    @update:modelValue="(value: any) => updateCurrencyType(value)"
-                        >
-                            <div v-if="`right_currency_type` === isLoadingToggle" class="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center z-10">
-                                <LoadingIcon class="text-white text-xl m-auto" />
-                            </div>
-                            <RadioGroupLabel class="sr-only">Choose the radio</RadioGroupLabel>
-                            <div class="flex gap-y-1 flex-wrap border border-gray-300 rounded-md overflow-hidden w-fit">
-                                <RadioGroupOption
-                                    as="template" v-for="(option) in settings.currency_type.options"
-                                    :key="option.value"
-                                    :value="option.value"
-                                    v-slot="{ active, checked }"
-                                >
-                                    <div :class="[
-                                            'cursor-pointer focus:outline-none flex items-center justify-center py-1 sm:py-2 md:py-3 px-2 sm:px-3 text-xs sm:text-sm font-medium whitespace-nowrap',
-                                            checked ? 'dashboard-accent' : ' bg-white text-gray-700 hover:bg-gray-200',
-                                        ]"
-                                         v-tooltip="option.tooltip"
-                                    >
-                                        <RadioGroupLabel as="span">{{ option.label }}</RadioGroupLabel>
-                                    </div>
-                                </RadioGroupOption>
-                            </div>
-                        </RadioGroup>
-                    </div>
+                    <DashboardSettingChoice
+                        v-if="settings.currency_type && settings.currency_type.display !== false"
+                        :value="settings.currency_type.value"
+                        :options="settings.currency_type.options"
+                        @change="updateCurrencyType"
+                    />
 
                     <div class="flex items-center gap-x-2 flex-shrink-0">
-                        <ModalConfirmationDelete
-                            :title="trans('Break dashboard cache')"
-                            :description="trans('Clear cached time-series aggregates so dashboards recompute fresh data on the next load.')"
-                            :noLabel="trans('Break cache')"
-                            :routeDelete="{
-                                name: 'grp.models.dashboard.break_cache',
-                                method: 'post'
-                            }">
-                            <template #default="{ changeModel }">
-                                <button type="button" @click="changeModel"
-                                    v-tooltip="trans('Force recompute of cached dashboard data')"
-                                    class="flex items-center gap-x-2 rounded border border-gray-300 px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-200 whitespace-nowrap">
-                                    <FontAwesomeIcon icon="far fa-trash-alt" fixed-width aria-hidden="true" />
-                                    {{ trans('Break cache') }}
-                                </button>
-                            </template>
-                        </ModalConfirmationDelete>
+                        <button type="button" @click="refreshDashboard" :disabled="isRefreshing"
+                            v-tooltip="ctrans('Recalculate the dashboard numbers now')"
+                            class="flex items-center gap-x-2 rounded border border-gray-300 px-3 h-9 font-medium text-gray-600 hover:bg-gray-200 whitespace-nowrap">
+                            <FontAwesomeIcon icon="far fa-sync-alt" :class="isRefreshing ? 'animate-spin' : ''" fixed-width aria-hidden="true" />
+                            {{ ctrans('Refresh') }}
+                        </button>
                     </div>
                 </div>
             </div>

@@ -14,7 +14,7 @@ class GetInvoiceCategoryTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null): array
+    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null, bool $includePartners = false): array
     {
         $query = InvoiceCategory::query()
             ->select(['invoice_categories.id', 'invoice_categories.slug', 'invoice_categories.name', 'invoice_categories.state', 'invoice_categories.colour', 'invoice_categories.organisation_id', 'invoice_categories.group_id', 'invoice_categories.currency_id'])
@@ -56,7 +56,7 @@ class GetInvoiceCategoryTimeSeriesStats
         if (!empty($timeSeriesIds)) {
             $allStats = CalculateTimeSeriesStats::run(
                 $timeSeriesIds,
-                [
+                CalculateTimeSeriesStats::withPartners([
                     'sales_external'              => 'sales_external',
                     'sales_org_currency_external' => 'sales_org_currency_external',
                     'sales_grp_currency_external' => 'sales_grp_currency_external',
@@ -66,7 +66,7 @@ class GetInvoiceCategoryTimeSeriesStats
                     'invoices'                    => 'invoices',
                     'refunds'                     => 'refunds',
                     'customers_invoiced'          => 'customers_invoiced',
-                ],
+                ], $includePartners),
                 'invoice_category_time_series_records',
                 'invoice_category_time_series_id',
                 $from_date,

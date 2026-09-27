@@ -60,7 +60,7 @@ class ShowGroupDashboard extends OrgAction
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         $performanceDates = $this->resolvePerformanceDates($saved_interval, $userSettings);
 
-        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1]);
+        $timeSeriesData = GetGroupDashboardTimeSeriesData::run($group, $performanceDates[0], $performanceDates[1], null, $this->dashboardIncludesPartners($userSettings));
         $tabNavigation = GroupDashboardSalesTableTabsEnum::navigation();
         $primaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum]);
         $secondaryTables = GroupDashboardSalesTableTabsEnum::tablesForTabs($group, $timeSeriesData, [$currentTabEnum], true);
@@ -78,6 +78,7 @@ class ShowGroupDashboard extends OrgAction
                     ],
                     'settings'  => [
                         'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'partners_type'       => $this->dashboardPartnersTypeSettings($userSettings),
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($group, $userSettings),
                     ],

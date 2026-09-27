@@ -20,31 +20,32 @@ class GetOrganisationDashboardTimeSeriesData
 {
     use AsObject;
 
-    public function handle(Organisation $organisation, $fromDate = null, $toDate = null, ?bool $useCache = null): array
+    public function handle(Organisation $organisation, $fromDate = null, $toDate = null, ?bool $useCache = null, bool $includePartners = false): array
     {
         $useCache = $useCache ?? true;
 
         if (!$useCache) {
-            return $this->fetchData($organisation, $fromDate, $toDate);
+            return $this->fetchData($organisation, $fromDate, $toDate, $includePartners);
         }
 
-        $cacheKey = $this->getCacheKey($organisation, $fromDate, $toDate);
+        $cacheKey = $this->getCacheKey($organisation, $fromDate, $toDate, $includePartners);
 
         return Cache::tags(["dashboard-org-{$organisation->id}"])
-            ->remember($cacheKey, now()->addSeconds(300), function () use ($organisation, $fromDate, $toDate) {
-                return $this->fetchData($organisation, $fromDate, $toDate);
+            ->remember($cacheKey, now()->addSeconds(300), function () use ($organisation, $fromDate, $toDate, $includePartners) {
+                return $this->fetchData($organisation, $fromDate, $toDate, $includePartners);
             });
     }
 
-    protected function getCacheKey(Organisation $organisation, $fromDate, $toDate): string
+    protected function getCacheKey(Organisation $organisation, $fromDate, $toDate, bool $includePartners): string
     {
         [$normalizedFromDate, $normalizedToDate] = $this->normalizeDateBounds($fromDate, $toDate);
 
         return sprintf(
-            'dashboard:org_timeseries:%s:%s:%s',
+            'dashboard:org_timeseries:%s:%s:%s%s',
             $organisation->id,
             $normalizedFromDate,
-            $normalizedToDate
+            $normalizedToDate,
+            $includePartners ? ':partners' : ''
         );
     }
 
@@ -73,13 +74,13 @@ class GetOrganisationDashboardTimeSeriesData
         return Carbon::parse((string) $date)->toDateString();
     }
 
-    protected function fetchData(Organisation $organisation, $fromDate, $toDate): array
+    protected function fetchData(Organisation $organisation, $fromDate, $toDate, bool $includePartners): array
     {
         return [
-            'shops'             => GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate),
-            'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate),
-            'platforms'         => GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate),
-            'brands'            => GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate),
+            'shops'             => GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate, null, $includePartners),
+            'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners),
+            'platforms'         => GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners),
+            'brands'            => GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners),
         ];
     }
 

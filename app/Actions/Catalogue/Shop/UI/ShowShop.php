@@ -59,7 +59,7 @@ class ShowShop extends OrgAction
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate);
+        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate, null, $this->dashboardIncludesPartners($userSettings));
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
@@ -76,6 +76,7 @@ class ShowShop extends OrgAction
                     ],
                     'settings'  => [
                         'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'partners_type'       => $this->dashboardPartnersTypeSettings($userSettings),
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                     ],

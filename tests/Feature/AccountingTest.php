@@ -19,8 +19,13 @@ use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\ForceDeleteRefund;
+use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
+use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
+use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
+use App\Actions\Catalogue\Shop\UI\GetFormatedShopTimeSeriesStats;
+use App\Actions\UI\Dashboards\GetGroupDashboardTimeSeriesData;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\InvoiceTransaction\RefundTaxTransactions;
@@ -3482,4 +3487,81 @@ test('credit transaction exchange rates keep their precision below four decimals
         ->and($creditTransaction->grp_exchange)->toBe('0.0023071834')
         ->and((float)$creditTransaction->org_amount)->toBe(82.04)
         ->and((float)$creditTransaction->grp_amount)->toBe(71.03);
+});
+
+test('invoice category time series keep partner invoices and refunds apart and the dashboard can add them back', function () {
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Partner split category',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 1
+    ]);
+
+    $customer = createCustomer($this->shop);
+    $date     = now()->startOfDay()->addHour();
+
+    $invoiceSpecs = [
+        ['type' => InvoiceTypeEnum::INVOICE, 'amount' => 100, 'partner' => false],
+        ['type' => InvoiceTypeEnum::INVOICE, 'amount' => 300, 'partner' => true],
+        ['type' => InvoiceTypeEnum::INVOICE, 'amount' => 200, 'partner' => true],
+        ['type' => InvoiceTypeEnum::REFUND, 'amount' => -50, 'partner' => true],
+    ];
+
+    foreach ($invoiceSpecs as $spec) {
+        $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        DB::table('invoices')->where('id', $invoice->id)->update([
+            'invoice_category_id' => $invoiceCategory->id,
+            'type'                => $spec['type']->value,
+            'in_process'          => false,
+            'date'                => $date,
+            'net_amount'          => $spec['amount'],
+            'org_net_amount'      => $spec['amount'],
+            'grp_net_amount'      => $spec['amount'],
+            'as_organisation_id'  => $spec['partner'] ? $this->organisation->id : null,
+        ]);
+    }
+
+    ProcessInvoiceCategoryTimeSeriesRecords::run($invoiceCategory->id, TimeSeriesFrequencyEnum::DAILY, $date->toDateString(), $date->toDateString());
+
+    $record = DB::table('invoice_category_time_series_records')
+        ->join('invoice_category_time_series', 'invoice_category_time_series.id', '=', 'invoice_category_time_series_records.invoice_category_time_series_id')
+        ->where('invoice_category_time_series.invoice_category_id', $invoiceCategory->id)
+        ->where('invoice_category_time_series_records.from', '>=', $date->copy()->startOfDay())
+        ->first();
+
+    expect((int)$record->invoices)->toBe(1)
+        ->and((int)$record->refunds)->toBe(0)
+        ->and((int)$record->invoices_internal)->toBe(2)
+        ->and((int)$record->refunds_internal)->toBe(1)
+        ->and((float)$record->sales_org_currency_external)->toBe(100.0)
+        ->and((float)$record->sales_org_currency_internal)->toBe(450.0);
+
+    $statsFor = fn (bool $includePartners) => collect(GetInvoiceCategoryTimeSeriesStats::run($this->organisation, $date, $date, $includePartners))
+        ->firstWhere('id', $invoiceCategory->id);
+
+    $withoutPartners = $statsFor(false);
+    $withPartners    = $statsFor(true);
+
+    expect((int)$withoutPartners['invoices_ctm'])->toBe(1)
+        ->and((float)$withoutPartners['sales_org_currency_external_ctm'])->toBe(100.0)
+        ->and((int)$withPartners['invoices_ctm'])->toBe(3)
+        ->and((int)$withPartners['refunds_ctm'])->toBe(1)
+        ->and((float)$withPartners['sales_org_currency_external_ctm'])->toBe(550.0);
+
+    ProcessShopTimeSeriesRecords::run($this->shop->id, TimeSeriesFrequencyEnum::DAILY, $date->toDateString(), $date->toDateString());
+
+    $shopWithoutPartners = GetFormatedShopTimeSeriesStats::run($this->shop->fresh(), null, null, false);
+    $shopWithPartners    = GetFormatedShopTimeSeriesStats::run($this->shop->fresh(), null, null, true);
+
+    expect($shopWithPartners['invoices']['tdy']['raw_value'] - $shopWithoutPartners['invoices']['tdy']['raw_value'])->toEqual(2)
+        ->and($shopWithPartners['refunds']['tdy']['raw_value'] - $shopWithoutPartners['refunds']['tdy']['raw_value'])->toEqual(1)
+        ->and($shopWithPartners['sales_org_currency_external']['tdy']['raw_value'] - $shopWithoutPartners['sales_org_currency_external']['tdy']['raw_value'])->toEqual(450);
+
+    $groupCategory = fn (bool $includePartners) => collect(GetGroupDashboardTimeSeriesData::run($this->group, null, null, false, $includePartners)['invoiceCategories'])
+        ->firstWhere('id', $invoiceCategory->id);
+
+    expect((int)$groupCategory(false)['invoices_tdy'])->toBe(1)
+        ->and((int)$groupCategory(true)['invoices_tdy'])->toBe(3)
+        ->and((int)$groupCategory(true)['refunds_tdy'])->toBe(1);
 });

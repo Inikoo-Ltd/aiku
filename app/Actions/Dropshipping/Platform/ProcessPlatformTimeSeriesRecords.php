@@ -99,6 +99,8 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'sales_internal'              => $result->sales_internal,
                     'sales_org_currency_internal' => $result->sales_org_currency_internal,
                     'sales_grp_currency_internal' => $result->sales_grp_currency_internal,
+                    'invoices_internal' => $result->invoices_internal,
+                    'refunds_internal' => $result->refunds_internal,
                     'invoices'                    => $result->invoices,
                     ...$metrics,
                 ]
@@ -210,6 +212,8 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
                     'sales_internal'              => 0,
                     'sales_org_currency_internal' => 0,
                     'sales_grp_currency_internal' => 0,
+                    'invoices_internal' => 0,
+                    'refunds_internal' => 0,
                     'invoices'                    => 0,
                     ...$metrics,
                 ]

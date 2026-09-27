@@ -46,6 +46,14 @@ trait BuildsInvoiceTransactionTimeSeriesQuery
         ];
     }
 
+    protected function partnerInvoiceTransactionCountSelects(): array
+    {
+        return [
+            DB::raw('COUNT(DISTINCT CASE WHEN invoice_transactions.is_refund = false AND invoice_transactions.is_partner THEN invoice_transactions.invoice_id END) as invoices_internal'),
+            DB::raw('COUNT(DISTINCT CASE WHEN invoice_transactions.is_refund = true AND invoice_transactions.is_partner THEN invoice_transactions.invoice_id END) as refunds_internal'),
+        ];
+    }
+
     protected function pivotBasedSelects(string $pivot = 'pivot'): array
     {
         return [

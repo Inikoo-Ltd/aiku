@@ -75,6 +75,8 @@ trait BuildsInvoiceTimeSeriesQuery
             DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NOT NULL THEN net_amount ELSE 0 END) as sales_internal'),
             DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NOT NULL THEN org_net_amount ELSE 0 END) as sales_org_currency_internal'),
             DB::raw('SUM(CASE WHEN invoices.as_organisation_id IS NOT NULL THEN grp_net_amount ELSE 0 END) as sales_grp_currency_internal'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' AND invoices.as_organisation_id IS NOT NULL THEN id END) as invoices_internal'),
+            DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NOT NULL THEN id END) as refunds_internal'),
         ];
     }
 
