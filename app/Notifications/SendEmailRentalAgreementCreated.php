@@ -12,19 +12,6 @@ class SendEmailRentalAgreementCreated extends Notification implements ShouldQueu
 {
     use Queueable;
 
-    public string|null $password;
-
-    /**
-     * Create a new notification instance.
-     *
-     * @return void
-     */
-    public function __construct($password)
-    {
-        $this->password = $password;
-    }
-
-
     public function via($notifiable): array
     {
         return ['mail'];
@@ -36,8 +23,8 @@ class SendEmailRentalAgreementCreated extends Notification implements ShouldQueu
         $message = (new CustomMailMessage($notifiable))
                     ->line("Here is your credentials to login to {$notifiable->shop->name}.")
                     ->line("Username: $notifiable->username")
-                    ->line($this->password ? "Password: $this->password" : null)
-                    ->action('RetinaLogin', $notifiable->shop->website->domain.'/app/login')
+                    ->line("Use Forgot password on the login page to set your password.")
+                    ->action('Log in', $notifiable->shop->website->domain.'/app/login')
                     ->line("Thank you for using {$notifiable->shop->name}.");
 
         if (app()->isProduction()) {
