@@ -28,6 +28,7 @@ import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardSho
 import { useTabChange } from "@/Composables/tab-change"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
+import ShopMonthBriefing from "@/Components/DataDisplay/Dashboard/ShopMonthBriefing.vue"
 import axios from "axios"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { faBullseyeArrow, faUserFriends, faCodeBranch, faPlug, faChartLine, faChartBar, faBullhorn } from "@fal"
@@ -147,6 +148,14 @@ onMounted(() => {
         <KeepAlive v-if="inSection('target') && props.dashboard?.super_blocks?.[0]?.tabs_box">
             <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
         </KeepAlive>
+
+        <ShopMonthBriefing
+            v-if="sections && inSection('target') && props.dashboard?.super_blocks?.[0]?.widgets_route && props.dashboard?.super_blocks?.[0]?.month_target"
+            :fetch-route="props.dashboard.super_blocks[0].widgets_route"
+            :currency-code="props.dashboard.super_blocks[0].month_target.currency_code"
+            :gap="props.dashboard.super_blocks[0].month_target.gap"
+            :remaining-days="props.dashboard.super_blocks[0].month_target.remaining_days"
+        />
 
         <slot v-if="inSection('sales_analysis')" name="salesAnalysis" />
 

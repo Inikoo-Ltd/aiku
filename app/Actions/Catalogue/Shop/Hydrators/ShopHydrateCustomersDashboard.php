@@ -93,7 +93,8 @@ class ShopHydrateCustomersDashboard implements ShouldBeUnique
                         'invoices' => (int) $customer['invoices'],
                     ])->values()->all(),
                 'sister_shops'  => $this->sisterShops($shop),
-                'problems'      => $this->problems($shop, $today),
+                'problems'      => $this->problems($shop, $today->copy()->subDays(30)),
+                'problems_month_to_date' => $this->problems($shop, $today->copy()->startOfMonth()),
             ]),
             'customers_dashboard_hydrated_at' => now(),
         ]);
@@ -183,17 +184,17 @@ class ShopHydrateCustomersDashboard implements ShouldBeUnique
     }
 
     /**
-     * Chats and emails of the last 30 days whose topic is a problem, by topic and channel. Topics
-     * come from the AI summary of each conversation, so unclassified ones are counted apart.
+     * Chats and emails since a date whose topic is a problem, by topic and channel. Topics come
+     * from the AI summary of each conversation, so unclassified ones are counted apart.
      */
-    private function problems(Shop $shop, \Illuminate\Support\Carbon $today): array
+    private function problems(Shop $shop, \Illuminate\Support\Carbon $since): array
     {
         $rows = DB::table('chat_sessions')
             ->where('shop_id', $shop->id)
             ->whereNull('deleted_at')
             ->where(fn ($query) => $query->whereNull('is_spam')->orWhere('is_spam', false))
             ->where(fn ($query) => $query->whereNull('is_rubbish')->orWhere('is_rubbish', false))
-            ->where('created_at', '>=', $today->copy()->subDays(30))
+            ->where('created_at', '>=', $since)
             ->selectRaw('topic, channel, count(*) as conversations')
             ->groupBy('topic', 'channel')
             ->get();
@@ -201,7 +202,8 @@ class ShopHydrateCustomersDashboard implements ShouldBeUnique
         $problems = $rows->whereIn('topic', self::PROBLEM_TOPICS);
 
         return [
-            'days'          => 30,
+            'since'         => $since->toDateString(),
+            'days'          => (int) $since->diffInDays(now('UTC')->startOfDay()),
             'conversations' => (int) $rows->sum('conversations'),
             'classified'    => (int) $rows->whereNotNull('topic')->sum('conversations'),
             'problems'      => (int) $problems->sum('conversations'),

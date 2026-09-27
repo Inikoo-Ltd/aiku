@@ -53,7 +53,7 @@ class GetShopDashboardWidgets extends OrgAction
 
     private string $recordFrequency = 'D';
 
-    public const array WIDGETS = ['department_movers', 'family_movers', 'channels', 'top_customers', 'top_products', 'top_families', 'out_of_stock', 'email', 'marketing', 'top_webpages', 'subscriptions'];
+    public const array WIDGETS = ['department_movers', 'family_movers', 'out_of_stock_month', 'problems_month', 'customer_actions', 'channels', 'top_customers', 'top_products', 'top_families', 'out_of_stock', 'email', 'marketing', 'top_webpages', 'subscriptions'];
 
     /**
      * @param array<string>|null $only the widgets to compute; a tab asks only for its own, so the
@@ -74,6 +74,12 @@ class GetShopDashboardWidgets extends OrgAction
             'top_products'  => fn () => $this->topProducts($shop),
             'top_families'  => fn () => $this->topFamilies($shop),
             'out_of_stock'  => fn () => $this->outOfStockBestSellers($shop),
+            'out_of_stock_month' => fn () => $this->outOfStockBestSellers($shop, now('UTC')->startOfMonth()),
+            'problems_month'     => fn () => $shop->crmStats?->customers_dashboard['problems_month_to_date'] ?? null,
+            'customer_actions'   => fn () => [
+                'at_risk' => array_slice($shop->crmStats?->customers_dashboard['at_risk'] ?? [], 0, 5),
+                'overdue' => array_slice($shop->crmStats?->customers_dashboard['overdue'] ?? [], 0, 5),
+            ],
             'email'         => fn () => Arr::only(GetShopEmailMarketingPerformance::run($shop, $this->from, $this->to, 5), ['totals', 'mailshots']),
             'marketing'     => function () use ($shop) {
                 $marketing = GetShopMarketingOverview::run($shop, $this->from, $this->to);
@@ -268,9 +274,11 @@ class GetShopDashboardWidgets extends OrgAction
      * days it has been out. Ranked by that estimate, with the newest open purchase order line as
      * the replenishment status (there is no supplier lead time in the data to give a real ETA).
      *
+     * With $countFrom, only the days out since then count, so the estimate is what it cost this month.
+     *
      * @return array{products: int, estimated_lost: float, rows: array}
      */
-    private function outOfStockBestSellers(Shop $shop): array
+    private function outOfStockBestSellers(Shop $shop, ?Carbon $countFrom = null): array
     {
         $today = now('UTC')->startOfDay();
 
@@ -297,12 +305,13 @@ class GetShopDashboardWidgets extends OrgAction
             ->selectRaw('p.id, sum(r.sales_external) as sales')
             ->pluck('sales', 'p.id');
 
-        $products = $outOfStock->map(function ($product) use ($salesBefore, $today) {
+        $products = $outOfStock->map(function ($product) use ($salesBefore, $today, $countFrom) {
             $since   = $product->out_of_stock_since ? Carbon::parse($product->out_of_stock_since)->startOfDay() : null;
             $daysOut = $since ? (int) $since->diffInDays($today) : null;
+            $counted = $since ? (int) ($countFrom && $since->lt($countFrom) ? $countFrom : $since)->diffInDays($today) : 0;
 
             $product->days_out       = $daysOut;
-            $product->estimated_lost = $daysOut ? round((float) ($salesBefore[$product->id] ?? 0) / 90 * $daysOut, 2) : 0.0;
+            $product->estimated_lost = $counted ? round((float) ($salesBefore[$product->id] ?? 0) / 90 * $counted, 2) : 0.0;
 
             return $product;
         });
@@ -406,6 +415,7 @@ class GetShopDashboardWidgets extends OrgAction
             'family'    => ['name' => 'grp.org.shops.show.catalogue.families.show', 'parameters' => $parameters],
             'department' => ['name' => 'grp.org.shops.show.catalogue.departments.show', 'parameters' => $parameters],
             'marketing' => ['name' => 'grp.org.shops.show.marketing.dashboard', 'parameters' => $parameters],
+            'chat_sessions' => ['name' => 'grp.org.shops.show.crm.chat_sessions.index', 'parameters' => $parameters],
             'mailshots' => ['name' => 'grp.org.shops.show.marketing.mailshots.index', 'parameters' => $parameters],
             'webpage'   => $shop->website ? ['name' => 'grp.org.shops.show.web.webpages.show', 'parameters' => array_merge($parameters, ['website' => $shop->website->slug])] : null,
         ];
