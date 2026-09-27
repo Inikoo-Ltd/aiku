@@ -76,6 +76,7 @@ use App\Actions\Catalogue\ShippingCountry\StoreShippingCountry;
 use App\Actions\Catalogue\ShippingCountry\UpdateShippingCountry;
 use App\Actions\Catalogue\Shop\StoreExternalShop;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\TrafficSource\AdProposals\ApplyAdProposal;
 use App\Actions\CRM\TrafficSource\AdProposals\DismissAdProposal;
@@ -853,6 +854,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('shop', StoreShop::class)->name('shop.store');
     Route::post('shop-external/{engine}', StoreExternalShop::class)->name('shop.external.store');
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
+    Route::patch('shop/{shop:id}/sales-target', UpdateShopSalesTarget::class)->name('shop.sales_target.update')->withoutScopedBindings();
     Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}', UpdateGoogleAdsCampaign::class)
         ->name('shop.google_ads.campaign.update')->withoutScopedBindings();
     Route::patch('shop/{shop:id}/google-ads/campaign/{trafficSourceCampaign:id}/element', UpdateGoogleAdsCampaignElement::class)

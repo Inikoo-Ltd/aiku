@@ -126,7 +126,7 @@ class ShowGroupDashboard extends OrgAction
     {
         $group = group();
 
-        if (!$request->user()->hasGroupAccess()) {
+        if (!$request->user()->hasGroupAccess() && !$request->user()->canViewSales()) {
             $organisation = $request->user()->authorisedOrganisations()->first();
             abort_unless($organisation, 403);
 

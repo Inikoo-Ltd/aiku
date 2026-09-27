@@ -21,9 +21,12 @@ const props = defineProps<{
 
 <template>
     <Head :title="title" />
-    <div v-if="sales_analysis_url" class="grid gap-4 px-4 pt-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <SalesAnalysisTeaser :teaser="sales_analysis_teaser" :analysisHref="sales_analysis_url" />
-        <SalesAnalysisMovers :teaser="sales_analysis_teaser" />
-    </div>
-    <Dashboard :dashboard="props.dashboard" />
+    <Dashboard :dashboard="props.dashboard">
+        <template #afterTabsBox>
+            <div v-if="sales_analysis_url" class="grid gap-4 px-4 pt-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                <SalesAnalysisTeaser :teaser="sales_analysis_teaser" :analysisHref="sales_analysis_url" />
+                <SalesAnalysisMovers :teaser="sales_analysis_teaser" />
+            </div>
+        </template>
+    </Dashboard>
 </template>

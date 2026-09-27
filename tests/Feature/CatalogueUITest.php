@@ -11,15 +11,20 @@
 use App\Actions\Billables\Charge\StoreCharge;
 use App\Actions\Billables\Service\StoreService;
 use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Catalogue\ProductCategory\GetDepartmentTimeSeriesStats;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
@@ -28,6 +33,8 @@ use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
@@ -37,10 +44,13 @@ use App\Models\Billables\Service;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Catalogue\ShopSalesTarget;
+use App\Models\SysAdmin\Guest;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patchJson;
 
 uses()->group('ui');
 
@@ -1114,4 +1124,108 @@ test('customer portfolio showcase does not send the stock of each part', functio
     expect($showcase['org_stocks'][0]['id'])->toBe($orgStock->id)
         ->and($showcase['org_stocks'][0])->not->toHaveKeys(['quantity', 'quantity_available'])
         ->and($showcase['parts'][0])->not->toHaveKeys(['quantity', 'quantity_available']);
+});
+
+test('sales are visible to webmasters but not to staff unrelated to sales', function () {
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $newUser = fn () => StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    $unrelated = $newUser();
+    $unrelated->givePermissionTo('human-resources.'.$this->organisation->id.'.view');
+    actingAs($unrelated);
+    get(route('grp.org.shops.index', [$this->organisation->slug]))->assertForbidden();
+
+    $webmaster = $newUser();
+    $webmaster->givePermissionTo('web.'.$this->shop->id.'.view');
+    actingAs($webmaster);
+
+    get(route('grp.org.shops.index', [$this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Catalogue/Shops'));
+
+    get(route('grp.dashboard.show'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Dashboard/GrpDashboard')->has('dashboard.super_blocks', 1));
+});
+
+test('shop dashboard sales table shows departments, with brands as an icon on the right', function () {
+    $response = get(route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Catalogue/Shop')
+            ->where('dashboard.super_blocks.0.blocks.0.tabs.departments.title', 'Departments')
+            ->has('dashboard.super_blocks.0.month_target.target')
+            ->where('dashboard.super_blocks.0.sections.current', 'target')
+            ->where('dashboard.super_blocks.0.sections.navigation', fn ($navigation) => array_keys($navigation->all()) === array_map(
+                fn (ShopDashboardSectionsEnum $section) => $section->value,
+                ShopDashboardSectionsEnum::forShop($this->shop)
+            ));
+    });
+
+    $departmentsTable = ShopDashboardSalesTableTabsEnum::DEPARTMENTS->table(
+        $this->shop,
+        ['departments' => GetDepartmentTimeSeriesStats::run($this->shop)]
+    );
+
+    expect($departmentsTable['header']['columns']['label']['formatted_value'])->toBe('Department')
+        ->and($departmentsTable)->toHaveKeys(['body', 'totals'])
+        ->and(ShopDashboardSalesTableTabsEnum::BRANDS->blueprint())->toMatchArray(['type' => 'icon', 'align' => 'right']);
+});
+
+test('shop month sales target defaults to last year plus growth until management sets it', function () {
+    $shop  = $this->shop;
+    $today = now('UTC')->startOfDay();
+
+    $block = GetShopMonthSalesTarget::run($shop, null, $today);
+    $lastYearTotal = $block['last_year_total'];
+
+    expect($block['target']['is_default'])->toBeTrue()
+        ->and($block['target']['amount'])->toBe($lastYearTotal > 0 ? round($lastYearTotal * (1 + config('marketing.default_sales_target_growth')), 2) : null)
+        ->and($block['chart']['this_year'])->toHaveCount($today->day)
+        ->and($block['can_edit'])->toBeFalse();
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 123456.78, 'month' => $today->format('Y-m')]);
+
+    $block = GetShopMonthSalesTarget::run($shop, $this->user, $today);
+
+    expect($block['target']['is_default'])->toBeFalse()
+        ->and($block['target']['amount'])->toBe(123456.78)
+        ->and($block['gap'])->toBe(round(max(0, 123456.78 - $block['sales_so_far'] - $block['pipeline']['amount']), 2));
+});
+
+test('only organisation or group admins can change the shop sales target', function () {
+    setPermissionsTeamId($this->group->id);
+    SeedShopPermissions::run($this->shop);
+    $routeParameters = ['organisation' => $this->shop->organisation_id, 'shop' => $this->shop->id];
+
+    $webmaster = StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $webmaster->givePermissionTo('web.'.$this->shop->id.'.view');
+    actingAs($webmaster);
+    patchJson(route('grp.models.org.shop.sales_target.update', $routeParameters), ['target_org_currency' => 1])->assertForbidden();
+
+    $admin = $this->user;
+    $admin->givePermissionTo('org-admin.'.$this->shop->organisation_id);
+    actingAs($admin);
+    patchJson(route('grp.models.org.shop.sales_target.update', $routeParameters), ['target_org_currency' => 50000])->assertSuccessful();
+
+    expect(ShopSalesTarget::where('shop_id', $this->shop->id)->where('month', now('UTC')->startOfMonth()->toDateString())->first())
+        ->target_org_currency->toBe('50000.00')
+        ->set_by_user_id->toBe($admin->id);
+});
+
+test('dropshipping shops get sales channels and platforms, wholesale shops get customers', function () {
+    $dropshipping = Shop::factory()->make(['type' => ShopTypeEnum::DROPSHIPPING]);
+    $wholesale    = Shop::factory()->make(['type' => ShopTypeEnum::B2B]);
+
+    expect(array_keys(ShopDashboardSectionsEnum::navigation($dropshipping)))->toBe(['target', 'sales_channels', 'platforms', 'tendencies'])
+        ->and(array_keys(ShopDashboardSectionsEnum::navigation($wholesale)))->toBe(['target', 'customers', 'tendencies'])
+        ->and(ShopDashboardSectionsEnum::current($wholesale, ['shop_dashboard_section' => 'platforms']))->toBe('target')
+        ->and(ShopDashboardSectionsEnum::current($dropshipping, ['shop_dashboard_section' => 'platforms']))->toBe('platforms');
 });

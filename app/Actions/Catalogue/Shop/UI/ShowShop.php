@@ -8,6 +8,8 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
@@ -80,6 +82,11 @@ class ShowShop extends OrgAction
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                     ],
+                    'sections'        => [
+                        'navigation' => ShopDashboardSectionsEnum::navigation($shop),
+                        'current'    => ShopDashboardSectionsEnum::current($shop, $userSettings),
+                    ],
+                    'month_target' => GetShopMonthSalesTarget::run($shop, $request->user()),
                     'shop_blocks' => [
                         'interval_data'        => $shopTimeSeriesStats,
                         'currency_code'        => $shop->currency->code,

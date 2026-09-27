@@ -226,7 +226,7 @@ const updateTab = (value: string) => {
 						<Tab
 							@click="() => updateTab(tabSlug)"
 							:value="tabSlug"
-							:class="tab.align === 'right' ? 'ml-auto' : ''"
+							:class="tab.align === 'right' ? '!ml-auto' : ''"
 							v-tooltip="tab.type === 'icon' ? tab.title : undefined"
 							:aria-label="tab.title"
 						>

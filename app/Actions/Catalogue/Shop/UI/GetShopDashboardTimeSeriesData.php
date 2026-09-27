@@ -7,6 +7,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\ProductCategory\GetDepartmentTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
 use App\Models\Catalogue\Shop;
@@ -49,6 +50,7 @@ class GetShopDashboardTimeSeriesData
         $data = [
             'shops'        => GetFormatedShopTimeSeriesStats::run($shop, $fromDate, $toDate, $includePartners),
             'brands'       => GetBrandTimeSeriesStats::run($shop, $fromDate, $toDate, $includePartners),
+            'departments'  => GetDepartmentTimeSeriesStats::run($shop, $fromDate, $toDate),
         ];
 
         if ($shop->type->value === 'dropshipping') {

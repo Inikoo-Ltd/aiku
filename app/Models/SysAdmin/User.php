@@ -36,6 +36,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\PasskeyAuthenticatable;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -388,6 +389,26 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     {
         return $this->authorisedShopOrganisations()->count() > 1
             || $this->authTo(['group-overview', 'sysadmin.view', 'goods.view', 'masters.view', 'supply-chain.view', 'organisations.view']);
+    }
+
+    /**
+     * Anyone whose work moves sales (masters, procurement, webmasters, shopkeepers,
+     * customer service, PPC, SEO, social, marketing, accounting) can see the group sales.
+     */
+    public function canViewSales(): bool
+    {
+        $holder = $this->permissionsHolder();
+
+        return Cache::tags('auth-user:'.$holder->id)->remember('can-view-sales', 3600, function () use ($holder) {
+            $holder->bindPermissionsTeam();
+
+            return $holder->getAllPermissions()->contains(
+                fn ($permission) => preg_match(
+                    '/^(group-overview|masters|group-webmaster|supply-chain|(shops-view|accounting|procurement|ppc|seo|social|shop-admin|products|web|crm|chat|chat-m|orders|discounts|marketing|supervisor-(products|crm|web|orders|discounts|marketing))\.\d+|org-supervisor\.\d+(\.(accounting|procurement|ppc|seo|social))?$)(\.|$)/',
+                    $permission->name
+                )
+            );
+        });
     }
 
     public function authorisedShops(): MorphToMany

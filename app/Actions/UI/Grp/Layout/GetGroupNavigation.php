@@ -245,7 +245,7 @@ class GetGroupNavigation
         }
 
         if (!$user->hasGroupAccess()) {
-            return Arr::only($groupNavigation, ['tickets']);
+            return Arr::only($groupNavigation, $user->canViewSales() ? ['dashboard', 'tickets'] : ['tickets']);
         }
 
         return $groupNavigation;
