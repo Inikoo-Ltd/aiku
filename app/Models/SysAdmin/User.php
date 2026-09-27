@@ -394,6 +394,7 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     /**
      * Anyone whose work moves sales (masters, procurement, webmasters, shopkeepers,
      * customer service, PPC, SEO, social, marketing, accounting) can see the group sales.
+     * Staff who only work for agents never see them through their organisation permissions.
      */
     public function canViewSales(): bool
     {
@@ -401,12 +402,13 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
 
         return Cache::tags('auth-user:'.$holder->id)->remember('can-view-sales', 3600, function () use ($holder) {
             $holder->bindPermissionsTeam();
+            $worksOnlyForAgents = $holder->authorisedAgentsOrganisations()->exists() && $holder->authorisedShopOrganisations()->doesntExist();
 
             return $holder->getAllPermissions()->contains(
                 fn ($permission) => preg_match(
                     '/^(group-overview|masters|group-webmaster|supply-chain|(shops-view|accounting|procurement|ppc|seo|social|shop-admin|products|web|crm|chat|chat-m|orders|discounts|marketing|supervisor-(products|crm|web|orders|discounts|marketing))\.\d+|org-supervisor\.\d+(\.(accounting|procurement|ppc|seo|social))?$)(\.|$)/',
                     $permission->name
-                )
+                ) && (!$worksOnlyForAgents || !preg_match('/\.\d+(\.|$)/', $permission->name))
             );
         });
     }
