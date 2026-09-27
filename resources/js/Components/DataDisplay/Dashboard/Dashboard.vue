@@ -93,7 +93,7 @@ const inSection = (...keys: string[]) => !sections.value || keys.includes(curren
 const PLATFORMS_TABLE = "ds_platforms"
 
 const SECTION_WIDGETS: Record<string, string[]> = {
-    sales: ["top_products", "top_families", "out_of_stock"],
+    sales: ["department_movers", "family_movers", "top_products", "top_families", "out_of_stock"],
     sales_channels: ["channels", "top_customers"],
     marketing: ["marketing", "email", "subscriptions", "top_webpages"],
 }

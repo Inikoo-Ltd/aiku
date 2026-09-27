@@ -1262,6 +1262,7 @@ test('shop customers tab reads the hydrated snapshot and matches sister shop buy
 
     expect($data['base'])->toHaveKeys(['ordered', 'active', 'losing', 'lost', 'never_ordered'])
         ->and($data['this_month'])->toHaveKeys(['registrations', 'registrations_with_orders'])
+        ->and($data['problems'])->toHaveKeys(['conversations', 'classified', 'problems', 'by_topic'])
         ->and($data['sister_shops']['shared_buyers'])->toBeGreaterThanOrEqual(1)
         ->and(collect($data['sister_shops']['shops'])->pluck('code'))->toContain($otherShop->code);
 
@@ -1272,9 +1273,9 @@ test('shop customers tab reads the hydrated snapshot and matches sister shop buy
 });
 
 test('shop dashboard widgets compute only the widgets a tab asks for', function () {
-    $response = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'only' => 'top_products,top_families']))
+    $response = getJson(route('grp.org.shops.show.dashboard.widgets', [$this->organisation->slug, $this->shop->slug, 'only' => 'top_products,top_families,department_movers,family_movers,out_of_stock']))
         ->assertOk();
 
-    expect($response->json())->toHaveKeys(['top_products', 'top_families', 'routes'])
+    expect($response->json())->toHaveKeys(['top_products', 'top_families', 'department_movers.growing', 'department_movers.falling', 'family_movers.period', 'out_of_stock.products', 'out_of_stock.estimated_lost', 'out_of_stock.rows', 'routes'])
         ->not->toHaveKeys(['marketing', 'email', 'channels']);
 });

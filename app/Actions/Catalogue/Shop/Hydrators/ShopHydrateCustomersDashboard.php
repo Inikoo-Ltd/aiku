@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\GetTopCustomersStats;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
+use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
@@ -31,6 +32,16 @@ class ShopHydrateCustomersDashboard implements ShouldBeUnique
     use AsAction;
 
     private const int LIMIT = 10;
+
+    /**
+     * Chat topics that mean something went wrong for the customer, as opposed to a question.
+     */
+    public const array PROBLEM_TOPICS = [
+        ChatTopicEnum::MISSING_OR_DAMAGED->value,
+        ChatTopicEnum::RETURN_REFUND->value,
+        ChatTopicEnum::COMPLAINT->value,
+        ChatTopicEnum::WEBSITE_PROBLEM->value,
+    ];
 
     public string $commandSignature = 'hydrate:shop-customers-dashboard {shop? : shop slug}';
 
@@ -82,6 +93,7 @@ class ShopHydrateCustomersDashboard implements ShouldBeUnique
                         'invoices' => (int) $customer['invoices'],
                     ])->values()->all(),
                 'sister_shops'  => $this->sisterShops($shop),
+                'problems'      => $this->problems($shop, $today),
             ]),
             'customers_dashboard_hydrated_at' => now(),
         ]);
@@ -167,6 +179,42 @@ class ShopHydrateCustomersDashboard implements ShouldBeUnique
                     'shops'       => $rows->map(fn ($row) => $shops[$row->shop_id]?->code)->filter()->unique()->values()->all(),
                 ])
                 ->sortByDesc('sales_there')->take(self::LIMIT)->values()->all(),
+        ];
+    }
+
+    /**
+     * Chats and emails of the last 30 days whose topic is a problem, by topic and channel. Topics
+     * come from the AI summary of each conversation, so unclassified ones are counted apart.
+     */
+    private function problems(Shop $shop, \Illuminate\Support\Carbon $today): array
+    {
+        $rows = DB::table('chat_sessions')
+            ->where('shop_id', $shop->id)
+            ->whereNull('deleted_at')
+            ->where(fn ($query) => $query->whereNull('is_spam')->orWhere('is_spam', false))
+            ->where(fn ($query) => $query->whereNull('is_rubbish')->orWhere('is_rubbish', false))
+            ->where('created_at', '>=', $today->copy()->subDays(30))
+            ->selectRaw('topic, channel, count(*) as conversations')
+            ->groupBy('topic', 'channel')
+            ->get();
+
+        $problems = $rows->whereIn('topic', self::PROBLEM_TOPICS);
+
+        return [
+            'days'          => 30,
+            'conversations' => (int) $rows->sum('conversations'),
+            'classified'    => (int) $rows->whereNotNull('topic')->sum('conversations'),
+            'problems'      => (int) $problems->sum('conversations'),
+            'by_topic'      => collect(self::PROBLEM_TOPICS)
+                ->map(fn (string $topic) => [
+                    'topic'   => $topic,
+                    'label'   => ChatTopicEnum::from($topic)->label(),
+                    'chat'    => (int) $problems->where('topic', $topic)->where('channel', '!=', 'email')->sum('conversations'),
+                    'email'   => (int) $problems->where('topic', $topic)->where('channel', 'email')->sum('conversations'),
+                ])
+                ->filter(fn (array $row) => $row['chat'] + $row['email'] > 0)
+                ->sortByDesc(fn (array $row) => $row['chat'] + $row['email'])
+                ->values()->all(),
         ];
     }
 

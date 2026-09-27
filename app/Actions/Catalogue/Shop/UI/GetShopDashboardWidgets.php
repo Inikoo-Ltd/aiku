@@ -53,7 +53,7 @@ class GetShopDashboardWidgets extends OrgAction
 
     private string $recordFrequency = 'D';
 
-    public const array WIDGETS = ['channels', 'top_customers', 'top_products', 'top_families', 'out_of_stock', 'email', 'marketing', 'top_webpages', 'subscriptions'];
+    public const array WIDGETS = ['department_movers', 'family_movers', 'channels', 'top_customers', 'top_products', 'top_families', 'out_of_stock', 'email', 'marketing', 'top_webpages', 'subscriptions'];
 
     /**
      * @param array<string>|null $only the widgets to compute; a tab asks only for its own, so the
@@ -67,6 +67,8 @@ class GetShopDashboardWidgets extends OrgAction
         $this->recordFrequency = $this->from ? 'D' : 'Y';
 
         $widgets = [
+            'department_movers' => fn () => $this->categoryMovers($shop, ProductCategoryTypeEnum::DEPARTMENT),
+            'family_movers'     => fn () => $this->categoryMovers($shop, ProductCategoryTypeEnum::FAMILY),
             'channels'      => fn () => $this->salesByChannel($shop),
             'top_customers' => fn () => $this->topCustomers($shop, $fromDate, $toDate),
             'top_products'  => fn () => $this->topProducts($shop),
@@ -196,25 +198,121 @@ class GetShopDashboardWidgets extends OrgAction
     }
 
     /**
-     * Out-of-stock products that sold most in the period, with the newest open purchase order line
-     * for any of their org stocks. There is no supplier lead time in the data, so "ETA" is the honest
-     * replenishment status: on order / dispatched with the order date, or not on order at all.
+     * The departments or families whose sales rose or fell most, month to date against the same
+     * days a year earlier. In the first week the month is too young to say anything, so it
+     * compares the whole of last month instead. Fixed window: the period picker does not apply.
+     *
+     * @return array{period: string, from: string, to: string, growing: array, falling: array}
+     */
+    private function categoryMovers(Shop $shop, ProductCategoryTypeEnum $type): array
+    {
+        $today = now('UTC')->startOfDay();
+
+        if ($today->day < 7) {
+            $from   = $today->copy()->subMonthNoOverflow()->startOfMonth();
+            $to     = $from->copy()->endOfMonth();
+            $period = 'last_month';
+        } else {
+            $from   = $today->copy()->startOfMonth();
+            $to     = $today;
+            $period = 'month_to_date';
+        }
+
+        $current  = $this->categorySales($shop, $type, $from, $to);
+        $lastYear = $this->categorySales($shop, $type, $from->copy()->subYear(), $to->copy()->subYear());
+
+        $rows = $current->keys()->merge($lastYear->keys())->unique()
+            ->map(function ($id) use ($current, $lastYear) {
+                $category = $current->get($id) ?? $lastYear->get($id);
+                $sales    = (float) ($current->get($id)?->sales ?? 0);
+                $before   = (float) ($lastYear->get($id)?->sales ?? 0);
+
+                return [
+                    'slug'            => $category->slug,
+                    'code'            => $category->code,
+                    'name'            => $category->name,
+                    'sales'           => round($sales, 2),
+                    'sales_last_year' => round($before, 2),
+                    'change'          => round($sales - $before, 2),
+                ];
+            });
+
+        return [
+            'period'  => $period,
+            'from'    => $from->toDateString(),
+            'to'      => $to->toDateString(),
+            'growing' => $rows->where('change', '>', 0)->sortByDesc('change')->take(5)->values()->all(),
+            'falling' => $rows->where('change', '<', 0)->sortBy('change')->take(5)->values()->all(),
+        ];
+    }
+
+    private function categorySales(Shop $shop, ProductCategoryTypeEnum $type, Carbon $from, Carbon $to): \Illuminate\Support\Collection
+    {
+        return DB::table('product_category_time_series_records as r')
+            ->join('product_category_time_series as t', 't.id', '=', 'r.product_category_time_series_id')
+            ->join('product_categories as c', 'c.id', '=', 't.product_category_id')
+            ->where('c.shop_id', $shop->id)
+            ->where('c.type', $type->value)
+            ->where('t.frequency', TimeSeriesFrequencyEnum::DAILY->value)
+            ->where('r.frequency', 'D')
+            ->whereBetween('r.from', [$from->toDateString(), $to->toDateString()])
+            ->groupBy('c.id', 'c.slug', 'c.code', 'c.name')
+            ->selectRaw('c.id, c.slug, c.code, c.name, sum(r.sales_external) as sales')
+            ->get()
+            ->keyBy('id');
+    }
+
+    /**
+     * Every product out of stock right now, with how long it has been out and an estimate of the
+     * sales lost meanwhile: its average daily sales over the 90 days before it ran out, times the
+     * days it has been out. Ranked by that estimate, with the newest open purchase order line as
+     * the replenishment status (there is no supplier lead time in the data to give a real ETA).
+     *
+     * @return array{products: int, estimated_lost: float, rows: array}
      */
     private function outOfStockBestSellers(Shop $shop): array
     {
-        $products = $this->assetSalesQuery($shop)
+        $today = now('UTC')->startOfDay();
+
+        $outOfStock = DB::table('products as p')
+            ->where('p.shop_id', $shop->id)
             ->where('p.state', ProductStateEnum::ACTIVE->value)
             ->where('p.status', ProductStatusEnum::OUT_OF_STOCK->value)
-            ->get();
+            ->whereNull('p.deleted_at')
+            ->get(['p.id', 'p.asset_id', 'p.slug', 'p.code', 'p.name', 'p.out_of_stock_since']);
 
-        if ($products->isEmpty()) {
-            return [];
+        if ($outOfStock->isEmpty()) {
+            return ['products' => 0, 'estimated_lost' => 0, 'rows' => []];
         }
+
+        $salesBefore = DB::table('products as p')
+            ->join('asset_time_series as t', 't.asset_id', '=', 'p.asset_id')
+            ->join('asset_time_series_records as r', 'r.asset_time_series_id', '=', 't.id')
+            ->whereIn('p.id', $outOfStock->pluck('id'))
+            ->whereNotNull('p.out_of_stock_since')
+            ->where('t.frequency', TimeSeriesFrequencyEnum::DAILY->value)
+            ->where('r.frequency', 'D')
+            ->whereRaw("r.from >= (p.out_of_stock_since::date - interval '90 days') and r.from < p.out_of_stock_since::date")
+            ->groupBy('p.id')
+            ->selectRaw('p.id, sum(r.sales_external) as sales')
+            ->pluck('sales', 'p.id');
+
+        $products = $outOfStock->map(function ($product) use ($salesBefore, $today) {
+            $since   = $product->out_of_stock_since ? Carbon::parse($product->out_of_stock_since)->startOfDay() : null;
+            $daysOut = $since ? (int) $since->diffInDays($today) : null;
+
+            $product->days_out       = $daysOut;
+            $product->estimated_lost = $daysOut ? round((float) ($salesBefore[$product->id] ?? 0) / 90 * $daysOut, 2) : 0.0;
+
+            return $product;
+        });
+
+        $top = $products->where('estimated_lost', '>', 0)->sortByDesc('estimated_lost')->take(self::LIMIT);
 
         $openLines = DB::table('product_has_org_stocks as pos')
             ->join('purchase_order_transactions as pot', 'pot.org_stock_id', '=', 'pos.org_stock_id')
             ->join('purchase_orders as po', 'po.id', '=', 'pot.purchase_order_id')
-            ->whereIn('pos.product_id', $products->pluck('id'))
+            ->whereIn('pos.product_id', $top->pluck('id'))
             ->whereIn('pot.delivery_state', [
                 PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS->value,
                 PurchaseOrderTransactionDeliveryStateEnum::CONFIRMED->value,
@@ -227,23 +325,28 @@ class GetShopDashboardWidgets extends OrgAction
             ->unique('product_id')
             ->keyBy('product_id');
 
-        return $products->map(function ($row) use ($openLines) {
-            $line = $openLines->get($row->id);
+        return [
+            'products'       => $products->count(),
+            'estimated_lost' => round($products->sum('estimated_lost'), 2),
+            'rows'           => $top->map(function ($row) use ($openLines) {
+                $line = $openLines->get($row->id);
 
-            return [
-                'slug'     => $row->slug,
-                'code'     => $row->code,
-                'name'     => $row->name,
-                'sales'    => (float) $row->sales,
-                'sold'     => (float) $row->sold,
-                'on_order' => $line ? [
-                    'reference'      => $line->reference,
-                    'date'           => Carbon::parse($line->date)->toDateString(),
-                    'delivery_state' => $line->delivery_state,
-                    'quantity'       => (float) $line->quantity_ordered,
-                ] : null,
-            ];
-        })->values()->all();
+                return [
+                    'slug'               => $row->slug,
+                    'code'               => $row->code,
+                    'name'               => $row->name,
+                    'out_of_stock_since' => $row->out_of_stock_since ? Carbon::parse($row->out_of_stock_since)->toDateString() : null,
+                    'days_out'           => $row->days_out,
+                    'estimated_lost'     => $row->estimated_lost,
+                    'on_order'           => $line ? [
+                        'reference'      => $line->reference,
+                        'date'           => Carbon::parse($line->date)->toDateString(),
+                        'delivery_state' => $line->delivery_state,
+                        'quantity'       => (float) $line->quantity_ordered,
+                    ] : null,
+                ];
+            })->values()->all(),
+        ];
     }
 
     private function topWebpages(Shop $shop): array
@@ -301,6 +404,7 @@ class GetShopDashboardWidgets extends OrgAction
             'product'   => ['name' => 'grp.org.shops.show.catalogue.products.current_products.show', 'parameters' => $parameters],
             'families'  => ['name' => 'grp.org.shops.show.catalogue.families.index', 'parameters' => $parameters],
             'family'    => ['name' => 'grp.org.shops.show.catalogue.families.show', 'parameters' => $parameters],
+            'department' => ['name' => 'grp.org.shops.show.catalogue.departments.show', 'parameters' => $parameters],
             'marketing' => ['name' => 'grp.org.shops.show.marketing.dashboard', 'parameters' => $parameters],
             'mailshots' => ['name' => 'grp.org.shops.show.marketing.mailshots.index', 'parameters' => $parameters],
             'webpage'   => $shop->website ? ['name' => 'grp.org.shops.show.web.webpages.show', 'parameters' => array_merge($parameters, ['website' => $shop->website->slug])] : null,

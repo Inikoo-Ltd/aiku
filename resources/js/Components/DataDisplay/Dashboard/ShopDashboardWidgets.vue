@@ -7,9 +7,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArrowRight, faBoxOpen, faBullhorn, faCodeBranch, faCube, faEnvelope, faFolderOpen, faGlobe, faUserFriends, faUserPlus } from "@fal"
+import { faFolderTree, faArrowRight, faBoxOpen, faBullhorn, faCodeBranch, faCube, faEnvelope, faFolderOpen, faGlobe, faUserFriends, faUserPlus } from "@fal"
 
-library.add(faArrowRight, faBoxOpen, faBullhorn, faCodeBranch, faCube, faEnvelope, faFolderOpen, faGlobe, faUserFriends, faUserPlus)
+library.add(faFolderTree, faArrowRight, faBoxOpen, faBullhorn, faCodeBranch, faCube, faEnvelope, faFolderOpen, faGlobe, faUserFriends, faUserPlus)
 
 const props = defineProps<{
     fetchRoute: { name: string, parameters: Record<string, string> }
@@ -39,7 +39,12 @@ const fetchWidgets = async () => {
 onMounted(fetchWidgets)
 watch(() => props.interval, fetchWidgets)
 
-const money = (amount: number) => locale.currencyFormat(data.value?.currency_code, amount)
+const money = (amount: number) =>
+    new Intl.NumberFormat(undefined, { style: "currency", currency: data.value?.currency_code ?? "GBP", maximumFractionDigits: 0 }).format(Math.round(amount))
+const signedMoney = (amount: number) => (amount > 0 ? "+" : "−") + money(Math.abs(amount))
+const moversPeriod = (movers: any) => movers?.period === "last_month"
+    ? ctrans("Last month against the same month last year")
+    : ctrans("This month so far against the same days last year")
 const link = (key: string, param: string, value: string) => {
     const target = data.value?.routes?.[key]
     return target ? route(target.name, { ...target.parameters, [param]: value }) : null
@@ -60,11 +65,13 @@ const deliveryStateLabel = (state: string) => ({
 const cards = computed(() => allCards.value.filter((card) => shows(card.key)))
 
 const allCards = computed(() => [
+    { key: "department_movers", title: ctrans("Departments: biggest changes"), icon: "fal fa-folder-tree", rows: [...(data.value?.department_movers?.growing ?? []), ...(data.value?.department_movers?.falling ?? [])], movers: data.value?.department_movers, linkKey: "department" },
+    { key: "family_movers", title: ctrans("Families: biggest changes"), icon: "fal fa-folder-open", rows: [...(data.value?.family_movers?.growing ?? []), ...(data.value?.family_movers?.falling ?? [])], movers: data.value?.family_movers, linkKey: "family" },
     { key: "channels", title: ctrans("Sales by channel"), icon: "fal fa-code-branch", rows: data.value?.channels ?? [] },
     { key: "top_customers", title: ctrans("Top customers"), icon: "fal fa-user-friends", rows: data.value?.top_customers ?? [], viewAll: "customers" },
     { key: "top_products", title: ctrans("Top products"), icon: "fal fa-cube", rows: data.value?.top_products ?? [], viewAll: "products" },
     { key: "top_families", title: ctrans("Top families"), icon: "fal fa-folder-open", rows: data.value?.top_families ?? [], viewAll: "families" },
-    { key: "out_of_stock", title: ctrans("Best sellers out of stock"), icon: "fal fa-box-open", rows: data.value?.out_of_stock ?? [] },
+    { key: "out_of_stock", title: ctrans("Out of stock: sales we are losing"), icon: "fal fa-box-open", rows: data.value?.out_of_stock?.rows ?? [] },
     { key: "top_webpages", title: ctrans("Most visited pages"), icon: "fal fa-globe", rows: data.value?.top_webpages ?? [] },
     { key: "marketing", title: ctrans("Best performing marketing"), icon: "fal fa-bullhorn", rows: data.value?.marketing?.channels ?? [], viewAll: "marketing" },
     { key: "email", title: ctrans("Email marketing"), icon: "fal fa-envelope", rows: data.value?.email?.mailshots ?? [], viewAll: "mailshots" },
@@ -125,13 +132,37 @@ const allCards = computed(() => [
                     <div><span class="font-semibold text-gray-700">{{ money(data.email.totals.attributed_revenue) }}</span><br />{{ ctrans("Revenue") }}</div>
                 </div>
 
+                <p v-if="card.key === 'out_of_stock' && data.out_of_stock?.products" class="-mt-2 mb-3 text-xs text-gray-500">
+                    {{ ctrans(":count products out of stock, about :amount of sales lost while out. Estimated from what each sold in the 90 days before it ran out.", { count: locale.number(data.out_of_stock.products), amount: money(data.out_of_stock.estimated_lost) }) }}
+                </p>
+
                 <div v-if="!card.rows.length" class="text-sm text-gray-400 italic flex-1 flex items-center justify-center">
                     {{ ctrans("Nothing in this period") }}
                 </div>
 
+                <div v-else-if="card.movers" class="text-sm">
+                    <p class="-mt-2 mb-3 text-xs text-gray-500">{{ moversPeriod(card.movers) }}</p>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div v-for="side in ['growing', 'falling']" :key="side">
+                            <p class="mb-1 text-xs font-semibold" :class="side === 'growing' ? 'text-green-700' : 'text-red-700'">
+                                {{ side === "growing" ? ctrans("Growing") : ctrans("Falling") }}
+                            </p>
+                            <p v-if="!card.movers[side].length" class="text-xs italic text-gray-400">{{ ctrans("None") }}</p>
+                            <ul v-else class="space-y-1">
+                                <li v-for="row in card.movers[side]" :key="row.slug" class="flex items-center justify-between gap-2">
+                                    <Link :href="link(card.linkKey, card.linkKey, row.slug)" class="min-w-0 truncate hover:underline" :title="row.name">{{ row.name }}</Link>
+                                    <span class="shrink-0 font-semibold tabular-nums" :class="side === 'growing' ? 'text-green-600' : 'text-red-600'" :title="ctrans(':now now, :before last year', { now: money(row.sales), before: money(row.sales_last_year) })">
+                                        {{ signedMoney(row.change) }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <ul v-else class="space-y-1.5 text-sm">
                     <li v-for="(row, index) in card.rows" :key="index" class="relative">
-                        <div class="absolute inset-y-0 left-0 rounded bg-indigo-100/70" :style="{ width: share(Number(row.sales ?? row.revenue ?? row.page_views ?? row.attributed_revenue ?? 0), card.rows, row.sales != null ? 'sales' : row.revenue != null ? 'revenue' : row.page_views != null ? 'page_views' : 'attributed_revenue') + '%' }" />
+                        <div class="absolute inset-y-0 left-0 rounded bg-indigo-100/70" :style="{ width: share(Number(row.sales ?? row.estimated_lost ?? row.revenue ?? row.page_views ?? row.attributed_revenue ?? 0), card.rows, row.sales != null ? 'sales' : row.estimated_lost != null ? 'estimated_lost' : row.revenue != null ? 'revenue' : row.page_views != null ? 'page_views' : 'attributed_revenue') + '%' }" />
                         <div class="relative flex items-center gap-2 px-1.5 py-0.5">
                             <span class="w-4 text-xs text-gray-400 text-right shrink-0">{{ index + 1 }}</span>
 
@@ -165,7 +196,8 @@ const allCards = computed(() => [
                                     {{ deliveryStateLabel(row.on_order.delivery_state) }} · {{ row.on_order.date }}
                                 </span>
                                 <span v-else class="text-xs shrink-0 rounded px-1.5 py-0.5 bg-red-100 text-red-700">{{ ctrans("Not on order") }}</span>
-                                <span class="font-semibold tabular-nums shrink-0">{{ money(row.sales) }}</span>
+                                <span class="text-xs text-gray-500 shrink-0" :title="row.out_of_stock_since">{{ ctrans(":days d", { days: String(row.days_out) }) }}</span>
+                                <span class="font-semibold tabular-nums shrink-0 text-red-600">−{{ money(row.estimated_lost) }}</span>
                             </template>
 
                             <template v-else-if="card.key === 'top_webpages'">

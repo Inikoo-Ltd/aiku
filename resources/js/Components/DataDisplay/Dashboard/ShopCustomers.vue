@@ -4,11 +4,11 @@ import { Link } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArrowRight, faExclamationTriangle, faAlarmClock, faSeedling, faCrown, faPeopleArrows } from "@fal"
+import { faArrowRight, faExclamationTriangle, faAlarmClock, faSeedling, faCrown, faPeopleArrows, faCommentExclamation } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
-library.add(faArrowRight, faExclamationTriangle, faAlarmClock, faSeedling, faCrown, faPeopleArrows)
+library.add(faArrowRight, faExclamationTriangle, faAlarmClock, faSeedling, faCrown, faPeopleArrows, faCommentExclamation)
 
 interface CustomerRow {
     slug: string
@@ -30,8 +30,17 @@ interface SisterShops {
     top: { slug: string, name: string, sales_here: number, sales_there: number, shops: string[] }[]
 }
 
+interface Problems {
+    days: number
+    conversations: number
+    classified: number
+    problems: number
+    by_topic: { topic: string, label: string, chat: number, email: number }[]
+}
+
 interface CustomersDashboard {
     pending?: boolean
+    problems?: Problems
     hydrated_at?: string
     sister_shops?: SisterShops
     currency_code: string
@@ -51,7 +60,8 @@ const props = defineProps<{
 
 const locale = inject("locale", aikuLocaleStructure)
 
-const money = (amount: number, currency?: string) => locale.currencyFormat(currency ?? props.data?.currency_code, Math.round(amount))
+const money = (amount: number, currency?: string) =>
+    new Intl.NumberFormat(undefined, { style: "currency", currency: currency ?? props.data?.currency_code ?? "GBP", maximumFractionDigits: 0 }).format(Math.round(amount))
 const sister = computed(() => props.data?.sister_shops)
 const sisterShare = computed(() => (sister.value?.buyers ? Math.round((sister.value.shared_buyers / sister.value.buyers) * 100) : 0))
 const count = (value: number) => locale.number(value)
@@ -158,6 +168,39 @@ const lists = computed(() => props.data ? [
             ·
             <Link :href="route(data.routes.customers.name, data.routes.customers.parameters)" class="text-indigo-600 hover:underline">{{ ctrans("All customers") }}</Link>
         </p>
+
+        <div v-if="data.problems" class="rounded-lg border bg-white p-4 shadow-sm">
+            <p class="flex items-center gap-2 text-lg font-bold">
+                <FontAwesomeIcon icon="fal fa-comment-exclamation" fixed-width class="text-gray-400" aria-hidden="true" />
+                {{ ctrans("Problems customers told us about") }}
+                <span class="text-sm font-normal text-gray-400">{{ ctrans("last :days days, chat and email", { days: String(data.problems.days) }) }}</span>
+            </p>
+            <p class="mb-3 text-xs text-gray-500">
+                {{ ctrans(":problems of :classified conversations were about a problem.", { problems: count(data.problems.problems), classified: count(data.problems.classified) }) }}
+                <template v-if="data.problems.conversations > data.problems.classified">
+                    {{ ctrans(":count more are not sorted by topic yet.", { count: count(data.problems.conversations - data.problems.classified) }) }}
+                </template>
+            </p>
+            <p v-if="!data.problems.by_topic.length" class="text-sm italic text-gray-400">{{ ctrans("No problems reported") }}</p>
+            <table v-else class="text-sm tabular-nums">
+                <thead>
+                    <tr class="text-xs text-gray-400">
+                        <th class="py-1 pr-6 text-left font-normal"></th>
+                        <th class="py-1 pr-6 text-right font-normal">{{ ctrans("Chat") }}</th>
+                        <th class="py-1 pr-6 text-right font-normal">{{ ctrans("Email") }}</th>
+                        <th class="py-1 text-right font-normal">{{ ctrans("Total") }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="row in data.problems.by_topic" :key="row.topic">
+                        <td class="py-1 pr-6">{{ row.label }}</td>
+                        <td class="py-1 pr-6 text-right">{{ count(row.chat) }}</td>
+                        <td class="py-1 pr-6 text-right">{{ count(row.email) }}</td>
+                        <td class="py-1 text-right font-semibold">{{ count(row.chat + row.email) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
         <div class="grid gap-4 md:grid-cols-2">
             <div v-for="list in lists" :key="list.key" class="flex flex-col rounded-lg border bg-white p-4 shadow-sm">
