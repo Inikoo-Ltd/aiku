@@ -124,6 +124,9 @@ const onUpdateQuantity = (item: any, value: number) => {
 
 const debounceUpdateQuantity = debounce(
     (item: any, value: number) => {
+        if (!Number.isInteger(value) || value < 0 || value === Number(item.quantity_ordered)) {
+            return
+        }
         onUpdateQuantity(item, value)
     },
     500
