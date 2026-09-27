@@ -15,6 +15,7 @@ use App\Models\DevOps\AppDeployment;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -86,8 +87,13 @@ class StoreAppDeployment
 
     private function currentTag(string $path): ?string
     {
-        $process = new Process(['git', 'describe', '--tags', '--abbrev=0'], $path);
-        $process->run();
+        $process = new Process(['git', 'describe', '--tags', '--abbrev=0'], $path, timeout: 15);
+
+        try {
+            $process->run();
+        } catch (ProcessTimedOutException) {
+            return null;
+        }
 
         if (! $process->isSuccessful()) {
             return null;
