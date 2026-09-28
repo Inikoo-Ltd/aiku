@@ -49,6 +49,7 @@ const props = defineProps<{
     },
     currency_code: string
     stock_issues?: StockIssues
+    is_gift_message_missing?: boolean
     earlier_delivery_address?: { previous_address: string, previous_address_line: string, previous_order_reference: string, current_address_line: string, confirmed: boolean, actions: { confirm_route: routeType, use_previous_route: routeType } | null } | null
 }>()
 
@@ -130,8 +131,20 @@ const locale = inject("locale", aikuLocaleStructure)
             class="md:px-4 !px-0"
         />
 
+        <div v-if="is_gift_message_missing" class="mt-10 md:mx-10 flex flex-col items-center gap-y-3 border border-amber-300 bg-amber-50 text-amber-700 rounded px-4 py-5 text-center">
+            <div class="flex items-start gap-x-2">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-1" fixed-width aria-hidden="true" />
+                <span>{{ trans("Write a gift message or upload a PDF before placing the order.") }}</span>
+            </div>
+            <ButtonWithLink
+                :icon="faArrowLeft"
+                :label="trans('Back to basket')"
+                :routeTarget="routes.back_to_basket"
+            />
+        </div>
+
         <!-- If 'Total' is 0 or less -->
-        <div v-if="to_pay_data.total <= 0">
+        <div v-else-if="to_pay_data.total <= 0">
             <EmptyState
                 :data="{
                     title: trans('No item to checkout')

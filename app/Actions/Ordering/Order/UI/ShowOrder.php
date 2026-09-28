@@ -206,7 +206,7 @@ class ShowOrder extends OrgAction
                 "field"       => "gift_message",
                 "bgColor"       => "#ececec",
                 "pdf_preview" => $giftMessagePdf ? [
-                    "label" => $giftMessagePdf->file_name,
+                    "label" => $order->giftMessagePdfName() ?? __("Gift message"),
                     "route" => [
                         "name"       => "grp.media.download",
                         "parameters" => [

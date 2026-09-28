@@ -30,7 +30,7 @@ class UpdateRetinaOrderGiftMessagePdf extends RetinaAction
                 'path'         => $file->getPathName(),
                 'originalName' => $file->getClientOriginalName(),
                 'scope'        => 'GiftMessage',
-                'caption'      => 'Gift message',
+                'caption'      => $file->getClientOriginalName(),
                 'extension'    => $file->getClientOriginalExtension(),
             ]
         );

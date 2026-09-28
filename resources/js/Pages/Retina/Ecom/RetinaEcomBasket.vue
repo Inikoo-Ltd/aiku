@@ -70,6 +70,7 @@ const props = defineProps<{
         has_gift_message?: boolean
         gift_message?: string | null
         has_gift_message_pdf?: boolean
+        gift_message_pdf_name?: string | null
     }
     upcoming_transactions: {
         data: {
@@ -983,6 +984,7 @@ const onChangeInsurance = async (val: boolean) => {
                             ref="giftMessagePanel"
                             :giftMessage="order?.gift_message"
                             :hasGiftMessagePdf="order?.has_gift_message_pdf"
+                            :giftMessagePdfName="order?.gift_message_pdf_name"
                             :textRoute="{ name: 'retina.models.order.update', parameters: props.order.id }"
                             :pdfRoute="{ name: 'retina.models.order.update_gift_message_pdf', parameters: props.order.id }"
                             @uploaded="() => router.reload({ only: ['order'] })"

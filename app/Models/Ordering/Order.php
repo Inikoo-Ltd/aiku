@@ -431,6 +431,20 @@ class Order extends Model implements HasMedia, Auditable
         return 'slug';
     }
 
+    public function giftMessagePdfName(): ?string
+    {
+        $caption = $this->attachments()->wherePivot('scope', 'GiftMessage')->first()?->pivot->caption;
+
+        return $caption === 'Gift message' ? null : $caption;
+    }
+
+    public function isGiftMessageMissing(): bool
+    {
+        return $this->has_gift_message
+            && !$this->gift_message
+            && !$this->attachments()->wherePivot('scope', 'GiftMessage')->exists();
+    }
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
