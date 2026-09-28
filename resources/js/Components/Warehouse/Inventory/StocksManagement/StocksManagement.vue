@@ -413,9 +413,9 @@ const actionGridClass = computed(() => {
     return {
         1: 'xl:grid-cols-1',
         2: 'xl:grid-cols-2',
-        3: 'xl:grid-cols-3',
-        4: 'xl:grid-cols-4',
-    }[count] ?? 'xl:grid-cols-4'
+        3: '2xl:grid-cols-3',
+        4: '2xl:grid-cols-4',
+    }[count] ?? '2xl:grid-cols-4'
 })
 
 const isStockCheckModalOpen = ref(false)
@@ -515,7 +515,7 @@ const onAddLocationShow = () => {
         <!-- Header Section -->
         <div class="flex items-center justify-between">
             <span>
-                <h2 v-if="header_title" class="text-xl font-bold flex items-center gap-2">
+                <h2 v-if="header_title" class="text-xs font-medium uppercase tracking-wide text-gray-400 flex items-center gap-2">
                     {{ header_title }}
                     <!-- <FontAwesomeIcon :icon="faBox"></FontAwesomeIcon> Active -->
                 </h2>

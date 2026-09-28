@@ -182,6 +182,8 @@ class GetTradeUnitShowcase
             'oxidising' => $tradeUnit->pictogram_oxidising,
         ];
 
+        $brand = $tradeUnit->brand();
+
         return [
             'properties' => $properties,
             'gpsr'  => $gpsr,
@@ -196,6 +198,10 @@ class GetTradeUnitShowcase
             'tradeUnit' => TradeUnitResource::make($tradeUnit)->toArray(request()),
             'brand_routes' => $brandRoute,
             'brand' => $tradeUnit->brand(),
+            'brand_badge' => $brand ? [
+                'name'  => $brand->name,
+                'image' => $brand->imageSources(48, 48),
+            ] : null,
             'tag_routes' => $tagRoute,
             'main_image'      => $tradeUnit->imageSources(),
             'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),

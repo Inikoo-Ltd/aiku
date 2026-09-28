@@ -2,7 +2,7 @@
 import { ref, inject } from 'vue'
 import { faDollarSign, faImage, faUnlink, faGlobe } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { router } from '@inertiajs/vue3'
 
@@ -61,15 +61,15 @@ const UnassignCollectionFormWebpage = async (id: number) => {
   router.delete(url, {
     onError: (error) => {
       notify({
-        title: trans("Something went wrong."),
-        text: error?.products || trans("Failed to remove collection."),
+        title: ctrans("Something went wrong."),
+        text: error?.products || ctrans("Failed to remove collection."),
         type: "error",
       })
     },
     onSuccess: () => {
       notify({
-        title: trans("Success!"),
-        text: trans("Parent has been removed."),
+        title: ctrans("Success!"),
+        text: ctrans("Parent has been removed."),
         type: "success",
       })
     },
@@ -90,8 +90,8 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
       preserveScroll: true,
       onSuccess: () => {
         notify({
-          title: trans('Success!'),
-          text: trans('edit Webpages  successfully.'),
+          title: ctrans('Success!'),
+          text: ctrans('edit Webpages  successfully.'),
           type: 'success',
         })
         isModalOpenDepartment.value = false
@@ -99,8 +99,8 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
       },
       onError: (errors) => {
         notify({
-          title: trans('Error'),
-          text: errors?.ids || trans('Failed edit webpages.'),
+          title: ctrans('Error'),
+          text: errors?.ids || ctrans('Failed edit webpages.'),
           type: 'error',
         })
       },
@@ -116,7 +116,9 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
   <div class="p-4 space-y-6">
     <div class="grid lg:grid-cols-[30%_40%_30%] gap-4 max-w-6xl">
       <!-- Info Card -->
-      <ProductCategoryCard :data="data" />
+      <div>
+        <ProductCategoryCard :data="data" />
+      </div>
 
       <!-- Department List -->
       <div class="space-y-6">
@@ -124,7 +126,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
           <div>
             <div class="flex items-center justify-between">
-              <h2 class="text-sm font-semibold text-gray-800">{{trans('Belongs to Department')}}</h2>
+              <h2 class="text-sm font-semibold text-gray-800">{{ctrans('Belongs to Department')}}</h2>
               <Button type="create" size="xs" v-if="data?.can_edit" @click="isModalOpenDepartment = true" :label="'Department'" />
             </div>
             <hr class="mt-2 border-gray-200" />
@@ -143,7 +145,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             </div>
           </div>
           <div v-else class="text-xs text-gray-400 italic text-center py-2">
-            {{trans('No parent departments assigned.')}}
+            {{ctrans('No parent departments assigned.')}}
           </div>
         </div>
 
@@ -151,7 +153,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
           <div>
             <div class="flex items-center justify-between">
-              <h2 class="text-sm font-semibold text-gray-800">{{trans('Belongs to Sub Department')}}</h2>
+              <h2 class="text-sm font-semibold text-gray-800">{{ctrans('Belongs to Sub Department')}}</h2>
               <Button type="create" size="xs" v-if="data?.can_edit"  @click="isModalOpenSubDepartment = true" :label="'Sub-Department'" />
             </div>
             <hr class="mt-2 border-gray-200" />
@@ -170,7 +172,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             </div>
           </div>
           <div v-else class="text-xs text-gray-400 italic text-center py-2">
-            {{trans('No parent sub-department assigned.')}}
+            {{ctrans('No parent sub-department assigned.')}}
           </div>
         </div>
       </div>
@@ -184,14 +186,14 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
 
   <!-- Modals -->
   <Modal :isOpen="isModalOpenDepartment" @onClose="isModalOpenDepartment = false" width="w-full max-w-6xl">
-    <CollectionSelector :headLabel="`${trans('Add Department to collection')}`" :routeFetch="{
+    <CollectionSelector :headLabel="`${ctrans('Add Department to collection')}`" :routeFetch="{
       name: data.routes.departments_route.name,
       parameters: data.routes.departments_route.parameters
     }" :isLoadingSubmit="loading" @submit="(ids)=>attachToparent('departments',ids)" />
   </Modal>
 
   <Modal :isOpen="isModalOpenSubDepartment" @onClose="isModalOpenSubDepartment = false" width="w-full max-w-6xl">
-    <CollectionSelector :headLabel="`${trans('Add Sub-Department to collection')}`" :routeFetch="{
+    <CollectionSelector :headLabel="`${ctrans('Add Sub-Department to collection')}`" :routeFetch="{
       name: data.routes.sub_departments_route.name,
       parameters: data.routes.sub_departments_route.parameters
     }" :isLoadingSubmit="loading" @submit="(ids)=>attachToparent('sub_departments',ids)" />

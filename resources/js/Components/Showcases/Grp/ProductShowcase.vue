@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import ImagePrime from "primevue/image"
+import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
 import { ref, computed, inject } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo} from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle, faTimesCircle } from "@fas"
@@ -10,7 +11,6 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { faImage } from "@far"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -236,7 +236,7 @@ const getTooltips = () => {
 
 	<!-- The right sidebar (prices, analytics) always keeps its width; the content area
 	     gets the rest, with the image beside the summary only when there is room -->
-	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mx-0 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
+	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mr-0 lg:ml-5 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
 		<!-- Content: image + summary. The summary is capped; spare width goes first to
 		     the image column (up to its own cap), the rest stays as breathing room -->
 		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
@@ -249,27 +249,12 @@ const getTooltips = () => {
 			</dd> -->
 
 			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white   p-4 lg:p-5">
-				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
+			<ProductCategoryCard :data="data.product.data">
+				<template v-if="props.data?.main_image?.webp" #image>
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
-						class="min-h-60" />
-					<!-- <div class="text-sm italic text-gray-500">
-						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div> -->
-				</div>
-				<div v-else>
-					<div
-						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
-						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
-					</div>
-					<!-- <div class="mt-2 text-sm italic text-gray-500">
-						Manage images in tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div> -->
-				</div>
-			</div>
+						class="block w-full" imageClass="w-full aspect-square object-contain" />
+				</template>
+			</ProductCategoryCard>
 		</div>
 
 		<!-- Product Summary -->
