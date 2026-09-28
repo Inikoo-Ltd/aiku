@@ -8,8 +8,10 @@
 import Multiselect from '@vueform/multiselect'
 import "@vueform/multiselect/themes/default.css"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import { computed } from 'vue'
+import { useCountriesAddressData } from '@/Composables/useCountriesAddressData'
 
 const props = defineProps<{
     modelValue: Address
@@ -17,21 +19,25 @@ const props = defineProps<{
     fieldLabel?: boolean
 }>()
 
-const countries = {}
+const fetchedCountriesAddressData = props.options?.countriesAddressData ? null : useCountriesAddressData()
 
-for (const item in props.options.countriesAddressData) {
-    // "1": "Bangladesh (BD)"
-    countries[item] = props.options.countriesAddressData[item]['label']
-}
+const countriesAddressData = computed(() => props.options?.countriesAddressData ?? fetchedCountriesAddressData?.value ?? {})
 
-const administrativeAreas = (countryID: number) => props.options.countriesAddressData[countryID]['administrativeAreas']
+const countries = computed(() => {
+    const labels = {}
+    for (const item in countriesAddressData.value) {
+        labels[item] = countriesAddressData.value[item]['label']
+    }
+    return labels
+})
+
+const administrativeAreas = (countryID: number) => countriesAddressData.value[countryID]?.administrativeAreas ?? []
 const inAdministrativeAreas = (administrativeArea: string, countryID: number) => {
-    return !!props.options.countriesAddressData[countryID].administrativeAreas.find(c => c.name === administrativeArea)
+    return !!administrativeAreas(countryID).find(c => c.name === administrativeArea)
 }
 
-// Return the fields of the selected country
 const addressFields = (countryID: number) => {
-    return props.options.countriesAddressData?.[countryID]?.fields
+    return countriesAddressData.value[countryID]?.fields
 }
 
 </script>
@@ -42,7 +48,7 @@ const addressFields = (countryID: number) => {
         <!-- Country Options -->
         <div v-if="fieldLabel" class="col-span-2">
             <label for="selectCountry" class="mb-1 block text-xs font-medium">
-                {{ trans('Label') }}
+                {{ ctrans('Label') }}
             </label>
             <PureInput v-model="modelValue.label" placeholder="Enter address name" />
         </div>
@@ -50,7 +56,7 @@ const addressFields = (countryID: number) => {
         <!-- Country Options -->
         <div class="col-span-2">
             <label for="selectCountry" class="mb-1 block text-xs font-medium">
-                {{ trans('Country') }}
+                {{ ctrans('Country') }}
             </label>
             <Multiselect v-model="modelValue.country_id" searchable :options="countries" placeholder="Select a country" :canDeselect="false" :canClear="false" />
         </div>

@@ -26,7 +26,7 @@ export interface Address {
 }
 
 export interface AddressOptions {
-    countriesAddressData: {
+    countriesAddressData?: {
         [key: string]: {
             administrativeAreas: []
             fields: {
