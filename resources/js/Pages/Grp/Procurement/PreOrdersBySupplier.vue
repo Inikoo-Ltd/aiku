@@ -89,8 +89,10 @@ const submit = (operation: string, preOrderIds: number[], confirmText: string) =
 
     <div v-else class="p-4 space-y-3">
         <div v-for="(supplier, index) in suppliers" :key="supplier.org_supplier_id ?? 'none'" class="rounded border border-gray-200">
-            <div class="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 cursor-pointer hover:bg-gray-50" @click="openSupplier = openSupplier === index ? null : index">
-                <div class="font-semibold min-w-48">{{ supplier.supplier_name }}</div>
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3">
+                <button type="button" class="font-semibold min-w-48 text-left hover:underline" :aria-expanded="openSupplier === index" @click="openSupplier = openSupplier === index ? null : index">
+                    {{ supplier.supplier_name }}
+                </button>
                 <div class="text-sm">{{ ctrans(":count pre-orders", { count: String(supplier.number_pre_orders) }) }}</div>
                 <div class="text-sm">{{ ctrans("Quantity") }}: <b>{{ supplier.quantity }}</b></div>
                 <div class="text-sm">{{ ctrans("Sales value") }}: <b>{{ locale.currencyFormat(currency, supplier.sales_value) }}</b></div>
@@ -102,7 +104,7 @@ const submit = (operation: string, preOrderIds: number[], confirmText: string) =
                     </span>
                 </div>
                 <div class="text-sm">{{ ctrans("Order by") }}: <b>{{ formatDate(supplier.order_by_date) }}</b></div>
-                <div v-if="can_edit" class="ml-auto flex gap-2" @click.stop>
+                <div v-if="can_edit" class="ml-auto flex gap-2">
                     <Button v-if="supplier.not_ordered_ids.length" size="xs" type="secondary" :loading="isSubmitting"
                         :label="ctrans('Mark supplier ordered')"
                         @click="submit('supplier_ordered', supplier.not_ordered_ids, ctrans('Mark these pre-orders as ordered from the supplier? Trade customers then lose the made-to-order deposit if they cancel.'))" />

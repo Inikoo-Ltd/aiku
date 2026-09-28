@@ -146,7 +146,7 @@ class GetBasketPreOrders
     {
         ksort($lines);
 
-        return md5(json_encode([
+        return hash('sha256', json_encode([
             array_map(fn ($line) => [$line['transaction_id'], $line['pre_order_quantity'], $line['type']], array_values($lines)),
             $terms,
         ]));

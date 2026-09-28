@@ -205,9 +205,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 );
             }
 
-            if ($preOrderNote = GetProductPreOrder::make()->lineNote(Arr::get($transaction->data, 'pre_order'))) {
-                $discountLabel .= '<br/><span style="display: inline-block; margin-top: 4px; padding: 2px 4px; font-size: 11px; font-weight: bold; color: #92400e; background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 3px;">'.e($preOrderNote).'</span>';
-            }
+            $discountLabel .= $this->preOrderLineNoteHtml($transaction->data);
 
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
@@ -365,6 +363,18 @@ class SendNewOrderEmailToCustomer extends OrgAction
         $html .= '</div>'; // Close padding wrapper
 
         return $html.$this->generatePreOrderHtml($order);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $transactionData
+     */
+    private function preOrderLineNoteHtml(?array $transactionData): string
+    {
+        $preOrderNote = GetProductPreOrder::make()->lineNote(Arr::get($transactionData, 'pre_order'));
+
+        return $preOrderNote
+            ? '<br/><span style="display: inline-block; margin-top: 4px; padding: 2px 4px; font-size: 11px; font-weight: bold; color: #92400e; background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 3px;">'.e($preOrderNote).'</span>'
+            : '';
     }
 
     /**

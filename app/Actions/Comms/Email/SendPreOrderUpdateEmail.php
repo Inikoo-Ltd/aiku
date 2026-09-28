@@ -171,6 +171,8 @@ class SendPreOrderUpdateEmail extends OrgAction
                     ? __(':currency :amount has been returned to your account balance.', ['currency' => $currency, 'amount' => number_format($refund, 2)])
                     : __('No refund is due under the pre-order terms.');
                 break;
+            default:
+                break;
         }
 
         $html = implode('', array_map(fn ($text) => '<p '.$paragraph.'>'.e($text).'</p>', $paragraphs));

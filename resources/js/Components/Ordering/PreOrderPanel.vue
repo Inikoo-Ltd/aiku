@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, ref } from "vue"
-import { router, Link } from "@inertiajs/vue3"
+import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
