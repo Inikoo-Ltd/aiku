@@ -462,7 +462,7 @@ const isModalProductForSale = ref(false)
 		</div>
 
         <!-- Sales Analytics - right sidebar -->
-        <div class="min-w-0">
+        <div class="min-w-0 h-fit ml-4 mr-2">
 			<div class="grid justify-items-end pr-3 pb-2 gap-2">
 				<ReuseMasterPriceBlock
 					:title="ctrans('Price / Outer')"

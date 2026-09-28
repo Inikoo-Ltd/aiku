@@ -240,41 +240,41 @@ const getTooltips = () => {
 	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mr-0 lg:ml-5 lg:grid-cols-[minmax(0,8fr)_minmax(385px,4fr)]">
 		<!-- Content: image + summary. The image column has its own cap; the summary takes the rest -->
 		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
-		<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]" v-if="data?.product?.data?.picking_factor?.length">
-			<!-- Product Tags -->
-			<!-- <dd v-if="data.tags && data.tags?.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
-				<span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
-					{{ tag.name }}
-				</span>
-			</dd> -->
+			<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]" v-if="data?.product?.data?.picking_factor?.length">
+				<!-- Product Tags -->
+				<!-- <dd v-if="data.tags && data.tags?.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
+					<span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'" class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+						{{ tag.name }}
+					</span>
+				</dd> -->
 
-			<!-- Image Preview & Thumbnails -->
-			<ProductCategoryCard subtle :data="data.product.data">
-				<template v-if="props.data?.main_image?.webp" #image>
-					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
-						class="block w-full" imageClass="w-full aspect-square object-contain" />
-				</template>
-			</ProductCategoryCard>
+				<!-- Image Preview & Thumbnails -->
+				<ProductCategoryCard subtle :data="data.product.data">
+					<template v-if="props.data?.main_image?.webp" #image>
+						<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
+							class="block w-full" imageClass="w-full aspect-square object-contain" />
+					</template>
+				</ProductCategoryCard>
+			</div>
+
+			<!-- Product Summary -->
+			<div class="min-w-0 flex-1">
+				<SummaryCard>
+					<ProductSummary
+						:noTradeUnit="!data?.product?.data?.picking_factor?.length"
+						:data="{...data.product.data, tags: data.tags, brands: data.brands}"
+						:properties="data.properties"
+						:parts="data.org_stocks"
+						:public-attachment="data.attachment_box.public"
+						:gpsr="data.gpsr"
+						:attachments="data.attachment_box"
+						:labelInfo="data.label_info"
+					/>
+				</SummaryCard>
+			</div>
 		</div>
 
-		<!-- Product Summary -->
-		<div class="min-w-0 flex-1">
-			<SummaryCard>
-				<ProductSummary
-					:noTradeUnit="!data?.product?.data?.picking_factor?.length"
-					:data="{...data.product.data, tags: data.tags, brands: data.brands}"
-					:properties="data.properties"
-					:parts="data.org_stocks"
-					:public-attachment="data.attachment_box.public"
-					:gpsr="data.gpsr"
-					:attachments="data.attachment_box"
-					:labelInfo="data.label_info"
-				/>
-			</SummaryCard>
-		</div>
-		</div>
-
-		<div class="min-w-0 bg-white h-fit mx-4 shadow-sm">
+		<div class="min-w-0 h-fit mx-4">
 			<div class="mb-4 flex items-center gap-3 px-2">
 				<span class="relative flex h-3 w-3 shrink-0">
 					<span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
