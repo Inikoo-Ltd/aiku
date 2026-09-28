@@ -97,6 +97,28 @@ class SendSupplierWhatsappMessage extends OrgAction
             ->exists();
     }
 
+    /**
+     * @return array{name: string, language: string|null, status: string|null, body: string|null}|null
+     */
+    public static function messageTemplate(Organisation $organisation): ?array
+    {
+        $whatsapp = Arr::get($organisation->settings, 'procurement.whatsapp', []);
+        $name     = Arr::get($whatsapp, 'message_template');
+
+        if (blank($name)) {
+            return null;
+        }
+
+        $template = Arr::get($whatsapp, 'message_template_meta.template');
+
+        return [
+            'name'     => $name,
+            'language' => Arr::get($template, 'language', Arr::get($whatsapp, 'template_language')),
+            'status'   => Arr::get($template, 'status'),
+            'body'     => Arr::get(collect(Arr::get($template, 'components', []))->firstWhere('type', 'BODY'), 'text'),
+        ];
+    }
+
     public static function isConnected(Organisation $organisation): bool
     {
         return filled(Arr::get($organisation->settings, 'procurement.whatsapp.phone_number_id'));
@@ -114,7 +136,8 @@ class SendSupplierWhatsappMessage extends OrgAction
     private function templatePayload(Organisation $organisation, string $text, ?string $mediaId, ?array $document, ?PurchaseOrder $purchaseOrder): array
     {
         $settings = Arr::get($organisation->settings, 'procurement.whatsapp', []);
-        $name     = $mediaId ? Arr::get($settings, 'purchase_order_template') : Arr::get($settings, 'message_template');
+        $key      = $mediaId ? 'purchase_order_template' : 'message_template';
+        $name     = Arr::get($settings, $key);
 
         if (blank($name)) {
             throw ValidationException::withMessages(['body' => __('The supplier has not written in the last 24 hours, so WhatsApp only accepts an approved template. Set one in Procurement settings.')]);
@@ -131,7 +154,7 @@ class SendSupplierWhatsappMessage extends OrgAction
 
         return ['type' => 'template', 'template' => [
             'name'       => $name,
-            'language'   => ['code' => Arr::get($settings, 'template_language', 'en')],
+            'language'   => ['code' => Arr::get($settings, "{$key}_meta.template.language") ?? Arr::get($settings, 'template_language') ?? 'en'],
             'components' => $components,
         ]];
     }

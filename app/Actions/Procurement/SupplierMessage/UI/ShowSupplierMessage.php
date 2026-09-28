@@ -174,6 +174,7 @@ class ShowSupplierMessage extends OrgAction
                     'counterpart' => $counterpart ? self::counterpartSummary($counterpart, $this->organisation)['key'] : null,
                     'window_open' => SendSupplierWhatsappMessage::isWindowOpen($this->organisation, (string) $supplierMessage->phone_number),
                     'has_template' => filled(Arr::get($this->organisation->settings, 'procurement.whatsapp.message_template')),
+                    'template'     => SendSupplierWhatsappMessage::messageTemplate($this->organisation),
                 ] : null) : ($canEdit && Arr::get($this->organisation->settings, 'procurement.gmail.email') ? [
                     'channel' => 'email',
                     'route'   => [
