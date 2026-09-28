@@ -41,7 +41,7 @@ class OrganisationHydrateInvoices implements ShouldBeUnique
                 enum: InvoiceTypeEnum::class,
                 models: Invoice::class,
                 where: function ($q) use ($organisation) {
-                    $q->where('organisation_id', $organisation->id);
+                    $q->where('organisation_id', $organisation->id)->where('in_process', false);
                 }
             )
         );

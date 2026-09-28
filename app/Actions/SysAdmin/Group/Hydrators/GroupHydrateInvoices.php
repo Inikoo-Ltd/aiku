@@ -42,7 +42,7 @@ class GroupHydrateInvoices implements ShouldBeUnique
                 enum: InvoiceTypeEnum::class,
                 models: Invoice::class,
                 where: function ($q) use ($group) {
-                    $q->where('group_id', $group->id);
+                    $q->where('group_id', $group->id)->where('in_process', false);
                 }
             )
         );
