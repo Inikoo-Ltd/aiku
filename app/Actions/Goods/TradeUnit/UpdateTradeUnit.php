@@ -154,6 +154,10 @@ class UpdateTradeUnit extends OrgAction
             data_set($modelData, 'label_info.label_info_approved', (bool) Arr::pull($modelData, 'label_info_approved'));
         }
 
+        if (Arr::has($modelData, 'show_net_quantity')) {
+            data_set($modelData, 'label_info.show_net_quantity', (bool) Arr::pull($modelData, 'show_net_quantity'));
+        }
+
         if (Arr::has($modelData, 'packaging_material_codes')) {
             data_set($modelData, 'label_info.packaging_material_codes.value', Arr::pull($modelData, 'packaging_material_codes') ?? []);
         }
@@ -364,6 +368,7 @@ class UpdateTradeUnit extends OrgAction
             'sorting_recycling_information' => ['sometimes', 'boolean'],
             'safety_icons'                  => ['sometimes', 'boolean'],
             'batch_number'                  => ['sometimes', 'boolean'],
+            'show_net_quantity'             => ['sometimes', 'boolean'],
             'markets'                       => ['sometimes', 'nullable', 'array'],
             'markets.*'                     => ['string', Rule::enum(TradeUnitMarketEnum::class)],
             'languages'                     => ['sometimes', 'nullable', 'array'],
