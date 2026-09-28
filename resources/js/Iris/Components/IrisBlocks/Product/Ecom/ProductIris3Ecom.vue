@@ -464,16 +464,16 @@ onMounted(async () => {
                         </div>
 
                         <button v-if="layout?.iris?.is_logged_in && product.stock <= 0 && layout?.outboxes?.oos_notification?.state == 'active'"
-                            @click="product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                            @click="customerData?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                             class="mt-2 flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-1.5 text-sm hover:bg-gray-200">
                             <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                            <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                                :class="product.is_back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
+                            <FontAwesomeIcon v-else :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                :class="customerData?.back_in_stock ? 'text-green-600' : 'text-gray-600'" fixed-width />
                             <span>
                                 {{
-                                    product.is_back_in_stock
-                                        ? ctrans("will be notified when in Stock")
-                                        : ctrans("Remind me")
+                                    customerData?.back_in_stock
+                                        ? ctrans('Back in Stock Alert On')
+                                        : ctrans('Notify Me When Back in Stock')
                                 }}
                             </span>
                         </button>
@@ -793,15 +793,15 @@ onMounted(async () => {
                 @selectQuantity="onSelectStepQuantityMobile" />
 
             <button v-if="layout?.iris?.is_logged_in && product.stock <= 0 && layout?.outboxes?.oos_notification?.state === 'active'"
-                @click="product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                @click="customerData?.back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                 class="flex items-center gap-2 rounded-full border bg-gray-100 px-3 py-2 text-sm">
                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
+                <FontAwesomeIcon v-else :icon="customerData?.back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width />
                 <span>
                     {{
-                        product.is_back_in_stock
-                            ? ctrans('will be notified when in Stock')
-                            : ctrans('Remind me')
+                        customerData?.back_in_stock
+                            ? ctrans('Back in Stock Alert On')
+                            : ctrans('Notify Me When Back in Stock')
                     }}
                 </span>
             </button>
