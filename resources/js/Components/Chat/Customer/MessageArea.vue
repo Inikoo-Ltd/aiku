@@ -36,6 +36,7 @@ const props = defineProps({
     rating: Number,
     isLoggedIn: Boolean,
     isUser: Boolean,
+    fullHeight: Boolean,
 })
 
 const emit = defineEmits(["send-message", "reload", "mounted", "new-session"])
@@ -492,14 +493,9 @@ defineExpose({
 <template>
     <div class="flex flex-col flex-1 min-h-0 bg-white">
         <!-- Messages -->
-        <div v-if="messages.length" ref="messagesContainer" @scroll="onScroll" class="
-    bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto scroll-smooth
-
-    flex-1 min-h-0
-    sm:flex-none
-    sm:min-h-[350px]
-    sm:max-h-[calc(100vh-420px)]
-  ">
+        <div v-if="messages.length" ref="messagesContainer" @scroll="onScroll"
+            class="bg-gray-50 px-3 py-2 space-y-2 overflow-y-auto scroll-smooth flex-1 min-h-0"
+            :class="fullHeight ? '' : 'sm:flex-none sm:min-h-[350px] sm:max-h-[calc(100vh-420px)]'">
             <template v-for="(group, date) in groupedMessages" :key="date">
                 <div class="mx-auto text-xs text-gray-400 flex justify-center">
                     {{ date }}
@@ -523,15 +519,9 @@ defineExpose({
         </div>
 
         <!-- Empty -->
-        <div v-if="!messages.length && isLoggedIn" class="
-        flex-1 flex items-center justify-center text-gray-400 text-sm
-
-        sm:flex-none
-        sm:min-h-[350px]
-        sm:max-h-[calc(100vh-400px)]
-        sm:grid
-        sm:place-content-center
-    ">
+        <div v-if="!messages.length && isLoggedIn"
+            class="flex-1 flex items-center justify-center text-gray-400 text-sm"
+            :class="fullHeight ? '' : 'sm:flex-none sm:min-h-[350px] sm:max-h-[calc(100vh-400px)] sm:grid sm:place-content-center'">
             {{ ctrans("Start the conversation") }}
         </div>
 
