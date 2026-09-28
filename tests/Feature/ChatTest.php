@@ -6083,11 +6083,14 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
 });
 
-test('a whatsapp thanks after we answered closes quietly with nothing sent, but never a sticker, voice note, location, emoji, question or open promise of ours', function () {
+test('a whatsapp thanks after we answered gets a thumbs up and closes, but never a sticker, voice note, location, emoji, question or open promise of ours', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    \App\Actions\Chat\Whatsapp\SendWhatsappReaction::shouldRun()->once()
+        ->withArgs(fn ($message, $agent, $emoji) => $message->message_text === 'Thank you so much!' && $agent === null && $emoji === '👍')
+        ->andReturn(['ok' => true]);
 
     $answered = function (string $phone, string $text, array $message = []): MetaChatSession {
         $session = noiseTestWhatsappSession($this->shop, $phone, $text);
@@ -6127,6 +6130,62 @@ test('a whatsapp thanks after we answered closes quietly with nothing sent, but 
     $switchedOff = $answered('+447500000306', 'Thank you!');
     \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($switchedOff);
     expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
+});
+
+test('a website chat thanks gets a thumbs up and closes, but with an agent in the chat it waits and closes only if nobody wrote since', function () {
+    config(['chat.close_after_thanks' => true, 'chat.close_after_thanks_minutes' => 2]);
+    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+
+    $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Chat', 'Great, thanks'), function (ChatSession $session) {
+        $session->update(['channel' => ChatChannelEnum::WEBSITE, 'last_agent_message_at' => now()->subMinute()]);
+    });
+    $thanksOf = fn (ChatSession $session) => $session->messages()->where('sender_type', ChatSenderTypeEnum::GUEST)->latest('id')->first();
+
+    $nobodyThere = $answered('web-thanks@example.com');
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($nobodyThere);
+
+    expect($nobodyThere->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and($thanksOf($nobodyThere)->reactions()->where('reactor_type', ChatSenderTypeEnum::AGENT->value)->whereNull('reactor_id')->value('emoji'))->toBe('👍');
+
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $agentThere = $answered('web-agent@example.com');
+    $thanksOf($agentThere)->update(['is_read' => true]);
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($agentThere);
+
+    expect($agentThere->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and(\Illuminate\Support\Carbon::parse(\App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($agentThere))->diffInSeconds(now()->addMinutes(2), true))->toBeLessThan(5);
+    \App\Actions\Chat\ChatSession\CloseChatAfterThanks::assertPushed(1);
+
+    \App\Actions\Chat\ChatSession\CloseChatAfterThanks::run($agentThere, $thanksOf($agentThere)->id, true);
+    expect($agentThere->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED)
+        ->and(\App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($agentThere))->toBeNull();
+
+    $keptOpen = $answered('web-kept@example.com');
+    $thanksOf($keptOpen)->update(['is_read' => true]);
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($keptOpen);
+    \App\Actions\Chat\ChatSession\KeepChatOpenAfterThanks::run($keptOpen);
+    \App\Actions\Chat\ChatSession\CloseChatAfterThanks::run($keptOpen, $thanksOf($keptOpen)->id, true);
+
+    expect($keptOpen->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and(\App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($keptOpen))->toBeNull();
+
+    $settings = $this->shop->settings;
+    \App\Actions\Chat\UpdateShopChatClosing::run($this->shop, ['close_after_thanks' => false, 'close_after_thanks_minutes' => 3]);
+    $switchedOffInShop = $answered('web-shop-off@example.com');
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($switchedOffInShop);
+    $this->shop->update(['settings' => $settings]);
+
+    expect($switchedOffInShop->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
+
+    $agentReplied = $answered('web-replied@example.com');
+    $thanksId     = $thanksOf($agentReplied)->id;
+    $agentReplied->messages()->create(['message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::AGENT, 'message_text' => 'You are welcome, have a lovely day!']);
+    \App\Actions\Chat\ChatSession\CloseChatAfterThanks::run($agentReplied, $thanksId);
+
+    expect($agentReplied->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($thanksOf($agentReplied)->reactions()->exists())->toBeFalse();
 });
 
 test('an agent unsubscribes a customer from every newsletter and reminder in one click, and when is kept', function () {

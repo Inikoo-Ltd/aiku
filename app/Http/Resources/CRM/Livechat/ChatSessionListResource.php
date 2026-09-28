@@ -85,6 +85,7 @@ class ChatSessionListResource extends JsonResource
             'claim' => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'promise' => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
             'urgent'  => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
+            'closing_at' => \App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,
