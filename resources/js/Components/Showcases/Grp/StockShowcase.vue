@@ -117,11 +117,12 @@ const props = defineProps < {
         }[]
         stock_history_route?: routeType
         future_orders?: {
-            id: number
+            id: string
             reference: string
             supplier_name: string | null
             delivery_state_label: string
             estimated_received_at: string | null
+            is_estimate: boolean
             quantity: string | number
             quantity_fractional?: [number, [number, number]]
             route: routeType
@@ -515,7 +516,7 @@ const saveBarcode = (value: string | null) => {
                         {{ ctrans("Future orders") }}
                     </span>
                     <span class="ml-auto text-xs text-gray-400">
-                        {{ ctrans("bought, not yet on the shelf") }}
+                        {{ ctrans("ordered or requested, not yet on the shelf") }}
                     </span>
                     <button type="button"
                         class="flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
@@ -536,7 +537,7 @@ const saveBarcode = (value: string | null) => {
                             <div class="truncate text-xs text-gray-400">
                                 {{ futureOrder.delivery_state_label }}
                                 <span v-if="futureOrder.estimated_received_at">
-                                    · {{ ctrans("expected") }} {{ useFormatTime(futureOrder.estimated_received_at) }}
+                                    · {{ futureOrder.is_estimate ? ctrans("estimated") : ctrans("expected") }} {{ useFormatTime(futureOrder.estimated_received_at) }}
                                 </span>
                                 <span v-else>· {{ ctrans("no expected date") }}</span>
                             </div>

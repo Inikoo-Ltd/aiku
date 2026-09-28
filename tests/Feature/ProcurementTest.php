@@ -4010,6 +4010,61 @@ describe('partner shopping list', function () {
             ->and($item->transaction_id)->toBeNull();
     });
 
+    test('a partner request is on its way: what the partner holds is dated from picking, the rest from production', function () {
+        $this->sellerProduct->orgStocks()->first()->update(['quantity_available' => 4]);
+        StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 10]);
+
+        $lines = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->where('type', 'partner_request')->values();
+        $inStock      = $lines->first(fn ($line) => str_starts_with($line['state_label'], 'In stock at'));
+        $notScheduled = $lines->first(fn ($line) => str_starts_with($line['state_label'], 'Not scheduled yet'));
+
+        expect($lines)->toHaveCount(2)
+            ->and($inStock['quantity'])->toBe(4.0)
+            ->and($notScheduled['quantity'])->toBe(6.0)
+            ->and($lines->every(fn ($line) => $line['is_estimate'] && $line['eta'] >= now()->addDay()->toDateString()))->toBeTrue()
+            ->and($notScheduled['eta'] >= $inStock['eta'])->toBeTrue();
+    });
+
+    test('a picked partner request is listed with its order until the order reaches the warehouse', function () {
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 3]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
+
+        $line = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request');
+
+        expect($line['reference'])->toBe($result['orders'][0]->reference)
+            ->and($line['state_label'])->toStartWith('Picked by')
+            ->and($line['quantity'])->toBe(3.0);
+    });
+
+    test('a partner request in production shows its job order and who is making it', function () {
+        $seller         = $this->orgPartner->partner;
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $sellerOrgStock->update(['quantity_available' => 0]);
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $artefact = Artefact::where('production_id', $production->id)->where('org_stock_id', $sellerOrgStock->id)->first()
+            ?? StoreArtefact::make()->action($production, ['code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
+
+        $employeeData                    = Employee::factory()->make(['organisation_id' => $seller->id])->toArray();
+        $employeeData['worker_number']   = 'W'.rand(1000, 9999);
+        $employeeData['alias']           = 'Alias '.rand(1000, 9999);
+        $employeeData['type']            = EmployeeTypeEnum::EMPLOYEE;
+        $employeeData['employment_type'] = EmploymentTypeEnum::FULL_TIME;
+        $employeeData['state']           = EmployeeStateEnum::WORKING;
+        $artisan = StoreEmployee::make()->action($seller, $employeeData);
+        AttachArtisan::make()->action($artefact, ['employee_id' => $artisan->id]);
+
+        $item     = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $jobOrder = StoreJobOrdersFromToProduceItems::make()->action($production, [$item->id])['job_orders'][0];
+
+        $line = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request');
+
+        expect($line['reference'])->toBe($jobOrder->reference)
+            ->and($line['state_label'])->toContain($artisan->contact_name)
+            ->and($line['quantity'])->toBe(5.0)
+            ->and($line['is_estimate'])->toBeTrue();
+    });
+
     test('cherry pick reuses in-process intercompany order across picks', function () {
         $itemA = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 5,
