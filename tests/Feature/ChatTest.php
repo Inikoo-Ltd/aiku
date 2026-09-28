@@ -8878,16 +8878,21 @@ test('an inline picture in an inbound email is shown inside the body where the s
     $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'c1');
     $media   = $message->attachedFiles()->first();
 
-    // Left alone the purifier drops a cid src and the picture is lost from the body, leaving
-    // "see picture below" with nothing below it.
+    // The body keeps the address the mail was written with. Where the file is served from
+    // changes over its life, so no url is ever frozen into what is stored.
     expect($media?->name)->toBe('broken.png')
-        ->and($message->html_body)->toContain($media->getUrl())
-        ->and($message->html_body)->not->toContain('cid:');
+        ->and($media->getCustomProperty('content_id'))->toBe('broken@mail')
+        ->and($message->html_body)->toContain('src="cid:broken@mail"')
+        ->and($message->html_body)->not->toContain('/storage/');
 
-    // The bubble hides an attachment whose url the body already shows, so the two have to be
-    // the same string.
     $resource = \App\Http\Resources\CRM\Livechat\ChatMessageResource::make($message->fresh())->resolve();
-    expect(collect($resource['attachments'])->pluck('original_url')->all())->toBe([$media->getUrl()]);
+    $picture  = $resource['attachments'][0]['media_url']['original'];
+
+    expect($picture)->toStartWith('http')
+        ->and($resource['html_body'])->toContain('src="'.e($picture).'"')
+        ->and($resource['html_body'])->not->toContain('cid:')
+        ->and($resource['html_body'])->not->toContain('/storage/')
+        ->and($resource['attachments'][0]['is_inline'])->toBeTrue();
 });
 
 test('a small inline picture in an inbound email is written into the body instead of being lost', function () {
@@ -8940,6 +8945,180 @@ test('a small inline picture in an inbound email is written into the body instea
     expect($message->attachedFiles())->toBeEmpty()
         ->and($message->html_body)->toContain('src="data:image/png;base64,'.base64_encode($png).'"')
         ->and($message->html_body)->not->toContain('cid:');
+});
+
+test('an email picture is pointed at wherever its file is served from when the message is shown', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+    $message = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'two pictures',
+    ]);
+
+    $png   = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+    $files = collect(['first.png', 'second.png'])->map(function (string $name) use ($png) {
+        $path = tempnam(sys_get_temp_dir(), 'pic');
+        file_put_contents($path, $png.$name);
+
+        return new \Illuminate\Http\UploadedFile($path, $name, 'image/png', null, true);
+    })->all();
+
+    \App\Actions\Chat\ChatSession\SendChatMessage::make()->processMessageAttachments($message, $files, ['one@mail', 'two@mail']);
+    [$first, $second] = $message->fresh()->attachedFiles()->all();
+
+    // Referenced in the other order from the files, one never fetched, one stored by path the way
+    // mail was between 22 and 28 Sep 2026, and a remote logo left as the sender wrote it.
+    $message->update(['html_body' => '<p>see below</p>'
+        .'<img src="cid:two@mail" alt="cid:two@mail" />'
+        .'<img src="cid:one@mail" alt="one" />'
+        .'<img src="cid:never-fetched@mail" alt="cid:never-fetched@mail" />'
+        .'<img src="/storage/AA/BB/XYZ/'.$first->file_name.'" alt="legacy" />'
+        .'<img src="https://example.com/logo.png" alt="logo" />']);
+
+    $sources = function () use ($message) {
+        $resource = \App\Http\Resources\CRM\Livechat\ChatMessageResource::make($message->fresh())->resolve();
+        preg_match_all('/src="([^"]*)"/', $resource['html_body'], $matches);
+
+        return [array_map('html_entity_decode', $matches[1]), $resource];
+    };
+    $picture = fn ($media) => \App\Actions\Helpers\Images\GetPictureSources::run($media->getImage()->resize(0, 0))['original'];
+
+    [$shown, $resource] = $sources();
+    expect($shown)->toBe([$picture($second), $picture($first), $picture($first), 'https://example.com/logo.png'])
+        ->and($resource['html_body'])->toContain('alt="second.png"')
+        ->and(collect($resource['attachments'])->pluck('is_inline')->all())->toBe([true, true]);
+
+    // Once archived the file is off the disk, and only the download route can still read it.
+    $second->setCustomProperty('archived_at', now()->toISOString())->save();
+
+    [$shown] = $sources();
+    expect($shown[0])->toBe(route('grp.api.chats.chat.attachment.download', ['ulid' => $second->ulid, 'inline' => 1]));
+
+    // Redacted: the file is gone, and so is the picture, rather than a broken frame in its place.
+    $first->delete();
+
+    [$shown] = $sources();
+    expect($shown)->toBe([route('grp.api.chats.chat.attachment.download', ['ulid' => $second->ulid, 'inline' => 1]), 'https://example.com/logo.png']);
+});
+
+test('removing the photographs of an email also removes the small pictures written into its body', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agent = ChatAgent::create(['user_id' => $clerk->id, 'language_id' => $clerk->language_id]);
+
+    $message = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'my card',
+        'html_body'       => '<p>my card</p><img src="data:image/png;base64,iVBORw0KGgo=" alt="card" />',
+    ]);
+
+    expect(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($message)->resolve()['has_embedded_pictures'])->toBeTrue();
+
+    $this->actingAs($clerk);
+    RedactChatMessage::make()->handleAttachment($session, $message, $agent);
+
+    $redacted = $message->fresh();
+    expect($redacted->html_body)->toBe('<p>my card</p>')
+        ->and($redacted->metadata['attachment_redacted_at'])->not->toBeNull();
+});
+
+test('a picture in an earlier mail of the thread is fetched on request and shown where it was written', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $original          = $this->shop->settings ?? [];
+    $settings          = $original;
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    $encode = fn (string $value) => rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    $png    = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+    $mail   = fn (string $id, array $payload) => [
+        'id'           => $id,
+        'threadId'     => 't9',
+        'internalDate' => '1758500000000',
+        'payload'      => $payload + ['headers' => [
+            ['name' => 'From', 'value' => 'Nicky <nicky@example.com>'],
+            ['name' => 'Subject', 'value' => 'Order GB588056'],
+            ['name' => 'Message-ID', 'value' => "<$id@example.com>"],
+        ]],
+    ];
+    $earlier = $mail('old9', [
+        'mimeType' => 'multipart/related',
+        'parts'    => [
+            ['mimeType' => 'text/plain', 'filename' => '', 'body' => ['data' => $encode('One is broken, see photo')]],
+            ['mimeType' => 'text/html', 'filename' => '', 'body' => ['data' => $encode('<p>One is broken, see photo</p><img src="cid:photo@mail">')]],
+            [
+                'mimeType' => 'image/png',
+                'filename' => 'photo.png',
+                'headers'  => [
+                    ['name' => 'Content-Disposition', 'value' => 'inline; filename="photo.png"'],
+                    ['name' => 'Content-ID', 'value' => '<photo@mail>'],
+                ],
+                'body'     => ['attachmentId' => 'att9', 'size' => 9000],
+            ],
+        ],
+    ]);
+    $latest = $mail('m9', ['mimeType' => 'text/plain', 'body' => ['data' => $encode('Any news?')]]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/old9/attachments/att9' => \Illuminate\Support\Facades\Http::response(['data' => $encode($png)]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/old9*'         => \Illuminate\Support\Facades\Http::response($earlier),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/m9*'           => \Illuminate\Support\Facades\Http::response($latest),
+        'gmail.googleapis.com/gmail/v1/users/me/threads/t9*'            => \Illuminate\Support\Facades\Http::response(['messages' => [$earlier, $latest]]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'                 => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'L1', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'm9');
+    $history = ChatMessage::where('metadata->gmail_message_id', 'old9')->firstOrFail();
+
+    expect($history->html_body)->toContain('src="cid:photo@mail"')
+        ->and(Arr::get($history->metadata, 'gmail_pending_attachments'))->toBe(1);
+
+    \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::make()->importMessage(
+        \App\Services\Gmail\GmailClient::forShop($this->shop),
+        $history
+    );
+
+    $resource = \App\Http\Resources\CRM\Livechat\ChatMessageResource::make($history->fresh())->resolve();
+
+    expect($resource['attachments'])->toHaveCount(1)
+        ->and($resource['attachments'][0]['is_inline'])->toBeTrue()
+        ->and($resource['html_body'])->toContain('src="'.e($resource['attachments'][0]['media_url']['original']).'"');
+
+    // Asked again, the picture already here is not fetched a second time.
+    \App\Actions\Comms\Mailbox\ImportPendingGmailAttachments::make()->importMessage(
+        \App\Services\Gmail\GmailClient::forShop($this->shop),
+        $history->fresh()
+    );
+    expect($history->fresh()->attachedFiles())->toHaveCount(1)
+        ->and($message)->not->toBeNull();
+
+    $this->shop->update(['settings' => $original]);
 });
 
 test('forwarding a conversation to a colleague opens one staff thread and optionally mails them', function () {

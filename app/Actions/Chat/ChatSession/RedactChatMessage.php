@@ -7,6 +7,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Http\Resources\CRM\Livechat\ChatMessageResource;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
@@ -150,7 +151,10 @@ class RedactChatMessage
             ->filter()
             ->unique('id');
 
-        if ($media->isEmpty()) {
+        // A small picture lives in the email's body rather than in a file, and goes with the rest.
+        $embedded = preg_match(ChatMessageResource::EMBEDDED_PICTURE, (string) $chatMessage->html_body) === 1;
+
+        if ($media->isEmpty() && ! $embedded) {
             throw ValidationException::withMessages([
                 'message' => __('This message has nothing attached to it'),
             ]);
@@ -179,8 +183,9 @@ class RedactChatMessage
         data_set($metadata, 'redacted_by_agent_id', $agent->id);
 
         $chatMessage->update([
-            'media_id' => null,
-            'metadata' => $metadata,
+            'media_id'  => null,
+            'metadata'  => $metadata,
+            'html_body' => $embedded ? preg_replace(ChatMessageResource::EMBEDDED_PICTURE, '', $chatMessage->html_body) : $chatMessage->html_body,
         ]);
 
         StoreChatEvent::run(
