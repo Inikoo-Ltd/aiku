@@ -83,7 +83,7 @@ class SyncRolesFromJobPositions
             }
         }
 
-        $this->addPartnersInventoryViewerRolesForManufacturingHubSupervisors($user, $roles);
+        $this->addPartnersInventoryViewerRoles($user, $roles);
 
         if ($user->roles()->whereIn('name', [RolesEnum::GROUP_ADMIN->value, RolesEnum::HELP_DESK_CLERK->value, RolesEnum::HELP_DESK_SUPERVISOR->value, RolesEnum::QA->value])->exists()) {
             foreach ($user->group->organisations as $organisation) {
@@ -158,24 +158,44 @@ class SyncRolesFromJobPositions
     }
 
     /**
+     * Hub and spoke: floor supervisors and buyers of a manufacturing hub see every partner's
+     * stock, buyers of a partner see the hub's stock, partners do not see each other.
+     *
      * @param array<int> $jobPositionRoleIds
      */
-    private function addPartnersInventoryViewerRolesForManufacturingHubSupervisors(User $user, array $jobPositionRoleIds): void
+    private function addPartnersInventoryViewerRoles(User $user, array $jobPositionRoleIds): void
     {
-        $supervisedProductionIds = Role::whereIn('id', $jobPositionRoleIds)
+        $jobPositionRoles = Role::whereIn('id', $jobPositionRoleIds)->get();
+
+        $supervisedProductionIds = $jobPositionRoles
             ->where('scope_type', 'Production')
-            ->where('name', 'like', RolesEnum::MANUFACTURING_ORCHESTRATOR->value.'-%')
+            ->filter(fn (Role $role) => str_starts_with($role->name, RolesEnum::MANUFACTURING_ORCHESTRATOR->value.'-'))
             ->pluck('scope_id');
 
-        $hubOrganisations = Organisation::where('is_manufacturing_hub', true)
-            ->whereIn('id', Production::whereIn('id', $supervisedProductionIds)->pluck('organisation_id'))
-            ->get();
+        $procurementOrganisationIds = $jobPositionRoles
+            ->where('scope_type', 'Organisation')
+            ->filter(fn (Role $role) => str_starts_with($role->name, RolesEnum::PROCUREMENT_CLERK->value.'-') || str_starts_with($role->name, RolesEnum::PROCUREMENT_SUPERVISOR->value.'-'))
+            ->pluck('scope_id');
 
-        foreach ($hubOrganisations as $hubOrganisation) {
-            foreach ($hubOrganisation->orgPartners()->with('partner.warehouses')->get() as $orgPartner) {
-                foreach ($orgPartner->partner->warehouses as $warehouse) {
-                    $this->addRole($user, RolesEnum::WAREHOUSE_VIEWER, $warehouse);
-                }
+        $hubOrganisationIds = Production::whereIn('id', $supervisedProductionIds)->pluck('organisation_id')
+            ->merge($procurementOrganisationIds)
+            ->unique();
+
+        $viewedOrganisations = collect();
+
+        foreach (Organisation::whereIn('id', $hubOrganisationIds)->where('is_manufacturing_hub', true)->get() as $hubOrganisation) {
+            $viewedOrganisations = $viewedOrganisations->merge($hubOrganisation->orgPartners()->with('partner')->get()->pluck('partner'));
+        }
+
+        foreach (Organisation::whereIn('id', $procurementOrganisationIds)->where('is_manufacturing_hub', false)->get() as $partnerOrganisation) {
+            $viewedOrganisations = $viewedOrganisations->merge(
+                $partnerOrganisation->orgPartners()->with('partner')->get()->pluck('partner')->where('is_manufacturing_hub', true)
+            );
+        }
+
+        foreach ($viewedOrganisations->unique('id') as $organisation) {
+            foreach ($organisation->warehouses as $warehouse) {
+                $this->addRole($user, RolesEnum::WAREHOUSE_VIEWER, $warehouse);
             }
         }
     }
