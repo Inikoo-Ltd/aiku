@@ -6585,3 +6585,19 @@ test('suppliers talk to procurement on WhatsApp: routed by phone, answered withi
 
     $this->organisation->update(['settings' => $originalSettings]);
 });
+
+test('agent organisations get the purchase order outbox, and only that one, so agents can email purchase orders to their suppliers', function () {
+    $agentOrganisation = $this->agent->organisation;
+
+    expect($agentOrganisation->type)->toBe(\App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::AGENT);
+
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationOutboxes::run($agentOrganisation);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationOutboxes::run($agentOrganisation);
+
+    $outboxes = $agentOrganisation->outboxes()->whereNull('shop_id')->get();
+
+    expect($outboxes->pluck('code')->all())->toBe([\App\Enums\Comms\Outbox\OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER])
+        ->and($outboxes->first()->state)->toBe(\App\Enums\Comms\Outbox\OutboxStateEnum::ACTIVE)
+        ->and($outboxes->first()->emailOngoingRun)->not->toBeNull()
+        ->and($outboxes->first()->org_post_room_id)->not->toBeNull();
+});
