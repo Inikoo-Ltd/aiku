@@ -30,17 +30,24 @@ class DownloadSupplierMessageAttachment extends OrgAction
     {
         $attachment = $supplierMessage->attachments[$index] ?? abort(404);
 
-        if ($supplierMessage->channel === SupplierMessageChannelEnum::WHATSAPP) {
-            $content = $this->whatsappMedia($supplierMessage, $attachment['media_id']);
-        } else {
-            $client  = GmailClient::forProcurement($supplierMessage->organisation) ?? abort(409, __('The procurement mailbox is not connected.'));
-            $content = $client->getAttachment($supplierMessage->gmail_message_id, $attachment['attachment_id']);
-        }
-
-        return response($content, 200, [
+        return response($this->content($supplierMessage, $attachment), 200, [
             'Content-Type'        => $attachment['mime_type'],
             'Content-Disposition' => 'inline; filename="'.addcslashes($attachment['name'], '"\\').'"',
         ]);
+    }
+
+    /**
+     * @param  array{attachment_id?: string, media_id?: string}  $attachment
+     */
+    public function content(SupplierMessage $supplierMessage, array $attachment): string
+    {
+        if ($supplierMessage->channel === SupplierMessageChannelEnum::WHATSAPP) {
+            return $this->whatsappMedia($supplierMessage, $attachment['media_id']);
+        }
+
+        $client = GmailClient::forProcurement($supplierMessage->organisation) ?? abort(409, __('The procurement mailbox is not connected.'));
+
+        return $client->getAttachment($supplierMessage->gmail_message_id, $attachment['attachment_id']);
     }
 
     /**

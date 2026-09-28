@@ -146,6 +146,7 @@ const props = defineProps<{
 	under_over_delivered?: {}
 	showcase?: {}
 	attachments?: {}
+	attachmentScopes: { name: string; code: string }[]
 	notes?: {}
 	note_store_route?: routeType
 	history?: {}
@@ -801,6 +802,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		}"
 		progressDescription="Adding Stock Delivery Attachments"
 		:attachmentRoutes="attachmentRoutes"
+		:options="attachmentScopes"
 	/>
 
 	<ConfirmDialog group="stock-delivery">

@@ -10,6 +10,9 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
+use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
 use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Actions\OrgAction;
@@ -278,6 +281,23 @@ class ShowPurchaseOrder extends OrgAction
                     'parameters' => [$purchaseOrder->id],
                 ],
 
+                PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))),
+
+                'attachmentRoutes' => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.purchase-order.attachment.attach',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                    'detachRoute' => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.purchase-order.attachment.detach',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                ],
+                'attachmentScopes' => PurchaseOrderAttachmentScopeEnum::options(),
+
                 PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value => $this->tab == PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value ?
                     fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $purchaseOrder, prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))
                     : Inertia::optional(fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $purchaseOrder, prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))),
@@ -289,6 +309,7 @@ class ShowPurchaseOrder extends OrgAction
         )->table(IndexPurchaseOrderTransactions::make()->tableStructure($purchaseOrder, prefix: PurchaseOrderTabsEnum::ITEMS->value))
             ->table(IndexPurchaseOrderOrgSupplierProducts::make()->tableStructure(prefix: PurchaseOrderTabsEnum::PRODUCTS->value))
             ->table(IndexProcurementNotes::make()->tableStructure(prefix: PurchaseOrderTabsEnum::NOTES->value))
+            ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
             ->table(IndexDispatchedEmailsInOrder::make()->tableStructure(prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
     }

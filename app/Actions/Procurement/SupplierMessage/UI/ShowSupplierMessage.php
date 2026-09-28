@@ -8,7 +8,9 @@
 namespace App\Actions\Procurement\SupplierMessage\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\SupplierMessage\AttachSupplierMessageAttachment;
 use App\Actions\Procurement\SupplierMessage\Whatsapp\SendSupplierWhatsappMessage;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\SupplierMessage\SupplierMessageChannelEnum;
 use App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum;
 use App\Models\Procurement\OrgAgent;
@@ -135,6 +137,7 @@ class ShowSupplierMessage extends OrgAction
         $lastEmail   = $thread->last();
         $mailbox     = Str::lower((string) Arr::get($this->organisation->settings, 'procurement.gmail.email'));
         $isWhatsapp  = $supplierMessage->channel === SupplierMessageChannelEnum::WHATSAPP;
+        $targets     = $canEdit ? AttachSupplierMessageAttachment::targetOptions($supplierMessage) : [];
         $title       = $isWhatsapp
             ? __('WhatsApp with :name', ['name' => $counterpart ? self::counterpartSummary($counterpart, $this->organisation)['name'] : ($supplierMessage->from_name ?: '+'.$supplierMessage->phone_number)])
             : ($supplierMessage->subject ?: __('(no subject)'));
@@ -159,6 +162,10 @@ class ShowSupplierMessage extends OrgAction
                         'parameters' => [$this->organisation->slug, $supplierMessage->id],
                     ],
                     'options' => self::counterpartOptions($this->organisation),
+                ] : null,
+                'attach'      => $canEdit ? [
+                    'targets' => $targets,
+                    'scopes'  => PurchaseOrderAttachmentScopeEnum::options(),
                 ] : null,
                 'reply'       => $isWhatsapp ? ($canEdit && SendSupplierWhatsappMessage::isConnected($this->organisation) ? [
                     'channel'     => 'whatsapp',
@@ -213,6 +220,13 @@ class ShowSupplierMessage extends OrgAction
                         'size'      => $attachment['size'],
                         'mime_type' => $attachment['mime_type'],
                         'url'       => route('grp.org.procurement.supplier_messages.attachment', [$this->organisation->slug, $email->id, $index]),
+                        'attached_to'      => AttachSupplierMessageAttachment::attachedTo($this->organisation, $attachment['attached_media_id'] ?? null),
+                        'suggested_target' => $canEdit ? AttachSupplierMessageAttachment::suggestedTarget($email, $attachment['name'], $targets) : null,
+                        'suggested_scope'  => PurchaseOrderAttachmentScopeEnum::guessFromFileName($attachment['name'])->value,
+                        'attach_route'     => [
+                            'name'       => 'grp.org.procurement.supplier_messages.attachment.attach',
+                            'parameters' => [$this->organisation->slug, $email->id, $index],
+                        ],
                     ])->values()->all(),
                 ])->values()->all(),
             ]

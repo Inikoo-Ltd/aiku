@@ -6404,6 +6404,82 @@ test('staff reply to a supplier from Aiku through the procurement mailbox, threa
     $this->organisation->update(['settings' => $originalSettings]);
 });
 
+test('supplier documents in the procurement inbox go on the purchase order and its deliveries, by themselves when the email answers the order', function () {
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationOutboxes::run($this->organisation);
+
+    $originalSettings = $this->organisation->settings;
+    $token            = Str::lower(Str::random(8));
+    $mailbox          = "docs-$token@org.test";
+
+    $settings = $this->organisation->settings ?? [];
+    data_set($settings, 'procurement.gmail', ['email' => $mailbox, 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'connected_at' => now()->toIso8601String()]);
+    $this->organisation->update(['settings' => $settings]);
+
+    $supplier      = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['email' => "sales@docs-$token.com"]));
+    $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    StoreSupplierProduct::make()->action($supplier, [
+        'code'             => "DOCS-$token",
+        'name'             => 'Docs product',
+        'cost'             => 10,
+        'stock_id'         => $this->orgStocks[0]->stock_id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => "PO-DOCS-$token"]));
+    $stockDelivery = StoreStockDelivery::make()->action($orgSupplier, ['reference' => "SD-DOCS-$token", 'date' => date('Y-m-d')]);
+    $stockDelivery->purchaseOrders()->attach($purchaseOrder->id);
+
+    $dispatchedEmail = \App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::run($purchaseOrder);
+    $dispatchedEmail->update(['ses_id' => "ses-$token"]);
+
+    $answer = procurementGmailMessage("d1-$token", "dt1-$token", "Docs <sales@docs-$token.com>", $mailbox, 'Re: your order');
+    $answer['payload']['headers'][] = ['name' => 'In-Reply-To', 'value' => "<ses-$token@eu-west-1.amazonses.com>"];
+    $answer['payload']['parts'][1]['filename'] = 'Invoice 2211.pdf';
+
+    $unrelated = procurementGmailMessage("d2-$token", "dt2-$token", "Docs <sales@docs-$token.com>", $mailbox, "Packing for PO-DOCS-$token");
+    $unrelated['payload']['parts'][1]['filename'] = 'packing.pdf';
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/d1-$token/attachments/*" => \Illuminate\Support\Facades\Http::response(['data' => rtrim(strtr(base64_encode("%PDF invoice $token"), '+/', '-_'), '=')]),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/d2-$token/attachments/*" => \Illuminate\Support\Facades\Http::response(['data' => rtrim(strtr(base64_encode("%PDF packing $token"), '+/', '-_'), '=')]),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/d1-$token*" => \Illuminate\Support\Facades\Http::response($answer),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/d2-$token*" => \Illuminate\Support\Facades\Http::response($unrelated),
+    ]);
+
+    $answered = \App\Actions\Procurement\SupplierMessage\ProcessProcurementEmail::run($this->organisation->fresh(), "d1-$token");
+    $other    = \App\Actions\Procurement\SupplierMessage\ProcessProcurementEmail::run($this->organisation->fresh(), "d2-$token");
+
+    expect($answered->purchase_order_id)->toBe($purchaseOrder->id)
+        ->and($answered->fresh()->attachments[0]['attached_media_id'])->not->toBeNull()
+        ->and($purchaseOrder->attachments()->wherePivot('scope', 'Invoice')->count())->toBe(1)
+        ->and($stockDelivery->attachments()->wherePivot('scope', 'Invoice')->count())->toBe(1)
+        ->and($other->purchase_order_id)->toBeNull()
+        ->and($other->attachments[0]['attached_media_id'] ?? null)->toBeNull();
+
+    $this->get(route('grp.org.procurement.supplier_messages.show', [$this->organisation->slug, $other->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('messages.0.attachments.0.suggested_target', 'purchase_order:'.$purchaseOrder->id)
+            ->where('messages.0.attachments.0.suggested_scope', 'Packing list')
+            ->where('messages.0.attachments.0.attached_to', []));
+
+    $this->post(route('grp.org.procurement.supplier_messages.attachment.attach', [$this->organisation->slug, $other->id, 0]), [
+        'target' => 'stock_delivery:'.$stockDelivery->id,
+        'scope'  => 'Packing list',
+    ])->assertRedirect();
+
+    expect($stockDelivery->attachments()->wherePivot('scope', 'Packing list')->count())->toBe(1)
+        ->and($purchaseOrder->attachments()->wherePivot('scope', 'Packing list')->count())->toBe(1);
+
+    $this->get(route('grp.org.procurement.supplier_messages.show', [$this->organisation->slug, $other->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('messages.0.attachments.0.attached_to', 2));
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('attachments.data', 2)->has('attachmentScopes', 4));
+
+    $this->organisation->update(['settings' => $originalSettings]);
+});
+
 test('suppliers talk to procurement on WhatsApp: routed by phone, answered within 24 hours, templated after, and purchase orders sent as a document', function () {
     config(['meta.base_endpoint' => 'https://graph.facebook.com', 'meta.whatsapp.api_version' => 'v21.0']);
 
