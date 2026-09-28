@@ -305,13 +305,13 @@ test('validation rules are correct', function () {
         'ulid',
         'shop_id'
     ])
-        ->and($rules['web_user_id'])->toEqual(['nullable', 'exists:web_users,id'])
-        ->and($rules['language_id'])->toEqual(['required', 'exists:languages,id'])
+        ->and($rules['web_user_id'])->toEqual(['nullable', 'integer', 'exists:web_users,id'])
+        ->and($rules['language_id'])->toEqual(['required', 'integer', 'exists:languages,id'])
         ->and($rules['priority'])->toEqual(['required', Rule::enum(ChatPriorityEnum::class)])
         ->and($rules['guest_identifier'])->toEqual(['nullable', 'string', 'max:255'])
         ->and($rules['ai_model_version'])->toEqual(['nullable', 'string', 'max:50'])
         ->and($rules['ulid'])->toEqual(['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid'])
-        ->and($rules['shop_id'])->toEqual(['required', 'exists:shops,id']);
+        ->and($rules['shop_id'])->toEqual(['required', 'integer', 'exists:shops,id']);
 });
 
 
@@ -8225,9 +8225,9 @@ test('the bin opens for an agent when no status is asked for', function () {
 test('an offline message becomes an email conversation only when the shop asks for it', function () {
     \Illuminate\Support\Facades\Http::fake();
 
-    $offlineMessage = fn () => StoreOfflineMessage::make()->handle($this->shop->refresh(), [
+    $offlineMessage = fn (string $email = 'jane@example.com') => StoreOfflineMessage::make()->handle($this->shop->refresh(), [
         'name'        => 'Jane Doe',
-        'email'       => 'jane@example.com',
+        'email'       => $email,
         'message'     => 'Nobody was on, please write back',
         'language_id' => 68,
         'sender_type' => ChatSenderTypeEnum::GUEST->value,
@@ -8239,7 +8239,7 @@ test('an offline message becomes an email conversation only when the shop asks f
     data_set($settings, 'chat.email_offline_replies', false);
     $this->shop->updateQuietly(['settings' => $settings]);
 
-    expect($offlineMessage()->channel)->toBe(ChatChannelEnum::WEBSITE);
+    expect($offlineMessage('jane.first@example.com')->channel)->toBe(ChatChannelEnum::WEBSITE);
 
     data_set($settings, 'chat.email_offline_replies', true);
     $this->shop->updateQuietly(['settings' => $settings]);
@@ -8256,7 +8256,7 @@ test('an offline message becomes an email conversation only when the shop asks f
     data_set($settings, 'gmail.email', null);
     $this->shop->updateQuietly(['settings' => $settings]);
 
-    expect($offlineMessage()->channel)->toBe(ChatChannelEnum::WEBSITE);
+    expect($offlineMessage('jane.third@example.com')->channel)->toBe(ChatChannelEnum::WEBSITE);
 
     // The toggle is a shop setting, so it has to survive the form it is saved from without
     // taking the rest of the shop's settings with it.
@@ -9704,4 +9704,71 @@ test('guest chat endpoints reject junk ids and throttle one address', function (
     }
 
     $this->postJson(route('grp.api.chats.sessions.store'), $junk)->assertStatus(429);
+});
+
+test('StoreOfflineMessage from the same guest email joins the conversation still open', function () {
+    $modelData = [
+        'name'        => 'e',
+        'email'       => 'Repeat.Guest@example.com',
+        'message'     => 'e',
+        'language_id' => 68,
+        'sender_type' => ChatSenderTypeEnum::GUEST->value,
+        'web_user_id' => null,
+    ];
+
+    $first  = StoreOfflineMessage::make()->handle($this->shop, $modelData);
+    $second = StoreOfflineMessage::make()->handle($this->shop, array_merge($modelData, ['email' => 'repeat.guest@example.com', 'message' => 'e again']));
+
+    expect($second->id)->toBe($first->id)
+        ->and(ChatMessage::where('chat_session_id', $first->id)->count())->toBe(2);
+});
+
+test('chat:spam_scanner_flood marks only the scanner guest sessions as spam', function () {
+    Bus::fake();
+    ChatSession::whereRaw("metadata->>'email' = ?", ['sample@email.tst'])->update(['status' => ChatSessionStatusEnum::CLOSED]);
+
+    $scanner = StoreOfflineMessage::make()->handle($this->shop, [
+        'name'        => 'e',
+        'email'       => 'sample@email.tst',
+        'message'     => 'e',
+        'language_id' => 68,
+        'sender_type' => ChatSenderTypeEnum::GUEST->value,
+        'web_user_id' => null,
+    ]);
+    $genuine = StoreOfflineMessage::make()->handle($this->shop, [
+        'name'        => 'Jane',
+        'email'       => 'jane.flood.check@example.com',
+        'message'     => 'Where is my order',
+        'language_id' => 68,
+        'sender_type' => ChatSenderTypeEnum::GUEST->value,
+        'web_user_id' => null,
+    ]);
+
+    $this->artisan('chat:spam_scanner_flood')->assertSuccessful();
+    expect($scanner->fresh()->is_spam)->toBeFalse();
+
+    $this->artisan('chat:spam_scanner_flood --apply')->assertSuccessful();
+    expect($scanner->fresh()->is_spam)->toBeTrue()
+        ->and($genuine->fresh()->is_spam)->toBeFalse();
+});
+
+test('a website guest on a test email domain is put in spam by rule', function () {
+    Bus::fake();
+    ChatSession::whereRaw("metadata->>'email' = ?", ['sample@email.tst'])->update(['status' => ChatSessionStatusEnum::CLOSED]);
+
+    $offline = fn (string $email) => StoreOfflineMessage::make()->handle($this->shop, [
+        'name'        => 'e',
+        'email'       => $email,
+        'message'     => 'e',
+        'language_id' => 68,
+        'sender_type' => ChatSenderTypeEnum::GUEST->value,
+        'web_user_id' => null,
+    ]);
+
+    $scanner = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->handle($offline('sample@email.tst'))->refresh();
+    $rule    = \App\Actions\Chat\ChatSession\ClassifyChatSessionNoise::make()->verdictByRules($offline('buyer.rule.check@gmail.com'));
+
+    expect($scanner->is_spam)->toBeTrue()
+        ->and($scanner->noise_source)->toBe('rule')
+        ->and($rule)->toBeNull();
 });
