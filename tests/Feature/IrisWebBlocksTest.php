@@ -857,3 +857,20 @@ test('iris variant products list leaves out the variant products that are not fo
         ->and(collect($variantAndProducts['products'])->pluck('id')->all())->toBe([$forSaleProduct->id])
         ->and(collect($variantAndProducts['variant_data']['products'])->keys()->all())->toBe([$forSaleProduct->id]);
 });
+
+test('iris basket endpoints send the quantity ordered as a number so the basket buttons can add to it', function () {
+    $customer = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+
+    $order       = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, \App\Models\Ordering\Order::factory()->definition());
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
+    $customer->updateQuietly(['current_order_in_basket_id' => $order->id]);
+
+    $basketLine  = \App\Actions\Catalogue\Product\Json\GetIrisBasketTransactions::run($customer->refresh())[$product->id];
+    $productData = \App\Actions\Iris\Basket\GetIrisBasketTransactionProductData::run($transaction);
+
+    expect($basketLine['quantity_ordered'])->toBe(1.0)
+        ->and($basketLine['quantity_ordered_new'])->toBe(1.0)
+        ->and($productData['quantity_ordered'])->toBe(1.0)
+        ->and($productData['quantity_ordered_new'])->toBe(1.0);
+});
