@@ -17,6 +17,7 @@ enum SupplierTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case EMAILS   = 'emails';
     case HISTORY  = 'history';
 
     // case PURCHASES_SALES = 'purchase_sales';
@@ -31,6 +32,10 @@ enum SupplierTabsEnum: string
             SupplierTabsEnum::SHOWCASE => [
                 'title' => __('Supplier'),
                 'icon'  => 'fas fa-info-circle',
+            ],
+            SupplierTabsEnum::EMAILS => [
+                'title' => __('Emails'),
+                'icon'  => 'fal fa-envelope',
             ],
             SupplierTabsEnum::HISTORY => [
                 'title' => __('Changelog'),

@@ -219,6 +219,30 @@ class GetOrganisationNavigation
         }
 
 
+        if (isset($navigation['procurement'])) {
+            $navigation['procurement']['topMenu']['subSections'][] = [
+                'label' => __('Emails'),
+                'icon'  => ['fal', 'fa-inbox'],
+                'root'  => 'grp.org.procurement.supplier_emails.',
+                'route' => [
+                    'name'       => 'grp.org.procurement.supplier_emails.index',
+                    'parameters' => [$organisation->slug],
+                ]
+            ];
+        }
+
+        if ($user->authTo(['org-admin.'.$organisation->id, 'org-supervisor.'.$organisation->id.'.procurement']) && isset($navigation['procurement'])) {
+            $navigation['procurement']['topMenu']['subSections'][] = [
+                'label' => __('Settings'),
+                'icon'  => ['fal', 'fa-cog'],
+                'root'  => 'grp.org.procurement.settings.',
+                'route' => [
+                    'name'       => 'grp.org.procurement.settings.edit',
+                    'parameters' => [$organisation->slug],
+                ]
+            ];
+        }
+
         $navigation = $this->getAccountingNavs($user, $organisation, $navigation);
 
 

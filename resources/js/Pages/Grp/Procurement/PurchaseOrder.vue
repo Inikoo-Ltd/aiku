@@ -18,6 +18,7 @@ import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Checkbox from "primevue/checkbox"
@@ -317,10 +318,22 @@ const formatDate = (date: Date | null): string | null => {
 	return `${year}-${month}-${day}`
 }
 
+const submitDialogAction = ref<any>(null)
+const sendToSupplier = ref(true)
+
 const submitPurchaseOrder = (action: any) => {
-	router.patch(route(action.route.name, action.route.parameters), {}, {
+	if (action.supplier_email && !submitDialogAction.value) {
+		sendToSupplier.value = true
+		submitDialogAction.value = action
+		return
+	}
+
+	router.patch(route(action.route.name, action.route.parameters), { send_to_supplier: action.supplier_email ? sendToSupplier.value : false }, {
 		onStart: () => { submitLoading.value = true },
-		onFinish: () => { submitLoading.value = false },
+		onFinish: () => {
+			submitLoading.value = false
+			submitDialogAction.value = null
+		},
 		onError: () => {
 			notify({
 				title: ctrans("Something went wrong"),
@@ -536,6 +549,7 @@ const component = computed(() => {
 		products: TablePurchaseOrderTransactions,
 		showcase: ProcurementOrderData,
 		notes: TableProcurementNotes,
+		dispatched_emails: TableDispatchedEmailsInOrder,
 		history: TableHistories,
 	}
 
@@ -1019,6 +1033,35 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			</div>
 		</template>
 	</ConfirmDialog>
+
+	<Dialog
+		:visible="!!submitDialogAction"
+		modal
+		:header="ctrans('Submit purchase order')"
+		:style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }"
+		:draggable="false"
+		@update:visible="(visible) => { if (!visible) submitDialogAction = null }"
+	>
+		<label class="flex cursor-pointer items-start gap-3">
+			<Checkbox v-model="sendToSupplier" binary inputId="purchase-order-send-to-supplier" />
+			<span class="text-sm text-gray-700">
+				{{ ctrans("Email the purchase order PDF to") }}
+				<span class="font-medium">{{ submitDialogAction?.supplier_email }}</span>
+				<span class="mt-1 block text-xs text-gray-500">{{ ctrans("Delivery, opens and clicks are tracked in the Emails sent tab. Replies arrive in procurement emails.") }}</span>
+			</span>
+		</label>
+
+		<template #footer>
+			<Button :label="ctrans('Cancel')" type="secondary" @click="submitDialogAction = null" />
+			<Button
+				:label="sendToSupplier ? ctrans('Submit and send') : ctrans('Submit')"
+				type="save"
+				:icon="faPaperPlane"
+				:loading="submitLoading"
+				@click="submitPurchaseOrder(submitDialogAction)"
+			/>
+		</template>
+	</Dialog>
 
 	<Dialog
 		v-model:visible="estimatedDeliveryDateModalOpen"

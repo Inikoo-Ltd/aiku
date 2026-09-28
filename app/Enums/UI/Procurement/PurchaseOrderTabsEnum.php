@@ -20,6 +20,7 @@ enum PurchaseOrderTabsEnum: string
     case PRODUCTS     = 'products';
     case SHOWCASE     = 'showcase';
     case NOTES = 'notes';
+    case DISPATCHED_EMAILS = 'dispatched_emails';
     case HISTORY      = 'history';
 
     public function blueprint(): array
@@ -40,6 +41,12 @@ enum PurchaseOrderTabsEnum: string
             PurchaseOrderTabsEnum::NOTES => [
                 'title' => __('Notes'),
                 'icon'  => 'fal fa-sticky-note',
+            ],
+            PurchaseOrderTabsEnum::DISPATCHED_EMAILS => [
+                'title' => __('Emails sent'),
+                'icon'  => 'fal fa-envelope',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             PurchaseOrderTabsEnum::HISTORY  => [
                 'title' => __('History'),

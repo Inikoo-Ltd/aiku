@@ -18,6 +18,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -44,7 +45,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         }
     }
 
-    public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
+    public function handle(PurchaseOrder $purchaseOrder, bool $sendToSupplier = false): PurchaseOrder
     {
         $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
@@ -78,11 +79,18 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
         StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
 
-        // TODO: Decide whether submitting should transmit the order to the supplier/agent
-        // (system-sent email + PDF) or whether that is done manually by the web user outside aiku.
-        // No supplier notification is sent here yet.
+        if ($sendToSupplier && SendPurchaseOrderToSupplier::recipientEmail($purchaseOrder)) {
+            SendPurchaseOrderToSupplier::dispatch($purchaseOrder);
+        }
 
         return $purchaseOrder;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'send_to_supplier' => ['sometimes', 'boolean'],
+        ];
     }
 
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
@@ -90,7 +98,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $this->handle($purchaseOrder);
+        return $this->handle($purchaseOrder, (bool) Arr::get($this->validatedData, 'send_to_supplier', false));
     }
 
     public function action(PurchaseOrder $purchaseOrder): PurchaseOrder

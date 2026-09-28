@@ -15,6 +15,8 @@ use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
+use App\Actions\Procurement\SupplierEmail\UI\IndexSupplierEmails;
+use App\Http\Resources\Procurement\SupplierEmailsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgSupplierResource;
 use App\Models\Procurement\OrgAgent;
@@ -107,11 +109,16 @@ class ShowOrgSupplier extends OrgAction
                     fn () => GetOrgSupplierShowcase::run($orgSupplier)
                     : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier)),
 
+                SupplierTabsEnum::EMAILS->value => $this->tab == SupplierTabsEnum::EMAILS->value ?
+                    fn () => SupplierEmailsResource::collection(IndexSupplierEmails::run($orgSupplier, SupplierTabsEnum::EMAILS->value))
+                    : Inertia::optional(fn () => SupplierEmailsResource::collection(IndexSupplierEmails::run($orgSupplier, SupplierTabsEnum::EMAILS->value))),
+
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgSupplier, SupplierTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier, SupplierTabsEnum::HISTORY->value))),
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value))
+            ->table(IndexSupplierEmails::make()->tableStructure($orgSupplier, prefix: SupplierTabsEnum::EMAILS->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array

@@ -6141,3 +6141,188 @@ test('procurement exchange rates keep their precision, the ones four decimals ro
         ->and((float) $rupeeItem->fresh()->org_net_amount)->toBe(15.0)
         ->and((float) $rupeeItem->fresh()->grp_net_amount)->toEqualWithDelta(1000 * $rupeeRate, 0.01);
 });
+
+test('procurement settings let the organisation connect a supplier mailbox of its own', function () {
+    $originalSettings = $this->organisation->settings;
+
+    $this->get(route('grp.org.procurement.settings.edit', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('EditModel')
+            ->where('formData.blueprint.0.fields.mailbox.type', 'mailbox_connect')
+            ->where('formData.blueprint.0.fields.mailbox.value.connected', false));
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                    => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'refresh_token' => 'rt']),
+        'gmail.googleapis.com/gmail/v1/users/me/profile' => \Illuminate\Support\Facades\Http::response(['emailAddress' => 'purchasing@org.test', 'historyId' => '9']),
+    ]);
+
+    $state = ['procurement_organisation_id' => $this->organisation->id, 'user_id' => 1, 'return' => '/back'];
+
+    \App\Actions\Comms\Mailbox\CallbackProcurementMailbox::make()->handle($this->organisation, 'code', $state);
+
+    expect(session('notification')['status'])->toBe('success')
+        ->and(Arr::get($this->organisation->fresh()->settings, 'procurement.gmail.email'))->toBe('purchasing@org.test');
+
+    $this->post(route('grp.org.procurement.settings.mailbox.disconnect', [$this->organisation->slug]))->assertRedirect();
+
+    expect(Arr::get($this->organisation->fresh()->settings, 'procurement.gmail'))->toBeNull();
+
+    $this->organisation->update(['settings' => $originalSettings]);
+});
+
+test('a mailbox already connected to a shop is refused as the procurement mailbox', function () {
+    $shop             = $this->organisation->shops()->first() ?? \App\Models\Catalogue\Shop::factory()->create(['organisation_id' => $this->organisation->id, 'group_id' => $this->organisation->group_id]);
+    $originalSettings = $shop->settings;
+    $shop->update(['settings' => array_merge($shop->settings ?? [], ['gmail' => ['email' => 'care@shop.test']])]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                    => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'refresh_token' => 'rt']),
+        'gmail.googleapis.com/gmail/v1/users/me/profile' => \Illuminate\Support\Facades\Http::response(['emailAddress' => 'care@shop.test', 'historyId' => '9']),
+    ]);
+
+    $state = ['procurement_organisation_id' => $this->organisation->id, 'user_id' => 1, 'return' => '/back'];
+
+    \App\Actions\Comms\Mailbox\CallbackProcurementMailbox::make()->handle($this->organisation, 'code', $state);
+
+    expect(session('notification')['status'])->toBe('error')
+        ->and(session('notification')['description'])->toContain($shop->name)
+        ->and(Arr::get($this->organisation->fresh()->settings, 'procurement.gmail'))->toBeNull();
+
+    $shop->update(['settings' => $originalSettings]);
+});
+
+function procurementGmailMessage(string $id, string $threadId, string $from, string $to, string $subject, array $labels = ['INBOX']): array
+{
+    return [
+        'id'           => $id,
+        'threadId'     => $threadId,
+        'labelIds'     => $labels,
+        'snippet'      => 'Snippet of '.$subject,
+        'internalDate' => (string) now()->getTimestampMs(),
+        'payload'      => [
+            'mimeType' => 'multipart/mixed',
+            'headers'  => [
+                ['name' => 'From', 'value' => $from],
+                ['name' => 'To', 'value' => $to],
+                ['name' => 'Subject', 'value' => $subject],
+            ],
+            'parts'    => [
+                ['mimeType' => 'text/plain', 'body' => ['data' => rtrim(strtr(base64_encode('Body of '.$subject), '+/', '-_'), '=')]],
+                ['mimeType' => 'application/pdf', 'filename' => 'proforma.pdf', 'headers' => [['name' => 'Content-Disposition', 'value' => 'attachment; filename="proforma.pdf"']], 'body' => ['attachmentId' => 'att-1', 'size' => 2048]],
+            ],
+        ],
+    ];
+}
+
+test('procurement mailbox emails are routed to their supplier by address, thread, learned address and domain', function () {
+    $originalSettings = $this->organisation->settings;
+    $token            = Str::lower(Str::random(8));
+    $mailbox          = "purchasing-$token@org.test";
+
+    $settings = $this->organisation->settings ?? [];
+    data_set($settings, 'procurement.gmail', ['email' => $mailbox, 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'connected_at' => now()->toIso8601String()]);
+    $this->organisation->update(['settings' => $settings]);
+
+    $supplier    = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['email' => "sales@acme-$token.com"]));
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $other       = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['email' => "lin-$token@163.com"]));
+    $otherOrgSupplier = $other->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $messages = [
+        "m1-$token" => procurementGmailMessage("m1-$token", "t1-$token", "Acme Sales <sales@acme-$token.com>", $mailbox, 'Proforma'),
+        "m2-$token" => procurementGmailMessage("m2-$token", "t1-$token", $mailbox, "boss-$token@gmail.com", 'Re: Proforma', ['SENT']),
+        "m3-$token" => procurementGmailMessage("m3-$token", "t3-$token", "accounts@acme-$token.com", $mailbox, 'Invoice'),
+        "m4-$token" => procurementGmailMessage("m4-$token", "t4-$token", "helper-$token@qq.com", $mailbox, 'Samples'),
+        "m5-$token" => procurementGmailMessage("m5-$token", "t5-$token", "helper-$token@qq.com", $mailbox, 'More samples'),
+        "m6-$token" => procurementGmailMessage("m6-$token", "t6-$token", "noreply@newsletter-$token.com", $mailbox, 'Deals'),
+    ];
+
+    $fakes = ['oauth2.googleapis.com/token' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at'])];
+    foreach ($messages as $id => $message) {
+        $fakes["gmail.googleapis.com/gmail/v1/users/me/messages/$id*"] = \Illuminate\Support\Facades\Http::response($message);
+    }
+    \Illuminate\Support\Facades\Http::fake($fakes);
+
+    $process = fn (string $id) => \App\Actions\Procurement\SupplierEmail\ProcessProcurementEmail::run($this->organisation->fresh(), $id);
+
+    $byAddress = $process("m1-$token");
+    $byThread  = $process("m2-$token");
+    $byDomain  = $process("m3-$token");
+    $stranger  = $process("m4-$token");
+
+    expect($byAddress->org_supplier_id)->toBe($orgSupplier->id)
+        ->and($byAddress->routed_by)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum::ADDRESS)
+        ->and($byAddress->attachments[0]['name'])->toBe('proforma.pdf')
+        ->and($byThread->org_supplier_id)->toBe($orgSupplier->id)
+        ->and($byThread->direction)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailDirectionEnum::OUTBOUND)
+        ->and($byThread->routed_by)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum::THREAD)
+        ->and($byDomain->org_supplier_id)->toBe($orgSupplier->id)
+        ->and($byDomain->routed_by)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum::DOMAIN)
+        ->and($stranger->org_supplier_id)->toBeNull()
+        ->and($process("m6-$token"))->toBeNull()
+        ->and($process("m1-$token"))->toBeNull();
+
+    \App\Actions\Procurement\SupplierEmail\AssignSupplierEmail::make()->handle($stranger, $otherOrgSupplier);
+
+    $learned = $process("m5-$token");
+
+    expect($learned->org_supplier_id)->toBe($otherOrgSupplier->id)
+        ->and($learned->routed_by)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum::ADDRESS);
+
+    $this->get(route('grp.org.procurement.supplier_emails.index', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/SupplierEmails')->has('data.data'));
+
+    $this->get(route('grp.org.procurement.supplier_emails.show', [$this->organisation->slug, $byThread->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/SupplierEmail')
+            ->has('messages', 2)
+            ->where('supplier.name', $supplier->name));
+
+    $this->get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug, 'tab' => 'emails']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('emails.data', 3));
+
+    $this->organisation->update(['settings' => $originalSettings]);
+});
+
+test('a submitted purchase order is emailed to the supplier through SES with its PDF and is tracked', function () {
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedOrganisationOutboxes::run($this->organisation);
+
+    $token       = Str::lower(Str::random(8));
+    $supplier    = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['email' => "orders@factory-$token.com"]));
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    StoreSupplierProduct::make()->action($supplier, [
+        'code'             => "PO-MAIL-$token",
+        'name'             => 'PO mail product',
+        'cost'             => 10,
+        'stock_id'         => $this->orgStocks[0]->stock_id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    expect(\App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::recipientEmail($purchaseOrder))->toBe("orders@factory-$token.com")
+        ->and(\App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::outbox($purchaseOrder))->not->toBeNull();
+
+    $dispatchedEmail = \App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::run($purchaseOrder);
+
+    $sentRow = \App\Models\Procurement\SupplierEmail::where('purchase_order_id', $purchaseOrder->id)->first();
+
+    expect($dispatchedEmail->emailAddress->email)->toBe("orders@factory-$token.com")
+        ->and($dispatchedEmail->outbox->code)->toBe(\App\Enums\Comms\Outbox\OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER)
+        ->and(\App\Models\Comms\ModelHasDispatchedEmail::where('model_type', 'PurchaseOrder')->where('model_id', $purchaseOrder->id)->value('dispatched_email_id'))->toBe($dispatchedEmail->id)
+        ->and($sentRow->dispatched_email_id)->toBe($dispatchedEmail->id)
+        ->and($sentRow->org_supplier_id)->toBe($orgSupplier->id)
+        ->and($sentRow->direction)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailDirectionEnum::OUTBOUND);
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'dispatched_emails']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('dispatched_emails.data', 1));
+
+    \Illuminate\Support\Facades\Queue::fake();
+
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted::make()->handle($purchaseOrder, sendToSupplier: true);
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted::make()->handle(StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition()));
+
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier);
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, 1);
+});
