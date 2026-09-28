@@ -32,6 +32,8 @@ class StockDeliveryItemResource extends JsonResource
             ->select([
                 'location_org_stocks.id',
                 'location_org_stocks.quantity',
+                'location_org_stocks.default_wholesale_picking_location',
+                'location_org_stocks.default_dropshipping_picking_location',
                 'locations.id as location_id',
                 'locations.code as location_code',
                 'locations.slug as location_slug',
@@ -145,6 +147,7 @@ class StockDeliveryItemResource extends JsonResource
             'has_available_qty'     => $checked - $placed > 0,
             'is_editable'           => $isEditable,
             'locations'             => $locations,
+            'has_picking_location'  => $locations->contains(fn ($location) => $location->default_wholesale_picking_location || $location->default_dropshipping_picking_location),
             'warehouse_area'        => $warehouseArea,
             'warehouse_slug'        => $locations->first()?->warehouse_slug,
             'searchLocationsRoute'  => $warehouse ? [

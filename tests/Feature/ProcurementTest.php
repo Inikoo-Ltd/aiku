@@ -2885,6 +2885,35 @@ test('stock delivery item is booked in to a location the org stock did not have 
         ->and($stockDeliveryItem->state)->toBe(StockDeliveryItemStateEnum::PLACED);
 });
 
+test('stock delivery item booked in with set as picking location flags that location as the picking location', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-SET-PICKING', [10]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDelivery->items()->first(), ['unit_quantity_checked' => 10]);
+    $warehouse         = Warehouse::where('organisation_id', $this->organisation->id)->first() ?? StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
+    $location          = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+
+    LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->update([
+        'default_wholesale_picking_location'    => false,
+        'default_dropshipping_picking_location' => false,
+    ]);
+
+    expect((new StockDeliveryItemResource($stockDeliveryItem))->resolve()['has_picking_location'])->toBeFalse();
+
+    $stockDeliveryItem = UpsertStockDeliveryItemPlaced::make()->action($stockDeliveryItem, [
+        'quantity'                => 4,
+        'location_id'             => $location->id,
+        'set_as_picking_location' => true,
+    ]);
+
+    $locationOrgStock = LocationOrgStock::where('org_stock_id', $stockDeliveryItem->org_stock_id)->where('location_id', $location->id)->first();
+
+    expect($locationOrgStock->default_wholesale_picking_location)->toBeTrue()
+        ->and($locationOrgStock->default_dropshipping_picking_location)->toBeTrue()
+        ->and((new StockDeliveryItemResource($stockDeliveryItem->fresh()))->resolve()['has_picking_location'])->toBeTrue();
+});
+
 test('stock delivery item is checked and placed in SKOs while its quantities stay in units', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'PLACE-IN-SKOS', [72]);
     $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
