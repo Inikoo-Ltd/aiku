@@ -21,6 +21,7 @@ import ImagePrime from "primevue/image"
 import Image from "@common/Components/Image.vue"
 import { ctrans } from "@/Composables/useTrans"
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
+import SummaryCard from "@/Components/Goods/SummaryCard.vue"
 import SalesAnalysisTeaser from "@/Components/SalesAnalysis/SalesAnalysisTeaser.vue"
 import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.vue"
 
@@ -142,14 +143,16 @@ console.log
 		</div>
 
 		<!-- Trade Unit Summary -->
-		<TradeUnitMasterProductSummary 
-			:attachments="data.attachment_box"
-			:publicAttachment="data.attachment_box?.public" 
-			:data="data.tradeUnit" 
-			:gpsr="data.gpsr"
-			:properties="data.properties" 
-			:labelInfo="data.label_info"
-		/>
+		<SummaryCard class="min-w-0 self-start">
+			<TradeUnitMasterProductSummary
+				:attachments="data.attachment_box"
+				:publicAttachment="data.attachment_box?.public"
+				:data="data.tradeUnit"
+				:gpsr="data.gpsr"
+				:properties="data.properties"
+				:labelInfo="data.label_info"
+			/>
+		</SummaryCard>
 
 		<!-- Sales -->
 		<div class="min-w-0">

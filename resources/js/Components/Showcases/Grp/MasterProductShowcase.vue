@@ -22,6 +22,7 @@ import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
 import { faStarfighter, faStarshipFreighter } from "@far"
 import ImagePrime from "primevue/image"
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
+import SummaryCard from "@/Components/Goods/SummaryCard.vue"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
@@ -423,11 +424,10 @@ const isModalProductForSale = ref(false)
 		</div>
 	</div>
 
-	<!-- The right sidebar (prices, analytics) always keeps its width; the content area
-	     gets the rest, with the image beside the summary only when there is room -->
-	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mr-0 lg:ml-5 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
-		<!-- Content: image + summary. The summary is capped; spare width goes first to
-		     the image column (up to its own cap), the rest stays as breathing room -->
+	<!-- Content area 8/12, right sidebar (prices, analytics) 4/12 but never under 385px;
+	     the image sits beside the summary only when there is room -->
+	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mr-0 lg:ml-5 lg:grid-cols-[minmax(0,8fr)_minmax(385px,4fr)]">
+		<!-- Content: image + summary. The image column has its own cap; the summary takes the rest -->
 		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
 			<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]">
 				<!-- Image Preview & Thumbnails -->
@@ -448,17 +448,16 @@ const isModalProductForSale = ref(false)
 			</div>
 
 			<!-- Product Summary -->
-			<div class="min-w-0 flex-1 max-w-2xl">
-				<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
-				<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
-
-				<TradeUnitMasterProductSummary
-					:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
-					:gpsr="data.gpsr"
-					:properties="data.properties"
-					:attachments="data.attachment_box"
-					:labelInfo="data.label_info"
-				/>
+			<div class="min-w-0 flex-1">
+				<SummaryCard>
+					<TradeUnitMasterProductSummary
+						:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
+						:gpsr="data.gpsr"
+						:properties="data.properties"
+						:attachments="data.attachment_box"
+						:labelInfo="data.label_info"
+					/>
+				</SummaryCard>
 			</div>
 		</div>
 
@@ -540,6 +539,8 @@ const isModalProductForSale = ref(false)
 				</Popover>
 			</div>
 			<div class="mr-3">
+				<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+				<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
 				<SalesAnalyticsCompact  v-if="salesData" :salesData="salesData" />
 			</div>
 
