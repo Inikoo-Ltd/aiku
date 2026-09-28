@@ -3857,6 +3857,15 @@ describe('partner shopping list', function () {
             ->and($item->state)->toBe(ShoppingListItemStateEnum::OPEN);
     });
 
+    test('storing a stock already open on the partner shopping list updates it instead of duplicating', function () {
+        $first  = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $second = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 20]);
+
+        expect($second->id)->toBe($first->id)
+            ->and((float) $second->quantity)->toBe(20.0)
+            ->and(PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('org_stock_id', $this->buyerOrgStock->id)->count())->toBe(1);
+    });
+
     test('update and delete partner shopping list item while open', function () {
         $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 10,
@@ -3926,11 +3935,11 @@ describe('partner shopping list', function () {
         $itemA = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 5,
         ]);
+        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
+
         $itemB = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 7,
         ]);
-
-        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
         $resultB = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemB->id]]);
 
         expect($resultA['orders'][0]->id)->toBe($resultB['orders'][0]->id);
@@ -4191,9 +4200,9 @@ describe('partner shopping list', function () {
     });
 
     test('delete all open partner shopping list items keeps items already taken', function () {
-        $open  = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
         $taken = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
         $taken->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $open = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
 
         actingAs($this->adminGuest->getUser());
         $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy_open', [$this->organisation->slug, $this->orgPartner->id]))
@@ -5424,15 +5433,16 @@ test('procurement dashboard lists stock levels linking to each bucket', function
 });
 
 test('procurement dashboard charts stock outs and their estimated lost revenue', function () {
-    $organisationStockHistoryId = DB::table('organisation_stock_histories')->insertGetId([
+    $todayKey = ['organisation_id' => $this->organisation->id, 'date' => today()->toDateString()];
+    $previousTodayHistory = DB::table('organisation_stock_histories')->where($todayKey)->first();
+    DB::table('organisation_stock_histories')->updateOrInsert($todayKey, [
         'group_id'                            => $this->organisation->group_id,
-        'organisation_id'                     => $this->organisation->id,
-        'date'                                => today()->toDateString(),
         'number_org_stocks'                   => 40,
         'number_out_of_stock_org_stocks'      => 10,
         'number_location_org_stocks'          => 40,
         'estimated_lost_revenue_org_currency' => 125.5,
     ]);
+    $organisationStockHistoryId = DB::table('organisation_stock_histories')->where($todayKey)->value('id');
 
     $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug, 'period' => '1m']))
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -5463,7 +5473,11 @@ test('procurement dashboard charts stock outs and their estimated lost revenue',
 
     $freshOrgStock->update(['is_fresh' => false]);
 
-    DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
+    if ($previousTodayHistory) {
+        DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->update(Arr::except((array) $previousTodayHistory, ['id']));
+    } else {
+        DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
+    }
 });
 
 test('supplier misplaced shopping list cleanup only accepts non-orderable buckets', function () {
