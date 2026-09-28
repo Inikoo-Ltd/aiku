@@ -49,6 +49,7 @@ const RenderEcommerceProduct = async(() => import("@/Iris/Components/IrisBlocks/
 const RecommendationCRB1Iris = async(() => import("@/Iris/Components/IrisBlocks/RecommendationCRB1Iris.vue"))
 const ProductIris2Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris2Ecom.vue"))
 const ProductIris3Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris3Ecom.vue"))
+const ProductIris4Ecom = async(() => import("@/Iris/Components/IrisBlocks/Product/Ecom/ProductIris4Ecom.vue"))
 const AnnouncementInformational1 = async(() => import("@/Iris/Components/IrisBlocks/Announcement/AnnouncementInformational1Iris.vue"))
 const Products2Render = async(() => import("@/Iris/Components/IrisBlocks/Products/Ecom/ProductCard/ProductCardEcom2.vue"))
 const Header2Iris = async(() => import("@/Iris/Components/IrisBlocks/Header2Iris.vue"))
@@ -183,10 +184,9 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 		//product
 		"product-1": shop_type === "b2b" ? RenderEcommerceProduct : RenderDropshippingProduct,
-
 		"product-2": RenderEcommerceProduct,
-
 		"product-3": RenderEcommerceProduct,
+		"product-4": RenderEcommerceProduct,
 
 		//product list
 		"products-1": shop_type === "b2b" ? ListProductsEcomIris : ListProductsIris,
@@ -302,6 +302,7 @@ export const getProductRenderB2bComponent = (
 		"product-1": ProductIris1Ecom,
 		"product-2": ProductIris2Ecom,
 		"product-3": ProductIris3Ecom,
+		"product-4": ProductIris4Ecom,
 	}
 
 	return components[componentName] ?? null

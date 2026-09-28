@@ -59,6 +59,7 @@ const PRODUCT_WEBPAGE_BLOCKS = [
     'product-1',
     'product-2',
     'product-3',
+    'product-4',
     'recommendation-customer-recently-bought-1',
 ];
 
@@ -800,4 +801,15 @@ test('iris product web block does not expose other customers back in stock remin
     $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
 
     expect(Arr::get($irisProduct, 'is_back_in_stock'))->toBeFalse();
+});
+
+test('iris product web block exposes the product family id so the member price can react to the family basket', function () {
+    [, $product] = createProduct($this->shop);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect($product->family_id)->not->toBeNull()
+        ->and(Arr::get($irisProduct, 'family_id'))->toBe($product->family_id);
 });
