@@ -892,6 +892,31 @@ test('nothing of ours is ever written to the listing of a variant the merchant a
         ->and($variantCreated)->toBeFalse();
 });
 
+test('editing only the price of a shopify portfolio does not overwrite the title and description in shopify', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-price-only-edit');
+    $channel     = $shopifyUser->customerSalesChannel;
+    $portfolio   = StorePortfolio::make()->action($channel, $this->product, []);
+    $portfolio->update([
+        'sku'                 => 'crbask-05a',
+        'customer_price'      => 10,
+        'platform_product_id' => 'gid://shopify/Product/7400',
+    ]);
+    $portfolio->refresh();
+
+    ShopifyFake::fake([
+        'ProductVariantsList' => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8402', 'title' => 'Default', 'price' => '9.00', 'updatedAt' => 'x', 'inventoryQuantity' => 1, 'product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas']]]]]]),
+        'ProductVariantsBulkUpdate' => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8402', 'price' => '12.00', 'compareAtPrice' => '12.00']], 'userErrors' => []]]),
+    ]);
+
+    \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
+        'customer_price' => '12',
+    ]);
+
+    expect(ShopifyFake::calls('ProductVariantsBulkUpdate'))->toHaveCount(1)
+        ->and(ShopifyFake::calls('productUpdate'))->toBeEmpty();
+});
+
 test('an order line never falls back by product id onto a portfolio linked to a sibling variant, and unlinking it switches its variant off', function () {
     Queue::fake();
     $shopifyUser = shopifyVariantLinkingChannel($this, 'product-adopted-orders');

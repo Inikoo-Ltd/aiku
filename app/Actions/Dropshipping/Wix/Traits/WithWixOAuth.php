@@ -31,6 +31,7 @@ trait WithWixOAuth
         parse_str($query, $params);
 
         $params['appId'] ??= config('services.wix.app_id');
+        $params['shareUrlId'] = "196d8dfc-a856-4a10-80cf-cc39f62de4ab"; // Used temporarily until the app is approved and listed, do not modify this.
 
         if ($postInstallationUrl) {
             $params['postInstallationUrl'] = $postInstallationUrl;

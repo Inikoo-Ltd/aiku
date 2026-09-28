@@ -80,7 +80,10 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
     public function updateShopifyChannel(Portfolio $portfolio): void
     {
         UpdateShopifyProductVariant::run($portfolio);
-        UpdateShopifyProduct::run($portfolio);
+
+        if ($portfolio->wasChanged(['customer_product_name', 'customer_description'])) {
+            UpdateShopifyProduct::run($portfolio);
+        }
     }
 
     public function rules(): array
