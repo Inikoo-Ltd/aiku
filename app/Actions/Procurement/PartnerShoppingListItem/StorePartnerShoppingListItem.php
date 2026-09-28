@@ -14,11 +14,14 @@ use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -56,7 +59,21 @@ class StorePartnerShoppingListItem extends OrgAction
             data_set($modelData, 'added_by_user_id', request()->user()->id);
         }
 
-        $item = PartnerShoppingListItem::create($modelData)->refresh();
+        $item = Cache::lock("partner-shopping-list:{$orgPartner->id}:{$buyerOrgStock->id}", 10)->block(5, function () use ($orgPartner, $buyerOrgStock, $modelData) {
+            $openItem = PartnerShoppingListItem::where('org_partner_id', $orgPartner->id)
+                ->where('org_stock_id', $buyerOrgStock->id)
+                ->where('state', ShoppingListItemStateEnum::OPEN)
+                ->whereNull('job_order_id')
+                ->first();
+
+            if ($openItem) {
+                $openItem->update(Arr::except($modelData, ['added_by_user_id']));
+
+                return $openItem->refresh();
+            }
+
+            return PartnerShoppingListItem::create($modelData)->refresh();
+        });
 
         OrgPartnerHydrateShoppingListItems::dispatch($orgPartner);
 

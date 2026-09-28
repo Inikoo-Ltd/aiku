@@ -3935,11 +3935,11 @@ describe('partner shopping list', function () {
         $itemA = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 5,
         ]);
+        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
+
         $itemB = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 7,
         ]);
-
-        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
         $resultB = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemB->id]]);
 
         expect($resultA['orders'][0]->id)->toBe($resultB['orders'][0]->id);
@@ -4200,9 +4200,9 @@ describe('partner shopping list', function () {
     });
 
     test('delete all open partner shopping list items keeps items already taken', function () {
-        $open  = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
         $taken = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
         $taken->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $open = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
 
         actingAs($this->adminGuest->getUser());
         $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy_open', [$this->organisation->slug, $this->orgPartner->id]))
