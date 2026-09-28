@@ -14,7 +14,6 @@ use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
-use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -60,11 +59,7 @@ class StorePartnerShoppingListItem extends OrgAction
         }
 
         $item = Cache::lock("partner-shopping-list:{$orgPartner->id}:{$buyerOrgStock->id}", 10)->block(5, function () use ($orgPartner, $buyerOrgStock, $modelData) {
-            $openItem = PartnerShoppingListItem::where('org_partner_id', $orgPartner->id)
-                ->where('org_stock_id', $buyerOrgStock->id)
-                ->where('state', ShoppingListItemStateEnum::OPEN)
-                ->whereNull('job_order_id')
-                ->first();
+            $openItem = PartnerShoppingListItem::openPartnerLineFor($orgPartner->id, $buyerOrgStock->id)->first();
 
             if ($openItem) {
                 $openItem->update(Arr::except($modelData, ['added_by_user_id']));

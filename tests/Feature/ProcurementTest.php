@@ -3931,6 +3931,23 @@ describe('partner shopping list', function () {
             ->and($child->state)->toBe(ShoppingListItemStateEnum::OPEN);
     });
 
+    test('cherry pick remainder joins the open line already waiting for the same stock', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 30,
+        ]);
+        $waiting = $item->replicate()->fill(['quantity' => 5]);
+        $waiting->save();
+
+        CherryPickPartnerShoppingListItems::make()->action(
+            $this->orgPartner->partner,
+            [['id' => $item->id, 'quantity' => 12]]
+        );
+
+        expect($item->refresh()->children()->count())->toBe(0)
+            ->and((float) $waiting->refresh()->quantity)->toBe(23.0)
+            ->and(PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->count())->toBe(1);
+    });
+
     test('cherry pick reuses in-process intercompany order across picks', function () {
         $itemA = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 5,
