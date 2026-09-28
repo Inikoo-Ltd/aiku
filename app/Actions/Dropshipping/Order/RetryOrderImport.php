@@ -16,6 +16,7 @@ use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Dropshipping\Shopify\Order\GetShopifyFulfilmentOrderFromApi;
 use App\Actions\Dropshipping\Tiktok\Order\ValidateIncomingTiktokOrder;
 use App\Actions\Dropshipping\WooCommerce\Orders\StoreOrderFromWooCommerce;
+use App\Actions\Dropshipping\Wix\Order\ValidateIncomingWixOrder;
 use App\Enums\Dropshipping\OrderImportRetryStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -144,6 +145,7 @@ class RetryOrderImport
             PlatformTypeEnum::AMAZON,
             PlatformTypeEnum::EBAY,
             PlatformTypeEnum::ALLEGRO,
+            PlatformTypeEnum::WIX,
         ]);
     }
 
@@ -201,8 +203,25 @@ class RetryOrderImport
             PlatformTypeEnum::TIKTOK => Arr::first(Arr::get($user->getOrder($platformOrderId), 'data.orders', [])) ?? [],
             PlatformTypeEnum::AMAZON => Arr::get($this->readResponse($user->getOrder($platformOrderId)), 'payload', []),
             PlatformTypeEnum::EBAY, PlatformTypeEnum::ALLEGRO => $this->readResponse($user->getOrder($platformOrderId)),
+            PlatformTypeEnum::WIX => $this->readWixResponse($user->getOrder($platformOrderId)),
             default => [],
         };
+    }
+
+    /**
+     * Wix reports a failed request with a "message" key rather than the "error" key the other
+     * clients use, and wraps a single order in an "order" key while the search endpoint used to
+     * import orders normally does not, so both need normalising here.
+     *
+     * @throws \Exception
+     */
+    private function readWixResponse(array $response): array
+    {
+        if ($message = Arr::get($response, 'message')) {
+            throw new \Exception($message);
+        }
+
+        return Arr::get($response, 'order', $response);
     }
 
     /**
@@ -233,6 +252,7 @@ class RetryOrderImport
             PlatformTypeEnum::AMAZON => StoreOrderFromAmazon::run($user, $platformOrder),
             PlatformTypeEnum::EBAY => StoreOrderFromEbay::run($user, $platformOrder),
             PlatformTypeEnum::ALLEGRO => ValidateIncomingAllegroOrder::run($user, $platformOrder),
+            PlatformTypeEnum::WIX => ValidateIncomingWixOrder::run($user, $platformOrder),
             default => null,
         };
     }

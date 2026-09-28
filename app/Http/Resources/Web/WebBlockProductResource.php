@@ -90,6 +90,7 @@ class WebBlockProductResource extends JsonResource
         return [
             'slug'              => $product->slug,
             'code'              => $product->code,
+            'family_id'         => $product->family_id,
             'family_code'       => $product->family?->code,
             'name'              => $product->name,
             'description'       => $product->description,

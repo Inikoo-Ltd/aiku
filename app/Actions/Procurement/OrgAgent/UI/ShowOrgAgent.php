@@ -16,6 +16,8 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\Agent\UI\WithAgentEditAction;
 use App\Enums\UI\Procurement\OrgAgentTabsEnum;
+use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
+use App\Http\Resources\Procurement\SupplierMessagesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
 use App\Models\Procurement\OrgAgent;
@@ -121,11 +123,16 @@ class ShowOrgAgent extends OrgAction
                     fn () => GetOrgAgentShowcase::run($orgAgent)
                     : Inertia::optional(fn () => GetOrgAgentShowcase::run($orgAgent)),
 
+                OrgAgentTabsEnum::INBOX->value => $this->tab == OrgAgentTabsEnum::INBOX->value ?
+                    fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgAgent, OrgAgentTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgAgent)])
+                    : Inertia::optional(fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($orgAgent, OrgAgentTabsEnum::INBOX->value))->additional(['compose' => IndexSupplierMessages::composeData($this->organisation, $request->user(), $orgAgent)])),
+
                 OrgAgentTabsEnum::HISTORY->value => $this->tab == OrgAgentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value)))
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value));
+        )->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value))
+            ->table(IndexSupplierMessages::make()->tableStructure($orgAgent, prefix: OrgAgentTabsEnum::INBOX->value));
     }
 
 

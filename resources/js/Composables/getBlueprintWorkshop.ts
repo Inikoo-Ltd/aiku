@@ -60,6 +60,7 @@ import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Bl
 import TimelineIris2 from "@/Components/CMS/Webpage/Step2/Blueprint"
 import Product2 from '@/Components/CMS/Webpage/Product2/Blueprint'
 import Product3 from '@/Components/CMS/Webpage/Product3/Blueprint'
+import Product4 from '@/Components/CMS/Webpage/Product4/Blueprint'
 import CollectionDescription from '@/Components/CMS/Webpage/CollectionDescription/Blueprint'
 import DepartmentDescription from "@/Components/CMS/Webpage/DepartmentDescription/Blueprint"
 import DepartmentDescription2 from "@/Components/CMS/Webpage/DepartmentDescription2/Blueprint"
@@ -145,6 +146,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"product-1": Product1Blueprint.blueprint,
 		"product-2": Product2.blueprint,
 		"product-3": Product3.blueprint,
+		"product-4": Product4.blueprint,
 
 		// see also — accepts dynamic data
 		"see-also-1": () => SeeAlso1Blueprint(data).blueprint,
@@ -243,6 +245,7 @@ export const getBlueprintProduct = (componentName: string, shop_type?: string) =
 		"product-1":  shop_type == 'b2b' ?  Product1EcomBlueprint.blueprint : Product1DSBlueprint.blueprint, 
 		"product-2": Product2.blueprint,
 		"product-3": Product3.blueprint,
+		"product-4": Product4.blueprint,
 	}
 
 	const blueprint = components[componentName]

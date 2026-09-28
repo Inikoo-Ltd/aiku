@@ -323,7 +323,13 @@ test("UI Show Stocks", function () {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $stock->code)->etc()
             )
-            ->has("tabs");
+            ->has("tabs")
+            ->has("showcase.trade_units", $stock->tradeUnits()->count())
+            ->where("showcase.currency_code", $stock->group->currency->code)
+            ->has("showcase.sales_data.yearly_sales")
+            ->has("showcase.sales_data.quarterly_sales")
+            ->has("showcase.org_stocks.items", $stock->orgStocks()->count())
+            ->has("showcase.org_stocks.summary", 3);
     });
 });
 

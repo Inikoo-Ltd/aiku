@@ -80,7 +80,7 @@ const chartOptions = {
 </script>
 
 <template>
-	<div class="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700" :class="{ 'self-start': !isOpen }">
+	<div class="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700" :class="{ 'h-fit': !isOpen }">
 		<div class="flex cursor-pointer select-none items-center gap-2" :class="{ 'mb-2': isOpen }" @click="isOpenByUser = !isOpen">
 			<FontAwesomeIcon :icon="faChartLine" class="text-gray-400" fixed-width aria-hidden="true" />
 			<span class="whitespace-nowrap font-semibold">{{ ctrans("Last 12 months") }}</span>
@@ -94,7 +94,6 @@ const chartOptions = {
 			</span>
 			<button
 				type="button"
-				v-tooltip="isOpen ? ctrans('Close') : ctrans('Open')"
 				class="flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
 				@click.stop="isOpenByUser = !isOpen">
 				<FontAwesomeIcon :icon="faChevronDown" class="transition-transform" :class="{ 'rotate-180': isOpen }" fixed-width aria-hidden="true" />

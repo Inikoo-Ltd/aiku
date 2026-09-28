@@ -76,6 +76,7 @@ enum OutboxCodeEnum: string
     case PROSPECT_CONVERTION_1 = 'prospect_convertion_1';
     case PROSPECT_CONVERTION_2 = 'prospect_convertion_2';
     case PROSPECT_CONVERTION_3 = 'prospect_convertion_3';
+    case SEND_PURCHASE_ORDER_TO_SUPPLIER = 'send_purchase_order_to_supplier';
 
 
     public function type(): OutboxTypeEnum
@@ -103,6 +104,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::PRICE_CHANGE_NOTIFICATION,
@@ -195,6 +197,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED => 'Pallet return dispatched',
             OutboxCodeEnum::INVITE => 'Invite',
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => 'Send invoice to customer',
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER => 'Purchase order to supplier',
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER => 'New pallet return from customer',
             OutboxCodeEnum::NEW_PALLET_DELIVERY_FROM_CUSTOMER => 'New pallet delivery from customer',
             OutboxCodeEnum::PALLET_DELIVERY_DELETED => 'Pallet delivery deleted',
@@ -260,6 +263,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED => 'Pallet return dispatched',
             OutboxCodeEnum::INVITE => 'Invite',
             OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER => 'Send invoice to customer',
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER => 'Purchase order to supplier',
             OutboxCodeEnum::NEW_PALLET_RETURN_FROM_CUSTOMER => 'New pallet return from customer',
             OutboxCodeEnum::NEW_PALLET_DELIVERY_FROM_CUSTOMER => 'New pallet delivery from customer',
             OutboxCodeEnum::PALLET_DELIVERY_DELETED => 'Pallet delivery deleted',
@@ -286,7 +290,7 @@ enum OutboxCodeEnum: string
     public function scope(): array
     {
         return match ($this) {
-            OutboxCodeEnum::TEST => ['Organisation'],
+            OutboxCodeEnum::TEST, OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER => ['Organisation'],
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::BASKET_PUSH,
@@ -403,6 +407,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEWSLETTER,
             OutboxCodeEnum::INVITE,
             OutboxCodeEnum::TEST,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_OFFER,
             OutboxCodeEnum::FINISH_OFFER,
@@ -432,7 +437,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::PRICE_CHANGE,
-            OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD
+            OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
             => OutboxBuilderEnum::BLADE,
             default => null
         };
@@ -493,7 +499,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PRICE_CHANGE,
             OutboxCodeEnum::PROSPECT_CONVERTION_1,
             OutboxCodeEnum::PROSPECT_CONVERTION_2,
-            OutboxCodeEnum::PROSPECT_CONVERTION_3
+            OutboxCodeEnum::PROSPECT_CONVERTION_3,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
             => 'EmailOngoingRun',
             OutboxCodeEnum::MARKETING,
             OutboxCodeEnum::NEWSLETTER,
@@ -537,7 +544,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
             OutboxCodeEnum::NEW_REVIEW,
-            OutboxCodeEnum::INVOICE_PAID
+            OutboxCodeEnum::INVOICE_PAID,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
             => EmailOngoingRunTypeEnum::TRANSACTIONAL,
             OutboxCodeEnum::BASKET_LOW_STOCK,
             OutboxCodeEnum::REORDER_REMINDER,
@@ -600,7 +608,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::BASKET_ON_OFFER,
             OutboxCodeEnum::FAVOURITES_ON_OFFER,
             OutboxCodeEnum::WEB_USER_REGISTRATION,
-            OutboxCodeEnum::INVOICE_PAID
+            OutboxCodeEnum::INVOICE_PAID,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
 
             => PostRoomCodeEnum::CUSTOMER_NOTIFICATION,
 

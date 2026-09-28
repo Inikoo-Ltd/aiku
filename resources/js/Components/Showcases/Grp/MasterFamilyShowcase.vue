@@ -134,7 +134,7 @@ const saveGROffer = () => {
                         {{ tag.name }}
                     </span>
                 </dd>
-                <ProductCategoryCard :data="data.family?.data"  />
+                <ProductCategoryCard subtle :data="data.family?.data"  />
             </div>
 
             <div class="col-span-1 md:col-span-2 lg:col-span-4">
