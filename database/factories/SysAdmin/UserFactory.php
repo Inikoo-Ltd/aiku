@@ -20,7 +20,7 @@ class UserFactory extends Factory
             'group_id'   => Group::factory(),
             'username'   => fake()->unique()->userName.'.'.Str::lower(Str::random(6)),
             'password'   => 'password',
-            'email'      => fake()->email,
+            'email'      => Str::lower(Str::random(6)).'.'.fake()->email,
             'language_id' => 1,
             'status'     => true,
         ];
