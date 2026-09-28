@@ -422,7 +422,7 @@ const isModalProductForSale = ref(false)
 		</div>
 	</div>
 
-	<div class="mx-3 mt-2 lg:mx-0">
+	<div class="mx-3 mt-2 lg:ml-5">
 		<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
 		<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
 	</div>

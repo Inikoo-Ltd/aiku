@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import Chart from "primevue/chart"
 import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChartLine, faArrowRight } from "@fal"
+import { faChartLine, faArrowRight, faChevronDown } from "@fal"
 
 interface Totals {
 	sales: number
@@ -46,6 +46,11 @@ const analysisUrl = computed(() => {
 	return url.pathname + url.search
 })
 
+const hasNoSales = computed(() => !!props.teaser && ![...props.teaser.sales, ...props.teaser.compare_sales].some((row) => row.sales))
+
+const isOpenByUser = ref<boolean | null>(null)
+const isOpen = computed(() => isOpenByUser.value ?? !hasNoSales.value)
+
 const salesChange = computed(() => (props.teaser ? percentChange(props.teaser.totals.current.sales, props.teaser.totals.previous.sales) : null))
 
 
@@ -75,18 +80,29 @@ const chartOptions = {
 </script>
 
 <template>
-	<div class="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
-		<div class="mb-2 flex items-center gap-2">
+	<div class="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700" :class="{ 'self-start': !isOpen }">
+		<div class="flex cursor-pointer select-none items-center gap-2" :class="{ 'mb-2': isOpen }" @click="isOpenByUser = !isOpen">
 			<FontAwesomeIcon :icon="faChartLine" class="text-gray-400" fixed-width aria-hidden="true" />
 			<span class="whitespace-nowrap font-semibold">{{ ctrans("Last 12 months") }}</span>
 			<span class="text-xs text-gray-500">{{ teaser && teaser.shop_count > 1 ? ctrans("vs year before, all websites") : ctrans("vs year before") }}</span>
-			<Link :href="analysisUrl" class="ml-auto flex items-center gap-1 text-xs text-indigo-600 hover:underline">
-				{{ ctrans("Sales analysis") }}
-				<FontAwesomeIcon :icon="faArrowRight" fixed-width aria-hidden="true" />
-			</Link>
+			<span v-if="hasNoSales" class="text-xs text-gray-400">· {{ ctrans("No data available") }}</span>
+			<span class="ml-auto" @click.stop>
+				<Link :href="analysisUrl" class="group flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-[var(--app-accent)] transition-colors hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent-strong)]">
+					{{ ctrans("Sales analysis") }}
+					<FontAwesomeIcon :icon="faArrowRight" class="transition-transform group-hover:translate-x-0.5" fixed-width aria-hidden="true" />
+				</Link>
+			</span>
+			<button
+				type="button"
+				v-tooltip="isOpen ? ctrans('Close') : ctrans('Open')"
+				class="flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+				@click.stop="isOpenByUser = !isOpen">
+				<FontAwesomeIcon :icon="faChevronDown" class="transition-transform" :class="{ 'rotate-180': isOpen }" fixed-width aria-hidden="true" />
+			</button>
 		</div>
 
-		<template v-if="teaser">
+		<template v-if="!isOpen" />
+		<template v-else-if="teaser">
 			<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 tabular-nums">
 				<span>
 					<span class="font-semibold text-gray-900">{{ money(teaser.totals.current.sales) }}</span>

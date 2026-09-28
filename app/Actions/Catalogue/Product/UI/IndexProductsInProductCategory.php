@@ -445,6 +445,16 @@ class IndexProductsInProductCategory extends OrgAction
                 'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
                 'familyId'                      => $productCategory->type === ProductCategoryTypeEnum::FAMILY ? $productCategory->id : null,
+                'step_discount_shop_data'      => $productCategory->type === ProductCategoryTypeEnum::FAMILY ? [
+                    'id'            => $productCategory->shop_id,
+                    'slug'          => $productCategory->shop->slug,
+                    'organisation'  => $productCategory->organisation->slug,
+                    'currency_code' => $productCategory->shop->currency->code,
+                    'default_dates' => [
+                        'start' => now()->toDateString(),
+                        'end'   => now()->addDays(7)->toDateString(),
+                    ],
+                ] : null,
                 'variantSlugs'                 => $products->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'tabs'                         => [
                     'current'    => $this->tab,

@@ -323,6 +323,7 @@ class GetSalesAnalysis
         return DB::table('invoice_transactions')
             ->whereRaw('invoice_transactions.asset_id = any(?::int[])', [$this->intArray($this->products->pluck('asset_id')->unique()->all())])
             ->whereNull('invoice_transactions.deleted_at')
+            ->where('invoice_transactions.in_process', false)
             ->when(!$this->includePartners, fn ($query) => $query->where('invoice_transactions.is_partner', false))
             ->whereBetween('invoice_transactions.date', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
     }

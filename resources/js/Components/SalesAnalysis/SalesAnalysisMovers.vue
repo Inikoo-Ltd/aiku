@@ -2,7 +2,7 @@
 import { computed, ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowDown, faArrowUp, faStore, faCube, faFrown } from "@fal"
+import { faArrowDown, faArrowUp, faStore, faCube, faFrown, faSmile, faInbox, faChevronDown } from "@fal"
 
 interface Mover {
 	label: string
@@ -58,12 +58,19 @@ const order = computed(() => (unit.value === "money" ? byMoney : byPercent))
 const display = (row: Mover) => (unit.value === "money" ? money(row.sales - row.previous_sales) : formatPercent(percentChange(row)))
 const tooltip = (row: Mover) => (unit.value === "money" ? formatPercent(percentChange(row)) : money(row.sales - row.previous_sales))
 
+const availableColumns = computed(() => [
+	{ kind: "website" as const, label: ctrans("Websites"), icon: faStore, isShown: (props.teaser?.shop_count ?? 0) > 1 },
+	{ kind: "product" as const, label: props.teaser?.breakdown_label ?? "", icon: faCube, isShown: !!props.teaser?.breakdown_label },
+])
+
+const shownColumns = computed(() => {
+	const shown = availableColumns.value.filter((column) => column.isShown)
+
+	return shown.length ? shown : availableColumns.value.filter((column) => column.kind === "website")
+})
+
 const columns = computed(() =>
-	[
-		{ kind: "website" as const, label: ctrans("Websites"), icon: faStore, isShown: (props.teaser?.shop_count ?? 0) > 1 },
-		{ kind: "product" as const, label: props.teaser?.breakdown_label ?? "", icon: faCube, isShown: !!props.teaser?.breakdown_label },
-	]
-		.filter((column) => column.isShown)
+	shownColumns.value
 		.map((column) => {
 		const movers = rows.value.filter((row) => row.kind === column.kind)
 		return {
@@ -75,29 +82,52 @@ const columns = computed(() =>
 )
 const gridColumns = computed(() => ({ gridTemplateColumns: `repeat(${Math.max(1, columns.value.length)}, minmax(0, 1fr))` }))
 const isAnythingGrowing = computed(() => columns.value.some((column) => column.growing.length))
+const isAnythingFalling = computed(() => columns.value.some((column) => column.falling.length))
+const hasMovers = computed(() => isAnythingGrowing.value || isAnythingFalling.value)
+
+const isOpenByUser = ref<boolean | null>(null)
+const isOpen = computed(() => isOpenByUser.value ?? hasMovers.value)
 </script>
 
 <template>
-	<div class="grid grid-rows-[auto_1fr_auto_1fr] rounded-lg border border-gray-200 bg-white text-xs text-gray-700 shadow-sm">
+	<div class="grid grid-rows-[auto_1fr_auto_1fr] rounded-lg border border-gray-200 bg-white text-xs text-gray-700 shadow-sm" :class="{ 'self-start': !isOpen }">
 		<template v-if="teaser">
-			<div class="grid gap-4 border-b border-gray-200 px-3 py-2 text-gray-500" :style="gridColumns">
+			<div class="grid cursor-pointer select-none gap-4 px-3 py-2 text-gray-500" :class="{ 'border-b border-gray-200': isOpen }" :style="gridColumns" @click="isOpenByUser = !isOpen">
 				<div v-for="(column, index) in columns" :key="column.kind" class="flex items-center gap-1.5">
 					<FontAwesomeIcon :icon="column.icon" fixed-width aria-hidden="true" />
 					{{ column.label }}
-					<div v-if="index === columns.length - 1" class="ml-auto flex overflow-hidden rounded border border-gray-300" data-movers-unit>
+					<span v-if="!hasMovers && index === 0" class="text-gray-400">· {{ ctrans("No data available") }}</span>
+					<div v-if="index === columns.length - 1" class="ml-auto flex items-center gap-2">
+						<div v-if="isOpen && hasMovers" class="flex cursor-default overflow-hidden rounded border border-gray-300" data-movers-unit @click.stop>
+							<button
+								v-for="option in (['percent', 'money'] as const)"
+								:key="option"
+								type="button"
+								class="px-1.5 leading-5"
+								:class="unit === option ? 'bg-gray-700 text-white' : 'text-gray-600 hover:bg-gray-50'"
+								@click="setUnit(option)">
+								{{ option === "percent" ? "%" : currencySymbol }}
+							</button>
+						</div>
 						<button
-							v-for="option in (['percent', 'money'] as const)"
-							:key="option"
 							type="button"
-							class="px-1.5 leading-5"
-							:class="unit === option ? 'bg-gray-700 text-white' : 'text-gray-600 hover:bg-gray-50'"
-							@click="setUnit(option)">
-							{{ option === "percent" ? "%" : currencySymbol }}
+							v-tooltip="isOpen ? ctrans('Close') : ctrans('Open')"
+							class="flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+							@click.stop="isOpenByUser = !isOpen">
+							<FontAwesomeIcon :icon="faChevronDown" class="transition-transform" :class="{ 'rotate-180': isOpen }" fixed-width aria-hidden="true" />
 						</button>
 					</div>
 				</div>
 			</div>
 
+			<template v-if="!isOpen" />
+
+			<div v-else-if="!hasMovers" class="flex flex-col items-center justify-center gap-1 py-4 text-gray-400">
+				<FontAwesomeIcon :icon="faInbox" class="text-2xl" fixed-width aria-hidden="true" />
+				{{ ctrans("No data available") }}
+			</div>
+
+			<template v-else>
 			<div v-if="isAnythingGrowing" class="grid gap-4 px-3 pt-2" :style="gridColumns">
 				<div v-for="column in columns" :key="column.kind" class="min-w-0">
 					<div v-for="row in column.growing" :key="row.label" v-tooltip="tooltip(row)" class="flex items-center gap-1.5 py-0.5 tabular-nums">
@@ -115,7 +145,7 @@ const isAnythingGrowing = computed(() => columns.value.some((column) => column.g
 
 			<div class="mx-3 my-1 border-t border-gray-100" />
 
-			<div class="grid gap-4 px-3 pb-2" :style="gridColumns">
+			<div v-if="isAnythingFalling" class="grid gap-4 px-3 pb-2" :style="gridColumns">
 				<div v-for="column in columns" :key="column.kind" class="min-w-0">
 					<div v-for="row in column.falling" :key="row.label" v-tooltip="tooltip(row)" class="flex items-center gap-1.5 py-0.5 tabular-nums">
 						<FontAwesomeIcon :icon="faArrowDown" class="text-red-600" fixed-width aria-hidden="true" />
@@ -125,6 +155,11 @@ const isAnythingGrowing = computed(() => columns.value.some((column) => column.g
 					<div v-if="!column.falling.length" class="py-0.5 text-gray-400">—</div>
 				</div>
 			</div>
+			<div v-else class="flex flex-col items-center justify-center gap-1 pb-2 text-gray-400">
+				<FontAwesomeIcon :icon="faSmile" class="text-2xl" fixed-width aria-hidden="true" />
+				{{ ctrans("Nothing is falling") }}
+			</div>
+			</template>
 		</template>
 		<div v-else class="grid gap-4 p-3">
 			<div class="h-32 animate-pulse rounded bg-gray-100" />
