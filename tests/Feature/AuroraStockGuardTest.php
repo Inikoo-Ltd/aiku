@@ -1,12 +1,12 @@
 <?php
 
+use App\Actions\Production\Production\StoreProduction;
 use App\Actions\Transfers\Aurora\WithFetchStock;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Transfers\SourceOrganisationService;
-use Illuminate\Support\Facades\DB;
 
 /**
  * This one genuinely needs rows: processOrgStock looks the org stock up before deciding, so it
@@ -104,26 +104,16 @@ it('lets only production movements through from aurora when the organisation run
     $organisation = $this->organisation;
     $organisation->update(['is_aiku_stock_control' => true]);
 
-    $note = null;
+    $note           = null;
+    $auroraDelivery = null;
     if ($deliveryParent) {
-        DB::table('stock_deliveries')->insert([
-            'group_id'        => $organisation->group_id,
-            'organisation_id' => $organisation->id,
-            'parent_type'     => 'Production',
-            'parent_id'       => 1,
-            'parent_code'     => 'guard',
-            'date'            => now(),
-            'data'            => '{}',
-            'cost_data'       => '{}',
-            'parent_name'     => 'guard',
-            'currency_id'     => $organisation->currency_id,
-            'slug'            => 'guard-'.uniqid(),
-            'reference'       => 'guard',
-            'source_id'       => $organisation->id.':777',
-            'created_at'      => now(),
-            'updated_at'      => now(),
-        ]);
-        $note = 'delivery/777';
+        $supplierKey = $deliveryParent == 'production' ? 'guard-production-'.uniqid() : 'guard-supplier-'.uniqid();
+        if ($deliveryParent == 'production') {
+            $production = StoreProduction::make()->action($organisation, ['code' => 'G'.substr(uniqid(), -5), 'name' => 'Guard factory']);
+            $production->update(['sources' => ['suppliers' => [$organisation->id.':'.$supplierKey]]]);
+        }
+        $auroraDelivery = (object) ['Supplier Delivery Parent' => 'Supplier', 'Supplier Delivery Parent Key' => $supplierKey];
+        $note           = 'delivery/777';
     }
 
     $source               = Mockery::mock(SourceOrganisationService::class);
@@ -131,6 +121,13 @@ it('lets only production movements through from aurora when the organisation run
 
     $fetcher = new class ($source) extends \App\Transfers\Aurora\FetchAuroraOrgStockMovement {
         public bool $lookedUpOrgStock = false;
+
+        public ?object $auroraDelivery = null;
+
+        protected function fetchAuroraDeliveryParent(string $auroraDeliveryKey): ?object
+        {
+            return $this->auroraDelivery;
+        }
 
         public function feed(object $row): void
         {
@@ -146,6 +143,8 @@ it('lets only production movements through from aurora when the organisation run
         }
     };
 
+    $fetcher->auroraDelivery = $auroraDelivery;
+
     $row       = auroraMovementRow($type, $section);
     $row->Note = $note;
     $fetcher->feed($row);
@@ -155,6 +154,7 @@ it('lets only production movements through from aurora when the organisation run
     'sale (picking is done in aiku)'         => ['Sale', '', false],
     'in (booking in is done in aiku)'        => ['In', '', false],
     'in from a production delivery'          => ['In', '', true, 'production'],
+    'in from a supplier delivery'            => ['In', '', false, 'supplier'],
     'restock (returns are sowed in aiku)'    => ['Restock', '', false],
     'production consumption'                 => ['Production', 'Out', true],
     'production return of consumed stock'    => ['Production', 'In', true],
