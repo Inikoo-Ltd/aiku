@@ -230,7 +230,7 @@ onMounted(() => {
         </Breadcrumb>
     </div>
 
-    <div v-if="anomalies?.items?.length" class="px-4 py-4 sm:px-6 lg:px-8">
+    <div v-if="anomalies?.items?.length" class="px-4 py-3">
         <MasterAnomalyBlocks :anomalies="anomalies" />
     </div>
 
