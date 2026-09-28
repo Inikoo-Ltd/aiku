@@ -72,6 +72,10 @@ class GetShopSalesAnalysis
         $this->seriesColumn  = $isShop ? 'sales_external' : 'sales_grp_currency_external';
         $this->invoiceColumn = $isShop ? 'net_amount' : 'grp_net_amount';
 
+        if (!Arr::get($modelData, 'from') && !Arr::get($modelData, 'to')) {
+            $modelData = $this->lastFullWeeks($modelData);
+        }
+
         $to   = Carbon::parse(Arr::get($modelData, 'to') ?? now()->subDay()->toDateString())->startOfDay();
         $from = Carbon::parse(Arr::get($modelData, 'from') ?? $to->copy()->subYear()->addDay()->toDateString())->startOfDay();
         if ($from->gt($to)) {
@@ -148,6 +152,20 @@ class GetShopSalesAnalysis
             'skos'                 => $this->latestStockCount($to),
             'traffic'              => $this->traffic($from, $to),
             'events'               => $this->events($departments, $isShop, $from, $to),
+        ];
+    }
+
+    private function lastFullWeeks(array $modelData): array
+    {
+        $to   = now()->startOfWeek(Carbon::MONDAY)->subDay()->startOfDay();
+        $from = $to->copy()->subWeeks(52)->addDay();
+
+        return [
+            ...$modelData,
+            'from'        => $from->toDateString(),
+            'to'          => $to->toDateString(),
+            'compareFrom' => Arr::get($modelData, 'compareFrom') ?? $from->copy()->subWeeks(52)->toDateString(),
+            'compareTo'   => Arr::get($modelData, 'compareTo') ?? $to->copy()->subWeeks(52)->toDateString(),
         ];
     }
 

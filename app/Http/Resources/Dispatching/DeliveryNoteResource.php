@@ -37,7 +37,7 @@ class DeliveryNoteResource extends JsonResource
             'gift_message_print_route'       => $deliverNote->has_gift_message ? [
                 'name'       => 'grp.pdfs.order-gift-message',
                 'parameters' => [
-                    'order' => $deliverNote->orders()->first()?->id
+                    'order' => $deliverNote->orders()->first()?->slug
                 ]
             ] : null,
             'updated_at'                     => $deliverNote->updated_at,

@@ -15,10 +15,13 @@ import {
 	faVideo
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
-import { faImage } from "@far"
 import TradeUnitMasterProductSummary from "@/Components/Goods/TradeUnitMasterProductSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 import ImagePrime from "primevue/image"
+import Image from "@common/Components/Image.vue"
+import { ctrans } from "@/Composables/useTrans"
+import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
+import SummaryCard from "@/Components/Goods/SummaryCard.vue"
 import SalesAnalysisTeaser from "@/Components/SalesAnalysis/SalesAnalysisTeaser.vue"
 import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.vue"
 
@@ -110,54 +113,52 @@ console.log
 			</span>
 		</span>
 	</div>
-	<div class="mx-3 lg:mx-0 mt-2">
-		<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
-		<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
-	</div>
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:ml-5 lg:mr-3 mt-2">
 
 		<!-- Sidebar -->
 		<div class="space-y-3 lg:space-y-6">
 			<!-- Image Preview -->
-			<div class="bg-white rounded-xl px-4 lg:p-5">
-				<dd class="font-medium flex flex-wrap gap-1 mb-4">
-					<span v-for="tag in data.tradeUnit?.tags ?? []" :key="tag.id" v-tooltip="'tag'"
-						class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
-						{{ tag.name }}
-					</span>
-				</dd>
-				<div class="bg-white   p-4 lg:p-5">
-				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
-					<ImagePrime :src="props.data.main_image.webp" :alt="props?.data?.tradeUnit?.data?.name" preview />
-					<!-- <div class="text-sm italic text-gray-500">
-						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">images</span>
-					</div> -->
-				</div>
-				<div v-else>
-					<div
-						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
-						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+			<ProductCategoryCard subtle :data="data.tradeUnit">
+				<template v-if="data.tradeUnit?.tags?.length || data.brand_badge" #beforeImage>
+					<div class="flex items-start gap-2 mb-4">
+						<div class="font-medium flex flex-wrap gap-1">
+							<span v-for="tag in data.tradeUnit?.tags ?? []" :key="tag.id" v-tooltip="'tag'"
+								class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+								{{ tag.name }}
+							</span>
+						</div>
+						<span v-if="data.brand_badge" v-tooltip="ctrans('Brand')"
+							class="ml-auto shrink-0 inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700">
+							<Image v-if="data.brand_badge.image" :src="data.brand_badge.image" imageCover
+								class="h-4 w-4 overflow-hidden rounded-full" />
+							{{ data.brand_badge.name }}
+						</span>
 					</div>
-					<!-- <div class="mt-2 text-sm italic text-gray-500">
-						Manage images in tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div> -->
-				</div>
-			</div>
-			</div>
+				</template>
+				<template v-if="props.data?.main_image?.webp" #image>
+					<ImagePrime :src="props.data.main_image.webp" :alt="props?.data?.tradeUnit?.name" preview
+						class="block w-full" imageClass="w-full aspect-square object-contain" />
+				</template>
+			</ProductCategoryCard>
 		</div>
 
 		<!-- Trade Unit Summary -->
-		<TradeUnitMasterProductSummary 
-			:attachments="data.attachment_box"
-			:publicAttachment="data.attachment_box?.public" 
-			:data="data.tradeUnit" 
-			:gpsr="data.gpsr"
-			:properties="data.properties" 
-			:labelInfo="data.label_info"
-		/>
+		<SummaryCard class="min-w-0 self-start">
+			<TradeUnitMasterProductSummary
+				:attachments="data.attachment_box"
+				:publicAttachment="data.attachment_box?.public"
+				:data="data.tradeUnit"
+				:gpsr="data.gpsr"
+				:properties="data.properties"
+				:labelInfo="data.label_info"
+			/>
+		</SummaryCard>
+
+		<!-- Sales -->
+		<div class="min-w-0">
+			<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+			<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
+		</div>
 
 		<!-- Attachments -->
 		<!-- <div>

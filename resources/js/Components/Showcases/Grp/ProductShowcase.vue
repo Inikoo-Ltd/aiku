@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import ImagePrime from "primevue/image"
+import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
 import { ref, computed, inject } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo} from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle, faTimesCircle } from "@fas"
@@ -10,9 +11,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { faImage } from "@far"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
+import SummaryCard from "@/Components/Goods/SummaryCard.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ReviewContent from "@/Components/ReviewContent.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
@@ -234,11 +235,10 @@ const getTooltips = () => {
 		</div>
 	</div>
 
-	<!-- The right sidebar (prices, analytics) always keeps its width; the content area
-	     gets the rest, with the image beside the summary only when there is room -->
-	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mx-0 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
-		<!-- Content: image + summary. The summary is capped; spare width goes first to
-		     the image column (up to its own cap), the rest stays as breathing room -->
+	<!-- Content area 8/12, right sidebar (prices, analytics) 4/12 but never under 385px;
+	     the image sits beside the summary only when there is room -->
+	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mr-0 lg:ml-5 lg:grid-cols-[minmax(0,8fr)_minmax(385px,4fr)]">
+		<!-- Content: image + summary. The image column has its own cap; the summary takes the rest -->
 		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
 		<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]" v-if="data?.product?.data?.picking_factor?.length">
 			<!-- Product Tags -->
@@ -249,56 +249,45 @@ const getTooltips = () => {
 			</dd> -->
 
 			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white   p-4 lg:p-5">
-				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
+			<ProductCategoryCard subtle :data="data.product.data">
+				<template v-if="props.data?.main_image?.webp" #image>
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
-						class="min-h-60" />
-					<!-- <div class="text-sm italic text-gray-500">
-						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div> -->
-				</div>
-				<div v-else>
-					<div
-						class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
-						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
-					</div>
-					<!-- <div class="mt-2 text-sm italic text-gray-500">
-						Manage images in tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
-					</div> -->
-				</div>
-			</div>
+						class="block w-full" imageClass="w-full aspect-square object-contain" />
+				</template>
+			</ProductCategoryCard>
 		</div>
 
 		<!-- Product Summary -->
-		<div class="min-w-0 flex-1 max-w-2xl">
-			<SalesAnalysisTeaser v-if="showSalesAnalysis" :teaser="salesAnalysisTeaser" class="mb-4" />
-
-			<ProductSummary
-				:noTradeUnit="!data?.product?.data?.picking_factor?.length"
-				:data="{...data.product.data, tags: data.tags, brands: data.brands}"
-				:properties="data.properties"
-				:parts="data.org_stocks"
-				:public-attachment="data.attachment_box.public"
-				:gpsr="data.gpsr"
-				:attachments="data.attachment_box"
-				:labelInfo="data.label_info"
-			/>
+		<div class="min-w-0 flex-1">
+			<SummaryCard>
+				<ProductSummary
+					:noTradeUnit="!data?.product?.data?.picking_factor?.length"
+					:data="{...data.product.data, tags: data.tags, brands: data.brands}"
+					:properties="data.properties"
+					:parts="data.org_stocks"
+					:public-attachment="data.attachment_box.public"
+					:gpsr="data.gpsr"
+					:attachments="data.attachment_box"
+					:labelInfo="data.label_info"
+				/>
+			</SummaryCard>
 		</div>
 		</div>
 
 		<div class="min-w-0 bg-white h-fit mx-4 shadow-sm">
-			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
-				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" fixed-width />
-				<span>
-					{{
-					data?.product?.data?.stock > 0
-					? ctrans("In stock") + ` (${data?.product?.data?.stock} ` + ctrans("available") + `)`
-					: data.product.data.state=='discontinued' ? ctrans("Discontinued")  : ctrans("Out Of Stock")
-					}}
+			<div class="mb-4 flex items-center gap-3 px-2">
+				<span class="relative flex h-3 w-3 shrink-0">
+					<span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+						:class="data?.product?.data?.stock > 0 ? 'bg-green-400' : 'bg-red-400'" />
+					<span class="relative inline-flex h-3 w-3 rounded-full"
+						:class="data?.product?.data?.stock > 0 ? 'bg-green-500' : 'bg-red-500'" />
+				</span>
+				<span v-if="data?.product?.data?.stock > 0" class="flex flex-wrap items-baseline gap-x-2">
+					<span class="text-xl font-semibold text-gray-800">{{ ctrans("In stock") }}</span>
+					<span class="text-sm tabular-nums text-gray-500">{{ locale.number(data.product.data.stock) }} {{ ctrans("available") }}</span>
+				</span>
+				<span v-else class="text-xl font-semibold text-gray-800">
+					{{ data.product.data.state == 'discontinued' ? ctrans("Discontinued") : ctrans("Out Of Stock") }}
 				</span>
 			</div>
 
@@ -315,8 +304,8 @@ const getTooltips = () => {
 			<!-- Section: Where the stock sits -->
 			<div v-if="data.stock_locations?.length" class="mb-4 px-2">
 				<button type="button" @click="showLocations = !showLocations" class="flex w-full items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1 hover:text-gray-700">
-					<FontAwesomeIcon :icon="showLocations ? faChevronUp : faChevronDown" fixed-width />
 					{{ ctrans("Locations") }} ({{ data.stock_locations.length }})
+					<FontAwesomeIcon :icon="faChevronDown" class="ml-auto transition-transform" :class="{ 'rotate-180': showLocations }" fixed-width />
 				</button>
 				<table v-if="showLocations" class="w-full text-sm">
 					<tr v-for="location in data.stock_locations" :key="location.location_code + location.org_stock_code" class="border-b border-gray-100 last:border-0">
@@ -346,6 +335,8 @@ const getTooltips = () => {
 			<!-- <div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 			</div> -->
+
+			<SalesAnalysisTeaser v-if="showSalesAnalysis" :teaser="salesAnalysisTeaser" class="mb-4" />
 
 			<!-- Sales Analytics Compact -->
 			<div v-if="salesData && !(data?.product?.data?.state == 'in_process')">
