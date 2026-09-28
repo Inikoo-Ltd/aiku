@@ -95,6 +95,17 @@ class EditProcurementSettings extends OrgAction
                                     'label' => __('WhatsApp Business Account ID'),
                                     'value' => Arr::get($whatsapp, 'waba_id'),
                                 ],
+                                'whatsapp_phone_status'            => [
+                                    'type'         => 'whatsapp_phone_status',
+                                    'label'        => __('Status'),
+                                    'information'  => __('Ask Meta whether this number is live and whether the WhatsApp Business Account delivers its messages to Aiku.'),
+                                    'noSaveButton' => true,
+                                    'value'        => Arr::get($whatsapp, 'last_status_check'),
+                                    'routes'       => [
+                                        'status'          => ['name' => 'grp.org.procurement.settings.whatsapp_phone.status', 'parameters' => [$organisation->slug]],
+                                        'subscribed_apps' => ['name' => 'grp.org.procurement.settings.whatsapp_app.subscribed', 'parameters' => [$organisation->slug]],
+                                    ],
+                                ],
                                 'whatsapp_message_template'        => [
                                     'type'        => 'input',
                                     'label'       => __('Message template'),
