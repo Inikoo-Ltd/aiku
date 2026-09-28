@@ -3846,3 +3846,9 @@ test('a job carried to another day is one row on the board, with the amount the 
         ->and($rows[0]['quantity_total'])->toEqual($skos(40))
         ->and($rows[0]['in_progress'])->toBeFalse();
 });
+
+test('organisation navigation shows the warehouse section above production', function () {
+    $sections = array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($this->guest->getUser(), $this->organisation));
+
+    expect(array_search('warehouses_navigation', $sections))->toBeLessThan(array_search('productions_navigation', $sections));
+});
