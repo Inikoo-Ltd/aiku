@@ -8,6 +8,7 @@ import { faCheckCircle, faExclamationTriangle, faPlus as fasPlus } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '@/Iris/Components/LinkIris.vue'
+import { useSidePanel } from '@/Iris/Composables/useSidePanel'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ToggleSwitch } from 'primevue'
@@ -64,6 +65,7 @@ const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
 const open = ref(true)
+const sidePanel = useSidePanel()
 
 
 // const dummyOrderSummary = { "0": [ { "label": "Елементи", "quantity": 1, "price_base": "Multiple", "price_total": "55.20" } ], "1": [ { "label": "Такси", "information": "", "price_total": "0.00" }, { "label": "Доставяне", "information": "", "price_total": "9.95" } ], "2": [ { "label": "Нетно", "information": "", "price_total": "65.15" }, { "label": "Данък (ДДС 20%)", "information": "", "price_total": "13.03" } ], "3": [ { "label": "Общо", "price_total": "78.18" } ], "currency": { "data": { "id": 49, "code": "EUR", "name": "Euro", "symbol": "€" } } } 
@@ -695,7 +697,7 @@ const onApplyVoucher = async () => {
             </div>
 
             <div class="mt-3">
-                <LinkIris href="/app/checkout">
+                <LinkIris href="/app/checkout" @start="() => sidePanel?.close()">
                     <Button full :label="ctrans('Checkout')" iconRight="far fa-arrow-right" key="1" />
                 </LinkIris>
             </div>
