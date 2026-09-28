@@ -1516,3 +1516,16 @@ describe('Product analysis view', function () {
             ->and(collect($result['exceptions']['offline'])->pluck('code'))->toContain('GA-OFF');
     });
 });
+
+test('weights are whole grams: a decimal is refused instead of failing the save', function () {
+    [, $product] = createProduct($this->shop);
+    $tradeUnit   = $product->tradeUnits->first();
+
+    expect(fn () => \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['gross_weight' => 57.2]))
+        ->toThrow(ValidationException::class)
+        ->and(fn () => \App\Actions\Catalogue\Product\UpdateProduct::make()->action($product, ['marketing_weight' => 57.2]))
+        ->toThrow(ValidationException::class);
+
+    \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($tradeUnit, ['gross_weight' => 57]);
+    expect($tradeUnit->fresh()->gross_weight)->toBe(57);
+});
