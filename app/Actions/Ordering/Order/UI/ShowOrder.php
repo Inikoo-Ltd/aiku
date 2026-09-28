@@ -194,12 +194,28 @@ class ShowOrder extends OrgAction
         $noteList = [];
 
         if ($order->has_gift_message) {
+            $giftMessagePdf = $order->gift_message
+                ? null
+                : $order->attachments()->wherePivot('scope', 'GiftMessage')->first();
+
             $noteList[] = [
                 "label"       => __("Gift message"),
                 "note"        => $order->gift_message ?: __("PDF uploaded"),
                 "information" => __("The gift message the customer asked to be printed with the order."),
                 "editable"    => false,
                 "field"       => "gift_message",
+                "bgColor"       => "#ececec",
+                "pdf_preview" => $giftMessagePdf ? [
+                    "label" => $giftMessagePdf->file_name,
+                    "route" => [
+                        "name"       => "grp.media.download",
+                        "parameters" => [
+                            "media"  => $giftMessagePdf->ulid,
+                            "inline" => 1,
+                        ],
+                    ],
+                ] : null,
+                // "textColor"     => "#ececec",
             ];
         }
 
