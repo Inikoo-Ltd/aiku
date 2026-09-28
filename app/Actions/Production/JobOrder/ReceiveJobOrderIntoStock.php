@@ -12,6 +12,8 @@ use App\Actions\Dispatching\BatchCode\StoreBatchCode;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
+use App\Actions\Production\PartnerShippingList\FulfilToProduceItemsFromSurplus;
+use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -113,7 +115,13 @@ class ReceiveJobOrderIntoStock extends OrgAction
 
                 $this->deductRawMaterials($item, $producedUnits, $userId);
 
+                $surplusBefore = GetProductionSurplusInPipeline::make()->surplusReceived($item, (float) $item->quantity_received);
                 $item->update(['quantity_received' => round((float) $item->quantity_received + $producedUnits, 3)]);
+                $surplusBooked = GetProductionSurplusInPipeline::make()->surplusReceived($item, (float) $item->quantity_received) - $surplusBefore;
+
+                if ($surplusBooked > 0 && !$orgStock->organisation->orgPartners()->where('goods_out_location_id', $location->id)->exists()) {
+                    FulfilToProduceItemsFromSurplus::run($orgStock, $surplusBooked);
+                }
             }
 
             $stillOut = $items->contains(fn (JobOrderItem $item) => round($this->producedQuantity($item) - (float) $item->refresh()->quantity_received, 3) > 0);
