@@ -293,9 +293,11 @@ class StoreIncomingWhatsappMessage
         // ponytail: customers.phone has no index, so try the exact E.164 form first (~97% of rows)
         // and only fall back to the full digit-stripped scan. Add an index on the normalised phone
         // if inbound volume makes the fallback hurt.
-        return Customer::where('shop_id', $shop->id)->where('phone', '+'.$digits)->first()
-            ?? Customer::where('shop_id', $shop->id)
-                ->whereRaw("regexp_replace(phone, '\\D', '', 'g') = ?", [$digits])
-                ->first();
+        $customers = fn () => Customer::where('shop_id', $shop->id)
+            ->orderByRaw('last_invoiced_at desc nulls last')
+            ->orderByDesc('id');
+
+        return $customers()->where('phone', '+'.$digits)->first()
+            ?? $customers()->whereRaw("regexp_replace(phone, '\\D', '', 'g') = ?", [$digits])->first();
     }
 }
