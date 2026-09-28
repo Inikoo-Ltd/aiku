@@ -825,7 +825,14 @@ test('iris variant products list leaves out the variant products that are not fo
         'is_for_sale' => false,
     ])->saveQuietly();
 
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $forSaleProduct->group_id,
+        'code'     => $forSaleProduct->code,
+        'data'     => ['products' => []],
+    ]);
+
     $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
         'group_id'        => $forSaleProduct->group_id,
         'organisation_id' => $forSaleProduct->organisation_id,
         'shop_id'         => $forSaleProduct->shop_id,
@@ -837,7 +844,16 @@ test('iris variant products list leaves out the variant products that are not fo
     $forSaleProduct->updateQuietly(['variant_id' => $variant->id]);
     $notForSaleProduct->updateQuietly(['variant_id' => $variant->id]);
 
+    $variant->updateQuietly(['data' => ['products' => [
+        $forSaleProduct->id    => ['product' => ['id' => $forSaleProduct->id]],
+        $notForSaleProduct->id => ['product' => ['id' => $notForSaleProduct->id]],
+    ]]]);
+
     $productIds = collect(\App\Actions\Catalogue\Product\Json\GetProductsOfVariant::run($variant)['products'])->pluck('id');
 
-    expect($productIds->all())->toBe([$forSaleProduct->id]);
+    $variantAndProducts = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant);
+
+    expect($productIds->all())->toBe([$forSaleProduct->id])
+        ->and(collect($variantAndProducts['products'])->pluck('id')->all())->toBe([$forSaleProduct->id])
+        ->and(collect($variantAndProducts['variant_data']['products'])->keys()->all())->toBe([$forSaleProduct->id]);
 });
