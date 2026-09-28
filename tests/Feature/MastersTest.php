@@ -2266,6 +2266,47 @@ test('bulk trade unit quantity sets units through the master update and reports 
         ->assertExactJson([(string) $masterAsset->id => 0]);
 });
 
+test('changing the composition flags the master price for review until prices are saved, HELP-3496', function () {
+    Queue::fake();
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'PRV-DEPT-'.uniqid(),
+        'name' => 'Price Review Department',
+    ]);
+    $masterFamily = StoreMasterFamily::make()->action($masterDepartment, [
+        'code' => 'PRV-FAM-'.uniqid(),
+        'name' => 'Price Review Family',
+    ]);
+    $masterAssets = collect([9, 10, 11, 157.19])->map(fn ($price) => StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PRV-AST-'.uniqid(),
+        'name'    => 'Price Review Asset',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::RENTAL,
+        'price'   => $price,
+        'unit'    => 'piece',
+        'stocks'  => [],
+    ]));
+    $masterAsset = $masterAssets->first();
+    $tradeUnitA  = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+    $tradeUnitB  = StoreTradeUnit::make()->action(group(), TradeUnit::factory()->definition());
+
+    expect(\App\Actions\Masters\MasterAsset\GetMasterAssetPriceOutlier::familyUnitPriceMedian($masterFamily->id))->toBe(10.5);
+
+    UpdateMasterAsset::make()->action($masterAsset, ['trade_units' => [['id' => $tradeUnitA->id, 'quantity' => 1]]]);
+    expect($masterAsset->refresh()->price_review)->toBe('composition_changed');
+
+    \App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices::make()->action($masterAsset, [
+        'master_prices' => ['EUR' => ['value' => 10, 'independent' => false]],
+    ]);
+    expect($masterAsset->refresh()->price_review)->toBeNull();
+
+    UpdateMasterAsset::make()->action($masterAsset, ['name' => 'Renamed', 'trade_units' => [['id' => $tradeUnitA->id, 'quantity' => 1]]]);
+    expect($masterAsset->refresh()->price_review)->toBeNull();
+
+    UpdateMasterAsset::make()->action($masterAsset, ['trade_units' => [['id' => $tradeUnitA->id, 'quantity' => 1], ['id' => $tradeUnitB->id, 'quantity' => 1]]]);
+    expect($masterAsset->refresh()->price_review)->toBe('composition_changed');
+});
+
 test('UpdateMultipleMasterProductsFamily moves master assets to a new family', function () {
     $masterShop      = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
@@ -3052,7 +3093,10 @@ test('master product creation seeds minor prices from the official exchange, not
         ->and(data_get($data, 'currencies.EUR.is_major'))->toBeFalse()
         ->and(data_get($data, 'currencies.EUR.major'))->toBe('GBP')
         ->and(data_get($data, 'currencies.GBP.ratio_eur'))->toBe(1.0)
-        ->and(data_get($data, 'currencies.GBP.is_major'))->toBeTrue();
+        ->and(data_get($data, 'currencies.GBP.is_major'))->toBeTrue()
+        ->and($data)->toHaveKey('family_unit_price_median')
+        ->and(data_get($data, 'family_unit_price_median'))->toBeNull()
+        ->and(data_get($data, 'base_currency_code'))->toBe('GBP');
 });
 
 test('master product creation data refuses a trade unit quantity of zero instead of dividing by it', function () {
