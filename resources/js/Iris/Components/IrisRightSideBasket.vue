@@ -679,6 +679,7 @@ const onApplyVoucher = async () => {
                                 ref="giftMessagePanel"
                                 :giftMessage="dataSideBasket?.order_data?.gift_message"
                                 :hasGiftMessagePdf="dataSideBasket?.order_data?.has_gift_message_pdf"
+                                :giftMessagePdfName="dataSideBasket?.order_data?.gift_message_pdf_name"
                                 :textRoute="{ name: 'iris.models.order.update_gift_message_text', parameters: dataSideBasket?.order_data?.id }"
                                 :pdfRoute="{ name: 'iris.models.order.update_gift_message_pdf', parameters: dataSideBasket?.order_data?.id }"
                                 @uploaded="() => fetchDataSideBasket(true)"

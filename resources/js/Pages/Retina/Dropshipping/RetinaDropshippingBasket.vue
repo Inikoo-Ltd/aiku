@@ -641,6 +641,7 @@ const onChangeInsurance = async (val: boolean) => {
                     ref="giftMessagePanel"
                     :giftMessage="data?.data?.gift_message"
                     :hasGiftMessagePdf="data?.data?.has_gift_message_pdf"
+                    :giftMessagePdfName="data?.data?.gift_message_pdf_name"
                     :textRoute="{ name: 'retina.models.order.update', parameters: props.data.data?.id }"
                     :pdfRoute="{ name: 'retina.models.order.update_gift_message_pdf', parameters: props.data.data?.id }"
                     @uploaded="() => router.reload({ only: ['data'] })"
