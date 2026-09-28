@@ -103,6 +103,8 @@ use App\Enums\HumanResources\Employee\EmployeeTypeEnum;
 use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\Production\Artefact;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
+use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
 use App\Models\Production\JobOrder;
@@ -3966,6 +3968,46 @@ describe('partner shopping list', function () {
         expect($item->refresh()->children()->count())->toBe(0)
             ->and((float) $waiting->refresh()->quantity)->toBe(23.0)
             ->and(PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->count())->toBe(1);
+    });
+
+    test('a line the seller deletes from the partner order goes back on the buyer list', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 25,
+        ]);
+        CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
+
+        DeleteTransaction::make()->action($item->refresh()->transaction);
+
+        expect($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN)
+            ->and($item->transaction_id)->toBeNull()
+            ->and((float) $item->quantity)->toBe(25.0);
+    });
+
+    test('a deleted partner order line joins the open line left by a partial pick', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 30,
+        ]);
+        CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id, 'quantity' => 12]]);
+
+        DeleteTransaction::make()->action($item->refresh()->transaction);
+
+        $openLines = PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->get();
+
+        expect(PartnerShoppingListItem::find($item->id))->toBeNull()
+            ->and($openLines)->toHaveCount(1)
+            ->and((float) $openLines->first()->quantity)->toBe(30.0);
+    });
+
+    test('cancelling a partner order puts its lines back on the buyer list', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 8,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
+
+        CancelOrder::make()->action($result['orders'][0]);
+
+        expect($item->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN)
+            ->and($item->transaction_id)->toBeNull();
     });
 
     test('cherry pick reuses in-process intercompany order across picks', function () {
