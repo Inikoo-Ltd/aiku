@@ -5412,13 +5412,49 @@ test('procurement dashboard lists stock levels linking to each bucket', function
 
     $response->assertInertia(function (AssertableInertia $page) {
         $page
-            ->has('stockLevels', 7)
+            ->has('stockLevels', 8)
             ->where('stockLevels.0.label', 'Out of stock')
             ->where('stockLevels.0.route.name', 'grp.org.procurement.stock_cover.index')
             ->where('stockLevels.0.route.parameters._query', ['elements[cover]' => 'out'])
-            ->where('stockLevels.5.bucket', 'excess')
+            ->where('stockLevels.5.bucket', 'ok')
+            ->where('stockLevels.6.bucket', 'excess')
             ->etc();
     });
+});
+
+test('procurement dashboard charts stock outs and their estimated lost revenue', function () {
+    $organisationStockHistoryId = DB::table('organisation_stock_histories')->insertGetId([
+        'group_id'                            => $this->organisation->group_id,
+        'organisation_id'                     => $this->organisation->id,
+        'date'                                => today()->toDateString(),
+        'number_org_stocks'                   => 40,
+        'number_out_of_stock_org_stocks'      => 10,
+        'number_location_org_stocks'          => 40,
+        'estimated_lost_revenue_org_currency' => 125.5,
+    ]);
+
+    $this->get(route('grp.org.procurement.dashboard', [$this->organisation->slug, 'period' => '1m']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('stockOuts.period', '1m')
+            ->where('stockOuts.unit', 'day')
+            ->where('stockOuts.now.out_of_stock', 10)
+            ->where('stockOuts.now.percentage', 25)
+            ->where('stockOuts.lost_total', 126)
+            ->has('stockOuts.series', 1)
+            ->etc());
+
+    $hydrator = App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateOutOfStock::make();
+    $hydrator->handle($organisationStockHistoryId);
+
+    $aliveWithoutLocation = count($hydrator->aliveOrgStockIds($this->organisation->id, today()));
+    $organisationStockHistory = DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->first();
+
+    expect($aliveWithoutLocation)->toBeGreaterThan(0)
+        ->and($organisationStockHistory->number_out_of_stock_org_stocks)->toBe($aliveWithoutLocation)
+        ->and($organisationStockHistory->number_org_stocks)->toBe($aliveWithoutLocation)
+        ->and((float)$organisationStockHistory->estimated_lost_revenue_org_currency)->toBe(0.0);
+
+    DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
 });
 
 test('supplier misplaced shopping list cleanup only accepts non-orderable buckets', function () {
