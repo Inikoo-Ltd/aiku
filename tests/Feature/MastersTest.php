@@ -905,6 +905,40 @@ test('UI Show Master Family mismatch with null master department', function (Mas
         $page
             ->component('Masters/MasterFamily')
             ->where('mini_breadcrumbs.1.to.parameters.masterDepartment', $masterDepartment->slug)
+            ->where('pageHead.subNavigation.3.route.name', 'grp.masters.master_shops.show.master_family.mismatch_detected.master_products.sales')
+            ->etc();
+    });
+})->depends('create master department');
+
+test('UI Show Master Family in master sub department links sales sub navigation without department', function (MasterProductCategory $masterDepartment) {
+    $masterSubDepartment = StoreMasterSubDepartment::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'SN_SUBDEPT1',
+            'name' => 'sub navigation sub department',
+        ]
+    );
+
+    $masterFamily = StoreMasterFamily::make()->action(
+        $masterSubDepartment,
+        [
+            'code' => 'SN_FAM1',
+            'name' => 'sub navigation family',
+        ]
+    );
+
+    $response = get(
+        route('grp.masters.master_shops.show.master_sub_departments.master_families.show', [
+            'masterShop'          => $masterFamily->masterShop->slug,
+            'masterSubDepartment' => $masterSubDepartment->slug,
+            'masterFamily'        => $masterFamily->slug,
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Masters/MasterFamily')
+            ->where('pageHead.subNavigation.3.route.name', 'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.sales')
             ->etc();
     });
 })->depends('create master department');
