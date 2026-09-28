@@ -30,7 +30,7 @@ console.log(props)
 			</span>
 		</span>
 	</div>
-	<div class="mx-3 lg:mx-0 mt-2">
+	<div class="mx-4 mt-4">
 		<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
 		<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
 	</div>

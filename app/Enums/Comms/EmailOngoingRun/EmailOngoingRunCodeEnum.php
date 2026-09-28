@@ -80,4 +80,5 @@ enum EmailOngoingRunCodeEnum: string
     case PROSPECT_CONVERTION_1 = 'prospect_convertion_1';
     case PROSPECT_CONVERTION_2 = 'prospect_convertion_2';
     case PROSPECT_CONVERTION_3 = 'prospect_convertion_3';
+    case SEND_PURCHASE_ORDER_TO_SUPPLIER = 'send_purchase_order_to_supplier';
 }

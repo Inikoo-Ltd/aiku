@@ -90,7 +90,7 @@ const isOpen = computed(() => isOpenByUser.value ?? hasMovers.value)
 </script>
 
 <template>
-	<div class="grid grid-rows-[auto_1fr_auto_1fr] rounded-lg border border-gray-200 bg-white text-xs text-gray-700 shadow-sm" :class="{ 'self-start': !isOpen }">
+	<div class="grid grid-rows-[auto_1fr_auto_1fr] rounded-lg border border-gray-200 bg-white text-xs text-gray-700 shadow-sm" :class="{ 'h-fit': !isOpen }">
 		<template v-if="teaser">
 			<div class="grid cursor-pointer select-none gap-4 px-3 py-2 text-gray-500" :class="{ 'border-b border-gray-200': isOpen }" :style="gridColumns" @click="isOpenByUser = !isOpen">
 				<div v-for="(column, index) in columns" :key="column.kind" class="flex items-center gap-1.5">
@@ -111,7 +111,6 @@ const isOpen = computed(() => isOpenByUser.value ?? hasMovers.value)
 						</div>
 						<button
 							type="button"
-							v-tooltip="isOpen ? ctrans('Close') : ctrans('Open')"
 							class="flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
 							@click.stop="isOpenByUser = !isOpen">
 							<FontAwesomeIcon :icon="faChevronDown" class="transition-transform" :class="{ 'rotate-180': isOpen }" fixed-width aria-hidden="true" />

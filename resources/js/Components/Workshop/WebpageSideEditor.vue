@@ -463,6 +463,7 @@ const blockNotEditableVisible = [
 		"product-1",
 		"product-2",
 		"product-3",
+		"product-4",
 
 ]
 

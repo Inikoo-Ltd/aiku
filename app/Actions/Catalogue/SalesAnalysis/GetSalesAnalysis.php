@@ -63,6 +63,10 @@ class GetSalesAnalysis
         $this->scope           = $scope;
         $this->includePartners = (bool)Arr::get($modelData, 'partners');
 
+        if (!Arr::get($modelData, 'from') && !Arr::get($modelData, 'to')) {
+            $modelData = $this->lastFullWeeks($modelData);
+        }
+
         $to   = Carbon::parse(Arr::get($modelData, 'to') ?? now()->subDay()->toDateString())->startOfDay();
         $from = Carbon::parse(Arr::get($modelData, 'from') ?? $to->copy()->subYear()->addDay()->toDateString())->startOfDay();
         if ($from->gt($to)) {
@@ -169,6 +173,20 @@ class GetSalesAnalysis
             'shop_count' => count($analysis['filters']['shops']),
             'shops'     => $this->movers($analysis['shops']),
             'breakdown' => $this->movers(array_filter($analysis['breakdown'], fn ($row) => $row['id'] !== 0)),
+        ];
+    }
+
+    private function lastFullWeeks(array $modelData): array
+    {
+        $to   = now()->startOfWeek(Carbon::MONDAY)->subDay()->startOfDay();
+        $from = $to->copy()->subWeeks(52)->addDay();
+
+        return [
+            ...$modelData,
+            'from'        => $from->toDateString(),
+            'to'          => $to->toDateString(),
+            'compareFrom' => Arr::get($modelData, 'compareFrom') ?? $from->copy()->subWeeks(52)->toDateString(),
+            'compareTo'   => Arr::get($modelData, 'compareTo') ?? $to->copy()->subWeeks(52)->toDateString(),
         ];
     }
 

@@ -177,7 +177,6 @@ const onFixAnomalies = (event: MouseEvent) => {
                 </h2>
                 <button
                     type="button"
-                    v-tooltip="isRebelsOpen ? ctrans('Close') : ctrans('Open')"
                     class="ml-auto flex h-6 w-6 items-center justify-center rounded text-amber-600 transition-colors hover:bg-amber-100 hover:text-amber-800"
                     @click.stop="isRebelsOpen = !isRebelsOpen">
                     <FontAwesomeIcon icon="fal fa-chevron-down" class="transition-transform" :class="{ 'rotate-180': isRebelsOpen }" fixed-width aria-hidden="true" />
