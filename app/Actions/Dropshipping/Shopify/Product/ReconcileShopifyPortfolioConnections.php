@@ -191,13 +191,14 @@ class ReconcileShopifyPortfolioConnections
 
         foreach ($candidateSkus as $candidateSku) {
             $isActiveByProductId = $snapshot['product_ids_by_sku'][$candidateSku] ?? [];
+            $activeProductIds    = array_keys(array_filter($isActiveByProductId));
 
-            if (count($isActiveByProductId) > 1) {
+            if (count($activeProductIds) > 1 || (count($activeProductIds) === 0 && count($isActiveByProductId) > 1)) {
                 return ['repair' => 'ambiguous', ...$noRepair];
             }
 
-            if (count($isActiveByProductId) === 1) {
-                $productId = array_key_first($isActiveByProductId);
+            if (count($isActiveByProductId) > 0) {
+                $productId = $activeProductIds[0] ?? array_key_first($isActiveByProductId);
 
                 $variantsCarryingSku = array_values(array_filter(
                     $snapshot['products'][$productId]['variants'] ?? [],
