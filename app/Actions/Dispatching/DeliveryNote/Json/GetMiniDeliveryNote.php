@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\Json;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -85,7 +84,6 @@ class GetMiniDeliveryNote extends OrgAction
                 'address' => [
                     'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                     'options'  => [
-                        'countriesAddressData' => GetAddressData::run()
                     ]
                 ],
                 'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),

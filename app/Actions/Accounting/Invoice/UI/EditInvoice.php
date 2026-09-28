@@ -8,7 +8,6 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -100,7 +99,6 @@ class EditInvoice extends OrgAction
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                             ]

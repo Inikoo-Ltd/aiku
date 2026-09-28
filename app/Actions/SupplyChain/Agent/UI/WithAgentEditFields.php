@@ -2,7 +2,6 @@
 
 namespace App\Actions\SupplyChain\Agent\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
@@ -60,7 +59,6 @@ trait WithAgentEditFields
                         'label'   => __('Address'),
                         'value'   => AddressResource::make($agent->organisation->address)->getArray(),
                         'options' => [
-                            'countriesAddressData' => GetAddressData::run()
                         ]
                     ],
                 ]

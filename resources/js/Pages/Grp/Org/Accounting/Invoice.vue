@@ -16,7 +16,8 @@ import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {trans} from "laravel-vue-i18n";
+import { ctrans } from '@/Composables/useTrans'
+import { useCountriesAddressData } from '@/Composables/useCountriesAddressData'
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue";
 import {routeType} from "@/types/route";
 import OrderSummary from "@/Components/Summary/OrderSummary.vue";
@@ -234,12 +235,12 @@ const getStatusColor = (status: string, valid: boolean) => {
 
 const taxNumberStatusText = computed(() => {
     if (props.invoice.tax_number_status === 'invalid' || !props.invoice.tax_number_valid) {
-        return trans('Invalid')
+        return ctrans('Invalid')
     }
     if (props.invoice.tax_number_status === 'valid' || props.invoice.tax_number_valid) {
-        return trans('Valid')
+        return ctrans('Valid')
     }
-    return trans('Pending')
+    return ctrans('Pending')
 })
 
 const generateShowOrderRoute = () => {
@@ -280,7 +281,7 @@ const submitEditDate = async () => {
         )
         isModalEditDate.value = false
         isModalConfirmEditDate.value = false
-        notify({ type: 'success', title: trans('Invoice date updated'), text: trans('Invoice date has been successfully updated.') })
+        notify({ type: 'success', title: ctrans('Invoice date updated'), text: ctrans('Invoice date has been successfully updated.') })
         router.reload({ only: ['invoice'] })
     } finally {
         isSubmittingDate.value = false
@@ -299,6 +300,7 @@ const getEmptyAddress = (): Address => ({
 })
 
 const editingAddress = ref<Address>(getEmptyAddress())
+const fetchedCountriesAddressData = props.billing_address_form?.options?.countriesAddressData ? null : useCountriesAddressData()
 
 const openEditAddressModal = () => {
     editingAddress.value = cloneDeep(props.invoice.address || getEmptyAddress())
@@ -307,7 +309,7 @@ const openEditAddressModal = () => {
 
 watch(() => editingAddress.value.country_id, (countryId) => {
     if (!countryId) return
-    const countryData = props.billing_address_form?.options?.countriesAddressData?.[countryId]
+    const countryData = (props.billing_address_form?.options?.countriesAddressData ?? fetchedCountriesAddressData?.value)?.[countryId]
     if (countryData?.code) {
         editingAddress.value.country_code = countryData.code
     }
@@ -327,15 +329,15 @@ const submitEditAddress = async () => {
                 isModalEditAddress.value = false
                 notify({ 
                     type: 'success', 
-                    title: trans('Invoice address updated'), 
-                    text: trans('Invoice address has been successfully updated.') 
+                    title: ctrans('Invoice address updated'), 
+                    text: ctrans('Invoice address has been successfully updated.') 
                 })
             }, 
             onError: () => {
                 notify({ 
                     type: 'error', 
-                    title: trans('Failed to update invoice address'), 
-                    text: trans('Please review the address fields and try again.') 
+                    title: ctrans('Failed to update invoice address'), 
+                    text: ctrans('Please review the address fields and try again.') 
                 })
             },
             onFinish: () => {
@@ -354,7 +356,7 @@ const submitEditAddress = async () => {
 
         <template #other>
             <Button v-if="currentTab === 'attachments' && attachmentRoutes?.attachRoute"
-                @click="() => isModalUploadOpen = true" :label="trans('Attach')" icon="upload" />
+                @click="() => isModalUploadOpen = true" :label="ctrans('Attach')" icon="upload" />
         </template>
 
         <!-- Export Buttons -->
@@ -471,7 +473,7 @@ const submitEditAddress = async () => {
                         icon="fal fa-trash-alt"
                         @click="changeModel"
                         :style="'edit'"
-                        :label="trans('Delete')"
+                        :label="ctrans('Delete')"
                         :injectStyle="{
                             color: '#ef4444 !important'
                         }"
@@ -501,7 +503,7 @@ const submitEditAddress = async () => {
 
             <!-- Field: Fiscal Name -->
             <dl v-if="box_stats?.customer.fiscal_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="trans('Fiscal name')" class="flex-none">
+                <dt v-tooltip="ctrans('Fiscal name')" class="flex-none">
                     <span class="sr-only">{{'Fiscal name'}}</span>
                     <FontAwesomeIcon icon="far fa-id-card" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
@@ -511,8 +513,8 @@ const submitEditAddress = async () => {
 
             <!-- Field: Customer name -->
             <dl v-if="box_stats?.customer.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt  v-tooltip="trans('Customer name')"  class="flex-none">
-                    <span class="sr-only">{{trans('Customer name')}}</span>
+                <dt  v-tooltip="ctrans('Customer name')"  class="flex-none">
+                    <span class="sr-only">{{ctrans('Customer name')}}</span>
                     <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
                 </dt>
@@ -521,7 +523,7 @@ const submitEditAddress = async () => {
 
             <!-- Field: Contact name -->
             <dl v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="trans('Customer contact name')" class="flex-none">
+                <dt v-tooltip="ctrans('Customer contact name')" class="flex-none">
                     <span class="sr-only">{{'Customer contact name'}}</span>
                     <FontAwesomeIcon icon="fal fa-address-card" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
@@ -541,7 +543,7 @@ const submitEditAddress = async () => {
 
             <!-- Field: Tax Number -->
             <dl v-if="invoice.tax_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="trans('Tax Number')" class="flex-none">
+                <dt v-tooltip="ctrans('Tax Number')" class="flex-none">
                     <span class="sr-only">Tax Number</span>
                     <FontAwesomeIcon icon="fal fa-receipt" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
@@ -607,7 +609,7 @@ const submitEditAddress = async () => {
                             v-if="props.can?.editInvoiceAddress"
                             icon="fal fa-pencil"
                             class="text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
-                            v-tooltip="trans('Edit invoice address')"
+                            v-tooltip="ctrans('Edit invoice address')"
                             @click="openEditAddressModal"
                             fixed-width aria-hidden="true"
                         />
@@ -619,7 +621,7 @@ const submitEditAddress = async () => {
         <!-- Section: Detail (2nd box) -->
         <BoxStatPallet class="col-span-2 py-2 px-3">
             <div class="mt-1">
-                <dl v-if="box_stats.information.recurring_bill" v-tooltip="trans('Recurring bill')"
+                <dl v-if="box_stats.information.recurring_bill" v-tooltip="ctrans('Recurring bill')"
                     class="w-fit flex items-center flex-none gap-x-2">
                     <dt class="flex-none">
                         <FontAwesomeIcon icon="fal fa-receipt" fixed-width aria-hidden="true" class="text-gray-500"/>
@@ -635,7 +637,7 @@ const submitEditAddress = async () => {
 
                 <!-- Section: Invoice date -->
                 <dl class="flex items-center flex-none gap-x-2 w-fit">
-                    <dt v-tooltip="trans('Invoice date')" class="flex-none">
+                    <dt v-tooltip="ctrans('Invoice date')" class="flex-none">
                         <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="text-gray-500"/>
                     </dt>
                     <dd class="text-base text-gray-500">
@@ -645,7 +647,7 @@ const submitEditAddress = async () => {
                         <FontAwesomeIcon
                             icon="fal fa-pencil"
                             class="text-gray-400 hover:text-gray-600 cursor-pointer text-sm"
-                            v-tooltip="trans('Edit invoice date')"
+                            v-tooltip="ctrans('Edit invoice date')"
                             @click="openEditDateModal"
                             fixed-width aria-hidden="true"
                         />
@@ -655,7 +657,7 @@ const submitEditAddress = async () => {
                 <!-- Section: Category -->
                 <dl v-if="props.invoice?.category?.name"
                     class="flex items-center flex-none gap-x-2 w-fit">
-                    <dt v-tooltip="trans('Category')" class="flex-none">
+                    <dt v-tooltip="ctrans('Category')" class="flex-none">
                         <FontAwesomeIcon icon="fal fa-shapes" fixed-width aria-hidden="true" class="text-gray-500"/>
                     </dt>
                     <dd class="text-base text-gray-500">
@@ -667,7 +669,7 @@ const submitEditAddress = async () => {
                 <dl
                     v-if="props.invoice_pay.order_slug"
                     class="flex items-center flex-none gap-x-2 w-fit">
-                    <dt v-tooltip="trans('Order')" class="flex-none">
+                    <dt v-tooltip="ctrans('Order')" class="flex-none">
                         <FontAwesomeIcon icon="fal fa-shopping-cart" fixed-width aria-hidden="true" class="text-gray-500"/>
                     </dt>
                     <dd class="text-base text-gray-500 -ml-1">
@@ -698,7 +700,7 @@ const submitEditAddress = async () => {
                     <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
                         <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width/>
                         <div class="text-sm font-semibold text-gray-800">
-                            {{ trans('Delivery Notes') }}
+                            {{ ctrans('Delivery Notes') }}
                         </div>
                     </div>
 
@@ -707,7 +709,7 @@ const submitEditAddress = async () => {
                          class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
 
                         <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
-                            <span class="font-medium">{{ trans("Reference") }}:</span>
+                            <span class="font-medium">{{ ctrans("Reference") }}:</span>
                             <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">
                                 #{{ note?.reference }}
                             </Link>
@@ -718,7 +720,7 @@ const submitEditAddress = async () => {
 
                         <!-- Shipments -->
                         <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
-                            <p class="text-gray-700 font-medium mb-1">{{ trans('Shipments') }}:</p>
+                            <p class="text-gray-700 font-medium mb-1">{{ ctrans('Shipments') }}:</p>
                             <ul class="list-disc pl-4 space-y-1">
                                 <li v-for="(shipment, i) in note.shipments" :key="i">
                                     <template v-if="shipment?.formatted_tracking_urls?.length">
@@ -727,7 +729,7 @@ const submitEditAddress = async () => {
 
                                             <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
                                                class="secondaryLink"
-                                               v-tooltip="trans('Click to track shipment')">
+                                               v-tooltip="ctrans('Click to track shipment')">
                                                 {{ trackingData.tracking }}
                                             </a>
                                         </div>
@@ -737,14 +739,14 @@ const submitEditAddress = async () => {
                                             {{ shipment.name }}
                                         </span>
                                     <span v-else-if="shipment.name" class="text-gray-400 italic">
-                                            {{ trans("No shipment information") }}
+                                            {{ ctrans("No shipment information") }}
                                         </span>
                                 </li>
                             </ul>
                         </div>
 
                         <div v-else class="mt-1 text-xs italic text-gray-400">
-                            {{ trans('No shipments') }}
+                            {{ ctrans('No shipments') }}
                         </div>
                     </div>
                 </div>
@@ -766,15 +768,15 @@ const submitEditAddress = async () => {
     <!-- Modal: Edit invoice date -->
     <Modal :isOpen="isModalEditDate" @onClose="isModalEditDate = false" width="w-full max-w-sm">
         <div class="p-4 flex flex-col gap-4">
-            <h2 class="text-base font-semibold text-gray-700">{{ trans('Edit invoice date') }}</h2>
+            <h2 class="text-base font-semibold text-gray-700">{{ ctrans('Edit invoice date') }}</h2>
             <input
                 v-model="editingDate"
                 type="date"
                 class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
             <div class="flex justify-end gap-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="isModalEditDate = false" />
-                <Button type="primary" :label="trans('Save')" :disabled="!editingDate" @click="confirmEditDate" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="isModalEditDate = false" />
+                <Button type="primary" :label="ctrans('Save')" :disabled="!editingDate" @click="confirmEditDate" />
             </div>
         </div>
     </Modal>
@@ -787,29 +789,29 @@ const submitEditAddress = async () => {
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-600" fixed-width aria-hidden="true" />
                 </div>
                 <div>
-                    <h2 class="text-base font-semibold text-gray-700">{{ trans('Are you sure?') }}</h2>
+                    <h2 class="text-base font-semibold text-gray-700">{{ ctrans('Are you sure?') }}</h2>
                     <p class="mt-1 text-sm text-gray-500">
-                        {{ trans('You are about to change the invoice date. This action will also update all related transaction dates.') }}
+                        {{ ctrans('You are about to change the invoice date. This action will also update all related transaction dates.') }}
                     </p>
                 </div>
             </div>
             <div class="flex justify-end gap-2">
-                <Button type="tertiary" :label="trans('Cancel')" :disabled="isSubmittingDate" @click="isModalConfirmEditDate = false" />
-                <Button type="secondary" :label="trans('Yes, update date')" :loading="isSubmittingDate" @click="submitEditDate" />
+                <Button type="tertiary" :label="ctrans('Cancel')" :disabled="isSubmittingDate" @click="isModalConfirmEditDate = false" />
+                <Button type="secondary" :label="ctrans('Yes, update date')" :loading="isSubmittingDate" @click="submitEditDate" />
             </div>
         </div>
     </Modal>
 
     <Modal :isOpen="isModalEditAddress" @onClose="isModalEditAddress = false" width="w-full max-w-2xl">
         <div class="p-4 flex flex-col gap-4">
-            <h2 class="text-base font-semibold text-gray-700">{{ trans('Edit invoice address') }}</h2>
+            <h2 class="text-base font-semibold text-gray-700">{{ ctrans('Edit invoice address') }}</h2>
             <PureAddress
                 v-model="editingAddress"
                 :options="props.billing_address_form.options"
             />
             <div class="flex justify-end gap-2">
-                <Button type="tertiary" :label="trans('Cancel')" @click="isModalEditAddress = false" />
-                <Button type="primary" :label="trans('Save')" :loading="isSubmittingAddress" @click="submitEditAddress" />
+                <Button type="tertiary" :label="ctrans('Cancel')" @click="isModalEditAddress = false" />
+                <Button type="primary" :label="ctrans('Save')" :loading="isSubmittingAddress" @click="submitEditAddress" />
             </div>
         </div>
     </Modal>
@@ -818,8 +820,8 @@ const submitEditAddress = async () => {
         <div>
             <EmptyState
                 :data="{
-                    title: trans('Outbox is still in process'),
-                    description: trans('You can edit it in workshop')
+                    title: ctrans('Outbox is still in process'),
+                    description: ctrans('You can edit it in workshop')
                 }"
                 class="py-7"
             >
@@ -839,7 +841,7 @@ const submitEditAddress = async () => {
     </Modal>
 
     <UploadAttachment v-if="attachmentRoutes" v-model="isModalUploadOpen" scope="attachment" :title="{
-        label: trans('Upload your file'),
+        label: ctrans('Upload your file'),
     }" :attachmentRoutes="attachmentRoutes" :options="[
         {
             name: 'Other',

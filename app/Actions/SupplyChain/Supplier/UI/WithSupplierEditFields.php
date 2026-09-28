@@ -2,7 +2,6 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Http\Resources\Helpers\AddressResource;
@@ -67,7 +66,6 @@ trait WithSupplierEditFields
                         'label'   => __('Address'),
                         'value'   => AddressResource::make($supplier->getAddress('contact'))->getArray(),
                         'options' => [
-                            'countriesAddressData' => GetAddressData::run()
                         ]
                     ],
                 ]
