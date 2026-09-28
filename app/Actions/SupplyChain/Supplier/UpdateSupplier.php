@@ -19,6 +19,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -68,7 +69,7 @@ class UpdateSupplier extends OrgAction
         }
 
         if (Arr::has($modelData, 'agent_id')) {
-            $supplier = MoveSupplierToAgent::run($supplier, Agent::find(Arr::pull($modelData, 'agent_id')));
+            $supplier = SetSupplierAgent::run($supplier, Agent::find(Arr::pull($modelData, 'agent_id')));
         }
 
         $modelData = $this->pullSupplierJsonColumns($modelData);
@@ -149,7 +150,7 @@ class UpdateSupplier extends OrgAction
             'image'           => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
             'agent_id'        => [
                 'sometimes',
-                'required',
+                'nullable',
                 Rule::exists('agents', 'id')->where('group_id', $this->group->id)->whereNull('deleted_at'),
             ],
         ];
@@ -186,6 +187,11 @@ class UpdateSupplier extends OrgAction
         $this->initialisationFromGroup($supplier->group, $modelData);
 
         return $this->handle($supplier, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     public function jsonResponse(Supplier $supplier): SupplierResource

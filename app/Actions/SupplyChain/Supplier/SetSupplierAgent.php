@@ -11,6 +11,7 @@ namespace App\Actions\SupplyChain\Supplier;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSupplierProducts;
 use App\Actions\Procurement\OrgAgent\Hydrators\OrgAgentHydrateOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
+use App\Actions\Procurement\OrgSupplier\StoreOrgSupplierFromFreeSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\SyncOrgSupplierProducts;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
@@ -23,44 +24,46 @@ use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MoveSupplierToAgent
+class SetSupplierAgent
 {
     use AsAction;
 
     /**
-     * Organisations trading with the new agent keep ordering this supplier through their org agent;
-     * the others lose it, because an agent's supplier can only be bought through that agent.
+     * Under an agent, only organisations trading with that agent keep the supplier, bought through their org agent.
+     * Without an agent, the supplier goes back to the organisations that buy independent suppliers directly.
      *
      * @throws \Throwable
      */
-    public function handle(Supplier $supplier, Agent $agent): Supplier
+    public function handle(Supplier $supplier, ?Agent $agent): Supplier
     {
         $previousAgent = $supplier->agent;
 
-        if ($previousAgent?->id === $agent->id) {
+        if ($previousAgent?->id === $agent?->id) {
             return $supplier;
         }
 
-        $orgAgents = $agent->orgAgents()->get()->keyBy('organisation_id');
+        $parents = $agent
+            ? $agent->orgAgents()->get()->keyBy('organisation_id')
+            : StoreOrgSupplierFromFreeSupplier::make()->getOrganisations($supplier)->keyBy('id');
 
-        $touchedOrgAgents = DB::transaction(function () use ($supplier, $agent, $orgAgents) {
+        $touchedOrgAgents = DB::transaction(function () use ($supplier, $agent, $parents) {
             $touchedOrgAgents = collect();
 
-            $supplier->update(['agent_id' => $agent->id]);
-            $supplier->supplierProducts()->update(['agent_id' => $agent->id]);
+            $supplier->update(['agent_id' => $agent?->id]);
+            $supplier->supplierProducts()->update(['agent_id' => $agent?->id]);
 
             foreach ($supplier->orgSuppliers as $orgSupplier) {
                 if ($orgSupplier->org_agent_id) {
                     $touchedOrgAgents->push($orgSupplier->orgAgent);
                 }
 
-                /** @var OrgAgent|null $orgAgent */
-                $orgAgent = $orgAgents->get($orgSupplier->organisation_id);
+                $parent   = $parents->get($orgSupplier->organisation_id);
+                $orgAgent = $parent instanceof OrgAgent ? $parent : null;
 
                 $orgSupplier->update([
-                    'agent_id'     => $agent->id,
+                    'agent_id'     => $agent?->id,
                     'org_agent_id' => $orgAgent?->id,
-                    'status'       => $orgAgent ? $supplier->status : false,
+                    'status'       => $parent ? $supplier->status : false,
                 ]);
                 $orgSupplier->orgSupplierProducts()->update(['org_agent_id' => $orgAgent?->id]);
 
@@ -71,16 +74,23 @@ class MoveSupplierToAgent
 
             $organisationsWithOrgSupplier = $supplier->orgSuppliers()->pluck('organisation_id')->all();
 
-            foreach ($orgAgents->reject(fn (OrgAgent $orgAgent) => in_array($orgAgent->organisation_id, $organisationsWithOrgSupplier)) as $orgAgent) {
-                $orgSupplier = StoreOrgSupplier::make()->action($orgAgent, $supplier);
+            foreach ($parents as $organisationId => $parent) {
+                if (in_array($organisationId, $organisationsWithOrgSupplier)) {
+                    continue;
+                }
+
+                $orgSupplier = StoreOrgSupplier::make()->action($parent, $supplier);
                 SyncOrgSupplierProducts::run($orgSupplier);
-                $touchedOrgAgents->push($orgAgent);
+
+                if ($parent instanceof OrgAgent) {
+                    $touchedOrgAgents->push($parent);
+                }
             }
 
             ShoppingListItem::query()
                 ->whereIn('state', [ShoppingListItemStateEnum::OPEN, ShoppingListItemStateEnum::DISMISS_PROPOSED])
                 ->where('supplier_id', $supplier->id)
-                ->update(['agent_id' => $agent->id]);
+                ->update(['agent_id' => $agent?->id]);
 
             return $touchedOrgAgents;
         });

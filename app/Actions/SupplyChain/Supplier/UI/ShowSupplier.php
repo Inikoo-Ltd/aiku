@@ -78,6 +78,17 @@ class ShowSupplier extends OrgAction
                         'title' => __('Supplier'),
                     ],
                     'model'         => __('Supplier'),
+                    'actions'       => [
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
+                    ],
                     'subNavigation' => $this->getSupplierNavigation($supplier),
                 ],
                 'tabs'        => [

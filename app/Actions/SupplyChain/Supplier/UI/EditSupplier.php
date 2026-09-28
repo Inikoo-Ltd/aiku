@@ -77,7 +77,7 @@ class EditSupplier extends OrgAction
                 ],
 
                 'formData'    => [
-                    'blueprint' => [...$this->supplierEditSections($supplier), $this->agentSection($supplier)],
+                    'blueprint' => [...$this->supplierEditSections($supplier), $this->supplierAgentSection($supplier)],
                     'args' => [
                         'updateRoute' => [
                             'name'      => 'grp.models.supplier.update',
@@ -90,34 +90,6 @@ class EditSupplier extends OrgAction
         );
     }
 
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function agentSection(Supplier $supplier): array
-    {
-        return [
-            'label'  => __('Agent'),
-            'title'  => __('Agent'),
-            'icon'   => 'fal fa-exchange',
-            'fields' => [
-                'agent_id' => [
-                    'type'        => 'select',
-                    'label'       => __('Agent'),
-                    'placeholder' => __('Select an agent'),
-                    'information' => __('Organisations working with the agent buy this supplier through it; the others stop buying it directly'),
-                    'options'     => Agent::where('group_id', $supplier->group_id)
-                        ->orderBy('name')
-                        ->get()
-                        ->map(fn (Agent $agent) => ['value' => $agent->id, 'label' => $agent->name.' ('.$agent->code.')'])
-                        ->all(),
-                    'value'       => $supplier->agent_id,
-                    'searchable'  => true,
-                    'mode'        => 'single'
-                ],
-            ]
-        ];
-    }
 
     public function getBreadcrumbs(Supplier $supplier, string $routeName, array $routeParameters): array
     {

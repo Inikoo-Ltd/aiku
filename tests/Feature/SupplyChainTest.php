@@ -1045,27 +1045,6 @@ test('housekeep purchase orders flags legacy open orders and undo removes the fl
     expect(\App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0, true))->toBe($flagged);
 });
 
-test('move independent supplier to an agent', function () {
-    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
-    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
-
-    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
-    $supplierProductData = SupplierProduct::factory()->definition();
-    data_set($supplierProductData, 'stock_id', $this->stocks[0]->id);
-    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
-
-    $supplier = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
-
-    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
-
-    expect($supplier->agent_id)->toBe($agent->id)
-        ->and($supplierProduct->refresh()->agent_id)->toBe($agent->id)
-        ->and($orgSupplier->agent_id)->toBe($agent->id)
-        ->and($orgSupplier->org_agent_id)->toBe($orgAgent->id)
-        ->and($orgSupplier->orgSupplierProducts()->whereNull('org_agent_id')->count())->toBe(0)
-        ->and($supplier->orgSuppliers()->whereNull('org_agent_id')->where('status', true)->count())->toBe(0);
-});
-
 test('agents and suppliers keep documents in an attachments tab', function () {
     $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
     $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
@@ -1109,4 +1088,44 @@ test('agents and suppliers keep documents in an attachments tab', function () {
     $this->delete(route('grp.models.agent.attachment.detach', ['agent' => $agent->id, 'attachment' => $agent->attachments()->first()->id]));
 
     expect($agent->attachments()->count())->toBe(0);
+});
+
+test('UI edit independent supplier shows the agent field', function () {
+    $supplier = Supplier::whereNull('agent_id')->first();
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.supply-chain.suppliers.show', $supplier->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.name', 'grp.supply-chain.suppliers.edit'));
+    $blueprint = $this->get(route('grp.supply-chain.suppliers.edit', $supplier->slug))->viewData('page')['props']['formData']['blueprint'];
+    expect(collect($blueprint)->pluck('fields.agent_id.type')->filter()->values()->all())->toBe(['select']);
+});
+
+test('move independent supplier to an agent and free it again', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplierProductData = SupplierProduct::factory()->definition();
+    data_set($supplierProductData, 'stock_id', $this->stocks[0]->id);
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+
+    $supplier = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
+
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    expect($supplier->agent_id)->toBe($agent->id)
+        ->and($supplierProduct->refresh()->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->org_agent_id)->toBe($orgAgent->id)
+        ->and($orgSupplier->orgSupplierProducts()->whereNull('org_agent_id')->count())->toBe(0)
+        ->and($supplier->orgSuppliers()->whereNull('org_agent_id')->where('status', true)->count())->toBe(0);
+
+    $supplier    = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => null]);
+    $orgSupplier->refresh();
+
+    expect($supplier->agent_id)->toBeNull()
+        ->and($supplierProduct->refresh()->agent_id)->toBeNull()
+        ->and($orgSupplier->agent_id)->toBeNull()
+        ->and($orgSupplier->org_agent_id)->toBeNull()
+        ->and($orgSupplier->status)->toBeTrue()
+        ->and($orgSupplier->orgSupplierProducts()->whereNotNull('org_agent_id')->count())->toBe(0);
 });
