@@ -4,7 +4,7 @@ summary: How aiku suggests a price when you create a master product, the red war
 date: 2026-09-28
 tags: masters, pricing, products, catalogue
 category: shop
-help_routes: grp.masters.master_shops.show.master_families.show
+help_routes: grp.masters.master_shops.show.master_families, grp.masters.master_shops.show.master_departments.show.master_families, grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families, grp.masters.master_shops.show.master_sub_departments.master_families, grp.masters.master_departments.show.master_families, grp.masters.master_families
 ---
 
 <aside class="tldr">
