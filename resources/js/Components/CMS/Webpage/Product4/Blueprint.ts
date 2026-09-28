@@ -1,6 +1,8 @@
 import Product3 from "@/Components/CMS/Webpage/Product3/Blueprint"
 import BlueprintSideInformation from "@/Components/CMS/Webpage/Product1/BlueprintSideInformation"
 
+const isBespokeField = (field: { key?: string[] }): boolean => ["bespoke", "bespoke_data"].includes(field.key?.[0] ?? "")
+
 const [idField, settingsField, ...product3Fields] = Product3.blueprint
 
 export default {
@@ -9,7 +11,7 @@ export default {
 		{
 			...settingsField,
 			replaceForm: [
-				...settingsField.replaceForm,
+				...settingsField.replaceForm.filter(field => !isBespokeField(field)),
 				{
 					key: ["information"],
 					type: "switch",
@@ -63,6 +65,6 @@ export default {
 				},
 			],
 		},
-		...product3Fields,
+		...product3Fields.filter(field => !isBespokeField(field)),
 	],
 }
