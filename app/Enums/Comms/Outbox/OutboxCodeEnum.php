@@ -11,6 +11,7 @@ namespace App\Enums\Comms\Outbox;
 use App\Enums\Comms\EmailOngoingRun\EmailOngoingRunTypeEnum;
 use App\Enums\Comms\PostRoom\PostRoomCodeEnum;
 use App\Enums\EnumHelperTrait;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 
 enum OutboxCodeEnum: string
 {
@@ -333,6 +334,20 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED => ['Fulfilment'],
             default => ['Shop']
+        };
+    }
+
+    /**
+     * Agents run no shops, so of the organisation outboxes they only get the one they use to
+     * send purchase orders to their own suppliers.
+     *
+     * @return array<int, OrganisationTypeEnum>
+     */
+    public function organisationTypes(): array
+    {
+        return match ($this) {
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER => [OrganisationTypeEnum::SHOP, OrganisationTypeEnum::DIGITAL_AGENCY, OrganisationTypeEnum::AGENT],
+            default => [OrganisationTypeEnum::SHOP, OrganisationTypeEnum::DIGITAL_AGENCY],
         };
     }
 

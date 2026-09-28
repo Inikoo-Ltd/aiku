@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\OrganisationStockHistory\Hydrators;
 
-use App\Actions\Inventory\GroupStockHistory\Hydrators\GroupStockHistoryHydrateFromOrgStockHistories;
 use App\Actions\Traits\WithStockHistoryArchiveRead;
 use App\Models\Inventory\OrganisationStockHistory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -80,8 +79,6 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             ->selectRaw('sum(grp_stock_wac_value) as grp_stock_wac_values')
             ->selectRaw('sum(org_stock_fifo_value) as org_stock_fifo_values')
             ->selectRaw('sum(grp_stock_fifo_value) as grp_stock_fifo_values')
-            ->selectRaw('COUNT(DISTINCT org_stock_id) as number_org_stocks')
-            ->selectRaw('COUNT(DISTINCT CASE WHEN quantity_in_locations < 1 THEN org_stock_id END) as number_out_of_stock_org_stocks')
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();
 
@@ -95,11 +92,6 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             ->where('organisation_stock_history_id', $organisationStockHistory->id)
             ->first();
 
-        $percentageOutOfStock = 0;
-        if ($stockData->number_org_stocks > 0) {
-            $percentageOutOfStock = round($stockData->number_out_of_stock_org_stocks / $stockData->number_org_stocks * 100, 2);
-        }
-
         $percentageValueDormantStock1y = 0;
         if ($stockData->org_stock_lpp_values > 0) {
             $percentageValueDormantStock1y = round(($stockData->value_dormant_stock_1y ?? 0) / $stockData->org_stock_lpp_values * 100, 2);
@@ -112,10 +104,7 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             'grp_stock_wac_value'               => $stockData->grp_stock_wac_values,
             'org_stock_fifo_value'              => $stockData->org_stock_fifo_values,
             'grp_stock_fifo_value'              => $stockData->grp_stock_fifo_values,
-            'number_org_stocks'                 => $stockData->number_org_stocks,
             'number_locations'                  => $stockLocationData->number_locations ?? 0,
-            'number_out_of_stock_org_stocks'    => $stockData->number_out_of_stock_org_stocks,
-            'percentage_out_of_stock'           => $percentageOutOfStock,
             'number_org_stocks_not_sold_1y'     => $stockNotSold,
             'percentage_value_dormant_stock_1y' => $percentageValueDormantStock1y,
             'value_dormant_stock_1y'            => $stockData->value_dormant_stock_1y ?? 0,
@@ -123,7 +112,7 @@ class OrganisationStockHistoryHydrateFromOrgStockHistories implements ShouldBeUn
             'value_dormant_stock_1y_fifo'       => $stockData->value_dormant_stock_1y_fifo,
         ]);
 
-        GroupStockHistoryHydrateFromOrgStockHistories::run($organisationStockHistory->group_stock_history_id);
+        OrganisationStockHistoryHydrateOutOfStock::run($organisationStockHistory->id);
 
     }
 

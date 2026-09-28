@@ -8,7 +8,9 @@
 namespace App\Actions\Procurement\SupplierMessage;
 
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
 use App\Services\Gmail\GmailClient;
@@ -79,10 +81,17 @@ class ProcessProcurementEmail
 
         $html = GmailMessageParser::htmlBody($raw);
 
-        return SupplierMessage::create([
+        $purchaseOrderId = $isOutbound ? null : $this->answeredPurchaseOrderId(
+            $organisation,
+            $threadId,
+            GmailMessageParser::header($raw, 'In-Reply-To').' '.GmailMessageParser::header($raw, 'References')
+        );
+
+        $supplierMessage = SupplierMessage::create([
             ...SupplierMessage::counterpartAttributes($counterpart),
             'group_id'         => $organisation->group_id,
             'organisation_id'  => $organisation->id,
+            'purchase_order_id' => $purchaseOrderId,
             'gmail_message_id' => $gmailMessageId,
             'gmail_thread_id'  => $threadId,
             'header_message_id' => GmailMessageParser::header($raw, 'Message-ID'),
@@ -100,6 +109,52 @@ class ProcessProcurementEmail
             'attachments'      => $this->attachments($raw),
             'sent_at'          => Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate', now()->getTimestampMs())),
         ]);
+
+        if ($supplierMessage->purchaseOrder) {
+            foreach ($supplierMessage->attachments as $index => $attachment) {
+                AttachSupplierMessageAttachment::dispatch(
+                    $supplierMessage,
+                    $index,
+                    $supplierMessage->purchaseOrder,
+                    PurchaseOrderAttachmentScopeEnum::guessFromFileName($attachment['name'])
+                );
+            }
+        }
+
+        return $supplierMessage;
+    }
+
+    /**
+     * Only a certain answer counts: the supplier replied to the email that sent the purchase order
+     * (its SES Message-ID is in the reply's headers), or wrote in a Gmail thread already tied to one.
+     */
+    private function answeredPurchaseOrderId(Organisation $organisation, ?string $threadId, string $replyHeaders): ?int
+    {
+        preg_match_all('/<([^@>\s]+)@[^>]*amazonses\.com>/i', $replyHeaders, $matches);
+
+        if ($matches[1]) {
+            $purchaseOrderId = SupplierMessage::where('organisation_id', $organisation->id)
+                ->whereIn('dispatched_email_id', DispatchedEmail::whereIn('ses_id', $matches[1])->select('id'))
+                ->whereNotNull('purchase_order_id')
+                ->latest('sent_at')
+                ->value('purchase_order_id');
+
+            if ($purchaseOrderId) {
+                return $purchaseOrderId;
+            }
+        }
+
+        if (! $threadId) {
+            return null;
+        }
+
+        $purchaseOrderIds = SupplierMessage::where('organisation_id', $organisation->id)
+            ->where('gmail_thread_id', $threadId)
+            ->whereNotNull('purchase_order_id')
+            ->distinct()
+            ->pluck('purchase_order_id');
+
+        return $purchaseOrderIds->count() === 1 ? $purchaseOrderIds->first() : null;
     }
 
     /**

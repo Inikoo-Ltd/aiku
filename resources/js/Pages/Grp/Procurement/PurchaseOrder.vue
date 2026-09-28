@@ -18,6 +18,8 @@ import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -157,6 +159,9 @@ const props = defineProps < {
 	showcase?: {}
 	notes?: {}
 	note_store_route?: routeType
+	attachments?: {}
+	attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
+	attachmentScopes: { name: string; code: string }[]
 	history?: {}
     upload_excel?: {
         title: { label: string, information: string }
@@ -545,12 +550,15 @@ function openSupplierEmail(action: { mailto?: string, pdfUrl: string }) {
 	}
 }
 
+const isModalUploadAttachmentOpen = ref(false)
+
 const component = computed(() => {
 	const components: Component = {
 		items: TablePurchaseOrderTransactions,
 		products: TablePurchaseOrderTransactions,
 		showcase: ProcurementOrderData,
 		notes: TableProcurementNotes,
+		attachments: TableAttachments,
 		dispatched_emails: TableDispatchedEmailsInOrder,
 		history: TableHistories,
 	}
@@ -585,6 +593,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #other>
+			<Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
+		</template>
+
 		<template #button-email-to-supplier="{ action }">
 			<Button
 				:style="action.style"
@@ -985,6 +997,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
 			:storeRoute="currentTab === 'notes' ? note_store_route : undefined"
+			:detachRoute="attachmentRoutes.detachRoute"
 			v-bind="isOrderingLevelTab ? {
 				level: currentLevel,
 				'onUpdate:level': (value: OrderingLevel) => currentLevel = value,
@@ -992,6 +1005,15 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			@update:tab="handleTabUpdate"
 		/>
 	</div>
+
+	<UploadAttachment
+		v-model="isModalUploadAttachmentOpen"
+		scope="attachment"
+		:title="{ label: ctrans('Upload your file'), information: '' }"
+		:progressDescription="ctrans('Adding purchase order attachments')"
+		:attachmentRoutes="attachmentRoutes"
+		:options="attachmentScopes"
+	/>
 
 	<ModalProductList
 		v-if="routes.products_list?.name"
