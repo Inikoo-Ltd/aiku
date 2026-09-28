@@ -2,7 +2,7 @@
 import { Head, router, usePage } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { inject, ref, watch, onMounted, provide } from "vue"
+import { inject, ref, computed, watch, onMounted, provide } from "vue"
 
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
@@ -365,13 +365,37 @@ provide("tiktokUserId", tiktokUserId)
 provide("ebayName", ebayName)
 provide("customerSalesChannelId", customerSalesChannelId)
 
-const steps = ref([
+const stepsEbay = ref([
 	{ name: "Account Name", status: "current" },
 	// { name: "Ebay Site", status: "upcoming" },
 	{ name: "Auth Key", status: "upcoming" },
 	// { name: "Ebay Listing Profile Name", status: "upcoming" },
 	{ name: "Listing Profile Confirmation", status: "upcoming" },
 ])
+
+const stepsWoo = ref([
+	{ name: "Account Name", status: "current" },
+	{ name: "Auth Key", status: "upcoming" },
+	{ name: "Connected", status: "upcoming" },
+])
+
+const stepsTiktok = ref([
+	{ name: "Auth Key", status: "current" },
+	{ name: "Business Accounts", status: "upcoming" },
+	{ name: "Connected", status: "upcoming" },
+])
+
+const steps = computed(() => {
+	if (isModalWooCommerce.value) {
+		return stepsWoo.value
+	}
+
+	if (isModalTiktok.value) {
+		return stepsTiktok.value
+	}
+
+	return stepsEbay.value
+})
 
 provide("steps", steps)
 
@@ -814,7 +838,7 @@ provide("goNext", goNext)
 				<ul class="list-disc list-outside space-y-1 pl-6">
 					<li>{{ ctrans("TikTok integration is currently in beta testing and may not be fully functional. Please proceed with caution.") }}</li>
 					<li>{{ ctrans("When you use TikTok Shipping, you must update your logistical preferences to Pick Up.") }}</li>
-					<li>{{ ctrans("See the full guide") }} <a href="https://aw-dropship.info/knowledge-base/tiktok-shop-sales-channel-warehouse-setup-guide/" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:text-amber-900">{{ ctrans("here") }}</a></li>
+					<li>{{ ctrans("See the full guide") }} <a href="/docs/tiktok-shop-warehouse" target="_blank" rel="noopener noreferrer" class="underline font-medium hover:text-amber-900">{{ ctrans("here") }}</a></li>
 				</ul>
 			</div>
 			<ProgressBar />
