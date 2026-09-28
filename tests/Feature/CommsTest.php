@@ -54,6 +54,7 @@ use App\Actions\Comms\Mailshot\MailshotHasUnsubscribeLink;
 use App\Actions\Comms\Mailshot\PrepareMailshotRecipients;
 use App\Actions\Comms\Mailshot\PrepareMailshotSecondWaveRecipients;
 use App\Actions\Comms\Mailshot\PrepareNewsletterRecipients;
+use App\Actions\Comms\EmailDeliveryChannel\SendEmailDeliveryChannel;
 use App\Actions\Comms\Mailshot\ProcessSendMailshot;
 use App\Actions\Comms\Mailshot\PublishMailShot;
 use App\Actions\Comms\Mailshot\PublishMailShotSecondWave;
@@ -1520,6 +1521,25 @@ test('process send mailshot creates recipient and dispatched email', function (M
 
     expect($mailshot->recipients()->count())->toBe(1)
         ->and($mailshot->channels()->count())->toBeGreaterThan(0);
+})->depends('create mailshot with recipe for filters');
+
+test('process send mailshot sends second wave on low priority ses queue', function (Mailshot $mailshot) {
+    Queue::fake();
+
+    $secondWave                 = $mailshot->replicate();
+    $secondWave->is_second_wave = true;
+    $secondWave->save();
+
+    ProcessSendMailshot::make()->handle($mailshot->id, [$this->customer->id]);
+    ProcessSendMailshot::make()->handle($secondWave->id, [$this->customer->id]);
+
+    $sendQueues = Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === SendEmailDeliveryChannel::class)
+        ->map(fn ($job) => $job->queue)
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($sendQueues)->toBe(['ses-low', 'ses-send']);
 })->depends('create mailshot with recipe for filters');
 
 test('process send mailshot is no-op for missing mailshot', function () {
