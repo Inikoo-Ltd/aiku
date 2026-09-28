@@ -28,6 +28,19 @@ class UpdateMailshotSentState
             ];
         }
         $count = $mailshot->channels()->count();
+        if ($count == 0 && $mailshot->recipients_count === 0) {
+            UpdateMailshot::run(
+                $mailshot,
+                [
+                    'state'   => MailshotStateEnum::SENT,
+                    'sent_at' => now()
+                ]
+            );
+
+            return [
+                'msg' => 'mailshot sent'
+            ];
+        }
         if ($count == 0) {
             return [
                 'error' => true,

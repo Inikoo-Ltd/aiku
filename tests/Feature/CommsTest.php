@@ -1471,6 +1471,21 @@ test('update mailshot recipients stored at marks stored when counts match', func
         ->and($mailshot->refresh()->recipients_stored_at)->not->toBeNull();
 })->depends('create mailshot with recipe for filters');
 
+test('update mailshot recipients stored at marks mailshot without recipients as sent', function (Mailshot $mailshot) {
+    $emptyMailshot                       = $mailshot->replicate();
+    $emptyMailshot->state                = MailshotStateEnum::SENDING;
+    $emptyMailshot->recipients_count     = 0;
+    $emptyMailshot->recipients_stored_at = null;
+    $emptyMailshot->sent_at              = null;
+    $emptyMailshot->save();
+
+    UpdateMailshotRecipientsStoredAt::run($emptyMailshot);
+
+    $emptyMailshot->refresh();
+    expect($emptyMailshot->state)->toBe(MailshotStateEnum::SENT)
+        ->and($emptyMailshot->sent_at)->not->toBeNull();
+})->depends('create mailshot with recipe for filters');
+
 test('update mailshot recipients stored at is no-op when counts differ', function (Mailshot $mailshot) {
     $mailshot->update(['recipients_stored_at' => null, 'recipients_count' => 5]);
     $mailshot->refresh();
