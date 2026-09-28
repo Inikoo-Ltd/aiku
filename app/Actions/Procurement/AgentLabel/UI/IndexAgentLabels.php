@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
 use App\Models\Inventory\OrgStock;
@@ -51,9 +52,10 @@ class IndexAgentLabels extends OrgAction
                 'name'         => $orgStock->name,
                 'organisation' => $orgStock->organisation->name,
                 'labels'       => $orgStock->labels->map(fn (ArtefactLabel $label) => [
-                    'id'      => $label->id,
-                    'name'    => $label->name,
-                    'pdf_url' => route('grp.org.procurement.agent_labels.pdf', [
+                    'id'          => $label->id,
+                    'name'        => $label->name,
+                    'run_sources' => DownloadArtefactLabelPdf::getRunSources($label),
+                    'pdf_url'     => route('grp.org.procurement.agent_labels.pdf', [
                         'organisation' => $this->organisation->slug,
                         'orgStock'     => $orgStock->id,
                         'label'        => $label->id,

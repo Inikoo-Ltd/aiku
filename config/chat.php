@@ -31,6 +31,8 @@ return [
         'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com',
     ],
 
+    'marketplace_notice_domains' => ['info.faire.com', 'orderchamp.com'],
+
     'phone_call' => [
 
         'max_minutes' => (int) env('CHAT_PHONE_CALL_MAX_MINUTES', 60),

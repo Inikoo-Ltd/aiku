@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User\UI;
 
+use App\Actions\SysAdmin\User\BorrowUserPermissions;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Models\SysAdmin\User;
@@ -36,6 +37,8 @@ class GetLoggedUser
             'language_id'  => $user->language_id,
             'email'        => $user->email,
             'is_agent'     => $isAgent,
+            'borrowed_permissions_from' => $user->permissionsLender()?->only(['id', 'username', 'contact_name']),
+            'can_borrow_permissions'    => BorrowUserPermissions::canBorrowSomebody($user),
             'agent_id'     => $user->chatAgent?->id,
             'agent_shops'  => $agentShops,
             'timezone'       => $user->timezone_name,

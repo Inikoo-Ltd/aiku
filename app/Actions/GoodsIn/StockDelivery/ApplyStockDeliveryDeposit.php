@@ -9,7 +9,6 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryDepositApplication;
 use App\Models\SupplyChain\AspoDeposit;
@@ -19,7 +18,17 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ApplyStockDeliveryDeposit extends OrgAction
 {
-    use WithProcurementEditAuthorisation;
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo([
+            "procurement.{$this->organisation->id}.edit",
+            "accounting.{$this->organisation->id}.edit",
+        ]);
+    }
 
     private StockDelivery $stockDelivery;
     private AspoDeposit $aspoDeposit;

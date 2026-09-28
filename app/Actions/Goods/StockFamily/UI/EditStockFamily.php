@@ -79,6 +79,20 @@ class EditStockFamily extends OrgAction
                                     'label' => __('label'),
                                     'value' => $stockFamily->name
                                 ],
+                                'understock_days' => [
+                                    'type'        => 'input_number',
+                                    'label'       => __('Understocked below (days of cover)'),
+                                    'min'         => 1,
+                                    'information' => __('Default: twice the lead time'),
+                                    'value'       => data_get($stockFamily->data, 'stock_cover.understock_days'),
+                                ],
+                                'overstock_days' => [
+                                    'type'        => 'input_number',
+                                    'label'       => __('Overstocked from (days of cover)'),
+                                    'min'         => 1,
+                                    'information' => __('Default: 120 days'),
+                                    'value'       => data_get($stockFamily->data, 'stock_cover.overstock_days'),
+                                ],
                             ]
                         ]
 

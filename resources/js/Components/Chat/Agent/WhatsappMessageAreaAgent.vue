@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent } from "vue"
+import { useElementSize } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { chatSendErrorText } from "@/Composables/chatSendError"
@@ -166,6 +167,14 @@ const canDispose = computed(() => {
 const canReportSpam = computed(() =>
     !(chatSession.value as any)?.customer?.id && !isClosed.value && !(chatSession.value as any)?.is_spam && !props.readOnly && canDispose.value
 )
+
+// The header goes to two rows by the width it actually has, not the screen's: on a tablet the
+// app menu and the conversation list leave the thread a phone's width on an lg screen.
+const headerRef = ref<HTMLElement | null>(null)
+const { width: headerWidth } = useElementSize(headerRef)
+const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.value < 600)
+
+const hasHeaderActions = computed(() => openTasks.value.length > 0 || canReportSpam.value || (!isClosed.value && !props.readOnly))
 
 const isAssigningSelf = ref(false)
 const isTakingOver = ref(false)
@@ -942,7 +951,10 @@ onUnmounted(() => {
         @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
         @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
-        <header class="flex items-center gap-3 px-3 py-2 border-b">
+        <!-- When the thread is too narrow for the name and the buttons side by side, the name
+             keeps the first row and the buttons drop to a second one beneath it. -->
+        <header ref="headerRef" class="flex items-center gap-3 px-3 py-2 border-b"
+            :class="isHeaderStacked ? 'flex-wrap gap-y-1.5 justify-end' : ''">
             <button @click="$emit('back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
@@ -984,6 +996,10 @@ onUnmounted(() => {
                     </span>
                 </div>
             </div>
+
+            <!-- The line between the two rows: it spans the header edge to edge, and being a whole
+                 row on its own is also what pushes the buttons onto the second one. -->
+            <div v-if="isHeaderStacked && hasHeaderActions" class="basis-[calc(100%+1.5rem)] -mx-3 h-px bg-gray-200" />
 
             <a v-for="task in openTasks" :key="task.reference" :href="task.url" target="_blank"
                 v-tooltip="ctrans(':reference for :who. The chat cannot be closed until it is done or cancelled.', { reference: task.reference, who: task.who })"

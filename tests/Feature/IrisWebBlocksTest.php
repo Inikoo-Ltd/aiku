@@ -59,6 +59,7 @@ const PRODUCT_WEBPAGE_BLOCKS = [
     'product-1',
     'product-2',
     'product-3',
+    'product-4',
     'recommendation-customer-recently-bought-1',
 ];
 
@@ -533,6 +534,20 @@ test('product web blocks return a null description tabs style when no family ext
         ->and(Arr::get($fieldValue, 'tabs_style'))->toBeNull();
 });
 
+test('iris product web block gives a guest the product price for the product snippet structured data', function () {
+    [, $product] = createProduct($this->shop);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    expect(auth()->check())->toBeFalse();
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect($product->price)->not->toBeNull()
+        ->and(Arr::get($irisProduct, 'price'))->toEqual($product->price)
+        ->and($irisProduct)->toHaveKey('stock');
+});
+
 test('website product workshop layout exposes the family extra description style', function () {
     [, $product] = createProduct($this->shop);
 
@@ -773,4 +788,28 @@ test('department web block renders when the department lost its webpage link', f
     $department->setRelation('webpage', null);
 
     expect(WebBlockDepartmentResource::make($department)->resolve())->toHaveKey('url', null);
+});
+
+test('iris product web block does not expose other customers back in stock reminders', function () {
+    [, $product] = createProduct($this->shop);
+    $customer = createCustomer($this->shop);
+
+    \App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder::make()->action($customer, $product, [], strict: false);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect(Arr::get($irisProduct, 'is_back_in_stock'))->toBeFalse();
+});
+
+test('iris product web block exposes the product family id so the member price can react to the family basket', function () {
+    [, $product] = createProduct($this->shop);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect($product->family_id)->not->toBeNull()
+        ->and(Arr::get($irisProduct, 'family_id'))->toBe($product->family_id);
 });

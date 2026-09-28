@@ -28,4 +28,14 @@ module.exports = {
         ...(base.safelist ?? []),
         ...Array.from({ length: 12 }, (_, index) => `grid-cols-${index + 1}`),
     ],
+    theme: {
+        ...base.theme,
+        extend: {
+            ...base.theme.extend,
+            fontSize: {
+                ...base.theme.extend.fontSize,
+                xxs: ['0.75rem', { lineHeight: '1rem' }],
+            },
+        },
+    },
 };

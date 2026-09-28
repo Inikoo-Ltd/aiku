@@ -20,7 +20,8 @@ class SyncPartnerStockDeliveryOnDispatch
 
     public function handle(DeliveryNote $deliveryNote): ?StockDelivery
     {
-        $stockDelivery = StockDelivery::where('delivery_note_id', $deliveryNote->id)->first();
+        $stockDelivery = StockDelivery::where('delivery_note_id', $deliveryNote->id)->first()
+            ?? StorePartnerStockDeliveryFromDeliveryNote::run($deliveryNote);
         if (!$stockDelivery) {
             return null;
         }

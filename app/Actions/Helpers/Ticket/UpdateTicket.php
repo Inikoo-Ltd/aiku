@@ -66,6 +66,20 @@ class UpdateTicket extends OrgAction
             StoreTicketComment::make()->action($ticket, $asker, ['body' => $statusComment, 'images' => $images], isStatusNote: Arr::get($modelData, 'status') !== TicketStatusEnum::ANSWERED->value);
         }
 
+        /* A failed check on a ticket already marked Done sends it back to the assignee: the work
+           is not finished, and a ticket left Closed drops off the board where nobody looks at it
+           again. Only from Done - failing a ticket that is still in progress changes nothing,
+           since it is already where it needs to be - and only when the caller is not setting a
+           status itself, so an explicit choice always wins. Passing and skipping never move a
+           ticket. The status block below does the rest: it clears resolved_at and closed_at and
+           restores started_at, and the usual status notifications go out. */
+        if (Arr::get($modelData, 'qa_status') === TicketQaStatusEnum::FAILED->value
+            && $ticket->status === TicketStatusEnum::RESOLVED
+            && !Arr::exists($modelData, 'status')
+        ) {
+            data_set($modelData, 'status', TicketStatusEnum::IN_PROGRESS->value);
+        }
+
         if (Arr::exists($modelData, 'assignee_id') && Arr::get($modelData, 'assignee_id') != $ticket->assignee_id) {
             data_set($modelData, 'assigned_at', Arr::get($modelData, 'assignee_id') ? now() : null);
 
@@ -113,7 +127,7 @@ class UpdateTicket extends OrgAction
             data_set($modelData, 'qa_requested_at', $qaStatus === TicketQaStatusEnum::REQUESTED ? now() : ($qaStatus ? $ticket->qa_requested_at : null));
             data_set($modelData, 'qa_checked_at', $isVerdict ? now() : null);
             data_set($modelData, 'qa_user_id', match (true) {
-                $isVerdict && $asker instanceof User => $asker->id,
+                ($isVerdict || $qaStatus === TicketQaStatusEnum::CHECKING) && $asker instanceof User => $asker->id,
                 $qaStatus === TicketQaStatusEnum::REQUESTED => Arr::get($modelData, 'qa_user_id'),
                 default => null,
             });
@@ -127,6 +141,9 @@ class UpdateTicket extends OrgAction
                 'author_type' => 'User',
                 'author_id'   => $asker->id,
                 'body'        => $qaNote !== '' ? $verdict.': '.$qaNote : $verdict,
+                /* Only a verdict marks the comment. Requesting a check, and withdrawing one,
+                   are ordinary comments: there is nothing to show a badge for yet. */
+                'has_qa_verdict' => $ticket->qa_status?->isVerdict() ? $ticket->qa_status->value : null,
             ])->attachTicketImages($images);
             NotifyTicketUsers::make()->mentioned($ticket, $asker, $qaNote);
             PostTicketSlackThreadReply::run($ticket, $ticket->reference.' · '.$verdict);
@@ -218,8 +235,18 @@ class UpdateTicket extends OrgAction
                         $fail(__('QA was asked to check this ticket, so it cannot be skipped.'));
                     }
 
-                    if (TicketQaStatusEnum::tryFrom((string) $value)?->isVerdict() && $this->updatingTicket?->qa_status?->isVerdict()) {
+                    $qaStatus = TicketQaStatusEnum::tryFrom((string) $value);
+                    $current  = $this->updatingTicket;
+                    $user     = request()->user();
+
+                    if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->qa_status?->isVerdict()) {
                         $fail(__('This ticket already has a QA verdict. Ask QA to check it again first.'));
+
+                        return;
+                    }
+
+                    if (($qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING) && $current?->isQaHeldByAnotherThan($user)) {
+                        $fail(__('This check is with another checker.'));
                     }
                 },
             ],
@@ -252,9 +279,11 @@ class UpdateTicket extends OrgAction
                 return false;
             }
 
-            $isVerdict = (bool) TicketQaStatusEnum::tryFrom((string) $request->input('qa_status'))?->isVerdict();
+            $qaStatus = TicketQaStatusEnum::tryFrom((string) $request->input('qa_status'));
 
-            return $isVerdict ? Ticket::canGiveQaVerdict($user) : $ticket->canRequestQaBy($user);
+            return $qaStatus?->isVerdict() || $qaStatus === TicketQaStatusEnum::CHECKING
+                ? Ticket::canGiveQaVerdict($user)
+                : $ticket->canRequestQaBy($user);
         }
 
         // The reporter's own cancel and reopen are additions to who could already do it: whoever

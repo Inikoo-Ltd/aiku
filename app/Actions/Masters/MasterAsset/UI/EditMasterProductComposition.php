@@ -11,7 +11,6 @@ use App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies;
 use App\Actions\Masters\MasterAsset\WithMasterProductSubNavigation;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithBarcodeChoice;
 use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\WithUnitsChangeConfirmation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -33,7 +32,6 @@ use Lorisleiva\Actions\ActionRequest;
 class EditMasterProductComposition extends OrgAction
 {
     use WithUnitsChangeConfirmation;
-    use WithBarcodeChoice;
     use WithMasterAssetTradeUnits;
     use WithMasterProductSubNavigation;
 
@@ -192,7 +190,9 @@ class EditMasterProductComposition extends OrgAction
             ]
         ];
 
-        $barcodeChoice = $this->getBarcodeChoice($masterProduct);
+        /* A bundle, or a 10ml bottle filled from a kg of oil, is not its trade unit, so its barcode is not either. */
+        $isNotOneTradeUnit = $masterProduct->tradeUnits->unique('id')->count() > 1
+            || ($masterProduct->tradeUnits->count() == 1 && (float)$masterProduct->tradeUnits->first()->pivot->quantity != 1.0);
 
         return array_values(array_filter([
             [
@@ -249,7 +249,7 @@ class EditMasterProductComposition extends OrgAction
                     'units' => $this->getUnitsField($masterProduct, $this->getUnitsChangeConfirmation($masterProduct)),
                 ]),
             ],
-            $barcodeChoice['hasChoice'] ? [
+            $isNotOneTradeUnit ? [
                 'label'  => __('Barcode'),
                 'icon'   => 'fa-light fa-barcode',
                 'fields' => [
@@ -257,8 +257,14 @@ class EditMasterProductComposition extends OrgAction
                         'type'         => 'barcode_choice',
                         'label'        => __('GTIN'),
                         'value'        => $masterProduct->barcode,
-                        'options'      => $barcodeChoice,
-                        'information'  => __('Several trade units, so no barcode is the product\'s by default. What is chosen here is published as the GTIN of every shop product that follows this master.'),
+                        'options'      => [
+                            'options'       => [],
+                            'hasChoice'     => true,
+                            'nextFreeRoute' => [
+                                'name' => 'grp.json.barcodes.next_free',
+                            ],
+                        ],
+                        'information'  => __('This product is not one of its trade unit, so it gets its own barcode from the barcode pool. It is published as the GTIN of every shop product that follows this master.'),
                     ],
                 ],
             ] : null,

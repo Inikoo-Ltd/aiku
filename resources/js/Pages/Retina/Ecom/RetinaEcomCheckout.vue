@@ -21,7 +21,6 @@ import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaym
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Select } from "primevue"
 import CheckoutPaymentPastpay from "@/Components/Retina/Ecom/CheckoutPaymentPastpay.vue"
-import WhatsAppNewsletterOptIn from "@/Components/Retina/Ecom/WhatsAppNewsletterOptIn.vue"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -50,12 +49,8 @@ const props = defineProps<{
     },
     currency_code: string
     stock_issues?: StockIssues
+    is_gift_message_missing?: boolean
     earlier_delivery_address?: { previous_address: string, previous_address_line: string, previous_order_reference: string, current_address_line: string, confirmed: boolean, actions: { confirm_route: routeType, use_previous_route: routeType } | null } | null
-    whatsapp_newsletter?: {
-        is_subscribed: boolean
-        label: string
-        update_route: routeType
-    }
 }>()
 
 const currentTab = ref({
@@ -121,8 +116,8 @@ const locale = inject("locale", aikuLocaleStructure)
 
     <div v-else class="w-full px-4 xmt-8">
 
-        <div v-if="stock_issues?.out_of_stock?.length || stock_issues?.low_stock?.length" class="md:px-4 mb-4 space-y-3">
-            <BasketStockIssues :stock_issues />
+        <div v-if="stock_issues?.out_of_stock?.length" class="md:px-4 mb-4 space-y-3">
+            <BasketStockIssues :stock_issues="{ ...stock_issues, low_stock: [] }" />
         </div>
 
         <EcomCheckoutSummary
@@ -136,14 +131,20 @@ const locale = inject("locale", aikuLocaleStructure)
             class="md:px-4 !px-0"
         />
 
-        <WhatsAppNewsletterOptIn
-            v-if="whatsapp_newsletter && !whatsapp_newsletter.is_subscribed && whatsapp_newsletter.update_route.parameters.customerComms"
-            :label="whatsapp_newsletter.label"
-            :updateRoute="whatsapp_newsletter.update_route"
-        />
+        <div v-if="is_gift_message_missing" class="mt-10 md:mx-10 flex flex-col items-center gap-y-3 border border-amber-300 bg-amber-50 text-amber-700 rounded px-4 py-5 text-center">
+            <div class="flex items-start gap-x-2">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-1" fixed-width aria-hidden="true" />
+                <span>{{ trans("Write a gift message or upload a PDF before placing the order.") }}</span>
+            </div>
+            <ButtonWithLink
+                :icon="faArrowLeft"
+                :label="trans('Back to basket')"
+                :routeTarget="routes.back_to_basket"
+            />
+        </div>
 
         <!-- If 'Total' is 0 or less -->
-        <div v-if="to_pay_data.total <= 0">
+        <div v-else-if="to_pay_data.total <= 0">
             <EmptyState
                 :data="{
                     title: trans('No item to checkout')

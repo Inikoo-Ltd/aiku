@@ -139,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $collection_address_id
  * @property bool $is_premium_dispatch
  * @property bool|null $has_extra_packing
+ * @property bool|null $has_gift_message
  * @property string|null $company_name recipient company name
  * @property string|null $contact_name recipient contact name
  * @property bool $is_cash_on_delivery

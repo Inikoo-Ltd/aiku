@@ -25,12 +25,7 @@ trait WithCatalogueAuthorisation
                 ]
             );
 
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
+            return $request->user()->canViewSales();
         } else {
             $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
             $this->canDelete = $request->user()->authTo("products.{$this->shop->id}.edit");

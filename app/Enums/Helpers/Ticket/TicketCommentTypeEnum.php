@@ -17,4 +17,5 @@ enum TicketCommentTypeEnum: string
 
     case COMMENT = 'comment';
     case WAITING_FOR_DEPLOYMENT = 'waiting_for_deployment';
+    case POST_MORTEM = 'post_mortem';
 }

@@ -45,6 +45,7 @@ export interface JourneyRibbon {
     amount_grp: number | null
     created_at: string
     current_stage: string | null
+    current_label: string | null
     status: "on_track" | "at_risk" | "overdue" | "completed"
     days_overdue: number
     eta: string | null
@@ -54,7 +55,7 @@ export interface JourneyRibbon {
 
 const props = defineProps<{
     ribbon: JourneyRibbon
-    stageKeys: string[]
+    stages: { key: string; label: string; description: string; markable: boolean }[]
     groupCurrency: string
     canMark: boolean
 }>()
@@ -63,13 +64,11 @@ const emit = defineEmits<{ mark: [ribbon: JourneyRibbon, segment: JourneySegment
 
 const segmentsByKey = computed(() => Object.fromEntries(props.ribbon.segments.map((segment) => [segment.key, segment])))
 
-const currentSegment = computed(() => props.ribbon.segments.find((segment) => segment.key === props.ribbon.current_stage))
-
 const journeyIcon = { agent: "fal fa-user-tie", supplier: "fal fa-industry-alt", partner: "fal fa-building" }
 
 const cellClass: Record<JourneySegment["state"], string> = {
     done: "bg-emerald-200 text-emerald-900",
-    skipped: "bg-emerald-100 text-emerald-700/70",
+    skipped: "bg-emerald-100 text-emerald-800",
     untracked: "bg-slate-50",
     on_track: "bg-blue-500 text-white font-semibold",
     at_risk: "bg-amber-400 text-amber-950 font-semibold",
@@ -92,15 +91,43 @@ const statusLabel = computed(() => ({
 })[props.ribbon.status])
 
 const statusNote = computed(() => {
-    const segment = currentSegment.value
     if (props.ribbon.status === "completed") {
         return props.ribbon.eta ? `${ctrans("Finished")} ${shortDate(props.ribbon.eta)}` : ""
     }
     if (props.ribbon.status === "on_track") {
         return `${ctrans("ETA")} ${shortDate(props.ribbon.eta)}`
     }
-    return segment?.label ?? ""
+    return props.ribbon.current_label ?? ""
 })
+
+function absentStage(stage: { key: string; label: string; description: string }): JourneySegment {
+    return {
+        key: stage.key,
+        label: stage.label,
+        description: stage.description,
+        state: "untracked",
+        done_at: null,
+        planned_at: "",
+        forecast_at: "",
+        behind_plan: false,
+        days_overdue: 0,
+        mark_column: stage.key
+    }
+}
+
+function tracksAbsent(stage: { key: string; markable: boolean }): boolean {
+    return props.ribbon.journey === "supplier" && stage.markable && stage.key !== "spec_sample"
+}
+
+function absentTitle(key: string): string {
+    if (key === "spec_sample") {
+        return ctrans("Only for orders with new products")
+    }
+    if (key === "products_online") {
+        return ctrans("No products for sale on this order")
+    }
+    return ctrans("Not used for orders between AW companies")
+}
 
 const chevron = {
     clipPath: "polygon(0 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 0 100%, 7px 50%)"
@@ -129,7 +156,9 @@ function cellTitle(segment: JourneySegment): string {
     } else if (segment.state === "untracked") {
         parts.push(ctrans("Not recorded on this order. Mark it done when it happens"))
     }
-    parts.push(`${ctrans("Plan")}: ${useFormatTime(segment.planned_at)}`)
+    if (segment.planned_at) {
+        parts.push(`${ctrans("Plan")}: ${useFormatTime(segment.planned_at)}`)
+    }
     if (segment.behind_plan) {
         parts.push(ctrans("Behind plan, now expected :date", { date: useFormatTime(segment.forecast_at) }))
     }
@@ -186,13 +215,14 @@ function isMarkable(segment: JourneySegment): boolean {
                 </span>
             </div>
         </td>
-        <td v-for="key in stageKeys" :key="key" class="px-0 py-2 align-middle">
+        <td v-for="stage in stages" :key="stage.key" class="px-0 py-2 align-middle">
+            <template v-for="key in [stage.key]" :key="key">
             <button
                 v-if="segmentsByKey[key]"
                 type="button"
                 :title="cellTitle(segmentsByKey[key])"
                 :style="chevron"
-                class="-mr-1 flex h-10 w-full min-w-[4.75rem] flex-col items-center justify-center px-2 text-[11px] leading-tight"
+                class="-mr-1 flex h-10 w-full min-w-[4.75rem] flex-col items-center justify-center px-2 text-[11px] leading-tight focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-700"
                 :class="[cellClass[segmentsByKey[key].state], isMarkable(segmentsByKey[key]) ? 'cursor-pointer hover:brightness-95' : 'cursor-default']"
                 @click="isMarkable(segmentsByKey[key]) && emit('mark', ribbon, segmentsByKey[key], $event)">
                 <template v-if="segmentsByKey[key].state === 'done'">
@@ -200,7 +230,7 @@ function isMarkable(segment: JourneySegment): boolean {
                 </template>
                 <template v-else-if="segmentsByKey[key].state === 'skipped'">✓</template>
                 <template v-else-if="segmentsByKey[key].state === 'untracked'" />
-                <span v-else-if="segmentsByKey[key].state === 'future'" :class="segmentsByKey[key].behind_plan ? 'text-red-400' : ''">
+                <span v-else-if="segmentsByKey[key].state === 'future'" :class="segmentsByKey[key].behind_plan ? 'text-gray-500 line-through' : ''">
                     {{ shortDate(segmentsByKey[key].planned_at) }}
                 </span>
                 <template v-else>
@@ -208,7 +238,16 @@ function isMarkable(segment: JourneySegment): boolean {
                     <span v-if="segmentsByKey[key].state === 'overdue'">+{{ segmentsByKey[key].days_overdue }}d</span>
                 </template>
             </button>
-            <div v-else class="mx-2 h-px bg-gray-200" :title="ctrans('Not part of this journey')" />
+            <button
+                v-else-if="canMark && tracksAbsent(stage)"
+                type="button"
+                :title="`${stage.label}\n${stage.description}\n${ctrans('Not recorded on this order. Click to mark done')}`"
+                :style="chevron"
+                class="-mr-1 flex h-10 w-full min-w-[4.75rem] cursor-pointer bg-slate-50 hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-700"
+                @click="emit('mark', ribbon, absentStage(stage), $event)" />
+            <div v-else-if="tracksAbsent(stage)" :style="chevron" class="-mr-1 h-10 bg-slate-50" :title="ctrans('Not recorded on this order')" />
+            <div v-else class="mx-2 h-px bg-gray-200" :title="absentTitle(stage.key)" />
+            </template>
         </td>
         <td class="whitespace-nowrap py-2 pl-4 pr-3 align-middle">
             <div class="text-sm font-semibold" :class="statusClass[ribbon.status]">

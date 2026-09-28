@@ -28,7 +28,7 @@ class ShowReturn extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo("incoming.{$this->warehouse->id}.view");
+        return $request->user()->authTo(["incoming.{$this->warehouse->id}.view", "returns.{$this->warehouse->id}"]);
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, OrderReturn $return, ActionRequest $request): OrderReturn

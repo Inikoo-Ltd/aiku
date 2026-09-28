@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
@@ -131,6 +132,7 @@ use App\Actions\Inventory\OrgStock\Json\FetchOrgStockStocksManagement;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
+use App\Actions\Goods\Barcode\Json\GetNextFreeBarcode;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\CheckMasterAssetTradeUnitOrgStockExistence;
 use App\Actions\Masters\MasterAsset\Json\GetMasterAssetsOpenOrdersAffectedByUnitsChange;
@@ -252,6 +254,7 @@ Route::get('master-product-category/{masterProductCategory:id}/shops-content', G
 Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks');
 Route::get('org-agent/{orgAgent}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgAgent'])->name('org-agent.org-supplier-products');
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
+Route::get('purchase-order-transaction-recent-uploads/{purchaseOrder:id}', IndexRecentPurchaseOrderTransactionUploads::class)->name('purchase_order.transaction.recent_uploads');
 
 Route::get('website/{website}/unique-visitors', GetWebsiteCloudflareUniqueVisitors::class)->name('website.unique-visitors');
 
@@ -266,6 +269,7 @@ Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('sh
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 Route::get('organisation/{organisation}/org-supplier-products', GetOrgSupplierProducts::class)->name('org_supplier_products.index');
 Route::get('organisation/{organisation:id}/org-stock/{orgStock:id}/batch-codes', GetBatchCodes::class)->name('org_stock.batch_codes.index');
+Route::get('barcodes/next-free', GetNextFreeBarcode::class)->name('barcodes.next_free');
 Route::get('warehouse/{warehouse}/scan-sko-barcode', ScanSkoBarcode::class)->name('warehouse.scan_sko_barcode');
 Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/stocks-management', FetchOrgStockStocksManagement::class)->name('warehouse.org_stock.stocks_management')->withoutScopedBindings();
 Route::get('warehouse/{warehouse}/org-stock/{orgStock:id}/label-options', FetchOrgStockLabelOptions::class)->name('warehouse.org_stock.label_options')->withoutScopedBindings();

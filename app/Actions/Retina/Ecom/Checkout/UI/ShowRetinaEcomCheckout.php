@@ -124,6 +124,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 'order'          => OrderResource::make($order)->resolve(),
                 'summary'        => $this->getOrderBoxStats($order),
                 'stock_issues'   => $this->getBasketStockIssues($order),
+                'is_gift_message_missing' => $order->isGiftMessageMissing(),
                 'earlier_delivery_address' => GetEarlierDeliveryAddressWarning::run($order, withCustomerActions: true),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,
@@ -137,15 +138,6 @@ class ShowRetinaEcomCheckout extends RetinaAction
                     'by_balance' => $toPayByBalance,
                     'by_other'   => $toPayByOther
 
-                ],
-                'whatsapp_newsletter' => [
-                    'is_subscribed' => (bool) $this->customer->comms?->is_subscribed_to_whatsapp_newsletter,
-                    'label'         => Arr::get($this->shop->settings, 'registration.whatsapp_newsletter_label')
-                        ?? __('Opt in to receive our newsletter and offers via WhatsApp.'),
-                    'update_route'  => [
-                        'name'       => 'retina.models.customer_comms.update',
-                        'parameters' => ['customerComms' => $this->customer->comms?->id],
-                    ],
                 ],
                 'routes'         => [
                     'pay_with_balance' => [

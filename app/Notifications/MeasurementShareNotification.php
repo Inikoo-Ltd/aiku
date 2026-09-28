@@ -44,10 +44,16 @@ class MeasurementShareNotification extends Notification implements ShouldQueue
      */
     public function toMail(mixed $notifiable): MailMessage
     {
-        return (new CustomMailMessage($notifiable))
+        $message = (new CustomMailMessage($notifiable))
                     ->line('The introduction to the notification.')
                     ->action('Notification Action', url('/'))
                     ->line('Thank you for using our application!');
+
+        if (app()->isProduction()) {
+            $message->mailer('ses')->from('help@aiku.io', 'Aiku Help');
+        }
+
+        return $message;
     }
 
     /**

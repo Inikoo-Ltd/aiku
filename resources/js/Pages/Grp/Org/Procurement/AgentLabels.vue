@@ -21,6 +21,7 @@ library.add(faPrint, faTags)
 interface AgentLabel {
     id: number
     name: string
+    run_sources: string[]
     pdf_url: string
 }
 
@@ -60,7 +61,13 @@ const openPrint = (label: AgentLabel) => {
     expiryDate.value = ""
 }
 
+const isReadyToPrint = (label: AgentLabel) =>
+    (!label.run_sources.includes("batch_code") || batchCode.value.trim() !== "")
+    && (!label.run_sources.includes("expiry_date") || expiryDate.value !== "")
+
 const print = (label: AgentLabel) => {
+    if (!isReadyToPrint(label)) return
+
     const url = new URL(label.pdf_url)
 
     if (batchCode.value.trim()) url.searchParams.set("batch_code", batchCode.value.trim())
@@ -120,15 +127,15 @@ const print = (label: AgentLabel) => {
                             v-if="printingLabelId === label.id"
                             class="mt-2 ml-6 flex flex-wrap items-end gap-3 rounded bg-gray-50 p-3"
                             @submit.prevent>
-                            <label class="text-xs text-gray-600">
+                            <label v-if="label.run_sources.includes('batch_code')" class="text-xs text-gray-600">
                                 {{ ctrans('Batch code') }}
-                                <input v-model="batchCode" type="text" class="mt-1 block w-48 rounded border border-gray-300 px-2 py-1 text-sm" />
+                                <input v-model="batchCode" type="text" required class="mt-1 block w-48 rounded border border-gray-300 px-2 py-1 text-sm" />
                             </label>
-                            <label class="text-xs text-gray-600">
+                            <label v-if="label.run_sources.includes('expiry_date')" class="text-xs text-gray-600">
                                 {{ ctrans('Expiry date') }}
-                                <input v-model="expiryDate" type="date" class="mt-1 block rounded border border-gray-300 px-2 py-1 text-sm" />
+                                <input v-model="expiryDate" type="date" required class="mt-1 block rounded border border-gray-300 px-2 py-1 text-sm" />
                             </label>
-                            <Button type="primary" size="xs" icon="fal fa-print" :label="ctrans('Open PDF')" @click="print(label)" />
+                            <Button type="primary" size="xs" icon="fal fa-print" :label="ctrans('Open PDF')" :disabled="!isReadyToPrint(label)" @click="print(label)" />
                         </form>
                     </li>
                 </ul>

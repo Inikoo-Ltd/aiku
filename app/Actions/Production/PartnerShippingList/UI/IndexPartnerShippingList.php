@@ -9,6 +9,7 @@
 namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
@@ -365,14 +366,14 @@ class IndexPartnerShippingList extends OrgAction
 
         $backlogItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
-            $item->batch_code         = $this->getBatchCode($item);
+            $item->batch_code         = $item->run_batch_code;
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
             $item->run_expiry         = $this->getRunExpiryDate($item);
         });
 
         $preparingItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
-            $item->batch_code         = $this->getBatchCode($item);
+            $item->batch_code         = $item->run_batch_code;
             $item->label_expiry_date  = $this->getLabelExpiryDate($item);
             $item->run_expiry         = $this->getRunExpiryDate($item);
         });
@@ -385,7 +386,7 @@ class IndexPartnerShippingList extends OrgAction
 
     /**
      * @param  array<int, int>  $artefactIds
-     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, batch_code: string|null, expiry_date: string|null, pdf_url: string}>>
+     * @return Collection<int, Collection<int, array{id: int, artefact_id: int, name: string, run_sources: array<int, string>, expiry_date: string|null, pdf_url: string}>>
      */
     public function getPublishedLabelsByArtefact(array $artefactIds): Collection
     {
@@ -402,26 +403,11 @@ class IndexPartnerShippingList extends OrgAction
                 'id'          => $label->id,
                 'artefact_id' => $label->artefact_id,
                 'name'        => $label->name,
-                'batch_code'  => $this->getPrintedText($label, 'batch_code'),
+                'run_sources' => DownloadArtefactLabelPdf::getRunSources($label),
                 'expiry_date' => $this->getPrintedText($label, 'expiry_date'),
                 'pdf_url'     => route('grp.models.artefact.labels.pdf', ['artefact' => $label->artefact_id, 'label' => $label->id]),
             ])
             ->groupBy('artefact_id');
-    }
-
-    /**
-     * The batch code the artisan should mark the run with. What was typed when the run was prepared
-     * wins, then a published label that prints one, because the board must never contradict the
-     * sheet coming out of the printer. Nothing is invented when neither exists: the batch is named
-     * after the job order once it is made, and showing a guess here would name it twice.
-     */
-    private function getBatchCode(object $item): ?string
-    {
-        if ($item->run_batch_code) {
-            return $item->run_batch_code;
-        }
-
-        return collect($item->published_labels)->pluck('batch_code')->filter()->first();
     }
 
     private function getPrintedText(ArtefactLabel $label, string $source): ?string

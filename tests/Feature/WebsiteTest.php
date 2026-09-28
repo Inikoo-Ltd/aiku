@@ -2835,6 +2835,26 @@ test('repair create system pages puts back a missing system web block', function
         ->and($website->refresh()->register_dashboard_page_id)->toBe($registerDashboard->id);
 })->depends('launch website');
 
+test('UI edit blog dashboard system page offers only the SEO settings and structured data', function (Website $website) {
+    $blogDashboardPage = $website->refresh()->blogDashboardPage;
+
+    $response = get(route('grp.org.shops.show.web.webpages.edit', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $website->slug,
+        $blogDashboardPage->slug,
+    ]));
+
+    $response->assertOk();
+
+    $fieldKeys = collect($response->original->getData()['page']['props']['formData']['blueprint'])
+        ->flatMap(fn (array $section) => array_keys($section['fields'] ?? []))
+        ->values()
+        ->all();
+
+    expect($fieldKeys)->toBe(['seo_image', 'title', 'description', 'structured_data', 'state_data']);
+})->depends('launch website');
+
 test('repair create system pages replaces the register dashboard block with register dashboard 2', function (Website $website) {
     $registerDashboard = $website->refresh()->registerDashboardPage;
     $registerDashboard->modelHasWebBlocks()->delete();

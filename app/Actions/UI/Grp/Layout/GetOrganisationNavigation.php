@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Models\Helpers\Ticket;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
@@ -218,6 +219,30 @@ class GetOrganisationNavigation
         }
 
 
+        if (isset($navigation['procurement'])) {
+            $navigation['procurement']['topMenu']['subSections'][] = [
+                'label' => __('Inbox'),
+                'icon'  => ['fal', 'fa-inbox'],
+                'root'  => 'grp.org.procurement.supplier_messages.',
+                'route' => [
+                    'name'       => 'grp.org.procurement.supplier_messages.index',
+                    'parameters' => [$organisation->slug],
+                ]
+            ];
+        }
+
+        if ($user->authTo(['org-admin.'.$organisation->id, 'org-supervisor.'.$organisation->id.'.procurement']) && isset($navigation['procurement'])) {
+            $navigation['procurement']['topMenu']['subSections'][] = [
+                'label' => __('Settings'),
+                'icon'  => ['fal', 'fa-cog'],
+                'root'  => 'grp.org.procurement.settings.',
+                'route' => [
+                    'name'       => 'grp.org.procurement.settings.edit',
+                    'parameters' => [$organisation->slug],
+                ]
+            ];
+        }
+
         $navigation = $this->getAccountingNavs($user, $organisation, $navigation);
 
 
@@ -352,7 +377,7 @@ class GetOrganisationNavigation
             'icon'    => ['fal', 'fa-life-ring'],
             'root'    => 'grp.org.tickets.',
             'route'   => [
-                'name'       => $user->roles()->where('name', RolesEnum::HELP_DESK_SUPERVISOR->value)->exists() ? 'grp.org.tickets.board' : 'grp.org.tickets.index',
+                'name'       => $user->hasRole(RolesEnum::HELP_DESK_SUPERVISOR->value) ? 'grp.org.tickets.board' : 'grp.org.tickets.index',
                 'parameters' => [$organisation->slug],
             ],
             'topMenu' => [
@@ -367,7 +392,7 @@ class GetOrganisationNavigation
                         ],
                     ],
                     [
-                        'label' => __('List'),
+                        'label' => __('Ticket List'),
                         'icon'  => ['fal', 'fa-list'],
                         'root'  => 'grp.org.tickets.list',
                         'route' => [
@@ -375,6 +400,15 @@ class GetOrganisationNavigation
                             'parameters' => [$organisation->slug],
                         ],
                     ],
+                    ...(Ticket::canCheckQa($user) ? [[
+                        'label' => __('QA List'),
+                        'icon'  => ['fal', 'fa-vial'],
+                        'root'  => 'grp.org.tickets.qa_list',
+                        'route' => [
+                            'name'       => 'grp.org.tickets.qa_list',
+                            'parameters' => [$organisation->slug],
+                        ],
+                    ]] : []),
                     [
                         'label' => __('Board'),
                         'icon'  => ['fal', 'fa-columns'],

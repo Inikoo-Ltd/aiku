@@ -14,7 +14,11 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\HumanResources\JobPosition\JobPositionScopeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\HumanResources\JobPosition;
+use App\Models\Inventory\Warehouse;
+use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
@@ -47,7 +51,7 @@ class SyncRolesFromJobPositions
             }
         }
 
-        $user->syncRoles($roles);
+        $user->syncRoles($this->withoutRolesCoveredByAdmin($roles));
 
         foreach (
             $user->roles()->where(function ($query) {
@@ -81,58 +85,12 @@ class SyncRolesFromJobPositions
 
         if ($user->roles()->whereIn('name', [RolesEnum::GROUP_ADMIN->value, RolesEnum::HELP_DESK_CLERK->value, RolesEnum::HELP_DESK_SUPERVISOR->value, RolesEnum::QA->value])->exists()) {
             foreach ($user->group->organisations as $organisation) {
-                UserAddRoles::run(
-                    $user,
-                    [
-                        Role::where('name', RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $organisation))->first()
-                    ],
-                    setUserAuthorisedModels: false
-                );
+                $this->addRole($user, RolesEnum::ORG_ADMIN, $organisation);
             }
-            foreach ($user->group->shops as $shop) {
-                if ($shop->type == ShopTypeEnum::FULFILMENT) {
-                    UserAddRoles::run(
-                        $user,
-                        [
-                            Role::where('name', RolesEnum::getRoleName(RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR->value, $shop->fulfilment))->first()
-                        ],
-                        setUserAuthorisedModels: false
-                    );
-                    UserAddRoles::run(
-                        $user,
-                        [
-                            Role::where('name', RolesEnum::getRoleName(RolesEnum::FULFILMENT_SHOP_SUPERVISOR->value, $shop->fulfilment))->first()
-                        ],
-                        setUserAuthorisedModels: false
-                    );
-                } else {
-                    UserAddRoles::run(
-                        $user,
-                        [
-                            Role::where('name', RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $shop))->first()
-                        ],
-                        setUserAuthorisedModels: false
-                    );
-                }
-            }
-            foreach ($user->group->warehouses as $warehouse) {
-                UserAddRoles::run(
-                    $user,
-                    [
-                        Role::where('name', RolesEnum::getRoleName(RolesEnum::WAREHOUSE_ADMIN->value, $warehouse))->first()
-                    ],
-                    setUserAuthorisedModels: false
-                );
-            }
-            foreach ($user->group->productions as $production) {
-                UserAddRoles::run(
-                    $user,
-                    [
-                        Role::where('name', RolesEnum::getRoleName(RolesEnum::MANUFACTURING_ADMIN->value, $production))->first()
-                    ],
-                    setUserAuthorisedModels: false
-                );
-            }
+        }
+
+        foreach ($user->roles()->where('name', 'like', RolesEnum::ORG_ADMIN->value.'-%')->where('scope_type', 'Organisation')->get() as $orgAdminRole) {
+            $this->addAdminRolesInOrganisation($user, Organisation::find($orgAdminRole->scope_id));
         }
 
 
@@ -161,6 +119,70 @@ class SyncRolesFromJobPositions
         }
     }
 
+
+    /**
+     * Admins are given everything below them, so positions held alongside are dropped: a customer
+     * service position made an admin a chat agent, routed chats and rung for them.
+     *
+     * @param array<int> $roleIds
+     * @return array<int>
+     */
+    private function withoutRolesCoveredByAdmin(array $roleIds): array
+    {
+        $roles = Role::whereIn('id', $roleIds)->get();
+
+        if ($roles->contains('name', RolesEnum::GROUP_ADMIN->value)) {
+            return $roles->where('scope_type', 'Group')->pluck('id')->all();
+        }
+
+        $isOrgAdmin           = fn (Role $role) => $role->scope_type === 'Organisation' && $role->name === RolesEnum::ORG_ADMIN->value.'-'.$role->scope_id;
+        $adminOrganisationIds = $roles->filter($isOrgAdmin)->pluck('scope_id')->all();
+        if ($adminOrganisationIds === []) {
+            return $roleIds;
+        }
+
+        $organisationIdsByScope = collect([
+            'Shop'       => Shop::class,
+            'Warehouse'  => Warehouse::class,
+            'Fulfilment' => Fulfilment::class,
+            'Production' => Production::class,
+        ])->map(fn (string $model, string $scopeType) => $model::whereIn('id', $roles->where('scope_type', $scopeType)->pluck('scope_id'))->pluck('organisation_id', 'id'));
+
+        return $roles->reject(function (Role $role) use ($isOrgAdmin, $adminOrganisationIds, $organisationIdsByScope) {
+            $organisationId = $role->scope_type === 'Organisation' ? $role->scope_id : $organisationIdsByScope->get($role->scope_type)?->get($role->scope_id);
+
+            return !$isOrgAdmin($role) && in_array($organisationId, $adminOrganisationIds);
+        })->pluck('id')->all();
+    }
+
+    private function addAdminRolesInOrganisation(User $user, Organisation $organisation): void
+    {
+        foreach ($organisation->shops as $shop) {
+            if ($shop->type == ShopTypeEnum::FULFILMENT) {
+                $this->addRole($user, RolesEnum::FULFILMENT_WAREHOUSE_SUPERVISOR, $shop->fulfilment);
+                $this->addRole($user, RolesEnum::FULFILMENT_SHOP_SUPERVISOR, $shop->fulfilment);
+            } else {
+                $this->addRole($user, RolesEnum::SHOP_ADMIN, $shop);
+            }
+        }
+        foreach ($organisation->warehouses as $warehouse) {
+            $this->addRole($user, RolesEnum::WAREHOUSE_ADMIN, $warehouse);
+        }
+        foreach ($organisation->productions as $production) {
+            $this->addRole($user, RolesEnum::MANUFACTURING_ADMIN, $production);
+        }
+    }
+
+    private function addRole(User $user, RolesEnum $role, Organisation|Shop|Warehouse|Fulfilment|Production $scope): void
+    {
+        UserAddRoles::run(
+            $user,
+            [
+                Role::where('name', RolesEnum::getRoleName($role->value, $scope))->first()
+            ],
+            setUserAuthorisedModels: false
+        );
+    }
 
     private function getRoles($roles, JobPosition $jobPosition): array
     {

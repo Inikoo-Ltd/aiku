@@ -18,13 +18,15 @@ library.add( faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faM
 import { faListUl, faEye } from "@far"
 
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import RetinaEcomLeftSidebar from "./Retina/RetinaEcomLeftSidebar.vue"
+import { useAutoCollapseLeftSidebar } from "@/Composables/useAutoCollapseLeftSidebar"
 import RetinaMobileNavigationSimple from "./Retina/RetinaMobileNavigationSimple.vue"
 import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder,faHistory)
 
 const layout = useLayoutStore()
+useAutoCollapseLeftSidebar(layout)
 const locale = useLocaleStore()
 const isOpenMenuMobile = ref(false)
 provide("layout", layout)
@@ -41,10 +43,10 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 <template>
 	<!-- page background -->
-	<div class="-z-[1] fixed inset-0 bg-slate-100 custom-class" />
+	<div class="-z-[1] fixed inset-0 bg-gray-100 custom-class" />
 
 	<ScreenWarning v-if="layout.app.environment === 'staging'">
-		{{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
+		{{ ctrans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
 	</ScreenWarning>
 
 	<div
@@ -65,19 +67,19 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 		<div class="relative">
 
 			<!-- sidebar + main content -->
-			<main class="flex flex-col md:flex-row gap-x-2 lg:max-w-7xl w-full lg:mx-auto my-10 px-4 lg:px-8 xl:px-0 transition-all">
+			<main class="flex flex-col sm:flex-row gap-x-2 lg:max-w-7xl w-full lg:mx-auto my-10 pl-2 pr-2 sm:pl-3 xl:pl-0 transition-all" :style="screenType === 'mobile' ? undefined : { paddingRight: 'max(0.75rem, min(4.25rem, calc(4.25rem - (100vw - 80rem) / 2)))' }">
 				<RetinaEcomLeftSidebar
 					v-if="layout.user && screenType !== 'mobile'"
 					:class="[
-						'fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform z-50 md:z-0 transition-all',
+						'fixed inset-y-0 left-0 sm:h-fit bg-white shadow-lg transform z-50 sm:z-0 transition-all',
 						sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-						'md:relative md:translate-x-0 md:flex md:flex-col',
-						layout.leftSidebar.show ? 'min-w-56 w-56' : 'min-w-56 w-56 md:min-w-14 md:w-14 '
+						'sm:relative sm:translate-x-0 sm:flex sm:flex-col',
+						layout.leftSidebar.show ? 'min-w-56 w-56' : 'min-w-56 w-56 sm:min-w-14 sm:w-14 '
 					]"
 				/>
 
 				<!-- RetinaLayoutDS -->
-				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
+				<div class="flex-1 min-w-0 flex flex-col pb-6 text-gray-800 relative">
 					<div class="overflow-x-auto flex flex-row justify-between items-center md:items-end absolute bottom-full w-full border-b-0 xmx-auto transition-all mb-1">
 						<!-- <Breadcrumbs
 							class=""
@@ -90,7 +92,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 						<div v-if="layout.iris?.is_logged_in"
 							class="xbg-slate-300 xborder border-slate-500 px-0 md:px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
 						>
-							{{ trans("Reference") }}:
+							{{ ctrans("Customer") }}:
 							<span class="font-semibold tabular-nums">
 								#{{ layout?.iris_variables?.reference }}
 							</span>
@@ -102,7 +104,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 								:href="route('retina.top_up.dashboard')"
 								class="md:place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2"
 							>
-								{{ trans("My balance") }}:
+								{{ ctrans("My balance") }}:
 								<span class="font-semibold tabular-nums">
 									{{ locale.currencyFormat(layout.retina?.currency?.code, layout.retina?.balance || 0) }}
 								</span>
@@ -114,17 +116,20 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 							<!-- Section: mobile navigation -->
 							<div
 								v-if="layout.user && screenType === 'mobile'"
-								class="sticky top-0 z-40 flex justify-center items-center gap-x-1 px-3 py-2 bg-white/95 backdrop-blur border-b border-slate-200 rounded-t-lg overflow-x-auto">
-								<template v-for="(grpNav, itemKey) in layout.navigation">
-									<RetinaMobileNavigationSimple
-										:nav="grpNav"
-										:navKey="generateNavigationName(itemKey)"
-									/>
-								</template>
+								class="sticky top-0 z-40 relative bg-white/95 backdrop-blur border-b border-gray-200 rounded-t-lg">
+								<div class="flex items-start gap-x-0.5 px-1 py-1 overflow-x-auto snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+									<template v-for="(grpNav, itemKey) in layout.navigation">
+										<RetinaMobileNavigationSimple
+											:nav="grpNav"
+											:navKey="generateNavigationName(itemKey)"
+										/>
+									</template>
+								</div>
+								<div class="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-tr-lg bg-gradient-to-l from-white to-transparent" />
 							</div>
 
 							<!-- Section: Top navigation -->
-							<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto" />
+							<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto empty:hidden" />
 
 							<!-- Main content of the page -->
 							<slot name="default" />

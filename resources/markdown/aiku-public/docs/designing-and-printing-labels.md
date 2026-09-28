@@ -1,7 +1,7 @@
 ---
 title: Designing and printing labels
 summary: Build an A4 label sheet on an artefact: upload the artwork, set the grid, drop on the batch code, expiry date and a barcode that scans, then publish it so the floor can print it.
-date: 2026-09-16
+date: 2026-09-25
 tags: production, crafts, labels, printing
 category: production
 help_routes: grp.org.productions.show.crafts.labels.index
@@ -91,7 +91,7 @@ Drag a text to move it. The small square on a selected text resizes it: font siz
 
 **Download PDF** generates the sheet as it stands, saved or not, so you can hold a test print against the real labels before committing to anything.
 
-Once the label is published, the floor prints it from the **Preparing** lane of the To produce board, and the header of the editor also carries a **Published PDF** link.
+Once the label is published, the floor prints it from the **Preparing** lane of the To produce board, and the header of the editor also carries a **Published PDF** link. The board prints each run's own batch code and expiry date, typed when the run is dragged into **Preparing**. A label that prints a batch code or an expiry date cannot be printed from the board until its run has them, and a run cannot be prepared without them.
 
 ## Things worth knowing
 
@@ -100,7 +100,7 @@ Once the label is published, the floor prints it from the **Preparing** lane of 
 - **Editing a published label goes live on save.** There is no draft copy sitting in front of it.
 - **Deleting a label cannot be undone.** The layout and its link to the artwork go with it. The artwork file itself stays on the artefact.
 - **An imported label has no variable text by design.** It prints exactly the artwork it came with. If a run needs a batch number on it, that is a decision someone makes in the editor, not something the import got wrong.
-- **The batch code and expiry date are stand-ins, not live data.** They do not update themselves between runs. Check them before each print until artefacts carry real ones.
+- **The batch code and expiry date on the design are examples.** Only the previews in the editor show them: the board and the agents always print the run's own. Choosing **Save on the label** when preparing a run changes the expiry date the next runs start from.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>

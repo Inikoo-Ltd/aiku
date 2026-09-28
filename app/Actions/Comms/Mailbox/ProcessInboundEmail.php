@@ -27,6 +27,7 @@ use App\Models\CRM\Customer;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
 use App\Models\CRM\WebUser;
+use App\Models\SysAdmin\Group;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
 use App\Services\HTMLSanitizer;
@@ -48,7 +49,10 @@ class ProcessInboundEmail
      */
     private const int GONE_TTL_DAYS = 7;
 
-    private const array MACHINE_SENDER_DOMAINS = ['luigisbox.com', 'email-abuse.amazonses.com'];
+    private const array MACHINE_SENDER_DOMAINS = [
+        'luigisbox.com', 'email-abuse.amazonses.com',
+        'brand.faire.com', 'e.faire.com', 'reply.ebay.co.uk', 'service.tiktok.com', 'shop.tiktok.com',
+    ];
 
     /**
      * The row carrying the gmail id is what stops a message being taken in twice, but it is only
@@ -137,6 +141,15 @@ class ProcessInboundEmail
             return null;
         }
 
+        // Order, shipping and payout notices from the marketplaces are work for whoever runs those
+        // portals, not a conversation. They wait unread under their own label in Gmail. Buyers'
+        // messages come from another address and still reach the inbox.
+        if (self::isMarketplaceNotice($from['address'])) {
+            $client->fileAway($gmailMessageId, 'Marketplaces', Arr::get($raw, 'labelIds', []), markRead: false);
+
+            return null;
+        }
+
         $webUser = $this->matchWebUser($shop, $from['address']);
 
         if (! $webUser && self::isAutomatedMail($from['address'], $subject)) {
@@ -181,7 +194,12 @@ class ProcessInboundEmail
         ]);
 
         $html = app(HTMLSanitizer::class)->cleanEmail(
-            $this->resolveInlineImages($rawHtml, $message, $contentIds)
+            $this->resolveInlineImages(
+                $rawHtml,
+                $message,
+                $contentIds,
+                ImportPendingGmailAttachments::make()->smallInlineImages($client, $gmailMessageId, $raw)
+            )
         );
 
         if ($html !== '') {
@@ -253,27 +271,28 @@ class ProcessInboundEmail
      * The stored files are in the order they were downloaded, so position is what matches them.
      *
      * @param  array<int, string|null>  $contentIds
+     * @param  array<string, string>  $smallInlineImages
      */
-    private function resolveInlineImages(?string $html, ChatMessage $message, array $contentIds): ?string
+    private function resolveInlineImages(?string $html, ChatMessage $message, array $contentIds, array $smallInlineImages): ?string
     {
-        if (! $html || ! array_filter($contentIds)) {
+        if (! $html) {
             return $html;
         }
 
-        $files = $message->attachedFiles();
+        $sources = $smallInlineImages;
 
-        foreach ($contentIds as $index => $contentId) {
-            $media = $files[$index] ?? null;
+        if (array_filter($contentIds)) {
+            $files = $message->attachedFiles();
 
-            if (! $contentId || ! $media) {
-                continue;
+            foreach ($contentIds as $index => $contentId) {
+                if ($contentId && isset($files[$index])) {
+                    $sources[$contentId] = $files[$index]->getUrl();
+                }
             }
+        }
 
-            $html = str_ireplace(
-                ['cid:'.$contentId, 'cid:'.rawurlencode($contentId)],
-                $media->getUrl(),
-                $html
-            );
+        foreach ($sources as $contentId => $source) {
+            $html = str_ireplace(['cid:'.$contentId, 'cid:'.rawurlencode($contentId)], $source, $html);
         }
 
         return $html;
@@ -553,7 +572,7 @@ class ProcessInboundEmail
                 'name'  => $from['name'] ?? $from['address'],
                 'email' => $from['address'],
             ]),
-            'is_carrier' => $session->is_carrier || (!$session->web_user_id && self::isCarrierAddress($from['address'])),
+            'is_carrier' => $session->is_carrier || (!$session->web_user_id && self::isCarrierAddress($from['address'], $session->shop?->group)),
         ]);
 
         return $session;
@@ -562,15 +581,33 @@ class ProcessInboundEmail
     /**
      * @param  array{address: ?string, name: ?string}  $from
      */
-    /**
-     * A courier writing about a delivery: its domain, or any subdomain of it, is on the list.
-     */
-    public static function isCarrierAddress(?string $address): bool
+    public static function isMarketplaceNotice(?string $address): bool
     {
         $domain = mb_strtolower((string) substr(strrchr((string) $address, '@') ?: '', 1));
 
-        return $domain !== '' && collect(config('chat.carrier_domains', []))
+        return $domain !== '' && in_array($domain, config('chat.marketplace_notice_domains', []), true);
+    }
+
+    /**
+     * A courier writing about a delivery: its domain, or any subdomain of it, is on the list.
+     */
+    public static function isCarrierAddress(?string $address, ?Group $group = null): bool
+    {
+        $domain = mb_strtolower((string) substr(strrchr((string) $address, '@') ?: '', 1));
+
+        return $domain !== '' && collect(self::carrierDomains($group))
             ->contains(fn (string $carrier) => $domain === $carrier || str_ends_with($domain, '.'.$carrier));
+    }
+
+    /**
+     * Customer service keeps the list in the chat settings. Until they first save it the group
+     * reads the list we shipped with, so an empty saved list really means no couriers.
+     *
+     * @return array<int, string>
+     */
+    public static function carrierDomains(?Group $group): array
+    {
+        return data_get($group?->settings, 'chat.carrier_domains') ?? config('chat.carrier_domains', []);
     }
 
     private function createSession(Shop $shop, ?WebUser $webUser, string $threadId, ?string $subject, array $from): ChatSession
@@ -592,7 +629,7 @@ class ProcessInboundEmail
                 'name'            => $from['name'] ?? $from['address'],
                 'email'           => $from['address'],
             ]),
-            'is_carrier' => !$webUser && self::isCarrierAddress($from['address']),
+            'is_carrier' => !$webUser && self::isCarrierAddress($from['address'], $shop->group),
         ]);
 
         return $session;

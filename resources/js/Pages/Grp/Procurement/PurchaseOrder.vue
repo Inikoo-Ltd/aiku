@@ -8,7 +8,8 @@
 import { computed, ref, watch } from "vue"
 import type { Component } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
+import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -17,9 +18,13 @@ import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.
 import TablePurchaseOrderTransactions from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrderTransactions.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
+import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Checkbox from "primevue/checkbox"
+import RadioButton from "primevue/radiobutton"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
@@ -38,11 +43,12 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
 library.add(
+	faDownload,
 	faIdCardAlt,
 	faEnvelope,
 	faPhone,
@@ -153,7 +159,16 @@ const props = defineProps < {
 	showcase?: {}
 	notes?: {}
 	note_store_route?: routeType
+	attachments?: {}
+	attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
+	attachmentScopes: { name: string; code: string }[]
 	history?: {}
+    upload_excel?: {
+        title: { label: string, information: string }
+        progressDescription: string
+        preview_template: { header: string[], rows: Record<string, string>[] }
+        upload_spreadsheet: any
+    } | null
 }>()
 
 const locale = useLocaleStore()
@@ -166,15 +181,15 @@ const metrics = computed(() => {
 			key: "weight",
 			isUnknown: weight === null,
 			showMark: weight === null || is_weight_partial,
-			text: weight === null ? trans("Unknown weight") : `${locale.number(weight)}Kg`,
-			tooltip: weight === null ? trans("No item has weight data") : trans("Some items have unknown weight"),
+			text: weight === null ? ctrans("Unknown weight") : `${locale.number(weight)}Kg`,
+			tooltip: weight === null ? ctrans("No item has weight data") : ctrans("Some items have unknown weight"),
 		},
 		{
 			key: "volume",
 			isUnknown: volume === null,
 			showMark: volume === null || is_volume_partial,
-			text: volume === null ? trans("Unknown CBM") : `${locale.number(volume)} m³`,
-			tooltip: volume === null ? trans("No item has CBM data") : trans("Some items have unknown CBM"),
+			text: volume === null ? ctrans("Unknown CBM") : `${locale.number(volume)} m³`,
+			tooltip: volume === null ? ctrans("No item has CBM data") : ctrans("Some items have unknown CBM"),
 		},
 	]
 })
@@ -195,11 +210,11 @@ const costRows = computed(() => {
 	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
 
 	return [
-		{ key: "items", label: trans("Items"), amount: Number(items) || 0, alwaysShown: true },
-		{ key: "extra", label: trans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
-		{ key: "shipping", label: trans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
-		{ key: "duties", label: trans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
-		{ key: "tax", label: trans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
+		{ key: "items", label: ctrans("Items"), amount: Number(items) || 0, alwaysShown: true },
+		{ key: "extra", label: ctrans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
+		{ key: "shipping", label: ctrans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
+		{ key: "duties", label: ctrans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
+		{ key: "tax", label: ctrans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
 	].filter(row => row.alwaysShown || row.amount !== 0)
 })
 
@@ -210,10 +225,10 @@ const costBlocks = computed(() => {
 
 	const supplierBlock = {
 		key: "supplier",
-		title: `${trans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
+		title: `${ctrans("Supplier invoice currency")} ${currency ?? ""}`.trim(),
 		rows: [
 			...costRows.value.map(row => ({ label: row.label, value: money(currency, row.amount) })),
-			{ label: trans("Total"), value: money(currency, Number(total)), isTotal: true },
+			{ label: ctrans("Total"), value: money(currency, Number(total)), isTotal: true },
 		],
 	}
 
@@ -228,7 +243,7 @@ const costBlocks = computed(() => {
 
 	const orderPerOrg = rate ? 1 / rate : null
 	const rateLabel = sameCurrency
-		? `${trans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
+		? `${ctrans("Organisation currency")} ${orgCurrency ?? ""}`.trim()
 		: orderPerOrg === null
 			? ""
 			: `1 ${orgCurrency} = ${orderPerOrg.toLocaleString(locale.locale_iso ?? "en", { maximumFractionDigits: 5 })} ${currency ?? ""}`.trim()
@@ -238,7 +253,7 @@ const costBlocks = computed(() => {
 		title: rateLabel,
 		rows: [
 			...costRows.value.map(row => ({ label: row.label, value: money(orgCurrency, orgAmount(row)) })),
-			{ label: trans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
+			{ label: ctrans("Total"), value: money(orgCurrency, orgTotal), isTotal: true },
 		],
 	}
 
@@ -261,6 +276,7 @@ const moneyTable = computed(() => {
 })
 
 const currentTab = ref(props.tabs.current)
+const isModalUploadExcel = ref(false)
 
 const currentLevel = ref<OrderingLevel>("cartons")
 
@@ -308,14 +324,27 @@ const formatDate = (date: Date | null): string | null => {
 	return `${year}-${month}-${day}`
 }
 
+const submitDialogAction = ref<any>(null)
+const sendVia = ref<string | null>(null)
+
 const submitPurchaseOrder = (action: any) => {
-	router.patch(route(action.route.name, action.route.parameters), {}, {
+	if (action.send_channels?.length && !submitDialogAction.value) {
+		sendVia.value = action.send_channels[0].channel
+		submitDialogAction.value = action
+		return
+	}
+
+	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value }, {
 		onStart: () => { submitLoading.value = true },
-		onFinish: () => { submitLoading.value = false },
+		onFinish: () => {
+			submitLoading.value = false
+			submitDialogAction.value = null
+			sendVia.value = null
+		},
 		onError: () => {
 			notify({
-				title: trans("Something went wrong"),
-				text: trans("Failed to submit purchase order"),
+				title: ctrans("Something went wrong"),
+				text: ctrans("Failed to submit purchase order"),
 				type: "error",
 			})
 		},
@@ -325,18 +354,18 @@ const submitPurchaseOrder = (action: any) => {
 const confirmDeletePurchaseOrder = (action: any) => {
 	confirm.require({
 		group: "purchase-order",
-		message: trans("Are you sure you want to delete this purchase order? This action cannot be undone."),
-		header: trans("Delete Purchase Order"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Delete"), severity: "danger" },
+		message: ctrans("Are you sure you want to delete this purchase order? This action cannot be undone."),
+		header: ctrans("Delete Purchase Order"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Delete"), severity: "danger" },
 		accept: () => {
 			router.delete(route(action.route.name, action.route.parameters), {
 				onStart: () => { deleteLoading.value = true },
 				onFinish: () => { deleteLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to delete purchase order"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to delete purchase order"),
 						type: "error",
 					})
 				},
@@ -348,18 +377,18 @@ const confirmDeletePurchaseOrder = (action: any) => {
 const confirmCancelPurchaseOrder = (action: any) => {
 	confirm.require({
 		group: "purchase-order",
-		message: trans("Are you sure you want to cancel this purchase order? All item amounts will be set to zero."),
-		header: trans("Cancel Purchase Order"),
-		rejectProps: { label: trans("Keep"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Cancel order"), severity: "danger" },
+		message: ctrans("Are you sure you want to cancel this purchase order? All item amounts will be set to zero."),
+		header: ctrans("Cancel Purchase Order"),
+		rejectProps: { label: ctrans("Keep"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Cancel order"), severity: "danger" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { cancelLoading.value = true },
 				onFinish: () => { cancelLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to cancel purchase order"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to cancel purchase order"),
 						type: "error",
 					})
 				},
@@ -371,18 +400,18 @@ const confirmCancelPurchaseOrder = (action: any) => {
 const confirmUndoSubmitPurchaseOrder = (action: any) => {
 	confirm.require({
 		group: "purchase-order",
-		message: trans("Are you sure you want to undo the submission? This purchase order will go back to in process."),
-		header: trans("Undo Submit Purchase Order"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Undo submit"), severity: "danger" },
+		message: ctrans("Are you sure you want to undo the submission? This purchase order will go back to in process."),
+		header: ctrans("Undo Submit Purchase Order"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Undo submit"), severity: "danger" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { undoSubmitLoading.value = true },
 				onFinish: () => { undoSubmitLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to undo submit purchase order"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to undo submit purchase order"),
 						type: "error",
 					})
 				},
@@ -398,10 +427,10 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 
 	confirm.require({
 		group: "purchase-order-confirm",
-		message: trans("Are you sure the supplier confirmed they will fulfil this purchase order?"),
-		header: trans("Confirm Purchase Order"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Confirm") },
+		message: ctrans("Are you sure the supplier confirmed they will fulfil this purchase order?"),
+		header: ctrans("Confirm Purchase Order"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Confirm") },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {
 				estimated_receiving_date: formatDate(estimatedReceivingDate.value),
@@ -410,8 +439,8 @@ const confirmConfirmPurchaseOrder = (action: any) => {
 				onFinish: () => { confirmLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to confirm purchase order"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to confirm purchase order"),
 						type: "error",
 					})
 				},
@@ -446,8 +475,8 @@ const saveEstimatedDeliveryDate = () => {
 		onFinish: () => { confirmLoading.value = false },
 		onError: () => {
 			notify({
-				title: trans("Something went wrong"),
-				text: trans("Failed to update estimated delivery date"),
+				title: ctrans("Something went wrong"),
+				text: ctrans("Failed to update estimated delivery date"),
 				type: "error",
 			})
 		},
@@ -457,18 +486,18 @@ const saveEstimatedDeliveryDate = () => {
 const confirmUndoConfirmPurchaseOrder = (action: any) => {
 	confirm.require({
 		group: "purchase-order",
-		message: trans("Are you sure you want to undo the confirmation? This purchase order will go back to submitted."),
-		header: trans("Undo Confirm Purchase Order"),
-		rejectProps: { label: trans("Cancel"), severity: "secondary", outlined: true },
-		acceptProps: { label: trans("Undo confirm"), severity: "danger" },
+		message: ctrans("Are you sure you want to undo the confirmation? This purchase order will go back to submitted."),
+		header: ctrans("Undo Confirm Purchase Order"),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: ctrans("Undo confirm"), severity: "danger" },
 		accept: () => {
 			router.patch(route(action.route.name, action.route.parameters), {}, {
 				onStart: () => { undoConfirmLoading.value = true },
 				onFinish: () => { undoConfirmLoading.value = false },
 				onError: () => {
 					notify({
-						title: trans("Something went wrong"),
-						text: trans("Failed to undo confirm purchase order"),
+						title: ctrans("Something went wrong"),
+						text: ctrans("Failed to undo confirm purchase order"),
 						type: "error",
 					})
 				},
@@ -506,8 +535,8 @@ const createStockDelivery = (purchaseOrderTransactionIds: number[]) => {
 		onFinish: () => { newStockDeliveryLoading.value = false },
 		onError: () => {
 			notify({
-				title: trans("Something went wrong"),
-				text: trans("Failed to create delivery"),
+				title: ctrans("Something went wrong"),
+				text: ctrans("Failed to create delivery"),
 				type: "error",
 			})
 		},
@@ -521,12 +550,16 @@ function openSupplierEmail(action: { mailto?: string, pdfUrl: string }) {
 	}
 }
 
+const isModalUploadAttachmentOpen = ref(false)
+
 const component = computed(() => {
 	const components: Component = {
 		items: TablePurchaseOrderTransactions,
 		products: TablePurchaseOrderTransactions,
 		showcase: ProcurementOrderData,
 		notes: TableProcurementNotes,
+		attachments: TableAttachments,
+		dispatched_emails: TableDispatchedEmailsInOrder,
 		history: TableHistories,
 	}
 
@@ -560,6 +593,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
+		<template #other>
+			<Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
+		</template>
+
 		<template #button-email-to-supplier="{ action }">
 			<Button
 				:style="action.style"
@@ -578,6 +615,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				@click="() => openProductListModal(action)"
+			/>
+		</template>
+
+		<template #button-upload-products="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				@click="() => isModalUploadExcel = true"
 			/>
 		</template>
 
@@ -688,7 +735,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				<div v-if="box_stats.first_block.orderer.name" class="flex items-center gap-2">
 					<dt>
 						<FontAwesomeIcon
-							v-tooltip="trans(box_stats.first_block.orderer.type)"
+							v-tooltip="ctrans(box_stats.first_block.orderer.type)"
 							icon="fal fa-hand-holding-box"
 							aria-hidden="true"
 							fixed-width
@@ -707,7 +754,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<div class="flex items-center gap-2">
 						<dt>
 							<FontAwesomeIcon
-								v-tooltip="trans('Incoterm')"
+								v-tooltip="ctrans('Incoterm')"
 								icon="fas fa-share"
 								aria-hidden="true"
 								fixed-width
@@ -720,14 +767,14 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
     							aria-hidden="true"
     							fixed-width
     						/>
-						    <span>{{ trans("Incoterm not set") }}</span>
+						    <span>{{ ctrans("Incoterm not set") }}</span>
 						</dd>
 					</div>
 
 					<div class="flex items-center gap-2">
 						<dt>
 							<FontAwesomeIcon
-								v-tooltip="trans('Port of export')"
+								v-tooltip="ctrans('Port of export')"
 								icon="fas fa-arrow-circle-right"
 								aria-hidden="true"
 								fixed-width
@@ -740,14 +787,14 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
      							aria-hidden="true"
      							fixed-width
       						/>
-                            <span>{{ trans("Port of export not set") }}</span>
+                            <span>{{ ctrans("Port of export not set") }}</span>
 						</dd>
 					</div>
 
 					<div class="flex items-center gap-2">
 						<dt>
 							<FontAwesomeIcon
-								v-tooltip="trans('Port of import')"
+								v-tooltip="ctrans('Port of import')"
 								icon="fas fa-arrow-circle-left"
 								aria-hidden="true"
 								fixed-width
@@ -760,14 +807,14 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
      							aria-hidden="true"
      							fixed-width
       						/>
-                            <span>{{ trans("Port of import not set") }}</span>
+                            <span>{{ ctrans("Port of import not set") }}</span>
 						</dd>
 					</div>
 				</div>
 
 				<!-- Deliver to -->
 				<div class="pt-2 text-sm">
-					<div class="text-gray-400">{{ trans("Deliver to") }}:</div>
+					<div class="text-gray-400">{{ ctrans("Deliver to") }}:</div>
 					<div v-if="box_stats.first_block.delivery.delivery_address" class="text-xs whitespace-pre-line">{{ box_stats.first_block.delivery.delivery_address }}</div>
 					<div v-else class="flex items-center gap-1 text-red-500 text-xs italic">
                         <FontAwesomeIcon
@@ -775,7 +822,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
  							aria-hidden="true"
  							fixed-width
   						/>
-                        <span>{{ trans("Delivery address not set") }}</span>
+                        <span>{{ ctrans("Delivery address not set") }}</span>
 					</div>
 				</div>
 			</div>
@@ -786,7 +833,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             <div class="flex h-8 justify-center items-center gap-4">
                 <div class="flex items-center gap-2">
                     <FontAwesomeIcon
-                        v-tooltip="trans('Purchase Order')"
+                        v-tooltip="ctrans('Purchase Order')"
                         icon="fal fa-clipboard-list"
                         class="text-gray-400"
                         fixed-width
@@ -799,7 +846,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
                 <div v-if="stock_delivery_timelines.length" class="flex items-center gap-2">
                     <FontAwesomeIcon
-                        v-tooltip="trans('Stock Delivery')"
+                        v-tooltip="ctrans('Stock Delivery')"
                         icon="fal fa-people-arrows"
                         class="text-gray-400"
                         fixed-width
@@ -816,15 +863,15 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             <template v-if="data.data.state === 'cancelled'">
                 <div class="space-y-1 text-sm">
                     <div class="flex items-center justify-between gap-4">
-                        <span>{{ trans("Production time") }}</span>
+                        <span>{{ ctrans("Production time") }}</span>
                         <span :class="box_stats.second_block.production_time ? '' : 'italic text-gray-400'">
-                            {{ box_stats.second_block.production_time ?? trans("Unknown") }}
+                            {{ box_stats.second_block.production_time ?? ctrans("Unknown") }}
                         </span>
                     </div>
                     <div class="flex items-center justify-between gap-4">
-                        <span>{{ trans("Delivery time") }}</span>
+                        <span>{{ ctrans("Delivery time") }}</span>
                         <span :class="box_stats.second_block.delivery_time ? '' : 'italic text-gray-400'">
-                            {{ box_stats.second_block.delivery_time ?? trans("Unknown") }}
+                            {{ box_stats.second_block.delivery_time ?? ctrans("Unknown") }}
                         </span>
                     </div>
                 </div>
@@ -837,7 +884,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
             <div class="flex justify-center gap-4">
                 <div class="flex items-center gap-1">
                     <FontAwesomeIcon
-                        v-tooltip="trans('Items')"
+                        v-tooltip="ctrans('Items')"
         				icon="fas fa-bars"
         				aria-hidden="true"
         				fixed-width
@@ -850,7 +897,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                     :class="box_stats.second_block.is_delivery_items_active ? '' : 'text-gray-300'"
                 >
                     <FontAwesomeIcon
-                        v-tooltip="trans('Delivery items')"
+                        v-tooltip="ctrans('Delivery items')"
         				icon="fas fa-arrow-circle-down"
         				aria-hidden="true"
         				fixed-width
@@ -863,7 +910,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
                     :class="box_stats.second_block.is_placed_items_active ? '' : 'text-gray-300'"
                 >
                     <FontAwesomeIcon
-                        v-tooltip="trans('Placed items')"
+                        v-tooltip="ctrans('Placed items')"
         				icon="fas fa-inventory"
         				aria-hidden="true"
         				fixed-width
@@ -895,7 +942,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		<!-- Third Block: stock deliveries -->
 		<BoxStatPallet v-if="stock_delivery_timelines.length" class="p-4">
 			<div class="flex h-8 items-center justify-center text-center">
-				{{ trans("Stock Deliveries") }}
+				{{ ctrans("Stock Deliveries") }}
 			</div>
 
 			<hr class="-mx-4 mb-1 border-t border-gray-300" />
@@ -914,7 +961,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				</div>
 			</div>
 			<div v-else class="mt-2 text-center text-sm italic text-gray-400">
-				{{ trans("No stock deliveries") }}
+				{{ ctrans("No stock deliveries") }}
 			</div>
 		</BoxStatPallet>
 
@@ -950,6 +997,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:orgAgentSlug="box_stats.first_block.orderer.slug"
 			:updateRoute="routes.updateOrderRoute"
 			:storeRoute="currentTab === 'notes' ? note_store_route : undefined"
+			:detachRoute="attachmentRoutes.detachRoute"
 			v-bind="isOrderingLevelTab ? {
 				level: currentLevel,
 				'onUpdate:level': (value: OrderingLevel) => currentLevel = value,
@@ -957,6 +1005,15 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			@update:tab="handleTabUpdate"
 		/>
 	</div>
+
+	<UploadAttachment
+		v-model="isModalUploadAttachmentOpen"
+		scope="attachment"
+		:title="{ label: ctrans('Upload your file'), information: '' }"
+		:progressDescription="ctrans('Adding purchase order attachments')"
+		:attachmentRoutes="attachmentRoutes"
+		:options="attachmentScopes"
+	/>
 
 	<ModalProductList
 		v-if="routes.products_list?.name"
@@ -985,7 +1042,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 				<div class="flex flex-col gap-2">
 					<label for="purchase-order-estimated-delivery-date" class="font-medium text-gray-700">
-						{{ trans("Estimated delivery date") }}
+						{{ ctrans("Estimated delivery date") }}
 					</label>
 					<DatePicker
 						v-model="estimatedReceivingDate"
@@ -1002,15 +1059,52 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	</ConfirmDialog>
 
 	<Dialog
+		:visible="!!submitDialogAction"
+		modal
+		:header="ctrans('Submit purchase order')"
+		:style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }"
+		:draggable="false"
+		@update:visible="(visible) => { if (!visible) submitDialogAction = null }"
+	>
+		<div class="flex flex-col gap-3">
+			<label v-for="option in submitDialogAction?.send_channels" :key="option.channel" class="flex cursor-pointer items-start gap-3">
+				<RadioButton v-model="sendVia" :value="option.channel" :inputId="`purchase-order-send-${option.channel}`" />
+				<span class="text-sm text-gray-700">
+					{{ option.channel === "email" ? ctrans("Email the purchase order PDF to") : ctrans("Send the purchase order PDF by WhatsApp to") }}
+					<span class="font-medium">{{ option.to }}</span>
+					<span v-if="option.channel === 'email'" class="mt-1 block text-xs text-gray-500">{{ ctrans("Delivery, opens and clicks are tracked in the Emails sent tab.") }}</span>
+					<span v-else class="mt-1 block text-xs text-gray-500">{{ ctrans("Delivered and read receipts show in the supplier's inbox.") }}</span>
+				</span>
+			</label>
+			<label class="flex cursor-pointer items-start gap-3">
+				<RadioButton v-model="sendVia" :value="null" inputId="purchase-order-send-none" />
+				<span class="text-sm text-gray-700">{{ ctrans("Don't send, I will send it myself") }}</span>
+			</label>
+			<p class="text-xs text-gray-500">{{ ctrans("Replies arrive in the procurement inbox.") }}</p>
+		</div>
+
+		<template #footer>
+			<Button :label="ctrans('Cancel')" type="secondary" @click="submitDialogAction = null" />
+			<Button
+				:label="sendVia ? ctrans('Submit and send') : ctrans('Submit')"
+				type="save"
+				:icon="faPaperPlane"
+				:loading="submitLoading"
+				@click="submitPurchaseOrder(submitDialogAction)"
+			/>
+		</template>
+	</Dialog>
+
+	<Dialog
 		v-model:visible="estimatedDeliveryDateModalOpen"
 		modal
-		:header="trans('Estimated delivery date')"
+		:header="ctrans('Estimated delivery date')"
 		:style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:draggable="false"
 	>
 		<div class="flex flex-col gap-2">
 			<label for="purchase-order-edit-estimated-delivery-date" class="font-medium text-gray-700">
-				{{ trans("Estimated delivery date") }}
+				{{ ctrans("Estimated delivery date") }}
 			</label>
 			<DatePicker
 				v-model="estimatedReceivingDate"
@@ -1025,12 +1119,12 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 		<template #footer>
 			<Button
-				:label="trans('Cancel')"
+				:label="ctrans('Cancel')"
 				type="secondary"
 				@click="estimatedDeliveryDateModalOpen = false"
 			/>
 			<Button
-				:label="trans('Save')"
+				:label="ctrans('Save')"
 				type="save"
 				:loading="confirmLoading"
 				@click="saveEstimatedDeliveryDate"
@@ -1041,12 +1135,12 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<Dialog
 		v-model:visible="deliveryScopeModalOpen"
 		modal
-		:header="trans('Create delivery')"
+		:header="ctrans('Create delivery')"
 		:style="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:draggable="false"
 	>
 		<div class="flex flex-col gap-4">
-			<p class="text-gray-600">{{ trans("Which purchase order items should be included in this delivery?") }}</p>
+			<p class="text-gray-600">{{ ctrans("Which purchase order items should be included in this delivery?") }}</p>
 
 			<button
 				type="button"
@@ -1056,8 +1150,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			>
 				<FontAwesomeIcon icon="fal fa-box" class="mt-0.5 text-indigo-500" fixed-width aria-hidden="true" />
 				<span class="flex flex-col gap-1">
-					<span class="font-medium text-gray-800">{{ trans("All items") }}</span>
-					<span class="text-sm text-gray-500">{{ trans("Include every item in this purchase order") }}</span>
+					<span class="font-medium text-gray-800">{{ ctrans("All items") }}</span>
+					<span class="text-sm text-gray-500">{{ ctrans("Include every item in this purchase order") }}</span>
 				</span>
 			</button>
 
@@ -1069,8 +1163,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			>
 				<FontAwesomeIcon icon="fal fa-clipboard-list" class="mt-0.5 text-indigo-500" fixed-width aria-hidden="true" />
 				<span class="flex flex-col gap-1">
-					<span class="font-medium text-gray-800">{{ trans("Only selected items") }}</span>
-					<span class="text-sm text-gray-500">{{ trans("Choose the items to include in this delivery") }}</span>
+					<span class="font-medium text-gray-800">{{ ctrans("Only selected items") }}</span>
+					<span class="text-sm text-gray-500">{{ ctrans("Choose the items to include in this delivery") }}</span>
 				</span>
 			</button>
 		</div>
@@ -1079,7 +1173,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<Dialog
 		v-model:visible="deliveryItemsModalOpen"
 		modal
-		:header="trans('Select delivery items')"
+		:header="ctrans('Select delivery items')"
 		:style="{ width: '44rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:draggable="false"
 	>
@@ -1091,23 +1185,23 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			>
 				<Checkbox v-model="selectedDeliveryItemIds" :value="item.id" />
 				<span class="min-w-0 flex-1">
-					<span class="block font-medium text-gray-800">{{ item.code || trans("No code") }}</span>
+					<span class="block font-medium text-gray-800">{{ item.code || ctrans("No code") }}</span>
 					<span class="block truncate text-sm text-gray-500">{{ item.name }}</span>
 				</span>
 				<span class="text-sm text-gray-500">
-					{{ trans("Quantity") }}: {{ locale.number(Number(item.quantity_ordered)) }}
+					{{ ctrans("Quantity") }}: {{ locale.number(Number(item.quantity_ordered)) }}
 				</span>
 			</label>
 		</div>
 
 		<template #footer>
 			<Button
-				:label="trans('Back')"
+				:label="ctrans('Back')"
 				type="secondary"
 				@click="deliveryItemsModalOpen = false; deliveryScopeModalOpen = true"
 			/>
 			<Button
-				:label="trans('Create delivery')"
+				:label="ctrans('Create delivery')"
 				type="create"
 				:loading="newStockDeliveryLoading"
 				:disabled="selectedDeliveryItemIds.length === 0"
@@ -1115,4 +1209,13 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			/>
 		</template>
 	</Dialog>
+
+	<UploadExcel
+		v-if="props.upload_excel"
+		v-model="isModalUploadExcel"
+		:title="props.upload_excel.title"
+		:progressDescription="props.upload_excel.progressDescription"
+		:upload_spreadsheet="props.upload_excel.upload_spreadsheet"
+		:preview_template="props.upload_excel.preview_template"
+		:propsRefreshAfterFinish="['items', 'box_stats']" />
 </template>

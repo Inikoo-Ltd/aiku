@@ -88,6 +88,7 @@ const props = defineProps<{
                 minimum_order?: number
                 cooling_period?: number
                 next_purchase_order_reference?: string
+                next_stock_delivery_reference?: string
             }
         }
         stats: {
@@ -257,6 +258,12 @@ const supplierInfo = computed(() => {
             label: ctrans('Next order number'),
             icon: 'fal fa-hashtag',
             value: info.next_purchase_order_reference
+        },
+        {
+            key: 'next_stock_delivery_reference',
+            label: ctrans('Next delivery number'),
+            icon: 'fal fa-hashtag',
+            value: info.next_stock_delivery_reference
         }
     ].filter((row) => row.value)
 })

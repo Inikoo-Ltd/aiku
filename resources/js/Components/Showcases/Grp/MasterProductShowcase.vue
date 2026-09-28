@@ -19,8 +19,10 @@ import {
 	faCheckCircle
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
-import { faImage, faStarfighter, faStarshipFreighter } from "@far"
+import { faStarfighter, faStarshipFreighter } from "@far"
 import ImagePrime from "primevue/image"
+import ProductCategoryCard from "@/Components/ProductCategoryCard.vue"
+import SummaryCard from "@/Components/Goods/SummaryCard.vue"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
@@ -35,6 +37,8 @@ import { useLayoutStore } from "@/Stores/layout"
 import { provide } from "vue"
 import FractionDisplay from '@/Components/DataDisplay/FractionDisplay.vue'
 import SalesAnalyticsCompact from '@/Components/Product/SalesAnalyticsCompact.vue'
+import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.vue'
+import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.vue'
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 import CompositionTriangle from '@/Components/Goods/CompositionTriangle.vue'
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
@@ -71,6 +75,7 @@ const props = defineProps<{
 	currency: string,
 	handleTabUpdate: Function
 	salesData?: any
+	salesAnalysisTeaser?: object
 	anomalies?: {
 		items: {
 			issues: string[]
@@ -419,49 +424,45 @@ const isModalProductForSale = ref(false)
 		</div>
 	</div>
 
-	<!-- The right sidebar (prices, analytics) always keeps its width; the content area
-	     gets the rest, with the image beside the summary only when there is room -->
-	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mx-0 lg:grid-cols-[minmax(0,1fr)_minmax(385px,420px)]">
-		<!-- Content: image + summary. The summary is capped; spare width goes first to
-		     the image column (up to its own cap), the rest stays as breathing room -->
+	<!-- Content area 8/12, right sidebar (prices, analytics) 4/12 but never under 385px;
+	     the image sits beside the summary only when there is room -->
+	<div class="grid grid-cols-1 gap-4 mx-3 mt-2 lg:mr-0 lg:ml-5 lg:grid-cols-[minmax(0,8fr)_minmax(385px,4fr)]">
+		<!-- Content: image + summary. The image column has its own cap; the summary takes the rest -->
 		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
 			<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]">
-				<!-- Master Product Tags -->
-				<dd v-if="tradeUnitTags && tradeUnitTags.length > 0" class="font-medium flex flex-wrap gap-1 p-4">
-					<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
-						class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
-						{{ tag.name }}
-					</span>
-				</dd>
 				<!-- Image Preview & Thumbnails -->
-				<div class="bg-white p-4 lg:p-5">
-					<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
-						<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
-					</div>
-					<div v-else>
-						<div
-							class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-							<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" fixed-width />
-							<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+				<ProductCategoryCard subtle :data="data.masterProduct">
+					<template v-if="tradeUnitTags?.length" #beforeImage>
+						<div class="font-medium flex flex-wrap gap-1 mb-4">
+							<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"
+								class="px-2 py-0.5 rounded-full text-xs bg-green-50 border border-blue-100">
+								{{ tag.name }}
+							</span>
 						</div>
-					</div>
-				</div>
+					</template>
+					<template v-if="props.data?.main_image?.webp" #image>
+						<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.masterProduct?.name" preview
+							class="block w-full" imageClass="w-full aspect-square object-contain" />
+					</template>
+				</ProductCategoryCard>
 			</div>
 
 			<!-- Product Summary -->
-			<div class="min-w-0 flex-1 max-w-2xl">
-				<TradeUnitMasterProductSummary
-					:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
-					:gpsr="data.gpsr"
-					:properties="data.properties"
-					:attachments="data.attachment_box"
-					:labelInfo="data.label_info"
-				/>
+			<div class="min-w-0 flex-1">
+				<SummaryCard>
+					<TradeUnitMasterProductSummary
+						:data="{...data.masterProduct, tags : tradeUnitTags, brands : tradeUnitBrands}"
+						:gpsr="data.gpsr"
+						:properties="data.properties"
+						:attachments="data.attachment_box"
+						:labelInfo="data.label_info"
+					/>
+				</SummaryCard>
 			</div>
 		</div>
 
         <!-- Sales Analytics - right sidebar -->
-        <div class="min-w-0">
+        <div class="min-w-0 h-fit ml-4 mr-2">
 			<div class="grid justify-items-end pr-3 pb-2 gap-2">
 				<ReuseMasterPriceBlock
 					:title="ctrans('Price / Outer')"
@@ -538,6 +539,8 @@ const isModalProductForSale = ref(false)
 				</Popover>
 			</div>
 			<div class="mr-3">
+				<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
+				<SalesAnalysisMovers :teaser="salesAnalysisTeaser" class="mb-4" />
 				<SalesAnalyticsCompact  v-if="salesData" :salesData="salesData" />
 			</div>
 

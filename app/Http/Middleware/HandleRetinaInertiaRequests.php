@@ -12,6 +12,7 @@ use App\Actions\Retina\UI\GetRetinaFirstLoadProps;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -27,6 +28,10 @@ class HandleRetinaInertiaRequests extends Middleware
 
     protected $rootView = 'app-retina';
 
+    public function version(Request $request): ?string
+    {
+        return Vite::manifestHash('retina');
+    }
 
     public function share(Request $request): array
     {

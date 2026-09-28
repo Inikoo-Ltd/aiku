@@ -18,6 +18,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -44,7 +45,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         }
     }
 
-    public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
+    public function handle(PurchaseOrder $purchaseOrder, ?string $sendVia = null): PurchaseOrder
     {
         $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
@@ -78,11 +79,18 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
         StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
 
-        // TODO: Decide whether submitting should transmit the order to the supplier/agent
-        // (system-sent email + PDF) or whether that is done manually by the web user outside aiku.
-        // No supplier notification is sent here yet.
+        if ($sendVia && in_array($sendVia, array_column(SendPurchaseOrderToSupplier::channels($purchaseOrder), 'channel'), true)) {
+            SendPurchaseOrderToSupplier::dispatch($purchaseOrder, $sendVia);
+        }
 
         return $purchaseOrder;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'send_via' => ['sometimes', 'nullable', 'string', 'in:email,whatsapp'],
+        ];
     }
 
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
@@ -90,7 +98,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $this->handle($purchaseOrder);
+        return $this->handle($purchaseOrder, Arr::get($this->validatedData, 'send_via'));
     }
 
     public function action(PurchaseOrder $purchaseOrder): PurchaseOrder

@@ -200,4 +200,17 @@ return [
         '/^mail\.(google|yahoo|proton|zoho)\.com$/',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default monthly sales target growth
+    |--------------------------------------------------------------------------
+    |
+    | When management has not set a shop's target for a month, the target is the
+    | same month last year plus this growth, so standing still counts as falling
+    | behind inflation. 0.04 means 4%.
+    |
+    */
+
+    'default_sales_target_growth' => env('DEFAULT_SALES_TARGET_GROWTH', 0.04),
+
 ];

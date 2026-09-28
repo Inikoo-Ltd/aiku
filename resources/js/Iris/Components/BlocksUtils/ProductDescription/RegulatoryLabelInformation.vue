@@ -33,6 +33,7 @@ interface LabelInfoItem {
 	show: boolean
 	label: string
 	value: any
+	mark?: string
 }
 
 const props = defineProps<{
@@ -230,7 +231,13 @@ onMounted(() => {
 					class="flex w-full items-center gap-3 px-3 py-3 text-left"
 					:aria-expanded="openRow === row.key"
 					@click="toggleRow(row.key)">
-					<FontAwesomeIcon :icon="row.icon" class="shrink-0 text-[12px] text-primary" fixed-width />
+					<span
+						v-if="row.mark"
+						role="img"
+						:aria-label="row.label"
+						class="mark-icon h-[1em] w-[1.25em] shrink-0 bg-current text-[12px] text-primary"
+						:style="{ '--mark': `url(${row.mark})` }" />
+					<FontAwesomeIcon v-else :icon="row.icon" class="shrink-0 text-[12px] text-primary" fixed-width />
 					<span class="flex-1 text-[12px] text-[#334155] md:text-[13px]">{{ row.label }}</span>
 					<FontAwesomeIcon
 						:icon="faChevronDown"
@@ -301,6 +308,13 @@ onMounted(() => {
 						{{ row.value?.formatted }}
 					</template>
 
+					<template v-else-if="row.mark">
+						<span class="inline-flex items-center gap-1 accent-text">
+							<FontAwesomeIcon :icon="faCheckCircle" class="text-[11px]" fixed-width />
+							{{ ctrans("Present") }}
+						</span>
+					</template>
+
 					<template v-else-if="isPresenceRow(row.key)">
 						<span class="inline-flex items-center gap-1 accent-text">
 							<FontAwesomeIcon :icon="faCheckCircle" class="text-[11px]" fixed-width />
@@ -339,6 +353,11 @@ onMounted(() => {
 	border-color: #d1d5db;
 	background-color: color-mix(in srgb, var(--regulatory-accent) 8%, white);
 	color: color-mix(in srgb, var(--regulatory-accent) 70%, black);
+}
+
+.mark-icon {
+	-webkit-mask: var(--mark) center / contain no-repeat;
+	mask: var(--mark) center / contain no-repeat;
 }
 
 .accent-text {

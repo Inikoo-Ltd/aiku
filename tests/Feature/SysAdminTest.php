@@ -38,7 +38,9 @@ use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use Illuminate\Support\Arr;
+use App\Actions\SysAdmin\User\BorrowUserPermissions;
 use App\Actions\SysAdmin\User\HydrateUser;
+use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
 use App\Actions\SysAdmin\User\SetUserEmployedInOrganisation;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\SysAdmin\User\UpdateUserOrganisationPseudoJobPositions;
@@ -76,6 +78,7 @@ use App\Models\SysAdmin\Admin;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -97,6 +100,8 @@ use Laravel\Sanctum\Sanctum;
 use function Pest\Laravel\{get};
 use function Pest\Laravel\{patch};
 use function Pest\Laravel\{actingAs};
+use function Pest\Laravel\{post};
+use function Pest\Laravel\{delete};
 
 beforeAll(function () {
     loadDB();
@@ -2451,3 +2456,62 @@ test('every audit event has its columns on the audit stats tables', function () 
         expect($expectedColumns->diff(Schema::getColumnListing($tableName))->values()->all())->toBe([], $tableName);
     }
 });
+
+test('supervisors borrow another user\'s permissions and give them back', function (Guest $guest) {
+    $group        = $guest->group;
+    $organisation = $guest->getUser()->authorisedOrganisations()->first();
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+
+    $makeUser = function (string $username) use ($group): User {
+        $guestData = Guest::factory()->definition();
+        data_set($guestData, 'user.username', $username);
+        data_set($guestData, 'user.password', 'secret-password');
+
+        return StoreGuest::make()->action($group, $guestData)->getUser();
+    };
+
+    $groupAdmin = $makeUser('borrower-admin');
+    $groupAdmin->assignRole(RolesEnum::GROUP_ADMIN->value);
+
+    $orgLender = $makeUser('lender-org');
+    $orgLender->assignRole(
+        Role::where('scope_type', 'Organisation')->where('scope_id', $organisation->id)
+            ->where('name', '!=', RolesEnum::ORG_ADMIN->value.'-'.$organisation->id)->first()
+    );
+    SetUserAuthorisedModels::run($orgLender);
+
+    $groupLender = $makeUser('lender-group');
+    $groupLender->assignRole(RolesEnum::SUPPLY_CHAIN->value);
+
+    $orgAdmin = $guest->getUser();
+
+    expect(BorrowUserPermissions::canBorrow($groupAdmin, $groupLender))->toBeTrue()
+        ->and(BorrowUserPermissions::canBorrow($groupAdmin, $groupAdmin))->toBeFalse()
+        ->and(BorrowUserPermissions::canBorrow($groupLender, $groupAdmin))->toBeFalse()
+        ->and(BorrowUserPermissions::canBorrow($orgAdmin, $orgLender))->toBeTrue()
+        ->and(BorrowUserPermissions::canBorrow($orgAdmin, $groupLender))->toBeFalse();
+
+    actingAs($orgAdmin);
+    expect(collect(get(route('grp.profile.borrowable_users.index', ['search' => 'lender']))->json())->pluck('username')->all())
+        ->toBe(['lender-org']);
+
+    actingAs($groupAdmin);
+    get(route('grp.sysadmin.users.index'))->assertOk();
+    expect(collect(get(route('grp.profile.borrowable_users.index', ['search' => 'lender']))->json())->pluck('username')->all())
+        ->toBe(['lender-group', 'lender-org'])
+        ->and(BorrowUserPermissions::canBorrowSomebody($groupLender))->toBeFalse();
+
+    post(route('grp.models.user.borrow_permissions', ['user' => $groupLender->id]))->assertRedirect();
+    expect(session(BorrowUserPermissions::SESSION_KEY))->toBe($groupLender->id);
+
+    get(route('grp.sysadmin.users.index'))->assertForbidden();
+    expect($groupAdmin->permissionsLender()?->id)->toBe($groupLender->id)
+        ->and($groupAdmin->authTo('supply-chain.view'))->toBeTrue();
+
+    delete(route('grp.profile.borrowed_permissions.delete'))->assertRedirect();
+    get(route('grp.sysadmin.users.index'))->assertOk();
+
+    actingAs($groupLender);
+    post(route('grp.models.user.borrow_permissions', ['user' => $groupAdmin->id]))->assertForbidden();
+})->depends('create guest');

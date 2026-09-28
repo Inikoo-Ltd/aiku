@@ -21,6 +21,7 @@ use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
+use App\Actions\Production\Artefact\Label\GetArtefactLabelIconSource;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductLabelInfo;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -209,6 +210,24 @@ test('the product label info shows the GPSR texts in the shop language', functio
 
     expect($labelInfo['direction_for_use'])->toBe(['show' => true, 'label' => 'Direction For Use', 'value' => 'FR: Apply twice a day'])
         ->and($labelInfo['warnings_and_precautions'])->toBe(['show' => true, 'label' => 'Warning & Precautions', 'value' => 'FR: Keep away from children']);
+});
+
+test('the product label info shows the CE and WEEE marks when they are present', function () {
+    UpdateTradeUnit::make()->action($this->bottle, ['ce_marking' => true]);
+
+    $labelInfo = (new class () {
+        use HasWebBlockProductLabelInfo;
+
+        public function build($product): array
+        {
+            return $this->getProductLabelInfo($product);
+        }
+    })->build($this->product->refresh());
+
+    expect($labelInfo['ce_marking'])->toMatchArray(['show' => true, 'value' => true])
+        ->and($labelInfo['ce_marking']['mark'])->toBe(GetArtefactLabelIconSource::run(GetArtefactLabelIconSource::CE_MARKING))
+        ->and($labelInfo['weee_symbol'])->toMatchArray(['show' => false, 'value' => false])
+        ->and($labelInfo['weee_symbol']['mark'])->toStartWith('data:image/svg+xml;base64,');
 });
 
 test('the GPSR texts can be edited on the product and on the master product', function () {

@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Product\SyncProductTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithCustomTradeUnitAudits;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Product\UpdateProductFamily;
+use App\Actions\Goods\Barcode\SyncBarcodeToMasterAsset;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Catalogue\Product\TranslateProductGpsrText;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
@@ -34,6 +35,7 @@ use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Masters\MasterAsset;
@@ -396,6 +398,8 @@ class UpdateMasterAsset extends OrgAction
         }
 
         if ($masterAsset->wasChanged('barcode')) {
+            SyncBarcodeToMasterAsset::run($masterAsset);
+
             /** A child that has had its own barcode chosen keeps it, like every other override. */
             foreach ($masterAsset->products()->where('products.independent_barcode', false)->get() as $product) {
                 UpdateProduct::run($product, [
@@ -487,13 +491,7 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
-            'barcode'                       => [
-                'sometimes',
-                'nullable',
-                'string',
-                'max:255',
-                Rule::exists('barcodes', 'number')->whereNull('deleted_at')
-            ],
+            'barcode'                       => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 
         if (!$this->strict) {
@@ -537,6 +535,23 @@ class UpdateMasterAsset extends OrgAction
     {
         if ($this->strict) {
             $this->validateTradeUnitQuantities($validator, Arr::get($validator->getData(), 'trade_units') ?? []);
+        }
+
+        $this->validateBarcodeIsFree($validator, Arr::get($validator->getData(), 'barcode'));
+    }
+
+    /**
+     * A master's own GTIN identifies the bundle, so it comes from the pool and nobody else may
+     * carry it: a member trade unit's barcode would publish the cap as the tester.
+     */
+    private function validateBarcodeIsFree(Validator $validator, ?string $barcode): void
+    {
+        if (blank($barcode) || $barcode === $this->masterAsset->barcode) {
+            return;
+        }
+
+        if (!Barcode::where('group_id', $this->masterAsset->group_id)->where('number', $barcode)->free()->exists()) {
+            $validator->errors()->add('barcode', __('This barcode is not free in the barcode pool. Generate a new one.'));
         }
     }
 

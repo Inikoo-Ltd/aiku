@@ -95,7 +95,7 @@ class StoreEbayProduct extends RetinaAction
 
             $images = [];
             if (app()->isProduction()) {
-                foreach ($product->images as $image) {
+                foreach ($product->orderedImages() as $image) {
                     $images[] = GetImgProxyUrl::run($image->getImage()->extension('jpg'));
                 }
             } else {

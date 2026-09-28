@@ -232,6 +232,7 @@ class UpdateOrder extends OrgAction
             'company_name'            => ['sometimes', 'nullable', 'string', 'max:256'],
             'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'gift_message'            => ['sometimes', 'nullable', 'string', 'max:500'],
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'private_warehouse_note'  => ['sometimes', 'nullable', 'string', 'max:4000'],

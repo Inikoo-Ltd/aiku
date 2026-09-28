@@ -2,7 +2,7 @@
 import { faCube, faLink,  } from "@fal"
 import { faHeart as  faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, inject, computed } from "vue"
+import { ref, inject, computed, onBeforeUnmount } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 // import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
@@ -27,34 +27,47 @@ const popoverTimeout = ref()
 
 const _popover = ref(null)
 
-const hoverPopover = (e: any): void => {
+const isPopoverPinned = ref(false)
+
+const hoverPopover = (e: MouseEvent): void => {
+    if (popoverTimeout.value) clearTimeout(popoverTimeout.value)
     _popover.value?.show(e)
-	
-    // if (!open) {
-    //     e.target.parentNode.click()
-    // }
 }
 
 const closePopover = (): void => {
-
+    if (isPopoverPinned.value) return
     if (popoverTimeout.value) clearTimeout(popoverTimeout.value)
-    popoverTimeout.value = setTimeout(() => {
-        if (!_popover.value?.visible) {
-            _popover.value?.hide()
-        }
-    }, 100)
+    popoverTimeout.value = setTimeout(() => _popover.value?.hide(), 100)
 }
+
+const togglePinnedPopover = (e: MouseEvent): void => {
+    if (popoverTimeout.value) clearTimeout(popoverTimeout.value)
+    if (isPopoverPinned.value) {
+        isPopoverPinned.value = false
+        _popover.value?.hide()
+        return
+    }
+    isPopoverPinned.value = true
+    if (!_popover.value?.visible) {
+        _popover.value?.show(e)
+    }
+}
+
+onBeforeUnmount(() => {
+    if (popoverTimeout.value) clearTimeout(popoverTimeout.value)
+})
 </script>
 
 <template>
 	<div class="border-y border-gray-200 p-1 mb-2 tabular-nums">
-		<div class="grid grid-cols-6 gap-4 items-start" @mouseover="(e) => hoverPopover(e)"
-			@mouseleave="closePopover()">
+		<div class="group grid grid-cols-6 gap-4 items-start cursor-pointer" @mouseenter="(e) => hoverPopover(e)"
+			@mouseleave="closePopover()" @click="(e) => togglePinnedPopover(e)">
 			<!-- Retail -->
 			<div class="flex flex-col text-left col-span-4">
 				<span class="text-sm font-medium text-gray-600 mb-1">{{ ctrans('Retail Price') }} </span>
 				<div class="flex flex-wrap items-baseline gap-1">
-					<span class="text-base font-semibold">
+					<span class="text-base font-semibold transition-colors"
+						:class="isPopoverPinned ? 'text-[var(--app-accent-strong)]' : 'group-hover:text-[var(--app-accent)]'">
 						{{ locale.currencyFormatRrp(currency_code, (perOuter ? product?.rrp : product?.rrp_per_unit) || 0) }}
 					</span>
 					<span class="text-sm text-gray-500">/ {{ perOuter && product.units != 1 ? ctrans('Outer') : product.unit }}</span>
@@ -69,7 +82,8 @@ const closePopover = (): void => {
 						<span v-tooltip="ctrans('Profit margin')" class="mr-3 text-xs ml-1 font-medium text-gray-400">
 						</span> {{ctrans('Profit') }} ({{ product?.margin }})</span>
 					<div class="flex flex-wrap items-baseline justify-end gap-1">
-						<span class="text-base font-semibold text-gray-700">
+						<span class="text-base font-semibold transition-colors"
+							:class="isPopoverPinned ? 'text-[var(--app-accent-strong)]' : 'text-gray-700 group-hover:text-[var(--app-accent)]'">
 							{{ locale.currencyFormat(currency_code, (perOuter ? product?.profit : product?.profit_per_unit) || 0) }}
 						</span>
 						<span class="text-sm text-gray-500 ">/ {{ perOuter && product.units != 1 ? ctrans('Outer') : product.unit }}</span>
@@ -80,7 +94,7 @@ const closePopover = (): void => {
 		</div>
 	</div>
 
-	<Popover ref="_popover" class="max-w-md w-full p-2">
+	<Popover ref="_popover" class="max-w-md w-full p-2" @hide="isPopoverPinned = false">
 		<div class="text-sm font-semibold border-gray-300 pb-2">
 			{{ ctrans('Profit Margin Breakdown') }}
 		</div>

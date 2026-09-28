@@ -28,7 +28,7 @@ const props = defineProps<{
     pageHead: object
     groupCurrency: string
     canMark: boolean
-    stages: { key: string; label: string; description: string }[]
+    stages: { key: string; label: string; description: string; markable: boolean }[]
     filters: Record<FilterGroup, FacetOption[]>
     active: Record<FilterGroup, string | null> & { problems_only: boolean; search: string | null }
     summary: {
@@ -69,9 +69,16 @@ const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => 
     { group: "stage", label: ctrans("Current stage") }
 ])
 
-const stageKeys = computed(() => props.stages.map((stage) => stage.key))
-
 const search = ref(props.active.search ?? "")
+
+watch(
+    () => props.active.search,
+    (value) => {
+        if ((value ?? "") !== search.value.trim()) {
+            search.value = value ?? ""
+        }
+    }
+)
 
 function visit(changes: Record<string, string | number | boolean | null>): void {
     const params: Record<string, string | number | boolean> = {}
@@ -114,7 +121,7 @@ const legend = [
     { label: ctrans("Current stage"), class: "bg-blue-500" },
     { label: ctrans("At risk (due in 3 days)"), class: "bg-amber-400" },
     { label: ctrans("Overdue"), class: "bg-red-500" },
-    { label: ctrans("Planned"), class: "bg-gray-100 border border-gray-200" },
+    { label: ctrans("Planned (struck through once the plan date has passed)"), class: "bg-gray-100 border border-gray-200" },
     { label: ctrans("Not recorded"), class: "bg-slate-50 border border-slate-200" }
 ]
 
@@ -237,7 +244,7 @@ function saveMark(date: string | null): void {
                             v-for="ribbon in ribbons"
                             :key="ribbon.key"
                             :ribbon="ribbon"
-                            :stage-keys="stageKeys"
+                            :stages="stages"
                             :group-currency="groupCurrency"
                             :can-mark="canMark"
                             @mark="openMark" />
@@ -276,7 +283,7 @@ function saveMark(date: string | null): void {
                     @click="visit({ stage: blockage.stage, status: 'overdue' })">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-red-50 text-sm font-semibold text-red-600">{{ blockage.count }}</span>
                     <span class="min-w-0">
-                        <span class="block truncate text-sm text-gray-800">{{ ctrans("stuck at :stage", { stage: blockage.label }) }}</span>
+                        <span class="block truncate text-sm text-gray-800">{{ blockage.label }}</span>
                         <span class="block text-xs text-gray-500">{{ ctrans("up to :days days overdue", { days: blockage.max_days_overdue }) }}</span>
                     </span>
                 </button>

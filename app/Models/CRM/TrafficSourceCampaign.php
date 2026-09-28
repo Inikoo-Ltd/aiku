@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Models\Traits\HasHistory;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -55,9 +56,14 @@ class TrafficSourceCampaign extends Model implements Auditable
      */
     protected array $auditEvents = [];
 
+    protected $attributes = [
+        'state' => GoogleAdsCampaignStateEnum::PUBLISHED_PAUSED->value,
+    ];
+
     protected function casts(): array
     {
         return [
+            'state' => GoogleAdsCampaignStateEnum::class,
             'data' => 'array',
         ];
     }

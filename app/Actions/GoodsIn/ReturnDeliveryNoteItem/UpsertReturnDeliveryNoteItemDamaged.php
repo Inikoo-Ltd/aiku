@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNoteItem;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpsertReturnDeliveryNoteItemDamaged extends OrgAction
 {
+    use WithReturnsAuthorisation;
     use AsAction;
     use WithAttributes;
 
@@ -68,7 +70,7 @@ class UpsertReturnDeliveryNoteItemDamaged extends OrgAction
 
     public function asController(ReturnDeliveryNoteItem $returnDeliveryNoteItem, ActionRequest $request): void
     {
-        $this->initialisationFromShop($returnDeliveryNoteItem->shop, $request);
+        $this->initialisationFromWarehouse($returnDeliveryNoteItem->returnDeliveryNote->warehouse, $request);
 
         $this->handle($returnDeliveryNoteItem, $this->validatedData);
     }

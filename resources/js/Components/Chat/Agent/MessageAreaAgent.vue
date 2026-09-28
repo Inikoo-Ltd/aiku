@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent, getCurrentInstance } from "vue"
+import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
@@ -22,6 +23,7 @@ import {
     faCircle,
     faShare,
     faListCheck,
+    faTruck,
 } from "@fortawesome/free-solid-svg-icons"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -298,13 +300,29 @@ const canIgnore = computed(() =>
 
 const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value)
 
-// Ending a conversation nobody ever answered is rude: from the other side it reads as being
+// Ending a live chat nobody ever answered is rude: from the other side it reads as being
 // shown the door for writing in. Until somebody here has replied, the way to clear it is Ignore.
+// An email customer is never told it was closed, and is often already being helped on a chat.
 const hasBeenAnswered = computed(() =>
     messagesLocal.value.some((message) => message.sender_type === "agent")
 )
 
-const canEndChat = computed(() => hasBeenAnswered.value && !isClosed.value && !isTrashed.value && !props.readOnly)
+const canEndChat = computed(() =>
+    (hasBeenAnswered.value || (props.session as any)?.channel === "email") && !isClosed.value && !isTrashed.value && !props.readOnly
+)
+
+// The header goes to two rows by the width it actually has, not the screen's: on a tablet the
+// app menu and the conversation list leave the thread a phone's width on an lg screen.
+const headerRef = ref<HTMLElement | null>(null)
+const { width: headerWidth } = useElementSize(headerRef)
+const isHeaderStacked = computed(() => headerWidth.value > 0 && headerWidth.value < 600)
+
+// Whether the second row has anything in it. Spam and Customer details only show from lg up, so
+// below it they would leave the divider over an empty row; from lg up Customer details is always there.
+const isLgScreen = useMediaQuery("(min-width: 1024px)")
+const hasHeaderActions = computed(() =>
+    isLgScreen.value || canEndChat.value || canIgnore.value || Boolean(openTicketsCount.value && hasTicketsPanel.value) || openTasks.value.length > 0
+)
 
 // The reason is picked, never typed: clearing an imported mailbox is a bulk job, and what has
 // to be written becomes blank or inconsistent within a day. Picked from a list it can be counted.
@@ -325,6 +343,26 @@ const markRubbish = async (rubbish: boolean, reason?: string) => {
             reason ? { reason } : {},
             { withCredentials: true }
         )
+        emit("spam-success")
+    } catch (e: any) {
+        notify({
+            title: ctrans("Error"),
+            text: e?.response?.data?.message ?? ctrans("Failed to update"),
+            type: "error",
+        })
+    } finally {
+        isSpamMarking.value = false
+    }
+}
+
+const moveToCouriers = async () => {
+    if (!props.session?.ulid || isSpamMarking.value) return
+    isMenuOpen.value = false
+    isSpamMarking.value = true
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        const response = await axios.patch(route("grp.org.chat.agents.sessions.couriers", [organisation, props.session.ulid]), {}, { withCredentials: true })
+        notify({ title: ctrans("Moved to Couriers"), text: response.data?.message, type: "success" })
         emit("spam-success")
     } catch (e: any) {
         notify({
@@ -1271,12 +1309,15 @@ const handleClickOutside = (e: MouseEvent) => {
         @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
         @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
-        <header class="flex items-center gap-3 px-3 py-2 border-b">
-            <button @click="$emit('back')" :aria-label="ctrans('Back')">
+        <!-- When the thread is too narrow for the name and the buttons side by side, the name and
+             the menu keep the first row and the buttons drop to a second one beneath it. -->
+        <header ref="headerRef" class="flex items-center gap-3 px-3 py-2 border-b"
+            :class="isHeaderStacked ? 'flex-wrap gap-y-1.5 justify-end' : ''">
+            <button :class="{ '-order-2': isHeaderStacked }" @click="$emit('back')" :aria-label="ctrans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
 
-            <div class="flex-1 min-w-0 cursor-pointer" @click="onViewMessageDetails">
+            <div class="flex-1 min-w-0 cursor-pointer" :class="{ '-order-2': isHeaderStacked }" @click="onViewMessageDetails">
                 <div class="text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
                     {{ session?.guest_identifier || session?.contact_name }}
                 </div>
@@ -1308,6 +1349,10 @@ const handleClickOutside = (e: MouseEvent) => {
             <!-- Also offered on a conversation nobody has taken: an out of office reply or a
                  supplier's newsletter needs disposing of, and having to assign it to yourself
                  first to close it is why they pile up in the waiting queue. -->
+            <!-- The line between the two rows: it spans the header edge to edge, and being a whole
+                 row on its own is also what pushes the buttons onto the second one. -->
+            <div v-if="isHeaderStacked && hasHeaderActions" class="basis-[calc(100%+1.5rem)] -mx-3 h-px bg-gray-200" />
+
             <ModalConfirmationDelete v-if="canEndChat" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
@@ -1402,7 +1447,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <FontAwesomeIcon :icon="faUser" class="text-[11px]" fixed-width />
             </button>
 
-            <div class="relative" ref="menuRef">
+            <div class="relative" :class="{ '-order-1': isHeaderStacked }" ref="menuRef">
                 <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="ctrans('Toggle menu')">
                     <FontAwesomeIcon :icon="faEllipsisVertical" class="text-gray-400" fixed-width />
                 </button>
@@ -1460,6 +1505,12 @@ const handleClickOutside = (e: MouseEvent) => {
 
                         <button class="menu-item" @click="openSlackModal">
                             <FontAwesomeIcon :icon="faSlack" class="text-purple-600" fixed-width /> {{ ctrans("Share to Slack") }}
+                        </button>
+
+                        <button v-if="(session as any)?.can_move_to_couriers" class="menu-item" :disabled="isSpamMarking"
+                            v-tooltip="ctrans('Adds the sender\'s domain to the courier list, and moves its open conversations to the Couriers folder')"
+                            @click="moveToCouriers">
+                            <FontAwesomeIcon :icon="faTruck" class="text-gray-600" fixed-width /> {{ ctrans("Move to Couriers") }}
                         </button>
 
                     </template>

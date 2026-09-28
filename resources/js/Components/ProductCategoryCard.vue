@@ -6,7 +6,7 @@ import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { routeType } from "@/types/route";
 import Image from "@common/Components/Image.vue";
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 library.add(faAlbumCollection, faImage, faCheck, faTimesCircle);
 
@@ -23,6 +23,8 @@ const props = defineProps<{
       save_route?: routeType;
     } | null;
   };
+  imageOnly?: boolean;
+  subtle?: boolean;
 }>();
 
 const showExtra = ref(false);
@@ -37,8 +39,9 @@ const status = computed(() => ({
 </script>
 
 <template>
-  <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-    <div class="bg-white rounded-lg shadow mb-4 overflow-hidden">
+  <div class="bg-white p-6 border border-gray-200" :class="subtle ? 'rounded-lg shadow-sm' : 'rounded-2xl shadow-md'">
+    <slot name="beforeImage" />
+    <div class="bg-white overflow-hidden" :class="[subtle ? 'rounded-md border border-gray-100' : 'rounded-lg shadow', { 'mb-4': !imageOnly }]">
       <slot name="image">
         <div class="w-full aspect-square" :class="props.data?.image ? '' : 'h-32'">
           <Image v-if="props.data?.image" :src="props.data.image"
@@ -51,14 +54,14 @@ const status = computed(() => ({
     </div>
 
     <!-- Content Section -->
-    <div class="border-t pt-4 space-y-4 text-sm text-gray-700">
+    <div v-if="!imageOnly" class="border-t pt-4 space-y-4 text-sm text-gray-700">
       <div class="text-lg font-semibold text-gray-800">{{ data?.name }}</div>
       <div class="space-y-2">
         <div class="text-gray-600 leading-relaxed" v-if="status.description" v-html="props.data?.description"></div>
         <div v-if="showExtra" class="text-gray-600 leading-relaxed" v-html="props.data?.description_extra"></div>
         <button v-if="props.data?.description_extra" @click="showExtra = !showExtra"
           class="text-blue-500 text-xs font-medium hover:underline focus:outline-none">
-          {{ showExtra ? trans("Show Less") : trans("Read More") }}
+          {{ showExtra ? ctrans("Show Less") : ctrans("Read More") }}
         </button>
       </div>
     </div>

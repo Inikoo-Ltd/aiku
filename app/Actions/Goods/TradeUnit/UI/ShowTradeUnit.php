@@ -8,6 +8,8 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInTradeUnit;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInTradeUnit;
 use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
@@ -99,6 +101,20 @@ class ShowTradeUnit extends OrgAction
                         'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
                     ],
                     'actions'    => [
+                        $this->canEdit && blank($tradeUnit->barcode) ? [
+                            'type'    => 'button',
+                            'style'   => 'secondary',
+                            'icon'    => 'fal fa-barcode',
+                            'label'   => __('Assign barcode'),
+                            'tooltip' => __('Takes the next free barcode of the pool'),
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.trade-unit.assign_next_barcode',
+                                'parameters' => [
+                                    'tradeUnit' => $tradeUnit->id,
+                                ],
+                            ],
+                        ] : false,
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -117,6 +133,14 @@ class ShowTradeUnit extends OrgAction
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
                     : Inertia::optional(fn () => GetTradeUnitShowcase::run($tradeUnit)),
+
+                TradeUnitTabsEnum::SALES_ANALYSIS->value => $this->tab === TradeUnitTabsEnum::SALES_ANALYSIS->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnit($tradeUnit), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
+                    : Inertia::optional(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnit($tradeUnit), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']))),
+
+                'sales_analysis_teaser' => $this->tab === TradeUnitTabsEnum::SHOWCASE->value ?
+                    Inertia::defer(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnit($tradeUnit)), 'sales_analysis_teaser')
+                    : Inertia::optional(fn () => GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnit($tradeUnit))),
 
                 TradeUnitTabsEnum::COMPOSITION->value => $this->tab == TradeUnitTabsEnum::COMPOSITION->value ?
                     fn () => GetTradeUnitComposition::run($tradeUnit)

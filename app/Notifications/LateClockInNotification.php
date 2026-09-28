@@ -26,13 +26,19 @@ class LateClockInNotification extends Notification implements ShouldQueue
         $clockedAt = $this->clocking->clocked_at->format('H:i');
         $scheduleName = $this->clocking->workSchedule?->name ?? 'Default Schedule';
 
-        return (new MailMessage())
+        $message = (new MailMessage())
             ->subject(__('Late Clock In Notification'))
             ->greeting(__('Hello :name,', ['name' => $notifiable->contact_name ?? $notifiable->alias]))
             ->line(__('You have clocked in late today.'))
             ->line(__('Clock In Time: :time', ['time' => $clockedAt]))
             ->line(__('Schedule: :schedule', ['schedule' => $scheduleName]))
             ->line(__('Please ensure to clock in on time going forward.'));
+
+        if (app()->isProduction()) {
+            $message->mailer('ses')->from($this->clocking->organisation->email ?: 'help@aiku.io', $this->clocking->organisation->name);
+        }
+
+        return $message;
     }
 
     public function toArray($notifiable): array

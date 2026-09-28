@@ -27,12 +27,14 @@ class UpdateStockDeliveryCost extends OrgAction
             'amount'      => ['sometimes', 'nullable', 'numeric', 'gte:0'],
             'received_at' => ['sometimes', 'nullable', 'date'],
             'is_na'       => ['sometimes', 'boolean'],
+            'currency_id' => ['sometimes', 'nullable', 'exists:currencies,id'],
+            'exchange'    => ['sometimes', 'nullable', 'numeric', 'gt:0'],
         ];
     }
 
     public function handle(StockDeliveryCost $stockDeliveryCost, array $modelData): StockDeliveryCost
     {
-        $stockDeliveryCost = $this->update($stockDeliveryCost, $modelData);
+        $stockDeliveryCost = $this->update($stockDeliveryCost, StoreStockDeliveryCost::withExchange($stockDeliveryCost->stockDelivery, $modelData));
 
         EvaluateStockDeliveryCosting::run($stockDeliveryCost->stockDelivery);
 

@@ -28,6 +28,8 @@ use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Helpers\Ticket\UpdateTicketDeployComment;
 use App\Actions\Search\SearchTickets;
 use App\Actions\Retina\Dropshipping\Ticket\StoreRetinaTicket;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -79,7 +81,13 @@ beforeAll(function () {
     loadDB();
 });
 
+/* Laravel writes datetimes as naive UTC strings, so a Postgres session on any other zone
+   stores them shifted and hands them back shifted: a waiting_at written a second ago reads
+   hours old, and a fixture written at 11:48 comes back at another time entirely. Pinned for
+   this file only, and put back afterwards so no other suite inherits it. */
 beforeEach(function () {
+    DB::statement("set time zone 'UTC'");
+
     list($this->organisation, $this->user, $this->shop) = createShop();
     $this->group    = $this->organisation->group;
     $this->website  = createWebsite($this->shop);
@@ -93,6 +101,10 @@ beforeEach(function () {
     $this->user->forgetWildcardPermissionIndex();
     Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
     actingAs($this->user);
+});
+
+afterEach(function () {
+    DB::statement('set time zone default');
 });
 
 test('help ticket gets a HELP reference and defaults', function () {
@@ -1348,6 +1360,145 @@ test('the held deploy comment keeps its files out of the thread until the deploy
         ->and($ticket->attachmentGalleryFor($this->user))->toHaveCount(1);
 });
 
+test('QA has its own ticket list, filtered first by QA assignee, and the ticket list no longer offers that filter', function () {
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $mine   = StoreTicket::make()->action($this->group, ['subject' => 'Checked by me']);
+    $anyone = StoreTicket::make()->action($this->group, ['subject' => 'Anyone in QA']);
+    Ticket::whereKey($mine->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $qa->id, 'status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($anyone->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => null, 'status' => TicketStatusEnum::RESOLVED]);
+
+    $elementGroupKeys = fn (AssertableInertia $page) => array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']);
+    $references       = fn (AssertableInertia $page) => collect($page->toArray()['props']['data']['data'])->pluck('reference')->all();
+    $subSections      = fn (User $user) => collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($user)['tickets']['topMenu']['subSections'])->pluck('label')->all();
+
+    expect($subSections($qa))->toContain('Ticket List', 'QA List')
+        ->and($subSections($engineer))->toContain('Ticket List')->not->toContain('QA List');
+
+    actingAs($engineer);
+    get(route('grp.tickets.qa_list'))->assertForbidden();
+    get(route('grp.tickets.list'))->assertInertia(fn (AssertableInertia $page) => expect($elementGroupKeys($page))->toContain('mine')->not->toContain('qa_checker'));
+
+    actingAs($qa);
+    get(route('grp.tickets.qa_list'))->assertInertia(function (AssertableInertia $page) use ($elementGroupKeys) {
+        $page->component('Tickets/Tickets')->where('title', 'QA List');
+        expect($elementGroupKeys($page)[0])->toBe('qa_checker')
+            ->and($elementGroupKeys($page))->not->toContain('mine');
+    });
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_checker' => 'mine'], 'perPage' => 1000]))
+        ->assertInertia(function (AssertableInertia $page) use ($references, $mine, $anyone, $qa) {
+            expect($references($page))->toContain($mine->reference)->not->toContain($anyone->reference)
+                ->and(collect($page->toArray()['props']['data']['data'])->firstWhere('reference', $mine->reference)['qa_user'])->toBe($qa->contact_name ?: $qa->username);
+        });
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_checker' => 'anyone'], 'perPage' => 1000]))
+        ->assertInertia(fn (AssertableInertia $page) => expect($references($page))->toContain($anyone->reference)->not->toContain($mine->reference));
+    $untouched = StoreTicket::make()->action($this->group, ['subject' => 'Nobody looked yet']);
+    $passed    = StoreTicket::make()->action($this->group, ['subject' => 'Already passed']);
+    Ticket::whereKey($untouched->id)->update(['status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($passed->id)->update(['qa_status' => TicketQaStatusEnum::PASSED, 'qa_user_id' => $qa->id, 'status' => TicketStatusEnum::RESOLVED]);
+
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertInertia(function (AssertableInertia $page) use ($references, $untouched, $mine, $passed) {
+        $page->where('listTip', fn ($tip) => str_contains($tip, 'no QA verdict'));
+        expect($references($page))->toContain($untouched->reference, $mine->reference)->not->toContain($passed->reference)
+            ->and(array_keys($page->toArray()['props']['queryBuilderProps']['default']['elementGroups']['qa_status']['elements']))->toBe(['none', 'passed', 'failed', 'skipped']);
+    });
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => 'passed'], 'perPage' => 1000]))
+        ->assertInertia(fn (AssertableInertia $page) => expect($references($page))->toContain($passed->reference, $mine->reference, $anyone->reference)->not->toContain($untouched->reference));
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertInertia(function (AssertableInertia $page) {
+        $isRequested = collect($page->toArray()['props']['data']['data'])->map(fn ($row) => $row['qa_status'] === 'requested')->values();
+        $firstNotRequested = $isRequested->search(false);
+        expect($firstNotRequested)->not->toBeFalse()
+            ->and($isRequested->slice($firstNotRequested)->contains(true))->toBeFalse();
+    });
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => ''], 'perPage' => 1000]))
+        ->assertInertia(fn (AssertableInertia $page) => expect($references($page))->toContain($passed->reference, $untouched->reference));
+
+    get(route('grp.tickets.list', ['sort' => 'qa_status', 'perPage' => 1000]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('listTip', null)->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->firstWhere('key', 'qa_status')['sortable'] === true));
+});
+
+test('the dashboard shows QA details to QA, and the urgent check lands on requested tickets only', function () {
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $requested = StoreTicket::make()->action($this->group, ['subject' => 'Urgent check']);
+    $passed    = StoreTicket::make()->action($this->group, ['subject' => 'Checked fine']);
+    $hidden    = StoreTicket::make()->action($this->group, ['subject' => 'Not for QA eyes']);
+    $stillOpen = StoreTicket::make()->action($this->group, ['subject' => 'Not finished yet']);
+    $deploying = StoreTicket::make()->action($this->group, ['subject' => 'Waiting on a deploy']);
+    Ticket::whereKey($deploying->id)->update(['status' => TicketStatusEnum::PENDING_DEPLOY]);
+    Ticket::whereKey($requested->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($passed->id)->update(['qa_status' => TicketQaStatusEnum::PASSED, 'status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($hidden->id)->update(['qa_status' => TicketQaStatusEnum::REQUESTED, 'status' => TicketStatusEnum::RESOLVED, 'is_confidential' => true]);
+    Ticket::whereKey($stillOpen->id)->update(['status' => TicketStatusEnum::IN_PROGRESS]);
+
+    actingAs($engineer);
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page->missing('qa_stats'));
+
+    actingAs($qa);
+    $visible = fn (): Builder => Ticket::where('group_id', $this->group->id)->visibleTo($qa);
+    $done    = fn (): Builder => $visible()->whereIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY]);
+
+    expect($visible()->whereKey($hidden->id)->exists())->toBeFalse();
+
+    get(route('grp.tickets.index'))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('qa_stats.requested', $visible()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count())
+        ->where('qa_stats.passed', $done()->where('qa_status', TicketQaStatusEnum::PASSED)->count())
+        ->where('qa_stats.not_checked', $done()->whereNull('qa_status')->count()));
+
+    expect($done()->whereKey($stillOpen->id)->exists())->toBeFalse();
+
+    get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => ''], 'filter' => ['qa_requested' => 1], 'perPage' => 1000]))
+        ->assertInertia(fn (AssertableInertia $page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('qa_status')->unique()->values()->all())->toBe(['requested']));
+
+    $mine      = StoreTicket::make()->action($this->group, ['subject' => 'Asked of me']);
+    $unclaimed = StoreTicket::make()->action($this->group, ['subject' => 'Asked of anyone']);
+    $theirs    = StoreTicket::make()->action($this->group, ['subject' => 'Asked of another checker']);
+    $otherQa   = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa->assignRole('qa');
+    Ticket::whereKey($mine->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $qa->id]);
+    Ticket::whereKey($unclaimed->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => null]);
+    Ticket::whereKey($theirs->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $otherQa->id]);
+
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($mine, $unclaimed, $theirs) {
+            $ids = collect($page->toArray()['props']['data']['data'])->pluck('id');
+
+            expect($ids)->toContain($mine->id)
+                ->and($ids)->toContain($unclaimed->id)
+                ->and($ids)->not->toContain($theirs->id);
+        });
+
+    actingAs($otherQa);
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($mine, $theirs) {
+            $ids = collect($page->toArray()['props']['data']['data'])->pluck('id');
+
+            expect($ids)->toContain($theirs->id)
+                ->and($ids)->not->toContain($mine->id);
+        });
+
+    actingAs($qa);
+    get(route('grp.tickets.qa_list', ['perPage' => 1000]))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($stillOpen, $deploying) {
+            $rows = collect($page->toArray()['props']['data']['data']);
+
+            $verdicts = collect(TicketQaStatusEnum::cases())->filter->isVerdict()->map->value->all();
+
+            expect($rows->pluck('status')->unique()->diff(['resolved', 'pending_deploy'])->all())->toBe([])
+                ->and($rows->pluck('qa_status')->intersect($verdicts)->all())->toBe([])
+                ->and($rows->pluck('id'))->toContain($deploying->id)
+                ->and($rows->pluck('id'))->not->toContain($stillOpen->id);
+        });
+});
+
 test('ticket badges count my tickets and the engineer queue, and engineers hear of new tickets in-app', function () {
     Notification::fake();
     Event::fake([BroadcastTicketBadgeUpdate::class]);
@@ -2599,15 +2750,17 @@ test('the ticket list offers ownership by role and QA filters', function () {
     UpdateTicket::make()->action($forAnyone, ['qa_status' => TicketQaStatusEnum::REQUESTED->value]);
     UpdateTicket::make()->action($forQa, ['qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
     $failed->forceFill(['qa_status' => TicketQaStatusEnum::FAILED, 'qa_user_id' => $qa->id])->saveQuietly();
+    Ticket::whereIn('id', [$forAnyone->id, $forQa->id, $failed->id])->update(['status' => TicketStatusEnum::RESOLVED]);
 
-    $references = fn (array $elements) => collect(get(route('grp.tickets.list', ['elements' => $elements, 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
+    $references   = fn (array $elements) => collect(get(route('grp.tickets.list', ['elements' => $elements, 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
+    $qaReferences = fn (array $elements) => collect(get(route('grp.tickets.qa_list', ['elements' => ['qa_status' => '', ...$elements], 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])->pluck('reference');
 
     get(route('grp.tickets.list'))->assertInertia(
         fn (AssertableInertia $page) => $page->where('queryBuilderProps.default.elementGroups.mine.label', 'Ownership')
             ->has('queryBuilderProps.default.elementGroups.mine.elements.assigned')
             ->has('queryBuilderProps.default.elementGroups.mine.elements.unassigned')
             ->has('queryBuilderProps.default.elementGroups.qa_status')
-            ->has('queryBuilderProps.default.elementGroups.qa_checker')
+            ->missing('queryBuilderProps.default.elementGroups.qa_checker')
     );
 
     actingAs($qa);
@@ -2616,7 +2769,7 @@ test('the ticket list offers ownership by role and QA filters', function () {
             ->has('queryBuilderProps.default.elementGroups.mine.elements.reported')
             ->where('queryBuilderProps.default.elementGroups.mine.optional', true)
             ->where('queryBuilderProps.default.elementGroups.status.optional', false)
-            ->has('queryBuilderProps.default.elementGroups.qa_checker')
+            ->missing('queryBuilderProps.default.elementGroups.qa_checker')
     );
 
     actingAs($this->user);
@@ -2626,11 +2779,11 @@ test('the ticket list offers ownership by role and QA filters', function () {
 
     actingAs($qa);
     expect($references(['mine' => 'reported'])->all())->toContain($noQa->reference)->not->toContain($forAnyone->reference)
-        ->and($references(['qa_checker' => 'mine'])->all())->toContain($forQa->reference, $failed->reference)->not->toContain($forAnyone->reference, $noQa->reference)
-        ->and($references(['qa_checker' => 'anyone'])->all())->toContain($forAnyone->reference)->not->toContain($forQa->reference, $noQa->reference)
-        ->and($references(['qa_checker' => 'everyone'])->all())->toContain($forAnyone->reference, $forQa->reference, $failed->reference)->not->toContain($noQa->reference)
-        ->and($references(['qa_status' => 'failed'])->all())->toContain($failed->reference)->not->toContain($forQa->reference, $noQa->reference)
-        ->and($references(['qa_checker' => 'mine,anyone,everyone'])->all())->toContain($forAnyone->reference)->not->toContain($noQa->reference)
+        ->and($qaReferences(['qa_checker' => 'mine'])->all())->toContain($forQa->reference, $failed->reference)->not->toContain($forAnyone->reference, $noQa->reference)
+        ->and($qaReferences(['qa_checker' => 'anyone'])->all())->toContain($forAnyone->reference)->not->toContain($forQa->reference, $noQa->reference)
+        ->and($qaReferences(['qa_checker' => 'everyone'])->all())->toContain($forAnyone->reference, $forQa->reference, $failed->reference)->not->toContain($noQa->reference)
+        ->and($references(['qa_status' => 'failed'])->all())->toContain($failed->reference, $forQa->reference)->not->toContain($noQa->reference)
+        ->and($qaReferences(['qa_checker' => 'mine,anyone,everyone'])->all())->toContain($forAnyone->reference)->not->toContain($noQa->reference)
         ->and($references(['qa_status' => 'requested,failed,passed'])->all())->not->toContain($noQa->reference);
 
     patch(route('grp.models.profile.update'), ['tickets_list_mine' => 'reported'])->assertSessionHasNoErrors();
@@ -2642,7 +2795,7 @@ test('the ticket list offers ownership by role and QA filters', function () {
         fn (AssertableInertia $page) => $page->missing('queryBuilderProps.default.elementGroups.qa_checker')
             ->has('queryBuilderProps.default.elementGroups.qa_status')
     );
-    expect($references(['qa_status' => 'requested'])->all())->toContain($forAnyone->reference, $forQa->reference)->not->toContain($failed->reference);
+    expect($references(['qa_status' => 'none'])->all())->toContain($forAnyone->reference, $forQa->reference)->not->toContain($failed->reference);
 
     actingAs($this->user);
 });
@@ -3122,4 +3275,143 @@ test('assistant reads ticket attachments through MCP, within the ticket visibili
     $ticket->update(['is_confidential' => true]);
     $tool($qa, 'invoice.pdf')->assertHasErrors(['Ticket not found or not visible to you.']);
     expect($stock)->toBeInstanceOf(TicketComment::class);
+});
+
+test('a failed QA verdict reopens a ticket that was already done, and every verdict marks its own comment', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Totals wrong again', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
+    expect($ticket->refresh()->comments()->latest('id')->value('has_qa_verdict'))->toBeNull();
+
+    patch(route('grp.models.ticket.update', $ticket->id), ['status' => 'resolved'])->assertRedirect();
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->resolved_at)->not->toBeNull()
+        ->and($ticket->closed_at)->not->toBeNull();
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'The voucher total is still wrong'])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS)
+        ->and($ticket->resolved_at)->toBeNull()
+        ->and($ticket->closed_at)->toBeNull()
+        ->and($ticket->started_at)->not->toBeNull()
+        ->and($ticket->assignee_id)->toBe($engineer->id)
+        ->and($ticket->comments()->latest('id')->value('has_qa_verdict'))->toBe(TicketQaStatusEnum::FAILED);
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->status)->toBe(TicketStatusEnum::IN_PROGRESS)
+        ->and($ticket->comments()->latest('id')->value('has_qa_verdict'))->toBe(TicketQaStatusEnum::PASSED);
+});
+
+test('a failed QA verdict leaves a ticket that is still being worked on exactly where it is', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $reporter = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Still in flight', 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::WAITING->value]);
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'requested', 'qa_user_id' => $qa->id])->assertRedirect();
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'failed', 'qa_note' => 'Not there yet'])->assertRedirect();
+
+    expect($ticket->refresh()->status)->toBe(TicketStatusEnum::WAITING);
+});
+
+test('a checker claims a ticket, it leaves every other checker\'s QA list, and only they can give its verdict', function () {
+    Mail::fake();
+    Notification::fake();
+    $engineer = User::factory()->create(['group_id' => $this->group->id]);
+    $qa       = User::factory()->create(['group_id' => $this->group->id]);
+    $otherQa  = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $engineer->assignRole('help-desk-clerk');
+    $qa->assignRole('qa');
+    $otherQa->assignRole('qa');
+
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Claim me']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $engineer->id, 'status' => TicketStatusEnum::RESOLVED->value]);
+
+    $qaListIds = fn (array $query = []) => collect(get(route('grp.tickets.qa_list', ['perPage' => 1000, ...$query]))->assertOk()->inertiaProps()['data']['data'])->pluck('id');
+
+    actingAs($engineer);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertForbidden();
+
+    actingAs($qa);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertRedirect();
+
+    $ticket->refresh();
+    expect($ticket->qa_status)->toBe(TicketQaStatusEnum::CHECKING)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_checked_at)->toBeNull()
+        ->and($ticket->status)->toBe(TicketStatusEnum::RESOLVED)
+        ->and($ticket->comments()->latest('id')->value('has_qa_verdict'))->toBeNull()
+        ->and($qaListIds())->toContain($ticket->id);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', false));
+
+    actingAs($otherQa);
+    expect($qaListIds())->not->toContain($ticket->id)
+        ->and($qaListIds(['elements' => ['qa_checker' => 'everyone']]))->toContain($ticket->id);
+    get(route('grp.tickets.show', $ticket->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', true));
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'checking'])->assertSessionHasErrors('qa_status');
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertSessionHasErrors('qa_status');
+    expect($ticket->refresh()->qa_user_id)->toBe($qa->id);
+
+    actingAs($qa);
+    patch(route('grp.models.ticket.update', $ticket->id), ['qa_status' => 'passed'])->assertRedirect();
+    expect($ticket->refresh()->qa_status)->toBe(TicketQaStatusEnum::PASSED)
+        ->and($ticket->qa_user_id)->toBe($qa->id)
+        ->and($ticket->qa_checked_at)->not->toBeNull();
+
+    $askedOfOther = StoreTicket::make()->action($this->group, ['subject' => 'Asked of the other checker']);
+    Ticket::whereKey($askedOfOther->id)->update(['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::REQUESTED, 'qa_user_id' => $otherQa->id]);
+
+    get(route('grp.tickets.show', $askedOfOther->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', false)->where('qa_held_by_another', true));
+    patch(route('grp.models.ticket.update', $askedOfOther->id), ['qa_status' => 'checking'])->assertSessionHasErrors('qa_status');
+    patch(route('grp.models.ticket.update', $askedOfOther->id), ['qa_status' => 'failed', 'qa_note' => 'Not mine to judge'])->assertSessionHasErrors('qa_status');
+    expect($askedOfOther->refresh()->qa_status)->toBe(TicketQaStatusEnum::REQUESTED)
+        ->and($askedOfOther->qa_user_id)->toBe($otherQa->id);
+
+    actingAs($otherQa);
+    get(route('grp.tickets.show', $askedOfOther->reference))->assertInertia(fn (AssertableInertia $page) => $page->where('can_claim_qa', true)->where('qa_held_by_another', false));
+});
+
+test('an engineer writes an incident post-mortem on a ticket and customers cannot', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Side basket empty']);
+    UpdateTicket::make()->action($ticket, ['assignee_id' => $this->user->id, 'status' => TicketStatusEnum::IN_PROGRESS->value]);
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'Root cause: null charge', 'post_mortem' => true])->assertOk()->assertSee('"commented":true');
+
+    $postMortem = $ticket->comments()->latest('id')->first();
+    expect($postMortem->type)->toBe(\App\Enums\Helpers\Ticket\TicketCommentTypeEnum::POST_MORTEM)
+        ->and(\App\Http\Resources\Helpers\TicketCommentResource::make($postMortem)->resolve()['type'])->toBe('post_mortem')
+        ->and(StoreTicketComment::make()->action($ticket, $this->user, ['body' => 'plain'], false)->type)->toBe(\App\Enums\Helpers\Ticket\TicketCommentTypeEnum::COMMENT);
+
+    expect(fn () => StoreTicketComment::make()->action($ticket, $this->webUser, ['body' => 'mine', 'type' => 'post_mortem'], false))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
 });

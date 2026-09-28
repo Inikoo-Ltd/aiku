@@ -15,6 +15,30 @@ class CalculateTimeSeriesStats
 
     protected int $chunkSize = 100;
 
+    private const PARTNER_COLUMNS = [
+        'sales_external'              => 'sales_internal',
+        'sales_org_currency_external' => 'sales_org_currency_internal',
+        'sales_grp_currency_external' => 'sales_grp_currency_internal',
+        'invoices'                    => 'invoices_internal',
+        'refunds'                     => 'refunds_internal',
+    ];
+
+    /**
+     * @param  array<string, string>  $metricsMapping
+     * @return array<string, string>
+     */
+    public static function withPartners(array $metricsMapping, bool $includePartners): array
+    {
+        if (!$includePartners) {
+            return $metricsMapping;
+        }
+
+        return array_map(
+            fn (string $column) => isset(self::PARTNER_COLUMNS[$column]) ? "($column + ".self::PARTNER_COLUMNS[$column].')' : $column,
+            $metricsMapping
+        );
+    }
+
     public function handle(
         array $timeSeriesIds,
         array $metricsMapping,
@@ -158,14 +182,14 @@ class CalculateTimeSeriesStats
 
         $intervals = DateIntervalEnum::cases();
 
-        foreach ($metricsMapping as $metricKey => $column) {
+        foreach (array_keys($metricsMapping) as $metricKey) {
             $formattedStats[$metricKey] = [];
             $formattedStats[$metricKey . '_delta'] = [];
 
             foreach ($intervals as $interval) {
                 $intervalValue = $interval->value;
 
-                $currentValueKey = "{$column}_{$intervalValue}";
+                $currentValueKey = "{$metricKey}_{$intervalValue}";
                 $lastYearValueKey = "{$currentValueKey}_ly";
 
                 $currentValue = (float)($stats[$currentValueKey] ?? 0);

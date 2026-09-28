@@ -45,10 +45,6 @@ class UpdateSupplierProduct extends OrgAction
         'units_per_carton',
     ];
 
-    private const ORG_PROPAGATED_FIELDS = [
-        'state',
-        'is_available',
-    ];
 
     private const STATS_FIELDS = [
         'state',
@@ -79,15 +75,9 @@ class UpdateSupplierProduct extends OrgAction
             ]);
         }
 
-        if ($supplierProduct->wasChanged(self::ORG_PROPAGATED_FIELDS)) {
+        if ($supplierProduct->wasChanged('state')) {
             foreach ($supplierProduct->orgSupplierProducts as $orgSupplierProduct) {
-                UpdateOrgSupplierProduct::run(
-                    $orgSupplierProduct,
-                    [
-                        'state'        => $supplierProduct->state,
-                        'is_available' => $supplierProduct->is_available
-                    ]
-                );
+                UpdateOrgSupplierProduct::run($orgSupplierProduct, ['state' => $supplierProduct->state]);
             }
         }
 

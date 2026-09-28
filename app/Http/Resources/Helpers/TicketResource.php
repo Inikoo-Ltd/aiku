@@ -39,9 +39,11 @@ class TicketResource extends JsonResource
             'is_confidential' => (bool) $this->is_confidential,
             'qa_status'      => $this->qa_status?->value,
             'qa_status_label' => $this->qa_status ? TicketQaStatusEnum::labels()[$this->qa_status->value] : null,
-            'qa_status_icon' => $this->qa_status ? TicketQaStatusEnum::stateIcon()[$this->qa_status->value] : null,
+            'qa_status_icon' => $this->qaStatusIcon(),
             'qa_user'        => $this->qaUser?->contact_name ?: $this->qaUser?->username,
             'qa_user_id'     => $this->qa_user_id,
+            'qa_user_avatar' => $this->qaUser?->imageSources(48, 48),
+            'qa_user_username' => $this->qaUser?->username,
             'qa_requested_at' => $this->qa_requested_at,
             'qa_checked_at'  => $this->qa_checked_at,
             'kind_label'     => $this->kind ? TicketKindEnum::labels()[$this->kind->value] : null,
@@ -164,6 +166,35 @@ class TicketResource extends JsonResource
     /**
      * @return array<int, array{key: string, label: string}>
      */
+    /**
+     * @return array{tooltip: string, icon: string, class: string, color: string}|null
+     */
+    private function qaStatusIcon(): ?array
+    {
+        if (!$this->qa_status) {
+            return null;
+        }
+
+        $icon = TicketQaStatusEnum::stateIcon()[$this->qa_status->value];
+        $name = $this->qaUser?->contact_name ?: $this->qaUser?->username;
+
+        if ($this->qa_status->isVerdict()) {
+            $icon['tooltip'] = $name
+                ? __(':verdict QA Check | Checked by :name', ['verdict' => $this->qa_status->shortLabel(), 'name' => $name])
+                : __(':verdict QA Check', ['verdict' => $this->qa_status->shortLabel()]);
+
+            return $icon;
+        }
+
+        $icon['tooltip'] = match (true) {
+            $this->qa_status === TicketQaStatusEnum::CHECKING => __(':name is checking this', ['name' => $name ?? __('QA')]),
+            $name !== null && $name !== ''                   => __('QA check requested from :name', ['name' => $name]),
+            default                                           => __('QA check open to anyone in QA'),
+        };
+
+        return $icon;
+    }
+
     private function reporterRoles(): array
     {
         $reporter = $this->reporter;

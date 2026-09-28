@@ -56,7 +56,8 @@ watch(selectedCustomer, (customer) => {
     form.email = customer?.email ?? ""
 })
 
-watch(() => form.email, (email) => {
+watch(() => form.email, (addresses) => {
+    const email = addresses.split(/[\s,;]+/).find(Boolean) ?? ""
     clearTimeout(prospectLookupTimer)
     existingProspect.value = null
     if (!isNotACustomer.value || !props.shopId || !/^\S+@\S+\.\S+$/.test(email.trim())) {
@@ -64,7 +65,7 @@ watch(() => form.email, (email) => {
     }
     prospectLookupTimer = setTimeout(async () => {
         const { data } = await axios.get(route("grp.json.shop.prospect_by_email", { shop: props.shopId }), { params: { email: email.trim() } })
-        if (form.email === email) {
+        if (form.email === addresses) {
             existingProspect.value = data.prospect
             if (data.prospect) {
                 form.save_as_prospect = false
@@ -146,7 +147,7 @@ watch(visible, (isVisible) => {
 
             <div v-if="selectedCustomer || isNotACustomer" class="flex flex-col gap-1">
                 <label class="text-xs font-medium text-gray-600">{{ ctrans("To") }}</label>
-                <PureInput v-model="form.email" type="email" :placeholder="ctrans('Email address')" />
+                <PureInput v-model="form.email" :placeholder="ctrans('Email addresses, separated by commas')" />
             </div>
 
             <p v-if="isNotACustomer && existingProspect" class="text-xs text-gray-600 leading-snug">

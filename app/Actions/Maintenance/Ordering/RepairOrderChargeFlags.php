@@ -25,6 +25,7 @@ class RepairOrderChargeFlags
         ChargeTypeEnum::PREMIUM->value   => 'is_premium_dispatch',
         ChargeTypeEnum::INSURANCE->value => 'has_insurance',
         ChargeTypeEnum::PACKING->value   => 'has_extra_packing',
+        ChargeTypeEnum::GIFT_MESSAGE->value => 'has_gift_message',
     ];
 
     public function asCommand(Command $command): int

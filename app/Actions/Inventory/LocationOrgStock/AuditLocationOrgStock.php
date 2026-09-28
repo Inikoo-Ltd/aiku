@@ -46,7 +46,8 @@ class AuditLocationOrgStock extends OrgAction
 
         try {
             $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData) {
-                $currentStock = $locationOrgStock->quantity;
+                $locationOrgStock = LocationOrgStock::lockForUpdate()->findOrFail($locationOrgStock->id);
+                $currentStock     = $locationOrgStock->quantity;
                 $newQuantity  = Arr::pull($modelData, 'quantity');
                 $reason       = Arr::pull($modelData, 'reason');
                 $note         = Arr::pull($modelData, 'note');

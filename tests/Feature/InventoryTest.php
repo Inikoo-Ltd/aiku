@@ -10,8 +10,16 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
+use App\Enums\UI\Inventory\OrgStockFamilyTabsEnum;
+use App\Enums\UI\Procurement\OrgStockTabsEnum;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
+use App\Actions\Goods\StockFamily\UpdateStockFamily;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Mcp\Servers\AikuServer;
+use App\Mcp\Tools\OrgStockDiscontinueTool;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\HydrateLocation;
@@ -43,6 +51,7 @@ use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentBatchCodes;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateOutOfStockForecast;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProducts;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity;
@@ -156,6 +165,8 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Mockery;
+use RuntimeException;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -247,14 +258,14 @@ test('create warehouse by command', function () {
 
     expect($organisation->inventoryStats->number_warehouses)->toBe(2)
         ->and($organisation->group->inventoryStats->number_warehouses)->toBe(2)
-        ->and($warehouse->roles()->count())->toBe(10);
+        ->and($warehouse->roles()->count())->toBe(11);
 });
 
 test('seed warehouse permissions', function () {
     setPermissionsTeamId($this->group->id);
     $this->artisan('warehouse:seed-permissions')->assertExitCode(0);
     $warehouse = Warehouse::where('code', 'AA')->first();
-    expect($warehouse->roles()->count())->toBe(10);
+    expect($warehouse->roles()->count())->toBe(11);
 });
 
 
@@ -387,6 +398,63 @@ test('update org stock', function (OrgStock $orgStock) {
 
     return $orgStock;
 })->depends('create org stock');
+
+test('update org stock route needs stock edit permission', function (OrgStock $orgStock) {
+    $warehouse = $this->organisation->warehouses()->first() ?? createWarehouse();
+    $user      = $this->guest->getUser();
+
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $reset         = function (array $roles) use ($user) {
+        setPermissionsTeamId($user->group_id);
+        $user->syncRoles($roles);
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+    };
+    $url     = route('grp.org.warehouses.show.inventory.org_stocks.update', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]);
+    $showUrl = route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]);
+
+    $reset([RolesEnum::getRoleName('warehouse-viewer', $warehouse)]);
+    expect($this->get($showUrl)->assertOk()->viewData('page')['props']['showcase']['barcode_update_route'])->toBeNull();
+    $this->patchJson($url, ['name' => 'Renamed by viewer', 'state' => OrgStockStateEnum::DISCONTINUED->value])->assertForbidden();
+    expect($orgStock->refresh()->name)->not->toBe('Renamed by viewer')
+        ->and($orgStock->state)->toBe(OrgStockStateEnum::ACTIVE);
+
+    $reset([RolesEnum::getRoleName('stock-controller', $warehouse)]);
+    expect($this->get($showUrl)->assertOk()->viewData('page')['props']['showcase']['barcode_update_route']['name'])->toBe('grp.org.warehouses.show.inventory.org_stocks.update');
+    $this->patchJson($url, ['name' => 'Renamed by stock controller'])->assertOk();
+    expect($orgStock->refresh()->name)->toBe('Renamed by stock controller');
+
+    $reset($originalRoles);
+})->depends('update org stock');
+
+test('changing an org stock state through update needs the status permission', function (OrgStock $orgStock) {
+    $warehouse = $this->organisation->warehouses()->first() ?? createWarehouse();
+    $user      = $this->guest->getUser();
+
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $reset         = function (array $roles) use ($user) {
+        setPermissionsTeamId($user->group_id);
+        $user->syncRoles($roles);
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+    };
+    $url = route('grp.org.warehouses.show.inventory.org_stocks.update', [$this->organisation->slug, $warehouse->slug, $orgStock->slug]);
+
+    $reset([RolesEnum::getRoleName('stock-controller', $warehouse)]);
+    $this->patchJson($url, ['state' => OrgStockStateEnum::DISCONTINUING->value])->assertForbidden();
+    expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+
+    $reset([RolesEnum::getRoleName('stock-controller', $warehouse), RolesEnum::getRoleName('supply-chain', $this->group)]);
+    $this->patchJson($url, ['state' => OrgStockStateEnum::DISCONTINUING->value])->assertOk();
+    expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
+
+    UpdateOrgStock::make()->action($orgStock, ['state' => OrgStockStateEnum::ACTIVE->value]);
+    $reset($originalRoles);
+})->depends('update org stock');
 
 test('create org stock family', function () {
     $stockFamily = StoreStockFamily::make()->action(
@@ -785,6 +853,42 @@ test("UI show org stock", function (OrgStock $orgStock) {
     $orgStock->update(['is_on_demand' => false]);
 })->depends('create org stock');
 
+test("UI show org stock sales analysis tab", function (OrgStock $orgStock) {
+    $warehouse = $this->organisation->warehouses->first();
+
+    $response = get(
+        route("grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show", [
+            $this->organisation->slug,
+            $warehouse->slug,
+            $orgStock->slug,
+            'tab'         => OrgStockTabsEnum::SALES_ANALYSIS->value,
+            'from'        => '2026-01-01',
+            'to'          => '2026-03-31',
+            'compareFrom' => '2025-01-01',
+            'compareTo'   => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Inventory/OrgStock")
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStock($orgStock));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+})->depends('create org stock');
+
 test("UI show org stock navigation follows the bucket and sort", function () {
     $warehouse = $this->organisation->warehouses->first() ?? createWarehouse();
     $this->withoutExceptionHandling();
@@ -1010,6 +1114,42 @@ test("UI Show Org Stock Family", function (OrgStockFamily $orgStockFamily) {
     });
 })->depends('create org stock family');
 
+test("UI Show Org Stock Family sales analysis tab", function (OrgStockFamily $orgStockFamily) {
+    $warehouse = Warehouse::first();
+
+    $response = get(
+        route("grp.org.warehouses.show.inventory.org_stock_families.show", [
+            $this->organisation->slug,
+            $warehouse->slug,
+            $orgStockFamily->slug,
+            'tab'         => OrgStockFamilyTabsEnum::SALES_ANALYSIS->value,
+            'from'        => '2026-01-01',
+            'to'          => '2026-03-31',
+            'compareFrom' => '2025-01-01',
+            'compareTo'   => '2025-03-31',
+        ])
+    );
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component("Org/Inventory/OrgStockFamily")
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forOrgStockFamily($orgStockFamily));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+})->depends('create org stock family');
+
 test("UI Index Stock Families", function () {
     $this->withoutExceptionHandling();
     $response = get(
@@ -1179,7 +1319,17 @@ test('org stock hydrator', function () {
     $this->artisan('hydrate:org_stocks')->assertExitCode(0);
 
     $orgStock = OrgStock::first();
+    $orgStock->updateQuietly(['packed_in' => 4321]);
     HydrateOrgStock::run($orgStock);
+
+    expect($orgStock->fresh()->packed_in)->toBe(4321);
+
+    $this->artisan('repair:org-stocks-packed-in');
+    expect($orgStock->fresh()->packed_in)->toBe(4321);
+
+    $orgStock->updateQuietly(['packed_in' => null]);
+    $this->artisan('repair:org-stocks-packed-in')->assertExitCode(0);
+    expect($orgStock->fresh()->packed_in)->toBe(1);
 });
 
 test('org stock families  hydrator', function () {
@@ -1347,6 +1497,54 @@ test('stock parked in a goods out location stops being available', function () {
 
     UpdateLocation::make()->action($slot->location->refresh(), ['is_goods_out' => false]);
     expect((float) $orgStock->fresh()->quantity_available)->toBe($inLocations);
+});
+
+test('stock location integrity monitor reports a location that no longer matches its movements', function () {
+    \Illuminate\Support\Facades\Http::fake();
+    config(['services.discord.webhook_url' => 'https://discord.test/webhook']);
+    $wasAikuStockControl = $this->organisation->is_aiku_stock_control;
+    $this->organisation->update(['is_aiku_stock_control' => true]);
+
+    $warehouse = createWarehouse();
+    $location  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $orgStock  = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+    $slot      = StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => LocationStockTypeEnum::PICKING]);
+
+    AuditLocationOrgStock::run($slot, ['quantity' => 10]);
+    StoreOrgStockMovement::make()->action($orgStock, $location, ['quantity' => -3, 'type' => OrgStockMovementTypeEnum::PICKED]);
+    expect((float)$slot->refresh()->quantity)->toBe(7.0);
+
+    $slot->timestamps = false;
+    $slot->forceFill(['updated_at' => now()->subHour()])->save();
+
+    $label = fn () => collect(\App\Actions\DevOps\MonitorStockLocationIntegrity::run(2))
+        ->first(fn (string $issue) => str_contains($issue, "$orgStock->code @ $location->code"));
+
+    expect($label())->toBeNull();
+
+    DB::table('location_org_stocks')->where('id', $slot->id)->update(['quantity' => 5]);
+
+    expect($label())->toContain('location 5, movements 7');
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request['content'], 'Stock leaking from locations'));
+
+    $repair         = \App\Actions\Maintenance\Inventory\LocationOrgStock\RepairLocationOrgStockQuantityFromMovements::make();
+    $movementsCount = $orgStock->orgStockMovements()->count();
+    expect($repair->handle($slot->id, false))->toBeNull();
+
+    DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->update(['created_at' => now()->subHour()]);
+
+    expect($repair->handle($slot->id, false))->toBe([5.0, 7.0])
+        ->and((float)$slot->refresh()->quantity)->toBe(5.0)
+        ->and($repair->handle($slot->id, true))->toBe([5.0, 7.0])
+        ->and((float)$slot->refresh()->quantity)->toBe(7.0)
+        ->and($repair->handle($slot->id, true))->toBeNull()
+        ->and($orgStock->orgStockMovements()->count())->toBe($movementsCount);
+
+    $slot->timestamps = false;
+    $slot->forceFill(['updated_at' => now()->subHour()])->save();
+    expect($label())->toBeNull();
+
+    $this->organisation->update(['is_aiku_stock_control' => $wasAikuStockControl]);
 });
 
 test('an emptied slot stays listed on a shelf but not in a goods out bay', function () {
@@ -1924,6 +2122,30 @@ test('UI Show org stock stock_history tab', function () {
     });
 })->depends('create warehouse', 'create org stock');
 
+test('UI Show org stock in family has valid sub navigation routes', function () {
+    $warehouse = Warehouse::first();
+    $orgStock  = OrgStock::whereNotNull('org_stock_family_id')->first();
+    $this->withoutExceptionHandling();
+    $routeParameters = [$this->organisation->slug, $warehouse->slug, $orgStock->orgStockFamily->slug, $orgStock->slug];
+
+    get(route('grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show', $routeParameters))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Inventory/OrgStock')
+                ->where('pageHead.subNavigation', function ($subNavigation) {
+                    foreach ($subNavigation as $item) {
+                        expect(app('router')->has($item['route']['name']))->toBeTrue($item['route']['name']);
+                    }
+
+                    return true;
+                });
+        });
+
+    get(route('grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.delivery_notes', $routeParameters))
+        ->assertInertia(function (AssertableInertia $page) {
+            $page->component('Org/Inventory/DeliveryNotesInOrgStock');
+        });
+})->depends('create warehouse', 'create org stock');
+
 test('UI Show org stock labels and compliance tabs', function () {
     $warehouse = Warehouse::first();
     $orgStock  = OrgStock::first();
@@ -1932,15 +2154,27 @@ test('UI Show org stock labels and compliance tabs', function () {
         $this->organisation->slug, $warehouse->slug, $orgStock->slug, 'tab' => $tab,
     ]);
 
-    get($route('labels'))->assertInertia(function (AssertableInertia $page) {
+    get($route('labels'))->assertInertia(function (AssertableInertia $page) use ($orgStock) {
         $page->component('Org/Inventory/OrgStockLabels')
             ->where('labels.store_route.name', 'grp.models.org_stock.labels.store')
-            ->has('labels.information_options', 21)
+            ->where('labels.mandatory_route.name', 'grp.models.stock.label_mandatory_information.update')
+            ->where('labels.abilities.edit', false)
+            ->where('pageHead.actions.0.route.name', 'grp.goods.stocks.show.labels')
+            ->where('pageHead.actions.0.route.parameters.stock', $orgStock->stock->slug)
+            ->has('labels.information_options', 24)
             ->has('labels.labels');
     });
     get($route('compliance'))->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Inventory/OrgStockLabels')
             ->where('compliance.routes.store.name', 'grp.models.org_stock.compliance-item.store');
+    });
+
+    get(route('grp.goods.stocks.show.labels', [$orgStock->stock->slug, 'tab' => 'labels']))->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Inventory/OrgStockLabels')
+            ->where('pageHead.model', 'Master SKO')
+            ->where('labels.store_route.name', 'grp.models.org_stock.labels.store')
+            ->where('labels.abilities.edit', true)
+            ->has('labels.information_options', 24);
     });
 })->depends('create warehouse', 'create org stock');
 
@@ -3826,5 +4060,219 @@ describe('discontinue confirm', function () {
         $after = $row();
         expect($after['state'])->toBe('discontinuing')
             ->and($after['organisations']['other']['condition'])->toBe('sell');
+    });
+});
+
+describe('discontinue authorisation', function () {
+    beforeEach(function () {
+        $stocks = array_map(
+            fn () => StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE])),
+            range(1, 2)
+        );
+        $this->authOrgStocks = createOrgStocks($this->organisation, $stocks);
+
+        $otherOrganisation = Organisation::where('code', 'other')->first();
+        if (!$otherOrganisation) {
+            $otherOrganisation = StoreOrganisation::make()->action(
+                $this->group,
+                array_merge(Organisation::factory()->definition(), ['code' => 'other', 'type' => OrganisationTypeEnum::SHOP])
+            );
+        }
+        $this->authOtherOrganisation = $otherOrganisation;
+        $this->authOtherOrgStocks    = createOrgStocks($otherOrganisation, $stocks);
+
+        ensureFirstWarehouseHasCountry($this->organisation);
+
+        $this->authUser          = $this->guest->getUser();
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authOriginalRoles = $this->authUser->roles->pluck('name')->toArray();
+    });
+
+    afterEach(function () {
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles($this->authOriginalRoles);
+        $this->authUser->update(['can_use_mcp_discontinue' => false]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    });
+
+    test('a user with the group supply-chain permission can change status group wide', function () {
+        $orgStock      = $this->authOrgStocks[0];
+        $otherOrgStock = $this->authOtherOrgStocks[0];
+
+        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'reason'        => 'group wide change',
+        ], $this->authUser);
+
+        expect($stats['changed'])->toBeGreaterThanOrEqual(1)
+            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING);
+    });
+
+    test('a buyer can change status in their own organisation but is refused group scope and organisation overrides', function () {
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles([RolesEnum::getRoleName(RolesEnum::PROCUREMENT_CLERK->value, $this->organisation)]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $orgStock      = $this->authOrgStocks[0];
+        $otherOrgStock = $this->authOtherOrgStocks[0];
+
+        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'scope'         => 'organisation',
+            'reason'        => 'buyer scoped change',
+        ], $this->authUser);
+
+        expect($stats['changed'])->toBe(1)
+            ->and($orgStock->refresh()->state)->toBe(OrgStockStateEnum::DISCONTINUING)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::ACTIVE->value,
+        ], $this->authUser))->toThrow(ValidationException::class);
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$orgStock->id],
+            'state'               => OrgStockStateEnum::DISCONTINUING->value,
+            'scope'               => 'organisation',
+            'organisation_states' => ['other' => OrgStockStateEnum::ACTIVE->value],
+            'reason'              => 'attempted override',
+        ], $this->authUser))->toThrow(ValidationException::class);
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->authOtherOrganisation, [
+            'org_stock_ids' => [$otherOrgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'scope'         => 'organisation',
+            'reason'        => 'wrong organisation',
+        ], $this->authUser))->toThrow(ValidationException::class);
+    });
+
+    test('a user with neither permission is refused by the action and the controller', function () {
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles([]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $orgStock  = $this->authOrgStocks[0];
+        $warehouse = $this->organisation->warehouses()->first() ?? createWarehouse();
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'scope'         => 'organisation',
+            'reason'        => 'no permission',
+        ], $this->authUser))->toThrow(ValidationException::class);
+
+        actingAs($this->authUser->refresh());
+        $this->post(route('grp.org.warehouses.show.inventory.org_stocks.discontinue', [$this->organisation->slug, $warehouse->slug]), [
+            'org_stock_ids' => [$orgStock->id], 'state' => 'discontinuing', 'reason' => 'no',
+        ])->assertForbidden();
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+    });
+
+    test('the mcp discontinue tool applies the central permission check on top of mcp enrolment', function () {
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles([]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->authUser->update(['can_use_mcp_discontinue' => true]);
+
+        $orgStock = $this->authOrgStocks[0];
+
+        AikuServer::actingAs($this->authUser)->tool(OrgStockDiscontinueTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code],
+            'state'        => 'discontinuing',
+            'reason'       => 'no permission via mcp',
+            'request_text' => 'please discontinue',
+        ])->assertHasErrors(['Changing every organisation needs the Supply Chain Manager permission']);
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+    });
+
+    test('a group-wide change is atomic: a failure partway through rolls back every organisation', function () {
+        $orgStock      = $this->authOrgStocks[0];
+        $otherOrgStock = $this->authOtherOrgStocks[0];
+
+        $mock = Mockery::mock(UpdateOrgStock::class);
+        $mock->shouldReceive('action')->andReturnUsing(function (OrgStock $target, array $data) {
+            if ($target->organisation->code === 'other') {
+                throw new RuntimeException('boom mid loop');
+            }
+            $target->update(['state' => $data['state']]);
+
+            return $target;
+        });
+        app()->instance(UpdateOrgStock::class, $mock);
+
+        expect(fn () => DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$orgStock->id],
+            'state'         => OrgStockStateEnum::DISCONTINUING->value,
+            'reason'        => 'atomic test',
+        ]))->toThrow(RuntimeException::class);
+
+        expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+    });
+});
+
+describe('stock cover thresholds per family', function () {
+    test('a per-family overstock_days override changes the bucket', function () {
+        $stock = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'estimated_lead_time_days' => 10, 'quantity_available' => 50]);
+        $orgStock->stats->update(['days_of_cover' => 50, 'predicted_daily_usage' => 1, 'stock_value' => 100]);
+
+        $buckets = GetOrganisationStockCoverBuckets::make();
+        expect($buckets->bucketOf($orgStock->fresh()))->toBe('ok');
+
+        $stockFamily = StoreStockFamily::make()->action($this->group, StockFamily::factory()->definition());
+        UpdateStock::make()->action($stock, ['stock_family_id' => $stockFamily->id]);
+        UpdateStockFamily::make()->action($stockFamily, ['overstock_days' => 40]);
+
+        expect($buckets->bucketOf($orgStock->fresh()))->toBe('excess');
+    });
+});
+
+describe('out of stock forecast', function () {
+    beforeEach(function () {
+        list(, , $this->shop) = createShop();
+
+        $this->warehouse = createWarehouse();
+        $this->customer  = createCustomer($this->shop);
+
+        list($this->tradeUnit, $this->product) = createProduct($this->shop);
+    });
+
+    test('dispatches from delivery notes made in aiku feed the forecast although they carry no date', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $deliveryNoteItem->update(['quantity_dispatched' => 10]);
+
+        OrgStockHydrateOutOfStockForecast::run($deliveryNoteItem->orgStock);
+        $stats = $deliveryNoteItem->orgStock->stats->refresh();
+
+        expect($deliveryNoteItem->refresh()->date)->toBeNull()
+            ->and($stats->forecast_source)->toBe('croston')
+            ->and((float) $stats->predicted_daily_usage)->toBeGreaterThan(0.0);
+    });
+
+    test('dispatches from the coming quarter last year do not revive the forecast of an item that stopped selling', function () {
+        [, $deliveryNoteItem] = packedDeliveryNote($this);
+        $deliveryNoteItem->update(['quantity_dispatched' => 30]);
+        DB::table('delivery_note_items')->where('id', $deliveryNoteItem->id)
+            ->update(['created_at' => now()->subYear()->addDays(20)]);
+
+        OrgStockHydrateOutOfStockForecast::run($deliveryNoteItem->orgStock);
+        $stats = $deliveryNoteItem->orgStock->stats->refresh();
+
+        expect($stats->forecast_source)->toBeNull()
+            ->and($stats->predicted_daily_usage)->toBeNull()
+            ->and($stats->recommended_order_quantity)->toBeNull();
     });
 });

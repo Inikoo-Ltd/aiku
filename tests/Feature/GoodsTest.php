@@ -8,11 +8,18 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
+use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
 use App\Actions\Goods\Ingredient\Json\ParseIngredientsList;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\UI\ShowGoodsAnalysis;
+use App\Actions\Goods\UI\ShowGoodsDashboard;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
@@ -255,6 +262,39 @@ test("UI Show Stock Family", function () {
     });
 });
 
+test("UI Show Stock Family sales analysis tab", function () {
+    $stockFamily = StockFamily::first();
+
+    $response = get(route('grp.goods.stock-families.show', [
+        'stockFamily' => $stockFamily->slug,
+        'tab'         => \App\Enums\UI\SupplyChain\StockFamilyTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/StockFamily')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStockFamily($stockFamily));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
+});
+
 test("UI Index Stocks", function () {
     $this->withoutExceptionHandling();
     $response = get(
@@ -283,8 +323,47 @@ test("UI Show Stocks", function () {
                 "pageHead",
                 fn (AssertableInertia $page) => $page->where("title", $stock->code)->etc()
             )
-            ->has("tabs");
+            ->has("tabs")
+            ->has("showcase.trade_units", $stock->tradeUnits()->count())
+            ->where("showcase.currency_code", $stock->group->currency->code)
+            ->has("showcase.sales_data.yearly_sales")
+            ->has("showcase.sales_data.quarterly_sales")
+            ->has("showcase.org_stocks.items", $stock->orgStocks()->count())
+            ->has("showcase.org_stocks.summary", 3);
     });
+});
+
+test("UI Show Stocks sales analysis tab", function () {
+    $stock = Stock::first();
+
+    $response = get(route('grp.goods.stocks.show', [
+        'stock'       => $stock->slug,
+        'tab'         => \App\Enums\UI\SupplyChain\StockTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/Stock')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forStock($stock));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test("UI show stock navigation follows the bucket and sort", function () {
@@ -377,6 +456,49 @@ test("UI Show TradeUnit", function () {
             )
             ->has("tabs");
     });
+});
+
+test("UI Show TradeUnit sales analysis tab", function () {
+    $tradeUnit = TradeUnit::first();
+    if (!$tradeUnit) {
+        $tradeUnit = TradeUnit::factory()->create([
+            'group_id' => $this->group->id,
+            'code'     => 'TU-'.uniqid(),
+            'name'     => 'Sample TU',
+        ]);
+    }
+    if (!$tradeUnit->stats) {
+        $tradeUnit->stats()->create();
+    }
+
+    $response = get(route('grp.trade_units.units.show', [
+        'tradeUnit'   => $tradeUnit->slug,
+        'tab'         => \App\Enums\UI\SupplyChain\TradeUnitTabsEnum::SALES_ANALYSIS->value,
+        'from'        => '2026-01-01',
+        'to'          => '2026-03-31',
+        'compareFrom' => '2025-01-01',
+        'compareTo'   => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnit')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnit($tradeUnit));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test("UI show trade unit navigation stays in the bucket and the group", function () {
@@ -704,6 +826,44 @@ test('UI Show Trade Unit Family page loads', function () {
             })
             ->has('tabs.current');
     });
+});
+
+test('UI Show Trade Unit Family sales analysis tab', function () {
+    $group = createGroup();
+
+    $family = StoreTradeUnitFamily::make()->action($group, [
+        'code' => 'TUF-'.uniqid(),
+        'name' => 'Sales Analysis Family',
+    ]);
+
+    $response = get(route('grp.trade_units.families.show', [
+        'tradeUnitFamily' => $family->slug,
+        'tab'             => \App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum::SALES_ANALYSIS->value,
+        'from'            => '2026-01-01',
+        'to'              => '2026-03-31',
+        'compareFrom'     => '2025-01-01',
+        'compareTo'       => '2025-03-31',
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Goods/TradeUnitFamily')
+            ->missing('sales_analysis')
+            ->loadDeferredProps(
+                'sales_analysis',
+                fn (AssertableInertia $reload) => $reload
+                ->where('sales_analysis.period', ['from' => '2026-01-01', 'to' => '2026-03-31'])
+                ->where('sales_analysis.frequency', 'daily')
+                ->has('sales_analysis.breakdown')
+                ->has('sales_analysis.stock_outs')
+                ->has('sales_analysis.events')
+                ->has('sales_analysis.filters.organisations')
+            );
+    });
+
+    $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnitFamily($family));
+
+    expect($teaser)->toHaveKeys(['period', 'compare_period', 'sales', 'compare_sales', 'totals', 'shops', 'breakdown']);
 });
 
 test('UI Edit Trade Unit Family page loads', function () {
@@ -1126,4 +1286,233 @@ test('tariff codes index lists rows and the export name is editable', function (
         ->and($fetch->normaliseCode('902300000'))->toBe('0902300000')
         ->and($fetch->normaliseCode('9021000'))->toBe('09021000')
         ->and($fetch->normaliseCode('3406000000'))->toBe('3406000000');
+});
+
+describe('Product Command & Control extras', function () {
+    beforeEach(function () {
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->group->id));
+    });
+
+    test('dashboard page carries period, rates, editable_organisations and can_change_group', function () {
+        $response = get(route('grp.goods.dashboard'));
+
+        $response->assertOk()->assertInertia(function (AssertableInertia $page) {
+            $page
+                ->component('Goods/ProductCommandControl')
+                ->where('period', '90d')
+                ->has('periods')
+                ->has('rates')
+                ->has('editable_organisations')
+                ->has('can_change_group');
+        });
+    });
+
+    test('export streams a CSV with the expected header row', function () {
+        $response = get(route('grp.goods.export'));
+
+        $content   = $response->streamedContent();
+        $firstLine = strtok($content, "\n");
+
+        expect($response->headers->get('content-type'))->toContain('text/csv')
+            ->and($firstLine)->toContain('Code')
+            ->and($firstLine)->toContain('Group status');
+    });
+
+    test('product detail route returns the per organisation and status history structure', function () {
+        [$stock] = createStocks($this->group);
+        createOrgStocks($this->organisation, [$stock]);
+
+        $response = get(route('grp.goods.products.show', ['stock' => $stock->slug]));
+
+        $response->assertOk()->assertJsonStructure([
+            'id', 'code', 'name', 'group_state', 'all_retired',
+            'organisations' => [
+                '*' => [
+                    'organisation', 'name', 'on_hand', 'available', 'allocated', 'inbound',
+                    'next_expected_at', 'inbound_lines', 'days_of_cover', 'state', 'differs_from_group', 'shops', 'monthly_sales',
+                ],
+            ],
+            'status_history',
+        ]);
+    });
+
+    test('ns, off, raw-material and retired conditions are classified correctly', function () {
+        $family = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GDCCFAM']));
+
+        $stockNs  = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GDCC-NS']));
+        $stockOff = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GDCC-OFF']));
+        $stockRaw = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GDCC-RAW']));
+        $stockRet = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GDCC-RET']));
+
+        DB::table('stocks')->whereIn('id', [$stockNs->id, $stockOff->id, $stockRaw->id, $stockRet->id])->update(['stock_family_id' => $family->id]);
+
+        [$orgStockNs, $orgStockOff, $orgStockRaw, $orgStockRet] = createOrgStocks($this->organisation, [$stockNs, $stockOff, $stockRaw, $stockRet]);
+
+        $orgStockNs->update(['quantity_available' => 0, 'quantity_in_locations' => 0, 'is_on_demand' => false]);
+        $orgStockOff->update(['quantity_available' => 10, 'quantity_in_locations' => 10, 'is_on_demand' => false]);
+        $orgStockRaw->update(['quantity_available' => 10, 'quantity_in_locations' => 10, 'is_on_demand' => false]);
+        $orgStockRet->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+
+        $productionId = DB::table('productions')->insertGetId([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'slug'            => 'gdcc-test-production',
+            'code'            => 'GDCCPROD',
+            'name'            => 'GDCC test production',
+            'settings'        => '{}',
+            'data'            => '{}',
+            'sources'         => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+
+        DB::table('raw_materials')->insert([
+            'group_id'        => $this->group->id,
+            'organisation_id' => $this->organisation->id,
+            'slug'            => 'gdcc-test-raw-material',
+            'type'            => 'ingredient',
+            'production_id'   => $productionId,
+            'org_stock_id'    => $orgStockRaw->id,
+            'code'            => 'GDCCRAW',
+            'description'     => 'GDCC test raw material',
+            'unit_cost'       => 1,
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->group->id));
+
+        $familyResult = ShowGoodsDashboard::make()->forGroup($this->group)->handle(['family' => 'GDCCFAM']);
+        $familyRows   = collect($familyResult['rows'])->keyBy('code');
+
+        expect($familyRows->get('GDCC-NS')['organisations'][$this->organisation->code]['condition'])->toBe('ns')
+            ->and($familyRows->get('GDCC-OFF')['organisations'][$this->organisation->code]['condition'])->toBe('off')
+            ->and($familyRows->get('GDCC-RAW')['organisations'][$this->organisation->code]['condition'])->not->toBe('off')
+            ->and($familyRows->has('GDCC-RET'))->toBeFalse();
+
+        $retiredResult = ShowGoodsDashboard::make()->forGroup($this->group)->handle(['family' => 'GDCCFAM', 'state' => OrgStockStateEnum::DISCONTINUED->value]);
+        $retiredRows   = collect($retiredResult['rows'])->keyBy('code');
+
+        expect($retiredRows->get('GDCC-RET')['organisations'][$this->organisation->code]['condition'])->toBe('ret')
+            ->and($retiredRows->get('GDCC-RET')['all_retired'])->toBeTrue();
+
+        $searchResult = ShowGoodsDashboard::make()->forGroup($this->group)->handle(['family' => 'GDCCFAM', 'search' => 'GDCC-RET']);
+
+        expect(collect($searchResult['rows'])->pluck('code'))->toContain('GDCC-RET');
+    });
+});
+
+describe('Product analysis view', function () {
+    beforeEach(function () {
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->group->id));
+        foreach (['month', 'quarter', 'year'] as $granularity) {
+            Cache::forget(ShowGoodsAnalysis::cacheKey($this->group->id, $granularity));
+        }
+    });
+
+    test('page renders with the expected props for each granularity', function (string $granularity) {
+        $response = get(route('grp.goods.analysis', ['granularity' => $granularity]));
+
+        $response->assertOk()->assertInertia(function (AssertableInertia $page) use ($granularity) {
+            $page
+                ->component('Goods/ProductAnalysis')
+                ->has('breadcrumbs')
+                ->where('granularity', $granularity)
+                ->has('summary')
+                ->has('series')
+                ->has('families_table')
+                ->has('organisations_table')
+                ->has('products_table')
+                ->has('stock_trend')
+                ->has('exceptions')
+                ->has('urgent_actions')
+                ->has('promotion_candidates')
+                ->has('status_history')
+                ->has('inbound');
+        });
+    })->with(['month', 'quarter', 'year']);
+
+    test('filters are echoed back', function () {
+        $family = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GAFAM']));
+
+        $response = get(route('grp.goods.analysis', [
+            'organisation' => $this->organisation->code,
+            'family'       => $family->code,
+            'search'       => 'gizmo',
+            'granularity'  => 'quarter',
+        ]));
+
+        $response->assertOk()->assertInertia(function (AssertableInertia $page) use ($family) {
+            $page
+                ->where('filters.organisation', $this->organisation->code)
+                ->where('filters.family', $family->code)
+                ->where('filters.search', 'gizmo')
+                ->where('filters.granularity', 'quarter');
+        });
+    });
+
+    test('comparisons compute current vs previous vs last year correctly on fixture time series records', function () {
+        [$stock] = createStocks($this->group);
+        [$orgStock] = createOrgStocks($this->organisation, [$stock]);
+
+        $timeSeriesId = DB::table('org_stock_time_series')->insertGetId([
+            'org_stock_id' => $orgStock->id,
+            'frequency'    => 'monthly',
+            'from'         => now()->subYears(2)->startOfYear(),
+            'to'           => now(),
+            'data'         => '{}',
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
+
+        $currentFrom  = now()->startOfMonth();
+        $previousFrom = now()->copy()->subMonthNoOverflow()->startOfMonth();
+        $lastYearFrom = now()->copy()->subYearNoOverflow()->startOfMonth();
+
+        foreach ([[$currentFrom, 100], [$previousFrom, 40], [$lastYearFrom, 25]] as [$from, $sales]) {
+            DB::table('org_stock_time_series_records')->insert([
+                'org_stock_time_series_id'    => $timeSeriesId,
+                'frequency'                   => 'M',
+                'sales_grp_currency_external' => $sales,
+                'from'                        => $from,
+                'to'                          => $from->copy()->endOfMonth(),
+                'created_at'                  => now(),
+                'updated_at'                  => now(),
+            ]);
+        }
+
+        $result = ShowGoodsAnalysis::make()->forGroup($this->group)->handle(['granularity' => 'month', 'search' => $stock->code]);
+
+        expect($result['summary']['current'])->toBe(100.0)
+            ->and($result['summary']['previous'])->toBe(40.0)
+            ->and($result['summary']['last_year'])->toBe(25.0)
+            ->and($result['summary']['change_vs_previous'])->toBe(150.0)
+            ->and($result['summary']['change_vs_last_year'])->toBe(300.0)
+            ->and($result['product'])->not->toBeNull()
+            ->and($result['product']['code'])->toBe($stock->code);
+    });
+
+    test('promotion candidates and urgent actions come from the command view dataset', function () {
+        $family = StoreStockFamily::make()->action($this->group, array_merge(StockFamily::factory()->definition(), ['code' => 'GAPROMO']));
+
+        $stockSell = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GA-SELL']));
+        $stockOff  = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE, 'code' => 'GA-OFF']));
+
+        DB::table('stocks')->whereIn('id', [$stockSell->id, $stockOff->id])->update(['stock_family_id' => $family->id]);
+
+        [$orgStockSell, $orgStockOff] = createOrgStocks($this->organisation, [$stockSell, $stockOff]);
+
+        $orgStockSell->update(['state' => OrgStockStateEnum::DISCONTINUING, 'quantity_available' => 5, 'quantity_in_locations' => 5]);
+        $orgStockOff->update(['quantity_available' => 10, 'quantity_in_locations' => 10, 'is_on_demand' => false]);
+
+        Cache::forget(ShowGoodsDashboard::cacheKey($this->group->id));
+        Cache::forget(ShowGoodsAnalysis::cacheKey($this->group->id, 'month'));
+
+        $result = ShowGoodsAnalysis::make()->forGroup($this->group)->handle(['family' => $family->code]);
+
+        expect(collect($result['promotion_candidates'])->pluck('code'))->toContain('GA-SELL')
+            ->and(collect($result['urgent_actions']['offline_with_stock'])->pluck('code'))->toContain('GA-OFF')
+            ->and(collect($result['exceptions']['offline'])->pluck('code'))->toContain('GA-OFF');
+    });
 });

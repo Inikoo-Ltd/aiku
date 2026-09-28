@@ -3129,3 +3129,112 @@ test('a worker position is dropped on the shops where the employee is already su
         ->and($scopes['cus-c'])->toBe(['Shop' => [2]])
         ->and($scopes['shk-m'])->toBe(['Shop' => [1, 2]]);
 });
+
+test('pickers handle returns in goods in without seeing stock deliveries', function () {
+    $warehouse = createWarehouse();
+    setPermissionsTeamId($warehouse->group_id);
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    \App\Actions\SysAdmin\Organisation\Seeders\SeedJobPositions::run($warehouse->organisation);
+
+    $picker          = JobPosition::where('organisation_id', $warehouse->organisation_id)->where('code', 'dist-pik')->firstOrFail();
+    $returnsRoleName = RolesEnum::getRoleName(RolesEnum::RETURNS_CLERK->value, $warehouse);
+
+    expect($picker->name)->toBe('Picker/Returns')
+        ->and($picker->roles()->pluck('name')->all())->toContain($returnsRoleName);
+
+    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
+    $user->assignRole($returnsRoleName);
+
+    $goodsIn  = \App\Actions\UI\Grp\Layout\GetWarehouseNavigation::run($warehouse, $user->fresh())['incoming'];
+    $sections = collect($goodsIn['topMenu']['subSections'])->filter()->pluck('label')->values()->all();
+
+    expect($user->hasPermissionTo("incoming.$warehouse->id.view"))->toBeFalse()
+        ->and($goodsIn['route']['name'])->toBe('grp.org.warehouses.show.incoming.return_delivery_notes.state.received')
+        ->and($sections)->toBe(['Returns']);
+
+    $this->withoutVite();
+    $returnsRoute        = route('grp.org.warehouses.show.incoming.return_delivery_notes.index', [$warehouse->organisation->slug, $warehouse->slug]);
+    $stockDeliveriesRoute = route('grp.org.warehouses.show.incoming.stock_deliveries.index', [$warehouse->organisation->slug, $warehouse->slug]);
+
+    $this->actingAs($user)->get($returnsRoute)->assertOk();
+    $this->actingAs($user)->get($stockDeliveriesRoute)->assertForbidden();
+
+    $userWithoutReturns = \App\Models\SysAdmin\User::factory()->create(['group_id' => $warehouse->group_id]);
+    $this->actingAs($userWithoutReturns)->get($returnsRoute)->assertForbidden();
+});
+
+test('an admin holds no other position below them, so a customer service position does not make them a chat agent', function () {
+    [$organisation, , $shop] = createShop();
+    setPermissionsTeamId($organisation->group_id);
+
+    $positionIds = $organisation->group->jobPositions()
+        ->where(fn ($query) => $query->where('organisation_id', $organisation->id)->whereIn('code', ['org-admin', 'cus-m', 'hr-c'])->orWhere('code', 'group-admin'))
+        ->pluck('id', 'code');
+
+    $employee = Employee::factory()->create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+    ]);
+    $user = User::factory()->create(['group_id' => $organisation->group_id, 'status' => true]);
+    $user->employees()->attach($employee->id, ['status' => true, 'group_id' => $organisation->group_id, 'organisation_id' => $organisation->id]);
+
+    SyncEmployeeJobPositions::make()->handle($employee, [
+        $positionIds['org-admin'] => [],
+        $positionIds['cus-m']     => ['Shop' => [$shop->id]],
+        $positionIds['hr-c']      => ['Organisation' => [$organisation->id]],
+    ]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    $roles = $user->fresh()->roles()->pluck('name');
+
+    expect($roles)->toContain("org-admin-$organisation->id", "shop-admin-$shop->id")
+        ->not->toContain("customer-service-supervisor-$shop->id", "human-resources-clerk-$organisation->id")
+        ->and($user->fresh()->hasPermissionTo("chat.$shop->id"))->toBeFalse();
+
+    SyncEmployeeJobPositions::make()->handle($employee->fresh(), [
+        $positionIds['group-admin'] => [],
+        $positionIds['cus-m']       => ['Shop' => [$shop->id]],
+    ]);
+    \App\Actions\SysAdmin\User\SyncRolesFromJobPositions::run($user);
+    $roles = $user->fresh()->roles()->pluck('name');
+
+    expect($roles)->toContain('group-admin', "org-admin-$organisation->id", "shop-admin-$shop->id")
+        ->not->toContain("customer-service-supervisor-$shop->id");
+});
+
+test('staff attachment downloads need permission on what the file is attached to', function () {
+    Storage::fake('local');
+    setPermissionsTeamId($this->group->id);
+    $customer = createCustomer(createShop()[2]);
+
+    $employee   = Employee::factory()->create(['organisation_id' => $this->organisation->id, 'group_id' => $this->group->id]);
+    $employeeCv = createAttachedMedia('Employee', $employee->id, 'CV');
+    $customerNote = createAttachedMedia('Customer', $customer->id, 'CustomerNote');
+    $productSds   = createAttachedMedia('Product', 1, 'sds');
+
+    $hrClerk = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $hrClerk->assignRole(RolesEnum::getRoleName(RolesEnum::HUMAN_RESOURCES_CLERK->value, $this->organisation));
+    $colleague = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $ownUser   = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $ownUser->employees()->attach($employee->id, ['status' => true, 'group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]);
+
+    $download = fn (User $user, $media) => $this->actingAs($user)->get(route('grp.media.download', $media->ulid));
+
+    $download($hrClerk, $employeeCv)->assertOk();
+    $download($ownUser, $employeeCv)->assertOk();
+    $download($colleague, $employeeCv)->assertNotFound();
+    $download($hrClerk, $customerNote)->assertNotFound();
+    $download($colleague, $productSds)->assertOk();
+
+    $warehouse = createWarehouse();
+    \App\Actions\Inventory\Warehouse\SeedWarehousePermissions::run($warehouse);
+    $supplier    = \App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, \App\Models\SupplyChain\Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $warehouse->organisation_id)->first();
+    $stockDelivery = \App\Actions\GoodsIn\StockDelivery\StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'INI021-'.rand(1000, 9999), 'date' => date('Y-m-d')]);
+    $deliveryPaperwork = createAttachedMedia('StockDelivery', $stockDelivery->id, 'Delivery Paperwork');
+
+    $goodsIn = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $goodsIn->givePermissionTo("incoming.$warehouse->id.view");
+
+    $download($goodsIn, $deliveryPaperwork)->assertOk();
+    $download($colleague, $deliveryPaperwork)->assertNotFound();
+});

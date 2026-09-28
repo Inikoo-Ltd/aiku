@@ -2,11 +2,11 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
-use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -31,6 +31,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 {
     use WithProcurementEditAuthorisation;
     use AsAction;
+    use WithProcurementSerialReferences;
 
     private PurchaseOrder $purchaseOrder;
 
@@ -38,6 +39,22 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
     {
         if ($purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
             abort(422, __('Only confirmed purchase orders can create a stock delivery'));
+        }
+
+        $openAuroraStockDelivery = $purchaseOrder->stockDeliveries()
+            ->whereNotNull('source_id')
+            ->whereNotIn('state', [
+                StockDeliveryStateEnum::BOOKED_IN,
+                StockDeliveryStateEnum::PLACED,
+                StockDeliveryStateEnum::CANCELLED,
+                StockDeliveryStateEnum::NOT_RECEIVED,
+            ])
+            ->first();
+
+        if ($openAuroraStockDelivery) {
+            throw ValidationException::withMessages([
+                'purchase_order_transaction_ids' => __('This purchase order already has the stock delivery :reference, book the goods in on it', ['reference' => $openAuroraStockDelivery->reference]),
+            ]);
         }
 
         $purchaseOrderTransactionsQuery = $purchaseOrder->purchaseOrderTransactions()
@@ -59,10 +76,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         $stockDelivery = StoreStockDelivery::make()->action(
             $purchaseOrder->parent,
             array_merge([
-                'reference'   => GetSerialReference::run(
-                    container: $purchaseOrder->organisation,
-                    modelType: SerialReferenceModelEnum::STOCK_DELIVERY
-                ),
+                'reference'   => $this->newProcurementReference($purchaseOrder->parent, SerialReferenceModelEnum::STOCK_DELIVERY),
                 'state'       => StockDeliveryStateEnum::IN_PROCESS,
                 'date'        => now(),
                 'currency_id' => $purchaseOrder->currency_id,

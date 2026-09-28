@@ -18,7 +18,9 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateStockDelivery extends OrgAction
@@ -53,11 +55,28 @@ class UpdateStockDelivery extends OrgAction
 
         $stockDelivery = $this->update($stockDelivery, $modelData, ['data']);
 
+        if ($stockDelivery->wasChanged('org_exchange')) {
+            $this->applyOrgExchangeToItems($stockDelivery);
+        }
+
         if ($stockDelivery->wasChanged('state')) {
             $this->runStockDeliveryHydrators($stockDelivery);
         }
 
         return $stockDelivery;
+    }
+
+    private function applyOrgExchangeToItems(StockDelivery $stockDelivery): void
+    {
+        $orgExchange = (float) $stockDelivery->org_exchange;
+
+        $stockDelivery->items()->update([
+            'org_exchange'     => $orgExchange,
+            'org_net_amount'   => DB::raw("net_amount * $orgExchange"),
+            'org_gross_amount' => DB::raw("gross_amount * $orgExchange"),
+        ]);
+
+        RepriceStockDeliveryOrgStockMovements::run($stockDelivery);
     }
 
     public function rules(): array
@@ -66,7 +85,7 @@ class UpdateStockDelivery extends OrgAction
             'reference'                 => [
                 'sometimes',
                 'required',
-                $this->strict ? 'alpha_dash' : 'string',
+                $this->strict ? 'alpha_dash:ascii' : 'string',
             ],
             'delivery_type'             => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
             'invoice_number'            => ['sometimes', 'nullable', 'string'],
@@ -77,6 +96,7 @@ class UpdateStockDelivery extends OrgAction
             'port_of_export'            => ['sometimes', 'nullable', 'string'],
             'port_of_import'            => ['sometimes', 'nullable', 'string'],
             'delivery_address'          => ['sometimes', 'nullable', 'string'],
+            'org_exchange'              => ['sometimes', 'numeric', 'gt:0'],
         ];
 
         if ($this->strict) {
@@ -109,6 +129,10 @@ class UpdateStockDelivery extends OrgAction
 
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
+        if ($stockDelivery->isManagedByPartner()) {
+            throw ValidationException::withMessages(['state' => __('This delivery is managed by the partner until you receive it')]);
+        }
+
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, $request);
 

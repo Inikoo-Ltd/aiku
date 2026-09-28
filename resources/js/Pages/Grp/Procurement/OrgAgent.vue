@@ -14,7 +14,7 @@ import {
     faTerminal,
     faPeopleArrows,
     faClipboard, faTruck, faCameraRetro,
-    faPersonDolly,faAddressBook
+    faPersonDolly,faAddressBook, faInbox
 } from '@fal';
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {computed, defineAsyncComponent, ref} from "vue";
@@ -27,6 +27,7 @@ import { capitalize } from "@/Composables/capitalize"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue";
 import {useForm} from "@inertiajs/vue3";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import TableSupplierMessages from "@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue";
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -43,6 +44,7 @@ const props = defineProps<{
     purchase_orders?: object,
     errors?: object,
     history?: object
+    inbox?: object
 }>()
 
 
@@ -56,7 +58,8 @@ library.add(
     faCameraRetro,
     faClipboard,
     faPeopleArrows,
-    faAddressBook
+    faAddressBook,
+    faInbox
 );
 
 let currentTab = ref(props.tabs.current);
@@ -70,6 +73,7 @@ const component = computed(() => {
         org_supplier_products: TableOrgSupplierProducts,
         purchase_orders: TablePurchaseOrders,
         details: ModelDetails,
+        inbox: TableSupplierMessages,
         history: TableHistories
     };
     return components[currentTab.value];

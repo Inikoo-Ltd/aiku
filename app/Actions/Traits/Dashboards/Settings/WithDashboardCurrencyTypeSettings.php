@@ -94,12 +94,12 @@ trait WithDashboardCurrencyTypeSettings
         return [
             [
                 'value'   => 'org',
-                'label'   => '',
+                'label'   => __('Org'),
                 'tooltip' => __('Organisations currency'),
             ],
             [
                 'value'   => 'grp',
-                'label'   => $group->currency->symbol,
+                'label'   => __('Group').' ('.$group->currency->symbol.')',
                 'tooltip' => __('Group currency'),
             ]
         ];

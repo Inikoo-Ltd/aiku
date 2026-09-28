@@ -78,6 +78,10 @@ const informationLabels = computed<Record<string, string>>(() =>
     Object.fromEntries((props.data?.information_options ?? []).map(option => [option.value, option.label]))
 )
 
+const mandatoryInformationOptions = computed(() =>
+    (props.data?.information_options ?? []).filter(option => option.value !== "free_text")
+)
+
 const mandatoryInformation = ref<string[]>([...(props.data?.mandatory_information ?? [])])
 watch(() => props.data?.mandatory_information, value => { mandatoryInformation.value = [...(value ?? [])] })
 const isSavingMandatory = ref(false)
@@ -280,7 +284,7 @@ const describeLabel = (label: ArtefactLabel) => {
                 <legend class="sr-only">{{ ctrans('Mandatory information') }}</legend>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <label
-                        v-for="option in data.information_options"
+                        v-for="option in mandatoryInformationOptions"
                         :key="option.value"
                         class="flex items-center gap-2 text-sm">
                         <input v-model="mandatoryInformation" type="checkbox" :value="option.value" class="rounded border-gray-300" />

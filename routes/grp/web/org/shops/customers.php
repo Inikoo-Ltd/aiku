@@ -12,6 +12,7 @@ use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use App\Actions\Accounting\Payment\UI\ShowPayment;
 use App\Actions\Accounting\Payment\UI\ShowRefundPayment;
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\CRM\Customer\UI\CreateCustomer;
 use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
@@ -50,6 +51,7 @@ Route::post('sync-to-google-ads', SyncShopCustomersToGoogleAds::class)->name('sy
 Route::get('{customer}/edit', EditCustomer::class)->name('edit');
 Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('', ShowCustomer::class);
+    Route::get('/letter-of-authorisation', PdfCustomerLetterOfAuthorisation::class)->name('.letter_of_authorisation.pdf');
 
     Route::get('/payments/{payment}', [ShowPayment::class, 'inCustomer'])->name('.payments.show');
     Route::get('/refunds/{payment}', [ShowRefundPayment::class, 'inCustomer'])->name('.refunds.show');

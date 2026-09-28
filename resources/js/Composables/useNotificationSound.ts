@@ -184,8 +184,15 @@ export const alertSoundLabels = (): Record<AlertSound, string> => ({
 	silent: ctrans("Silent"),
 })
 
+const alertSoundsKey = (userId: number) => `aiku-alert-sounds-${userId}`
+
+const currentAlertSounds = (): Partial<Record<AlertSoundKind, AlertSound>> | null => {
+	const user = useLayoutStore().user
+	return (user?.id ? readStorage(alertSoundsKey(user.id)) : null) ?? user?.settings?.alert_sounds ?? null
+}
+
 export const chosenAlertSound = (kind: AlertSoundKind): AlertSound =>
-	useLayoutStore().user?.settings?.alert_sounds?.[kind] ?? (kind === "waiting" ? chosenAlertSound("chat") : DEFAULT_ALERT_SOUNDS[kind])
+	currentAlertSounds()?.[kind] ?? (kind === "waiting" ? chosenAlertSound("chat") : DEFAULT_ALERT_SOUNDS[kind])
 
 type Alert = {
 	key: string
@@ -368,6 +375,10 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	const myId: number | undefined = layout.user?.id
 	const baseUrl = layout.appUrl ?? ""
 	const tabId = Math.random().toString(36).slice(2)
+
+	if (myId) {
+		watch(() => layout.user?.settings?.alert_sounds, (sounds) => writeStorage(alertSoundsKey(myId), sounds ?? null), { immediate: true, deep: true })
+	}
 
 	const openUlids = () => [
 		...staff.openWindows.filter((openWindow) => !openWindow.minimised).map((openWindow) => openWindow.ulid),

@@ -62,6 +62,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import PureCheckbox from "@/Components/Pure/PureCheckbox.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
@@ -846,6 +847,22 @@ const stopSocketListener = () => {
 				class="text-yellow-500 animate-bounce"
 				fixed-width
 				aria-hidden="true" />
+			<FontAwesomeIcon
+				v-if="delivery_note.has_gift_message"
+				v-tooltip="ctrans('Gift message')"
+				icon="fas fa-gift"
+				class="text-yellow-500 animate-bounce"
+				fixed-width
+				aria-hidden="true" />
+			<a
+				v-if="delivery_note.has_gift_message && delivery_note.gift_message_print_route"
+				:href="route(delivery_note.gift_message_print_route.name, delivery_note.gift_message_print_route.parameters)"
+				target="_blank"
+				v-tooltip="ctrans('Print gift message')"
+				class="ml-2 text-sm text-indigo-500 hover:underline"
+			>
+				{{ ctrans('Print gift message') }}
+			</a>
 		</template>
 		
 		<template #button-finalise-and-dispatch="{ action }">
@@ -1003,6 +1020,28 @@ const stopSocketListener = () => {
 						class="whitespace-nowrap" />
 				</template>
 			</ModalConfirmationDelete>
+		</template>
+
+		<template #wrapped-undo-waiting="{ action }">
+			<ModalConfirmation
+				:routeYes="action.route"
+				:body="{}"
+				:title="ctrans('Send this delivery note back to picking?')"
+				:description="
+					ctrans(
+						'Items waiting for the warehouse go back to the picker to be picked. Items waiting for customer services stay with them.'
+					)
+				"
+				:noLabel="ctrans('No, keep waiting')">
+				<template #default="{ changeModel }">
+					<Button
+						@click="changeModel"
+						:label="action.label"
+						:icon="action.icon"
+						:type="action.style"
+						class="whitespace-nowrap" />
+				</template>
+			</ModalConfirmation>
 		</template>
 
 		<!-- Button: Select trolley (only for Ecom) -->

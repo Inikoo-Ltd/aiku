@@ -420,13 +420,14 @@ return [
         ],
         'dist-pik' => [
             'code'       => 'dist-pik',
-            'name'       => 'Picker',
+            'name'       => 'Picker/Returns',
             'scope'      => JobPositionScopeEnum::WAREHOUSES,
             'team'       => 'warehouse',
             'department' => 'warehouse',
 
             'roles'              => [
-                RolesEnum::DISPATCH_CLERK
+                RolesEnum::DISPATCH_CLERK,
+                RolesEnum::RETURNS_CLERK
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,

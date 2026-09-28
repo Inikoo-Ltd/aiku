@@ -61,6 +61,7 @@ class GetChatSessions
             'is_rubbish'      => ['sometimes', 'boolean'],
             'highlighted'     => ['sometimes', 'boolean'],
             'carrier'         => ['sometimes', 'boolean'],
+            'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'       => ['sometimes', 'boolean'],
             'trashed'         => ['sometimes', 'boolean'],
             'limit'           => ['sometimes', 'integer', 'min:1', 'max:50'],
@@ -241,6 +242,10 @@ class GetChatSessions
         // shop: which shops the person asking works is exactly what let these go unanswered.
         if (!empty($filters['unclaimed'])) {
             $this->scopeUnclaimedChatSessions($query);
+        }
+
+        if (!empty($filters['ds_kind'])) {
+            $query->where('metadata->'.FlagUrgentChatRequest::KIND_KEY, $filters['ds_kind']);
         }
 
         // Highlight view is additive: it keeps the normal status/assignment filters

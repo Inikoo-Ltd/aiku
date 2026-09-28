@@ -32,7 +32,7 @@ class CustomerClientHydrateInvoices implements ShouldBeUnique
     public function handle(CustomerClient $customerClient): void
     {
         $stats = [
-            'invoices_amount' => $customerClient->invoices->sum('total_amount'),
+            'invoices_amount' => $customerClient->invoices()->where('in_process', false)->sum('total_amount'),
         ];
 
         $stats = array_merge($stats, $this->getInvoicesStats($customerClient));
@@ -43,7 +43,7 @@ class CustomerClientHydrateInvoices implements ShouldBeUnique
             enum: InvoiceTypeEnum::class,
             models: Invoice::class,
             where: function ($q) use ($customerClient) {
-                $q->where('customer_client_id', $customerClient->id);
+                $q->where('customer_client_id', $customerClient->id)->where('in_process', false);
             }
         ));
 

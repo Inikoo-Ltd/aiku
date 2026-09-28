@@ -10,6 +10,7 @@ use App\Actions\Chat\ChatSession\UI\ShowOrgChatConversation;
 use App\Actions\Chat\ChatSession\UI\ShowOrgChatInbox;
 use App\Actions\Chat\PhoneCall\UI\ShowOrgChatPhoneCalls;
 use App\Actions\Chat\UI\ShowChatSettings;
+use App\Actions\Chat\UpdateGroupChatCarrierDomains;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/reports', ShowChatDashboard::class)->name('reports');
@@ -26,6 +27,7 @@ Route::get('/supervision/{chatSession:ulid}', [ShowOrgChatInbox::class, 'supervi
     ->withoutScopedBindings();
 Route::get('/phone-calls', ShowOrgChatPhoneCalls::class)->name('phone_calls.index');
 Route::get('/settings', ShowChatSettings::class)->name('settings');
+Route::patch('/settings/carrier-domains', UpdateGroupChatCarrierDomains::class)->name('settings.carrier_domains.update');
 Route::get('/conversations', ShowChatConversations::class)->name('conversations.show');
 Route::get('/conversations/export', ExportChatConversations::class)->name('conversations.export');
 Route::get('/conversations/{chatSession}', ShowOrgChatConversation::class)->name('conversations.detail');

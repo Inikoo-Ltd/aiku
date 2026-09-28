@@ -64,7 +64,13 @@ class ProcessStockFamilyTimeSeriesRecords implements ShouldBeUnique
             ->where('invoice_transactions.date', '<=', $to)
             ->whereNull('invoice_transactions.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $this->pivotBasedSelects())->get();
+        $selects = [
+            ...$this->pivotBasedSelects(),
+            DB::raw('SUM(CASE WHEN invoice_transactions.is_partner THEN pivot.org_net_amount ELSE 0 END) as sales_org_currency_internal'),
+            DB::raw('SUM(CASE WHEN invoice_transactions.is_partner THEN pivot.grp_net_amount ELSE 0 END) as sales_grp_currency_internal'),
+        ];
+
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, $selects)->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -80,8 +86,8 @@ class ProcessStockFamilyTimeSeriesRecords implements ShouldBeUnique
                     'sales_org_currency_external' => $result->sales_org_currency_external,
                     'sales_grp_currency_external' => $result->sales_grp_currency_external,
                     'sales_internal'              => 0,
-                    'sales_org_currency_internal' => 0,
-                    'sales_grp_currency_internal' => 0,
+                    'sales_org_currency_internal' => $result->sales_org_currency_internal,
+                    'sales_grp_currency_internal' => $result->sales_grp_currency_internal,
                     'lost_revenue'                => $result->lost_revenue,
                     'lost_revenue_org_currency'   => $result->lost_revenue_org_currency,
                     'lost_revenue_grp_currency'   => $result->lost_revenue_grp_currency,

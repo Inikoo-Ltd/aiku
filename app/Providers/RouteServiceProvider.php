@@ -13,6 +13,7 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\PersonalAccessToken;
 use App\Models\HumanResources\Leave;
 
 class RouteServiceProvider extends ServiceProvider
@@ -108,7 +109,7 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('retina-api', function (Request $request) {
             $token = $request->user()?->currentAccessToken();
 
-            return Limit::perMinute(120)->by($token ? 'token:'.$token->id : 'ip:'.$request->ip());
+            return Limit::perMinute(120)->by($token instanceof PersonalAccessToken ? 'token:'.$token->id : 'ip:'.$request->ip());
         });
 
         RateLimiter::for('kiosk', function (Request $request) {

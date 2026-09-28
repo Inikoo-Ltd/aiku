@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { onMounted } from "vue"
 import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 const props = withDefaults(
 	defineProps<{
 		options: Record<string, string>
 		selected: string
 		storageKey?: string
+		label?: string
+		param?: string
 	}>(),
-	{ storageKey: "tickets-created-interval" }
+	{ storageKey: "tickets-created-interval", label: "Created", param: "created" }
 )
 
 const storageKey = props.storageKey
@@ -18,11 +20,11 @@ const select = (interval: string) => {
 	try {
 		localStorage.setItem(storageKey, interval)
 	} catch {}
-	router.reload({ data: { created: interval, page: 1 }, preserveScroll: true })
+	router.reload({ data: { [props.param]: interval, page: 1 }, preserveScroll: true })
 }
 
 onMounted(() => {
-	if (new URLSearchParams(window.location.search).has("created")) {
+	if (new URLSearchParams(window.location.search).has(props.param)) {
 		try {
 			localStorage.setItem(storageKey, props.selected)
 		} catch {}
@@ -33,7 +35,7 @@ onMounted(() => {
 		remembered = localStorage.getItem(storageKey)
 	} catch {}
 	if (remembered && remembered !== props.selected && remembered in props.options) {
-		router.reload({ data: { created: remembered, page: 1 }, preserveScroll: true })
+		router.reload({ data: { [props.param]: remembered, page: 1 }, preserveScroll: true })
 	}
 })
 </script>
@@ -42,10 +44,10 @@ onMounted(() => {
 	<div
 		class="flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm">
 		<span class="mr-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{
-			trans("Created")
+			ctrans(label)
 		}}</span>
 		<button
-			v-for="(label, interval) in options"
+			v-for="(optionLabel, interval) in options"
 			:key="interval"
 			type="button"
 			class="rounded-md px-3 py-1 transition"
@@ -55,7 +57,7 @@ onMounted(() => {
 					: 'text-gray-600 hover:bg-gray-100'
 			"
 			@click="select(interval)">
-			{{ label }}
+			{{ optionLabel }}
 		</button>
 	</div>
 </template>

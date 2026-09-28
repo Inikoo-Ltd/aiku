@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -26,6 +27,7 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithWebUserMeta;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\CRM\CustomerDropshippingTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
@@ -94,6 +96,9 @@ class ShowCustomer extends OrgAction
                 CustomerTabsEnum::HISTORY->value,
             ]);
         }
+        if ($customer->shop->type != ShopTypeEnum::B2B) {
+            unset($navigation[CustomerTabsEnum::RETINA_DASHBOARD->value]);
+        }
         $webUsersMeta = $this->getWebUserMeta($customer, $request);
 
         $shopMeta      = [];
@@ -157,6 +162,17 @@ class ShowCustomer extends OrgAction
                         $webUsersMeta
                     ]),
                     'actions'       => array_values(array_filter([
+                        PdfCustomerLetterOfAuthorisation::isAvailable($customer->shop) && $request->route()->getName() == 'grp.org.shops.show.crm.customers.show' ? [
+                            'type'    => 'button',
+                            'style'   => 'tertiary',
+                            'label'   => __('Letter of authorisation'),
+                            'icon'    => 'fal fa-file-pdf',
+                            'target'  => '_blank',
+                            'route'   => [
+                                'name'       => 'grp.org.shops.show.crm.customers.show.letter_of_authorisation.pdf',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : null,
                         [
                             'key'     => 'edit_customer',
                             'type'    => 'button',
@@ -230,6 +246,10 @@ class ShowCustomer extends OrgAction
                 CustomerTabsEnum::JOURNEY->value  => $this->tab == CustomerTabsEnum::JOURNEY->value ?
                     fn () => GetCustomerJourney::run($customer)
                     : Inertia::optional(fn () => GetCustomerJourney::run($customer)),
+
+                CustomerTabsEnum::RETINA_DASHBOARD->value => $this->tab == CustomerTabsEnum::RETINA_DASHBOARD->value ?
+                    fn () => $this->getRetinaDashboard($customer)
+                    : Inertia::optional(fn () => $this->getRetinaDashboard($customer)),
 
                 $tabs::API_REQUESTS->value => $this->tab == $tabs::API_REQUESTS->value ?
                     fn () => RetinaApiRequestsResource::collection(IndexRetinaApiRequests::run($customer, $tabs::API_REQUESTS->value))
@@ -458,5 +478,10 @@ class ShowCustomer extends OrgAction
                 ]
             ]
         };
+    }
+
+    private function getRetinaDashboard(Customer $customer): ?array
+    {
+        return $customer->shop->type == ShopTypeEnum::B2B ? GetRetinaB2BDashboardInsights::run($customer) : null;
     }
 }

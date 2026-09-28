@@ -60,6 +60,7 @@ class EditWebpage extends OrgAction
 
         $isBlog = $webpage->type == WebpageTypeEnum::BLOG;
         $isSystemPage = $webpage->type == WebpageTypeEnum::SYSTEM_PAGE;
+        $isBlogDashboardPage = $isSystemPage && $webpage->sub_type == WebpageSubTypeEnum::BLOG_DASHBOARD_PAGE;
 
         $fields = [
             "seo_image"        => [
@@ -234,6 +235,10 @@ class EditWebpage extends OrgAction
             $fields = array_merge($fields, $productFields);
         }
 
+        if ($isBlogDashboardPage) {
+            $fields = Arr::only($fields, ['seo_image', 'title', 'description']);
+        }
+
         $mainData = $webpage->state !== WebpageStateEnum::CLOSED ? [
             'label'  => $isBlog ? __('Blog') : __('Webpage'),
             'icon'   => 'fal fa-browser',
@@ -305,8 +310,8 @@ class EditWebpage extends OrgAction
                 ],
                 'formData' => [
                     'blueprint' => array_values(array_filter([
-                        $webpage->type == WebpageTypeEnum::SYSTEM_PAGE ? null : $mainData,
-                        ($webpage->state == WebpageStateEnum::CLOSED || $webpage->type == WebpageTypeEnum::SYSTEM_PAGE) ? null : [
+                        ($isSystemPage && !$isBlogDashboardPage) ? null : $mainData,
+                        ($webpage->state == WebpageStateEnum::CLOSED || ($isSystemPage && !$isBlogDashboardPage)) ? null : [
                             'label'  => __('Structured data'),
                             'icon'   => 'fal fa-brackets-curly',
                             'fields' => [

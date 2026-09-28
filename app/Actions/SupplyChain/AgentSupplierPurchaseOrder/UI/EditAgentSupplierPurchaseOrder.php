@@ -105,6 +105,22 @@ class EditAgentSupplierPurchaseOrder extends OrgAction
                             ]
                         ],
                         [
+                            'title'  => __('Production'),
+                            'icon'   => 'fal fa-industry-alt',
+                            'fields' => [
+                                'sample_approved_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('Sample approved'),
+                                    'value' => $agentSupplierPurchaseOrder->sample_approved_at,
+                                ],
+                                'produced_at' => [
+                                    'type'  => 'date',
+                                    'label' => __('Production done'),
+                                    'value' => $agentSupplierPurchaseOrder->produced_at,
+                                ],
+                            ]
+                        ],
+                        [
                             'title'  => __('Clean handover'),
                             'icon'   => 'fal fa-handshake',
                             'fields' => [

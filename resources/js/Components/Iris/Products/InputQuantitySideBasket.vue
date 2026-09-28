@@ -44,6 +44,10 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 const onUpdateQuantity = async (newVal?: number) => {
     const selectedQuantity = newVal ?? props.product.quantity_ordered_new
 
+    if (!Number.isInteger(selectedQuantity) || selectedQuantity < 0 || selectedQuantity === Number(props.product.quantity_ordered)) {
+        return
+    }
+
     try {
         setStatus('loading')
         const response = await axios.post(

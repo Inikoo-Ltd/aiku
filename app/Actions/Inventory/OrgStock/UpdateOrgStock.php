@@ -24,6 +24,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -141,11 +142,25 @@ class UpdateOrgStock extends OrgAction
         return $rule->ignore($this->orgStock->id);
     }
 
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        if ($request->has('state') && !DiscontinueOrgStocks::canChangeStatus($request->user(), $this->organisation)) {
+            return false;
+        }
+
+        return $request->user()->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($this->organisation));
+    }
+
     public function rules(): array
     {
         $rules = [
             'state'        => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
             'is_on_demand' => ['sometimes', 'boolean'],
+            'is_fresh'     => ['sometimes', 'boolean'],
             'is_excluded_from_auto_ordering' => ['sometimes', 'boolean'],
             'estimated_lead_time_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
             'name'         => ['sometimes', 'string', 'max:255'],

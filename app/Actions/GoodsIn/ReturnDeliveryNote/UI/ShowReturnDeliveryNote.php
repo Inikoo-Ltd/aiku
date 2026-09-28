@@ -9,6 +9,7 @@
 
 namespace App\Actions\GoodsIn\ReturnDeliveryNote\UI;
 
+use App\Actions\Traits\Authorisations\Inventory\WithReturnsAuthorisation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
@@ -47,6 +48,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowReturnDeliveryNote extends OrgAction
 {
+    use WithReturnsAuthorisation;
     use AsAction;
     use WithInertia;
     use GetPlatformLogo;

@@ -79,7 +79,7 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
              */
             $currentState = DeliveryNote::whereKey($deliveryNote->id)->lockForUpdate()->value('state');
 
-            if ($currentState == DeliveryNoteStateEnum::PICKED->value) {
+            if ($currentState === DeliveryNoteStateEnum::PICKED) {
                 return $deliveryNote->refresh();
             }
 

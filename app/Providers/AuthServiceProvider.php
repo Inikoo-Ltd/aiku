@@ -44,7 +44,8 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Auth::provider('case-insensitive-eloquent', function ($app, array $config) {
-            return new CaseInsensitiveEloquentUserProvider($app['hash'], $config['model']);
+            return (new CaseInsensitiveEloquentUserProvider($app['hash'], $config['model']))
+                ->withQuery(fn ($query) => $query->where('status', true));
         });
 
         Auth::viaRequest('websockets-auth', function () {
@@ -56,7 +57,7 @@ class AuthServiceProvider extends ServiceProvider
             $id = Session::get('login_retina_'.sha1('Illuminate\Auth\SessionGuard'));
 
             if ($id !== null) {
-                return WebUser::find($id);
+                return WebUser::where('status', true)->find($id);
             }
 
             $id = Session::get('login_pupil_'.sha1('Illuminate\Auth\SessionGuard'));

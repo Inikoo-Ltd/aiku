@@ -8,6 +8,10 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\CRM\Customer\GetShopCustomersDashboard;
+use App\Enums\Dashboards\ShopDashboardSectionsEnum;
+use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
 use App\Actions\OrgAction;
@@ -58,7 +62,7 @@ class ShowShop extends OrgAction
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate);
+        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate, null, $this->dashboardIncludesPartners($userSettings));
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
@@ -75,9 +79,15 @@ class ShowShop extends OrgAction
                     ],
                     'settings'  => [
                         'model_state_type'    => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
+                        'partners_type'       => $this->dashboardPartnersTypeSettings($userSettings),
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                     ],
+                    'sections'        => [
+                        'navigation' => ShopDashboardSectionsEnum::navigation($shop),
+                        'current'    => ShopDashboardSectionsEnum::current($shop, $userSettings, $request->query('section')),
+                    ],
+                    'month_target' => GetShopMonthSalesTarget::run($shop, $request->user()),
                     'shop_blocks' => [
                         'interval_data'        => $shopTimeSeriesStats,
                         'currency_code'        => $shop->currency->code,
@@ -123,6 +133,8 @@ class ShowShop extends OrgAction
             'title'            => __('Shop').' '.$shop->code,
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
             'dashboard'   => $dashboard,
+            'customers_dashboard'   => Inertia::optional(fn () => GetShopCustomersDashboard::run($shop)),
+            'sales_analysis'        => Inertia::optional(fn () => GetShopSalesAnalysis::run($shop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners']))),
         ]);
     }
 

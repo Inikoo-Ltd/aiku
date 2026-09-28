@@ -32,6 +32,7 @@ class HistoryResource extends JsonResource
             'comments'       => $this['comments'],
             'auditable_id'   => $this['auditable_id'],
             'auditable_type' => $this['auditable_type'],
+            'record'         => $this['record'],
             'user_id'        => $this['user_id'],
             'user_type'      => $this['user_type'],
             'slug'           => $this['slug'],

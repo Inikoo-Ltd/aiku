@@ -59,6 +59,10 @@ use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoWaitingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
+use App\Actions\Dispatching\Picking\SetAsWaitingCrm;
+use App\Actions\Dispatching\Picking\SetAsWaitingWarehouse;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
@@ -1946,6 +1950,231 @@ test('releasing a blocked delivery note brings its order back to handling', func
 });
 
 
+function waitingDeliveryNoteWithItemWaitingForWarehouse($ctx): array
+{
+    $settings = $ctx->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $ctx->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx, 6);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    SetAsWaitingWarehouse::make()->action($item->refresh(), $ctx->user, ['quantity' => 4]);
+
+    return [$deliveryNote->refresh(), $item->refresh()];
+}
+
+test('a waiting delivery note steps back to picking with its items waiting for the warehouse given back to the picker', function () {
+    [$deliveryNote, $item] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+    $order                 = $deliveryNote->orders->first();
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::HANDLING_BLOCKED);
+
+    $deliveryNote = UndoWaitingDeliveryNote::make()->action($deliveryNote);
+    $item->refresh();
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($deliveryNote->handling_blocked_at)->toBeNull()
+        ->and($deliveryNote->picker_user_id)->toBe($this->user->id)
+        ->and($deliveryNote->number_items_waiting_warehouse)->toBe(0)
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::HANDLING)
+        ->and($item->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
+        ->and((float)$item->quantity_waiting_warehouse)->toBe(0.0)
+        ->and((float)$item->quantity_picked)->toBe(6.0)
+        ->and($item->is_handled)->toBeFalse()
+        ->and($deliveryNote->deliveryNoteItems()->where('state', DeliveryNoteItemStateEnum::CANCELLED)->count())
+        ->toBe($deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->count());
+
+    StorePicking::make()->action($item, $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 4,
+    ]);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::PICKED);
+});
+
+test('stepping a waiting delivery note back to picking leaves the items waiting for customer services with them', function () {
+    [$deliveryNote, $item] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+
+    SetAsWaitingCrm::make()->action($item, $this->user, ['quantity' => 1]);
+    $item->refresh();
+    expect((float)$item->quantity_waiting_warehouse)->toBe(3.0)
+        ->and((float)$item->quantity_waiting_crm)->toBe(1.0);
+
+    UndoWaitingDeliveryNote::make()->action($deliveryNote->refresh());
+    $item->refresh();
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and((float)$item->quantity_waiting_warehouse)->toBe(0.0)
+        ->and((float)$item->quantity_waiting_crm)->toBe(1.0)
+        ->and($item->state)->toBe(DeliveryNoteItemStateEnum::HANDLING_BLOCKED);
+
+    StorePicking::make()->action($item, $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 3,
+    ]);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+});
+
+test('a waiting delivery note with only items waiting for customer services is not stepped back to picking', function () {
+    [$deliveryNote, $item] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+
+    SetAsWaitingCrm::make()->action($item, $this->user, ['quantity' => 4]);
+    $item->refresh();
+    expect((float)$item->quantity_waiting_warehouse)->toBe(0.0)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    expect(fn () => UndoWaitingDeliveryNote::make()->action($deliveryNote))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and((float)$item->refresh()->quantity_waiting_crm)->toBe(4.0);
+});
+
+test('only a waiting delivery note can be stepped back to picking', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this, 6);
+
+    expect(fn () => UndoWaitingDeliveryNote::make()->action($deliveryNote))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING);
+});
+
+test('stepping a waiting delivery note back to picking puts its picking session back to picking', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 4]);
+    $pickingSession->update(['state' => PickingSessionStateEnum::HANDLING_BLOCKED]);
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    UndoWaitingDeliveryNote::make()->action($deliveryNote);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING);
+
+    StorePicking::make()->action($item, $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 4,
+    ]);
+
+    expect($item->refresh()->state)->toBe(DeliveryNoteItemStateEnum::PICKED)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
+test('a waiting page left open after the delivery note stepped back to picking does not put the items back to waiting', function () {
+    [$deliveryNote, $item] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+    $itemOnWaitingPage     = $item->replicate();
+    $itemOnWaitingPage->id = $item->id;
+    $itemOnWaitingPage->exists = true;
+
+    UndoWaitingDeliveryNote::make()->action($deliveryNote);
+
+    expect(fn () => \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::make()->handle($itemOnWaitingPage, $this->user, [
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 2,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect(fn () => \App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse::make()->handle($itemOnWaitingPage, $this->user, [
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect(\App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingWarehouse::make()->handle($itemOnWaitingPage, $this->user, ['quantity' => 2]))->toBeNull();
+
+    $item->refresh();
+    expect((float)$item->quantity_waiting_warehouse)->toBe(0.0)
+        ->and((float)$item->quantity_picked)->toBe(6.0)
+        ->and((float)$item->quantity_not_picked)->toBe(0.0)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING);
+});
+
+test('a delivery note stepped back to picking can be picked while another note of its picking session is still waiting', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item]           = handlingDeliveryNoteWithPicking($this, 6);
+    [$otherDeliveryNote, $otherItem] = handlingDeliveryNoteWithPicking($this, 6);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+    $otherDeliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]);
+
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id, $otherDeliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $pickingSession = StartPickPickingSession::run($pickingSession, []);
+    $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+    $otherDeliveryNote->deliveryNoteItems()->whereKeyNot($otherItem->id)->update(['state' => DeliveryNoteItemStateEnum::CANCELLED]);
+
+    SetAsWaitingWarehouse::make()->action($item->refresh(), $this->user, ['quantity' => 4]);
+    SetAsWaitingWarehouse::make()->action($otherItem->refresh(), $this->user, ['quantity' => 4]);
+    $pickingSession->update(['state' => PickingSessionStateEnum::HANDLING_BLOCKED]);
+
+    UndoWaitingDeliveryNote::make()->action($deliveryNote->refresh());
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+        ->and($otherDeliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING);
+
+    StorePicking::make()->action($item->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $item->orgStock->locationOrgStocks()->first()->id,
+        'quantity'              => 4,
+    ]);
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::HANDLING_BLOCKED);
+});
+
+test('only a dispatch supervisor can step a waiting delivery note back to picking', function () {
+    [$deliveryNote] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($user->group_id);
+    $originalRoles = $user->roles->pluck('name')->toArray();
+
+    $actAs = function (string $role) use ($user) {
+        setPermissionsTeamId($user->group_id);
+        $user->syncRoles([RolesEnum::getRoleName($role, $this->warehouse)]);
+        Cache::tags('auth-user:'.$user->id)->flush();
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        actingAs($user->refresh());
+    };
+
+    $actAs('dispatch-clerk');
+    patch(route('grp.models.delivery_note.state.undo_waiting', $deliveryNote->id))->assertForbidden();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED);
+
+    $actAs('dispatch-supervisor');
+    patch(route('grp.models.delivery_note.state.undo_waiting', $deliveryNote->id))->assertSessionHasNoErrors();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING);
+
+    setPermissionsTeamId($user->group_id);
+    $user->syncRoles($originalRoles);
+    Cache::tags('auth-user:'.$user->id)->flush();
+    actingAs($user->refresh());
+});
+
 test('over-picked item is trimmed back to required when picking is done', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
@@ -2283,6 +2512,63 @@ test('picking upsert from waiting warehouse', function () {
 
     \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, ['quantity' => 1, 'location_org_stock_id' => $los->id]);
     expect($item->refresh()->pickings()->exists())->toBeTrue();
+});
+
+test('lowering a pick from the waiting warehouse panel puts the difference back on the shelf', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+
+    expect((float)$locationOrgStock->quantity)->toBe(94.0);
+
+    $item->update(['state' => DeliveryNoteItemStateEnum::HANDLING_BLOCKED, 'quantity_waiting_warehouse' => 4, 'locked_at' => null]);
+
+    \App\Actions\Dispatching\Picking\UpsertPickingFromWaitingWarehouse::run($item->refresh(), $this->user, [
+        'quantity'              => 2,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'picking_id'            => $picking->id,
+    ]);
+
+    $locationOrgStock->refresh();
+    expect((float)$picking->refresh()->quantity)->toBe(2.0)
+        ->and((float)$picking->orgStockMovement->quantity)->toBe(-2.0)
+        ->and((float)$locationOrgStock->quantity)->toBe(98.0);
+});
+
+test('a pick edited or deleted before its queued movement runs is taken off the shelf as it ends up', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+
+    $movement = $picking->orgStockMovement;
+    $picking->update(['org_stock_movement_id' => null]);
+    \App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement::make()->action($movement);
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(100.0);
+
+    \App\Actions\Dispatching\Picking\UpdatePicking::make()->action($picking->refresh(), ['quantity' => 4]);
+    \App\Actions\Dispatching\Picking\StorePickingOrgStockMovement::run($picking->id, $this->user->id);
+    \App\Actions\Dispatching\Picking\StorePickingOrgStockMovement::run($picking->id, $this->user->id);
+
+    expect((float)$picking->refresh()->orgStockMovement->quantity)->toBe(-4.0)
+        ->and($picking->orgStock->orgStockMovements()->where('type', \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PICKED)->count())->toBe(1)
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBe(96.0);
+
+    \App\Actions\Dispatching\Picking\SplitPicking::make()->handle($picking->refresh(), 1);
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(96.0)
+        ->and((float)$picking->refresh()->orgStockMovement->quantity)->toBe(-3.0);
+
+    $pendingPickingId = $picking->id;
+    $movement = $picking->orgStockMovement;
+    $picking->update(['org_stock_movement_id' => null]);
+    \App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement::make()->action($movement);
+    \App\Actions\Dispatching\Picking\DeletePicking::make()->action($picking->refresh(), $this->user);
+    \App\Actions\Dispatching\Picking\StorePickingOrgStockMovement::run($pendingPickingId, $this->user->id);
+
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(99.0);
 });
 
 test('picking and delivery note item repairs and reindex', function () {
@@ -4825,4 +5111,66 @@ test('sending the order again reuses the goods left on its cancellation return i
         ->and((float)$returnItem->refresh()->total_item_returned)->toBe(6.0)
         ->and($returnItem->is_handled)->toBeFalse()
         ->and((float)$locationOrgStock->refresh()->quantity)->toBe($shelfAfterFirstPick);
+});
+
+test('a return cannot be put back without a location, so no stock goes missing (HELP-3398)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 1]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+
+    actingAs($this->user);
+
+    $this->patchJson(route('grp.models.return_delivery_note_item.upsert_returned', $returnItem->id), ['quantity' => 1])
+        ->assertJsonValidationErrors('message');
+    $this->patchJson(route('grp.models.return_delivery_note_item.set_all_returned', $returnItem->id))
+        ->assertJsonValidationErrors('message');
+
+    expect($returnItem->sowings()->count())->toBe(0);
+});
+
+test('an open pack goes back into stock as the packets that came back (HELP-3449)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+    $returnItem->update(['total_expected_qty' => 2]);
+
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+
+    actingAs($this->user);
+
+    $this->patchJson(route('grp.models.return_delivery_note_item.upsert_returned', $returnItem->id), [
+        'quantity'              => 23 / 12,
+        'location_org_stock_id' => $locationOrgStock->id,
+    ])->assertSessionHasNoErrors();
+
+    $returnDeliveryNote->update(['state' => \App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum::RETURNING]);
+    request()->setUserResolver(fn () => $this->user);
+    \App\Actions\GoodsIn\ReturnDeliveryNote\SetReturnedReturnDeliveryNote::make()->handle($returnDeliveryNote->refresh());
+
+    $returnItem->refresh();
+
+    expect(round((float) $returnItem->total_item_returned * 12))->toBe(23.0)
+        ->and(round((float) $returnItem->total_item_not_returned * 12))->toBe(1.0)
+        ->and(round((float) $returnItem->sowings()->first()->orgStockMovement->quantity * 12))->toBe(23.0);
+});
+
+test('a second worker reaching picked with a stale note leaves the already picked note alone', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $staleDeliveryNote = DeliveryNote::find($deliveryNote->id);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PICKED);
+    $pickedAt = $deliveryNote->picked_at;
+
+    $this->travel(5)->minutes();
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($staleDeliveryNote);
+    $this->travelBack();
+
+    expect($deliveryNote->fresh()->picked_at->equalTo($pickedAt))->toBeTrue();
 });

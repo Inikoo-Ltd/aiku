@@ -53,7 +53,23 @@ enum PurchaseOrderJourneyStageEnum: string
             'dispatched'         => __('Goods left the supplier'),
             'in_transit'         => __('Done when the goods arrive at our warehouse'),
             'warehouse_received' => __('Goods checked and placed in their locations'),
-            'products_online'    => __('Every product from the PO on sale on the website'),
+            'products_online'    => __('Every product from the PO created and on sale on the website'),
+        ];
+    }
+
+    public static function waitingLabels(): array
+    {
+        return [
+            'po_created'         => __('Not sent yet'),
+            'spec_sample'        => __('Waiting for sample approval'),
+            'deposit_paid'       => __('Waiting for deposit'),
+            'production'         => __('In production'),
+            'qc'                 => __('Waiting for QC'),
+            'clean_handover'     => __('Waiting for handover'),
+            'dispatched'         => __('Waiting for dispatch'),
+            'in_transit'         => __('In transit'),
+            'warehouse_received' => __('Waiting to be placed'),
+            'products_online'    => __('Waiting to go online'),
         ];
     }
 

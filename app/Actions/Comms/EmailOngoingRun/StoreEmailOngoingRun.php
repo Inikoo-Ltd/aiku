@@ -80,7 +80,11 @@ class StoreEmailOngoingRun extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
 
 
-        $this->initialisationFromShop($outbox->shop, $modelData);
+        if ($outbox->shop) {
+            $this->initialisationFromShop($outbox->shop, $modelData);
+        } else {
+            $this->initialisation($outbox->organisation, $modelData);
+        }
 
         return $this->handle($outbox, $this->validatedData);
     }

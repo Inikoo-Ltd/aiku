@@ -10,7 +10,7 @@ namespace App\Actions\Procurement\OrgSupplier\UI;
 
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PurchaseOrder\WithPurchaseOrderSerialReference;
+use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\SupplyChain\Supplier\UI\WithSupplierEditFields;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
@@ -22,7 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditOrgSupplier extends OrgAction
 {
     use WithProcurementAuthorisation;
-    use WithPurchaseOrderSerialReference;
+    use WithProcurementSerialReferences;
     use WithSupplierEditFields;
 
     public function handle(OrgSupplier $orgSupplier): OrgSupplier
@@ -85,10 +85,10 @@ class EditOrgSupplier extends OrgAction
                 'parameters' => $orgSupplier->id,
             ];
 
-        $blueprint[] = $this->purchaseOrderSerialReferenceSection($orgSupplier, [
+        $blueprint = array_merge($blueprint, $this->procurementSerialReferenceSections($orgSupplier, [
             'name'       => 'grp.models.org_supplier.update',
             'parameters' => $orgSupplier->id,
-        ]);
+        ]));
 
         return Inertia::render(
             'EditModel',

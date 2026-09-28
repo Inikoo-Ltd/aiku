@@ -9,11 +9,13 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -33,6 +35,12 @@ class UpdateRetinaOrder extends RetinaAction
 
     public function handle(Order $order, array $modelData): Order
     {
+        if (filled(Arr::get($modelData, 'gift_message'))) {
+            foreach ($order->attachments()->wherePivot('scope', 'GiftMessage')->get() as $attachment) {
+                DetachAttachmentFromModel::run($order, $attachment);
+            }
+        }
+
         return UpdateOrder::make()->action($order, $modelData);
     }
 
@@ -40,6 +48,7 @@ class UpdateRetinaOrder extends RetinaAction
     {
         return [
             'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'gift_message'          => ['sometimes', 'nullable', 'string', 'max:500'],
             'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')]
         ];

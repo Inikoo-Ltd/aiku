@@ -811,12 +811,6 @@ parameters:
 			path: app/Actions/Catalogue/Shop/UI/ShowCatalogue.php
 
 		-
-			message: '#^Variable \$return_stat on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.variable
-			count: 1
-			path: app/Actions/Catalogue/Shop/UI/ShowShop.php
-
-		-
 			message: '#^Access to an undefined property App\\Actions\\Catalogue\\Variant\\StoreVariantFromMaster\:\:\$data\.$#'
 			identifier: property.notFound
 			count: 4

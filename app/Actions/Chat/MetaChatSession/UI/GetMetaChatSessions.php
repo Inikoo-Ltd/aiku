@@ -51,6 +51,7 @@ class GetMetaChatSessions
             'pairs'          => ['sometimes', 'array'],
             'pairs.*'        => ['string', 'regex:/^[a-z]+:(customer|guest)$/'],
             'highlighted'    => ['sometimes', 'boolean'],
+            'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
             'unclaimed'      => ['sometimes', 'boolean'],
             'trashed'        => ['sometimes', 'boolean'],
             'include_spam'   => ['sometimes', 'boolean'],
@@ -189,6 +190,10 @@ class GetMetaChatSessions
 
         if (!empty($filters['unclaimed'])) {
             $this->scopeUnclaimedMetaChatSessions($query);
+        }
+
+        if (!empty($filters['ds_kind'])) {
+            $query->where('metadata->'.FlagUrgentChatRequest::KIND_KEY, $filters['ds_kind']);
         }
 
         // Additive: keeps the normal status and assignment filters, just narrows to

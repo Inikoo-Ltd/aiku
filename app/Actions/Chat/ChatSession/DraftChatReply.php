@@ -230,6 +230,10 @@ class DraftChatReply implements ShouldBeUnique
           ship to, dispatch or delivery times, opening an account, how to order, samples.
         - "subscription" if what they ask now is to stop receiving our newsletters or marketing,
           or why they still get them.
+        - "other" when they say an order or parcel has not arrived, is late, lost, stuck or still
+          awaited, or a replacement never came: that is a delivery problem for an agent, and
+          tracking numbers do not answer it. Also "other" when something looks wrong to them: an
+          order shown unpaid, a charge, an invoice or a status they question.
         - "other" when the writer is not our customer (a courier, carrier, warehouse, supplier
           or marketplace), when they report missing, damaged or wrong items (the claim checklist
           handles those), or for anything else, or when they also ask for something else: a
@@ -254,11 +258,10 @@ class DraftChatReply implements ShouldBeUnique
         $response = AskToAi::run($prompt, config('chat.summary_model'));
         $data     = is_string($response) ? json_decode(trim(preg_replace('/^```(?:json)?|```$/m', '', trim($response))), true) : null;
         $data     = is_array($data) ? $data : [];
-        $topic    = ChatTopicEnum::tryFrom((string) Arr::get($data, 'asks'));
-
-        if (in_array(Arr::get($data, 'asks'), ['shop_info', 'subscription'], true)) {
-            $topic = ChatTopicEnum::OTHER;
-        }
+        $asks     = (string) Arr::get($data, 'asks');
+        $topic    = in_array($asks, ['shop_info', 'subscription'], true)
+            ? ChatTopicEnum::OTHER
+            : ($asks === ChatTopicEnum::OTHER->value ? null : ChatTopicEnum::tryFrom($asks));
 
         if (!in_array($topic, self::DRAFTED_TOPICS, true)) {
             return null;

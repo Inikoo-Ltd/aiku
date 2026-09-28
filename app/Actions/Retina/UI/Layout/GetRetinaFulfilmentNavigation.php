@@ -226,8 +226,8 @@ class GetRetinaFulfilmentNavigation
 
             if ($webUser->is_root) {
                 $groupNavigation['sysadmin'] = [
-                    'label'   => __('manage account'),
-                    'icon'    => ['fal', 'fa-users-cog'],
+                    'label'   => __('Settings'),
+                    'icon'    => ['fal', 'fa-cog'],
                     'root'    => 'retina.sysadmin.',
                     'route'   => [
                         'name' => 'retina.sysadmin.fulfilment.dashboard'

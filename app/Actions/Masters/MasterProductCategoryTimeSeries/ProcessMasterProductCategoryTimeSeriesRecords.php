@@ -86,7 +86,7 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
             ->where('date', '<=', $to)
             ->whereNull('deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency)->get();
+        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, [...$this->fullInvoiceTransactionSelects(), ...$this->partnerInvoiceTransactionSelects()])->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);
@@ -112,6 +112,9 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                     'sales_external'              => $result->sales_external,
                     'sales_org_currency_external' => $result->sales_org_currency_external,
                     'sales_grp_currency_external' => $result->sales_grp_currency_external,
+                    'sales_internal'              => $result->sales_internal,
+                    'sales_org_currency_internal' => $result->sales_org_currency_internal,
+                    'sales_grp_currency_internal' => $result->sales_grp_currency_internal,
                     'customers_invoiced'          => $result->customers_invoiced,
                     'invoices'                    => $result->invoices,
                     'refunds'                     => $result->refunds,
@@ -159,6 +162,9 @@ class ProcessMasterProductCategoryTimeSeriesRecords implements ShouldBeUnique
                     'sales_external'              => 0,
                     'sales_org_currency_external' => 0,
                     'sales_grp_currency_external' => 0,
+                    'sales_internal'              => 0,
+                    'sales_org_currency_internal' => 0,
+                    'sales_grp_currency_internal' => 0,
                     'customers_invoiced'          => 0,
                     'invoices'                    => 0,
                     'refunds'                     => 0,

@@ -44,6 +44,7 @@ const defaultNoteFields = {
     customer: 'customer_notes',
     internal: 'internal_notes',
     public: 'public_notes',
+    warehouse: 'private_warehouse_note',
     credit_transaction_note: 'notes',
 }
 

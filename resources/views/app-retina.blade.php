@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="h-full text-[14px] lg:text-[16px]"  lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html class="h-full"  lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
 
 
@@ -9,7 +9,7 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=fira-sans:100,200,300,400,500,600,700,800,900|inter:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=fira-sans:100,200,300,400,500,600,700,800,900|inter:100,200,300,400,500,600,700,800,900|raleway:400,500,600,700&display=swap" rel="stylesheet" />
 
         <!-- Favicon -->
         @if(request()->input('website'))

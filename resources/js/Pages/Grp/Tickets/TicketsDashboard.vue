@@ -6,6 +6,9 @@
 
 <script setup lang="ts">
 import { ticketsRoute } from "@/Composables/useTicketsRoute"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCircle, faShieldCheck, faShield, faVial } from "@fal"
 import { computed, provide, ref } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
@@ -38,9 +41,29 @@ const props = defineProps<{
     collaborating?: any[]
     waiting_due?: any[]
     by_status?: { status: string; label: string; icon: any; total: number }[]
+    qa_stats?: { not_checked: number; passed: number; failed: number; requested: number }
 }>()
 
-const liveProps = ["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "assigned", "collaborating", "waiting_due", "by_status"]
+library.add(faCircle, faShieldCheck, faShield, faVial)
+
+const liveProps = ["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "assigned", "collaborating", "waiting_due", "by_status", "qa_stats"]
+
+const openStatuses = "open,assigned,in_progress,waiting,answered,pending_deploy"
+
+const ticketListLink = (elements: Record<string, string> = {}, parameters: Record<string, unknown> = {}) =>
+    ticketsRoute("list", { created: "all", ...parameters, elements: { mine: "", ...elements } })
+
+const qaListLink = (elements: Record<string, string>, parameters: Record<string, unknown> = {}) =>
+    ticketsRoute("qa_list", { created: "all", ...parameters, elements })
+
+const oneWeekAgo = () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+const qaDetails = computed(() => props.qa_stats ? [
+    { key: "not_checked", label: ctrans("Not Checked"), total: props.qa_stats.not_checked, icon: "fal fa-circle", class: "text-gray-400", href: qaListLink({ qa_status: "none" }) },
+    { key: "passed", label: ctrans("Check Passed"), total: props.qa_stats.passed, icon: "fal fa-shield-check", class: "text-green-600", href: qaListLink({ qa_status: "passed" }) },
+    { key: "failed", label: ctrans("Check Failed"), total: props.qa_stats.failed, icon: "fal fa-shield", class: "text-red-500", href: qaListLink({ qa_status: "failed" }) },
+    { key: "requested", label: ctrans("Need Check Urgent"), total: props.qa_stats.requested, icon: "fal fa-vial", class: "text-amber-500", href: qaListLink({ qa_status: "" }, { filter: { qa_requested: 1 } }) },
+] : [])
 
 const quickLook = ref<any | null>(null)
 
@@ -67,29 +90,42 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-4 space-y-4">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-300 px-4 py-3 flex flex-wrap gap-x-10 gap-y-3">
-            <div>
-                <p class="text-2xl font-bold">{{ stats.open }}</p>
-                <p class="text-xs text-gray-600">{{ ctrans("Open now") }}</p>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-300 px-4 py-3">
+            <p class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Ticket Details") }}</p>
+            <div class="flex flex-wrap gap-x-6 gap-y-3">
+                <Link :href="ticketListLink({ status: openStatuses })" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
+                    <p class="text-2xl font-bold">{{ stats.open }}</p>
+                    <p class="text-xs text-gray-600">{{ ctrans("Open now") }}</p>
+                </Link>
+                <Link :href="ticketListLink({}, { created: '1w' })" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
+                    <p class="text-2xl font-bold text-pink-600">{{ stats.created_week }}</p>
+                    <p class="text-xs text-gray-600">{{ ctrans("Raised this week") }}</p>
+                </Link>
+                <Link :href="ticketListLink({}, { filter: { resolved_since: oneWeekAgo() } })" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
+                    <p class="text-2xl font-bold text-green-700">{{ stats.done_week }}</p>
+                    <p class="text-xs text-gray-600">{{ ctrans("Done this week") }}</p>
+                </Link>
+                <Link :href="ticketsRoute('reports')" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
+                    <p class="text-2xl font-bold">{{ hours(stats.median_hours) }}</p>
+                    <p class="text-xs text-gray-600">{{ ctrans("Typical time to resolve") }}</p>
+                </Link>
+                <template v-if="by_status">
+                    <Link v-for="row in by_status" :key="row.status" :href="ticketListLink({ status: row.status })" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
+                        <p class="text-2xl font-bold"><Icon :data="row.icon" class="text-lg" /> {{ row.total }}</p>
+                        <p class="text-xs text-gray-600">{{ row.label }}</p>
+                    </Link>
+                </template>
             </div>
-            <div>
-                <p class="text-2xl font-bold text-pink-600">{{ stats.created_week }}</p>
-                <p class="text-xs text-gray-600">{{ ctrans("Raised this week") }}</p>
-            </div>
-            <div>
-                <p class="text-2xl font-bold text-green-700">{{ stats.done_week }}</p>
-                <p class="text-xs text-gray-600">{{ ctrans("Done this week") }}</p>
-            </div>
-            <div>
-                <p class="text-2xl font-bold">{{ hours(stats.median_hours) }}</p>
-                <p class="text-xs text-gray-600">{{ ctrans("Typical time to resolve") }}</p>
-            </div>
-            <template v-if="by_status">
-                <div v-for="row in by_status" :key="row.status">
-                    <p class="text-2xl font-bold"><Icon :data="row.icon" class="text-lg" /> {{ row.total }}</p>
+        </div>
+
+        <div v-if="qaDetails.length" class="bg-white rounded-lg shadow-sm border border-gray-300 px-4 py-3">
+            <p class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("QA Details") }}</p>
+            <div class="flex flex-wrap gap-x-6 gap-y-3">
+                <Link v-for="row in qaDetails" :key="row.key" :href="row.href" class="-mx-2 rounded-md px-2 py-1 transition duration-200 hover:bg-gray-100">
+                    <p class="text-2xl font-bold"><FontAwesomeIcon :icon="row.icon" :class="row.class" class="text-lg" fixed-width /> {{ row.total }}</p>
                     <p class="text-xs text-gray-600">{{ row.label }}</p>
-                </div>
-            </template>
+                </Link>
+            </div>
         </div>
 
         <TicketTabsCard v-if="workTabs.length" :tabs="workTabs" storage-key="tickets_dashboard_tab">

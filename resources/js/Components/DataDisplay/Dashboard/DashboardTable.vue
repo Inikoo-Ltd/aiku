@@ -7,11 +7,11 @@ import { ref, computed, inject, watch } from "vue"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
-import { faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight } from "@fal"
+import { faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight, faFolderTree, faCopyright } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
@@ -20,7 +20,7 @@ import DashboardCell from "./DashboardCell.vue"
 import { formatInTimeZone } from "date-fns-tz"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
-library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight)
+library.add(faYinYang, faShoppingBasket, faSitemap, faStore, faArrowRight, faFolderTree, faCopyright)
 
 interface Column {
 	formatted_value: string  // "€0.00"
@@ -100,6 +100,10 @@ const utcDayStartInUserTime = computed(() => {
 
 	return formatInTimeZone(midnightUtc, timezone, 'HH:mm')
 })
+
+const openDashboardSettings = () => {
+	window.dispatchEvent(new CustomEvent("open-dashboard-settings"))
+}
 
 const localCurrentTab = ref(props.tableData.current_tab)
 watch(() => props.tableData.current_tab, (newVal) => {
@@ -222,9 +226,12 @@ const updateTab = (value: string) => {
 						<Tab
 							@click="() => updateTab(tabSlug)"
 							:value="tabSlug"
+							:class="tab.align === 'right' ? '!ml-auto' : ''"
+							v-tooltip="tab.type === 'icon' ? tab.title : undefined"
+							:aria-label="tab.title"
 						>
 							<FontAwesomeIcon v-if="tab.icon" :icon="tab.icon" class="" fixed-width aria-hidden="true" />
-							{{ tab.title }}
+							<template v-if="tab.type !== 'icon'">{{ tab.title }}</template>
 						</Tab>
 					</template>
 				</TabList>
@@ -242,7 +249,7 @@ const updateTab = (value: string) => {
 			>
 				<template #empty>
 					<div class="flex items-center justify-center h-full text-center">
-						{{ trans("No data available.") }}
+						{{ ctrans("No data available.") }}
 					</div>
 				</template>
 
@@ -300,8 +307,12 @@ const updateTab = (value: string) => {
 			</div>
 
 			<div class="mt-1 text-right text-[10px] text-gray-400">
-				{{ trans('Periods run from midnight UTC') }}<template v-if="utcDayStartInUserTime">
-					{{ trans('— that is :time for you', { time: utcDayStartInUserTime }) }}
+				<template v-if="settings.partners_type">
+					{{ settings.partners_type.value === settings.partners_type.options[1]?.value ? ctrans('Includes partners') : ctrans('Excludes partners') }}
+					(<button type="button" class="underline hover:text-gray-600" @click="openDashboardSettings">{{ ctrans('change') }}</button>) ·
+				</template>
+				{{ ctrans('Periods run from midnight UTC') }}<template v-if="utcDayStartInUserTime">
+					{{ ctrans('— that is :time for you', { time: utcDayStartInUserTime }) }}
 				</template>
 			</div>
 

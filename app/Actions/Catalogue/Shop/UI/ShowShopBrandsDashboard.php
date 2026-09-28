@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardPartnersTypeSettings;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\Settings\WithDashboardDataDisplayTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
@@ -29,6 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class ShowShopBrandsDashboard extends OrgAction
 {
+    use WithDashboardPartnersTypeSettings;
     use WithDashboardCurrencyTypeSettings;
     use WithDashboardDataDisplayTypeSettings;
     use WithDashboardIntervalOption;
@@ -43,7 +45,7 @@ class ShowShopBrandsDashboard extends OrgAction
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate);
+        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate, null, $this->dashboardIncludesPartners($userSettings));
 
         $tab       = ShopDashboardSalesTableTabsEnum::BRANDS;
         $dashboard = [
@@ -56,6 +58,7 @@ class ShowShopBrandsDashboard extends OrgAction
                         'range_interval' => DashboardIntervalFilters::run($savedInterval, $userSettings)
                     ],
                     'settings'  => [
+                        'partners_type'     => $this->dashboardPartnersTypeSettings($userSettings),
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                     ],

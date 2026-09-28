@@ -18,6 +18,7 @@ enum OrgStockFamilyTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case SALES_ANALYSIS = 'sales_analysis';
     case SALES    = 'sales';
     case HISTORY  = 'history';
     case IMAGES   = 'images';
@@ -29,6 +30,10 @@ enum OrgStockFamilyTabsEnum: string
             OrgStockFamilyTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            OrgStockFamilyTabsEnum::SALES_ANALYSIS => [
+                'title' => __('Sales analysis'),
+                'icon'  => 'fal fa-chart-line',
             ],
             OrgStockFamilyTabsEnum::SALES => [
                 'title' => __('Sales'),

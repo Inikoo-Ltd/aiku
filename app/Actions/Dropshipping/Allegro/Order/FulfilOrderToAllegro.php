@@ -47,6 +47,8 @@ class FulfilOrderToAllegro extends RetinaAction
                 'carrier_name' => $shipment->shipper->trade_as,
                 'line_items' => $order->transactions->pluck('platform_transaction_id')->toArray()
             ]);
+
+            $allegroUser->setOrderFulfilled($order->platform_order_id);
         } catch (\Exception $e) {
             \Sentry::captureMessage($e);
         }

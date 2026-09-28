@@ -166,6 +166,37 @@ class ImportPendingGmailAttachments
     }
 
     /**
+     * A picture too small to be imported is still part of what was written when the markup points
+     * at it: a cropped screenshot of two invoice numbers is under 2 KB. It is written into the body
+     * itself rather than stored, so a signature logo stays in the signature instead of piling up
+     * among the attachments.
+     *
+     * @param  array<string, mixed>  $raw
+     * @return array<string, string> Content-ID => data uri
+     */
+    public function smallInlineImages(GmailClient $client, string $gmailMessageId, array $raw): array
+    {
+        $images = [];
+
+        foreach (GmailMessageParser::attachments(Arr::get($raw, 'payload', [])) as $attachment) {
+            if (! $attachment['inline']
+                || ! $attachment['contentId']
+                || ! str_starts_with($attachment['mimeType'], 'image/')
+                || $attachment['size'] >= self::INLINE_IMAGE_MIN_BYTES) {
+                continue;
+            }
+
+            $content = $attachment['attachmentId']
+                ? $client->getAttachment($gmailMessageId, $attachment['attachmentId'])
+                : GmailMessageParser::decodeData((string) $attachment['data']);
+
+            $images[$attachment['contentId']] = 'data:'.$attachment['mimeType'].';base64,'.base64_encode($content);
+        }
+
+        return $images;
+    }
+
+    /**
      * Everything the message offers, wherever it is kept. A photograph over Gmail's attachment
      * limit is not in the mail at all: it is a Drive link, and Drive is asked what it is before
      * any of the rules below can judge it. A file the sender never shared with us answers

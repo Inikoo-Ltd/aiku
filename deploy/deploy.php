@@ -515,6 +515,28 @@ task('deploy:aiku-public:index-notes', function () {
     }
 });
 
+desc('Purge the dropshipping websites /docs from Varnish when the guides changed');
+task('deploy:iris-docs:purge-varnish', function () {
+    try {
+        $prevHash = trim(run('cat {{previous_release}}/REVISION'));
+        $changed  = trim(run("cd {{release_path}} && git diff --name-only $prevHash HEAD -- resources/markdown/dropshipping"));
+    } catch (\Throwable $e) {
+        $changed = 'unknown';
+    }
+
+    if ($changed === '') {
+        writeln('Dropshipping docs unchanged. Skipping purge.');
+
+        return;
+    }
+
+    try {
+        artisan('iris:purge-docs', ['skipIfNoEnv', 'showOutput'])();
+    } catch (\Throwable $e) {
+        writeln('<comment>iris:purge-docs skipped: '.$e->getMessage().'</comment>');
+    }
+})->once();
+
 desc('Submit public URLs to IndexNow');
 task('deploy:aiku-public:indexnow', function () {
     try {
@@ -557,6 +579,7 @@ task('deploy', [
     'deploy:log-app-deployment',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
+    'deploy:iris-docs:purge-varnish',
     'deploy:translations:setup-guess-language',
     'deploy:aiku-public:index-notes',
     'deploy:aiku-public:indexnow',

@@ -90,15 +90,19 @@ class IndexAdProposals extends OrgAction
                     'headlines'          => data_get($proposal->payload, 'headlines', []),
                     'existing_headlines' => data_get($proposal->evidence, 'headlines', []),
 
-                    /* A draft opens the campaign form instead of applying; the suggestion carries what
-                       it knows and a person finishes it. */
+                    /* A draft starts the campaign instead of applying to one, carrying the name and the
+                       terms it worked out, and opens it in process for a person to finish. */
                     'is_draft'     => $proposal->type->isDraft(),
                     'draft_route'  => $proposal->type->isDraft() ? [
-                        'name'       => 'grp.org.shops.show.marketing.google_ads.create',
-                        'parameters' => array_merge($parameters, [
+                        'name'       => 'grp.models.org.shop.google_ads.campaign.store',
+                        'parameters' => [
+                            'organisation' => $this->organisation->id,
+                            'shop'         => $this->shop->id,
+                        ],
+                        'payload' => [
                             'name'     => data_get($proposal->payload, 'name'),
-                            'keywords' => implode("\n", data_get($proposal->payload, 'keywords', [])),
-                        ]),
+                            'keywords' => data_get($proposal->payload, 'keywords', []),
+                        ],
                     ] : null,
 
                     'apply_route' => [

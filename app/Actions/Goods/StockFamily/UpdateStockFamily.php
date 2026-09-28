@@ -32,6 +32,15 @@ class UpdateStockFamily extends OrgAction
 
     public function handle(StockFamily $stockFamily, array $modelData): StockFamily
     {
+        if (Arr::hasAny($modelData, ['understock_days', 'overstock_days'])) {
+            $stockCover = array_filter(
+                array_merge(Arr::get($stockFamily->data, 'stock_cover', []), Arr::only($modelData, ['understock_days', 'overstock_days'])),
+                fn ($value) => $value !== null
+            );
+            $stockFamily->update(['data->stock_cover' => $stockCover]);
+            $modelData = Arr::except($modelData, ['understock_days', 'overstock_days']);
+        }
+
         $stockFamily = $this->update($stockFamily, $modelData, ['data']);
         $changes     = $stockFamily->getChanges();
         if ($stockFamily->orgStockFamilies && Arr::hasAny($changes, ['code', 'name'])) {
@@ -75,8 +84,10 @@ class UpdateStockFamily extends OrgAction
                     ]
                 ),
             ],
-            'name'  => ['sometimes', 'required', 'string', 'max:255'],
-            'state' => ['sometimes', 'required', Rule::enum(StockFamilyStateEnum::class)],
+            'name'             => ['sometimes', 'required', 'string', 'max:255'],
+            'state'            => ['sometimes', 'required', Rule::enum(StockFamilyStateEnum::class)],
+            'understock_days'  => ['sometimes', 'nullable', 'integer', 'min:1', 'max:3650'],
+            'overstock_days'   => ['sometimes', 'nullable', 'integer', 'min:1', 'max:3650'],
         ];
 
         if (!$this->strict) {
