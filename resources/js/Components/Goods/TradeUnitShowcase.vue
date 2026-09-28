@@ -118,7 +118,7 @@ console.log
 		<!-- Sidebar -->
 		<div class="space-y-3 lg:space-y-6">
 			<!-- Image Preview -->
-			<ProductCategoryCard :data="data.tradeUnit">
+			<ProductCategoryCard subtle :data="data.tradeUnit">
 				<template v-if="data.tradeUnit?.tags?.length || data.brand_badge" #beforeImage>
 					<div class="flex items-start gap-2 mb-4">
 						<div class="font-medium flex flex-wrap gap-1">

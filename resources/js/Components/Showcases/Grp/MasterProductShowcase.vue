@@ -431,7 +431,7 @@ const isModalProductForSale = ref(false)
 		<div class="flex min-w-0 flex-col gap-4 xl:flex-row xl:gap-8">
 			<div class="shrink-0 space-y-4 xl:w-96 2xl:w-[550px]">
 				<!-- Image Preview & Thumbnails -->
-				<ProductCategoryCard :data="data.masterProduct">
+				<ProductCategoryCard subtle :data="data.masterProduct">
 					<template v-if="tradeUnitTags?.length" #beforeImage>
 						<div class="font-medium flex flex-wrap gap-1 mb-4">
 							<span v-for="tag in tradeUnitTags" :key="tag.id" v-tooltip="'tag'"

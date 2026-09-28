@@ -249,7 +249,7 @@ const getTooltips = () => {
 			</dd> -->
 
 			<!-- Image Preview & Thumbnails -->
-			<ProductCategoryCard :data="data.product.data">
+			<ProductCategoryCard subtle :data="data.product.data">
 				<template v-if="props.data?.main_image?.webp" #image>
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview
 						class="block w-full" imageClass="w-full aspect-square object-contain" />

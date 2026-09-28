@@ -329,7 +329,7 @@ const saveBarcode = (value: string | null) => {
             <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
                 <!-- Image -->
                 <div class="self-start w-full max-w-sm xl:max-w-none">
-                    <ProductCategoryCard imageOnly :data="{ image: data?.trade_units?.[0]?.images?.[0]?.images }" />
+                    <ProductCategoryCard subtle imageOnly :data="{ image: data?.trade_units?.[0]?.images?.[0]?.images }" />
                 </div>
 
                 <div class="min-w-0 flex flex-col gap-4 self-start">

@@ -24,6 +24,7 @@ const props = defineProps<{
     } | null;
   };
   imageOnly?: boolean;
+  subtle?: boolean;
 }>();
 
 const showExtra = ref(false);
@@ -38,9 +39,9 @@ const status = computed(() => ({
 </script>
 
 <template>
-  <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
+  <div class="bg-white p-6 border border-gray-200" :class="subtle ? 'rounded-lg shadow-sm' : 'rounded-2xl shadow-md'">
     <slot name="beforeImage" />
-    <div class="bg-white rounded-lg shadow overflow-hidden" :class="{ 'mb-4': !imageOnly }">
+    <div class="bg-white overflow-hidden" :class="[subtle ? 'rounded-md border border-gray-100' : 'rounded-lg shadow', { 'mb-4': !imageOnly }]">
       <slot name="image">
         <div class="w-full aspect-square" :class="props.data?.image ? '' : 'h-32'">
           <Image v-if="props.data?.image" :src="props.data.image"

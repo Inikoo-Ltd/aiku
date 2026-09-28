@@ -96,7 +96,7 @@ const openFamilyModal = () => {
 
          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
-                  <ProductCategoryCard :data="data.subDepartment" />
+                  <ProductCategoryCard subtle :data="data.subDepartment" />
             </div>
             <div class="col-span-1 md:col-span-2 lg:col-span-4">
                 <SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />

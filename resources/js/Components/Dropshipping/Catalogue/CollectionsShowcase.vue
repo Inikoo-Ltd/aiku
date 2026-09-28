@@ -117,7 +117,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
     <div class="grid lg:grid-cols-[30%_40%_30%] gap-4 max-w-6xl">
       <!-- Info Card -->
       <div>
-        <ProductCategoryCard :data="data" />
+        <ProductCategoryCard subtle :data="data" />
       </div>
 
       <!-- Department List -->

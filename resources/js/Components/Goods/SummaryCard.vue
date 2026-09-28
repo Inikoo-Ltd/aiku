@@ -1,5 +1,5 @@
 <template>
-	<div class="summaryCard overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md">
+	<div class="summaryCard overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
 		<slot />
 	</div>
 </template>
