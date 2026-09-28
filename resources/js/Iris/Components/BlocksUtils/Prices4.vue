@@ -320,7 +320,7 @@ const onHideStepsPopover = () => {
                         :class="product.stock > 0 ? 'text-green-500' : 'text-red-500'" fixed-width />
                 </div>
 
-                <LabelComingSoon v-else-if="product.is_coming_soon" :product="product" />
+                <LabelComingSoon v-else-if="product.is_coming_soon && !product.pre_order" :product="product" />
             </div>
 
             <div v-if="(product?.rrp_per_unit ?? 0) > 0 && !product.is_coming_soon"

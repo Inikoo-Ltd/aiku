@@ -13,12 +13,15 @@ use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
+use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\ProcessOrderTrafficSource;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
+use App\Actions\Ordering\PreOrder\MoveOrderExcessPaymentToPreOrder;
+use App\Actions\Ordering\PreOrder\SplitOrderPreOrders;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
@@ -112,11 +115,16 @@ class SubmitOrder extends OrgAction
             );
         }
 
-        $this->processGrGift($order);
-        $this->removeGiftsFromOffersNoLongerLive($order);
-        $this->processGiftOffers($order);
-        $this->processVoucherGiftOffers($order);
-        $this->processUpComingTransactions($order);
+        /** A pre-order split off a basket at its submit: gifts and upcoming lines stay with the in-stock order */
+        $isSplitPreOrder = (bool)$order->preOrder?->parent_order_id;
+
+        if (!$isSplitPreOrder) {
+            $this->processGrGift($order);
+            $this->removeGiftsFromOffersNoLongerLive($order);
+            $this->processGiftOffers($order);
+            $this->processVoucherGiftOffers($order);
+            $this->processUpComingTransactions($order);
+        }
 
         /**
          * A product line at zero quantity with no bonus is nothing to pick: it was zeroed while out
@@ -130,6 +138,9 @@ class SubmitOrder extends OrgAction
             ->where('quantity_bonus', '<=', 0)
             ->get()
             ->each(fn (Transaction $emptyLine) => DeleteTransaction::make()->action($emptyLine));
+
+        $splitPreOrder = SplitOrderPreOrders::run($order);
+        $order->load('preOrder');
 
         /**
          * The submitted_* columns freeze each line at the price it was sold at, copied column to
@@ -160,6 +171,17 @@ class SubmitOrder extends OrgAction
          */
         if ($order->pay_status === null) {
             $order = UpdateOrderPaymentsStatus::run($order);
+        }
+
+        if ($splitPreOrder?->parent_order_id) {
+            MoveOrderExcessPaymentToPreOrder::run($order, $splitPreOrder->order);
+            $order = UpdateOrderPaymentsStatus::run($order);
+            SubmitOrder::run($splitPreOrder->order->refresh());
+
+            /** Dropshipping pays pre-orders in full upfront, second delivery and pallet estimate included (HELP-3432) */
+            if (!$splitPreOrder->is_trade) {
+                PayOrderWithCustomerBalance::make()->handle($splitPreOrder->order->refresh());
+            }
         }
 
         if ($order->customer->warehouse_temporary_notes) {

@@ -396,8 +396,7 @@ const showChartButton = computed(() => {
 })
 
 const canOrder = computed(() => {
-    if (props.product.stock > 0) return true
-    return false
+    return props.product.stock > 0 || !!props.product.pre_order
 })
 
 const hoveredButton = ref<string | null>(null)

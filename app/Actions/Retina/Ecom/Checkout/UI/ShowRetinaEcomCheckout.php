@@ -10,6 +10,8 @@
 
 namespace App\Actions\Retina\Ecom\Checkout\UI;
 
+use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Order\UI\GetEarlierDeliveryAddressWarning;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentApiPoint;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
@@ -98,10 +100,11 @@ class ShowRetinaEcomCheckout extends RetinaAction
             return Redirect::route('retina.ecom.basket.show');
         }
 
-        $isPlacedOnAccount = $this->customer->credit_limit > 0 && $this->customer->spendableBalance() >= $order->total_amount;
+        $amountToPayNow    = GetOrderAmountToPayNow::run($order);
+        $isPlacedOnAccount = $this->customer->credit_limit > 0 && $this->customer->spendableBalance() >= $amountToPayNow;
 
         $paymentAmounts = $this->calculatePaymentWithBalance(
-            $order->total_amount,
+            $amountToPayNow,
             $isPlacedOnAccount ? $this->customer->spendableBalance() : $this->customer->balance
         );
 
@@ -124,6 +127,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 'order'          => OrderResource::make($order)->resolve(),
                 'summary'        => $this->getOrderBoxStats($order),
                 'stock_issues'   => $this->getBasketStockIssues($order),
+                'pre_orders'     => GetBasketPreOrders::run($order),
                 'is_gift_message_missing' => $order->isGiftMessageMissing(),
                 'earlier_delivery_address' => GetEarlierDeliveryAddressWarning::run($order, withCustomerActions: true),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),

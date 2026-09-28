@@ -219,6 +219,12 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
         }
 
+        foreach (array_keys(Shop::PRE_ORDER_DEFAULTS) as $preOrderSetting) {
+            if (Arr::has($modelData, "pre_order_$preOrderSetting")) {
+                data_set($modelData, "settings.pre_orders.$preOrderSetting", Arr::pull($modelData, "pre_order_$preOrderSetting"));
+            }
+        }
+
         if (Arr::has($modelData, 'dispatch_require_shipping')) {
             data_set($modelData, 'settings.dispatch.require_shipping', Arr::pull($modelData, 'dispatch_require_shipping'));
         }
@@ -994,6 +1000,23 @@ class UpdateShop extends OrgAction
             'review_allow_reply_reactions'                            => ['sometimes', 'boolean'],
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'packaging_and_inserts_enabled'                           => ['sometimes', 'boolean'],
+            'pre_order_enabled'                                       => ['sometimes', 'boolean'],
+            'pre_order_deposit_percentage'                            => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'pre_order_full_payment_below'                            => ['sometimes', 'numeric', 'min:0'],
+            'pre_order_default_lead_time_days'                        => ['sometimes', 'integer', 'min:1', 'max:1000'],
+            'pre_order_dispatch_range_weeks'                          => ['sometimes', 'integer', 'min:0', 'max:52'],
+            'pre_order_balance_due_days'                              => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_first_reminder_day'                    => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_second_reminder_day'                   => ['sometimes', 'integer', 'min:1', 'max:90'],
+            'pre_order_balance_cancel_after_days'                     => ['sometimes', 'integer', 'min:1', 'max:180'],
+            'pre_order_free_cancellation_working_days'                => ['sometimes', 'integer', 'min:0', 'max:30'],
+            'pre_order_late_cancellation_days'                        => ['sometimes', 'integer', 'min:1', 'max:365'],
+            'pre_order_pallet_weight_kg'                              => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'pre_order_pallet_longest_side_cm'                        => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'pre_order_pallet_quote_tolerance_percentage'             => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'pre_order_pallet_rates'                                  => ['sometimes', 'array'],
+            'pre_order_pallet_rates.*.country_code'                   => ['required', 'string', 'size:2'],
+            'pre_order_pallet_rates.*.amount'                         => ['required', 'numeric', 'min:0'],
             'payment_settlement_tolerance'                            => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'bank_transfer_instructions_for_email'                    => ['sometimes', 'nullable', 'string', 'max:10000'],
             'access_id'                                               => ['sometimes', 'nullable', 'string'],

@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import RetinaPreOrderPanel, { PreOrderShowcase } from "@/Components/Retina/PreOrder/RetinaPreOrderPanel.vue"
 import {Head, router} from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeadingPublic.vue'
 import {capitalize} from "@/Composables/capitalize"
@@ -13,7 +14,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import {computed, inject, ref} from 'vue'
 import type {Component} from 'vue'
 import {useTabChange} from "@/Composables/tab-change"
-import {trans} from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import {routeType} from '@/types/route'
 import {PageHeadingTypes} from '@/types/PageHeading'
 import {Tabs as TSTabs} from '@/types/Tabs'
@@ -62,6 +63,7 @@ library.add(fadExclamationTriangle,faStars, faExclamationTriangle, faDollarSign,
 
 
 const props = defineProps<{
+    pre_order?: PreOrderShowcase | null
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
@@ -203,8 +205,8 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         }, 3000)
 
         notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to update the note, try again."),
+            title: ctrans("Something went wrong"),
+            text: ctrans("Failed to update the note, try again."),
             type: "error",
         })
     }
@@ -224,8 +226,8 @@ const syncOrderCancellationShopify = async (order) => {
             onStart: () => { isLoadingSyncStatus.value = true },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Order state has been synced to Shopify"),
+                    title: ctrans("Success"),
+                    text: ctrans("Order state has been synced to Shopify"),
                     type: "error"
                 })
             },
@@ -233,13 +235,13 @@ const syncOrderCancellationShopify = async (order) => {
                 console.error(errors)
                 if (errors.messages == 'The fulfillment order is not in an in progress state.') {
                     notify({
-                        title: trans("Unable to sync"),
-                        text: trans('The order state on Shopify is up-to-date'),
+                        title: ctrans("Unable to sync"),
+                        text: ctrans('The order state on Shopify is up-to-date'),
                         type: "error"
                     })
                 } else {
                     notify({
-                        title: trans("Something went wrong"),
+                        title: ctrans("Something went wrong"),
                         text: errors.messages,
                         type: "error"
                     })
@@ -261,28 +263,28 @@ const syncOrderCancellationShopify = async (order) => {
     <PageHeading :data="pageHead">
         <template v-if="['unpaid', 'paid'].includes(box_stats.products.payment.pay_status) && !(order.data.state === 'cancelled' || order.data.state === 'creating')" #afterTitle2>
             <div v-if="box_stats.products.payment.pay_status === 'paid'" class="border border-green-400 bg-green-200/70 px-1.5 py-0.5 font-normal text-sm text-green-700 rounded-sm">
-                {{ trans("Paid") }}
+                {{ ctrans("Paid") }}
             </div>
             <div v-else class="border border-red-400 bg-red-200/70 px-1.5 py-0.5 font-normal text-sm text-red-600 rounded-sm">
-                {{ trans("Unpaid") }}
+                {{ ctrans("Unpaid") }}
             </div>
         </template>
         <template #other>
             <span 
                 v-if="order?.data.state == 'cancelled' && box_stats.customer_channel.platform.name == 'Shopify'" 
-                v-tooltip="trans('Sync order state')"
+                v-tooltip="ctrans('Sync order state')"
                 @click="syncOrderCancellationShopify(order)"
                 class="py-2 px-3 border border-solid border-gray-500 rounded-md cursor-pointer font-medium" 
             >
                 <LoadingIcon v-if="isLoadingSyncStatus" />
                 <FontAwesomeIcon v-else :icon="faSync" fixed-width />
             </span>
-            <span v-if="order?.data.state == 'cancelled'" :class="order?.data.state_icon.class" class="py-2 px-3 border border-solid border-red-500 rounded-md cursor-default font-medium" v-tooltip="trans('Order is cancelled')">
+            <span v-if="order?.data.state == 'cancelled'" :class="order?.data.state_icon.class" class="py-2 px-3 border border-solid border-red-500 rounded-md cursor-default font-medium" v-tooltip="ctrans('Order is cancelled')">
                 <FontAwesomeIcon :icon="order?.data.state_icon.icon" fixed-width/>
                 {{ order?.data.state_label }}
             </span>
             <!-- To display if order have missing items / items that are not picked -->
-            <span v-if="order?.data.state == 'dispatched' && hasModified" class="py-2 px-3 border border-solid text-purple-500 border-purple-500 rounded-md cursor-default font-medium" v-tooltip="trans('Some items are not being sent. Excessed payments have been refunded automatically')">
+            <span v-if="order?.data.state == 'dispatched' && hasModified" class="py-2 px-3 border border-solid text-purple-500 border-purple-500 rounded-md cursor-default font-medium" v-tooltip="ctrans('Some items are not being sent. Excessed payments have been refunded automatically')">
                 <FontAwesomeIcon :icon="order?.data.state_icon.icon" fixed-width/>
                 {{ order?.data.state_label }} | Modified
             </span>
@@ -290,9 +292,9 @@ const syncOrderCancellationShopify = async (order) => {
     </PageHeading>
 
     <div v-if="order?.data?.has_insurance || order?.data?.is_premium_dispatch || order?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
-        <FontAwesomeIcon v-if="order?.data?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order?.data?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
-        <FontAwesomeIcon v-if="order?.data?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.data?.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.data?.has_extra_packing" v-tooltip="ctrans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.data?.has_insurance" v-tooltip="ctrans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
     </div>
 
     <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2 max-w-5xl">
@@ -306,7 +308,7 @@ const syncOrderCancellationShopify = async (order) => {
         </template>
 
         <div class="ml-2 font-normal text-sm">
-            <span class="font-bold">{{ trans("Order cancelled") }}:</span>
+            <span class="font-bold">{{ ctrans("Order cancelled") }}:</span>
             <span v-if="order?.data?.cancellation?.label">{{ order.data.cancellation.label }}</span>
             <span v-if="order?.data?.cancellation?.notes" class="italic">{{ order.data.cancellation.notes }}</span>
         </div>
@@ -320,19 +322,23 @@ const syncOrderCancellationShopify = async (order) => {
 
         <div class="ml-2 font-normal flex justify-between w-full">
             <div class="flex items-center gap-x-2 text-sm">
-                <!-- {{ trans("You have unpaid amount of the order") }}: <span class="font-bold">{{
+                <!-- {{ ctrans("You have unpaid amount of the order") }}: <span class="font-bold">{{
                     locale.currencyFormat(locale.currencyInertia?.code, order?.data.unpaid_amount)
                 }}</span> -->
-                {{ trans("If your order is marked as unpaid, please add the required funds to your account balance. Once done, return back to orders and click to complete the payment by balance. Your order will then be automatically sent to the warehouse for fulfilment") }}.
+                {{ ctrans("If your order is marked as unpaid, please add the required funds to your account balance. Once done, return back to orders and click to complete the payment by balance. Your order will then be automatically sent to the warehouse for fulfilment") }}.
             </div>
             <!-- <ButtonWithLink
                 :routeTarget="routes.route_to_pay_unpaid"
-                :label="trans('Click to pay')"
+                :label="ctrans('Click to pay')"
                 type="positive"
                 class="bg-green-100"
             /> -->
         </div>
     </Message>
+
+    <div v-if="pre_order" class="mx-4 mt-4">
+        <RetinaPreOrderPanel :pre_order :orderId="order?.data?.id" :orderSlug="order?.data?.slug" />
+    </div>
 
     <DropshippingSummaryOrder
         :address_management
@@ -358,7 +364,7 @@ const syncOrderCancellationShopify = async (order) => {
                 <div class="mb-2 text-sm text-gray-500">
                     <FontAwesomeIcon style="color: #AAAAAA" icon="fal fa-sticky-note" class="xopacity-70"
                                      fixed-width aria-hidden="true"/>
-                    {{ trans("Notes from Staff") }}
+                    {{ ctrans("Notes from Staff") }}
                     :
                 </div>
                 <PureTextarea
@@ -376,7 +382,7 @@ const syncOrderCancellationShopify = async (order) => {
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
                     <FontAwesomeIcon style="color: #93C5FD" icon="fal fa-truck" fixed-width aria-hidden="true"/>
-                    {{ trans("Delivery Instructions") }}
+                    {{ ctrans("Delivery Instructions") }}
                     :
                 </div>
                 <PureTextarea
@@ -395,7 +401,7 @@ const syncOrderCancellationShopify = async (order) => {
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
                     <FontAwesomeIcon style="color: #599FF0" icon="fal fa-sticky-note" fixed-width aria-hidden="true"/>
-                    {{ trans("Other Instructions") }}:
+                    {{ ctrans("Other Instructions") }}:
                 </div>
                 <PureTextarea
                     v-model="noteToSubmit"

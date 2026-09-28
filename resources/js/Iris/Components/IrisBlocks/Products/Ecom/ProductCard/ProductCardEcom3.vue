@@ -308,12 +308,12 @@ defineExpose({
           
 
                 <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2 flex items-center gap-1.5">
-                    <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
+                    <NewAddToCartButton v-if="((product.stock && !product.is_coming_soon) || product.pre_order) && basketButton" :hasInBasket
                         ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
                         :buttonStyleHover="buttonStyleHover" :updateBasketQuantityRoute="addToBasketRoute"
                         :buttonStyle="buttonStyle"  :routeGettransactionProductData/>
-                    <template v-else-if="!product.stock && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant">
+                    <template v-else-if="!product.stock && !product.pre_order && layout?.outboxes?.oos_notification?.state == 'active' && basketButton && !product.variant">
                         <ChipExpectedBackInStock :product="product"
                             @toggle="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)" />
                         <button
@@ -362,6 +362,10 @@ defineExpose({
                         </h3>
                     </template>
                 </LinkIris>
+
+                <div v-if="product.pre_order && layout?.iris?.is_logged_in" class="text-xs text-amber-800">
+                    <span class="font-semibold">{{ product.pre_order.type_label }}</span> · {{ product.pre_order.dispatch_label }}
+                </div>
             </div>
         </div>
 

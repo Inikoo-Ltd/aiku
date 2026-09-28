@@ -17,6 +17,7 @@ import GiftMessagePanel from "@/Components/Order/GiftMessagePanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
+import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
@@ -157,6 +158,7 @@ const props = defineProps<{
     }
     missed_offers: Record<string, { label: string }>
     stock_issues?: StockIssues
+    pre_orders?: BasketPreOrdersData | null
     voucher: {
         id: number
         voucher_code: string
@@ -745,6 +747,7 @@ const onChangeInsurance = async (val: boolean) => {
             <TableEcomBasket
                 :data="transactions"
                 :updateRoute="routes.update_route"
+                :preOrderLines="pre_orders?.lines"
             >
                 <template #tableHeaderActions>
                     <Button
@@ -995,6 +998,10 @@ const onChangeInsurance = async (val: boolean) => {
 
             <div v-if="stock_issues?.out_of_stock?.length || stock_issues?.low_stock?.length" class="px-4 md:px-8 pb-4 space-y-3">
                 <BasketStockIssues :stock_issues />
+            </div>
+
+            <div v-if="pre_orders?.has_pre_orders" class="px-4 md:px-8 pb-4">
+                <BasketPreOrders :pre_orders :currencyCode="order?.currency_code" />
             </div>
 
             <div class="border-t flex justify-end py-5 px-4 md:px-8">

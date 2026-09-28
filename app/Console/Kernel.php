@@ -8,6 +8,8 @@
 
 namespace App\Console;
 
+use App\Actions\Ordering\PreOrder\AllocatePreOrderStock;
+use App\Actions\Ordering\PreOrder\ProcessPreOrders;
 use App\Actions\Accounting\Invoice\RedoDailyInvoiceTimeSeries;
 use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPoints;
 use App\Actions\Catalogue\Shop\NotifyShopStockArrivals;
@@ -236,6 +238,24 @@ class Kernel extends ConsoleKernel
                 name: 'RemindChannelOrdersOnHold',
                 type: 'job',
                 scheduledAt: '08:00'
+            );
+
+            $this->logSchedule(
+                $schedule->job(ProcessPreOrders::makeJob())->dailyAt('08:15')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'ProcessPreOrders',
+                ),
+                name: 'ProcessPreOrders',
+                type: 'job',
+                scheduledAt: '08:15'
+            );
+
+            $this->logSchedule(
+                $schedule->job(AllocatePreOrderStock::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'AllocatePreOrderStock',
+                ),
+                name: 'AllocatePreOrderStock',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
             );
 
             $this->logSchedule(

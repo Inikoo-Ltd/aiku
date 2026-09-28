@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
@@ -38,6 +39,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -105,6 +107,17 @@ class SendOrderToWarehouse extends OrgAction
      */
     public function handle(Order $order, array $modelData): ?DeliveryNote
     {
+        /** A pre-order waits for its goods and its balance; ReleasePreOrder sends it (HELP-3432) */
+        if ($order->preOrder && in_array($order->preOrder->state, PreOrderStateEnum::open())) {
+            if (!$this->asAction) {
+                throw ValidationException::withMessages([
+                    'order' => __('This pre-order is waiting for its goods or its balance. Release it from the pre-order panel.'),
+                ]);
+            }
+
+            return null;
+        }
+
         data_set($modelData, 'state', OrderStateEnum::IN_WAREHOUSE);
 
         if ($this->releaseFromGate && $order->at_gate_at) {

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -54,6 +55,7 @@ use App\Http\Resources\Traits\HasProductOfferPrices;
  * @property mixed $variant_id
  * @property mixed $step_discount_data
  * @property string|null $expected_back_in_stock_at
+ * @property array|null $pre_order
  */
 class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
@@ -74,8 +76,11 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 
         $expectedBackInStockAt = GetProductIncomingStock::make()->earliestEtaByProduct($outOfStockProductIds);
 
-        $products->each(function ($product) use ($expectedBackInStockAt) {
+        $preOrders = GetProductPreOrder::make()->byProductId($products->pluck('id')->all());
+
+        $products->each(function ($product) use ($expectedBackInStockAt, $preOrders) {
             $product->expected_back_in_stock_at = $expectedBackInStockAt[$product->id] ?? null;
+            $product->pre_order                 = $preOrders[$product->id] ?? null;
         });
 
         return parent::collection($resource);
@@ -145,6 +150,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'available_quantity'         => $this->available_quantity,
             'expected_back_in_stock_at'  => $this->expected_back_in_stock_at ?? null,
             'is_on_demand'               => $this->is_on_demand,
+            'pre_order'                  => GetProductPreOrder::make()->withPalletEstimateFor($this->pre_order ?? null, $request->user()?->customer),
             'offers_data'                => $this->offers_data, // this comes from transaction.offers_data
 
 

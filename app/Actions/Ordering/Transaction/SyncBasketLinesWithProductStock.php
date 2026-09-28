@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\LogBasketEvent;
@@ -24,7 +25,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * the customer is never charged for it. The quantity they asked for is kept on the line and put
  * back the moment the product is in stock again, as long as the order is still a basket.
  *
- * An on demand product is made to order, so it is never zeroed for lack of stock.
+ * An on demand product is made to order, so it is never zeroed for lack of stock, nor is one
+ * offered for pre-order (HELP-3432): its lines are put back when the pre-order is switched on.
  * Baskets fetched from a sales platform, and orders of external shops, belong to the platform:
  * the merchant's customer already paid for that quantity there, so those lines are left alone.
  */
@@ -57,8 +59,10 @@ class SyncBasketLinesWithProductStock implements ShouldBeUnique
             })
             ->get();
 
+        $offersPreOrder = GetProductPreOrder::make()->type($product) !== null;
+
         foreach ($lines as $line) {
-            if (($product->refresh()->available_quantity ?? 0) <= 0) {
+            if (($product->refresh()->available_quantity ?? 0) <= 0 && !$offersPreOrder) {
                 $this->nil($line);
             } else {
                 $this->restore($line);

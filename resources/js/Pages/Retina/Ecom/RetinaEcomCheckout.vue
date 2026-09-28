@@ -2,6 +2,7 @@
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import BasketStockIssues, { StockIssues } from "@/Components/Retina/Basket/BasketStockIssues.vue"
+import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import type { Component } from "vue"
@@ -49,6 +50,7 @@ const props = defineProps<{
     },
     currency_code: string
     stock_issues?: StockIssues
+    pre_orders?: BasketPreOrdersData
     is_gift_message_missing?: boolean
     earlier_delivery_address?: { previous_address: string, previous_address_line: string, previous_order_reference: string, current_address_line: string, confirmed: boolean, actions: { confirm_route: routeType, use_previous_route: routeType } | null } | null
 }>()
@@ -120,6 +122,10 @@ const locale = inject("locale", aikuLocaleStructure)
             <BasketStockIssues :stock_issues="{ ...stock_issues, low_stock: [] }" />
         </div>
 
+        <div v-if="pre_orders?.has_pre_orders && pre_orders.is_accepted" class="md:px-4 mb-4">
+            <BasketPreOrders :pre_orders :orderId="(order as any)?.id" :currencyCode="currency_code" isInCheckout />
+        </div>
+
         <EcomCheckoutSummary
             :summary
             :balance
@@ -141,6 +147,10 @@ const locale = inject("locale", aikuLocaleStructure)
                 :label="trans('Back to basket')"
                 :routeTarget="routes.back_to_basket"
             />
+        </div>
+
+        <div v-else-if="pre_orders?.has_pre_orders && !pre_orders.is_accepted" class="mt-10 md:mx-10">
+            <BasketPreOrders :pre_orders :orderId="(order as any)?.id" :currencyCode="currency_code" isInCheckout />
         </div>
 
         <!-- If 'Total' is 0 or less -->

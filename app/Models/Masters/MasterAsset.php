@@ -135,6 +135,11 @@ use App\Models\Traits\HasSearch;
  * @property string|null $marketing_ingredients
  * @property int|null $origin_country_id
  * @property bool|null $is_for_sale
+ * @property bool $is_back_order
+ * @property bool $is_made_to_order
+ * @property string|null $pre_order_deposit_percentage
+ * @property int|null $pre_order_lead_time_days
+ * @property int|null $max_quantity_per_order
  * @property string|null $not_for_sale_since
  * @property bool $not_for_sale_from_trade_unit
  * @property array<array-key, mixed>|null $web_images
@@ -241,6 +246,9 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'web_images'              => 'array',
         'tax_category'            => 'array',
         'follow_trade_unit_media' => 'boolean',
+        'is_back_order'           => 'boolean',
+        'is_made_to_order'        => 'boolean',
+        'pre_order_deposit_percentage' => 'decimal:2',
         'independent_barcode'     => 'boolean',
         'master_prices'           => 'array',
         'master_rrps'             => 'array',
@@ -280,6 +288,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'is_for_sale',
         'follow_trade_unit_media',
         'is_golden_product',
+        'is_back_order',
+        'is_made_to_order',
+        'pre_order_deposit_percentage',
+        'pre_order_lead_time_days',
+        'max_quantity_per_order',
     ];
 
     public function getRouteKeyName(): string

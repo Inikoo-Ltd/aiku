@@ -8,6 +8,8 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
+use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -538,6 +540,18 @@ class ShowOrder extends OrgAction
                     'insurance'        => $orderCharges['insurance'] ? ChargeResource::make($orderCharges['insurance'])->toArray(request()) : null,
                 ],
                 'data'                        => OrderResource::make($order),
+                'pre_order'                   => $order->preOrder ? array_merge(GetPreOrderShowcase::run($order->preOrder), [
+                    'update_route'         => [
+                        'name'       => 'grp.models.order.pre_order.update',
+                        'parameters' => ['order' => $order->id],
+                        'method'     => 'patch',
+                    ],
+                    'cancellation_reasons' => PreOrderCancellationReasonEnum::valuesWithLabels(),
+                ]) : null,
+                'split_pre_order'             => $order->splitPreOrder ? [
+                    'reference' => $order->splitPreOrder->order->reference,
+                    'slug'      => $order->splitPreOrder->order->slug,
+                ] : null,
                 'delivery_note'               => $deliveryNoteResource,
 
                 'is_forbidden_delivery'    => data_get($orderBanStatus, 'delivery', false),

@@ -137,6 +137,36 @@ trait WithSupplierEditFields
                 ]
             ],
             [
+                'label'  => __('Pre-orders'),
+                'title'  => __('Pre-orders'),
+                'icon'   => 'fal fa-hourglass-half',
+                'fields' => [
+                    'pre_order_lead_time' => [
+                        'type'        => 'input',
+                        'label'       => __('Pre-order lead time'),
+                        'information' => __('From the customer ordering to us dispatching, shown on the website as an estimated dispatch range. Products can set their own.'),
+                        'value'       => Arr::get($supplier->settings, 'pre_order_lead_time'),
+                        'options'     => ['inputType' => 'number']
+                    ],
+                    'pre_order_lead_time_unit' => [
+                        'type'    => 'select',
+                        'label'   => __('Lead time in'),
+                        'options' => [
+                            ['value' => 'days', 'label' => __('Days')],
+                            ['value' => 'weeks', 'label' => __('Weeks')],
+                        ],
+                        'value'   => Arr::get($supplier->settings, 'pre_order_lead_time_unit', 'days'),
+                        'mode'    => 'single'
+                    ],
+                    'pre_order_order_by_date' => [
+                        'type'        => 'date',
+                        'label'       => __('Order by date'),
+                        'information' => __('The date the buying team must place the supplier order for the open pre-orders. If the minimum order is not reached by then, decide whether to order anyway or cancel the pre-orders with a full refund.'),
+                        'value'       => Arr::get($supplier->settings, 'pre_order_order_by_date'),
+                    ],
+                ]
+            ],
+            [
                 'label'  => __('Purchase orders'),
                 'title'  => __('Purchase orders'),
                 'icon'   => 'fal fa-envelope',

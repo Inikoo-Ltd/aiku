@@ -19,9 +19,9 @@ import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select,
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
+import PreOrderPanel from "@/Components/Ordering/PreOrderPanel.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
-import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { UploadPallet } from "@/types/Pallet"
@@ -129,6 +129,8 @@ interface UploadSection {
 }
 
 const props = defineProps<{
+    pre_order?: any
+    split_pre_order?: { reference: string, slug: string } | null
     aurora_notice?: string | null
     title: string
     tabs: TSTabs
@@ -1851,7 +1853,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     <div v-if="aurora_notice" class="m-3 flex items-center gap-4 rounded-lg border-4 border-red-600 bg-red-50 p-4 text-red-800">
         <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-4xl text-red-600" fixed-width aria-hidden="true" />
         <div>
-            <div class="text-xl font-bold uppercase">{{ trans("Process in Aurora") }}</div>
+            <div class="text-xl font-bold uppercase">{{ ctrans("Process in Aurora") }}</div>
             <div class="text-base">{{ aurora_notice }}</div>
         </div>
     </div>
@@ -1876,6 +1878,11 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     :updateRoute="routes.updateOrderRoute" />
             </div>
         </Transition>
+    </div>
+
+    <PreOrderPanel v-if="pre_order" :pre_order />
+    <div v-if="split_pre_order" class="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        {{ ctrans("The pre-order items of this order were split into order :reference, sent when they arrive.", { reference: split_pre_order.reference }) }}
     </div>
 
     <!-- Section: Timeline -->

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
@@ -56,7 +57,9 @@ class PayRetinaOrderWithBalance extends RetinaAction
             'order'   => $order,
         ];
 
-        if ($order->customer->spendableBalance() < $order->total_amount) {
+        $amountToPayNow = GetOrderAmountToPayNow::run($order);
+
+        if ($order->customer->spendableBalance() < $amountToPayNow) {
             return $insufficientBalance;
         }
 
@@ -76,15 +79,15 @@ class PayRetinaOrderWithBalance extends RetinaAction
         }
         $paymentData = [
             'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
-            'amount'                  => $order->total_amount,
+            'amount'                  => $amountToPayNow,
             'status'                  => PaymentStatusEnum::SUCCESS,
             'state'                   => PaymentStateEnum::COMPLETED,
             'payment_account_shop_id' => $paymentAccountShop->id
         ];
 
-        $paidOrder = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $submitOrder) {
+        $paidOrder = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $submitOrder, $amountToPayNow) {
             $customer = Customer::lockForUpdate()->findOrFail($customer->id);
-            if ($customer->spendableBalance() < $order->total_amount) {
+            if ($customer->spendableBalance() < $amountToPayNow) {
                 return null;
             }
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Catalogue\Product\Traits\WithPreOrderEditFields;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -34,6 +35,7 @@ class EditProduct extends OrgAction
     use WithUnitsChangeConfirmation;
     use WithBarcodeChoice;
     use WithDuplicatedBarcodeProducts;
+    use WithPreOrderEditFields;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -768,6 +770,12 @@ class EditProduct extends OrgAction
                             ],
                         ],
                     ] : [],
+                $this->preOrderEditFieldsSection(
+                    $product,
+                    $product->master_product_id
+                        ? __('Set on the master product for every shop; a change there replaces what is set here.')
+                        : ''
+                ),
                 [
                     'label'  => __('Sold only to'),
                     'icon'   => 'fal fa-gem',

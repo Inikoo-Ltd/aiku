@@ -48,6 +48,7 @@ enum OutboxCodeEnum: string
     case OOS_IN_ORDER_NOTIFICATION = 'oos_in_order_notification';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case CHANNEL_ORDER_ON_HOLD = 'channel_order_on_hold';
+    case PRE_ORDER_UPDATE = 'pre_order_update';
     case PASSWORD_REMINDER = 'password_reminder';
     case REGISTRATION = 'registration';
     case REGISTRATION_APPROVED = 'registration_approved';
@@ -101,6 +102,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,
@@ -188,6 +190,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => 'Channel order on hold',
+            OutboxCodeEnum::PRE_ORDER_UPDATE => 'Pre-order update',
             OutboxCodeEnum::PASSWORD_REMINDER => 'Password reminder',
             OutboxCodeEnum::REGISTRATION => 'Registration',
             OutboxCodeEnum::REGISTRATION_APPROVED => 'Registration approved',
@@ -254,6 +257,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => 'Channel order on hold',
+            OutboxCodeEnum::PRE_ORDER_UPDATE => 'Pre-order update',
             OutboxCodeEnum::PASSWORD_REMINDER => 'Password reminder',
             OutboxCodeEnum::REGISTRATION => 'Registration',
             OutboxCodeEnum::REGISTRATION_APPROVED => 'Registration approved',
@@ -383,6 +387,9 @@ enum OutboxCodeEnum: string
             /** Only a shop whose orders arrive from a platform can have an order the customer never
              * saw us fail to charge. Anywhere else they are standing at the checkout. */
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => ['dropshipping'],
+
+            /** Balance requests, reminders, new dispatch dates and cancellations of pre-orders (HELP-3432) */
+            OutboxCodeEnum::PRE_ORDER_UPDATE => ['b2b', 'dropshipping'],
             OutboxCodeEnum::OOS_NOTIFICATION,
             OutboxCodeEnum::REVIEW_REMINDER,
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
@@ -453,6 +460,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::PRICE_CHANGE,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER
             => OutboxBuilderEnum::BLADE,
             default => null
@@ -477,6 +485,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
@@ -545,6 +554,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::PASSWORD_REMINDER,
             OutboxCodeEnum::REGISTRATION,
             OutboxCodeEnum::REGISTRATION_APPROVED,
@@ -613,6 +623,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::PALLET_DELIVERY_PROCESSED,
             OutboxCodeEnum::PALLET_RETURN_DISPATCHED,

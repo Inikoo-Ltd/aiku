@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Ordering\PreOrder\UpdatePreOrder;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
 use App\Http\Middleware\EnsureNotHandledInAurora;
@@ -135,6 +136,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledIn
     Route::get('set-shipping-engine-auto', UpdateOrderShippingEngineAsAuto::class)->name('set_shipping_engine_auto');
 
     Route::patch('recalculate-vat', UpdateOrderReCalculateVAT::class)->name('recalculate-vat');
+    Route::patch('pre-order', UpdatePreOrder::class)->name('pre_order.update');
 });
 
 Route::name('picking.')->prefix('picking/{picking:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {
