@@ -2408,6 +2408,26 @@ test('UI Index stock deliveries', function () {
     });
 });
 
+test('UI Index stock deliveries shows the expected received date', function () {
+    $stockDelivery = StoreStockDelivery::make()->action(
+        $this->orgAgent,
+        [
+            'reference'   => 'EXPECTED-DATE-1',
+            'date'        => date('Y-m-d'),
+            'currency_id' => $this->organisation->currency_id,
+        ],
+        strict: false,
+    );
+    UpdateStockDelivery::make()->action($stockDelivery, ['estimated_receiving_date' => '2026-10-15']);
+
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.org.procurement.stock_deliveries.index', [$this->organisation->slug]).'?sort=estimated_receiving_date');
+
+    $data = $response->viewData('page')['props']['data'];
+    $row  = collect($data['data'] ?? $data)->firstWhere('id', $stockDelivery->id);
+    expect($row['estimated_receiving_date'])->toBe('2026-10-15');
+});
+
 test('UI Index org agent stock deliveries shows deliveries with empty between filter', function () {
     $agentStockDelivery = StoreStockDelivery::make()->action(
         $this->orgAgent,

@@ -176,7 +176,7 @@ class IndexStockDeliveries extends OrgAction
             'stock_deliveries.parent_name',
             'stock_deliveries.state',
             'stock_deliveries.date',
-        ]);
+        ])->selectRaw("stock_deliveries.data->>'estimated_receiving_date' as estimated_receiving_date");
 
         if ($organisationAgent || $this->parent instanceof Agent || $this->parent instanceof Supplier) {
             $query
@@ -207,7 +207,7 @@ class IndexStockDeliveries extends OrgAction
 
         return $query
             ->defaultSort('-stock_deliveries.date')
-            ->allowedSorts(['reference', 'parent_name', 'date'])
+            ->allowedSorts(['reference', 'parent_name', 'date', 'estimated_receiving_date'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -241,7 +241,8 @@ class IndexStockDeliveries extends OrgAction
             $table
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'estimated_receiving_date', label: __('Expected received date'), sortable: true, align: 'right');
 
             if (!$this->isAgentContext()) {
                 $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
