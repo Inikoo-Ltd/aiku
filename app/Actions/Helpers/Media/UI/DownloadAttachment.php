@@ -32,14 +32,20 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 class DownloadAttachment
 {
     use AsAction;
 
-    public function handle(Media $media): BinaryFileResponse
+    public function handle(Media $media, bool $inline = false): BinaryFileResponse
     {
         $filename = $media->media_scope == 'labeling_guide' ? $media->name : $media->file_name;
+
+        if ($inline) {
+            return response()->file($media->getPath())
+                ->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $filename);
+        }
 
         return response()->download($media->getPath(), $filename);
     }
@@ -50,7 +56,7 @@ class DownloadAttachment
             abort(404);
         }
 
-        return $this->handle($media);
+        return $this->handle($media, $request->boolean('inline'));
     }
 
     public function canDownload(Media $media, User $user): bool

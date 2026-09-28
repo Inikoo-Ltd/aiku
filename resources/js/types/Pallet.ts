@@ -209,6 +209,10 @@ export interface PDRNotes {
     warning?: string
     information?: string
     field: string  // customer_notes, public_notes, internal_notes
+    pdf_preview?: {
+        label: string
+        route: routeType
+    } | null
 }
 
 
