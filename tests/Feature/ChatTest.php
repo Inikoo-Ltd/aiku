@@ -4776,6 +4776,57 @@ test('an agent strikes a card number out of a message everywhere it was stored',
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 });
 
+test('striking a card number out of an email also takes it out of the email body and its summary', function () {
+    setPermissionsTeamId($this->user->group_id);
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $clerk = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $clerk->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+    $agent = ChatAgent::create(['user_id' => $clerk->id, 'language_id' => $clerk->language_id]);
+
+    $email = fn (string $html) => ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'my card is 4111111111111111 please charge it',
+        'html_body'       => $html,
+        'metadata'        => ['ai_summary' => 'Customer gives card 4111 1111 1111 1111 and asks to be charged.'],
+    ]);
+
+    $this->actingAs($clerk);
+    $mask = str_repeat(RedactChatMessage::MASK, 16);
+
+    $verbatim = $email('<p class="card">my card is <b>4111111111111111</b> please charge it</p>');
+    RedactChatMessage::make()->handle($session, $verbatim, $agent, '4111111111111111');
+    $verbatim = $verbatim->fresh();
+
+    expect($verbatim->html_body)->toBe("<p class=\"card\">my card is <b>$mask</b> please charge it</p>")
+        ->and($verbatim->metadata)->not->toHaveKey('ai_summary');
+    \App\Actions\Chat\ChatSession\SummarizeLongEmail::assertPushed(1);
+
+    // Split by a tag, the fragment cannot be masked in place, so the markup goes and the masked text shows.
+    $split = $email('<p>my card is 41111111<span>11111111</span> please charge it</p>');
+    RedactChatMessage::make()->handle($session, $split, $agent, '4111111111111111');
+
+    expect($split->fresh()->html_body)->toBeNull()
+        ->and($split->fresh()->message_text)->toBe("my card is $mask please charge it");
+
+    $spaced = $email('<p>my card is 4111&nbsp;1111 please charge it</p>');
+    $spaced->update(['message_text' => 'my card is 4111 1111 please charge it']);
+    RedactChatMessage::make()->handle($session, $spaced, $agent, '4111 1111');
+
+    expect($spaced->fresh()->html_body)->toBeNull();
+});
+
 test('an agent removes a photograph of a card from a message and from the archive', function (bool $hasArchiveCopy) {
     $archiveSchema = $hasArchiveCopy ? 'chat_redaction_archived' : 'chat_redaction_unarchived';
     config()->set(

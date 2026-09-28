@@ -83,16 +83,20 @@ class RedactChatMessage
 
         $mask = str_repeat(self::MASK, mb_strlen($fragment));
 
+        $hadEmailSummary = data_get($chatMessage->metadata, SummarizeLongEmail::KEY) !== null;
+
         DB::transaction(function () use ($chatMessage, $agent, $fragment, $mask, $occurrences) {
             $metadata = $chatMessage->metadata ?? [];
             data_set($metadata, 'redacted_at', now()->toISOString());
             data_set($metadata, 'redacted_by_user_id', Auth::id());
             data_set($metadata, 'redacted_by_agent_id', $agent->id);
             data_set($metadata, 'redaction_count', ($metadata['redaction_count'] ?? 0) + $occurrences);
+            unset($metadata[SummarizeLongEmail::KEY]);
 
             $chatMessage->update([
                 'message_text'  => $this->mask($chatMessage->message_text, $fragment, $mask),
                 'original_text' => $this->mask($chatMessage->original_text, $fragment, $mask),
+                'html_body'     => $this->maskHtml($chatMessage->html_body, $fragment, $mask),
                 'metadata'      => $metadata,
             ]);
 
@@ -108,6 +112,12 @@ class RedactChatMessage
         $chatMessage->refresh();
 
         $this->forgetSummary($chatSession);
+
+        // The email's summary is written in the AI's own words and may repeat the fragment in any
+        // shape, so it is written again from the masked text rather than patched.
+        if ($hadEmailSummary) {
+            SummarizeLongEmail::dispatch($chatMessage);
+        }
 
         // What was taken out is never written into the record of taking it out.
         StoreChatEvent::run(
@@ -223,6 +233,31 @@ class RedactChatMessage
     private function mask(?string $text, string $fragment, string $mask): ?string
     {
         return $text === null ? null : str_replace($fragment, $mask, $text);
+    }
+
+    /**
+     * Only the text between tags is masked, so the markup survives. When the fragment still reads
+     * in the email afterwards — split by a tag, written as entities, or inside an attribute — the
+     * markup is dropped and the masked plain text is shown instead.
+     */
+    private function maskHtml(?string $html, string $fragment, string $mask): ?string
+    {
+        if ($html === null || $html === '') {
+            return $html;
+        }
+
+        $parts = preg_split('/(<[^>]*>)/', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $masked = implode('', array_map(
+            fn (string $part) => str_starts_with($part, '<') ? $part : str_replace($fragment, $mask, $part),
+            $parts
+        ));
+
+        $readable = fn (string $text) => preg_replace('/[\s\x{00A0}]+/u', ' ', html_entity_decode($text, ENT_QUOTES | ENT_HTML5));
+        $needle = $readable($fragment);
+
+        $stillReadable = str_contains($readable($masked), $needle) || str_contains($readable(strip_tags($masked)), $needle);
+
+        return $stillReadable ? null : $masked;
     }
 
     public function inAttachment(string $organisation, ChatSession $chatSession, ChatMessage $chatMessage): JsonResponse
