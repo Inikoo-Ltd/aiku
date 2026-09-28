@@ -40,6 +40,8 @@ class UpdateCharge extends OrgAction
             data_set($modelData, 'status', $status);
         }
 
+        $modelData = Arr::except($modelData, ['amount', 'min_order']);
+
         $charge  = $this->update($charge, $modelData);
         $changed = $charge->getChanges();
 
@@ -110,6 +112,9 @@ class UpdateCharge extends OrgAction
 
             'data'     => ['sometimes', 'array'],
             'settings' => ['sometimes', 'array'],
+
+            'amount'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'min_order' => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
             'state'   => ['sometimes', 'required', Rule::enum(ChargeStateEnum::class)],
             'trigger' => ['sometimes', 'required', Rule::enum(ChargeTriggerEnum::class)],
