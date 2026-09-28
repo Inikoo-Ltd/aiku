@@ -32,7 +32,8 @@ class EditProcurementSettings extends OrgAction
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
         $title   = __('Procurement settings');
-        $mailbox = Arr::get($organisation->settings, 'procurement.gmail', []);
+        $mailbox  = Arr::get($organisation->settings, 'procurement.gmail', []);
+        $whatsapp = Arr::get($organisation->settings, 'procurement.whatsapp', []);
 
         return Inertia::render(
             'EditModel',
@@ -72,11 +73,53 @@ class EditProcurementSettings extends OrgAction
                                 ],
                             ],
                         ],
+                        [
+                            'label'  => __('Supplier WhatsApp'),
+                            'icon'   => 'fab fa-whatsapp',
+                            'fields' => [
+                                'whatsapp_display_phone'           => [
+                                    'type'        => 'input',
+                                    'label'       => __('Phone number'),
+                                    'placeholder' => '+44 7700 900000',
+                                    'information' => __('A WhatsApp Business number of its own for procurement, not a shop number, registered under this organisation\'s Meta app.'),
+                                    'value'       => Arr::get($whatsapp, 'display_phone'),
+                                ],
+                                'whatsapp_phone_number_id'         => [
+                                    'type'        => 'input',
+                                    'label'       => __('Phone number ID'),
+                                    'information' => __('From Meta WhatsApp Manager, API setup. Messages to this number arrive in the procurement inbox.'),
+                                    'value'       => Arr::get($whatsapp, 'phone_number_id'),
+                                ],
+                                'whatsapp_waba_id'                 => [
+                                    'type'  => 'input',
+                                    'label' => __('WhatsApp Business Account ID'),
+                                    'value' => Arr::get($whatsapp, 'waba_id'),
+                                ],
+                                'whatsapp_message_template'        => [
+                                    'type'        => 'input',
+                                    'label'       => __('Message template'),
+                                    'information' => __('Approved template used when the supplier has not written in 24 hours. Its body must have one variable, which carries the message.'),
+                                    'value'       => Arr::get($whatsapp, 'message_template'),
+                                ],
+                                'whatsapp_purchase_order_template' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Purchase order template'),
+                                    'information' => __('Approved template with a document header and one body variable for the order reference, used to send purchase orders.'),
+                                    'value'       => Arr::get($whatsapp, 'purchase_order_template'),
+                                ],
+                                'whatsapp_template_language'       => [
+                                    'type'        => 'input',
+                                    'label'       => __('Template language'),
+                                    'placeholder' => 'en',
+                                    'value'       => Arr::get($whatsapp, 'template_language'),
+                                ],
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.org.settings.update',
-                            'parameters' => [$organisation->id],
+                            'name'       => 'grp.org.procurement.settings.update',
+                            'parameters' => [$organisation->slug],
                         ],
                     ],
                 ],

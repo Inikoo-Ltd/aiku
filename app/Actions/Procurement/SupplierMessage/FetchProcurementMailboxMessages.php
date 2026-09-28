@@ -5,9 +5,9 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Procurement\SupplierEmail;
+namespace App\Actions\Procurement\SupplierMessage;
 
-use App\Models\Procurement\SupplierEmail;
+use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailHistoryExpiredException;
@@ -50,7 +50,7 @@ class FetchProcurementMailboxMessages
 
         $messageIds = array_unique(array_merge($messageIds, $client->listInboxMessageIds($this->sweepQuery($organisation), 100)));
 
-        $known = SupplierEmail::whereIn('gmail_message_id', $messageIds)->pluck('gmail_message_id')->all();
+        $known = SupplierMessage::whereIn('gmail_message_id', $messageIds)->pluck('gmail_message_id')->all();
 
         $dispatched = 0;
 

@@ -5,11 +5,11 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Enums\Procurement\SupplierEmail;
+namespace App\Enums\Procurement\SupplierMessage;
 
 use App\Enums\EnumHelperTrait;
 
-enum SupplierEmailRoutedByEnum: string
+enum SupplierMessageRoutedByEnum: string
 {
     use EnumHelperTrait;
 

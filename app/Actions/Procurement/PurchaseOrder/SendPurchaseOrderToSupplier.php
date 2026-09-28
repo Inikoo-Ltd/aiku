@@ -11,14 +11,18 @@ use App\Actions\Comms\EmailAddress\StoreEmailAddress;
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
-use App\Enums\Procurement\SupplierEmail\SupplierEmailDirectionEnum;
-use App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum;
+use App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum;
+use App\Enums\Procurement\SupplierMessage\SupplierMessageRoutedByEnum;
+use App\Actions\Procurement\SupplierMessage\RouteSupplierMessage;
+use App\Actions\Procurement\SupplierMessage\Whatsapp\SendSupplierWhatsappMessage;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\ModelHasDispatchedEmail;
 use App\Models\Comms\Outbox;
+use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
-use App\Models\Procurement\SupplierEmail;
+use App\Models\Procurement\SupplierMessage;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -31,8 +35,12 @@ class SendPurchaseOrderToSupplier
      * events on the dispatched email. Replies go to the procurement mailbox, where the mirror
      * picks them up and files them under the same supplier.
      */
-    public function handle(PurchaseOrder $purchaseOrder): ?DispatchedEmail
+    public function handle(PurchaseOrder $purchaseOrder, string $channel = 'email'): DispatchedEmail|SupplierMessage|null
     {
+        if ($channel === 'whatsapp') {
+            return $this->sendByWhatsapp($purchaseOrder);
+        }
+
         $recipient = self::recipientEmail($purchaseOrder);
         $outbox    = self::outbox($purchaseOrder);
 
@@ -40,8 +48,8 @@ class SendPurchaseOrderToSupplier
             return null;
         }
 
-        /** @var OrgSupplier $orgSupplier */
-        $orgSupplier  = $purchaseOrder->parent;
+        /** @var OrgSupplier|OrgAgent|OrgPartner $counterpart */
+        $counterpart  = $purchaseOrder->parent;
         $organisation = $purchaseOrder->organisation;
         $mailbox      = Arr::get($organisation->settings, 'procurement.gmail.email');
 
@@ -65,7 +73,7 @@ class SendPurchaseOrderToSupplier
 
         $html = view('emails.procurement.purchase-order', [
             'purchaseOrder'    => $purchaseOrder,
-            'supplierName'     => $orgSupplier->supplier->contact_name ?: $orgSupplier->supplier->name,
+            'supplierName'     => self::counterpartName($counterpart, contact: true),
             'organisationName' => $organisation->name,
             'numberItems'      => $purchaseOrder->purchaseOrderTransactions()->count(),
         ])->render();
@@ -87,18 +95,17 @@ class SendPurchaseOrderToSupplier
             replyTo: $mailbox,
         );
 
-        SupplierEmail::create([
+        SupplierMessage::create([
+            ...SupplierMessage::counterpartAttributes($counterpart),
             'group_id'            => $organisation->group_id,
             'organisation_id'     => $organisation->id,
-            'supplier_id'         => $orgSupplier->supplier_id,
-            'org_supplier_id'     => $orgSupplier->id,
             'purchase_order_id'   => $purchaseOrder->id,
             'dispatched_email_id' => $dispatchedEmail->id,
-            'direction'           => SupplierEmailDirectionEnum::OUTBOUND,
-            'routed_by'           => SupplierEmailRoutedByEnum::PURCHASE_ORDER,
+            'direction'           => SupplierMessageDirectionEnum::OUTBOUND,
+            'routed_by'           => SupplierMessageRoutedByEnum::PURCHASE_ORDER,
             'from_address'        => $sender,
             'from_name'           => $organisation->name,
-            'to'                  => [['name' => $orgSupplier->supplier->name, 'address' => $recipient]],
+            'to'                  => [['name' => self::counterpartName($counterpart), 'address' => $recipient]],
             'subject'             => $subject,
             'snippet'             => __('Purchase order :reference sent with the PDF attached.', ['reference' => $purchaseOrder->reference]),
             'body_html'           => $html,
@@ -109,11 +116,89 @@ class SendPurchaseOrderToSupplier
         return $dispatchedEmail;
     }
 
+    /**
+     * The template carries the order reference and the PDF as its document; the supplier answers
+     * in the chat, which lands in the procurement inbox like any other WhatsApp.
+     */
+    private function sendByWhatsapp(PurchaseOrder $purchaseOrder): ?SupplierMessage
+    {
+        $phone = self::recipientPhone($purchaseOrder);
+
+        if (! $phone || ! SendSupplierWhatsappMessage::isConnected($purchaseOrder->organisation)) {
+            return null;
+        }
+
+        return SendSupplierWhatsappMessage::make()->handle(
+            organisation: $purchaseOrder->organisation,
+            user: null,
+            phone: $phone,
+            text: __('Purchase order :reference from :organisation. Please confirm the order, prices and the expected dispatch date.', [
+                'reference'    => $purchaseOrder->reference,
+                'organisation' => $purchaseOrder->organisation->name,
+            ]),
+            counterpart: $purchaseOrder->parent,
+            document: [
+                'content'  => PdfPurchaseOrder::make()->handle($purchaseOrder),
+                'filename' => PdfPurchaseOrder::make()->filename($purchaseOrder),
+            ],
+            purchaseOrder: $purchaseOrder,
+        );
+    }
+
+    /**
+     * @return array<int, array{channel: string, to: string}>
+     */
+    public static function channels(PurchaseOrder $purchaseOrder): array
+    {
+        return array_values(array_filter([
+            self::outbox($purchaseOrder) && ($email = self::recipientEmail($purchaseOrder)) ? ['channel' => 'email', 'to' => $email] : null,
+            SendSupplierWhatsappMessage::isConnected($purchaseOrder->organisation) && ($phone = self::recipientPhone($purchaseOrder)) ? ['channel' => 'whatsapp', 'to' => '+'.$phone] : null,
+        ]));
+    }
+
+    /**
+     * Only a number written with its country code can be dialled from abroad; one starting with a
+     * trunk zero would reach nobody, so it is not offered.
+     */
+    public static function recipientPhone(PurchaseOrder $purchaseOrder): ?string
+    {
+        $parent = $purchaseOrder->parent;
+
+        $phone = trim((string) match (true) {
+            $parent instanceof OrgSupplier => $parent->supplier?->phone,
+            $parent instanceof OrgAgent    => $parent->agent?->organisation?->phone,
+            $parent instanceof OrgPartner  => $parent->partner?->phone,
+            default                        => null,
+        });
+
+        $digits = RouteSupplierMessage::phoneDigits($phone);
+
+        return strlen($digits) >= 10 && (str_starts_with($phone, '+') || str_starts_with($phone, '00')) ? $digits : null;
+    }
+
     public static function recipientEmail(PurchaseOrder $purchaseOrder): ?string
     {
-        $email = $purchaseOrder->parent instanceof OrgSupplier ? trim((string) $purchaseOrder->parent->supplier?->email) : '';
+        $parent = $purchaseOrder->parent;
+
+        $email = trim((string) match (true) {
+            $parent instanceof OrgSupplier => $parent->supplier?->email,
+            $parent instanceof OrgAgent    => $parent->agent?->organisation?->email,
+            $parent instanceof OrgPartner  => $parent->partner?->email,
+            default                        => null,
+        });
 
         return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
+    }
+
+    private static function counterpartName(OrgSupplier|OrgAgent|OrgPartner $counterpart, bool $contact = false): string
+    {
+        $model = match (true) {
+            $counterpart instanceof OrgSupplier => $counterpart->supplier,
+            $counterpart instanceof OrgAgent    => $counterpart->agent->organisation,
+            $counterpart instanceof OrgPartner  => $counterpart->partner,
+        };
+
+        return ($contact ? $model->contact_name : null) ?: $model->name;
     }
 
     public static function outbox(PurchaseOrder $purchaseOrder): ?Outbox

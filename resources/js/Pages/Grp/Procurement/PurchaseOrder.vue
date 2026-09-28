@@ -22,6 +22,7 @@ import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatch
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Checkbox from "primevue/checkbox"
+import RadioButton from "primevue/radiobutton"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
@@ -319,20 +320,21 @@ const formatDate = (date: Date | null): string | null => {
 }
 
 const submitDialogAction = ref<any>(null)
-const sendToSupplier = ref(true)
+const sendVia = ref<string | null>(null)
 
 const submitPurchaseOrder = (action: any) => {
-	if (action.supplier_email && !submitDialogAction.value) {
-		sendToSupplier.value = true
+	if (action.send_channels?.length && !submitDialogAction.value) {
+		sendVia.value = action.send_channels[0].channel
 		submitDialogAction.value = action
 		return
 	}
 
-	router.patch(route(action.route.name, action.route.parameters), { send_to_supplier: action.supplier_email ? sendToSupplier.value : false }, {
+	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value }, {
 		onStart: () => { submitLoading.value = true },
 		onFinish: () => {
 			submitLoading.value = false
 			submitDialogAction.value = null
+			sendVia.value = null
 		},
 		onError: () => {
 			notify({
@@ -1042,19 +1044,27 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:draggable="false"
 		@update:visible="(visible) => { if (!visible) submitDialogAction = null }"
 	>
-		<label class="flex cursor-pointer items-start gap-3">
-			<Checkbox v-model="sendToSupplier" binary inputId="purchase-order-send-to-supplier" />
-			<span class="text-sm text-gray-700">
-				{{ ctrans("Email the purchase order PDF to") }}
-				<span class="font-medium">{{ submitDialogAction?.supplier_email }}</span>
-				<span class="mt-1 block text-xs text-gray-500">{{ ctrans("Delivery, opens and clicks are tracked in the Emails sent tab. Replies arrive in procurement emails.") }}</span>
-			</span>
-		</label>
+		<div class="flex flex-col gap-3">
+			<label v-for="option in submitDialogAction?.send_channels" :key="option.channel" class="flex cursor-pointer items-start gap-3">
+				<RadioButton v-model="sendVia" :value="option.channel" :inputId="`purchase-order-send-${option.channel}`" />
+				<span class="text-sm text-gray-700">
+					{{ option.channel === "email" ? ctrans("Email the purchase order PDF to") : ctrans("Send the purchase order PDF by WhatsApp to") }}
+					<span class="font-medium">{{ option.to }}</span>
+					<span v-if="option.channel === 'email'" class="mt-1 block text-xs text-gray-500">{{ ctrans("Delivery, opens and clicks are tracked in the Emails sent tab.") }}</span>
+					<span v-else class="mt-1 block text-xs text-gray-500">{{ ctrans("Delivered and read receipts show in the supplier's inbox.") }}</span>
+				</span>
+			</label>
+			<label class="flex cursor-pointer items-start gap-3">
+				<RadioButton v-model="sendVia" :value="null" inputId="purchase-order-send-none" />
+				<span class="text-sm text-gray-700">{{ ctrans("Don't send, I will send it myself") }}</span>
+			</label>
+			<p class="text-xs text-gray-500">{{ ctrans("Replies arrive in the procurement inbox.") }}</p>
+		</div>
 
 		<template #footer>
 			<Button :label="ctrans('Cancel')" type="secondary" @click="submitDialogAction = null" />
 			<Button
-				:label="sendToSupplier ? ctrans('Submit and send') : ctrans('Submit')"
+				:label="sendVia ? ctrans('Submit and send') : ctrans('Submit')"
 				type="save"
 				:icon="faPaperPlane"
 				:loading="submitLoading"

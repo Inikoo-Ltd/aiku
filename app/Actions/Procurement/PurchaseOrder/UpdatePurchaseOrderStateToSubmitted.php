@@ -45,7 +45,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         }
     }
 
-    public function handle(PurchaseOrder $purchaseOrder, bool $sendToSupplier = false): PurchaseOrder
+    public function handle(PurchaseOrder $purchaseOrder, ?string $sendVia = null): PurchaseOrder
     {
         $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
@@ -79,8 +79,8 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
         StoreAgentSupplierPurchaseOrdersFromPurchaseOrder::make()->action($purchaseOrder);
 
-        if ($sendToSupplier && SendPurchaseOrderToSupplier::recipientEmail($purchaseOrder)) {
-            SendPurchaseOrderToSupplier::dispatch($purchaseOrder);
+        if ($sendVia && in_array($sendVia, array_column(SendPurchaseOrderToSupplier::channels($purchaseOrder), 'channel'), true)) {
+            SendPurchaseOrderToSupplier::dispatch($purchaseOrder, $sendVia);
         }
 
         return $purchaseOrder;
@@ -89,7 +89,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
     public function rules(): array
     {
         return [
-            'send_to_supplier' => ['sometimes', 'boolean'],
+            'send_via' => ['sometimes', 'nullable', 'string', 'in:email,whatsapp'],
         ];
     }
 
@@ -98,7 +98,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $this->handle($purchaseOrder, (bool) Arr::get($this->validatedData, 'send_to_supplier', false));
+        return $this->handle($purchaseOrder, Arr::get($this->validatedData, 'send_via'));
     }
 
     public function action(PurchaseOrder $purchaseOrder): PurchaseOrder

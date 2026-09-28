@@ -12,7 +12,7 @@ import {
     faBoxUsd,
     faClipboardList,
     faClock,
-    faEnvelope,
+    faInbox,
     faPersonDolly,
     faTruckContainer
 } from '@fal'
@@ -20,11 +20,11 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import SupplierShowcase from '@/Components/Showcases/Grp/SupplierShowcase.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
-import TableSupplierEmails from '@/Components/Tables/Grp/Org/Procurement/TableSupplierEmails.vue'
+import TableSupplierMessages from '@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 
-library.add(faBoxUsd, faClipboardList, faClock, faEnvelope, faPersonDolly, faTruckContainer)
+library.add(faBoxUsd, faClipboardList, faClock, faInbox, faPersonDolly, faTruckContainer)
 
 const props = defineProps<{
     title: string
@@ -34,7 +34,7 @@ const props = defineProps<{
         navigation: object
     }
     showcase?: object
-    emails?: object
+    inbox?: object
     history?: object
 }>()
 
@@ -44,7 +44,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components = {
         showcase: SupplierShowcase,
-        emails: TableSupplierEmails,
+        inbox: TableSupplierMessages,
         history: TableHistories
     }
 

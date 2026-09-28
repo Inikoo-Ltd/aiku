@@ -73,12 +73,15 @@ use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowPurchaseOrder;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\Settings\UI\EditProcurementSettings;
+use App\Actions\Procurement\Settings\UpdateProcurementSettings;
+use App\Actions\Procurement\SupplierMessage\Whatsapp\SendSupplierWhatsappMessage;
 use App\Actions\Comms\Mailbox\ConnectProcurementMailbox;
 use App\Actions\Comms\Mailbox\DisconnectProcurementMailbox;
-use App\Actions\Procurement\SupplierEmail\AssignSupplierEmail;
-use App\Actions\Procurement\SupplierEmail\DownloadSupplierEmailAttachment;
-use App\Actions\Procurement\SupplierEmail\UI\IndexSupplierEmails;
-use App\Actions\Procurement\SupplierEmail\UI\ShowSupplierEmail;
+use App\Actions\Procurement\SupplierMessage\AssignSupplierMessage;
+use App\Actions\Procurement\SupplierMessage\DownloadSupplierMessageAttachment;
+use App\Actions\Procurement\SupplierMessage\SendSupplierEmail;
+use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
+use App\Actions\Procurement\SupplierMessage\UI\ShowSupplierMessage;
 use App\Actions\Procurement\UI\IndexOrganisationStockCoverItems;
 use App\Actions\Procurement\ExportOrganisationStockCoverItems;
 use Illuminate\Support\Facades\Route;
@@ -89,15 +92,19 @@ Route::get('/stock-cover/export', ExportOrganisationStockCoverItems::class)->nam
 
 Route::prefix('settings')->as('settings.')->group(function () {
     Route::get('', EditProcurementSettings::class)->name('edit');
+    Route::patch('', UpdateProcurementSettings::class)->name('update');
     Route::get('mailbox/connect', ConnectProcurementMailbox::class)->name('mailbox.connect');
     Route::post('mailbox/disconnect', DisconnectProcurementMailbox::class)->name('mailbox.disconnect');
 });
 
-Route::prefix('emails')->as('supplier_emails.')->group(function () {
-    Route::get('', IndexSupplierEmails::class)->name('index');
-    Route::get('{supplierEmail}', ShowSupplierEmail::class)->name('show')->withoutScopedBindings();
-    Route::post('{supplierEmail}/assign', AssignSupplierEmail::class)->name('assign')->withoutScopedBindings();
-    Route::get('{supplierEmail}/attachments/{index}', DownloadSupplierEmailAttachment::class)->name('attachment')->whereNumber('index')->withoutScopedBindings();
+Route::prefix('emails')->as('supplier_messages.')->group(function () {
+    Route::get('', IndexSupplierMessages::class)->name('index');
+    Route::post('send', SendSupplierEmail::class)->name('send');
+    Route::post('whatsapp', SendSupplierWhatsappMessage::class)->name('whatsapp');
+    Route::post('{supplierMessage}/reply', [SendSupplierEmail::class, 'inReply'])->name('reply')->withoutScopedBindings();
+    Route::get('{supplierMessage}', ShowSupplierMessage::class)->name('show')->withoutScopedBindings();
+    Route::post('{supplierMessage}/assign', AssignSupplierMessage::class)->name('assign')->withoutScopedBindings();
+    Route::get('{supplierMessage}/attachments/{index}', DownloadSupplierMessageAttachment::class)->name('attachment')->whereNumber('index')->withoutScopedBindings();
 });
 
 Route::prefix('agents')->as('org_agents.')->group(function () {

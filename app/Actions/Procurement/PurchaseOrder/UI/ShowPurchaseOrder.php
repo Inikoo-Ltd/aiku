@@ -424,7 +424,7 @@ class ShowPurchaseOrder extends OrgAction
                     'style'   => 'save',
                     'icon'    => 'fal fa-paper-plane',
                     'key'     => 'submit_purchase_order',
-                    'supplier_email' => SendPurchaseOrderToSupplier::outbox($purchaseOrder) ? SendPurchaseOrderToSupplier::recipientEmail($purchaseOrder) : null,
+                    'send_channels' => SendPurchaseOrderToSupplier::channels($purchaseOrder),
                     'route'   => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.purchase-order.submit',

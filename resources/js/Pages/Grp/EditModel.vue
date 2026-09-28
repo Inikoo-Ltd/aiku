@@ -12,7 +12,7 @@ import { get as getLodash } from "lodash-es"
 import { capitalize } from "@/Composables/capitalize"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faGoogle, faFacebook } from "@fortawesome/free-brands-svg-icons"
+import { faGoogle, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { router } from "@inertiajs/vue3"
@@ -96,6 +96,7 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faWhatsapp,
     faHashtag,
     faChevronDown,
     faGem,

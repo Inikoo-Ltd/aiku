@@ -17,6 +17,7 @@ enum OrgAgentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE              = 'showcase';
+    case INBOX                 = 'inbox';
     case SYSTEM_USERS          = 'system_users';
     case HISTORY               = 'history';
     case DATA                  = 'data';
@@ -37,6 +38,10 @@ enum OrgAgentTabsEnum: string
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+            OrgAgentTabsEnum::INBOX => [
+                'title' => __('Inbox'),
+                'icon'  => 'fal fa-inbox',
             ],
             OrgAgentTabsEnum::SYSTEM_USERS => [
                 'title' => __('System User'),

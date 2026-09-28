@@ -16,8 +16,8 @@ use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Traits\UI\WithBucketNavigation;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
-use App\Actions\Procurement\SupplierEmail\UI\IndexSupplierEmails;
-use App\Http\Resources\Procurement\SupplierEmailsResource;
+use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
+use App\Http\Resources\Procurement\SupplierMessagesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\SupplyChain\SupplierResource;
 use App\Models\SupplyChain\Agent;
@@ -86,16 +86,16 @@ class ShowSupplier extends OrgAction
                     fn () => GetSupplierShowcase::run($supplier)
                     : Inertia::optional(fn () => GetSupplierShowcase::run($supplier)),
 
-                SupplierTabsEnum::EMAILS->value => $this->tab == SupplierTabsEnum::EMAILS->value ?
-                    fn () => SupplierEmailsResource::collection(IndexSupplierEmails::run($supplier, SupplierTabsEnum::EMAILS->value))
-                    : Inertia::optional(fn () => SupplierEmailsResource::collection(IndexSupplierEmails::run($supplier, SupplierTabsEnum::EMAILS->value))),
+                SupplierTabsEnum::INBOX->value => $this->tab == SupplierTabsEnum::INBOX->value ?
+                    fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($supplier, SupplierTabsEnum::INBOX->value))
+                    : Inertia::optional(fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($supplier, SupplierTabsEnum::INBOX->value))),
 
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplier, SupplierTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplier, SupplierTabsEnum::HISTORY->value))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value))
-            ->table(IndexSupplierEmails::make()->tableStructure($supplier, prefix: SupplierTabsEnum::EMAILS->value));
+            ->table(IndexSupplierMessages::make()->tableStructure($supplier, prefix: SupplierTabsEnum::INBOX->value));
     }
 
     public function getBreadcrumbs(Supplier $supplier, string $routeName, array $routeParameters, string $suffix = ''): array

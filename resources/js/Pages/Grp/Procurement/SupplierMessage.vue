@@ -6,11 +6,17 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInboxIn, faPaperPlane, faPaperclip, faPersonDolly } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import EmailBody from "@/Components/Chat/EmailBody.vue"
+import SupplierEmailComposer from "@/Components/Procurement/SupplierEmailComposer.vue"
+import SupplierWhatsappComposer from "@/Components/Procurement/SupplierWhatsappComposer.vue"
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
+import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
+
+library.add(faWhatsapp)
 
 interface EmailAddress {
     name: string | null
@@ -28,19 +34,25 @@ interface ThreadMessage {
     body_text: string | null
     attachments: { name: string; size: number; mime_type: string; url: string }[]
     delivery: { state: string; reads: number; clicks: number } | null
+    channel: "email" | "whatsapp" | "wechat"
+    author: string | null
     purchase_order: { reference: string; route: routeType } | null
 }
 
 const props = defineProps<{
     title: string
     pageHead: object
-    supplier: { name: string; code: string; routed_by: string | null; route: routeType } | null
-    assign: { route: routeType; options: { value: number; label: string }[] } | null
+    supplier: { type: "supplier" | "agent" | "partner"; name: string; code: string; routed_by: string | null; route: routeType } | null
+    assign: { route: routeType; options: { value: string; label: string }[] } | null
+    reply:
+        | { channel: "email"; route: routeType; to: string[]; cc: string[]; subject: string | null }
+        | { channel: "whatsapp"; route: routeType; phone: string; counterpart: string | null; window_open: boolean; has_template: boolean }
+        | null
     messages: ThreadMessage[]
 }>()
 
 const formatted = ref<Record<number, boolean>>({})
-const chosenSupplier = ref<number | null>(null)
+const chosenSupplier = ref<string | null>(null)
 const isAssigning = ref(false)
 const isReassigning = ref(false)
 
@@ -53,7 +65,7 @@ const assignSupplier = () => {
         return
     }
 
-    router.post(route(props.assign.route.name, props.assign.route.parameters), { org_supplier_id: chosenSupplier.value }, {
+    router.post(route(props.assign.route.name, props.assign.route.parameters), { counterpart: chosenSupplier.value }, {
         preserveScroll: true,
         onStart: () => (isAssigning.value = true),
         onFinish: () => (isAssigning.value = false),
@@ -72,13 +84,14 @@ const assignSupplier = () => {
             <template v-if="supplier && !isReassigning">
                 <Link :href="route(supplier.route.name, supplier.route.parameters)" class="primaryLink font-medium">{{ supplier.name }}</Link>
                 <span class="text-xs text-gray-500">{{ supplier.code }}</span>
+                <span v-if="supplier.type !== 'supplier'" class="rounded bg-sky-50 px-1.5 py-0.5 text-xs text-sky-700">{{ supplier.type === "agent" ? ctrans("Agent") : ctrans("Partner") }}</span>
                 <span v-if="supplier.routed_by === 'manual'" class="text-xs text-gray-400">· {{ ctrans("assigned by hand") }}</span>
                 <Button v-if="assign" :label="ctrans('Change')" type="tertiary" size="xs" class="ml-auto" @click="isReassigning = true" />
             </template>
             <template v-else>
-                <span v-if="!supplier" class="text-sm text-amber-700">{{ ctrans("Not matched to a supplier yet") }}</span>
+                <span v-if="!supplier" class="text-sm text-amber-700">{{ ctrans("Not matched to a supplier or agent yet") }}</span>
                 <div v-if="assign" class="ml-auto flex items-center gap-2">
-                    <Select v-model="chosenSupplier" :options="assign.options" optionLabel="label" optionValue="value" filter :placeholder="ctrans('Choose supplier')" class="w-72" size="small" />
+                    <Select v-model="chosenSupplier" :options="assign.options" optionLabel="label" optionValue="value" filter :placeholder="ctrans('Choose supplier or agent')" class="w-72" size="small" />
                     <Button :label="ctrans('Assign')" type="primary" size="xs" :loading="isAssigning" :disabled="!chosenSupplier" @click="assignSupplier" />
                     <Button v-if="isReassigning" :label="ctrans('Cancel')" type="tertiary" size="xs" @click="isReassigning = false" />
                 </div>
@@ -87,13 +100,15 @@ const assignSupplier = () => {
 
         <article v-for="message in messages" :key="message.id" class="rounded-md border bg-white" :class="message.is_outbound ? 'border-gray-200' : 'border-indigo-200'">
             <header class="flex flex-wrap items-start gap-x-3 gap-y-1 border-b border-gray-100 px-4 py-3">
-                <FontAwesomeIcon :icon="message.is_outbound ? faPaperPlane : faInboxIn" :class="message.is_outbound ? 'text-gray-400' : 'text-indigo-500'" class="mt-0.5" fixed-width />
+                <FontAwesomeIcon v-if="message.channel === 'whatsapp'" :icon="faWhatsapp" class="mt-0.5 text-green-600" fixed-width />
+                <FontAwesomeIcon v-else :icon="message.is_outbound ? faPaperPlane : faInboxIn" :class="message.is_outbound ? 'text-gray-400' : 'text-indigo-500'" class="mt-0.5" fixed-width />
                 <div class="min-w-0 flex-1 text-sm">
                     <div class="font-medium text-gray-800">
                         {{ message.from.name || message.from.address }}
                         <span v-if="message.from.name" class="font-normal text-gray-500">&lt;{{ message.from.address }}&gt;</span>
                     </div>
-                    <div class="text-xs text-gray-500">{{ ctrans("To") }}: {{ addressList(message.to) }}</div>
+                    <div v-if="message.author" class="text-xs text-gray-500">{{ ctrans("Written in Aiku by") }} {{ message.author }}</div>
+                    <div v-if="message.channel === 'email'" class="text-xs text-gray-500">{{ ctrans("To") }}: {{ addressList(message.to) }}</div>
                     <div v-if="message.cc.length" class="text-xs text-gray-500">{{ ctrans("Cc") }}: {{ addressList(message.cc) }}</div>
                 </div>
                 <div class="text-right">
@@ -126,5 +141,11 @@ const assignSupplier = () => {
                 </a>
             </footer>
         </article>
+
+        <section v-if="reply" class="rounded-md border border-gray-200 bg-white px-4 py-3">
+            <SupplierWhatsappComposer v-if="reply.channel === 'whatsapp'" :route="reply.route" :phone="reply.phone" :counterpart="reply.counterpart"
+                :window-open="reply.window_open" :has-template="reply.has_template" fixed-phone />
+            <SupplierEmailComposer v-else :route="reply.route" :to="reply.to" :cc="reply.cc" :subject="reply.subject" is-reply />
+        </section>
     </div>
 </template>

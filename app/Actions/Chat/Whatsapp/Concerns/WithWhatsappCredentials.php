@@ -30,6 +30,21 @@ trait WithWhatsappCredentials
     }
 
     /**
+     * Procurement talks to suppliers from a number of its own, kept apart from the shops' so a
+     * supplier never lands in a customer queue. The token is the organisation's, as for shops.
+     *
+     * @return array{phone_number_id: string, waba_id: string, access_token: string}
+     */
+    protected function procurementWhatsappCredentials(?Organisation $organisation): array
+    {
+        return [
+            'phone_number_id' => (string) Arr::get($organisation?->settings, 'procurement.whatsapp.phone_number_id'),
+            'waba_id'         => (string) Arr::get($organisation?->settings, 'procurement.whatsapp.waba_id'),
+            'access_token'    => (string) Arr::get($organisation?->settings, 'meta.access_key'),
+        ];
+    }
+
+    /**
      * Each organisation registers its own Meta app, so these have no meaningful default.
      *
      * @return array{app_id: string, app_secret: string}

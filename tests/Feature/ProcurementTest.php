@@ -6243,7 +6243,7 @@ test('procurement mailbox emails are routed to their supplier by address, thread
     }
     \Illuminate\Support\Facades\Http::fake($fakes);
 
-    $process = fn (string $id) => \App\Actions\Procurement\SupplierEmail\ProcessProcurementEmail::run($this->organisation->fresh(), $id);
+    $process = fn (string $id) => \App\Actions\Procurement\SupplierMessage\ProcessProcurementEmail::run($this->organisation->fresh(), $id);
 
     $byAddress = $process("m1-$token");
     $byThread  = $process("m2-$token");
@@ -6251,35 +6251,35 @@ test('procurement mailbox emails are routed to their supplier by address, thread
     $stranger  = $process("m4-$token");
 
     expect($byAddress->org_supplier_id)->toBe($orgSupplier->id)
-        ->and($byAddress->routed_by)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum::ADDRESS)
+        ->and($byAddress->routed_by)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageRoutedByEnum::ADDRESS)
         ->and($byAddress->attachments[0]['name'])->toBe('proforma.pdf')
         ->and($byThread->org_supplier_id)->toBe($orgSupplier->id)
-        ->and($byThread->direction)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailDirectionEnum::OUTBOUND)
-        ->and($byThread->routed_by)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum::THREAD)
+        ->and($byThread->direction)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum::OUTBOUND)
+        ->and($byThread->routed_by)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageRoutedByEnum::THREAD)
         ->and($byDomain->org_supplier_id)->toBe($orgSupplier->id)
-        ->and($byDomain->routed_by)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum::DOMAIN)
+        ->and($byDomain->routed_by)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageRoutedByEnum::DOMAIN)
         ->and($stranger->org_supplier_id)->toBeNull()
         ->and($process("m6-$token"))->toBeNull()
         ->and($process("m1-$token"))->toBeNull();
 
-    \App\Actions\Procurement\SupplierEmail\AssignSupplierEmail::make()->handle($stranger, $otherOrgSupplier);
+    \App\Actions\Procurement\SupplierMessage\AssignSupplierMessage::make()->handle($stranger, $otherOrgSupplier);
 
     $learned = $process("m5-$token");
 
     expect($learned->org_supplier_id)->toBe($otherOrgSupplier->id)
-        ->and($learned->routed_by)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailRoutedByEnum::ADDRESS);
+        ->and($learned->routed_by)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageRoutedByEnum::ADDRESS);
 
-    $this->get(route('grp.org.procurement.supplier_emails.index', [$this->organisation->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/SupplierEmails')->has('data.data'));
+    $this->get(route('grp.org.procurement.supplier_messages.index', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/SupplierMessages')->has('data.data'));
 
-    $this->get(route('grp.org.procurement.supplier_emails.show', [$this->organisation->slug, $byThread->id]))
+    $this->get(route('grp.org.procurement.supplier_messages.show', [$this->organisation->slug, $byThread->id]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('Procurement/SupplierEmail')
+            ->component('Procurement/SupplierMessage')
             ->has('messages', 2)
             ->where('supplier.name', $supplier->name));
 
-    $this->get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug, 'tab' => 'emails']))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('emails.data', 3));
+    $this->get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug, 'tab' => 'inbox']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('inbox.data', 3));
 
     $this->organisation->update(['settings' => $originalSettings]);
 });
@@ -6306,23 +6306,206 @@ test('a submitted purchase order is emailed to the supplier through SES with its
 
     $dispatchedEmail = \App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::run($purchaseOrder);
 
-    $sentRow = \App\Models\Procurement\SupplierEmail::where('purchase_order_id', $purchaseOrder->id)->first();
+    $sentRow = \App\Models\Procurement\SupplierMessage::where('purchase_order_id', $purchaseOrder->id)->first();
 
     expect($dispatchedEmail->emailAddress->email)->toBe("orders@factory-$token.com")
         ->and($dispatchedEmail->outbox->code)->toBe(\App\Enums\Comms\Outbox\OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER)
         ->and(\App\Models\Comms\ModelHasDispatchedEmail::where('model_type', 'PurchaseOrder')->where('model_id', $purchaseOrder->id)->value('dispatched_email_id'))->toBe($dispatchedEmail->id)
         ->and($sentRow->dispatched_email_id)->toBe($dispatchedEmail->id)
         ->and($sentRow->org_supplier_id)->toBe($orgSupplier->id)
-        ->and($sentRow->direction)->toBe(\App\Enums\Procurement\SupplierEmail\SupplierEmailDirectionEnum::OUTBOUND);
+        ->and($sentRow->direction)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum::OUTBOUND);
 
     $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug, 'tab' => 'dispatched_emails']))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('dispatched_emails.data', 1));
 
     \Illuminate\Support\Facades\Queue::fake();
 
-    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted::make()->handle($purchaseOrder, sendToSupplier: true);
+    \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted::make()->handle($purchaseOrder, sendVia: 'email');
     \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted::make()->handle(StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition()));
 
     \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier);
     \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, 1);
+});
+
+test('staff reply to a supplier from Aiku through the procurement mailbox, threaded, and agents route and get their purchase orders by email', function () {
+    $originalSettings = $this->organisation->settings;
+    $token            = Str::lower(Str::random(8));
+    $mailbox          = "buying-$token@org.test";
+
+    $settings = $this->organisation->settings ?? [];
+    data_set($settings, 'procurement.gmail', ['email' => $mailbox, 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'connected_at' => now()->toIso8601String()]);
+    $this->organisation->update(['settings' => $settings]);
+
+    $supplier    = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['email' => "sales@maker-$token.com"]));
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $agentOrganisation         = $this->orgAgent->agent->organisation;
+    $originalAgentEmail        = $agentOrganisation->email;
+    $agentOrganisation->email  = "desk@agent-$token.com";
+    $agentOrganisation->saveQuietly();
+
+    $inbound = procurementGmailMessage("r1-$token", "rt-$token", "Maker <sales@maker-$token.com>", $mailbox, 'Price list');
+    $inbound['payload']['headers'][] = ['name' => 'Message-ID', 'value' => "<orig-$token@maker.com>"];
+
+    $sent = procurementGmailMessage("r2-$token", "rt-$token", $mailbox, "sales@maker-$token.com", 'Re: Price list', ['SENT']);
+
+    $fromAgent = procurementGmailMessage("r3-$token", "ra-$token", "Agent Desk <desk@agent-$token.com>", $mailbox, 'Container booked');
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                                   => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send'          => \Illuminate\Support\Facades\Http::response(['id' => "r2-$token", 'threadId' => "rt-$token"]),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/r1-$token*"    => \Illuminate\Support\Facades\Http::response($inbound),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/r2-$token*"    => \Illuminate\Support\Facades\Http::response($sent),
+        "gmail.googleapis.com/gmail/v1/users/me/messages/r3-$token*"    => \Illuminate\Support\Facades\Http::response($fromAgent),
+    ]);
+
+    $original = \App\Actions\Procurement\SupplierMessage\ProcessProcurementEmail::run($this->organisation->fresh(), "r1-$token");
+
+    expect($original->header_message_id)->toBe("<orig-$token@maker.com>");
+
+    $this->post(route('grp.org.procurement.supplier_messages.reply', [$this->organisation->slug, $original->id]), [
+        'to'      => ["sales@maker-$token.com"],
+        'subject' => 'Price list',
+        'body'    => 'Thanks, please send the 2027 prices.',
+    ])->assertRedirect();
+
+    \Illuminate\Support\Facades\Http::assertSent(function ($request) use ($token) {
+        if (! str_ends_with($request->url(), 'messages/send')) {
+            return false;
+        }
+
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return $request['threadId'] === "rt-$token"
+            && str_contains($raw, "In-Reply-To: <orig-$token@maker.com>")
+            && str_contains($raw, 'Subject: Re: Price list');
+    });
+
+    $reply = \App\Models\Procurement\SupplierMessage::where('gmail_message_id', "r2-$token")->first();
+
+    expect($reply->user_id)->toBe($this->adminGuest->getUser()->id)
+        ->and($reply->org_supplier_id)->toBe($orgSupplier->id);
+
+    $agentEmail = \App\Actions\Procurement\SupplierMessage\ProcessProcurementEmail::run($this->organisation->fresh(), "r3-$token");
+
+    expect($agentEmail->org_agent_id)->toBe($this->orgAgent->id)
+        ->and($agentEmail->org_supplier_id)->toBeNull();
+
+    $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $this->orgAgent->slug, 'tab' => 'inbox']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('inbox.data', 1)->where('inbox.compose.email.counterpart', 'agent:'.$this->orgAgent->id));
+
+    $agentPurchaseOrder = new PurchaseOrder();
+    $agentPurchaseOrder->setRelation('parent', $this->orgAgent);
+
+    expect(\App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::recipientEmail($agentPurchaseOrder))->toBe("desk@agent-$token.com");
+
+    $agentOrganisation->email = $originalAgentEmail;
+    $agentOrganisation->saveQuietly();
+    $this->organisation->update(['settings' => $originalSettings]);
+});
+
+test('suppliers talk to procurement on WhatsApp: routed by phone, answered within 24 hours, templated after, and purchase orders sent as a document', function () {
+    config(['meta.base_endpoint' => 'https://graph.facebook.com', 'meta.whatsapp.api_version' => 'v21.0']);
+
+    $originalSettings = $this->organisation->settings;
+    $token            = Str::lower(Str::random(8));
+    $phoneNumberId    = (string) random_int(100000000, 999999999);
+    $supplierPhone    = '8613'.random_int(100000000, 999999999);
+
+    $this->patch(route('grp.org.procurement.settings.update', [$this->organisation->slug]), ['whatsapp_phone_number_id' => $phoneNumberId])->assertRedirect();
+
+    $settings = $this->organisation->fresh()->settings;
+    data_set($settings, 'meta.access_key', 'meta-token');
+    $this->organisation->update(['settings' => $settings]);
+
+    expect(\App\Actions\Procurement\SupplierMessage\Whatsapp\StoreIncomingProcurementWhatsappMessage::organisationFor($phoneNumberId)?->id)->toBe($this->organisation->id);
+
+    $supplier    = StoreSupplier::make()->action($this->group, array_merge(Supplier::factory()->definition(), ['phone' => '+86 '.substr($supplierPhone, 2), 'email' => null]));
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    \Illuminate\Support\Facades\Queue::fake();
+    \App\Actions\Chat\Whatsapp\HandleWhatsappWebhook::make()->handle(['entry' => [['changes' => [['field' => 'messages', 'value' => [
+        'metadata' => ['phone_number_id' => $phoneNumberId],
+        'messages' => [['id' => "wamid.in-$token", 'from' => $supplierPhone, 'type' => 'text', 'text' => ['body' => 'Goods ready Friday'], 'timestamp' => (string) now()->timestamp]],
+    ]]]]]]);
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Procurement\SupplierMessage\Whatsapp\StoreIncomingProcurementWhatsappMessage);
+
+    $value = [
+        'metadata' => ['phone_number_id' => $phoneNumberId],
+        'contacts' => [['profile' => ['name' => 'Mr Lin']]],
+        'messages' => [['id' => "wamid.in-$token", 'from' => $supplierPhone, 'type' => 'text', 'text' => ['body' => 'Goods ready Friday'], 'timestamp' => (string) now()->timestamp]],
+    ];
+
+    expect(\App\Actions\Procurement\SupplierMessage\Whatsapp\StoreIncomingProcurementWhatsappMessage::run($value))->toBe(1)
+        ->and(\App\Actions\Procurement\SupplierMessage\Whatsapp\StoreIncomingProcurementWhatsappMessage::run($value))->toBe(0);
+
+    $inbound = \App\Models\Procurement\SupplierMessage::where('whatsapp_message_id', "wamid.in-$token")->first();
+
+    expect($inbound->org_supplier_id)->toBe($orgSupplier->id)
+        ->and($inbound->channel)->toBe(\App\Enums\Procurement\SupplierMessage\SupplierMessageChannelEnum::WHATSAPP)
+        ->and($inbound->body_text)->toBe('Goods ready Friday');
+
+    \Illuminate\Support\Facades\Http::fake([
+        "graph.facebook.com/v21.0/$phoneNumberId/media"    => \Illuminate\Support\Facades\Http::response(['id' => "media-$token"]),
+        "graph.facebook.com/v21.0/$phoneNumberId/messages" => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['messages' => [['id' => "wamid.out-$token"]]])
+            ->push(['messages' => [['id' => "wamid.po-$token"]]]),
+    ]);
+
+    $this->post(route('grp.org.procurement.supplier_messages.whatsapp', [$this->organisation->slug]), [
+        'phone' => '+'.$supplierPhone,
+        'body'  => 'Thanks, collect Friday',
+    ])->assertRedirect();
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), '/messages') && $request['type'] === 'text' && $request['text']['body'] === 'Thanks, collect Friday');
+
+    $outbound = \App\Models\Procurement\SupplierMessage::where('whatsapp_message_id', "wamid.out-$token")->first();
+
+    expect($outbound->org_supplier_id)->toBe($orgSupplier->id)
+        ->and($outbound->user_id)->toBe($this->adminGuest->getUser()->id);
+
+    \App\Actions\Procurement\SupplierMessage\Whatsapp\UpdateProcurementWhatsappStatus::run(['statuses' => [
+        ['id' => "wamid.out-$token", 'status' => 'read'],
+        ['id' => "wamid.out-$token", 'status' => 'delivered'],
+    ]]);
+
+    expect($outbound->fresh()->delivery_state)->toBe('read');
+
+    $inbound->update(['sent_at' => now()->subDays(2)]);
+
+    expect(fn () => \App\Actions\Procurement\SupplierMessage\Whatsapp\SendSupplierWhatsappMessage::make()->handle($this->organisation->fresh(), null, $supplierPhone, 'Are you there?'))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $this->patch(route('grp.org.procurement.settings.update', [$this->organisation->slug]), ['whatsapp_purchase_order_template' => 'purchase_order_v1'])->assertRedirect();
+
+    StoreSupplierProduct::make()->action($supplier, [
+        'code'             => "WA-$token",
+        'name'             => 'WhatsApp product',
+        'cost'             => 10,
+        'stock_id'         => $this->orgStocks[0]->stock_id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    expect(\App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::channels($purchaseOrder))->toBe([['channel' => 'whatsapp', 'to' => '+'.$supplierPhone]]);
+
+    $poMessage = \App\Actions\Procurement\PurchaseOrder\SendPurchaseOrderToSupplier::run($purchaseOrder, 'whatsapp');
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), '/messages')
+        && $request['type'] === 'template'
+        && $request['template']['name'] === 'purchase_order_v1'
+        && $request['template']['components'][0]['parameters'][0]['document']['id'] === "media-$token");
+
+    expect($poMessage->purchase_order_id)->toBe($purchaseOrder->id)
+        ->and($poMessage->whatsapp_message_id)->toBe("wamid.po-$token");
+
+    $this->get(route('grp.org.procurement.supplier_messages.show', [$this->organisation->slug, $inbound->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/SupplierMessage')
+            ->has('messages', 3)
+            ->where('reply.channel', 'whatsapp')
+            ->where('reply.window_open', false));
+
+    $this->organisation->update(['settings' => $originalSettings]);
 });

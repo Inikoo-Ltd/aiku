@@ -303,7 +303,7 @@ class SendChatMessageByGmail
     /**
      * A name holding a comma, as "Doe, Jane" does, reads as two recipients unless it is quoted.
      */
-    private function mailbox(string $address, ?string $name): string
+    public static function mailbox(string $address, ?string $name): string
     {
         if (! $name) {
             return $address;
@@ -318,7 +318,7 @@ class SendChatMessageByGmail
         return "{$name} <{$address}>";
     }
 
-    private function encodeHeader(string $value): string
+    public static function encodeHeader(string $value): string
     {
         return preg_match('/[^\x20-\x7E]/', $value) ? mb_encode_mimeheader($value, 'UTF-8') : $value;
     }

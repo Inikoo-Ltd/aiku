@@ -5,11 +5,11 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Procurement\SupplierEmail;
+namespace App\Actions\Procurement\SupplierMessage;
 
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
-use App\Enums\Procurement\SupplierEmail\SupplierEmailDirectionEnum;
-use App\Models\Procurement\SupplierEmail;
+use App\Enums\Procurement\SupplierMessage\SupplierMessageDirectionEnum;
+use App\Models\Procurement\SupplierMessage;
 use App\Models\SysAdmin\Organisation;
 use App\Services\Gmail\GmailClient;
 use App\Services\Gmail\GmailMessageParser;
@@ -29,9 +29,9 @@ class ProcessProcurementEmail
      * so nothing is labelled, archived or marked read here. Both directions are kept, because what
      * we promised a supplier matters as much as what they told us.
      */
-    public function handle(Organisation $organisation, string $gmailMessageId): ?SupplierEmail
+    public function handle(Organisation $organisation, string $gmailMessageId): ?SupplierMessage
     {
-        if (SupplierEmail::where('gmail_message_id', $gmailMessageId)->exists()) {
+        if (SupplierMessage::where('gmail_message_id', $gmailMessageId)->exists()) {
             return null;
         }
 
@@ -71,22 +71,23 @@ class ProcessProcurementEmail
 
         $threadId = GmailMessageParser::threadId($raw);
 
-        [$orgSupplier, $routedBy] = RouteSupplierEmail::run($organisation, $counterparts, $threadId);
+        [$counterpart, $routedBy] = RouteSupplierMessage::run($organisation, $counterparts, $threadId);
 
-        if (! $orgSupplier && ! $isOutbound && ProcessInboundEmail::isAutomatedMail($from['address'], $subject)) {
+        if (! $counterpart && ! $isOutbound && ProcessInboundEmail::isAutomatedMail($from['address'], $subject)) {
             return null;
         }
 
         $html = GmailMessageParser::htmlBody($raw);
 
-        return SupplierEmail::create([
+        return SupplierMessage::create([
+            ...SupplierMessage::counterpartAttributes($counterpart),
             'group_id'         => $organisation->group_id,
             'organisation_id'  => $organisation->id,
-            'supplier_id'      => $orgSupplier?->supplier_id,
-            'org_supplier_id'  => $orgSupplier?->id,
             'gmail_message_id' => $gmailMessageId,
             'gmail_thread_id'  => $threadId,
-            'direction'        => $isOutbound ? SupplierEmailDirectionEnum::OUTBOUND : SupplierEmailDirectionEnum::INBOUND,
+            'header_message_id' => GmailMessageParser::header($raw, 'Message-ID'),
+            'header_references' => GmailMessageParser::header($raw, 'References'),
+            'direction'        => $isOutbound ? SupplierMessageDirectionEnum::OUTBOUND : SupplierMessageDirectionEnum::INBOUND,
             'routed_by'        => $routedBy,
             'from_address'     => $from['address'],
             'from_name'        => $from['name'],

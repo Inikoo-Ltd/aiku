@@ -13,7 +13,7 @@ import {
     faCameraRetro,
     faClipboard,
     faClock,
-    faEnvelope,
+    faInbox,
     faMoneyBill,
     faPaperclip,
     faPaperPlane,
@@ -25,7 +25,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import SupplierShowcase from '@/Components/Showcases/Grp/SupplierShowcase.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
-import TableSupplierEmails from '@/Components/Tables/Grp/Org/Procurement/TableSupplierEmails.vue'
+import TableSupplierMessages from '@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 
@@ -34,7 +34,7 @@ library.add(
     faCameraRetro,
     faClipboard,
     faClock,
-    faEnvelope,
+    faInbox,
     faMoneyBill,
     faPaperclip,
     faPaperPlane,
@@ -51,7 +51,7 @@ const props = defineProps<{
         navigation: object
     }
     showcase?: object
-    emails?: object
+    inbox?: object
     history?: object
     errors?: object
 }>()
@@ -62,7 +62,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components = {
         showcase: SupplierShowcase,
-        emails: TableSupplierEmails,
+        inbox: TableSupplierMessages,
         history: TableHistories
     }
 

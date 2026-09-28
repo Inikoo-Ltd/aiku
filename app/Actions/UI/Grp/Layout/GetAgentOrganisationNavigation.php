@@ -115,11 +115,11 @@ class GetAgentOrganisationNavigation
 
         if (isset($navigation['procurement'])) {
             $navigation['procurement']['topMenu']['subSections'][] = [
-                'label' => __('Emails'),
+                'label' => __('Inbox'),
                 'icon'  => ['fal', 'fa-inbox'],
-                'root'  => 'grp.org.procurement.supplier_emails.',
+                'root'  => 'grp.org.procurement.supplier_messages.',
                 'route' => [
-                    'name'       => 'grp.org.procurement.supplier_emails.index',
+                    'name'       => 'grp.org.procurement.supplier_messages.index',
                     'parameters' => [$organisation->slug],
                 ]
             ];
