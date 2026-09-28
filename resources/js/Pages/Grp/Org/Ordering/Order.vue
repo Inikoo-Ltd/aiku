@@ -689,7 +689,7 @@ const labelPercentage = ref("")
 const updateCollection = async (e: Event) => {
     const target = e.target as HTMLInputElement
     const payload = {
-        collection_address_id: target.checked ? props.box_stats.customer.address.id : null
+        collection_address_id: target.checked ? props.delivery_address_management.addresses.shop_collection_address_id : null
     }
     try {
         router.patch(route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters), {
@@ -1994,7 +1994,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div v-if="props.data?.data?.state !== 'dispatched' && !is_shop_external"
+                    <div v-if="props.data?.data?.state !== 'dispatched' && !is_shop_external && (isCollection || props.delivery_address_management.addresses.shop_collection_address_id)"
                         class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
