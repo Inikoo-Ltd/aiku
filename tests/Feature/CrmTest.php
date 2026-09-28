@@ -807,7 +807,8 @@ test('UI show customer mirrors the dashboard the customer sees in retina', funct
             ->where('tabs.current', 'retina_dashboard')
             ->has('tabs.navigation.retina_dashboard')
             ->has('retina_dashboard.kpis')
-            ->has('retina_dashboard.monthly', 12)
+            ->has('retina_dashboard.favourites')
+            ->has('retina_dashboard.gold_reward')
             ->has('retina_dashboard.regulars')
             ->has('retina_dashboard.recent_orders')
             ->has('retina_dashboard.recommendations');

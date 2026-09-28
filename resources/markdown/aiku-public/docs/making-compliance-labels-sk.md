@@ -15,12 +15,14 @@ Každá SKO môže mať svoj vlastný compliance štítok: názov produktu, hmot
 
 ## Kde sa nachádzajú compliance štítky
 
-Otvorte SKO a vyberte **Labels**, vedľa **Batch codes**. Stránka má dve karty.
+Štítky sa vytvárajú na **master SKO**, raz pre všetky organizácie, ktoré produkt majú. Choďte do **Goods** → **SKOs**, otvorte master SKO a stlačte **Labels**. Stránka má dve karty.
 
-- **Labels** — čo musí každý štítok obsahovať, štítky už vytvorené pre túto SKO a tlačidlo na vytvorenie nového.
+- **Labels** — čo musí každý štítok obsahovať, štítky už vytvorené pre tento produkt a tlačidlo na vytvorenie nového.
 - **Compliance** — zoznam certifikátov, bezpečnostných testov, colných kódov a ďalších dokumentov, ktoré produkt potrebuje, každý so svojou referenciou, dátumami platnosti a informáciou, či je v súlade.
 
-Štítok patrí SKO organizácie, ktorá produkt nakupuje. Ten istý produkt nakúpený vo Veľkej Británii a na Slovensku má dve SKO, takže každá môže mať správnu zodpovednú osobu a jazyky pre svoj vlastný trh.
+Jeden štítok slúži všetkým organizáciám. Keď sa produkt predáva vo Veľkej Británii aj v EÚ, umiestnite naň **UK responsible person** aj **EU responsible person**. Texty, ktoré závisia od toho, kto tovar dováža, napríklad „Dovezené z Indie spoločnosťou…“, doplní organizácia, ktorá štítok tlačí.
+
+SKO každej organizácie má tiež stránku **Labels**, vedľa **Batch codes**. Zobrazuje tie isté štítky len na čítanie, s tlačidlom na ich úpravu na master SKO.
 
 Továreň k tým istým štítkom pristupuje cez svoje artefakty. Ako funguje samotný editor štítkov — grafika, rozloženie štítkov na hárku A4, čiarový kód — je vysvetlené v <a href="/docs/designing-and-printing-labels-sk">navrhovaní a tlači štítkov</a>. Tento návod sa venuje tomu, čo pridáva compliance štítok.
 
@@ -103,7 +105,7 @@ Publikovaný štítok sa dá ešte vylepšiť. Zmeňte ho a stlačte **Publish a
 
 <aside class="wayfinder">
 <b>Kde kliknúť v aiku</b><br>
-Váš sklad → <b>Inventory</b> → <b>SKOs</b> → otvorte SKO → <b>Labels</b>. Karta <b>Labels</b> obsahuje <b>Mandatory information</b> a <b>New label</b>; karta <b>Compliance</b> obsahuje certifikáty a testy. Záznam produktu je v <b>Trade Units</b> → otvorte trade unit → <b>Edit</b>, a preklady pri produkte v každom shope → <b>Edit</b>.
+<b>Goods</b> → <b>SKOs</b> → otvorte master SKO → <b>Labels</b>. Zo SKO vašej organizácie: <b>Labels</b> → <b>Edit on master SKO</b>. Karta <b>Labels</b> obsahuje <b>Mandatory information</b> a <b>New label</b>; karta <b>Compliance</b> obsahuje certifikáty a testy. Záznam produktu je v <b>Trade Units</b> → otvorte trade unit → <b>Edit</b>, a preklady pri produkte v každom shope → <b>Edit</b>.
 </aside>
 
 <aside class="wayfinder">

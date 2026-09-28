@@ -14,6 +14,7 @@ use App\Actions\Goods\Stock\UI\EditStock;
 use App\Actions\Goods\Stock\UI\EditStockComposition;
 use App\Actions\Goods\Stock\UI\IndexStocks;
 use App\Actions\Goods\Stock\UI\ShowStock;
+use App\Actions\Goods\Stock\UI\ShowStockLabels;
 use App\Actions\Goods\StockFamily\ExportStockFamilies;
 use App\Actions\Goods\StockFamily\UI\CreateStockFamily;
 use App\Actions\Goods\StockFamily\UI\EditStockFamily;
@@ -80,6 +81,7 @@ Route::prefix('stocks')->as('stocks.')->group(function () {
         Route::get('', ShowStock::class)->name('show');
         Route::get('edit', EditStock::class)->name('edit');
         Route::get('composition', EditStockComposition::class)->name('composition');
+        Route::get('labels', ShowStockLabels::class)->name('show.labels');
     });
 });
 

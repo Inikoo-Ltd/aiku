@@ -3085,6 +3085,7 @@ test('an agent sees and prints only the published labels of the SKOs it buys for
         'group_id'        => $orgStock->group_id,
         'organisation_id' => $orgStock->organisation_id,
         'org_stock_id'    => $orgStock->id,
+        'stock_id'        => $orgStock->stock_id,
         'name'            => $name,
         'layout'          => $layout,
         'state'           => $state,
@@ -5454,6 +5455,14 @@ test('procurement dashboard charts stock outs and their estimated lost revenue',
         ->and($organisationStockHistory->number_org_stocks)->toBe($aliveWithoutLocation)
         ->and((float)$organisationStockHistory->estimated_lost_revenue_org_currency)->toBe(0.0);
 
+    $freshOrgStock = App\Models\Inventory\OrgStock::whereIn('id', $hydrator->aliveOrgStockIds($this->organisation->id, today()))->first();
+    $freshOrgStock->update(['is_fresh' => true]);
+    $hydrator->handle($organisationStockHistoryId);
+
+    expect(DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->value('number_out_of_stock_org_stocks'))->toBe($aliveWithoutLocation - 1);
+
+    $freshOrgStock->update(['is_fresh' => false]);
+
     DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
 });
 
@@ -6514,6 +6523,83 @@ test('supplier documents in the procurement inbox go on the purchase order and i
         ->assertInertia(fn (AssertableInertia $page) => $page->has('attachments.data', 2)->has('attachmentScopes', 4));
 
     $this->organisation->update(['settings' => $originalSettings]);
+});
+
+test('a supplier invoice attached to a delivery is read into proposed costs that only reach the costing once reviewed and applied', function () {
+    $token         = Str::upper(Str::random(6));
+    $stockDelivery = createStockDeliveryWithItems($this, "INVREAD-$token", [10]);
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::BOOKED_IN]);
+    $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+    $item          = $stockDelivery->items()->first();
+    $currency      = $stockDelivery->currency->code;
+
+    $path = tempnam(sys_get_temp_dir(), 'invoice');
+    file_put_contents($path, "%PDF-1.4\n% invoice $token\n%%EOF");
+    $media = \App\Actions\Helpers\Media\SaveModelAttachment::make()->action($stockDelivery, [
+        'path'         => $path,
+        'originalName' => "invoice-$token.pdf",
+        'extension'    => 'pdf',
+        'scope'        => 'Invoice',
+    ]);
+    @unlink($path);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode([
+            'is_invoice'     => true,
+            'invoice_number' => "INV-$token",
+            'invoice_date'   => '2026-09-20',
+            'currency'       => $currency,
+            'lines'          => [
+                ['code' => "invread $token", 'description' => 'Goods', 'quantity' => 12, 'unit_price' => 9.5, 'amount' => 114],
+                ['code' => 'SAMPLE-1', 'description' => 'Sample', 'quantity' => 1, 'unit_price' => 5, 'amount' => 5],
+            ],
+            'charges'        => [['label' => 'Freight', 'amount' => 30], ['label' => 'Early payment discount', 'amount' => -3]],
+            'total'          => 146,
+        ])]]]]),
+    ]);
+
+    $this->post(route('grp.models.stock-delivery.invoice.read', [$stockDelivery->id, $media->id]))->assertRedirect();
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => $request['model'] === 'gpt-5-mini'
+        && $request['messages'][0]['content'][1]['type'] === 'file'
+        && str_contains($request['messages'][0]['content'][0]['text'], "INVREAD-$token"));
+
+    expect((float) $item->fresh()->cost_items)->toEqualWithDelta((float) $item->net_amount, 0.001);
+
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('invoice_costing.0.reading.state', 'read')
+            ->where('invoice_costing.0.reading.can_apply', true)
+            ->where('invoice_costing.0.reading.total_mismatch', false)
+            ->where('invoice_costing.0.reading.items.0.invoice_amount', 114)
+            ->where('invoice_costing.0.reading.items.0.quantity_differs', true)
+            ->where('invoice_costing.0.reading.items.0.proposed_cost', 95)
+            ->has('invoice_costing.0.reading.unmatched', 1));
+
+    $apply = fn () => $this->post(route('grp.models.stock-delivery.invoice.apply', [$stockDelivery->id, $media->id]), [
+        'invoice_number' => "INV-$token",
+        'invoice_date'   => '2026-09-20',
+        'invoice_total'  => 146,
+        'items'          => [['id' => $item->id, 'cost' => 100]],
+        'charges'        => [['label' => 'Freight', 'amount' => 30]],
+    ]);
+
+    $apply()->assertSessionHasNoErrors();
+
+    $item     = $item->fresh();
+    $invoice  = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::AGENT_INVOICE)->first();
+    $freight  = $stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::EXTRA)->first();
+
+    expect((float) $item->cost_items)->toEqualWithDelta(100, 0.001)
+        ->and((float) $item->cost_extra)->toEqualWithDelta(30, 0.001)
+        ->and((float) $invoice->amount)->toEqualWithDelta(146, 0.001)
+        ->and($invoice->received_at->toDateString())->toBe('2026-09-20')
+        ->and($freight->label)->toBe('Freight')
+        ->and(\App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice::reading($stockDelivery, $media)['applied_at'])->not->toBeNull();
+
+    $apply()->assertSessionHasErrors('invoice');
+
+    expect($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::EXTRA)->count())->toBe(1);
 });
 
 test('suppliers talk to procurement on WhatsApp: routed by phone, answered within 24 hours, templated after, and purchase orders sent as a document', function () {

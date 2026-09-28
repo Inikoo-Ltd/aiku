@@ -4,7 +4,7 @@ summary: For compliance staff — how a SKO gets its compliance label: who decid
 date: 2026-09-25
 tags: warehouse, inventory, labels, compliance, printing
 category: warehouse
-help_routes: grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.labels, grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.show.labels, grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.show.labels, grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.labels
+help_routes: grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.labels, grp.org.warehouses.show.inventory.org_stocks.active_org_stocks.show.labels, grp.org.warehouses.show.inventory.org_stocks.abnormality_org_stocks.show.labels, grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.labels, grp.goods.stocks.show.labels
 series: Compliance labels
 order: 1
 ---
@@ -15,12 +15,14 @@ Every SKO can carry its own compliance label: the product name, weight, ingredie
 
 ## Where compliance labels live
 
-Open a SKO and pick **Labels**, next to **Batch codes**. The page has two tabs.
+Labels are made on the **master SKO**, once for every organisation that stocks the product. Go to **Goods** → **SKOs**, open the master SKO and press **Labels**. The page has two tabs.
 
-- **Labels** — what every label must show, the labels already made for this SKO, and the button to make a new one.
+- **Labels** — what every label must show, the labels already made for this product, and the button to make a new one.
 - **Compliance** — the list of certificates, safety tests, tariff codes and other documents the product needs, each with its reference, the dates it is valid between and whether it is compliant.
 
-A label belongs to the SKO of the organisation that buys the product. The same product bought in the UK and in Slovakia has two SKOs, so each can carry the right responsible person and languages for its own market.
+One label serves every organisation. When a product is sold both in the UK and in the EU, place both the **UK responsible person** and the **EU responsible person** on it. Texts that depend on who imports the goods, such as "Imported from India by…", are filled in by the organisation that prints the label.
+
+Each organisation's SKO also has a **Labels** page, next to **Batch codes**. It shows the same labels read only, with a button to edit them on the master SKO.
 
 The factory reaches the same labels from its artefacts. How the label editor itself works — the artwork, the grid of labels on the A4 sheet, the barcode — is explained in <a href="/docs/designing-and-printing-labels">designing and printing labels</a>. This guide covers what a compliance label adds.
 
@@ -103,7 +105,7 @@ A published label can still be improved. Change it and press **Publish again**: 
 
 <aside class="wayfinder">
 <b>Where to click in aiku</b><br>
-Your warehouse → <b>Inventory</b> → <b>SKOs</b> → open the SKO → <b>Labels</b>. The <b>Labels</b> tab has <b>Mandatory information</b> and <b>New label</b>; the <b>Compliance</b> tab has the certificates and tests. The product record is at <b>Trade Units</b> → open the trade unit → <b>Edit</b>, and the translations at the product in each shop → <b>Edit</b>.
+<b>Goods</b> → <b>SKOs</b> → open the master SKO → <b>Labels</b>. From a SKO of your organisation: <b>Labels</b> → <b>Edit on master SKO</b>. The <b>Labels</b> tab has <b>Mandatory information</b> and <b>New label</b>; the <b>Compliance</b> tab has the certificates and tests. The product record is at <b>Trade Units</b> → open the trade unit → <b>Edit</b>, and the translations at the product in each shop → <b>Edit</b>.
 </aside>
 
 <aside class="wayfinder">

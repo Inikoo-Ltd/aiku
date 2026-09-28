@@ -35,7 +35,7 @@ class GetOrgStockLabels
         $information = GetOrgStockLabelInformation::run($orgStock);
         $route       = fn (string $name) => ['name' => $routePrefix.$name, 'parameters' => $routeParameters];
 
-        $labels = $orgStock->labels()->with(['artwork', 'orgStock'])->get();
+        $labels = $orgStock->labels()->with(['artwork', 'stock'])->get();
 
         return array_merge($information, [
             'route'                 => $route('label_sheet'),
@@ -46,13 +46,13 @@ class GetOrgStockLabels
             'unpublish_route'       => $route('labels.unpublish'),
             'on_artwork_route'      => $route('labels.on_artwork'),
             'mandatory_route'       => [
-                'name'       => 'grp.models.org_stock.label_mandatory_information.update',
-                'parameters' => ['orgStock' => $orgStock->id],
+                'name'       => 'grp.models.stock.label_mandatory_information.update',
+                'parameters' => ['stock' => $orgStock->stock_id],
             ],
             'information'           => $information,
             'information_options'   => $this->getInformationOptions($information),
             'icons'                 => GetArtefactLabelIconSource::make()->forBrowser($this->getIcons($information)),
-            'mandatory_information' => $orgStock->label_mandatory_information ?? [],
+            'mandatory_information' => $orgStock->stock?->label_mandatory_information ?? [],
             'abilities'             => $abilities,
             'labels'                => $labels->map(fn (ArtefactLabel $label) => array_merge(
                 ArtefactLabelResource::make($label)->resolve(),

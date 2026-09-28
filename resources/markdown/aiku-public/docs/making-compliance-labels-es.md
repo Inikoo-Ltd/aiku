@@ -15,12 +15,14 @@ Cada SKO puede tener su propia etiqueta de cumplimiento normativo: el nombre del
 
 ## Dónde viven las etiquetas de cumplimiento
 
-Abre un SKO y elige **Labels**, junto a **Batch codes**. La página tiene dos pestañas.
+Las etiquetas se crean en el **SKO maestro**, una sola vez para todas las organizaciones que tienen el producto. Ve a **Goods** → **SKOs**, abre el SKO maestro y pulsa **Labels**. La página tiene dos pestañas.
 
-- **Labels** — lo que debe mostrar cada etiqueta, las etiquetas ya creadas para este SKO, y el botón para crear una nueva.
+- **Labels** — lo que debe mostrar cada etiqueta, las etiquetas ya creadas para este producto, y el botón para crear una nueva.
 - **Compliance** — la lista de certificados, pruebas de seguridad, códigos arancelarios y otros documentos que necesita el producto, cada uno con su referencia, las fechas entre las que es válido y si está en regla.
 
-Una etiqueta pertenece al SKO de la organización que compra el producto. El mismo producto comprado en el Reino Unido y en Eslovaquia tiene dos SKOs, así que cada uno puede llevar la persona responsable y los idiomas correctos para su propio mercado.
+Una etiqueta sirve para todas las organizaciones. Cuando un producto se vende en el Reino Unido y en la UE, coloca en ella la **UK responsible person** y la **EU responsible person**. Los textos que dependen de quién importa la mercancía, como "Importado de India por…", los rellena la organización que imprime la etiqueta.
+
+El SKO de cada organización también tiene una página **Labels**, junto a **Batch codes**. Muestra las mismas etiquetas solo para consulta, con un botón para editarlas en el SKO maestro.
 
 La fábrica llega a las mismas etiquetas desde sus artefactos. Cómo funciona el propio editor de etiquetas — el diseño, la rejilla de etiquetas en la hoja A4, el código de barras — se explica en <a href="/docs/designing-and-printing-labels-es">diseñar e imprimir etiquetas</a>. Esta guía cubre lo que añade una etiqueta de cumplimiento normativo.
 
@@ -103,7 +105,7 @@ Una etiqueta publicada todavía se puede mejorar. Cámbiala y pulsa **Publish ag
 
 <aside class="wayfinder">
 <b>Dónde pulsar en aiku</b><br>
-Tu almacén → <b>Inventory</b> → <b>SKOs</b> → abre el SKO → <b>Labels</b>. La pestaña <b>Labels</b> tiene <b>Mandatory information</b> y <b>New label</b>; la pestaña <b>Compliance</b> tiene los certificados y las pruebas. La ficha del producto está en <b>Trade Units</b> → abre la unidad comercial → <b>Edit</b>, y las traducciones en el producto de cada tienda → <b>Edit</b>.
+<b>Goods</b> → <b>SKOs</b> → abre el SKO maestro → <b>Labels</b>. Desde un SKO de tu organización: <b>Labels</b> → <b>Edit on master SKO</b>. La pestaña <b>Labels</b> tiene <b>Mandatory information</b> y <b>New label</b>; la pestaña <b>Compliance</b> tiene los certificados y las pruebas. La ficha del producto está en <b>Trade Units</b> → abre la unidad comercial → <b>Edit</b>, y las traducciones en el producto de cada tienda → <b>Edit</b>.
 </aside>
 
 <aside class="wayfinder">

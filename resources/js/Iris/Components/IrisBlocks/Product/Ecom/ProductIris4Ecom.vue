@@ -14,7 +14,6 @@ import {
     faChevronLeft,
     faChevronRight,
     faPlusCircle,
-    faPencil,
     faCheckCircle,
     faChevronDown
 } from "@fal"
@@ -68,7 +67,6 @@ library.add(
     faPlus,
     faMinus,
     faCircle,
-    faPencil,
     faCheckCircle,
     faFileCheck,
     faFilePdf,
@@ -343,12 +341,6 @@ const selectedVariantLabel = computed(() =>
     || ""
 )
 
-const bespokeData = computed(() => props.fieldValue?.bespoke_data || {})
-
-const showBespoke = computed(() =>
-    Boolean(props.fieldValue?.setting?.bespoke && (bespokeData.value?.title || bespokeData.value?.text))
-)
-
 const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
@@ -601,7 +593,7 @@ onMounted(async () => {
                 </div>
 
                 <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment && fieldValue?.appointment_data?.link?.href"
-                    :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type">
+                    :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type" :target="fieldValue?.appointment_data?.link?.target">
                     <div class="group my-2 flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-[#F4F4F4] px-4 py-2 transition hover:border-gray-300 hover:bg-gray-100">
                         <FontAwesomeIcon :icon="faMapMarkerAlt" class="shrink-0 text-gray-600 transition group-hover:text-gray-800" fixed-width />
                         <span class="max-w-[420px] truncate text-sm font-medium text-gray-800 underline">
@@ -878,7 +870,7 @@ onMounted(async () => {
 
             <div class="mt-2">
                 <LinkIris v-if="layout?.iris?.is_logged_in && fieldValue?.setting?.appointment && fieldValue?.appointment_data?.link?.href"
-                    :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type">
+                    :href="fieldValue?.appointment_data?.link?.href" :type="fieldValue?.appointment_data?.link?.type" :target="fieldValue?.appointment_data?.link?.target">
                     <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-[#F4F4F4] px-4 py-2">
                         <FontAwesomeIcon :icon="faMapMarkerAlt" fixed-width />
                         <div v-html="fieldValue?.appointment_data?.text" class="text-sm underline" />
