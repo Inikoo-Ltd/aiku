@@ -817,6 +817,23 @@ test('an upload that collides with a listed sku adopts the listed product', func
         ->and($portfolio->errors_response)->toBeNull();
 });
 
+test('a sku collision whose lookup returns another product keeps the store error instead of adopting it', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'ghost-sku');
+
+    wooFake([
+        'POST products' => Http::response(['code' => 'product_invalid_sku', 'message' => 'Invalid or duplicated SKU.', 'data' => ['status' => 400]], 400),
+        'GET products'  => Http::response([wooProduct(36849, ['sku' => 'teak-board', 'description' => 'Crafted from Java teak'])]),
+    ]);
+
+    StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio);
+    $portfolio->refresh();
+
+    expect($portfolio->platform_product_id)->toBeNull()
+        ->and($portfolio->platform_status)->toBeFalse()
+        ->and($portfolio->errors_response['message'])->toBe('Invalid or duplicated SKU.');
+});
+
 test('a listing the store no longer has is reported missing and the sku match is offered in the table shape', function () {
     $wooCommerceUser = wooConnect(wooCustomer($this->shop));
     $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, '794', 'gone-sku');
