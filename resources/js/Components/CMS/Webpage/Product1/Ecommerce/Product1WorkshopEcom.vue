@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, useAttrs, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import ProductContents from "@/Components/CMS/Webpage/Product1/ProductContents.vue"
 import InformationSideProduct from "@/Components/CMS/Webpage/Product1/InformationSideProduct.vue"
 import Image from "@common/Components/Image.vue"
@@ -168,7 +168,7 @@ defineOptions({
                         </h1>
 
                         <div class="text-sm font-medium text-gray-600 mt-1 mb-1">
-                            {{ trans("Product code") }}: {{ product.code }}
+                            {{ ctrans("Product code") }}: {{ product.code }}
                         </div>
 
                         <!-- STOCK SECTION -->
@@ -179,9 +179,9 @@ defineOptions({
                                 <span>
                                     <span>
                                         {{ product?.is_on_demand
-                                            ? trans("Unlimited quantity available")
-                                            : (product.stock > 0 ? trans("In stock") + ` (${product.stock} ` +
-                                                trans("available") + `)` : trans("Out Of Stock"))
+                                            ? ctrans("Unlimited quantity available")
+                                            : (product.stock > 0 ? ctrans("In stock") + ` (${product.stock} ` +
+                                                ctrans("available") + `)` : ctrans("Out Of Stock"))
                                         }}
                                     </span>
                                 </span>
@@ -201,8 +201,8 @@ defineOptions({
                                 <span>
                                     {{
                                         product.is_back_in_stock
-                                            ? trans("will be notified when in Stock")
-                                            : trans("Remind me")
+                                            ? ctrans("will be notified when in Stock")
+                                            : ctrans("Remind me")
                                     }}
                                 </span>
                             </button>
@@ -242,8 +242,8 @@ defineOptions({
                     <div v-else />
                 </div>
 
-                <div class="flex justify-end items-end w-full">
-                    <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
+                <div v-if="product.rrp_per_unit > 0" class="flex justify-end items-end w-full">
+                    <span @click="_popoverProfit?.toggle">{{ ctrans("Profit") }}</span>:
                     <span class="text-green-500 ml-1 font-bold">
                         {{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }}
                     </span>
@@ -264,12 +264,12 @@ defineOptions({
                         <EcomAddToBasketv2 v-if="product.stock > 0" v-model:product="product"
                             :customerData="customerData" :key="keyCustomer"
                             :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
-                        <Button v-else :label="trans('Out of stock')" type="tertiary" disabled full />
+                        <Button v-else :label="ctrans('Out of stock')" type="tertiary" disabled full />
                     </div>
 
                     <div v-else class="w-full block text-center border text-sm px-3 py-2 rounded text-gray-600"
                         :style="getStyles(modelValue?.buttonLogin?.properties, screenType)">
-                        {{ trans("Login or Register for Wholesale Prices") }}
+                        {{ ctrans("Login or Register for Wholesale Prices") }}
                     </div>
                 </div>
 
@@ -317,7 +317,7 @@ defineOptions({
                     </div>
 
                     <button v-if="product.description_extra" @click="toggleExpanded" class="mt-1 text-xs underline">
-                        {{ expanded ? trans("Show Less") : trans("Read More") }}
+                        {{ expanded ? ctrans("Show Less") : ctrans("Read More") }}
                     </button>
                 </div>
 
@@ -331,7 +331,7 @@ defineOptions({
                         :informations="modelValue.information" :styleData="modelValue?.information_style" />
 
                     <h2 v-if="modelValue?.paymentData?.length" class="text-base font-semibold text-gray-800">
-                        {{ trans("Secure Payments") }}:
+                        {{ ctrans("Secure Payments") }}:
                     </h2>
 
                     <div class="flex flex-wrap items-center gap-6 py-2">
@@ -364,7 +364,7 @@ defineOptions({
 
  -->
             <div class="text-sm font-medium text-gray-600 mt-1 mb-1">
-                {{ trans("Product code") }}: {{ product.code }}
+                {{ ctrans("Product code") }}: {{ product.code }}
             </div>
             <div>
                 <FontAwesomeIcon v-if="layout?.iris?.is_logged_in && layout?.retina?.type !== 'dropshipping'"
@@ -383,7 +383,7 @@ defineOptions({
             :key="product.code" />
 
         <div class="flex justify-start items-end w-full">
-            <span @click="_popoverProfit?.toggle">{{ trans("Profit") }}</span>:
+            <span @click="_popoverProfit?.toggle">{{ ctrans("Profit") }}</span>:
             <span class="text-green-500 ml-1 font-bold">
                 {{ layout?.user?.gr_data?.customer_is_gr ? product?.discounted_margin : product?.margin }}
             </span>
@@ -408,12 +408,12 @@ defineOptions({
             <EcomAddToBasketv2 v-if="layout?.iris?.is_logged_in && product.stock > 0" v-model:product="product"
                 :customerData="customerData" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
 
-            <Button v-else-if="layout?.iris?.is_logged_in" :label="trans('Out of stock')" type="tertiary" disabled
+            <Button v-else-if="layout?.iris?.is_logged_in" :label="ctrans('Out of stock')" type="tertiary" disabled
                 full />
 
             <div v-else :style="getStyles(modelValue?.button?.properties, screenType)"
                 class="block text-center border text-sm px-3 py-2 rounded text-gray-600 w-full">
-                {{ trans("Login or Register for Wholesale Prices") }}
+                {{ ctrans("Login or Register for Wholesale Prices") }}
             </div>
         </div>
 
@@ -467,7 +467,7 @@ defineOptions({
             <InformationSideProduct v-if="modelValue?.information?.length" :informations="modelValue.information"
                 :styleData="modelValue?.information_style" />
 
-            <h2 class="text-base font-semibold mb-2">{{ trans("Secure Payments") }}:</h2>
+            <h2 class="text-base font-semibold mb-2">{{ ctrans("Secure Payments") }}:</h2>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in modelValue.paymentData" :key="logo.code" :src="logo.image" :alt="logo.code"
                     class="h-4 px-1" loading="lazy" decoding="async" />

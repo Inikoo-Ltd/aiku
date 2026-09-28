@@ -521,7 +521,7 @@ onMounted(async () => {
                     </div>
                 </div>
 
-                <div v-if="layout?.iris?.is_logged_in" class="mt-2 flex items-baseline gap-1 text-xs" :class="profitColorClass">
+                <div v-if="layout?.iris?.is_logged_in && product.rrp_per_unit > 0" class="mt-2 flex items-baseline gap-1 text-xs" :class="profitColorClass">
                     <span>{{ ctrans("Profit") }}:</span>
                     <span class="font-semibold">{{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}</span>
                     <span>({{ displayedMargin }})</span>
@@ -755,7 +755,7 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <div v-if="layout?.iris?.is_logged_in" class="flex items-baseline gap-1 text-xs" :class="profitColorClass">
+            <div v-if="layout?.iris?.is_logged_in && product.rrp_per_unit > 0" class="flex items-baseline gap-1 text-xs" :class="profitColorClass">
                 <span>{{ ctrans("Profit") }}:</span>
                 <span class="font-semibold">{{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}</span>
                 <span>({{ displayedMargin }})</span>
