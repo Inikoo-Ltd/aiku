@@ -92,11 +92,12 @@ const onUploadPdf = async (event: Event) => {
                 maxlength="500"
                 rows="3"
                 :loading="isLoadingText"
+                :class="giftMessageText?.length ? '' : 'errorShake'"
             />
             <div class="text-right text-xs text-gray-400">{{ giftMessageText?.length ?? 0 }} / 500</div>
         </div>
 
-        <div v-else>
+        <div v-else class="text-right">
             <input type="file" accept="application/pdf" @change="onUploadPdf" />
             <LoadingIcon v-if="isLoadingPdf" xclass="text-sm text-gray-500" />
             <div v-if="hasGiftMessagePdf" class="text-xs text-green-600">{{ ctrans('PDF uploaded') }}</div>
