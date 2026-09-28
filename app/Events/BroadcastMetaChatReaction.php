@@ -46,7 +46,8 @@ class BroadcastMetaChatReaction implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'message' => new MetaChatMessageResource($this->message),
+            'message'                       => new MetaChatMessageResource($this->message),
+            'can_send_non_template_message' => $this->message->metaChatSession->can_send_non_template_message,
         ];
     }
 }

@@ -875,8 +875,12 @@ const initSocket = () => {
         scrollBottom()
     }
 
-    onReaction = ({ message }: any) => {
+    onReaction = ({ message, can_send_non_template_message }: any) => {
         if (!message?.id) return
+
+        if (can_send_non_template_message !== undefined) {
+            canSendNonTemplate.value = can_send_non_template_message
+        }
 
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
 

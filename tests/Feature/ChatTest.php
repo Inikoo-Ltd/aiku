@@ -9676,6 +9676,42 @@ test('a WhatsApp chat from a phone shared by two accounts links to the one that 
     $session->forceDelete();
 });
 
+test('a WhatsApp reaction from the customer opens the 24 hour window so the agent can answer', function () {
+    Bus::fake();
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastMetaChatReaction::class]);
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '123']])]);
+
+    $session = noiseTestWhatsappSession($this->shop, '+447500000481', 'Hello');
+    $session->messages()->update(['created_at' => now()->subDays(2)]);
+    $session->update(['last_visitor_message_at' => now()->subDays(2)]);
+    $template = $session->messages()->create([
+        'meta_channel_id' => $session->meta_channel_id,
+        'meta_message_id' => 'wamid.template-'.Str::random(8),
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'message_text'    => 'Please message us back so we can continue the conversation',
+    ]);
+
+    expect($session->refresh()->can_send_non_template_message)->toBeFalse();
+
+    \App\Actions\Chat\Whatsapp\StoreIncomingWhatsappMessage::make()->handle([
+        'metadata' => ['phone_number_id' => '123'],
+        'messages' => [[
+            'id'       => 'wamid.reaction-'.Str::random(8),
+            'from'     => '447500000481',
+            'type'     => 'reaction',
+            'reaction' => ['message_id' => $template->meta_message_id, 'emoji' => '❤️'],
+        ]],
+    ]);
+
+    expect($session->refresh()->can_send_non_template_message)->toBeTrue();
+    \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\BroadcastMetaChatReaction::class, fn ($event) => $event->broadcastWith()['can_send_non_template_message'] === true);
+
+    $template->reactions()->delete();
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
 test('chat availability answers offline for a shop without a website and needs a shop', function () {
     $shop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
 

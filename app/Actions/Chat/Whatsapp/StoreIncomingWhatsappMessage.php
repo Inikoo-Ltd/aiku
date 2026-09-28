@@ -119,8 +119,8 @@ class StoreIncomingWhatsappMessage
         $isMedia  = in_array($type, DownloadWhatsappMedia::MEDIA_TYPES, true);
 
         if ($type === 'reaction') {
-            $this->storeReaction($metaChatSession, $waMessageId, (array) $waNode);
             $metaChatSession->update(['last_visitor_message_at' => now()]);
+            $this->storeReaction($metaChatSession, $waMessageId, (array) $waNode);
 
             return;
         }
