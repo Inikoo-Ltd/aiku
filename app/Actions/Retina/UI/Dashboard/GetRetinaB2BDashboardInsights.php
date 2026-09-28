@@ -11,13 +11,16 @@ namespace App\Actions\Retina\UI\Dashboard;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
 use App\Actions\Retina\Ecom\Basket\GetRetinaProductBasketRecommendations;
 use App\Actions\Retina\Traits\HasBasketTransactions;
+use App\Actions\Traits\HasGrData;
 use App\Actions\Traits\WithCustomerPurchasableProduct;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Http\Resources\Catalogue\IrisProductBasketRecommendationResource;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -26,10 +29,11 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * What a wholesale customer sees on their dashboard: how much they buy and how often, the products
- * they keep coming back for, when each of those is due again, which of them are running short in our
- * warehouse or out of stock (with the date the next delivery lands), their latest orders to repeat,
- * and products that sell alongside their range which they have never bought.
+ * What a wholesale customer sees on their dashboard: their Gold Reward status, the products they keep
+ * coming back for, when each of those is due again, which of them are running short in our warehouse or
+ * out of stock (with the date the next delivery lands), their favourites, their latest orders to repeat
+ * with their invoices, products that sell alongside their range which they have never bought, and a
+ * short overview of how often they order and their average order.
  *
  * Money is net of tax in the shop currency, orders are the ones submitted and not cancelled.
  */
@@ -37,10 +41,12 @@ class GetRetinaB2BDashboardInsights
 {
     use AsObject;
     use HasBasketTransactions;
+    use HasGrData;
     use WithCustomerPurchasableProduct;
 
     private const int REGULAR_PRODUCTS = 20;
     private const int RECENT_ORDERS = 5;
+    private const int FAVOURITES = 4;
 
     /**
      * ponytail: our stock is "running short" when it would not cover three of the customer's usual orders.
@@ -59,8 +65,12 @@ class GetRetinaB2BDashboardInsights
      */
     private const int RECOMMENDATIONS_CACHE_HOURS = 6;
 
+    protected Shop $shop;
+
     public function handle(Customer $customer): array
     {
+        $this->shop = $customer->shop;
+
         $today       = now()->startOfDay();
         $yearAgo     = $today->copy()->subYear();
         $twoYearsAgo = $today->copy()->subYears(2);
@@ -77,7 +87,6 @@ class GetRetinaB2BDashboardInsights
             ]);
 
         $lastYearOrders     = $orders->filter(fn ($order) => $order->date->gte($yearAgo));
-        $previousYearOrders = $orders->filter(fn ($order) => $order->date->lt($yearAgo));
 
         $productSales = $this->getProductSales($customer, $yearAgo);
         if ($productSales->isEmpty()) {
@@ -91,20 +100,34 @@ class GetRetinaB2BDashboardInsights
         );
 
         return [
-            'currency_code'   => $customer->shop->currency->code,
-            'kpis'            => $this->getKpis($customer, $lastYearOrders, $previousYearOrders, $orders, $today),
-            'monthly'         => $this->getMonthly($orders, $today),
-            'regulars'        => $this->getRegulars($customer, $productSales->take(self::REGULAR_PRODUCTS), $today),
-            'recent_orders'   => $this->getRecentOrders($customer),
+            'currency_code'          => $customer->shop->currency->code,
+            'kpis'                   => $this->getKpis($customer, $lastYearOrders, $orders, $today),
+            'gold_reward'            => $this->getGoldReward($customer, $today),
+            'regulars'               => $this->getRegulars($customer, $productSales->take(self::REGULAR_PRODUCTS), $today),
+            'favourites'             => $this->getFavourites($customer),
+            'recent_orders'          => $this->getRecentOrders($customer),
             'recommendations'        => $recommendations,
             'recommendations_source' => $recommendationsSource,
         ];
     }
 
-    private function getKpis(Customer $customer, Collection $lastYearOrders, Collection $previousYearOrders, Collection $orders, Carbon $today): array
+    /**
+     * The order overview: how often they order and their average order over the last 12 months, or over
+     * their whole history when they have not ordered in the last 12 months, and all their orders ever.
+     */
+    private function getKpis(Customer $customer, Collection $lastYearOrders, Collection $orders, Carbon $today): array
     {
-        $spend         = $lastYearOrders->sum('net_amount');
-        $previousSpend = $previousYearOrders->sum('net_amount');
+        $allTime = DB::table('orders')
+            ->where('customer_id', $customer->id)
+            ->whereNotIn('state', [OrderStateEnum::CREATING->value, OrderStateEnum::CANCELLED->value])
+            ->selectRaw('count(*) as orders, coalesce(sum(net_amount), 0) as spend')
+            ->first();
+
+        $totalOrders = (int) $allTime->orders;
+
+        $averageOrder = $lastYearOrders->count()
+            ? round($lastYearOrders->sum('net_amount') / $lastYearOrders->count(), 2)
+            : ($totalOrders ? round((float) $allTime->spend / $totalOrders, 2) : null);
 
         $orderEveryDays = $this->medianGapInDays($orders->pluck('date'));
         $lastOrderAt    = $orders->last()?->date;
@@ -117,12 +140,9 @@ class GetRetinaB2BDashboardInsights
         $daysSinceLast = $lastOrderAt ? (int) $lastOrderAt->copy()->startOfDay()->diffInDays($today) : null;
 
         return [
-            'spend'                => round($spend, 2),
-            'previous_spend'       => round($previousSpend, 2),
             'orders'               => $lastYearOrders->count(),
-            'previous_orders'      => $previousYearOrders->count(),
-            'average_order'        => $lastYearOrders->count() ? round($spend / $lastYearOrders->count(), 2) : null,
-            'previous_average'     => $previousYearOrders->count() ? round($previousSpend / $previousYearOrders->count(), 2) : null,
+            'total_orders'         => $totalOrders,
+            'average_order'        => $averageOrder,
             'order_every_days'     => $orderEveryDays,
             'last_order_at'        => $lastOrderAt?->toDateString(),
             'days_since_last'      => $daysSinceLast,
@@ -132,30 +152,23 @@ class GetRetinaB2BDashboardInsights
     }
 
     /**
-     * Twelve months ending this month, each next to the same month a year earlier.
+     * @return array{label: string, days_left: int, expires_at: string}|null
      */
-    private function getMonthly(Collection $orders, Carbon $today): array
+    private function getGoldReward(Customer $customer, Carbon $today): ?array
     {
-        $byMonth = $orders->groupBy(fn ($order) => $order->date->format('Y-m'));
+        $grData = $this->getGrData($customer);
 
-        $months = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $month         = $today->copy()->startOfMonth()->subMonths($i);
-            $previousMonth = $month->copy()->subYear();
-
-            $current  = $byMonth->get($month->format('Y-m'), collect());
-            $previous = $byMonth->get($previousMonth->format('Y-m'), collect());
-
-            $months[] = [
-                'month'           => $month->format('Y-m'),
-                'spend'           => round($current->sum('net_amount'), 2),
-                'orders'          => $current->count(),
-                'previous_spend'  => round($previous->sum('net_amount'), 2),
-                'previous_orders' => $previous->count(),
-            ];
+        if (!$grData['customer_is_gr']) {
+            return null;
         }
 
-        return $months;
+        $daysLeft = max(0, (int) $grData['meter'][0]);
+
+        return [
+            'label'      => $grData['gr_label'],
+            'days_left'  => $daysLeft,
+            'expires_at' => $today->copy()->addDays($daysLeft)->toDateString(),
+        ];
     }
 
     /**
@@ -268,6 +281,60 @@ class GetRetinaB2BDashboardInsights
         return in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::COMING_SOON], true);
     }
 
+    private function getFavourites(Customer $customer): array
+    {
+        $favouriteProductIds = DB::table('favourites')
+            ->where('customer_id', $customer->id)
+            ->whereNull('unfavourited_at')
+            ->orderByDesc('created_at')
+            ->limit(self::FAVOURITES)
+            ->pluck('product_id');
+
+        if ($favouriteProductIds->isEmpty()) {
+            return [];
+        }
+
+        $products = Product::query()
+            ->whereIn('products.id', $favouriteProductIds)
+            ->visibleToCustomer($customer->id)
+            ->leftJoin('webpages', function ($join) {
+                $join->on('products.id', '=', 'webpages.model_id')
+                    ->where('webpages.model_type', '=', 'Product');
+            })
+            ->select('products.*', 'webpages.canonical_url')
+            ->get()
+            ->keyBy('id');
+
+        $basketTransactions = $this->getBasketTransactions($customer);
+        $remindedProductIds = DB::table('back_in_stock_reminders')
+            ->where('customer_id', $customer->id)
+            ->whereIn('product_id', $products->keys())
+            ->pluck('product_id')
+            ->flip();
+
+        return $favouriteProductIds
+            ->filter(fn ($productId) => $products->has($productId))
+            ->map(function ($productId) use ($products, $customer, $basketTransactions, $remindedProductIds) {
+                /** @var Product $product */
+                $product = $products->get($productId);
+
+                return [
+                    'id'                 => $product->id,
+                    'code'               => $product->code,
+                    'name'               => $product->name,
+                    'image'              => data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original'),
+                    'url'                => $this->productUrl($product->canonical_url),
+                    'available_quantity' => (int) $product->available_quantity,
+                    'stock_status'       => $this->stockStatus($product, 1),
+                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer),
+                    'has_reminder'       => $remindedProductIds->has($product->id),
+                    'quantity_in_basket' => $basketTransactions[$product->id]['quantity_ordered'] ?? 0,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     private function getRecentOrders(Customer $customer): array
     {
         return DB::table('orders')
@@ -284,6 +351,7 @@ class GetRetinaB2BDashboardInsights
                 'orders.state',
                 'orders.total_amount',
                 'order_stats.number_item_transactions',
+                DB::raw("(select invoices.slug from invoices where invoices.order_id = orders.id and invoices.type = '".InvoiceTypeEnum::INVOICE->value."' and invoices.in_process = false and invoices.deleted_at is null order by invoices.id limit 1) as invoice_slug"),
             ])
             ->map(fn ($order) => [
                 'id'          => $order->id,
@@ -294,6 +362,7 @@ class GetRetinaB2BDashboardInsights
                 'state_label' => OrderStateEnum::labels()[$order->state] ?? $order->state,
                 'total'       => (float) $order->total_amount,
                 'items'       => (int) $order->number_item_transactions,
+                'invoice'     => $order->invoice_slug,
             ])
             ->all();
     }
