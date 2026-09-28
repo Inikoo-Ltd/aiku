@@ -813,3 +813,31 @@ test('iris product web block exposes the product family id so the member price c
     expect($product->family_id)->not->toBeNull()
         ->and(Arr::get($irisProduct, 'family_id'))->toBe($product->family_id);
 });
+
+test('iris variant products list leaves out the variant products that are not for sale', function () {
+    [, $forSaleProduct] = createProduct($this->shop);
+    $forSaleProduct->updateQuietly(['is_for_sale' => true]);
+
+    $notForSaleProduct = $forSaleProduct->replicate();
+    $notForSaleProduct->fill([
+        'code'        => $forSaleProduct->code.'-NFS',
+        'slug'        => $forSaleProduct->slug.'-nfs',
+        'is_for_sale' => false,
+    ])->saveQuietly();
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'group_id'        => $forSaleProduct->group_id,
+        'organisation_id' => $forSaleProduct->organisation_id,
+        'shop_id'         => $forSaleProduct->shop_id,
+        'family_id'       => $forSaleProduct->family_id,
+        'code'            => $forSaleProduct->code,
+        'leader_id'       => $forSaleProduct->id,
+        'data'            => ['products' => []],
+    ]);
+    $forSaleProduct->updateQuietly(['variant_id' => $variant->id]);
+    $notForSaleProduct->updateQuietly(['variant_id' => $variant->id]);
+
+    $productIds = collect(\App\Actions\Catalogue\Product\Json\GetProductsOfVariant::run($variant)['products'])->pluck('id');
+
+    expect($productIds->all())->toBe([$forSaleProduct->id]);
+});
