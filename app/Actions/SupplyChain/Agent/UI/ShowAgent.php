@@ -11,6 +11,9 @@ namespace App\Actions\SupplyChain\Agent\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
@@ -105,6 +108,23 @@ class ShowAgent extends OrgAction
                 //     fn () => SupplierProductsResource::collection(IndexSupplierProducts::run($agent))
                 //     : Inertia::optional(fn () => SupplierProductsResource::collection(IndexSupplierProducts::run($agent))),
 
+                AgentTabsEnum::ATTACHMENTS->value => $this->tab == AgentTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($agent, AgentTabsEnum::ATTACHMENTS->value))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($agent, AgentTabsEnum::ATTACHMENTS->value))),
+
+                'attachmentRoutes' => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.agent.attachment.attach',
+                        'parameters' => ['agent' => $agent->id],
+                    ],
+                    'detachRoute' => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.agent.attachment.detach',
+                        'parameters' => ['agent' => $agent->id],
+                    ],
+                ],
+                'attachmentScopes' => SupplyChainAttachmentScopeEnum::options(),
+
                 AgentTabsEnum::HISTORY->value => $this->tab == AgentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value)))
@@ -115,7 +135,7 @@ class ShowAgent extends OrgAction
             IndexHistory::make()->tableStructure(
                 prefix: AgentTabsEnum::HISTORY->value
             )
-        );
+        )->table(IndexAttachments::make()->tableStructure(prefix: AgentTabsEnum::ATTACHMENTS->value));
     }
 
 

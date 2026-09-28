@@ -23,13 +23,14 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachAttachmentToModel extends OrgAction
 {
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
+    public function handle(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
     {
         foreach (Arr::get($modelData, 'attachments') as $attachment) {
             $file           = $attachment;
@@ -37,7 +38,7 @@ class AttachAttachmentToModel extends OrgAction
                 'path'         => $file->getPathName(),
                 'originalName' => $file->getClientOriginalName(),
                 'scope'        => Arr::get($modelData, 'scope', 'Other'),
-                'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                'caption'      => Arr::get($modelData, 'caption') ?: pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
                 'extension'    => $file->getClientOriginalExtension()
             ];
 
@@ -68,10 +69,11 @@ class AttachAttachmentToModel extends OrgAction
                 'required',
                 'string'
             ],
+            'caption'    => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 
-    public function action(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
+    public function action(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void
     {
         $this->initialisationFromGroup(group(), $modelData);
 
@@ -104,6 +106,13 @@ class AttachAttachmentToModel extends OrgAction
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
         $this->handle($tradeUnit, $this->validatedData);
+    }
+
+    public function inAgent(Agent $agent, ActionRequest $request): void
+    {
+        $this->initialisationFromGroup($agent->group, $request);
+
+        $this->handle($agent, $this->validatedData);
     }
 
     public function inSupplier(Supplier $supplier, ActionRequest $request): void

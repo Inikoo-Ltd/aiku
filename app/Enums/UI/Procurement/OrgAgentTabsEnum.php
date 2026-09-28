@@ -19,6 +19,7 @@ enum OrgAgentTabsEnum: string
     case SHOWCASE              = 'showcase';
     case INBOX                 = 'inbox';
     case SYSTEM_USERS          = 'system_users';
+    case ATTACHMENTS           = 'attachments';
     case HISTORY               = 'history';
     case DATA                  = 'data';
     case IMAGES                = 'images';
@@ -46,6 +47,12 @@ enum OrgAgentTabsEnum: string
             OrgAgentTabsEnum::SYSTEM_USERS => [
                 'title' => __('System User'),
                 'icon'  => 'fal fa-terminal',
+            ],
+            OrgAgentTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             OrgAgentTabsEnum::HISTORY => [
                 'title' => __('History'),
