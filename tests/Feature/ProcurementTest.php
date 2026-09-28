@@ -26,6 +26,7 @@ use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SysAdmin\User;
 use App\Actions\Transfers\Aurora\RepairAuroraPurchaseOrderBuyers;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
+use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
@@ -4126,6 +4127,43 @@ describe('partner shopping list', function () {
     });
 
     test('send partner order to warehouse rejects non-creating order', function () {
+    test('mirror stock delivery counts units, not the SKOs on the delivery note', function () {
+        $seller = $this->orgPartner->partner;
+        if (!$seller->warehouses()->exists()) {
+            StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
+        }
+
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $packedIn       = $sellerOrgStock->packed_in;
+        $sellerOrgStock->update(['packed_in' => 4]);
+
+        $item   = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 12,
+        ]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($seller, [['id' => $item->id]]);
+        $order  = $result['orders'][0];
+
+        $stockDelivery    = SendPartnerOrderToWarehouse::make()->action($order);
+        $deliveryNote     = $order->deliveryNotes()->first();
+        $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->first();
+
+        expect((float) $stockDelivery->items()->first()->unit_quantity)->toBe((float) $deliveryNoteItem->quantity_required * 4);
+
+        $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+        SyncPartnerStockDeliveryOnDispatch::run($deliveryNote->refresh());
+
+        expect((float) $stockDelivery->items()->first()->refresh()->unit_quantity)->toBe(8.0);
+
+        $stockDelivery->items()->first()->update(['unit_quantity_checked' => 4, 'checked_at' => now()]);
+        request()->setRouteResolver(fn () => (new Illuminate\Routing\Route('GET', 'under-over', []))->name('under-over'));
+        $underOverDelivered = IndexStockDeliveryUnderOverDeliveredItems::make()->handle($stockDelivery)->first();
+
+        expect((float) $underOverDelivered->difference_skos)->toBe(-1.0);
+
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 0]);
+        $sellerOrgStock->update(['packed_in' => $packedIn]);
+    });
+
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {
             StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
