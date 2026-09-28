@@ -17,7 +17,7 @@ import { faSave as falSave, faInfoCircle, faRobot } from '@fal'
 import { faAsterisk, faQuestion } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Modal from '../Utils/Modal.vue'
-import { trans } from 'laravel-vue-i18n'
+import { ctrans } from '@/Composables/useTrans'
 import Button from '../Elements/Buttons/Button.vue'
 library.add(fadSave, faQuestion, falSave, faInfoCircle, faAsterisk, faRobot)
 
@@ -81,6 +81,13 @@ if (reasonField) {
 formFields['_method'] = 'patch'
 const form = useForm(formFields)
 form['fieldType'] = 'edit'
+
+watch(() => props.fieldData.value, (serverValue) => {
+    if (!form.isDirty) {
+        form[props.field] = serverValue
+        form.defaults(props.field, serverValue)
+    }
+})
 
 // Gated here, not on the save button, so fields with their own save (trade units) cannot bypass it
 const submit = () => {
@@ -275,17 +282,17 @@ const needsSaveConfirmation = computed(() => {
 
                 <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                     <div class="text-base font-semibold">
-                        {{ fieldData.saveConfirmation?.title ?? trans("Are you sure ?") }}
+                        {{ fieldData.saveConfirmation?.title ?? ctrans("Are you sure ?") }}
                     </div>
                     <div class="mt-2">
                         <p class="text-sm text-gray-500">
-                            {{ fieldData.saveConfirmation?.description ?? trans("I understand what I did.") }}
+                            {{ fieldData.saveConfirmation?.description ?? ctrans("I understand what I did.") }}
                         </p>
                     </div>
 
                     <div v-if="reasonField" class="mt-4">
                         <label :for="`${field}-reason`" class="text-sm text-gray-500">
-                            {{ fieldData.saveConfirmation?.reasonLabel ?? trans("Reason") }}
+                            {{ fieldData.saveConfirmation?.reasonLabel ?? ctrans("Reason") }}
                         </label>
                         <textarea
                             :id="`${field}-reason`"
@@ -300,7 +307,7 @@ const needsSaveConfirmation = computed(() => {
                             type="tertiary"
                             icon="far fa-arrow-left"
                             :disabled="form.processing"
-                            :label="trans('Cancel')"
+                            :label="ctrans('Cancel')"
                             full
                             @click=" () => (isModalConfirmation = false)"
                         />
@@ -315,7 +322,7 @@ const needsSaveConfirmation = computed(() => {
                             >
                                 <template #label>
                                     <div class="whitespace-nowrap">
-                                        {{ fieldData.saveConfirmation?.yesLabel ?? trans("Yes, update it") }}
+                                        {{ fieldData.saveConfirmation?.yesLabel ?? ctrans("Yes, update it") }}
                                     </div>
                                 </template>
                             </Button>

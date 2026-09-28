@@ -143,7 +143,10 @@ class SuggestChatSessionCustomer
         // ponytail: customers.phone has no index, so this scans the shop's customers. Fine for a
         // queued job at a few guests a day; index the normalised phone if that changes.
         if (strlen($phone) >= 10) {
-            $customer = $customers()->whereRaw("right(regexp_replace(phone, '\\D', '', 'g'), 9) = ?", [substr($phone, -9)])->first();
+            $customer = $customers()->whereRaw("right(regexp_replace(phone, '\\D', '', 'g'), 9) = ?", [substr($phone, -9)])
+                ->orderByRaw('last_invoiced_at desc nulls last')
+                ->orderByDesc('id')
+                ->first();
             if ($customer) {
                 return [$customer, self::BASIS_PHONE];
             }

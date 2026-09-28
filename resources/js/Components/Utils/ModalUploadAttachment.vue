@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 
 import Modal from "@/Components/Utils/Modal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -19,6 +19,7 @@ import Papa from "papaparse"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Select from "primevue/select"
+import InputText from "primevue/inputtext"
 
 library.add(
 	falFile,
@@ -42,14 +43,15 @@ const props = defineProps<{
 		name: string
 		code: string
 	}[]
+	withCaption?: boolean
 }>()
 
 const model = defineModel()
 
 const typeEmployee = props.options?.length ? props.options :  [
-	{ name: trans("Other"), code: "Other" },
-	{ name: trans("CV"), code: "CV" },
-	{ name: trans("Contract"), code: "Contract" },
+	{ name: ctrans("Other"), code: "Other" },
+	{ name: ctrans("CV"), code: "CV" },
+	{ name: ctrans("Contract"), code: "Contract" },
 ]
 
 // const emits = defineEmits();
@@ -63,6 +65,9 @@ const isDraggedFile = ref(false)
 const errorMessage = ref<string | null>(null)
 const selectedType = ref()
 const selectedFile = ref<File | null>(null)
+const caption = ref("")
+const isCaptionRequired = computed(() => props.withCaption && selectedType.value?.code === "Other")
+const isCaptionMissing = computed(() => isCaptionRequired.value && !caption.value.trim())
 
 // Running when file is uploaded or dropped
 const onUploadFile = async (fileUploaded: File) => {
@@ -72,7 +77,7 @@ const onUploadFile = async (fileUploaded: File) => {
 	if (fileExtention) {
 		selectedFile.value = fileUploaded
 	} else {
-		errorMessage.value = trans("File extension is not one of these:")
+		errorMessage.value = ctrans("File extension is not one of these:")
 	}
 }
 
@@ -108,6 +113,7 @@ const submitUpload = async () => {
 			{
 				attachments: [selectedFile.value],
 				scope: selectedType.value.code,
+				...(props.withCaption && caption.value.trim() ? { caption: caption.value.trim() } : {}),
 			},
 			{
 				headers: { "Content-Type": "multipart/form-data" },
@@ -138,6 +144,7 @@ const submitUpload = async () => {
 // Method: refresh all like new open the modal
 const clearAll = () => {
 	selectedFile.value = null
+	caption.value = ""
 	errorMessage.value = null
 }
 
@@ -145,7 +152,7 @@ const closeModal = () => {
 	/*    useEchoGrpPersonal().isShowProgress = false */
 	useEchoGrpPersonal().isShowProgress = false
 	model.value = false
-	console.log("model")
+	caption.value = ""
 }
 
 onMounted(() => {
@@ -186,6 +193,14 @@ onMounted(() => {
 								</div>
 							</template>
 						</Select>
+					</div>
+					<div v-if="withCaption" class="mb-2">
+						<InputText
+							v-model="caption"
+							fluid
+							maxlength="255"
+							:placeholder="isCaptionRequired ? ctrans('What is this document? (required)') : ctrans('Description (optional)')"
+							:invalid="isCaptionMissing && !!selectedFile" />
 					</div>
 					<div
 						@drop="(e: any) => (e.preventDefault(), onUploadFile(e.dataTransfer.files[0]))"
@@ -230,17 +245,17 @@ onMounted(() => {
 								<div
 									v-if="isDraggedFile"
 									class="text-2xl text-gray-500 h-full flex justify-center items-center">
-									{{ trans("Drop your file here") }}
+									{{ ctrans("Drop your file here") }}
 								</div>
 							</label>
 
 							<div v-if="!isDraggedFile" class="text-center text-gray-500">
 								<div class="flex justify-center text-sm font-medium leading-6">
-									{{ trans("Upload file") }}
+									{{ ctrans("Upload file") }}
 								</div>
 								<div class="flex w-fit mx-auto text-xs leading-6">
 									<p class="">
-										{{ trans("Drag and drop, or browse your files") }}
+										{{ ctrans("Drag and drop, or browse your files") }}
 									</p>
 								</div>
 							</div>
@@ -260,7 +275,7 @@ onMounted(() => {
 									label="Submit"
 									size="l"
 									full
-									:disabled="!selectedFile || !selectedType"
+									:disabled="!selectedFile || !selectedType || isCaptionMissing"
 									:loading="isLoadingUpload" />
 							</div>
 						<!-- </div> -->

@@ -6,6 +6,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
 
@@ -155,6 +156,52 @@ trait WithSupplierEditFields
                         'value'       => Arr::get($supplier->settings, 'po_email'),
                     ],
                 ]
+            ]
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function supplierAgentSection(Supplier $supplier): array
+    {
+        return [
+            'label'  => __('Agent'),
+            'title'  => __('Agent'),
+            'icon'   => 'fal fa-exchange',
+            'fields' => [
+                'agent_id' => [
+                    'type'        => 'select',
+                    'label'       => __('Agent'),
+                    'placeholder' => __('Select an agent'),
+                    'information' => __('Organisations working with the agent buy this supplier through it; the others stop buying it directly'),
+                    'options'     => Agent::where('group_id', $supplier->group_id)
+                        ->orderBy('name')
+                        ->get()
+                        ->map(fn (Agent $agent) => ['value' => $agent->id, 'label' => $agent->name.' ('.$agent->code.')'])
+                        ->all(),
+                    'value'       => $supplier->agent_id,
+                    'searchable'  => true,
+                    'mode'        => 'single'
+                ],
+                ...($supplier->agent_id ? [
+                    'make_independent' => [
+                        'type'        => 'action',
+                        'label'       => __('Independent supplier'),
+                        'information' => __('Takes the supplier away from its agent; organisations buy it directly again'),
+                        'action'      => [
+                            'type'  => 'button',
+                            'style' => 'secondary',
+                            'label' => __('Remove from agent'),
+                            'route' => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.supplier.update',
+                                'parameters' => $supplier->id,
+                                'body'       => ['agent_id' => null],
+                            ],
+                        ],
+                    ],
+                ] : []),
             ]
         ];
     }

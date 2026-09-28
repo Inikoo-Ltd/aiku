@@ -49,6 +49,7 @@ use App\Actions\Chat\ChatSession\StoreChatEvent;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreGuestProfile;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
+use Illuminate\Support\Facades\RateLimiter;
 use App\Actions\Chat\ChatSession\SummarizeChatSession;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
 use App\Actions\Chat\ChatSession\TranslateChatMessage;
@@ -9645,6 +9646,36 @@ test('a WhatsApp chat started from a Meta ad keeps the ad it came from', functio
     $message->metaChatSession->forceDelete();
 });
 
+test('a WhatsApp chat from a phone shared by two accounts links to the one that buys', function () {
+    Bus::fake();
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['whatsapp' => ['phone_number_id' => '123']])]);
+
+    StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), ['phone' => '+447500000077']));
+    $buyer   = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), ['phone' => '+447500000077']));
+    StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), ['phone' => '+447500000077']));
+    $buyer->update(['last_invoiced_at' => now()->subDays(3)]);
+
+    \App\Actions\Chat\Whatsapp\StoreIncomingWhatsappMessage::make()->handle([
+        'metadata' => ['phone_number_id' => '123'],
+        'contacts' => [['profile' => ['name' => 'Jenny']]],
+        'messages' => [[
+            'id'   => 'wamid.shared-'.Str::random(8),
+            'from' => '447500000077',
+            'type' => 'text',
+            'text' => ['body' => 'My diffuser stopped working'],
+        ]],
+    ]);
+
+    $session = MetaChatSession::where('shop_id', $this->shop->id)->where('phone_number', '+447500000077')->latest('id')->first();
+
+    expect($session->customer_id)->toBe($buyer->id);
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+});
+
 test('chat availability answers offline for a shop without a website and needs a shop', function () {
     $shop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, \App\Models\Catalogue\Shop::factory()->definition());
 
@@ -9653,4 +9684,24 @@ test('chat availability answers offline for a shop without a website and needs a
         ->assertExactJson(['is_online' => false]);
 
     $this->getJson(route('grp.api.chats.availability'))->assertUnprocessable();
+});
+
+test('guest chat endpoints reject junk ids and throttle one address', function () {
+    RateLimiter::clear('chat-guest-minute:127.0.0.1');
+    RateLimiter::clear('chat-guest-hour:127.0.0.1');
+
+    $junk = [
+        'shop_id'     => '../../etc/shells',
+        'language_id' => '${@print(md5(31337))}',
+        'name'        => 'e',
+        'email'       => 'sample@email.tst',
+        'message'     => 'e',
+        'sender_type' => ChatSenderTypeEnum::GUEST->value,
+    ];
+
+    foreach (range(1, 10) as $attempt) {
+        $this->postJson(route('grp.api.chats.offline-message.store'), $junk)->assertStatus(422);
+    }
+
+    $this->postJson(route('grp.api.chats.sessions.store'), $junk)->assertStatus(429);
 });
