@@ -154,6 +154,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property bool $is_aiku_stock_hr
  * @property bool $is_aiku_stock_procurement
  * @property bool $is_aiku_stock_production
+ * @property bool $is_manufacturing_hub
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Shop> $activeShops
  * @property-read Address|null $address
@@ -292,6 +293,7 @@ class Organisation extends Model implements HasMedia, Auditable
         'is_aiku_stock_hr'             => 'boolean',
         'is_aiku_stock_procurement'    => 'boolean',
         'is_aiku_stock_production'     => 'boolean',
+        'is_manufacturing_hub'         => 'boolean',
     ];
 
     protected $attributes = [
@@ -306,6 +308,7 @@ class Organisation extends Model implements HasMedia, Auditable
         'is_aiku_stock_hr'             => false,
         'is_aiku_stock_procurement'    => false,
         'is_aiku_stock_production'     => false,
+        'is_manufacturing_hub'         => false,
     ];
 
     protected $guarded = [];

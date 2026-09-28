@@ -83,6 +83,8 @@ class SyncRolesFromJobPositions
             }
         }
 
+        $this->addPartnersInventoryViewerRolesForManufacturingHubSupervisors($user, $roles);
+
         if ($user->roles()->whereIn('name', [RolesEnum::GROUP_ADMIN->value, RolesEnum::HELP_DESK_CLERK->value, RolesEnum::HELP_DESK_SUPERVISOR->value, RolesEnum::QA->value])->exists()) {
             foreach ($user->group->organisations as $organisation) {
                 $this->addRole($user, RolesEnum::ORG_ADMIN, $organisation);
@@ -153,6 +155,29 @@ class SyncRolesFromJobPositions
 
             return !$isOrgAdmin($role) && in_array($organisationId, $adminOrganisationIds);
         })->pluck('id')->all();
+    }
+
+    /**
+     * @param array<int> $jobPositionRoleIds
+     */
+    private function addPartnersInventoryViewerRolesForManufacturingHubSupervisors(User $user, array $jobPositionRoleIds): void
+    {
+        $supervisedProductionIds = Role::whereIn('id', $jobPositionRoleIds)
+            ->where('scope_type', 'Production')
+            ->where('name', 'like', RolesEnum::MANUFACTURING_ORCHESTRATOR->value.'-%')
+            ->pluck('scope_id');
+
+        $hubOrganisations = Organisation::where('is_manufacturing_hub', true)
+            ->whereIn('id', Production::whereIn('id', $supervisedProductionIds)->pluck('organisation_id'))
+            ->get();
+
+        foreach ($hubOrganisations as $hubOrganisation) {
+            foreach ($hubOrganisation->orgPartners()->with('partner.warehouses')->get() as $orgPartner) {
+                foreach ($orgPartner->partner->warehouses as $warehouse) {
+                    $this->addRole($user, RolesEnum::WAREHOUSE_VIEWER, $warehouse);
+                }
+            }
+        }
     }
 
     private function addAdminRolesInOrganisation(User $user, Organisation $organisation): void
