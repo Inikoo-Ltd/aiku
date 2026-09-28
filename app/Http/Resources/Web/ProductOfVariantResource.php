@@ -118,7 +118,7 @@ class ProductOfVariantResource extends JsonResource
             'tags'              => TagResource::collection($product->tags)->toArray($request),
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $product->is_on_demand,
-            'is_back_in_stock'  => $product->backInStockReminders,
+            'is_back_in_stock'  => $back_in_stock,
             'back_in_stock'     => $back_in_stock,
 
 

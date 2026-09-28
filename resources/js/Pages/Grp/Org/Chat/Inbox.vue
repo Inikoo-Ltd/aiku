@@ -1930,8 +1930,12 @@ onUnmounted(() => {
     <div ref="chatArea" :style="{ height: chatAreaHeight }"
         class="relative flex overflow-hidden border-t border-gray-200 bg-white -mb-6 md:-mb-24">
         <!-- PANEL 1: Inboxes (shops the agent handles) -->
-        <div v-show="!isEmbedded" ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200"
-            :class="railCollapsed ? 'w-16' : 'w-64'"
+        <!-- Below lg the rail lies over the conversation instead of pushing it aside: a phone has
+             no room for both, and squeezed, the thread header's buttons ran over the name. It stays
+             lifted while folded too, or closing would animate it back in the flow and shove the
+             thread sideways before letting go. -->
+        <div v-show="!isEmbedded" ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200 max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-40"
+            :class="railCollapsed ? 'w-16' : 'w-64 max-lg:shadow-xl'"
             @pointerdown="startRailIdle" @pointermove="startRailIdle" @wheel="startRailIdle"
             @focusin="startRailIdle" @keydown="startRailIdle">
             <!-- Header + collapse toggle -->
@@ -2234,6 +2238,13 @@ onUnmounted(() => {
             </div>
             </div>
         </div>
+
+        <!-- Holds the folded rail's place so nothing behind shifts, and a tap on the dimmed thread
+             folds the rail away for this page only, as the idle timer does. -->
+        <template v-if="!isEmbedded">
+            <div class="lg:hidden shrink-0 w-16" />
+            <div v-if="!railCollapsed" class="lg:hidden absolute inset-0 z-[35] bg-black/20" @click="railAutoCollapsed = true" />
+        </template>
 
         <!-- PANEL 2: conversation list for the selected inbox.
              Narrow screens have room for one column, not three, so the list and the thread take

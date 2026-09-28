@@ -122,7 +122,7 @@ class WebBlockProductResource extends JsonResource
             'is_coming_soon'    => $product->status === ProductStatusEnum::COMING_SOON,
             'is_on_demand'      => $product->is_on_demand,
             'is_golden_product' => (bool)$product->is_golden_product,
-            'is_back_in_stock'  => $product->backInStockReminders,
+            'is_back_in_stock'  => $back_in_stock,
             'expected_back_in_stock_at' => $product->available_quantity > 0
                 ? null
                 : GetProductIncomingStock::make()->earliestEta($product),

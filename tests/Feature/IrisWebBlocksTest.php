@@ -788,3 +788,16 @@ test('department web block renders when the department lost its webpage link', f
 
     expect(WebBlockDepartmentResource::make($department)->resolve())->toHaveKey('url', null);
 });
+
+test('iris product web block does not expose other customers back in stock reminders', function () {
+    [, $product] = createProduct($this->shop);
+    $customer = createCustomer($this->shop);
+
+    \App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder::make()->action($customer, $product, [], strict: false);
+
+    $webpage = StoreProductWebpage::make()->action($product);
+
+    $irisProduct = Arr::get(IrisGetWebBlockProduct::run($webpage, ['type' => 'product-3']), 'structure.product');
+
+    expect(Arr::get($irisProduct, 'is_back_in_stock'))->toBeFalse();
+});
