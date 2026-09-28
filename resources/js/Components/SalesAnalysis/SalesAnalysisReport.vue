@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
+import axios from "axios"
+import DashboardSettingToggle from "@/Components/DataDisplay/Dashboard/DashboardSettingToggle.vue"
 import Chart from "primevue/chart"
 import { Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
@@ -134,11 +136,22 @@ const selectedShops = ref<string[]>([...props.data.filters.selected_shops])
 const isShopMenuOpen = ref(false)
 const includePartners = ref(!!props.data.include_partners)
 const isLoading = ref(false)
+const isPartnersLoading = ref(false)
+
+const updateIncludePartners = (isOn: boolean) => {
+	includePartners.value = isOn
+	isPartnersLoading.value = true
+	axios.patch(route("grp.models.profile.update"), { settings: { partners_type: isOn ? "all" : "external" } })
+	reload()
+}
 
 const reload = () => {
 	router.reload({
 		onStart: () => (isLoading.value = true),
-		onFinish: () => (isLoading.value = false),
+		onFinish: () => {
+			isLoading.value = false
+			isPartnersLoading.value = false
+		},
 		data: {
 			from: range.value.from,
 			to: range.value.to,
@@ -146,7 +159,7 @@ const reload = () => {
 			compareTo: compareRange.value.to,
 			organisations: selectedOrganisations.value.join(",") || undefined,
 			shops: selectedShops.value.join(",") || undefined,
-			partners: includePartners.value ? 1 : undefined,
+			partners: includePartners.value ? 1 : 0,
 		},
 		only: ["sales_analysis"],
 	})
@@ -488,15 +501,14 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 				</div>
 			</div>
 
-			<button
-				type="button"
-				class="rounded-full border px-2.5 py-0.5 text-xs"
-				:class="includePartners ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
-				v-tooltip="ctrans('Sales to our own organisations are left out unless this is on')"
+			<DashboardSettingToggle
+				class="text-xs"
 				data-partners-toggle
-				@click="includePartners = !includePartners; reload()">
-				{{ includePartners ? ctrans("Including partners") : ctrans("Without partners") }}
-			</button>
+				:label="ctrans('Include partners')"
+				:tooltip="ctrans('Include sales to our own companies')"
+				:isOn="includePartners"
+				:isLoading="isPartnersLoading"
+				@change="updateIncludePartners" />
 
 			<div class="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
 				<input v-model="range.from" type="date" :max="range.to" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
