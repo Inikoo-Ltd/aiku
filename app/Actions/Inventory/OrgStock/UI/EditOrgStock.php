@@ -114,6 +114,12 @@ class EditOrgStock extends OrgAction
                         'value' => $orgStock->is_on_demand,
                         'information'   => __("Products using this SKO are treated as always available: they never go out of stock, the webshop shows 'Unlimited quantity available' (when all the product's SKOs are on demand), and Shopify/WooCommerce keep accepting orders even with empty stock."),
                     ],
+                    'is_fresh'            => [
+                        'type'        => 'toggle',
+                        'label'       => __('Made fresh'),
+                        'value'       => $orgStock->is_fresh,
+                        'information' => __('Made only for orders already placed, never kept on the shelf. It is not counted as out of stock and does not add to the lost revenue in the stock reports.'),
+                    ],
                     'is_excluded_from_auto_ordering' => [
                         'type'        => 'toggle',
                         'label'       => __('Do not auto order'),

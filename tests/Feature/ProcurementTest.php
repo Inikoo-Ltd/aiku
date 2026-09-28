@@ -5454,6 +5454,14 @@ test('procurement dashboard charts stock outs and their estimated lost revenue',
         ->and($organisationStockHistory->number_org_stocks)->toBe($aliveWithoutLocation)
         ->and((float)$organisationStockHistory->estimated_lost_revenue_org_currency)->toBe(0.0);
 
+    $freshOrgStock = App\Models\Inventory\OrgStock::whereIn('id', $hydrator->aliveOrgStockIds($this->organisation->id, today()))->first();
+    $freshOrgStock->update(['is_fresh' => true]);
+    $hydrator->handle($organisationStockHistoryId);
+
+    expect(DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->value('number_out_of_stock_org_stocks'))->toBe($aliveWithoutLocation - 1);
+
+    $freshOrgStock->update(['is_fresh' => false]);
+
     DB::table('organisation_stock_histories')->where('id', $organisationStockHistoryId)->delete();
 });
 

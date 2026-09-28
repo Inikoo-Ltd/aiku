@@ -21,11 +21,12 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * A SKO is out of stock on a day when it has less than one unit in its locations, or when it was
- * alive that day but had no location at all (those never get an org stock history row).
+ * alive that day but had no location at all (those never get an org stock history row). Fresh SKOs
+ * are made only for orders already placed and never kept on the shelf, so they are left out entirely.
  *
  * The estimated lost revenue is what those SKOs would have sold that day: each one's average daily
- * sales over the full months before, so a stock out never lowers its own rate. Discontinued SKOs
- * are not lost sales.
+ * sales over the full months before, so a stock out never lowers its own rate. Discontinued SKOs,
+ * and on demand SKOs that customers can still order, are not lost sales.
  *
  * Aurora SKOs were all created in Aiku on 31 Dec 2024, so SKOs without a location only count from then.
  */
@@ -67,6 +68,8 @@ class OrganisationStockHistoryHydrateOutOfStock
             ->pluck('quantity_in_locations', 'org_stock_id')
             ->all();
 
+        $quantities = array_diff_key($quantities, array_flip($this->freshOrgStockIds($organisationStockHistory->organisation_id)));
+
         $withoutLocation = array_values(array_diff($this->aliveOrgStockIds($organisationStockHistory->organisation_id, $date), array_keys($quantities)));
         $outOfStock      = array_merge(array_keys(array_filter($quantities, fn ($quantity) => $quantity < 1)), $withoutLocation);
         $numberOrgStocks = count($quantities) + count($withoutLocation);
@@ -91,11 +94,23 @@ class OrganisationStockHistoryHydrateOutOfStock
         return DB::connection('aiku_no_sticky')->table('org_stocks')
             ->where('organisation_id', $organisationId)
             ->where('created_at', '<', $nextDay)
-            ->whereRaw('coalesce(is_on_demand, false) = false')
+            ->where('is_fresh', false)
             ->whereNull('deleted_at')
             ->where(fn ($query) => $query
                 ->whereIn('state', [OrgStockStateEnum::ACTIVE->value, OrgStockStateEnum::DISCONTINUING->value])
                 ->orWhere('discontinued_in_organisation_at', '>=', $nextDay))
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function freshOrgStockIds(int $organisationId): array
+    {
+        return DB::connection('aiku_no_sticky')->table('org_stocks')
+            ->where('organisation_id', $organisationId)
+            ->where('is_fresh', true)
             ->pluck('id')
             ->all();
     }
@@ -121,6 +136,7 @@ class OrganisationStockHistoryHydrateOutOfStock
             ->where('records.from', '>=', $windowStart->toDateString())
             ->where('records.from', '<', $windowEnd->toDateString())
             ->where('org_stocks.state', '!=', OrgStockStateEnum::DISCONTINUED->value)
+            ->whereRaw('coalesce(org_stocks.is_on_demand, false) = false')
             ->sum('records.sales_org_currency_external');
 
         return round((float)$sales / $windowStart->diffInDays($windowEnd), 2);
