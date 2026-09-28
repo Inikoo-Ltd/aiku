@@ -6,29 +6,29 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Inventory\OrgStock;
+namespace App\Actions\Goods\Stock;
 
 use App\Actions\OrgAction;
 use App\Enums\Production\Artefact\ArtefactLabelInformationEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
-use App\Models\Inventory\OrgStock;
+use App\Models\Goods\Stock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Which information every label of this SKO must show. Only the compliance manager decides it, and a
- * label missing any of it cannot be published.
+ * Which information every label of this master SKO must show, in every organisation stocking it.
+ * Only the compliance manager decides it, and a label missing any of it cannot be published.
  */
-class UpdateOrgStockLabelMandatoryInformation extends OrgAction
+class UpdateStockLabelMandatoryInformation extends OrgAction
 {
-    public function handle(OrgStock $orgStock, array $modelData): OrgStock
+    public function handle(Stock $stock, array $modelData): Stock
     {
-        $orgStock->update([
+        $stock->update([
             'label_mandatory_information' => array_values(array_unique($modelData['label_mandatory_information'] ?? [])),
         ]);
 
-        return $orgStock;
+        return $stock;
     }
 
     public function rules(): array
@@ -48,19 +48,19 @@ class UpdateOrgStockLabelMandatoryInformation extends OrgAction
         return $request->user()->authTo(GroupPermissionsEnum::COMPLIANCE->value);
     }
 
-    public function action(OrgStock $orgStock, array $modelData): OrgStock
+    public function action(Stock $stock, array $modelData): Stock
     {
         $this->asAction = true;
-        $this->initialisation($orgStock->organisation, $modelData);
+        $this->initialisationFromGroup($stock->group, $modelData);
 
-        return $this->handle($orgStock, $this->validatedData);
+        return $this->handle($stock, $this->validatedData);
     }
 
-    public function asController(OrgStock $orgStock, ActionRequest $request): OrgStock
+    public function asController(Stock $stock, ActionRequest $request): Stock
     {
-        $this->initialisation($orgStock->organisation, $request);
+        $this->initialisationFromGroup($stock->group, $request);
 
-        return $this->handle($orgStock, $this->validatedData);
+        return $this->handle($stock, $this->validatedData);
     }
 
     public function htmlResponse(): RedirectResponse

@@ -24,12 +24,15 @@ class StoreArtefactLabel extends OrgAction
 
     public function handle(OrgStock $orgStock, array $modelData): ArtefactLabel
     {
+        abort_unless($orgStock->stock_id, 422, __('This SKO has no master SKO, so it cannot carry labels yet.'));
+
         $artwork = Arr::pull($modelData, 'artwork');
 
         $label = $orgStock->labels()->create([
             'group_id'        => $orgStock->group_id,
             'organisation_id' => $orgStock->organisation_id,
-            'artefact_id'     => Artefact::where('org_stock_id', $orgStock->id)->value('id'),
+            'org_stock_id'    => $orgStock->id,
+            'artefact_id'     => Artefact::whereIn('org_stock_id', OrgStock::where('stock_id', $orgStock->stock_id)->select('id'))->value('id'),
             'name'            => Arr::get($modelData, 'name'),
             'layout'          => $this->packLayout($modelData),
             'state'           => ArtefactLabelStateEnum::RAW,

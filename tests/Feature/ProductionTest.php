@@ -3552,15 +3552,17 @@ test('SKO labels are the compliance team\'s: workers draft, supervisors publish,
     $label = \App\Models\Production\ArtefactLabel::find($labelId);
 
     expect($label->org_stock_id)->toBe($orgStock->id)
+        ->and($label->stock_id)->toBe($orgStock->stock_id)
+        ->and($orgStock->stock->labels->pluck('id')->all())->toBe([$labelId])
         ->and($label->artefact_id)->toBeNull();
 
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
+    \Pest\Laravel\patchJson(route('grp.models.stock.label_mandatory_information.update', $orgStock->stock_id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
         ->assertForbidden();
     \Pest\Laravel\postJson(route('grp.models.org_stock.labels.publish', [$orgStock->id, $labelId]))
         ->assertForbidden();
 
     actingAs($userWithRole('compliance-manager'));
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
+    \Pest\Laravel\patchJson(route('grp.models.stock.label_mandatory_information.update', $orgStock->stock_id), ['label_mandatory_information' => ['cpnp_number', 'ingredients']])
         ->assertOk();
     expect($label->refresh()->missingMandatoryInformation())->toBe(['ingredients']);
 
@@ -3623,9 +3625,9 @@ test('compliance labels place icons, wrapped texts, free texts and a text per la
     };
 
     actingAs($userWithRole('compliance-manager'));
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['ingredients:de']])
+    \Pest\Laravel\patchJson(route('grp.models.stock.label_mandatory_information.update', $orgStock->stock_id), ['label_mandatory_information' => ['ingredients:de']])
         ->assertUnprocessable();
-    \Pest\Laravel\patchJson(route('grp.models.org_stock.label_mandatory_information.update', $orgStock->id), ['label_mandatory_information' => ['warnings:de', 'packaging_materials', 'product_name:de', 'period_after_opening']])
+    \Pest\Laravel\patchJson(route('grp.models.stock.label_mandatory_information.update', $orgStock->stock_id), ['label_mandatory_information' => ['warnings:de', 'packaging_materials', 'product_name:de', 'period_after_opening']])
         ->assertOk();
 
     $layout = [

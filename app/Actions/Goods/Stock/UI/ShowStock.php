@@ -102,6 +102,18 @@ class ShowStock extends OrgAction
                                 ]
                             ]
                         ] : false,
+                        [
+                            'type'  => 'button',
+                            'style' => 'secondary',
+                            'label' => __('Labels'),
+                            'icon'  => ['fal', 'fa-tags'],
+                            'route' => [
+                                'name'       => 'grp.goods.stocks.show.labels',
+                                'parameters' => [
+                                    'stock' => $stock->slug,
+                                ]
+                            ]
+                        ],
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',

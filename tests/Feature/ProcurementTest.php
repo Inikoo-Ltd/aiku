@@ -3085,6 +3085,7 @@ test('an agent sees and prints only the published labels of the SKOs it buys for
         'group_id'        => $orgStock->group_id,
         'organisation_id' => $orgStock->organisation_id,
         'org_stock_id'    => $orgStock->id,
+        'stock_id'        => $orgStock->stock_id,
         'name'            => $name,
         'layout'          => $layout,
         'state'           => $state,

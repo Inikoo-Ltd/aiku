@@ -41,11 +41,10 @@ class ShowOrgStockLabels extends OrgAction
 
     public function htmlResponse(OrgStock $orgStock, ActionRequest $request): Response
     {
-        $user      = $request->user();
         $abilities = [
-            'edit'          => $user->authTo(GroupPermissionsEnum::COMPLIANCE_EDIT->value),
-            'publish'       => $user->authTo(GroupPermissionsEnum::COMPLIANCE_PUBLISH->value),
-            'set_mandatory' => $user->authTo(GroupPermissionsEnum::COMPLIANCE->value),
+            'edit'          => false,
+            'publish'       => false,
+            'set_mandatory' => false,
         ];
         $labels    = fn () => GetOrgStockLabels::run($orgStock, 'grp.models.org_stock.', ['orgStock' => $orgStock->id], $abilities);
 
@@ -70,6 +69,18 @@ class ShowOrgStockLabels extends OrgAction
                     'model'         => __('SKO'),
                     'title'         => $orgStock->code,
                     'subNavigation' => $this->getOrgStockSubNavigation($orgStock, $request),
+                    'actions'       => [
+                        $orgStock->stock ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit on master SKO'),
+                            'icon'  => ['fal', 'fa-tags'],
+                            'route' => [
+                                'name'       => 'grp.goods.stocks.show.labels',
+                                'parameters' => ['stock' => $orgStock->stock->slug],
+                            ],
+                        ] : false,
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

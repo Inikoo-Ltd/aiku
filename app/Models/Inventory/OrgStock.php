@@ -118,7 +118,6 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|OrgStock query()
  * @method static Builder<static>|OrgStock withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|OrgStock withoutTrashed()
- * @property array<array-key, mixed> $label_mandatory_information
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ArtefactLabel> $labels
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ArtefactComplianceItem> $complianceItems
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Media> $attachments
@@ -147,12 +146,10 @@ class OrgStock extends Model implements Auditable, HasMedia
         'last_fetched_at'                  => 'datetime',
         'quantity_in_locations'            => 'decimal:3',
         'quantity_available'               => 'decimal:3',
-        'label_mandatory_information'      => 'array',
     ];
 
     protected $attributes = [
-        'data'                        => '{}',
-        'label_mandatory_information' => '[]',
+        'data' => '{}',
     ];
 
     protected $guarded = [];
@@ -270,14 +267,17 @@ class OrgStock extends Model implements Auditable, HasMedia
             ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
     }
 
+    /**
+     * Labels belong to the master SKO, so every organisation stocking it prints the same ones.
+     */
     public function labels(): HasMany
     {
-        return $this->hasMany(ArtefactLabel::class)->orderBy('name');
+        return $this->hasMany(ArtefactLabel::class, 'stock_id', 'stock_id')->orderBy('name');
     }
 
     public function complianceItems(): HasMany
     {
-        return $this->hasMany(ArtefactComplianceItem::class);
+        return $this->hasMany(ArtefactComplianceItem::class, 'stock_id', 'stock_id');
     }
 
     public function batchCodes(): HasMany

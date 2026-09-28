@@ -454,7 +454,7 @@ use App\Actions\Production\Artefact\Label\StoreArtefactLabel;
 use App\Actions\Production\Artefact\Label\UnpublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabelOnArtwork;
-use App\Actions\Inventory\OrgStock\UpdateOrgStockLabelMandatoryInformation;
+use App\Actions\Goods\Stock\UpdateStockLabelMandatoryInformation;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
@@ -724,6 +724,7 @@ Route::prefix('stock-family')->name('stock-family.')->group(function () {
 Route::name('stock.')->prefix('/stock')->group(function () {
     Route::post('/', StoreStock::class)->name('store');
     Route::patch('/{stock:id}', UpdateStock::class)->name('update');
+    Route::patch('/{stock:id}/label-mandatory-information', UpdateStockLabelMandatoryInformation::class)->name('label_mandatory_information.update');
 });
 
 Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
@@ -1603,7 +1604,6 @@ Route::name('org_stock.')->prefix('org-stock/{orgStock:id}')->group(function () 
     Route::post('labels/{label:id}/on-artwork', [UpdateArtefactLabelOnArtwork::class, 'inOrgStock'])->name('labels.on_artwork');
     Route::get('labels/{label:id}/pdf', [DownloadArtefactLabelPdf::class, 'inOrgStock'])->name('labels.pdf');
     Route::delete('labels/{label:id}', [DeleteArtefactLabel::class, 'inOrgStock'])->name('labels.delete');
-    Route::patch('label-mandatory-information', UpdateOrgStockLabelMandatoryInformation::class)->name('label_mandatory_information.update');
     Route::post('compliance-item', [StoreArtefactComplianceItem::class, 'inOrgStock'])->name('compliance-item.store');
 });
 
