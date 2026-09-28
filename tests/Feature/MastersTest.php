@@ -2846,7 +2846,7 @@ test('updating master prices merges per currency, skips nulls and syncs legacy c
         ->and((float) $masterAsset->price)->toBe(20.0);
 });
 
-test('reprocessing a master asset time series with a mid period window keeps the whole period total', function () {
+test('reprocessing a master asset time series with a mid period window keeps the whole period total and leaves out draft invoices', function () {
     $masterShop       = createFreshMasterShop();
     $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
         'code' => 'TS-DEP-'.uniqid(),
@@ -2869,7 +2869,7 @@ test('reprocessing a master asset time series with a mid period window keeps the
     $taxCategoryId = DB::table('tax_categories')->value('id');
     $monthStart    = now()->subMonth()->startOfMonth();
 
-    foreach ([[2, 100], [20, 250]] as [$dayOffset, $amount]) {
+    foreach ([[2, 100, false], [20, 250, false], [10, 999, true]] as [$dayOffset, $amount, $inProcess]) {
         DB::table('invoice_transactions')->insert([
             'group_id'        => $this->shop->group_id,
             'organisation_id' => $this->shop->organisation_id,
@@ -2879,6 +2879,7 @@ test('reprocessing a master asset time series with a mid period window keeps the
             'master_asset_id' => $masterAsset->id,
             'date'            => $monthStart->copy()->addDays($dayOffset),
             'quantity'        => 1,
+            'in_process'      => $inProcess,
             'net_amount'      => $amount,
             'grp_net_amount'  => $amount,
             'data'            => '{}',

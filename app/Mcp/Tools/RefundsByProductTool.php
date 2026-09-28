@@ -46,7 +46,7 @@ class RefundsByProductTool extends AikuTool
                 COUNT(DISTINCT it.invoice_id) AS refund_invoices
             FROM invoice_transactions it
             JOIN products p ON p.id = it.model_id AND it.model_type = ?
-            WHERE it.shop_id = ? AND it.is_refund = true AND it.date BETWEEN ? AND ? AND it.deleted_at IS NULL
+            WHERE it.shop_id = ? AND it.is_refund = true AND it.date BETWEEN ? AND ? AND it.deleted_at IS NULL AND it.in_process = false
             GROUP BY p.code, p.name
             ORDER BY SUM(it.net_amount) ASC
             LIMIT ?',
