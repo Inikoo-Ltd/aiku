@@ -29,7 +29,6 @@ class UnlinkAndDeleteBulkRetinaPortfolio extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            UnlinkRetinaPortfolio::run($portfolio);
             DeleteRetinaPortfolio::run($portfolio);
         }
     }
