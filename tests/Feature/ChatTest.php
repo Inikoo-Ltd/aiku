@@ -49,6 +49,7 @@ use App\Actions\Chat\ChatSession\StoreChatEvent;
 use App\Actions\Chat\ChatSession\StoreChatSession;
 use App\Actions\Chat\ChatSession\StoreGuestProfile;
 use App\Actions\Chat\ChatSession\StoreOfflineMessage;
+use Illuminate\Support\Facades\RateLimiter;
 use App\Actions\Chat\ChatSession\SummarizeChatSession;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
 use App\Actions\Chat\ChatSession\TranslateChatMessage;
@@ -9653,4 +9654,24 @@ test('chat availability answers offline for a shop without a website and needs a
         ->assertExactJson(['is_online' => false]);
 
     $this->getJson(route('grp.api.chats.availability'))->assertUnprocessable();
+});
+
+test('guest chat endpoints reject junk ids and throttle one address', function () {
+    RateLimiter::clear('chat-guest-minute:127.0.0.1');
+    RateLimiter::clear('chat-guest-hour:127.0.0.1');
+
+    $junk = [
+        'shop_id'     => '../../etc/shells',
+        'language_id' => '${@print(md5(31337))}',
+        'name'        => 'e',
+        'email'       => 'sample@email.tst',
+        'message'     => 'e',
+        'sender_type' => ChatSenderTypeEnum::GUEST->value,
+    ];
+
+    foreach (range(1, 10) as $attempt) {
+        $this->postJson(route('grp.api.chats.offline-message.store'), $junk)->assertStatus(422);
+    }
+
+    $this->postJson(route('grp.api.chats.sessions.store'), $junk)->assertStatus(429);
 });

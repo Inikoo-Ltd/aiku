@@ -227,10 +227,11 @@ class StoreOfflineMessage
             'web_user_id' => [
                 Rule::requiredIf(fn () => $request->input('sender_type') === ChatSenderTypeEnum::USER->value),
                 'nullable',
+                'integer',
                 'exists:web_users,id',
             ],
 
-            'shop_id' => ['required', 'exists:shops,id'],
+            'shop_id' => ['required', 'integer', 'exists:shops,id'],
             'session_ulid' => ['nullable', 'string'],
             'name' => [
                 Rule::requiredIf(fn () => blank($request->input('web_user_id'))),
@@ -245,7 +246,7 @@ class StoreOfflineMessage
                 'max:150',
             ],
             'message' => ['required', 'string', 'max:5000'],
-            'language_id' => ['required', 'exists:languages,id'],
+            'language_id' => ['required', 'integer', 'exists:languages,id'],
             'sender_type' => [
                 'required',
                 Rule::enum(ChatSenderTypeEnum::class),
