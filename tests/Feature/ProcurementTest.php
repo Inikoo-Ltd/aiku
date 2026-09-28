@@ -144,6 +144,7 @@ use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\UI\Grp\Layout\GetOrganisationNavigation;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
@@ -5857,6 +5858,21 @@ test('every organisation and group top menu subsection carries a label', functio
 
     expect($unlabelled(GetOrganisationNavigation::run($user, $this->organisation)))->toBe([])
         ->and($unlabelled(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($user)))->toBe([]);
+});
+
+test('organisation navigation leaves out the menu of closed shops', function () {
+    [$organisation, $user, $shop] = createShop();
+
+    $originalState = $shop->state;
+    $navigationPath = 'shops_fulfilments_navigation.shops_navigation.navigation.'.$shop->slug.'.subNavigation';
+
+    $shop->update(['state' => ShopStateEnum::OPEN]);
+    expect(data_get(GetOrganisationNavigation::run($user->fresh(), $organisation), $navigationPath))->not->toBeEmpty();
+
+    $shop->update(['state' => ShopStateEnum::CLOSED]);
+    expect(data_get(GetOrganisationNavigation::run($user->fresh(), $organisation), $navigationPath))->toBe([]);
+
+    $shop->update(['state' => $originalState]);
 });
 
 test('incoming stock tells the customer when an out of stock product is expected back', function () {
