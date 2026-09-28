@@ -4156,7 +4156,6 @@ describe('partner shopping list', function () {
             ->and((float) $stockDelivery->items()->first()->net_amount)->toBe((float) $order->deliveryNotes()->first()->deliveryNoteItems()->first()->transaction->net_amount);
     });
 
-    test('send partner order to warehouse rejects non-creating order', function () {
     test('mirror stock delivery counts units, not the SKOs on the delivery note', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {
@@ -4194,6 +4193,7 @@ describe('partner shopping list', function () {
         $sellerOrgStock->update(['packed_in' => $packedIn]);
     });
 
+    test('send partner order to warehouse rejects non-creating order', function () {
         $seller = $this->orgPartner->partner;
         if (!$seller->warehouses()->exists()) {
             StoreWarehouse::make()->action($seller, Warehouse::factory()->definition());
