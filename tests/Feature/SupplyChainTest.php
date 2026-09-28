@@ -1044,3 +1044,69 @@ test('housekeep purchase orders flags legacy open orders and undo removes the fl
     $response->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplyChainPurchaseOrderJourney'));
     expect(\App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0, true))->toBe($flagged);
 });
+
+test('move independent supplier to an agent', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplierProductData = SupplierProduct::factory()->definition();
+    data_set($supplierProductData, 'stock_id', $this->stocks[0]->id);
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+
+    $supplier = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
+
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    expect($supplier->agent_id)->toBe($agent->id)
+        ->and($supplierProduct->refresh()->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->org_agent_id)->toBe($orgAgent->id)
+        ->and($orgSupplier->orgSupplierProducts()->whereNull('org_agent_id')->count())->toBe(0)
+        ->and($supplier->orgSuppliers()->whereNull('org_agent_id')->where('status', true)->count())->toBe(0);
+});
+
+test('agents and suppliers keep documents in an attachments tab', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), [
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('agent-contract.pdf', 10, 'application/pdf')],
+        'scope'       => 'Contract',
+    ])->assertSessionHasNoErrors();
+
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), [
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('scan-0042.pdf', 12, 'application/pdf')],
+        'scope'       => 'Other',
+        'caption'     => 'Factory audit 2026',
+    ])->assertSessionHasNoErrors();
+
+    expect($agent->attachments()->wherePivot('scope', 'Contract')->first()->pivot->caption)->toBe('agent-contract')
+        ->and($supplier->attachments()->wherePivot('scope', 'Other')->first()->pivot->caption)->toBe('Factory audit 2026');
+
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Agent')
+            ->has('attachments.data', 1)
+            ->where('attachmentRoutes.attachRoute.name', 'grp.models.agent.attachment.attach')
+            ->has('attachmentScopes', 8));
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Supplier')
+            ->has('attachments.data', 1));
+
+    $orgAgent    = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+
+    $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $orgAgent->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/OrgAgent')
+            ->has('attachments.data', 1)
+            ->where('attachmentRoutes.detachRoute.parameters.agent', $agent->id));
+
+    $this->get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/OrgSupplier')
+            ->has('attachments.data', 1));
+
+    $this->delete(route('grp.models.agent.attachment.detach', ['agent' => $agent->id, 'attachment' => $agent->attachments()->first()->id]));
+
+    expect($agent->attachments()->count())->toBe(0);
+});

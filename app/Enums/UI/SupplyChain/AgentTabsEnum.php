@@ -17,6 +17,7 @@ enum AgentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE            = 'showcase';
+    case ATTACHMENTS         = 'attachments';
     case HISTORY             = 'history';
 
 
@@ -27,6 +28,12 @@ enum AgentTabsEnum: string
     {
         return match ($this) {
 
+            AgentTabsEnum::ATTACHMENTS => [
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             AgentTabsEnum::HISTORY     => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',

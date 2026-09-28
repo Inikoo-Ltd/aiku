@@ -9,6 +9,9 @@
 namespace App\Actions\SupplyChain\Supplier\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Helpers\Media\UI\IndexAttachments;
+use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
@@ -90,12 +93,30 @@ class ShowSupplier extends OrgAction
                     fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($supplier, SupplierTabsEnum::INBOX->value))
                     : Inertia::optional(fn () => SupplierMessagesResource::collection(IndexSupplierMessages::run($supplier, SupplierTabsEnum::INBOX->value))),
 
+                SupplierTabsEnum::ATTACHMENTS->value => $this->tab == SupplierTabsEnum::ATTACHMENTS->value ?
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($supplier, SupplierTabsEnum::ATTACHMENTS->value))
+                    : Inertia::optional(fn () => AttachmentsResource::collection(IndexAttachments::run($supplier, SupplierTabsEnum::ATTACHMENTS->value))),
+
+                'attachmentRoutes' => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.supplier.attachment.attach',
+                        'parameters' => ['supplier' => $supplier->id],
+                    ],
+                    'detachRoute' => [
+                        'method'     => 'delete',
+                        'name'       => 'grp.models.supplier.attachment.detach',
+                        'parameters' => ['supplier' => $supplier->id],
+                    ],
+                ],
+                'attachmentScopes' => SupplyChainAttachmentScopeEnum::options(),
+
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplier, SupplierTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplier, SupplierTabsEnum::HISTORY->value))),
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value))
-            ->table(IndexSupplierMessages::make()->tableStructure($supplier, prefix: SupplierTabsEnum::INBOX->value));
+            ->table(IndexSupplierMessages::make()->tableStructure($supplier, prefix: SupplierTabsEnum::INBOX->value))
+            ->table(IndexAttachments::make()->tableStructure(prefix: SupplierTabsEnum::ATTACHMENTS->value));
     }
 
     public function getBreadcrumbs(Supplier $supplier, string $routeName, array $routeParameters, string $suffix = ''): array
