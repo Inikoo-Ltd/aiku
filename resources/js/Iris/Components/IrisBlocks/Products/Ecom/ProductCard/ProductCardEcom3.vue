@@ -23,7 +23,7 @@ import BestsellerBadge from '@/Components/CMS/Webpage/Products/BestsellerBadge.v
 import { routeType } from '@/types/route'
 /* import LabelComingSoon from '@/Components/Iris/Products/LabelComingSoon.vue' */
 import Prices4 from '@/Iris/Components/BlocksUtils/Prices4.vue'
-import RibbonExpectedBackInStock from '@/Components/Iris/Products/RibbonExpectedBackInStock.vue'
+import ChipExpectedBackInStock from '@/Components/Iris/Products/ChipExpectedBackInStock.vue'
 
 const ProductSoundButton = defineAsyncComponent(() => import("@/Iris/Components/ProductSoundButton.vue"))
 
@@ -281,8 +281,6 @@ defineExpose({
 
                 <ProductSoundButton v-if="product.audio" :src="product.audio" :topSeller="product.top_seller" />
 
-                <RibbonExpectedBackInStock v-if="layout?.iris?.is_logged_in" :product="product" />
-
                 <!-- Section: Golden product, Favourite -->
                 <div v-if="product.is_golden_product || (layout?.iris?.is_logged_in && basketButton && !product.is_variant)"
                     class="absolute right-2 top-2 z-10 flex items-center gap-1.5">
@@ -309,7 +307,8 @@ defineExpose({
                 </div>
           
 
-                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2">
+                <div v-if="layout?.iris?.is_logged_in && !product.variant" class="absolute right-2 bottom-2 flex items-center gap-1.5">
+                    <ChipExpectedBackInStock :product="product" />
                     <NewAddToCartButton v-if="product.stock && basketButton && !product.is_coming_soon" :hasInBasket
                         ref="_button_add_to_cart"
                         :product="product" :key="product" :addToBasketRoute="addToBasketRoute"
