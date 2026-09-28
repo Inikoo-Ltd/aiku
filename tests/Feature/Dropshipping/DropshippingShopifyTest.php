@@ -907,6 +907,7 @@ test('editing only the price of a shopify portfolio does not overwrite the title
     ShopifyFake::fake([
         'ProductVariantsList' => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8402', 'title' => 'Default', 'price' => '9.00', 'updatedAt' => 'x', 'inventoryQuantity' => 1, 'product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas']]]]]]),
         'ProductVariantsBulkUpdate' => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8402', 'price' => '12.00', 'compareAtPrice' => '12.00']], 'userErrors' => []]]),
+        'getProduct'                => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7400', 'gid://shopify/ProductVariant/8402', 'crbask-05a', '12.00')]),
     ]);
 
     \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
