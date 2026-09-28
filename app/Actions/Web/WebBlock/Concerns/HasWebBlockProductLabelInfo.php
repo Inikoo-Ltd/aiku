@@ -170,7 +170,9 @@ trait HasWebBlockProductLabelInfo
     {
         $grams = (float) $product->marketing_weight;
 
-        if ($grams <= 0) {
+        $isNetQuantityHidden = data_get($product->label_info, 'show_net_quantity', true) === false;
+
+        if ($grams <= 0 || $isNetQuantityHidden) {
             return $this->labelInfoItem(__('Net Quantity'), false, null);
         }
 

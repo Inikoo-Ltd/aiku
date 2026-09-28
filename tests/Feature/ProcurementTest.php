@@ -3931,15 +3931,32 @@ describe('partner shopping list', function () {
             ->and($child->state)->toBe(ShoppingListItemStateEnum::OPEN);
     });
 
+    test('cherry pick remainder joins the open line already waiting for the same stock', function () {
+        $item = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
+            'quantity' => 30,
+        ]);
+        $waiting = $item->replicate()->fill(['quantity' => 5]);
+        $waiting->save();
+
+        CherryPickPartnerShoppingListItems::make()->action(
+            $this->orgPartner->partner,
+            [['id' => $item->id, 'quantity' => 12]]
+        );
+
+        expect($item->refresh()->children()->count())->toBe(0)
+            ->and((float) $waiting->refresh()->quantity)->toBe(23.0)
+            ->and(PartnerShoppingListItem::openPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->count())->toBe(1);
+    });
+
     test('cherry pick reuses in-process intercompany order across picks', function () {
         $itemA = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 5,
         ]);
+        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
+
         $itemB = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 7,
         ]);
-
-        $resultA = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemA->id]]);
         $resultB = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $itemB->id]]);
 
         expect($resultA['orders'][0]->id)->toBe($resultB['orders'][0]->id);
@@ -4200,9 +4217,9 @@ describe('partner shopping list', function () {
     });
 
     test('delete all open partner shopping list items keeps items already taken', function () {
-        $open  = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
         $taken = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 7]);
         $taken->update(['state' => ShoppingListItemStateEnum::ORDERED]);
+        $open = StorePartnerShoppingListItem::make()->action($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
 
         actingAs($this->adminGuest->getUser());
         $this->delete(route('grp.org.procurement.org_partners.show.shopping_list.destroy_open', [$this->organisation->slug, $this->orgPartner->id]))

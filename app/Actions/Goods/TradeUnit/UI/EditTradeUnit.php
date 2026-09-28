@@ -367,37 +367,51 @@ class EditTradeUnit extends OrgAction
                             ],
                         ],
                         [
-                            'label'  => __('GPSR (if empty will use Part GPSR)'),
+                            'label'  => __('GPSR'),
                             'icon'   => 'fa-light fa-biohazard',
                             'fields' => [
                                 'gpsr_manufacturer' => [
-                                    'type'  => 'input',
-                                    'label' => __('Manufacturer'),
-                                    'value' => $tradeUnit->gpsr_manufacturer
+                                    'type'        => 'textarea',
+                                    'label'       => __('Manufacturer Details'),
+                                    'information' => __('Name and postal address of the manufacturer. Shown on the product page. If empty, the Part GPSR is used.'),
+                                    'placeholder' => __('e.g. Company name, street, city, postcode, country'),
+                                    'rows'        => 2,
+                                    'value'       => $tradeUnit->gpsr_manufacturer
                                 ],
                                 'gpsr_eu_responsible' => [
-                                    'type'  => 'input',
-                                    'label' => __('EU Responsible'),
-                                    'value' => $tradeUnit->gpsr_eu_responsible
+                                    'type'        => 'textarea',
+                                    'label'       => __('EU Responsible Person'),
+                                    'information' => __('Name and postal address of the economic operator responsible for the product in the EU. If empty, the Part GPSR is used.'),
+                                    'placeholder' => __('e.g. Company name, street, city, postcode, country'),
+                                    'rows'        => 2,
+                                    'value'       => $tradeUnit->gpsr_eu_responsible
                                 ],
                                 'gpsr_warnings' => [
-                                    'type'  => 'textarea',
-                                    'label' => __('Warnings'),
-                                    'value' => $tradeUnit->gpsr_warnings
+                                    'type'        => 'textarea',
+                                    'label'       => __('Warnings & Precautions'),
+                                    'information' => __('Safety warnings printed on the label and shown on the product page. If empty, the Part GPSR is used.'),
+                                    'placeholder' => __('e.g. Keep out of reach of children. Avoid contact with eyes.'),
+                                    'value'       => $tradeUnit->gpsr_warnings
                                 ],
                                 'gpsr_manual' => [
-                                    'type'  => 'textarea',
-                                    'label' => __('How To Use'),
-                                    'value' => $tradeUnit->gpsr_manual
+                                    'type'        => 'textarea',
+                                    'label'       => __('Directions for Use'),
+                                    'information' => __('How to use the product safely. Shown on the product page. If empty, the Part GPSR is used.'),
+                                    'placeholder' => __('e.g. Apply a small amount to clean skin twice a day.'),
+                                    'value'       => $tradeUnit->gpsr_manual
                                 ],
                                 'gpsr_class_category_danger' => [
-                                    'type'  => 'textarea',
-                                    'label' => __('Class & category of danger'),
-                                    'value' => $tradeUnit->gpsr_class_category_danger,
+                                    'type'        => 'textarea',
+                                    'label'       => __('Hazard Class & Category'),
+                                    'information' => __('CLP / GHS hazard classification, with hazard statements when relevant. If empty, the Part GPSR is used.'),
+                                    'placeholder' => __('e.g. Flam. Liq. 3, H226; Eye Irrit. 2, H319'),
+                                    'rows'        => 2,
+                                    'value'       => $tradeUnit->gpsr_class_category_danger,
                                 ],
                                 'pictogram_toxic' => [
                                     'type'  => 'toggle',
                                     'label' => __('Acute Toxicity'),
+                                    'information' => __('CLP / GHS hazard pictograms. Each one turned on is shown on the product page.'),
                                     'value' => $tradeUnit->pictogram_toxic,
                                     'suffixImage' => '/hazardIcon/toxic-icon.png'
                                 ],
@@ -552,6 +566,12 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Safety Icons'),
                                     'value' => data_get($tradeUnit->label_info, 'safety_icons', false),
                                     'single_description' => __('Candles only. When enabled, candle safety warning pictograms are shown on the product page'),
+                                ],
+                                'show_net_quantity' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Show Net Quantity'),
+                                    'value' => data_get($tradeUnit->label_info, 'show_net_quantity', true) !== false,
+                                    'single_description' => __('When disabled, the net quantity is not shown on the product page'),
                                 ],
                             ],
                         ],
