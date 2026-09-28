@@ -173,6 +173,7 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerCustomerDiscount;
@@ -5184,7 +5185,15 @@ test('partner shopping list org stocks json feed', function () {
     $response = $this->getJson(route('grp.json.org_partner.shopping_list_org_stocks', [$this->orgPartner->id]));
     $row = collect($response->json('data'))->firstWhere('id', $sellerOrgStock->id);
 
+    $expectedPricePerSko = round(
+        (float) $sellerProduct->price / (float) $sellerOrgStock->pivot->quantity
+        * $this->orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($this->orgPartner),
+        4
+    );
+
     expect((float) $row['quantity_ordered'])->toBe(5.0)
+        ->and(round((float) $row['price_per_sko'], 4))->toBe($expectedPricePerSko)
+        ->and($response->json('currency'))->toBe($this->orgPartner->organisation->currency->code)
         ->and($row['saveRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.update')
         ->and($row['deleteRoute']['name'])->toBe('grp.org.procurement.org_partners.show.shopping_list.destroy');
 });
