@@ -14,11 +14,13 @@ use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\SupplyChain\SupplierResource;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -35,6 +37,10 @@ class UpdateSupplier extends OrgAction
     {
         if ($this->asAction) {
             return true;
+        }
+
+        if ($request->has('agent_id')) {
+            return $request->user()->authTo('supply-chain.edit');
         }
 
         if ($this->supplier->agent && $request->user()->authTo("procurement.{$this->supplier->agent->organisation_id}.edit")) {
@@ -59,6 +65,10 @@ class UpdateSupplier extends OrgAction
 
         if ($leavingContainer) {
             Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
+        }
+
+        if (Arr::has($modelData, 'agent_id')) {
+            $supplier = MoveSupplierToAgent::run($supplier, Agent::find(Arr::pull($modelData, 'agent_id')));
         }
 
         $modelData = $this->pullSupplierJsonColumns($modelData);
@@ -137,6 +147,11 @@ class UpdateSupplier extends OrgAction
             'address'         => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'currency_id'     => ['sometimes', 'required', 'exists:currencies,id'],
             'image'           => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
+            'agent_id'        => [
+                'sometimes',
+                'required',
+                Rule::exists('agents', 'id')->where('group_id', $this->group->id)->whereNull('deleted_at'),
+            ],
         ];
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules());

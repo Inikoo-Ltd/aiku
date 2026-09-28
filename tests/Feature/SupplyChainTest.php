@@ -1044,3 +1044,24 @@ test('housekeep purchase orders flags legacy open orders and undo removes the fl
     $response->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplyChainPurchaseOrderJourney'));
     expect(\App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0, true))->toBe($flagged);
 });
+
+test('move independent supplier to an agent', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplierProductData = SupplierProduct::factory()->definition();
+    data_set($supplierProductData, 'stock_id', $this->stocks[0]->id);
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+
+    $supplier = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
+
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    expect($supplier->agent_id)->toBe($agent->id)
+        ->and($supplierProduct->refresh()->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->org_agent_id)->toBe($orgAgent->id)
+        ->and($orgSupplier->orgSupplierProducts()->whereNull('org_agent_id')->count())->toBe(0)
+        ->and($supplier->orgSuppliers()->whereNull('org_agent_id')->where('status', true)->count())->toBe(0);
+});
