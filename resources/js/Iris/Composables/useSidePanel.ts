@@ -61,8 +61,10 @@ export const createSidePanel = (layout: any, screenType: Ref<'mobile' | 'tablet'
         isMounted.value = true
         try {
             const savedOpenState = localStorage.getItem('rightbasket')
+            const cartCount = layout.iris_variables?.cart_count
+            const isEmptyBasketTab = tab.value === 'basket' && typeof cartCount === 'number' && cartCount <= 0
             if (savedOpenState !== null) {
-                set(layout, 'rightbasket.show', savedOpenState === 'true')
+                set(layout, 'rightbasket.show', savedOpenState === 'true' && !isEmptyBasketTab)
             }
         } catch {
             return
@@ -73,6 +75,14 @@ export const createSidePanel = (layout: any, screenType: Ref<'mobile' | 'tablet'
         document.documentElement.style.setProperty('--iris-side-width', reserved)
         document.body.style.paddingRight = reserved === '0px' ? '' : 'var(--iris-side-width)'
     })
+
+    watch(() => (page.props as any)?.flash?.gtm?.event, (gtmEvent) => {
+        if (gtmEvent !== 'purchase') {
+            return
+        }
+        close()
+        layout.reload_handle?.()
+    }, { immediate: true })
 
     watch(() => layout.iris_variables?.cart_count, (cartCount) => {
         if (cartCount <= 0 && tab.value === 'basket') {

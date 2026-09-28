@@ -124,6 +124,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
                 'order'          => OrderResource::make($order)->resolve(),
                 'summary'        => $this->getOrderBoxStats($order),
                 'stock_issues'   => $this->getBasketStockIssues($order),
+                'is_gift_message_missing' => $order->isGiftMessageMissing(),
                 'earlier_delivery_address' => GetEarlierDeliveryAddressWarning::run($order, withCustomerActions: true),
                 'paymentMethods' => Arr::get($checkoutData, 'paymentMethods'),
                 'balance'        => $this->customer->balance,

@@ -2154,15 +2154,27 @@ test('UI Show org stock labels and compliance tabs', function () {
         $this->organisation->slug, $warehouse->slug, $orgStock->slug, 'tab' => $tab,
     ]);
 
-    get($route('labels'))->assertInertia(function (AssertableInertia $page) {
+    get($route('labels'))->assertInertia(function (AssertableInertia $page) use ($orgStock) {
         $page->component('Org/Inventory/OrgStockLabels')
             ->where('labels.store_route.name', 'grp.models.org_stock.labels.store')
+            ->where('labels.mandatory_route.name', 'grp.models.stock.label_mandatory_information.update')
+            ->where('labels.abilities.edit', false)
+            ->where('pageHead.actions.0.route.name', 'grp.goods.stocks.show.labels')
+            ->where('pageHead.actions.0.route.parameters.stock', $orgStock->stock->slug)
             ->has('labels.information_options', 24)
             ->has('labels.labels');
     });
     get($route('compliance'))->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Inventory/OrgStockLabels')
             ->where('compliance.routes.store.name', 'grp.models.org_stock.compliance-item.store');
+    });
+
+    get(route('grp.goods.stocks.show.labels', [$orgStock->stock->slug, 'tab' => 'labels']))->assertInertia(function (AssertableInertia $page) {
+        $page->component('Org/Inventory/OrgStockLabels')
+            ->where('pageHead.model', 'Master SKO')
+            ->where('labels.store_route.name', 'grp.models.org_stock.labels.store')
+            ->where('labels.abilities.edit', true)
+            ->has('labels.information_options', 24);
     });
 })->depends('create warehouse', 'create org stock');
 

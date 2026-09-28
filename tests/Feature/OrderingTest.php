@@ -4820,7 +4820,7 @@ test('org and group amounts of orders and invoices use the whole exchange rate',
         ->and((float) $transaction->org_net_amount)->toBe(round((float) $transaction->net_amount * $orgExchange, 2));
 });
 
-test('b2b dashboard insights show the customer spend, their regular products and when each is due again', function () {
+test('b2b dashboard insights show the customer order overview, their regular products, favourites and when each is due again', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     [, $product] = createProduct($this->shop);
     $product->update(['status' => ProductStatusEnum::FOR_SALE, 'price' => 10, 'available_quantity' => 1000]);
@@ -4830,16 +4830,21 @@ test('b2b dashboard insights show the customer spend, their regular products and
         StoreTransaction::make()->action($order, $product->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 4]));
         $order->update(['state' => OrderStateEnum::DISPATCHED, 'date' => now()->subDays($daysAgo), 'net_amount' => 40]);
     }
+    \App\Actions\CRM\Favourite\StoreFavourite::make()->action($customer, $product, []);
 
     $insights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh());
     $regular  = collect($insights['regulars'])->firstWhere('id', $product->id);
 
     expect($insights['kpis']['orders'])->toBe(2)
-        ->and($insights['kpis']['spend'])->toEqual(80)
+        ->and($insights['kpis']['total_orders'])->toBe(2)
         ->and($insights['kpis']['average_order'])->toEqual(40)
         ->and($insights['kpis']['days_since_last'])->toBe(10)
-        ->and($insights['monthly'])->toHaveCount(12)
+        ->and($insights)->not->toHaveKey('monthly')
         ->and($insights['recent_orders'])->toHaveCount(2)
+        ->and($insights['recent_orders'][0])->toHaveKey('invoice')
+        ->and(collect($insights['favourites'])->pluck('id')->all())->toBe([$product->id])
+        ->and($insights['favourites'][0]['stock_status'])->toBe('in_stock')
+        ->and($insights['favourites'][0]['has_reminder'])->toBeFalse()
         ->and($regular['orders'])->toBe(2)
         ->and($regular['average_quantity'])->toBe(4)
         ->and($regular['reorder_every_days'])->toBe(20)
@@ -4853,6 +4858,9 @@ test('b2b dashboard insights work for a customer who never ordered and for one w
     $newInsights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($newCustomer);
 
     expect($newInsights['kpis']['orders'])->toBe(0)
+        ->and($newInsights['kpis']['total_orders'])->toBe(0)
+        ->and($newInsights['kpis']['average_order'])->toBeNull()
+        ->and($newInsights['favourites'])->toBe([])
         ->and($newInsights['kpis']['last_order_at'])->toBeNull()
         ->and($newInsights['kpis']['is_lapsed'])->toBeFalse()
         ->and($newInsights['regulars'])->toBe([])
@@ -4869,6 +4877,8 @@ test('b2b dashboard insights work for a customer who never ordered and for one w
     $lostInsights = \App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($lostCustomer->fresh());
 
     expect($lostInsights['kpis']['orders'])->toBe(0)
+        ->and($lostInsights['kpis']['total_orders'])->toBe(1)
+        ->and($lostInsights['kpis']['average_order'])->toEqual(50)
         ->and($lostInsights['kpis']['days_since_last'])->toBe(900)
         ->and($lostInsights['kpis']['is_lapsed'])->toBeTrue()
         ->and(collect($lostInsights['regulars'])->pluck('id')->all())->toBe([$product->id])

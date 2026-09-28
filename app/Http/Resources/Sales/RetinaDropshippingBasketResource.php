@@ -28,6 +28,7 @@ class RetinaDropshippingBasketResource extends JsonResource
             'has_gift_message'          => $order->has_gift_message,
             'gift_message'              => $order->gift_message,
             'has_gift_message_pdf'      => $order->attachments()->wherePivot('scope', 'GiftMessage')->exists(),
+            'gift_message_pdf_name'     => $order->giftMessagePdfName(),
             'state'                     => $order->state->value,
             'state_label'               => $order->state->labels()[$order->state->value],
             'state_icon'                => $order->state->stateIcon()[$order->state->value],

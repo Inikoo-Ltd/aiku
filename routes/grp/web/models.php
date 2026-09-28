@@ -316,6 +316,8 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\Dashboard\BreakDashboardTimeSeriesCache;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
+use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice;
+use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryInvoiceCosting;
 use App\Actions\Helpers\Media\AttachImagesToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\Helpers\Snapshot\ApplyWebsiteMenuSnapshot;
@@ -452,7 +454,7 @@ use App\Actions\Production\Artefact\Label\StoreArtefactLabel;
 use App\Actions\Production\Artefact\Label\UnpublishArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabel;
 use App\Actions\Production\Artefact\Label\UpdateArtefactLabelOnArtwork;
-use App\Actions\Inventory\OrgStock\UpdateOrgStockLabelMandatoryInformation;
+use App\Actions\Goods\Stock\UpdateStockLabelMandatoryInformation;
 use App\Actions\Production\Artefact\MoveArtefactsToDepartment;
 use App\Actions\Production\Artefact\MoveArtefactsToFamily;
 use App\Actions\Production\Artefact\SetArtefactsState;
@@ -722,6 +724,7 @@ Route::prefix('stock-family')->name('stock-family.')->group(function () {
 Route::name('stock.')->prefix('/stock')->group(function () {
     Route::post('/', StoreStock::class)->name('store');
     Route::patch('/{stock:id}', UpdateStock::class)->name('update');
+    Route::patch('/{stock:id}/label-mandatory-information', UpdateStockLabelMandatoryInformation::class)->name('label_mandatory_information.update');
 });
 
 Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
@@ -1482,6 +1485,8 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::post('deposit/apply', ApplyStockDeliveryDeposit::class)->name('deposit.apply');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
+    Route::post('invoice/{media:id}/read', ReadStockDeliveryInvoice::class)->name('invoice.read')->withoutScopedBindings();
+    Route::post('invoice/{media:id}/apply', ApplyStockDeliveryInvoiceCosting::class)->name('invoice.apply')->withoutScopedBindings();
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inStockDelivery'])->name('attachment.detach')->withoutScopedBindings();
 });
 
@@ -1599,7 +1604,6 @@ Route::name('org_stock.')->prefix('org-stock/{orgStock:id}')->group(function () 
     Route::post('labels/{label:id}/on-artwork', [UpdateArtefactLabelOnArtwork::class, 'inOrgStock'])->name('labels.on_artwork');
     Route::get('labels/{label:id}/pdf', [DownloadArtefactLabelPdf::class, 'inOrgStock'])->name('labels.pdf');
     Route::delete('labels/{label:id}', [DeleteArtefactLabel::class, 'inOrgStock'])->name('labels.delete');
-    Route::patch('label-mandatory-information', UpdateOrgStockLabelMandatoryInformation::class)->name('label_mandatory_information.update');
     Route::post('compliance-item', [StoreArtefactComplianceItem::class, 'inOrgStock'])->name('compliance-item.store');
 });
 

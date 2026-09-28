@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardPartnersTypeSettings;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -27,6 +28,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetSalesAnalysis
 {
     use AsAction;
+    use WithDashboardPartnersTypeSettings;
 
     private const int MAX_EVENTS = 400;
 
@@ -47,6 +49,8 @@ class GetSalesAnalysis
      */
     public function handle(SalesAnalysisScope $scope, array $modelData): array
     {
+        $modelData['partners'] = (bool)(Arr::get($modelData, 'partners') ?? $this->dashboardIncludesPartners(auth()->user()?->settings ?? []));
+
         if (!$scope->cacheKey) {
             return $this->analyse($scope, $modelData);
         }

@@ -19,6 +19,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import StockDeliveryCostingChecklist from "@/Components/Procurement/StockDeliveryCostingChecklist.vue"
+import StockDeliveryInvoiceCosting from "@/Components/Procurement/StockDeliveryInvoiceCosting.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
@@ -132,6 +133,7 @@ const props = defineProps<{
 	}
 	costing: {
 		is_costed: boolean
+		is_partner: boolean
 		can_edit: boolean
 		can_edit_payments: boolean
 		currency: string | null
@@ -146,6 +148,8 @@ const props = defineProps<{
 	under_over_delivered?: {}
 	showcase?: {}
 	attachments?: {}
+	attachmentScopes: { name: string; code: string }[]
+	invoice_costing: InstanceType<typeof StockDeliveryInvoiceCosting>["$props"]["invoices"]
 	notes?: {}
 	note_store_route?: routeType
 	history?: {}
@@ -781,6 +785,12 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:canEditPayments="costing.can_edit_payments"
 	/>
 
+	<StockDeliveryInvoiceCosting
+		v-if="!costing.is_partner && !['in_process', 'confirmed', 'ready_to_ship', 'cancelled', 'not_received'].includes(stock_delivery.state)"
+		:invoices="invoice_costing"
+		:canEdit="costing.can_edit"
+	/>
+
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 	<component
 		:is="component"
@@ -801,6 +811,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		}"
 		progressDescription="Adding Stock Delivery Attachments"
 		:attachmentRoutes="attachmentRoutes"
+		:options="attachmentScopes"
 	/>
 
 	<ConfirmDialog group="stock-delivery">

@@ -9,6 +9,7 @@
 namespace App\Models\Production;
 
 use App\Enums\Production\Artefact\ArtefactComplianceTypeEnum;
+use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -20,7 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $group_id
  * @property int $organisation_id
  * @property int|null $artefact_id
- * @property int $org_stock_id
+ * @property int|null $org_stock_id
+ * @property int|null $stock_id
  * @property ArtefactComplianceTypeEnum $type
  * @property string|null $reference
  * @property string|null $notes
@@ -31,7 +33,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Production\Artefact|null $artefact
  * @property-read Group|null $group
- * @property-read OrgStock $orgStock
+ * @property-read OrgStock|null $orgStock
+ * @property-read Stock|null $stock
  * @property-read Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactComplianceItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ArtefactComplianceItem newQuery()
@@ -62,6 +65,11 @@ class ArtefactComplianceItem extends Model
     public function orgStock(): BelongsTo
     {
         return $this->belongsTo(OrgStock::class);
+    }
+
+    public function stock(): BelongsTo
+    {
+        return $this->belongsTo(Stock::class);
     }
 
     public function organisation(): BelongsTo

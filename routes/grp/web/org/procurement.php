@@ -78,6 +78,7 @@ use App\Actions\Procurement\SupplierMessage\Whatsapp\SendSupplierWhatsappMessage
 use App\Actions\Comms\Mailbox\ConnectProcurementMailbox;
 use App\Actions\Comms\Mailbox\DisconnectProcurementMailbox;
 use App\Actions\Procurement\SupplierMessage\AssignSupplierMessage;
+use App\Actions\Procurement\SupplierMessage\AttachSupplierMessageAttachment;
 use App\Actions\Procurement\SupplierMessage\DownloadSupplierMessageAttachment;
 use App\Actions\Procurement\SupplierMessage\SendSupplierEmail;
 use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
@@ -105,6 +106,7 @@ Route::prefix('emails')->as('supplier_messages.')->group(function () {
     Route::get('{supplierMessage}', ShowSupplierMessage::class)->name('show')->withoutScopedBindings();
     Route::post('{supplierMessage}/assign', AssignSupplierMessage::class)->name('assign')->withoutScopedBindings();
     Route::get('{supplierMessage}/attachments/{index}', DownloadSupplierMessageAttachment::class)->name('attachment')->whereNumber('index')->withoutScopedBindings();
+    Route::post('{supplierMessage}/attachments/{index}/attach', AttachSupplierMessageAttachment::class)->name('attachment.attach')->whereNumber('index')->withoutScopedBindings();
 });
 
 Route::prefix('agents')->as('org_agents.')->group(function () {

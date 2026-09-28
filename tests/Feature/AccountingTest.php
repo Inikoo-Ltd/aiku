@@ -23,6 +23,7 @@ use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
 use App\Actions\Accounting\InvoiceCategory\HydrateInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\ProcessInvoiceCategoryTimeSeriesRecords;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
+use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
 use App\Actions\Catalogue\Shop\UI\GetFormatedShopTimeSeriesStats;
 use App\Actions\UI\Dashboards\GetGroupDashboardTimeSeriesData;
@@ -3564,4 +3565,19 @@ test('invoice category time series keep partner invoices and refunds apart and t
     expect((int)$groupCategory(false)['invoices_tdy'])->toBe(1)
         ->and((int)$groupCategory(true)['invoices_tdy'])->toBe(3)
         ->and((int)$groupCategory(true)['refunds_tdy'])->toBe(1);
+});
+
+test('sales analysis follows the saved include partners setting unless the page asks otherwise', function () {
+    $user = $this->adminGuest->getUser();
+    $user->update(['settings' => array_merge($user->settings ?? [], ['partners_type' => 'all'])]);
+    actingAs($user->fresh());
+
+    expect(GetShopSalesAnalysis::run($this->shop, [])['include_partners'])->toBeTrue()
+        ->and(GetShopSalesAnalysis::run($this->shop, ['partners' => '0'])['include_partners'])->toBeFalse();
+
+    $user->update(['settings' => array_merge($user->settings ?? [], ['partners_type' => 'external'])]);
+    actingAs($user->fresh());
+
+    expect(GetShopSalesAnalysis::run($this->shop, [])['include_partners'])->toBeFalse()
+        ->and(GetShopSalesAnalysis::run($this->shop, ['partners' => '1'])['include_partners'])->toBeTrue();
 });

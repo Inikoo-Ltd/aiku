@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use App\Actions\Traits\Dashboards\Settings\WithDashboardPartnersTypeSettings;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetShopSalesAnalysis
 {
     use AsAction;
+    use WithDashboardPartnersTypeSettings;
 
     private const int MAX_EVENTS = 300;
 
@@ -44,6 +46,8 @@ class GetShopSalesAnalysis
      */
     public function handle(Shop|MasterShop $parent, array $modelData): array
     {
+        $modelData['partners'] = (bool)(Arr::get($modelData, 'partners') ?? $this->dashboardIncludesPartners(auth()->user()?->settings ?? []));
+
         return Cache::remember(
             'sales-analysis:'.class_basename($parent).':'.$parent->id.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
             now()->endOfDay(),

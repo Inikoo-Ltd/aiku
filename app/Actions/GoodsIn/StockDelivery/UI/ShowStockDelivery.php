@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\UI;
 
+use App\Actions\GoodsIn\StockDelivery\GetStockDeliveryInvoiceCosting;
 use App\Actions\GoodsIn\StockDelivery\Traits\WithStockDeliveryWeightAndVolume;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryItems;
 use App\Actions\GoodsIn\StockDeliveryItem\UI\IndexStockDeliveryUnderOverDeliveredItems;
@@ -23,6 +24,7 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Procurement\OrgAgentResource;
@@ -126,6 +128,8 @@ class ShowStockDelivery extends OrgAction
                     'navigation' => $this->getTabsNavigation($stockDelivery),
                 ],
                 'costing'          => $this->getCosting($stockDelivery),
+                'attachmentScopes' => PurchaseOrderAttachmentScopeEnum::options(),
+                'invoice_costing'  => GetStockDeliveryInvoiceCosting::run($stockDelivery),
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.stock-delivery.attachment.attach',

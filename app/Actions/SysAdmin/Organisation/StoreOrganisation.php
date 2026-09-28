@@ -83,6 +83,9 @@ class StoreOrganisation extends OrgAction
                 SeedPostRooms::run($group);
                 SeedOrgPostRooms::run($organisation);
                 SeedOrganisationOutboxes::run($organisation);
+            } elseif ($organisation->type == OrganisationTypeEnum::AGENT) {
+                SeedPostRooms::run($group);
+                SeedOrganisationOutboxes::run($organisation);
             }
 
             StoreOrganisationAddress::make()->action(

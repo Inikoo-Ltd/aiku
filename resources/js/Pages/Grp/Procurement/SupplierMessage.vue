@@ -23,6 +23,17 @@ interface EmailAddress {
     address: string | null
 }
 
+interface MessageAttachment {
+    name: string
+    size: number
+    mime_type: string
+    url: string
+    attached_to: { model_type: "purchase_order" | "stock_delivery"; reference: string; route: routeType }[]
+    suggested_target: string | null
+    suggested_scope: string
+    attach_route: routeType
+}
+
 interface ThreadMessage {
     id: number
     is_outbound: boolean
@@ -32,7 +43,7 @@ interface ThreadMessage {
     sent_at: string
     body_html: string | null
     body_text: string | null
-    attachments: { name: string; size: number; mime_type: string; url: string }[]
+    attachments: MessageAttachment[]
     delivery: { state: string; reads: number; clicks: number } | null
     channel: "email" | "whatsapp" | "wechat"
     author: string | null
@@ -44,6 +55,7 @@ const props = defineProps<{
     pageHead: object
     supplier: { type: "supplier" | "agent" | "partner"; name: string; code: string; routed_by: string | null; route: routeType } | null
     assign: { route: routeType; options: { value: string; label: string }[] } | null
+    attach: { targets: { value: string; label: string }[]; scopes: { name: string; code: string }[] } | null
     reply:
         | { channel: "email"; route: routeType; to: string[]; cc: string[]; subject: string | null }
         | { channel: "whatsapp"; route: routeType; phone: string; counterpart: string | null; window_open: boolean; has_template: boolean }
@@ -55,6 +67,31 @@ const formatted = ref<Record<number, boolean>>({})
 const chosenSupplier = ref<string | null>(null)
 const isAssigning = ref(false)
 const isReassigning = ref(false)
+
+const openAttachForm = ref<string | null>(null)
+const attachTarget = ref<string | null>(null)
+const attachScope = ref<string | null>(null)
+const isAttaching = ref(false)
+
+const toggleAttachForm = (attachment: MessageAttachment) => {
+    if (openAttachForm.value === attachment.url) {
+        openAttachForm.value = null
+        return
+    }
+
+    openAttachForm.value = attachment.url
+    attachTarget.value = attachment.suggested_target
+    attachScope.value = attachment.suggested_scope
+}
+
+const attachToOrder = (attachment: MessageAttachment) => {
+    router.post(route(attachment.attach_route.name, attachment.attach_route.parameters), { target: attachTarget.value, scope: attachScope.value }, {
+        preserveScroll: true,
+        onStart: () => (isAttaching.value = true),
+        onFinish: () => (isAttaching.value = false),
+        onSuccess: () => (openAttachForm.value = null),
+    })
+}
 
 const addressList = (addresses: EmailAddress[]) => addresses.map((address) => address.name || address.address).join(", ")
 
@@ -132,13 +169,29 @@ const assignSupplier = () => {
                 </button>
             </div>
 
-            <footer v-if="message.attachments.length" class="flex flex-wrap gap-2 border-t border-gray-100 px-4 py-3">
-                <a v-for="attachment in message.attachments" :key="attachment.url" :href="attachment.url" target="_blank"
-                    class="inline-flex items-center gap-1.5 rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                    <FontAwesomeIcon :icon="faPaperclip" class="text-gray-400" fixed-width />
-                    {{ attachment.name }}
-                    <span class="text-gray-400">{{ fileSize(attachment.size) }}</span>
-                </a>
+            <footer v-if="message.attachments.length" class="space-y-2 border-t border-gray-100 px-4 py-3">
+                <div v-for="attachment in message.attachments" :key="attachment.url">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a :href="attachment.url" target="_blank"
+                            class="inline-flex items-center gap-1.5 rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
+                            <FontAwesomeIcon :icon="faPaperclip" class="text-gray-400" fixed-width />
+                            {{ attachment.name }}
+                            <span class="text-gray-400">{{ fileSize(attachment.size) }}</span>
+                        </a>
+                        <template v-if="attachment.attached_to.length">
+                            <span class="text-xs text-gray-500">{{ ctrans("Attached to") }}</span>
+                            <Link v-for="link in attachment.attached_to" :key="link.model_type + link.reference" :href="route(link.route.name, link.route.parameters)" class="primaryLink text-xs">
+                                {{ link.reference }}
+                            </Link>
+                        </template>
+                        <Button v-if="attach && attach.targets.length" :label="ctrans('Attach to…')" type="tertiary" size="xs" @click="toggleAttachForm(attachment)" />
+                    </div>
+                    <div v-if="attach && openAttachForm === attachment.url" class="mt-2 flex flex-wrap items-center gap-2">
+                        <Select v-model="attachTarget" :options="attach.targets" optionLabel="label" optionValue="value" filter :placeholder="ctrans('Purchase order or stock delivery')" class="w-80" size="small" />
+                        <Select v-model="attachScope" :options="attach.scopes" optionLabel="name" optionValue="code" class="w-40" size="small" />
+                        <Button :label="ctrans('Attach')" type="primary" size="xs" :loading="isAttaching" :disabled="!attachTarget || !attachScope" @click="attachToOrder(attachment)" />
+                    </div>
+                </div>
             </footer>
         </article>
 
