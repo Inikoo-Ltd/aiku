@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Inventory\Location\CreateOrderFromLocationOrgStocks;
 use App\Actions\Inventory\Location\DeleteLocation;
 use App\Actions\Inventory\Location\MassMoveLocationOrgStocks;
 use App\Actions\Inventory\Location\PartialMoveLocationOrgStocks;
@@ -17,4 +18,5 @@ Route::name('location.')->prefix('location/{location:id}')->group(function () {
     Route::delete('delete', DeleteLocation::class)->name('delete');
     Route::post('mass-move-stock', MassMoveLocationOrgStocks::class)->name('mass_move_stock');
     Route::post('partial-move-stock', PartialMoveLocationOrgStocks::class)->name('partial_move_stock');
+    Route::post('create-order', CreateOrderFromLocationOrgStocks::class)->name('create_order');
 });

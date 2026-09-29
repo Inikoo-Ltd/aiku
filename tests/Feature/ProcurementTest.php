@@ -4751,6 +4751,66 @@ describe('partner shopping list', function () {
         expect($progressOf())->toBe('Pre-picked');
     });
 
+    test('SKOs picked from a partner bay become one order through the partner list, and can not be ordered twice (HELP-3500)', function () {
+        $seller = $this->orgPartner->partner;
+
+        $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($seller, \App\Models\Inventory\Warehouse::factory()->definition());
+        $goodsOut  = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $goodsOut->update(['is_goods_out' => true]);
+
+        $sellerPartner = \App\Models\Procurement\OrgPartner::where('organisation_id', $seller->id)
+            ->where('partner_id', $this->orgPartner->organisation_id)
+            ->first()
+            ?? StoreOrgPartner::make()->action($seller, $this->orgPartner->organisation);
+        $sellerPartner->update(['goods_out_location_id' => $goodsOut->id]);
+
+        $inTheBay = function (int $quantity) use ($seller, $goodsOut) {
+            $stock          = StoreStock::make()->action($seller->group, Stock::factory()->definition());
+            $sellerOrgStock = createOrgStocks($seller, [$stock])[0];
+            \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->sellerShop, array_merge(
+                \App\Models\Catalogue\Product::factory()->definition(),
+                [
+                    'state'       => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE,
+                    'trade_units' => [['id' => $stock->tradeUnits()->firstOrFail()->id, 'quantity' => 1]],
+                ]
+            ));
+            $slot = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($sellerOrgStock, $goodsOut, [
+                'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING,
+            ]);
+            \App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock::make()->action($slot, ['quantity' => $quantity]);
+
+            return $sellerOrgStock;
+        };
+
+        $asked    = $inTheBay(3);
+        $notAsked = $inTheBay(1);
+        $item     = StorePartnerShoppingListItem::make()->action($this->orgPartner, createOrgStocks($this->orgPartner->organisation, [$asked->stock])[0], ['quantity' => 2]);
+
+        actingAs($this->adminGuest->getUser());
+
+        $this->get(route('grp.org.warehouses.show.infrastructure.locations.show', [$seller->slug, $warehouse->slug, $goodsOut->slug, 'tab' => 'org_stocks']))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('create_order_route.name', 'grp.models.location.create_order')->etc());
+
+        $response = $this->post(route('grp.models.location.create_order', $goodsOut->id), ['org_stock_ids' => [$asked->id, $notAsked->id]]);
+
+        $item->refresh();
+        $order        = $item->transaction->order;
+        $notAskedLine = PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('stock_id', $notAsked->stock_id)->first();
+
+        $response->assertRedirect(route('grp.org.shops.show.ordering.orders.show', [$seller->slug, $order->shop->slug, $order->slug]));
+        expect($order->shop_id)->toBe($this->sellerShop->id)
+            ->and($item->state)->toBe(ShoppingListItemStateEnum::ORDERED)
+            ->and((float) $item->quantity)->toBe(3.0)
+            ->and($notAskedLine->state)->toBe(ShoppingListItemStateEnum::ORDERED)
+            ->and((float) $notAskedLine->quantity)->toBe(1.0)
+            ->and($notAskedLine->transaction->order_id)->toBe($order->id)
+            ->and(PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::OPEN)->whereIn('stock_id', [$asked->stock_id, $notAsked->stock_id])->exists())->toBeFalse();
+
+        $this->post(route('grp.models.location.create_order', $goodsOut->id), ['org_stock_ids' => [$asked->id]])
+            ->assertSessionHasErrors('org_stock_ids');
+        expect($order->transactions()->count())->toBe(2);
+    });
+
 });
 
 describe('partner browse', function () {
