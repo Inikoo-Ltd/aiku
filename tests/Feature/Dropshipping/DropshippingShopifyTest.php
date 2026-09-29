@@ -2035,3 +2035,36 @@ test('repair only follows a sku that belongs to this portfolio alone, and tries 
     expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(1)
         ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9301');
 });
+
+test('a product is never added to a shopify product whose only variant belongs to another of our products, since that would replace the variant', function () {
+    Queue::fake();
+    $channel    = shopifyProductChannel($this, 'standalone-variant-guard')->customerSalesChannel;
+    $newProduct = fn () => \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50]));
+
+    $holder = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $holder->update(['platform_product_id' => 'gid://shopify/Product/7900', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8900', 'platform_status' => true]);
+    $matched  = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $uploaded = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $matched->update(['sku' => 'MATCH-1']);
+    $uploaded->update(['sku' => 'UPLOAD-1', 'platform_product_id' => 'gid://shopify/Product/7900']);
+
+    $variants = fn (array $ids) => ShopifyFake::graphql(['product' => ['variants' => ['edges' => array_map(fn (string $id) => ['node' => ['id' => "gid://shopify/ProductVariant/$id"]], $ids)]]]);
+    ShopifyFake::fake(['productOnlyVariant' => $variants(['8900'])]);
+
+    MatchPortfolioToCurrentShopifyProduct::make()->handle($matched, ['shopify_product_id' => 'gid://shopify/Product/7900']);
+    [$stored, $message] = StoreShopifyProductVariant::run($uploaded->refresh());
+
+    expect($matched->refresh()->platform_product_id)->toBeNull()
+        ->and($matched->errors_response['message'])->toBe('This Shopify product has only one variant and it belongs to '.$holder->item_code.'. Adding this product to it would replace that variant, so nothing was changed. Upload this product as its own listing instead')
+        ->and($stored)->toBeFalse()
+        ->and($message)->toBe($matched->errors_response['message'])
+        ->and(ShopifyFake::calls('ProductVariantsCreate'))->toBe([])
+        ->and($holder->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8900');
+
+    ShopifyFake::fake(['productOnlyVariant' => $variants(['8900', '8901'])]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeNull()
+        ->and(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($holder->refresh(), 'gid://shopify/Product/7900'))->toBeNull();
+
+    ShopifyFake::fake(['productOnlyVariant' => ShopifyFake::graphql([], [['message' => 'Throttled']])]);
+    expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBeFalse();
+});

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Events\UploadProductToShopifyProgressEvent;
@@ -25,6 +26,15 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
         $shopifyProductId = Arr::get($modelData, 'shopify_product_id');
 
         if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId) === null) {
+            $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
+
+            if ($replacedVariantOwner !== null) {
+                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner)]]);
+                UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio->refresh());
+
+                return;
+            }
+
             if ($portfolio->isShopifyVariantAdopted()) {
                 UnlinkRetinaPortfolio::run($portfolio);
             }

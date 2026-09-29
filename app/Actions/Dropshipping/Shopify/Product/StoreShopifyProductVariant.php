@@ -87,6 +87,18 @@ class StoreShopifyProductVariant extends RetinaAction
         }
 
 
+        $replacedVariantOwner = self::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $productID);
+
+        if ($replacedVariantOwner !== null) {
+            $errorMessage = self::replacedVariantMessage($replacedVariantOwner);
+
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($errorMessage)
+            ]);
+
+            return [false, $errorMessage];
+        }
+
         try {
             // GraphQL mutation to update product variants
             $mutation = <<<'MUTATION'
@@ -238,5 +250,77 @@ class StoreShopifyProductVariant extends RetinaAction
             $command->info("\nProduct variant updated successfully");
             print_r($result);
         }
+    }
+
+    /**
+     * productVariantsBulkCreate with REMOVE_STANDALONE_VARIANT deletes the only variant of a product that
+     * has no options. When another portfolio of the channel is linked to that variant, adding this one
+     * would silently take its listing away.
+     *
+     * @return string|false|null  the product code of the portfolio whose variant would be replaced, false when it could not be checked
+     */
+    public static function ownerOfStandaloneVariantThatWouldBeReplaced(Portfolio $portfolio, string $productId): string|false|null
+    {
+        $siblings = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+            ->where('id', '!=', $portfolio->id)
+            ->where('status', true)
+            ->where('platform_product_id', $productId)
+            ->whereNotNull('platform_product_variant_id')
+            ->pluck('item_code', 'platform_product_variant_id');
+
+        if ($siblings->isEmpty()) {
+            return null;
+        }
+
+        $client = $portfolio->customerSalesChannel?->user?->getShopifyClient(true);
+
+        if (!$client) {
+            return false;
+        }
+
+        $query = <<<'QUERY'
+        query productOnlyVariant($id: ID!) {
+          product(id: $id) {
+            variants(first: 2) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+          }
+        }
+        QUERY;
+
+        try {
+            $response = $client->request($query, ['id' => $productId]);
+        } catch (Exception) {
+            return false;
+        }
+
+        if (!empty($response['errors']) || !isset($response['body'])) {
+            return false;
+        }
+
+        $body = $response['body']->toArray();
+
+        if (Arr::has($body, 'errors')) {
+            return false;
+        }
+
+        $variantIds = Arr::pluck(Arr::get($body, 'data.product.variants.edges', []), 'node.id');
+
+        if (count($variantIds) !== 1) {
+            return null;
+        }
+
+        return $siblings->get($variantIds[0]);
+    }
+
+    public static function replacedVariantMessage(string|false $replacedVariantOwner): string
+    {
+        return $replacedVariantOwner === false
+            ? 'Could not check the variants of this Shopify product, nothing was changed'
+            : 'This Shopify product has only one variant and it belongs to '.$replacedVariantOwner.'. Adding this product to it would replace that variant, so nothing was changed. Upload this product as its own listing instead';
     }
 }
