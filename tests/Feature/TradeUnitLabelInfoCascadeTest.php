@@ -717,12 +717,43 @@ test('bulk editing through the route only touches the selected trade units', fun
         ->and(data_get($this->plug->refresh()->label_info, 'markets'))->toBeNull();
 })->with('bulkLabelInfo');
 
-test('bulk editing needs every label info field so nothing is left half overridden', function (array $bulkLabelInfo) {
+test('bulk editing a single label info field leaves the rest of the label info as it was', function () {
+    UpdateTradeUnit::make()->action($this->bottle, [
+        'ce_marking'          => true,
+        'languages'           => ['fr', 'de'],
+        'label_info_approved' => true,
+    ]);
+
+    $this->patch(route('grp.models.trade_units.bulk_update_label_info'), [
+        'markets'     => ['uk'],
+        'trade_units' => [$this->bottle->id, $this->plug->id],
+    ])->assertSessionHasNoErrors();
+
+    expect($this->bottle->refresh()->label_info)->toMatchArray([
+        'markets'             => ['uk'],
+        'ce_marking'          => true,
+        'languages'           => ['fr', 'de'],
+        'label_info_approved' => true,
+    ])
+        ->and($this->plug->refresh()->label_info['markets'])->toBe(['uk'])
+        ->and(data_get($this->plug->label_info, 'ce_marking'))->toBeNull();
+});
+
+test('bulk editing packaging material codes on their own also sends their visibility', function () {
     UpdateBulkTradeUnitLabelInfo::make()->action(group(), [
-        ...Arr::except($bulkLabelInfo, 'ce_marking'),
+        'packaging_material_codes'      => ['pap_20'],
+        'packaging_material_codes_show' => true,
+        'trade_units'                   => [$this->bottle->id],
+    ]);
+
+    expect($this->bottle->refresh()->label_info['packaging_material_codes'])->toBe(['show' => true, 'value' => ['pap_20']]);
+});
+
+test('bulk editing label info refuses a save with no field in it', function () {
+    UpdateBulkTradeUnitLabelInfo::make()->action(group(), [
         'trade_units' => [$this->bottle->id],
     ]);
-})->with('bulkLabelInfo')->throws(Illuminate\Validation\ValidationException::class);
+})->throws(Illuminate\Validation\ValidationException::class);
 
 test('bulk editing rejects an empty selection', function (array $bulkLabelInfo) {
     UpdateBulkTradeUnitLabelInfo::make()->action(group(), [
@@ -790,12 +821,29 @@ test('bulk editing gpsr overrides the gpsr of every selected trade unit', functi
     }
 })->with('bulkGpsr');
 
-test('bulk editing gpsr needs every gpsr field', function (array $bulkGpsr) {
+test('bulk editing a single gpsr field leaves the rest of the gpsr as it was', function () {
+    UpdateTradeUnit::make()->action($this->bottle, [
+        'gpsr_manual'     => 'Apply twice a day',
+        'pictogram_toxic' => true,
+    ]);
+
+    $this->patch(route('grp.models.trade_units.bulk_update_gpsr'), [
+        'gpsr_manufacturer' => 'Ancient Wisdom, Sheffield',
+        'trade_units'       => [$this->bottle->id],
+    ])->assertSessionHasNoErrors();
+
+    $this->bottle->refresh();
+
+    expect($this->bottle->gpsr_manufacturer)->toBe('Ancient Wisdom, Sheffield')
+        ->and($this->bottle->gpsr_manual)->toBe('Apply twice a day')
+        ->and($this->bottle->pictogram_toxic)->toBeTrue();
+});
+
+test('bulk editing gpsr refuses a save with no field in it', function () {
     UpdateBulkTradeUnitGpsr::make()->action(group(), [
-        ...Arr::except($bulkGpsr, 'pictogram_gas'),
         'trade_units' => [$this->bottle->id],
     ]);
-})->with('bulkGpsr')->throws(Illuminate\Validation\ValidationException::class);
+})->throws(Illuminate\Validation\ValidationException::class);
 
 test('bulk editing is hidden and refused for users who can only view goods', function (array $bulkLabelInfo, array $bulkGpsr) {
     setPermissionsTeamId($this->group->id);

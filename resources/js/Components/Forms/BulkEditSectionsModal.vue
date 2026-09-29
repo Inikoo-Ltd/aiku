@@ -12,9 +12,14 @@
     - Left: one nav entry per section. Middle: that section's form (scrolls). Right: the selected items (removable).
     - Every section has its own Inertia form, built fresh from the blueprint each time the modal opens.
       Switching sections keeps what was typed in the others.
-    - "Replace" submits only the section on screen. The modal stays open so another section can be pushed after.
-    - Nav icons: amber triangle = unsaved changes in that section, green check = pushed and untouched since.
-      Nothing is shown for a section that was not touched.
+    - Two ways to save, both on the section's updateRoute, and the modal stays open after either:
+        - "Replace" (footer) sends every field of the section on screen.
+        - The save icon beside a field sends that field alone (plus its hasOther value), so the rest of the
+          section on the records is left as it is. It is enabled only once the field was changed.
+    - Unsaved / saved is tracked per field against a baseline (the fresh value, then the last value pushed):
+        - beside a field: green save icon = changed and not pushed, green check = pushed and untouched since.
+        - nav icons: amber triangle = a field of that section is unsaved, green check = something was pushed
+          and nothing changed since. Nothing is shown for a section that was not touched.
     - There is no close (X) button: it closes with the Close button in the footer or a click outside the modal.
       Closing keeps nothing, the next open starts from fresh forms again.
 
@@ -33,13 +38,17 @@
     bulk edit share one definition. Example: getTradeUnitLabelInfoFields(?array) / getTradeUnitGpsrFields(?TradeUnit).
 
   Payload sent to updateRoute
-    - Every field of the section, as the form holds it, plus each field's hasOther.name value.
+    - Replace: every field of the section, as the form holds it, plus each field's hasOther.name value.
+    - Field save: that one field, plus its hasOther.name value when it has one.
     - 'checkbox' fields (array of { key, label, value }) are sent as the list of the checked keys.
     - props.itemsKey => array of props.items ids, e.g. trade_units: [1, 2, 3].
 
   Backend endpoint checklist
     - Validate itemsKey as required|array|min:1 with each id existing in the group.
-    - Require every field of the section (required / present), so a partial payload can never half override records.
+    - Every field of the section is 'sometimes' (one route serves Replace and the single field save), and an
+      afterValidator refuses a payload that carries none of them. See UpdateBulkTradeUnitLabelInfo::afterValidator.
+    - Update only the fields that came in: a JSON column must be merged key by key, never overwritten whole
+      (UpdateTradeUnit merges label_info), or a single field save would wipe the rest of the section.
     - Loop over the records and call the model's normal Update action, so its hydrators and cascades still run.
     - Return nothing (void) like other Inertia model actions, the page reloads its props with preserveState.
     - Gate the blueprint prop on canEdit and use the edit authorisation trait on the endpoint.
@@ -66,13 +75,14 @@
 <script setup lang="ts">
 import { computed, inject, ref, shallowRef } from "vue"
 import { InertiaForm, useForm } from "@inertiajs/vue3"
-import { cloneDeep } from "lodash-es"
+import { cloneDeep, isEqual, pick } from "lodash-es"
 import Dialog from "primevue/dialog"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExclamationTriangle, faStamp, faBiohazard, faTimes, faInfoCircle } from "@fal"
+import { faExclamationTriangle, faStamp, faBiohazard, faTimes, faInfoCircle, faSave as falSave, faSpinnerThird } from "@fal"
 import { faCheckCircle, faExclamationTriangle as fasExclamationTriangle } from "@fas"
+import { faSave as fadSave } from "@fad"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { getComponent } from "@/Composables/Listing/FieldFormList"
@@ -139,20 +149,47 @@ const buildForms = () => {
     return forms
 }
 
+const buildBaselines = () => {
+    const baselines: Record<string, Record<string, any>> = {}
+
+    for (const [sectionKey, section] of Object.entries(props.sections)) {
+        baselines[sectionKey] = buildFormData(section)
+    }
+
+    return baselines
+}
+
 const forms = shallowRef(buildForms())
+const baselines = ref(buildBaselines())
 const formsVersion = ref(0)
-const savedSectionKeys = ref<string[]>([])
+const savedFieldNames = ref<Record<string, string[]>>({})
+const savingFieldName = ref<string | null>(null)
 
 const currentForm = computed(() => forms.value[currentSectionKey.value])
 
-const isSectionUnsaved = (sectionKey: string) => !!forms.value[sectionKey]?.isDirty
-const isSectionSaved = (sectionKey: string) => savedSectionKeys.value.includes(sectionKey) && !isSectionUnsaved(sectionKey)
+const formKeysOfField = (sectionKey: string, fieldName: string): string[] => {
+    const hasOther = props.sections[sectionKey].fields[fieldName]?.hasOther
+
+    return hasOther ? [fieldName, hasOther.name] : [fieldName]
+}
+
+const isFieldUnsaved = (sectionKey: string, fieldName: string) =>
+    formKeysOfField(sectionKey, fieldName).some((formKey) => !isEqual(forms.value[sectionKey]?.[formKey], baselines.value[sectionKey]?.[formKey]))
+const isFieldSaved = (sectionKey: string, fieldName: string) =>
+    !!savedFieldNames.value[sectionKey]?.includes(fieldName) && !isFieldUnsaved(sectionKey, fieldName)
+
+const isSectionUnsaved = (sectionKey: string) =>
+    Object.keys(props.sections[sectionKey].fields).some((fieldName) => isFieldUnsaved(sectionKey, fieldName))
+const isSectionSaved = (sectionKey: string) =>
+    !!savedFieldNames.value[sectionKey]?.length && !isSectionUnsaved(sectionKey)
 
 const resetForms = () => {
     forms.value = buildForms()
+    baselines.value = buildBaselines()
     formsVersion.value++
     currentSectionKey.value = sectionKeys.value[0]
-    savedSectionKeys.value = []
+    savedFieldNames.value = {}
+    savingFieldName.value = null
 }
 
 const removeItem = (itemId: number) => {
@@ -177,27 +214,28 @@ const transformSectionData = (section: BulkEditSection, data: Record<string, any
     return transformedData
 }
 
-const submit = () => {
+const pushToItems = (fieldNames: string[], successText: string) => {
     const sectionKey = currentSectionKey.value
     const section = currentSection.value
     const form = currentForm.value
+    const formKeys = fieldNames.flatMap((fieldName) => formKeysOfField(sectionKey, fieldName))
 
     form
         .transform((data) => ({
-            ...transformSectionData(section, data),
+            ...transformSectionData(section, pick(data, formKeys)),
             [props.itemsKey]: props.items.map((item) => item.id),
         }))
         .submit(section.updateRoute.method ?? "patch", route(section.updateRoute.name, section.updateRoute.parameters), {
             preserveScroll: true,
             preserveState: true,
             onSuccess: () => {
-                form.defaults()
-                if (!savedSectionKeys.value.includes(sectionKey)) {
-                    savedSectionKeys.value.push(sectionKey)
+                for (const formKey of formKeys) {
+                    baselines.value[sectionKey][formKey] = cloneDeep(form[formKey])
                 }
+                savedFieldNames.value[sectionKey] = [...new Set([...(savedFieldNames.value[sectionKey] ?? []), ...fieldNames])]
                 notify({
                     title: ctrans("Success"),
-                    text: ctrans(":section applied to :count :items", { section: section.label, count: String(props.items.length), items: props.itemsLabel }),
+                    text: successText,
                     type: "success",
                 })
             },
@@ -208,7 +246,25 @@ const submit = () => {
                     type: "error",
                 })
             },
+            onFinish: () => {
+                savingFieldName.value = null
+            },
         })
+}
+
+const submit = () => {
+    pushToItems(
+        Object.keys(currentSection.value.fields),
+        ctrans(":section applied to :count :items", { section: currentSection.value.label, count: String(props.items.length), items: props.itemsLabel })
+    )
+}
+
+const submitField = (fieldName: string) => {
+    savingFieldName.value = fieldName
+    pushToItems(
+        [fieldName],
+        ctrans(":field applied to :count :items", { field: currentSection.value.fields[fieldName].label, count: String(props.items.length), items: props.itemsLabel })
+    )
 }
 </script>
 
@@ -293,14 +349,32 @@ const submit = () => {
                                 </div>
                             </div>
                         </dt>
-                        <dd class="sm:col-span-2 text-sm text-gray-700">
-                            <component
-                                :is="getComponent(fieldData.type)"
-                                :form="currentForm"
-                                :fieldName="fieldName"
-                                :options="fieldData.options"
-                                :fieldData="fieldData"
-                            />
+                        <dd class="sm:col-span-2 flex items-start gap-2 text-sm text-gray-700">
+                            <div class="flex-1 min-w-0">
+                                <component
+                                    :is="getComponent(fieldData.type)"
+                                    :form="currentForm"
+                                    :fieldName="fieldName"
+                                    :options="fieldData.options"
+                                    :fieldData="fieldData"
+                                />
+                            </div>
+                            <button
+                                v-tooltip="isFieldUnsaved(currentSectionKey, fieldName)
+                                    ? ctrans('Apply only :field to the selected :items', { field: fieldData.label, items: itemsLabel })
+                                    : isFieldSaved(currentSectionKey, fieldName)
+                                        ? ctrans('Saved to the selected :items', { items: itemsLabel })
+                                        : ctrans('Change this field to apply it on its own')"
+                                type="button"
+                                class="shrink-0 h-9 w-9 flex items-center justify-center"
+                                :disabled="currentForm.processing || !items.length || !isFieldUnsaved(currentSectionKey, fieldName)"
+                                @click="submitField(fieldName)"
+                            >
+                                <FontAwesomeIcon v-if="savingFieldName === fieldName" :icon="faSpinnerThird" class="text-xl text-gray-500 animate-spin" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else-if="isFieldUnsaved(currentSectionKey, fieldName)" :icon="fadSave" class="text-2xl" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else-if="isFieldSaved(currentSectionKey, fieldName)" :icon="faCheckCircle" class="text-xl text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else :icon="falSave" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
+                            </button>
                         </dd>
                     </dl>
                 </div>
@@ -312,7 +386,7 @@ const submit = () => {
                             {{ ctrans("The current :section setup of these :count :items will be replaced.", { section: currentSection.label, count: String(items.length), items: itemsLabel }) }}
                         </div>
                         <div class="mt-0.5">
-                            {{ ctrans("Every field above is applied as shown, including the ones you leave untouched.") }}
+                            {{ ctrans("Replace applies every field above as shown, including the ones you leave empty. To change a single field, use the save icon next to it instead.") }}
                         </div>
                     </div>
                 </div>
@@ -321,8 +395,8 @@ const submit = () => {
                     <Button :label="ctrans('Close')" type="tertiary" @click="isVisible = false" />
                     <Button
                         :label="ctrans('Replace :section on :count :items', { section: currentSection.label, count: String(items.length), items: itemsLabel })"
-                        :loading="currentForm.processing"
-                        :disabled="!items.length"
+                        :loading="currentForm.processing && !savingFieldName"
+                        :disabled="!items.length || currentForm.processing"
                         @click="submit"
                     />
                 </div>

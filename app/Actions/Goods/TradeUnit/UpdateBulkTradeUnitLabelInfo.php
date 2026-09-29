@@ -19,6 +19,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateBulkTradeUnitLabelInfo extends OrgAction
@@ -38,28 +39,40 @@ class UpdateBulkTradeUnitLabelInfo extends OrgAction
         }
     }
 
+    /**
+     * The whole section is sent by "Replace", a single field by its own save button, both on this route.
+     */
     public function rules(): array
     {
         $rules = [
             'trade_units'                   => ['required', 'array', 'min:1'],
             'trade_units.*'                 => ['integer', Rule::exists('trade_units', 'id')->where('group_id', $this->group->id)],
-            'label_info_approved'           => ['required', 'boolean'],
-            'show_net_quantity'             => ['required', 'boolean'],
-            'markets'                       => ['present', 'array'],
+            'label_info_approved'           => ['sometimes', 'boolean'],
+            'show_net_quantity'             => ['sometimes', 'boolean'],
+            'markets'                       => ['sometimes', 'array'],
             'markets.*'                     => ['string', Rule::enum(TradeUnitMarketEnum::class)],
-            'languages'                     => ['present', 'array'],
+            'languages'                     => ['sometimes', 'array'],
             'languages.*'                   => ['string', Rule::exists('languages', 'code')],
-            'best_before'                   => ['present', 'nullable', Rule::enum(TradeUnitBestBeforeEnum::class)],
-            'packaging_material_codes'      => ['present', 'array'],
+            'best_before'                   => ['sometimes', 'nullable', Rule::enum(TradeUnitBestBeforeEnum::class)],
+            'packaging_material_codes'      => ['sometimes', 'array'],
             'packaging_material_codes.*'    => ['string', Rule::enum(TradeUnitPackagingMaterialEnum::class)],
-            'packaging_material_codes_show' => ['required', 'boolean'],
+            'packaging_material_codes_show' => ['sometimes', 'boolean'],
         ];
 
         foreach (TradeUnitLabelPresenceEnum::values() as $labelPresenceField) {
-            $rules[$labelPresenceField] = ['required', 'boolean'];
+            $rules[$labelPresenceField] = ['sometimes', 'boolean'];
         }
 
         return $rules;
+    }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $labelInfoFields = array_filter(array_keys($this->rules()), fn (string $field) => $field !== 'trade_units' && !str_contains($field, '.'));
+
+        if (!Arr::hasAny($validator->getData(), $labelInfoFields)) {
+            $validator->errors()->add('trade_units', __('Choose at least one field to update.'));
+        }
     }
 
     public function asController(ActionRequest $request): void

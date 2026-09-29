@@ -8,7 +8,7 @@ help_routes: grp.trade_units.units.index, grp.trade_units.units.active, grp.trad
 ---
 
 <aside class="tldr">
-For whoever keeps the product safety and label details up to date. When a group of trade units share the same details, for example a whole range of candles from one supplier, you no longer have to open each one. Tick them in the list, press <b>Bulk Edit</b>, fill in the <b>GPSR</b> or the <b>Labeling & Compliance Marks</b> once, and press the button to apply it. Every trade unit you ticked gets exactly what is on the screen.
+For whoever keeps the product safety and label details up to date. When a group of trade units share the same details, for example a whole range of candles from one supplier, you no longer have to open each one. Tick them in the list, press <b>Bulk Edit</b>, and fill in the <b>GPSR</b> or the <b>Labeling & Compliance Marks</b> once. Save a single field with the save icon next to it, or the whole section with the button at the bottom.
 </aside>
 
 ## Finding it
@@ -57,28 +57,34 @@ The window has three parts.
 
 ## Saving
 
-The button at the bottom says what it is about to do, for example **Replace GPSR on 12 trade units**. It only saves the section you are looking at. If you filled in both sections, save one, click the other on the left, and save that too.
+There are two ways to save. Pick the one that matches what you want to change.
 
-The window stays open after you save, so you can carry on with the other section. Press **Close**, or click anywhere outside the window, when you are done.
+**Just one field: the save icon next to it.** Each field has a small save icon on its right. It lights up green once you change that field. Press it and only that field is applied to the trade units you picked. Everything else they have stays exactly as it was. This is the one to use for small jobs, like setting the markets on a range without touching its warnings or languages.
 
-Two small icons next to the section names tell you where you are:
+**The whole section: the button at the bottom.** It says what it is about to do, for example **Replace GPSR on 12 trade units**. It applies every field of the section you are looking at, all in one go. Use it when you want a group of trade units to end up with exactly the same details.
 
-- An **amber triangle** means you have changed something in that section and not saved it yet.
-- A **green tick** means you saved that section and have not changed it since.
+Either way, only the section on screen is saved. If you want to change something in both sections, save one, click the other on the left, and save that too. The window stays open after you save, so you can carry on. Press **Close**, or click anywhere outside the window, when you are done.
 
-A section you have not touched shows no icon. Hover over an icon to see what it means.
+Small icons tell you where you are, and you can hover over any of them to see what it means:
 
-## Saving replaces what was there
+- Next to a field, a **green save icon** means you changed it and have not applied it yet. A **green tick** means you applied it and have not changed it since.
+- Next to a section name, an **amber triangle** means something in that section is not applied yet. A **green tick** means everything you changed there has been applied.
 
-This is the part to be careful with. When you save a section, every trade unit you picked ends up with exactly what is in the form:
+A field or section you have not touched shows nothing.
+
+## The button at the bottom replaces the whole section
+
+This is the part to be careful with. When you use **Replace**, every trade unit you picked ends up with exactly what is in the form:
 
 - **Every field is saved, including the ones you left empty.** An empty Manufacturer Details box clears the manufacturer on all of them. A switch you left off turns that mark off on all of them.
 - **Anything the trade units had before in that section is replaced.** It does not add to it. If you tick only UK under Markets, trade units that were also sold in the EU lose the EU tick.
-- **The other section is left alone.** Saving GPSR does not touch the labels, and the other way round.
+- **The other section is left alone.** Replacing GPSR does not touch the labels, and the other way round.
 
-The yellow box above the buttons reminds you of this each time.
+If you only meant to change one or two fields, use their own save icons instead. The yellow box above the buttons reminds you of this each time.
 
-**Publish Regulatory & Label Information starts switched off.** If you save the Labeling section without switching it on, the Regulatory & Label Information tab is hidden on the website for every trade unit you picked, even the ones where it was showing before.
+**Publish Regulatory & Label Information starts switched off.** If you replace the Labeling section without switching it on, the Regulatory & Label Information tab is hidden on the website for every trade unit you picked, even the ones where it was showing before.
+
+**A single field still replaces that field.** Saving Markets with only UK ticked leaves every picked trade unit with just UK, even the ones that also had EU before. It does not add UK to what they had.
 
 ## What happens after you save
 
@@ -105,6 +111,8 @@ The yellow box above the buttons reminds you of this each time.
 <li><b>One family:</b> <b>Trade Unit Families</b> at the top → the family → <b>Trade units</b> tab.</li>
 <li><b>Start:</b> tick the rows → <b>Bulk Edit</b> at the top right.</li>
 <li><b>Switch section:</b> <b>GPSR</b> or <b>Labeling & Compliance Marks</b> on the left of the window.</li>
+<li><b>Save one field:</b> the save icon on the right of that field.</li>
+<li><b>Save the whole section:</b> <b>Replace</b> at the bottom of the window.</li>
 <li><b>See what changed:</b> open a trade unit → <b>History</b> tab.</li>
 <li><b>One trade unit only:</b> open it and use the pencil, the same fields are there.</li>
 </ul>
