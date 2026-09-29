@@ -1854,3 +1854,29 @@ test('two products linked to one shopify listing: orders go to the product whose
     expect($third->refresh()->platform_product_id)->toBeNull()
         ->and($third->errors_response)->toBe(['message' => 'This Shopify product is already linked to '.$owner->item_code.' in this channel']);
 });
+
+test('repair tries the product code when the sku a portfolio carries only matches an archived copy', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'bundle-sku-repair')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $portfolio->update(['sku' => 'bundle-a-b-c', 'platform_product_id' => 'gid://shopify/Product/9102', 'platform_status' => true]);
+    $code = Str::lower($this->product->code);
+
+    GetShopifyCatalogueSnapshot::shouldRun()->andReturn([
+        'complete'           => true,
+        'reason'             => null,
+        'variants_read'      => 2,
+        'products'           => [
+            'gid://shopify/Product/9101' => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8101', 'sku' => $code, 'at_location' => true]]],
+            'gid://shopify/Product/9102' => ['status' => 'ARCHIVED', 'variants' => [['id' => 'gid://shopify/ProductVariant/8102', 'sku' => 'bundle-a-b-c', 'at_location' => true]]],
+        ],
+        'product_ids_by_sku' => [
+            $code          => ['gid://shopify/Product/9101' => true],
+            'bundle-a-b-c' => ['gid://shopify/Product/9102' => false],
+        ],
+    ]);
+
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(1)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9101')
+        ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8101');
+});
