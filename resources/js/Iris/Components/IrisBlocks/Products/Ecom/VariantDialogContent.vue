@@ -469,7 +469,7 @@ const onCancel = () => {
 
         <div class="mt-5 flex flex-col-reverse gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <div v-if="isLoggedIn">
-                <div class="text-xl font-bold text-gray-900 sm:text-2xl">
+                <div class="text-lg font-bold text-gray-900 sm:text-2xl">
                     {{ ctrans(':count items selected', { count: String(totalItemsSelected) }) }}
                 </div>
                 <div v-if="totalItemsSelected > 0" class="mt-0.5 text-sm text-gray-600">
@@ -485,20 +485,20 @@ const onCancel = () => {
 
             <div class="flex gap-3 sm:ml-auto">
                 <button type="button" :disabled="isSaving"
-                    class="flex-1 rounded-md border border-gray-300 bg-white px-6 py-2.5 font-medium text-gray-800 transition hover:bg-gray-50 sm:flex-none"
+                    class="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium sm:px-6 sm:py-2.5 sm:text-base text-gray-800 transition hover:bg-gray-50 sm:flex-none"
                     @click="onCancel">
                     {{ ctrans('Cancel') }}
                 </button>
 
                 <button v-if="isLoggedIn" type="button" :disabled="isSaving"
-                    class="button-primary flex flex-1 items-center justify-center gap-2 rounded-md px-6 py-2.5 font-medium transition sm:flex-none"
+                    class="button-primary flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium sm:px-6 sm:py-2.5 sm:text-base transition sm:flex-none"
                     @click="onSave">
                     <LoadingIcon v-if="isSaving" />
                     {{ ctrans('Save Selection') }}
                 </button>
 
                 <LinkIris v-else :href="urlLoginWithRedirect()"
-                    class="button-primary flex flex-1 items-center justify-center rounded-md px-6 py-2.5 font-medium sm:flex-none">
+                    class="button-primary flex flex-1 items-center justify-center rounded-md px-4 py-2 text-sm font-medium sm:px-6 sm:py-2.5 sm:text-base sm:flex-none">
                     {{ ctrans('Login or Register for Wholesale Prices') }}
                 </LinkIris>
             </div>
@@ -509,15 +509,17 @@ const onCancel = () => {
 <style scoped>
 .variant-row {
     display: grid;
-    grid-template-columns: minmax(48px, 0.7fr) minmax(0, 1fr) minmax(0, 1.3fr);
+    grid-template-columns: minmax(40px, 0.6fr) minmax(0, 1fr) auto;
     align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
+    gap: 8px;
+    padding: 8px 10px;
 }
 
 @media (min-width: 640px) {
     .variant-row {
-        grid-template-columns: minmax(48px, 0.7fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+        grid-template-columns: minmax(48px, 0.7fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+        gap: 12px;
+        padding: 10px 16px;
     }
 }
 
@@ -536,7 +538,8 @@ const onCancel = () => {
 }
 
 .qty-stepper-button {
-    padding: 8px 12px;
+    padding: 4px 8px;
+    font-size: 12px;
     color: #111827;
     transition: background-color 0.15s ease;
 }
@@ -551,13 +554,26 @@ const onCancel = () => {
 }
 
 .qty-stepper-input {
-    width: 52px;
+    width: 36px;
     border: 0;
     border-left: 1px solid #d1d5db;
     border-right: 1px solid #d1d5db;
+    padding: 0;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
     -moz-appearance: textfield;
+}
+
+@media (min-width: 640px) {
+    .qty-stepper-button {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .qty-stepper-input {
+        width: 52px;
+        font-size: 16px;
+    }
 }
 
 .qty-stepper-input:focus {
