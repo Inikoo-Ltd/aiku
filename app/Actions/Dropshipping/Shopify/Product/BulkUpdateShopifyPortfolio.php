@@ -8,8 +8,10 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\MatchBulkPortfoliosToPlatform;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio;
@@ -88,12 +90,20 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             ->get()
             ->keyBy('id');
 
+        $needsRematch = false;
         foreach ($portfolios->chunk(50) as $portfolioChunk) {
             try {
-                $this->processChunk($shopifyUser, $customerSalesChannel, $portfolioChunk, $productMap, $command);
+                if ($this->processChunk($shopifyUser, $customerSalesChannel, $portfolioChunk, $productMap, $command)) {
+                    $needsRematch = true;
+                }
             } catch (\Throwable $e) {
                 Sentry::captureException($e);
             }
+        }
+
+        if ($needsRematch) {
+            CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
+            MatchBulkPortfoliosToPlatform::dispatch($customerSalesChannel);
         }
     }
 
@@ -101,12 +111,13 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
      * @param  Collection<int, Portfolio>  $portfolios
      * @param  Collection<int, Product>  $productMap
      */
-    private function processChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, ?Command $command = null): void
+    private function processChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, ?Command $command = null): bool
     {
         $logs                   = [];
         $inventoryItems         = [];
         $portfoliosToUpdateData = [];
         $indexToPortfolioId     = [];
+        $needsRematch           = false;
 
         $variantsByProduct = $this->getShopifyVariantsBatch($shopifyUser, self::shopifyIdsToFetch($portfolios));
         $channelSkus       = $productMap->pluck('code')->merge($portfolios->pluck('sku'))->filter()->map(fn ($sku) => Str::lower($sku))->unique()->values()->all();
@@ -123,11 +134,17 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             $shopifyData = self::resolveVariant($portfolio, $productData, $variantsByProduct[$portfolio->platform_product_id] ?? [], $channelSkus);
 
             if (!$shopifyData) {
-                $portfolio->update(['stock_last_fail_updated_at' => now()]);
+                $portfolio->update([
+                    'platform_product_id'         => null,
+                    'platform_product_variant_id' => null,
+                    'platform_status'             => false,
+                    'stock_last_fail_updated_at'  => now(),
+                ]);
                 UpdatePlatformPortfolioLog::dispatch(StorePlatformPortfolioLog::run($portfolio, []), [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => 'No variant on Shopify matches this sku'
                 ]);
+                $needsRematch = true;
                 continue;
             }
 
@@ -159,7 +176,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
         }
 
         if (empty($inventoryItems)) {
-            return;
+            return $needsRematch;
         }
 
         $mutation = <<<'MUTATION'
@@ -197,7 +214,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 ]);
             }
 
-            return;
+            return $needsRematch;
         }
 
         $body = $res['body']->toArray();
@@ -242,6 +259,8 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 }
             }
         }
+
+        return $needsRematch;
     }
 
     /**
