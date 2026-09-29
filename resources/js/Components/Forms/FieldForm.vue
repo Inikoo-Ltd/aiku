@@ -10,6 +10,7 @@ import { router, useForm } from '@inertiajs/vue3'
 import { routeType } from '@/types/route'
 import { ref, computed, watch } from 'vue'
 import axios from 'axios'
+import { cloneDeep } from 'lodash-es'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as fadSave, } from '@fad'
@@ -84,8 +85,8 @@ form['fieldType'] = 'edit'
 
 watch(() => props.fieldData.value, (serverValue) => {
     if (!form.isDirty) {
-        form[props.field] = serverValue
-        form.defaults(props.field, serverValue)
+        form[props.field] = cloneDeep(serverValue)
+        form.defaults(props.field, cloneDeep(serverValue))
     }
 })
 
