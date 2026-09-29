@@ -79,10 +79,30 @@ Every minute, the mailbox check that already sweeps the inbox also asks Gmail fo
 
 Whatever stays gets an `aiku/spam-checked` label in Gmail, and the next check leaves labelled mail out of its search. Our first version remembered its decisions in the cache and listed the newest 100 spam emails every run. Those 100 never left the folder, so a mailbox with 900 spam emails would never have got past the newest 100. With the label, each run moves on to mail nobody has read. A backlog of 900 clears in under an hour, 25 at a time, which also keeps well under the Gmail quota we tripped over, and a lost cache cannot make us read anything twice. If Jev doesn't answer, the email is tried again an hour later, not every minute. Whatever comes in has Gmail's spam label removed, which also tells Gmail it was wrong.
 
+## Tightening the detector
+
+The first afternoon on production brought in 36 emails. The real customers were there, but so were about a dozen that were not: "White Label Manufacturers" twice, a textile factory looking for used weaving looms, a "procurement manager" wanting precious metals paid in crypto, three identical "send us your product list" emails, and several "purchase enquiries" from sourcing companies in three countries. Jev had labelled most of them prospects. By our own descriptions, they were: a business that wants to buy from us.
+
+So the descriptions were the problem, not the model. We added two kinds that are not wanted: a vague buying request, which is any buying or partnership request that could go unchanged to any company, with no product named; and a buyer of goods we do not sell. We also tightened the wanted ones. A prospect now has to say what it sells and which of our kinds of products it wants. A customer request has to carry its details in the email. A scam now includes anything whose order, invoice or damage report is only behind a link. That last one caught a "defective product" complaint that turned out to be phishing.
+
+We also tried spending a little more: a second call on everything that passed, asking whether it names our products, whether the details are behind a link, and whether it reads like a template. It made things worse. Genuine dropshippers write about Shopify connections, VAT and onboarding, not products, and the second check threw out 13 of them.
+
+On the 292 emails that reach the model, with the 30 genuine ones marked by hand:
+
+| | genuine kept | junk let in |
+|---|---|---|
+| First wording | 30/30 | 15 |
+| Sharper kinds | 30/30 | 1 |
+| Sharper kinds plus a second check | 17/30 | 0 |
+
+One rule went on top: when the model's first pick is a scam, the email stays out, whatever the other scores say. It lost no genuine email in the test and catches the fake "SWIFT payment copy" that had a customer request score just over the line. Re-run on everything the first wording let in on production, the new one keeps all 11 genuine emails and would have left out all 16 junk ones. The longer descriptions cost about one cent a month more.
+
+The descriptions were written looking at these same emails, so real traffic will do a little worse than 30 out of 30 and 1 junk. They describe what a buyer writes, not who sent it, which is why we expect them to hold.
+
 ## What we would keep
 
 Before building the filter, read the spam. One read-only export told us the volume, what the rules catch for free, where the real customers were, and what a month of the model would cost.
 
-Try more than one way of asking the question. Yes/no and "which kind" cost the same and look alike on made-up examples. On real spam, the option descriptions were where the difference came from.
+Try more than one way of asking the question. Yes/no and "which kind" cost the same and look alike on made-up examples. On real spam, the option descriptions were where the difference came from, and when the model got it wrong, it was usually doing exactly what our descriptions said.
 
 And decide who is trusted per folder, not per sender. The same customer's email means one thing in the inbox and another in spam.
