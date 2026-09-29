@@ -288,7 +288,8 @@ return [
             'scope'              => JobPositionScopeEnum::SHOPS,
             'department'         => 'products',
             'roles'              => [
-                RolesEnum::MARKETING_SUPERVISOR
+                RolesEnum::MARKETING_SUPERVISOR,
+                RolesEnum::DISCOUNTS_SUPERVISOR
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
@@ -301,7 +302,8 @@ return [
             'scope'              => JobPositionScopeEnum::SHOPS,
             'department'         => 'products',
             'roles'              => [
-                RolesEnum::MARKETING_CLERK
+                RolesEnum::MARKETING_CLERK,
+                RolesEnum::DISCOUNTS_CLERK
             ],
             'organisation_types' => [
                 OrganisationTypeEnum::SHOP,
