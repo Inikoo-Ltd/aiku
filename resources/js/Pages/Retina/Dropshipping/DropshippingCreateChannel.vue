@@ -11,6 +11,8 @@ import { routeType } from "@/types/route"
 
 import Modal from "@/Components/Utils/Modal.vue"
 import Dialog from "primevue/dialog"
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { notify } from "@kyvg/vue3-notification"
@@ -105,6 +107,26 @@ const props = defineProps<{
 
 const layout = inject("layout", layoutStructure)
 
+const confirm = useConfirm()
+
+const confirmCancel = (onAccept: () => void) => {
+	confirm.require({
+		message: ctrans("Are you sure you want to cancel? Your progress will be lost."),
+		header: ctrans("Cancel connection?"),
+		icon: "pi pi-exclamation-triangle",
+		rejectProps: {
+			label: ctrans("No, keep going"),
+			severity: "secondary",
+			outlined: true,
+		},
+		acceptProps: {
+			label: ctrans("Yes, cancel"),
+			severity: "danger",
+		},
+		accept: onAccept,
+	})
+}
+
 const isModalOpen = ref<string | boolean>(false)
 const isPlatformCreateLoading = ref<string | boolean>(false)
 const websiteInput = ref<string | null>(null)
@@ -135,6 +157,14 @@ const onCreateStoreShopify = async () => {
 		})
 	}
 	isLoading.value = false
+}
+
+const cancelShopifyModal = () => {
+	confirmCancel(() => {
+		isModalOpen.value = false
+		websiteInput.value = null
+		errorShopify.value = ""
+	})
 }
 
 // Section: Woocommerce
@@ -181,6 +211,14 @@ const onSubmitManual = async () => {
 		})
 	}
 	isLoading.value = false
+}
+
+const cancelManualModal = () => {
+	confirmCancel(() => {
+		isModalManual.value = false
+		manualInput.value.name = null
+		errManual.value = ""
+	})
 }
 
 // Section: amazon
@@ -249,6 +287,14 @@ const onSubmitMagento = async () => {
 	isLoading.value = false
 }
 
+const cancelMagentoModal = () => {
+	confirmCancel(() => {
+		isModalMagento.value = false
+		magentoInput.value = { username: null, password: null, url: null }
+		errMagento.value = ""
+	})
+}
+
 // Section: Ebay
 const isModalEbay = ref(false)
 
@@ -293,18 +339,48 @@ watch(
 	{ immediate: true }
 )
 
+const resetStepArray = (stepArray) => {
+	stepArray.forEach((step, index) => {
+		step.status = index === 0 ? "current" : "upcoming"
+	})
+}
+
+const resetStepper = () => {
+	currentStep.value = 0
+	resetStepArray(stepsEbay.value)
+	resetStepArray(stepsWoo.value)
+	resetStepArray(stepsTiktok.value)
+}
+
 const closeCreateEbayModal = () => {
+	resetStepper()
 	isModalCreateEbay.value = false
 	ebayId.value = null
 	ebayName.value = null
 }
 
 const closeCreateWooModal = () => {
+	resetStepper()
 	isModalWooCommerce.value = false
 }
 
 const closeCreateTiktokModal = () => {
+	resetStepper()
 	isModalTiktok.value = false
+}
+
+const cancelCreateEbayModal = () => confirmCancel(closeCreateEbayModal)
+const cancelCreateWooModal = () => confirmCancel(closeCreateWooModal)
+const cancelCreateTiktokModal = () => confirmCancel(closeCreateTiktokModal)
+
+const openCreateWooModal = () => {
+	resetStepper()
+	isModalWooCommerce.value = true
+}
+
+const openCreateTiktokModal = () => {
+	resetStepper()
+	isModalTiktok.value = true
 }
 
 const openCreateEbayModal = async () => {
@@ -313,6 +389,8 @@ const openCreateEbayModal = async () => {
 		const { data } = await axios.get(
 			route("retina.dropshipping.customer_sales_channels.ebay.creating_check")
 		)
+
+		resetStepper()
 
 		if (data) {
 			ebayId.value = data.id
@@ -337,11 +415,6 @@ const openCreateEbayModal = async () => {
 					steps.value[1].status = "complete"
 					steps.value[2].status = "current"
 					break
-				default:
-					currentStep.value = 0
-					steps.value[0].status = "current"
-					steps.value[1].status = "upcoming"
-					steps.value[2].status = "upcoming"
 			}
 		}
 
@@ -360,6 +433,9 @@ const openCreateEbayModal = async () => {
 provide("closeCreateEbayModal", closeCreateEbayModal)
 provide("closeCreateWooModal", closeCreateWooModal)
 provide("closeCreateTiktokModal", closeCreateTiktokModal)
+provide("cancelCreateEbayModal", cancelCreateEbayModal)
+provide("cancelCreateWooModal", cancelCreateWooModal)
+provide("cancelCreateTiktokModal", cancelCreateTiktokModal)
 provide("ebayId", ebayId)
 provide("tiktokUserId", tiktokUserId)
 provide("ebayName", ebayName)
@@ -428,6 +504,11 @@ provide("goNext", goNext)
 
 <template>
 	<Head :title="capitalize(title)" />
+	<ConfirmDialog>
+		<template #icon>
+			<FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl text-amber-500" fixed-width />
+		</template>
+	</ConfirmDialog>
 	<PageHeading :data="pageHead" />
 	<div class="mt-4 px-4 md:px-6">
 		<div class="text-base py-2 w-fit">{{ ctrans("Select channel you want to create") }}:</div>
@@ -504,7 +585,7 @@ provide("goNext", goNext)
                 </div>
 
                 <div class="w-full flex justify-end">
-                        <Button @click="() => (isModalTiktok = true)"
+                        <Button @click="openCreateTiktokModal"
 								:label="ctrans('Connect')"
                             type="primary"
                             full
@@ -538,7 +619,7 @@ provide("goNext", goNext)
 						:label="ctrans('Connect')"
 						type="primary"
 						full
-						@click="() => (isModalWooCommerce = true)" />
+						@click="openCreateWooModal" />
 				</div>
 			</div>
 			<!-- Section: Ebay -->
@@ -717,7 +798,7 @@ provide("goNext", goNext)
 	</div>
 
 	<!-- Modal: Shopify -->
-	<Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[600px]">
+	<Modal :isOpen="!!isModalOpen" :isClosableInBackground="false" @onClose="cancelShopifyModal" width="w-[600px]">
 		<div class="h-fit">
 			<div class="mb-6">
 				<div class="text-center font-semibold text-xl">
@@ -760,17 +841,19 @@ provide("goNext", goNext)
 				</div>
 			</Transition>
 
-			<Button
-				@click="() => onCreateStoreShopify()"
-				full
-				:label="ctrans('Connect')"
-				:loading="!!isLoading"
-				class="mt-6" />
+			<div class="flex gap-x-2 mt-6">
+				<Button @click="cancelShopifyModal" type="secondary" :label="ctrans('Cancel')" />
+				<Button
+					@click="() => onCreateStoreShopify()"
+					full
+					:label="ctrans('Connect')"
+					:loading="!!isLoading" />
+			</div>
 		</div>
 	</Modal>
 
 	<!-- Modal: Manual -->
-	<Modal :isOpen="isModalManual" @onClose="isModalManual = false" width="w-full max-w-lg">
+	<Modal :isOpen="isModalManual" :isClosableInBackground="false" @onClose="cancelManualModal" width="w-full max-w-lg">
 		<div class="">
 			<div class="mb-4">
 				<div class="text-center font-semibold text-xl">
@@ -799,19 +882,22 @@ provide("goNext", goNext)
 
 			<div v-if="errManual" class="text-red-500 italic text-sm mt-2">*{{ errManual }}</div>
 
-			<Button
-				@click="() => onSubmitManual()"
-				full
-				label="Create"
-				:loading="!!isLoading"
-				class="mt-6" />
+			<div class="flex gap-x-2 mt-6">
+				<Button @click="cancelManualModal" type="secondary" :label="ctrans('Cancel')" />
+				<Button
+					@click="() => onSubmitManual()"
+					full
+					label="Create"
+					:loading="!!isLoading" />
+			</div>
 		</div>
 	</Modal>
 
 	<!-- Modal: Woocommerce -->
 	<Modal
 		:isOpen="isModalWooCommerce"
-		@onClose="isModalWooCommerce = false"
+		:isClosableInBackground="false"
+		@onClose="cancelCreateWooModal"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
 			<ProgressBar />
@@ -822,7 +908,8 @@ provide("goNext", goNext)
 	<!-- Modal: Tiktok -->
 	<Modal
 		:isOpen="isModalTiktok"
-		@onClose="isModalTiktok = false"
+		:isClosableInBackground="false"
+		@onClose="cancelCreateTiktokModal"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
 			<div>
@@ -849,6 +936,7 @@ provide("goNext", goNext)
 	<!-- Modal: Allegro -->
 	<Modal
 		:isOpen="isModalAllegro"
+		:isClosableInBackground="false"
 		@onClose="isModalAllegro = false"
 		width="w-full max-w-lg">
 		<div class="flex flex-col gap-6">
@@ -888,7 +976,12 @@ provide("goNext", goNext)
 		</div>
 	</Modal>
 
-	<Dialog v-model:visible="isModalCreateEbay" modal header="eBay" class="max-w-[90%] w-full">
+	<Dialog
+		:visible="isModalCreateEbay"
+		:closable="false"
+		:closeOnEscape="false"
+		:dismissableMask="false"
+		modal header="eBay" class="max-w-[90%] w-full">
 		<div class="flex flex-col gap-6">
 			<ProgressBar />
 			<component :is="stepComponents[currentStep]" :props="props" />
@@ -896,7 +989,7 @@ provide("goNext", goNext)
 	</Dialog>
 
 	<!-- Modal: Magento -->
-	<Modal :isOpen="isModalMagento" @onClose="isModalMagento = false" width="w-full max-w-lg">
+	<Modal :isOpen="isModalMagento" :isClosableInBackground="false" @onClose="cancelMagentoModal" width="w-full max-w-lg">
 		<div class="">
 			<div class="mb-4">
 				<div class="text-center font-semibold text-xl">
@@ -924,12 +1017,14 @@ provide("goNext", goNext)
 					@keydown.enter="() => onSubmitMagento()" />
 			</div>
 
-			<Button
-				@click="() => onSubmitMagento()"
-				full
-				label="Create"
-				:loading="!!isLoading"
-				class="mt-6" />
+			<div class="flex gap-x-2 mt-6">
+				<Button @click="cancelMagentoModal" type="secondary" :label="ctrans('Cancel')" />
+				<Button
+					@click="() => onSubmitMagento()"
+					full
+					label="Create"
+					:loading="!!isLoading" />
+			</div>
 		</div>
 	</Modal>
 
