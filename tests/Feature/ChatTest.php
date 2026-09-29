@@ -10212,7 +10212,7 @@ test('a website guest on a test email domain is put in spam by rule', function (
         ->and($rule)->toBeNull();
 });
 
-test('gmail spam from customers who bought, replies and genuine strangers comes in with its files held back, the rest stays in gmail spam and is never read twice', function () {
+test('gmail spam from customers who bought, replies and genuine strangers comes in with its files held back, the rest stays in gmail spam labelled so it is never read twice', function () {
     Bus::fake();
     config()->set('services.openrouter.api_key', 'or-key');
 
@@ -10255,10 +10255,10 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [
             ['id' => 'LI', 'name' => 'aiku/imported'],
             ['id' => 'LU', 'name' => 'aiku/unmatched'],
+            ['id' => 'LC', 'name' => 'aiku/spam-checked'],
         ]]),
         'gmail.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([]),
     ]);
-
 
     $inbound = \App\Actions\Comms\Mailbox\ProcessInboundEmail::class;
 
@@ -10279,19 +10279,23 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         ->and($stranger = $inbound::run($this->shop, 'sp3'))->toBeInstanceOf(ChatMessage::class)
         ->and($stranger->spam_rescue_kind)->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::SCAM)
         ->and($fromCustomer->spam_rescue_kind)->toBeNull()
-        ->and($inbound::run($this->shop, 'sp4'))->toBeNull()
-        ->and(\Illuminate\Support\Facades\Cache::has($inbound::leftInSpamKey($this->shop, 'sp0')))->toBeTrue()
-        ->and(\Illuminate\Support\Facades\Cache::has($inbound::leftInSpamKey($this->shop, 'sp1')))->toBeFalse()
-        ->and(\Illuminate\Support\Facades\Cache::has($inbound::leftInSpamKey($this->shop, 'sp2')))->toBeTrue()
-        ->and(\Illuminate\Support\Facades\Cache::has($inbound::leftInSpamKey($this->shop, 'sp4')))->toBeTrue();
+        ->and($inbound::run($this->shop, 'sp4'))->toBeNull();
 
     $filed = fn (string $id) => \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), "messages/$id/modify"))
         ->map(fn ($pair) => $pair[0]->data())->first();
 
     expect($filed('sp1'))->toBe(['addLabelIds' => ['LI'], 'removeLabelIds' => ['INBOX', 'UNREAD', 'SPAM']])
         ->and($filed('sp3'))->toBe(['addLabelIds' => ['LU'], 'removeLabelIds' => ['INBOX', 'UNREAD', 'SPAM']])
-        ->and($filed('sp2'))->toBeNull()
-        ->and($filed('sp4'))->toBeNull();
+        ->and($filed('sp0'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('sp2'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']])
+        ->and($filed('sp4'))->toBe(['addLabelIds' => ['LC'], 'removeLabelIds' => ['INBOX']]);
+
+    \App\Actions\Comms\Mailbox\FetchShopMailboxMessages::make()->handle($this->shop->fresh());
+
+    $spamSweep = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains(urldecode($request->url()), 'in:spam'))->first()[0];
+
+    expect($spamSweep->data()['q'])->toContain('in:spam -label:aiku-spam-checked')
+        ->and((int) $spamSweep->data()['maxResults'])->toBe(25);
 
     $asked = \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_contains($request->url(), 'openrouter.ai'))->first()[0]->data();
 

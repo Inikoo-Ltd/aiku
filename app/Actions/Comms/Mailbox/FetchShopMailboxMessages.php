@@ -52,7 +52,7 @@ class FetchShopMailboxMessages
         $messageIds = array_unique(array_merge(
             $messageIds,
             $client->listInboxMessageIds($this->sweepQuery($shop), 100),
-            $client->listInboxMessageIds($this->spamSweepQuery($shop), 100)
+            $client->listInboxMessageIds($this->spamSweepQuery($shop), 25)
         ));
 
         $dispatched = 0;
@@ -96,9 +96,16 @@ class FetchShopMailboxMessages
         return 'in:inbox after:'.Carbon::parse($connectedAt)->format('Y/m/d');
     }
 
+    /**
+     * Only what has not been read yet, so a backlog is worked through 25 at a time instead of the
+     * newest 100 being listed forever, and a mailbox with a full spam folder does not spend its
+     * Gmail quota in one burst.
+     */
     private function spamSweepQuery(Shop $shop): string
     {
-        return str_replace('in:inbox', 'in:spam', $this->sweepQuery($shop));
+        $checked = str_replace('/', '-', ProcessInboundEmail::SPAM_CHECKED_LABEL);
+
+        return str_replace('in:inbox', "in:spam -label:$checked", $this->sweepQuery($shop));
     }
 
     /**

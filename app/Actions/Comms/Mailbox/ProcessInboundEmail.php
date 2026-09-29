@@ -52,8 +52,11 @@ class ProcessInboundEmail
      */
     private const int GONE_TTL_DAYS = 7;
 
-    /** Gmail empties its spam folder after 30 days, so a decision never needs to outlive it. */
-    public const int LEFT_IN_SPAM_TTL_DAYS = 31;
+    /**
+     * What is left in Gmail spam is labelled, so the spam sweep asks Gmail only for what has not
+     * been read yet. Gmail search spells the slash in a label name as a dash.
+     */
+    public const string SPAM_CHECKED_LABEL = 'aiku/spam-checked';
 
     private const array MACHINE_SENDER_DOMAINS = [
         'luigisbox.com', 'email-abuse.amazonses.com',
@@ -132,12 +135,12 @@ class ProcessInboundEmail
 
             if ($rescue instanceof ChatSpamRescueKindEnum) {
                 $spamRescueKind = $rescue;
-            } elseif ($rescue !== true) {
-                Cache::put(
-                    self::leftInSpamKey($shop, $gmailMessageId),
-                    true,
-                    $rescue === false ? now()->addDays(self::LEFT_IN_SPAM_TTL_DAYS) : now()->addHour()
-                );
+            } elseif ($rescue === false) {
+                $client->fileAway($gmailMessageId, self::SPAM_CHECKED_LABEL, markRead: false);
+
+                return null;
+            } elseif ($rescue === null) {
+                Cache::put(self::leftInSpamKey($shop, $gmailMessageId), true, now()->addHour());
 
                 return null;
             }
@@ -367,8 +370,8 @@ class ProcessInboundEmail
      * never do. A stranger's email is shown to Jev once, which says what kind of email it is, and
      * it comes in when a customer request or a prospect is likely enough; the kind comes back so
      * the agent sees what Aiku thought it was. The rest stays in Gmail's spam, where Gmail deletes
-     * it. Null means there was no answer, and the question is asked again an hour later rather
-     * than on every sweep.
+     * it, labelled so it is never read again. Null means there was no answer, and the question is
+     * asked again an hour later rather than on every sweep.
      *
      * @param  array{address: ?string, name: ?string}  $from
      */
