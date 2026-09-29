@@ -100,16 +100,22 @@ export const isLabelInfoApproved = (product: any): boolean =>
 export const hasProductAboutContent = (tabs: any, product: any): boolean =>
 	hasRichTextContent(tabs?.description) || hasRichTextContent(product?.description_extra)
 
+export const hasProductAppointment = (fieldValue: any, isLoggedIn: boolean): boolean =>
+	Boolean(
+		isLoggedIn && fieldValue?.setting?.appointment && hasValue(fieldValue?.appointment_data?.link?.href)
+	)
+
 export const isProductTabVisible = (
 	tabKey: FamilyExtraDescriptionTabKey,
 	tabs: any,
 	product: any,
 	isLoggedIn: boolean,
-	isWorkshop = false
+	isWorkshop = false,
+	hasAppointment = false
 ): boolean => {
 	switch (tabKey) {
 		case "about":
-			return hasProductAboutContent(tabs, product)
+			return hasAppointment || hasProductAboutContent(tabs, product)
 
 		case "regulatory_label_information":
 			return (
