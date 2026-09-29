@@ -13,7 +13,10 @@ use App\Actions\Iris\Docs\ShowIrisDocs;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Events\BroadcastChatAiDraft;
+use App\Models\Helpers\Ticket;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use Illuminate\Support\Arr;
@@ -33,7 +36,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  *
  * The same answers feed everything read from a customer's message: whether to draft, the
  * urgent flag for a cancel or change of address, the claim checklist out of hours, closing
- * after a thanks, the dropshipping queue and the guide an agent may send.
+ * after a thanks, the dropshipping queue, the guides an agent may send, and, when only a
+ * programmer can fix it, a one-click CUS ticket or the open ticket it already matches.
  */
 class ClassifyChatTurn
 {
@@ -51,6 +55,36 @@ class ClassifyChatTurn
 
     private const float URGENT = 0.4;
 
+    private const float ENGINEER = 0.6;
+
+    private const float SECOND_GUIDE = 0.25;
+
+    public const array PLATFORMS = [
+        'shopify'     => 'Shopify',
+        'woocommerce' => 'WooCommerce',
+        'wix'         => 'Wix',
+        'ebay'        => 'eBay',
+        'tiktok'      => 'TikTok Shop',
+        'amazon'      => 'Amazon',
+        'allegro'     => 'Allegro',
+        'faire'       => 'Faire',
+        'api'         => 'Our API or a manual channel',
+        'website'     => 'Our website, checkout or customer area',
+        'other'       => 'Something else',
+    ];
+
+    public const array SYMPTOMS = [
+        'cannot_connect'      => 'The store cannot connect or was disconnected',
+        'products_not_sync'   => 'Products do not upload, sync or match',
+        'stock_wrong'         => 'Stock shown wrong or not updating',
+        'orders_not_coming'   => 'Orders do not come through to us or do not update',
+        'prices_wrong'        => 'Prices or totals wrong or not updating',
+        'images_descriptions' => 'Images, titles or descriptions wrong or missing',
+        'error_message'       => 'An error message',
+        'website_broken'      => 'A page, button or feature of our website not working',
+        'other'               => 'Something else',
+    ];
+
     private const array CLAIM_KINDS = ['missing', 'damaged', 'wrong_item'];
 
     /**
@@ -58,7 +92,7 @@ class ClassifyChatTurn
      * claim check and the draft all run on the same message at the same time, and whichever
      * comes first asks Jev for the others.
      *
-     * @return array{branch: string|null, topic: ChatTopicEnum|null, answers: array<string, mixed>, guide: array<string, string>|null, hint: array<string, mixed>|null, urgent: string|null, closing: float, claim: bool, ds_kind: string|null}|null null when there is nothing to read or Jev could not be asked
+     * @return array{branch: string|null, topic: ChatTopicEnum|null, answers: array<string, mixed>, guide: array<string, string>|null, guides: array<int, array<string, mixed>>, engineer: array<string, mixed>|null, urgent: string|null, closing: float, claim: bool, ds_kind: string|null}|null null when there is nothing to read or Jev could not be asked
      */
     public static function forSession(ChatSession|MetaChatSession $chatSession): ?array
     {
@@ -112,7 +146,7 @@ class ClassifyChatTurn
     }
 
     /**
-     * @return array{branch: string|null, topic: ChatTopicEnum|null, answers: array<string, mixed>, guide: array<string, string>|null, hint: array<string, mixed>|null, urgent: string|null, closing: float, claim: bool, ds_kind: string|null}|null null when Jev could not be asked
+     * @return array{branch: string|null, topic: ChatTopicEnum|null, answers: array<string, mixed>, guide: array<string, string>|null, guides: array<int, array<string, mixed>>, engineer: array<string, mixed>|null, urgent: string|null, closing: float, claim: bool, ds_kind: string|null}|null null when Jev could not be asked
      */
     public function handle(ChatSession|MetaChatSession $chatSession, string $customerWrote, string $weSaid): ?array
     {
@@ -130,42 +164,43 @@ class ClassifyChatTurn
         $second  = $round ? (AskJev::make()->handle($state, $round) ?? []) : [];
         $answers = array_merge($first, $second);
         $topic   = self::topic($branch, $answers);
-        $picked  = (string) Arr::get($answers, 'guide.choice');
-        $guide   = $guides[$picked] ?? null;
-        $hint    = $guide && self::sureOf($answers, 'guide', $picked) ? $guide + [
-            'probability' => round((float) Arr::get($answers, "guide.probabilities.$picked"), 2),
-            'message'     => self::guideMessage($guide, $chatSession->shop?->language?->code),
-        ] : null;
+        $guide   = $guides[(string) Arr::get($answers, 'guide.choice')] ?? null;
 
         if ($topic === ChatTopicEnum::DROPSHIPPING_INTEGRATION && !$guide) {
             $topic = null;
         }
 
+        $engineer = self::yes($answers, 'needs_engineer') >= self::ENGINEER && !self::hasOpenTicket($chatSession)
+            ? self::engineer($chatSession, $state, self::yes($answers, 'needs_engineer'))
+            : null;
+
         $turn = [
-            'branch'  => $branch,
-            'topic'   => $topic,
-            'answers' => $answers,
-            'guide'   => $topic ? $guide : null,
-            'hint'    => $hint,
-            'urgent'  => self::urgent($answers),
-            'closing' => (float) Arr::get($answers, 'act.probabilities.closing', 0),
-            'claim'   => $branch === 'problem' && in_array(Arr::get($answers, 'problem_kind.choice'), self::CLAIM_KINDS, true),
-            'ds_kind' => $isDropship ? self::dsKind($answers) : null,
+            'branch'   => $branch,
+            'topic'    => $topic,
+            'answers'  => $answers,
+            'guide'    => $topic ? $guide : null,
+            'guides'   => self::suggestedGuides($guides, $answers, $chatSession->shop?->language?->code),
+            'engineer' => $engineer,
+            'urgent'   => self::urgent($answers),
+            'closing'  => (float) Arr::get($answers, 'act.probabilities.closing', 0),
+            'claim'    => $branch === 'problem' && in_array(Arr::get($answers, 'problem_kind.choice'), self::CLAIM_KINDS, true),
+            'ds_kind'  => $isDropship ? self::dsKind($answers) : null,
         ];
 
         $metadata            = $chatSession->metadata ?? [];
         $metadata[self::KEY] = [
-            'at'      => now()->toISOString(),
-            'branch'  => $branch,
-            'topic'   => $topic?->value,
-            'urgent'  => $turn['urgent'],
-            'claim'   => $turn['claim'],
-            'hint'    => $hint,
-            'answers' => self::compact($answers),
+            'at'       => now()->toISOString(),
+            'branch'   => $branch,
+            'topic'    => $topic?->value,
+            'urgent'   => $turn['urgent'],
+            'claim'    => $turn['claim'],
+            'guides'   => $turn['guides'],
+            'engineer' => $engineer,
+            'answers'  => self::compact($answers),
         ];
         $chatSession->update(['metadata' => $metadata]);
 
-        if ($hint) {
+        if ($turn['guides'] || $engineer) {
             BroadcastChatAiDraft::dispatch($chatSession, null);
         }
 
@@ -173,7 +208,84 @@ class ClassifyChatTurn
     }
 
     /**
-     * What "Insert link" puts in the reply, in the shop's language like the guide itself.
+     * The guide Jev is sure of, and a second one when it is torn between two, so staff pick.
+     *
+     * @param  array<string, array<string, string>>  $guides
+     * @param  array<string, mixed>  $answers
+     * @return array<int, array<string, mixed>>
+     */
+    public static function suggestedGuides(array $guides, array $answers, ?string $locale): array
+    {
+        $ranked = collect(Arr::get($answers, 'guide.probabilities', []))
+            ->filter(fn ($probability, $slug) => isset($guides[$slug]))
+            ->sortDesc()
+            ->take(2);
+
+        if ((float) $ranked->first() < self::LIKELY) {
+            return [];
+        }
+
+        return $ranked
+            ->filter(fn ($probability) => (float) $probability >= self::SECOND_GUIDE)
+            ->map(fn ($probability, $slug) => $guides[$slug] + [
+                'probability' => round((float) $probability, 2),
+                'message'     => self::guideMessage($guides[$slug], $locale),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * What is broken, asked only when Jev is sure a programmer is needed: the platform, the
+     * symptom, and whether it is one of the bugs already open, so the customer is added to that
+     * ticket instead of a new one being raised.
+     *
+     * @param  array<string, string>  $state
+     * @return array{probability: float, platform: string|null, platform_label: string|null, symptom: string|null, symptom_label: string|null, ticket: array{reference: string, subject: string}|null}
+     */
+    public static function engineer(ChatSession|MetaChatSession $chatSession, array $state, float $probability): array
+    {
+        $open = Ticket::where('group_id', $chatSession->shop?->group_id)
+            ->where('kind', TicketKindEnum::BUG)
+            ->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED])
+            ->where('created_at', '>', now()->subDays(120))
+            ->latest('id')
+            ->limit(30)
+            ->pluck('subject', 'reference');
+
+        $answers = AskJev::make()->handle($state, array_filter([
+            'platform'     => self::choice('Which platform or part of our system is it about?', self::PLATFORMS),
+            'symptom'      => self::choice('What is not working?', self::SYMPTOMS),
+            'known_ticket' => $open->isNotEmpty() ? self::choice('Is it one of these problems we already know about?', [
+                ...$open->all(),
+                'new' => 'None of these, a different problem',
+            ]) : null,
+        ])) ?? [];
+
+        $known    = (string) Arr::get($answers, 'known_ticket.choice');
+        $platform = self::sureOf($answers, 'platform', (string) Arr::get($answers, 'platform.choice'), 0.5) ? Arr::get($answers, 'platform.choice') : null;
+        $symptom  = self::sureOf($answers, 'symptom', (string) Arr::get($answers, 'symptom.choice'), 0.5) ? Arr::get($answers, 'symptom.choice') : null;
+
+        return [
+            'probability'    => round($probability, 2),
+            'platform'       => $platform,
+            'platform_label' => $platform && $platform !== 'other' ? self::PLATFORMS[$platform] : null,
+            'symptom'        => $symptom,
+            'symptom_label'  => $symptom && $symptom !== 'other' ? self::SYMPTOMS[$symptom] : null,
+            'ticket'         => $known !== 'new' && $open->has($known) && self::sureOf($answers, 'known_ticket', $known)
+                ? ['reference' => $known, 'subject' => $open[$known]]
+                : null,
+        ];
+    }
+
+    public static function hasOpenTicket(ChatSession|MetaChatSession $chatSession): bool
+    {
+        return $chatSession->tickets()->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED])->exists()
+            || (bool) data_get($chatSession->metadata, self::KEY.'.engineer.raised');
+    }
+
+    /**
+     * What "Suggest it to the customer" puts in the reply, in the shop's language like the guide.
      *
      * @param  array<string, string>  $guide
      */
@@ -184,21 +296,26 @@ class ClassifyChatTurn
     }
 
     /**
-     * The guide an agent may send, while nobody has answered since it was found.
+     * The guides and the programmer ticket staff may use, while nobody has answered since.
      *
-     * @return array<string, mixed>|null
+     * @return array{guides: array<int, array<string, mixed>>, engineer: array<string, mixed>|null}|null
      */
-    public static function currentHint(ChatSession|MetaChatSession $chatSession): ?array
+    public static function suggestions(ChatSession|MetaChatSession $chatSession): ?array
     {
         $turn = data_get($chatSession->metadata, self::KEY);
 
-        if (!is_array($turn) || empty($turn['hint']) || empty($turn['at'])) {
+        if (!is_array($turn) || empty($turn['at']) || (empty($turn['guides']) && empty($turn['engineer']))) {
             return null;
         }
 
         $answeredAt = $chatSession->last_agent_message_at;
+        $raised     = data_get($turn, 'engineer.raised');
 
-        return !$answeredAt || Carbon::parse($answeredAt)->lt(Carbon::parse($turn['at'])) ? $turn['hint'] : null;
+        if (!$raised && $answeredAt && Carbon::parse($answeredAt)->gte(Carbon::parse($turn['at']))) {
+            return null;
+        }
+
+        return ['guides' => $turn['guides'] ?? [], 'engineer' => $turn['engineer'] ?? null];
     }
 
     /**
@@ -288,6 +405,7 @@ class ClassifyChatTurn
                 'change_address' => 'They ask to change or correct the delivery address of an order they placed',
                 'none'           => 'Neither of these',
             ]),
+            'needs_engineer'       => self::noul('Is this something only our programmers can fix?', 'Our system is failing them: an error, a store connection or sync that does not work, products, stock, prices, orders or bundles not updating or shown wrong, a website or checkout feature broken', 'Customer service can answer or sort it: a question, an order, a delivery, stock, a return, a request, or something the customer can do themselves'),
             'act'                  => self::choice("What is the customer's latest message doing?", [
                 'closing'   => 'Only thanks, a goodbye or confirming they received something; they want nothing more from us',
                 'asking'    => 'They ask a question, make a request, report a problem or complain',
@@ -428,9 +546,9 @@ class ClassifyChatTurn
     /**
      * @param  array<string, mixed>  $answers
      */
-    private static function sureOf(array $answers, string $question, string $option): bool
+    private static function sureOf(array $answers, string $question, string $option, float $atLeast = self::LIKELY): bool
     {
-        return (float) Arr::get($answers, "$question.probabilities.$option", 0) >= self::LIKELY;
+        return (float) Arr::get($answers, "$question.probabilities.$option", 0) >= $atLeast;
     }
 
     /**

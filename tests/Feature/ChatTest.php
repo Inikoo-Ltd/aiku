@@ -7545,6 +7545,72 @@ test('an inbound gmail message brings the rest of its gmail thread in as earlier
         ->and(\App\Actions\Comms\Mailbox\BackfillGmailThreadHistory::run($this->shop)['messages'])->toBe(0);
 });
 
+test('when only a programmer can fix it staff get one click: the customer joins the open bug it matches, or a CUS ticket is raised, once', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    $user  = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent = ChatAgent::create(['user_id' => $user->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+
+    $newSession = function (string $text) {
+        $session = ChatSession::create([
+            'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+            'shop_id'          => $this->shop->id,
+            'language_id'      => 68,
+            'status'           => ChatSessionStatusEnum::ACTIVE->value,
+            'priority'         => ChatPriorityEnum::NORMAL->value,
+            'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+        ]);
+        $session->messages()->create(['message_text' => $text, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST]);
+
+        return $session;
+    };
+
+    $known = \App\Actions\Chat\ChatSession\StoreTicketFromChatSession::make()->handle($newSession('Stock stuck at zero'), $agent, ['summary' => 'Shopify stock not updating', 'kind' => 'bug']);
+
+    $knownOrNew = $known->reference;
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(function (array $state, array $questions) use (&$knownOrNew) {
+        return match (true) {
+            isset($questions['needs_engineer']) => ['needs_engineer' => ['type' => 'noul', 'noul' => 0.72], 'wants_something' => ['type' => 'noul', 'noul' => 0.9]],
+            isset($questions['platform'])       => [
+                'platform'     => ['type' => 'choice', 'choice' => 'shopify', 'probabilities' => ['shopify' => 0.9]],
+                'symptom'      => ['type' => 'choice', 'choice' => 'stock_wrong', 'probabilities' => ['stock_wrong' => 0.8]],
+                'known_ticket' => ['type' => 'choice', 'choice' => $knownOrNew, 'probabilities' => [$knownOrNew => 0.85]],
+            ],
+            default => null,
+        };
+    });
+
+    $sameBug = $newSession('My Shopify stock shows 0 for everything since yesterday');
+    $turn    = \App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($sameBug);
+
+    expect($turn['engineer'])->toMatchArray(['probability' => 0.72, 'platform_label' => 'Shopify', 'ticket' => ['reference' => $known->reference, 'subject' => 'Shopify stock not updating']]);
+
+    $added = \App\Actions\Chat\ChatSession\RaiseChatEngineerTicket::make()->handle($sameBug->refresh(), $agent);
+    expect($added)->toMatchArray(['reference' => $known->reference, 'added' => true])
+        ->and($known->comments()->latest('id')->value('body'))->toContain('My Shopify stock shows 0')
+        ->and(\App\Actions\Chat\ChatSession\RaiseChatEngineerTicket::make()->handle($sameBug->refresh(), $agent))->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($sameBug)['engineer']['raised'])->toBe($known->reference);
+
+    $knownOrNew = 'new';
+    $newBug     = $newSession('Our Shopify stock is wrong again');
+    \App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($newBug);
+    $raised = \App\Actions\Chat\ChatSession\RaiseChatEngineerTicket::make()->handle($newBug->refresh(), $agent);
+    $ticket = \App\Models\Helpers\Ticket::where('reference', $raised['reference'])->first();
+
+    expect($raised['added'])->toBeFalse()
+        ->and($ticket->type)->toBe(\App\Enums\Helpers\Ticket\TicketTypeEnum::CUSTOMER)
+        ->and($ticket->kind)->toBe(\App\Enums\Helpers\Ticket\TicketKindEnum::BUG)
+        ->and($ticket->subject)->toBe('Shopify · Stock shown wrong or not updating')
+        ->and($ticket->description)->toContain('Our Shopify stock is wrong again');
+
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($newSession('The Shopify stock is broken'))['engineer'])->not->toBeNull();
+
+    $guides = ['a' => ['title' => 'A', 'summary' => '', 'url' => 'https://shop.test/docs/a'], 'b' => ['title' => 'B', 'summary' => '', 'url' => 'https://shop.test/docs/b']];
+    $picked = fn (array $probabilities) => array_column(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestedGuides($guides, ['guide' => ['probabilities' => $probabilities]], 'en'), 'title');
+    expect($picked(['a' => 0.72, 'b' => 0.26]))->toBe(['A', 'B'])
+        ->and($picked(['a' => 0.9, 'b' => 0.1]))->toBe(['A'])
+        ->and($picked(['a' => 0.6, 'b' => 0.4]))->toBe([]);
+});
+
 test('a ticket marked as blocking holds the chat open until it is settled', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),
@@ -10464,11 +10530,11 @@ test('jev works out what the customer wants in rounds, and only a clear single q
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.2, 'none' => 0.8]]]))->toBeNull();
 
     $hint = ['title' => 'Connecting WooCommerce', 'summary' => 'Install the plugin.', 'url' => 'https://shop.test/docs/connecting-woocommerce', 'probability' => 0.93];
-    $session->update(['metadata' => ['ai_turn' => ['at' => now()->toISOString(), 'hint' => $hint]], 'last_agent_message_at' => now()->subMinute()]);
-    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::currentHint($session->refresh()))->toBe($hint);
-    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::guideMessage($hint, 'en'))->toContain("helps:\nConnecting WooCommerce\nhttps://shop.test/docs/connecting-woocommerce\n");
+    $session->update(['metadata' => ['ai_turn' => ['at' => now()->toISOString(), 'guides' => [$hint], 'engineer' => null]], 'last_agent_message_at' => now()->subMinute()]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBe(['guides' => [$hint], 'engineer' => null])
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::guideMessage($hint, 'en'))->toContain("helps:\nConnecting WooCommerce\nhttps://shop.test/docs/connecting-woocommerce\n");
     $session->update(['last_agent_message_at' => now()->addMinute()]);
-    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::currentHint($session->refresh()))->toBeNull();
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBeNull();
 
     $firstRound = \Illuminate\Support\Facades\Http::recorded()->first()[0]->data();
     expect(array_keys($firstRound['questions']))->toContain('wants_something', 'subject')
