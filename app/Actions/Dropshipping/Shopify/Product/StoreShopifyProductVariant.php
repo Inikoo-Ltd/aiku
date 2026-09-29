@@ -225,12 +225,19 @@ class StoreShopifyProductVariant extends RetinaAction
 
             $variantId = Arr::get($body, 'data.productVariantsBulkCreate.productVariants.0.id');
             if ($variantId) {
-                UpdatePortfolio::run($portfolio, [
-                    'platform_product_variant_id' => $variantId,
-                    'last_stock_value'            => $quantityToSend,
-                    'stock_last_updated_at'       => now(),
-                    'errors_response'             => null
+                [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, null, $variantId, [
+                    'last_stock_value'      => $quantityToSend,
+                    'stock_last_updated_at' => now(),
+                    'errors_response'       => null
                 ]);
+
+                if (!$linked) {
+                    UpdatePortfolio::run($portfolio, [
+                        'errors_response' => $this->portfolioErrorResponse($refusal)
+                    ]);
+
+                    return [false, $refusal];
+                }
             }
 
             SaveShopifyProductData::run($portfolio);

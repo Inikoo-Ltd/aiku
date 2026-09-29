@@ -176,7 +176,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             $variantsSent[$variantId] = $portfolio->id;
 
             if ($portfolio->platform_product_variant_id !== $variantId) {
-                $portfolio->update(['platform_product_variant_id' => $variantId]);
+                LinkShopifyPortfolio::run($portfolio, null, $variantId);
             }
 
             if (!$inventoryItemId) {

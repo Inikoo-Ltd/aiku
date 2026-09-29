@@ -50,6 +50,7 @@ use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\RepairShopifyPortfolioConnections;
 use App\Actions\Dropshipping\Shopify\Product\GetShopifyCatalogueSnapshot;
+use App\Actions\Dropshipping\Shopify\Product\LinkShopifyPortfolio;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -2136,4 +2137,71 @@ test('repair leaves disabled portfolios alone, and only corrects the variant id 
     \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $portfolio->id)->update(['status' => false]);
     expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(0)
         ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9401');
+});
+
+test('a shopify portfolio is only linked to a shopify variant that no other portfolio of its channel holds, closed ones included, without asking shopify', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'link-invariants')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $holder    = StorePortfolio::make()->action($channel, \App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50])), []);
+    $holder->update(['platform_product_id' => 'gid://shopify/Product/9500', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/9600']);
+    ShopifyFake::fake([]);
+
+    expect(LinkShopifyPortfolio::run($portfolio, 'gid://shopify/Product/9500', 'gid://shopify/ProductVariant/9600'))->toBe([false, 'This Shopify variant is already linked to '.$holder->item_code.' in this channel'])
+        ->and($portfolio->refresh()->platform_product_id)->toBeNull();
+
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $holder->id)->update(['status' => false, 'platform_product_variant_id' => '9600']);
+    expect(LinkShopifyPortfolio::run($portfolio->refresh(), 'gid://shopify/Product/9500', 'gid://shopify/ProductVariant/9600')[0])->toBeFalse()
+        ->and(LinkShopifyPortfolio::run($portfolio, 'gid://shopify/Product/9500', 'gid://shopify/ProductVariant/9601', ['platform_status' => true]))->toBe([true, null])
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9500')
+        ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9601')
+        ->and($portfolio->platform_status)->toBeTrue();
+
+    \Illuminate\Support\Facades\DB::table('portfolios')->where('id', $holder->id)->update(['platform_product_variant_id' => 'gid://shopify/ProductVariant/9601']);
+    expect(LinkShopifyPortfolio::run($portfolio->refresh(), 'gid://shopify/Product/9501', 'gid://shopify/ProductVariant/9601'))->toBe([true, null])
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9501')
+        ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9601');
+
+    foreach ([['1729426595965733982', null], ['gid://shopify/ProductVariant/9602', null], [null, 'gid://shopify/Product/9502'], [null, '9602'], [null, null]] as [$productId, $variantId]) {
+        expect(LinkShopifyPortfolio::run($portfolio, $productId, $variantId)[0])->toBeFalse();
+    }
+    expect($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9501')
+        ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9601');
+
+    $manualChannel = StoreCustomerSalesChannel::make()->action(StoreCustomer::make()->action($this->shop, Customer::factory()->definition()), Platform::where('type', PlatformTypeEnum::MANUAL)->first(), []);
+    expect(LinkShopifyPortfolio::refusal($manualChannel, 'gid://shopify/Product/9503', 'gid://shopify/ProductVariant/9603'))->toBe('This product is not in a Shopify channel, so it can not be linked to a Shopify listing')
+        ->and(ShopifyFake::$requests)->toBe([]);
+});
+
+test('the stock push and order lines never move a portfolio onto a variant another portfolio holds, and the stock of that listing is still sent', function () {
+    Queue::fake();
+    $channel    = shopifyProductChannel($this, 'link-heals')->customerSalesChannel;
+    $newProduct = fn () => tap(\App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50])), fn ($product) => $product->update(['available_quantity' => 7]));
+
+    $holder = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $holder->update(['platform_product_id' => 'gid://shopify/Product/9700', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/9800', 'platform_status' => true]);
+    $stale = StorePortfolio::make()->action($channel, $staleProduct = $newProduct(), []);
+    $stale->update(['platform_product_id' => 'gid://shopify/Product/9700', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/9899', 'platform_status' => true]);
+    $unlinked = StorePortfolio::make()->action($channel, $newProduct(), []);
+
+    ShopifyFake::fake([
+        'getProductsVariants'    => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => ['id' => $id, 'status' => 'ACTIVE', 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/9800', 'sku' => strtoupper($staleProduct->code), 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/9800']]]]]], $variables['ids'])]),
+        'inventorySetQuantities' => ShopifyFake::graphql(['inventorySetQuantities' => ['userErrors' => []]]),
+    ]);
+    BulkUpdateShopifyPortfolio::run($channel->id);
+
+    expect(ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'])->toBe([['inventoryItemId' => 'gid://shopify/InventoryItem/9800', 'locationId' => 'gid://shopify/Location/1001', 'quantity' => 7]])
+        ->and($stale->refresh()->last_stock_value)->toBe(7)
+        ->and($stale->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9899')
+        ->and($holder->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9800');
+
+    $orderLines = new class () {
+        use WithShopifyPortfolioMatching;
+    };
+
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/9701', '9801', $unlinked->item_code)?->id)->toBe($unlinked->id)
+        ->and($unlinked->refresh()->platform_product_id)->toBeNull()
+        ->and($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/9701', 'gid://shopify/ProductVariant/9801', $unlinked->item_code)?->id)->toBe($unlinked->id)
+        ->and($unlinked->refresh()->platform_product_id)->toBe('gid://shopify/Product/9701')
+        ->and($unlinked->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9801');
 });

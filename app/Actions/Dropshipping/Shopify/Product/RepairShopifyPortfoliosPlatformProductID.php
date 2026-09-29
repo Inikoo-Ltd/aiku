@@ -64,7 +64,11 @@ class RepairShopifyPortfoliosPlatformProductID
 
                         $correctPlatformProductId = 'gid://shopify/Product/'.$platformProductId;
 
-                        $portfolio->update(['platform_product_id' => $correctPlatformProductId]);
+                        [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, $correctPlatformProductId);
+
+                        if (!$linked) {
+                            $command->error('Portfolio '.$portfolio->id.' not updated: '.$refusal);
+                        }
                     }
                 }
 

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
-use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
@@ -109,8 +108,10 @@ class RepairShopifyPortfolioConnections
                 continue;
             }
 
-            if (!$dryRun) {
-                $this->repoint($portfolio, $row);
+            if (!$dryRun && !$this->repoint($portfolio, $row)) {
+                $result['skipped_variant_taken']++;
+
+                continue;
             }
 
             $takenVariantIds[$row['repair_variant_id']] = $row['portfolio_id'];
@@ -137,27 +138,25 @@ class RepairShopifyPortfolioConnections
             ->exists();
     }
 
-    private function repoint(Portfolio $portfolio, array $row): void
+    private function repoint(Portfolio $portfolio, array $row): bool
     {
-        if ($portfolio->platform_product_id === $row['repair_product_id']) {
-            UpdatePortfolio::run($portfolio, [
-                'platform_product_variant_id' => $row['repair_variant_id'],
-                'platform_status'             => $row['repair_at_location'],
-                'errors_response'             => null
-            ]);
+        $modelData = [
+            'platform_status' => $row['repair_at_location'],
+            'errors_response' => null
+        ];
 
-            return;
+        if ($portfolio->platform_product_id === $row['repair_product_id']) {
+            return LinkShopifyPortfolio::run($portfolio, null, $row['repair_variant_id'], $modelData)[0];
         }
 
-        DB::transaction(function () use ($portfolio, $row) {
-            UpdatePortfolio::run($portfolio, [
-                'platform_product_id'         => $row['repair_product_id'],
-                'platform_product_variant_id' => $row['repair_variant_id'],
-                'platform_status'             => $row['repair_at_location'],
-                'errors_response'             => null
-            ]);
+        return DB::transaction(function () use ($portfolio, $row, $modelData) {
+            [$linked] = LinkShopifyPortfolio::run($portfolio, $row['repair_product_id'], $row['repair_variant_id'], $modelData);
 
-            $portfolio->markShopifyVariantAdopted(true);
+            if ($linked) {
+                $portfolio->markShopifyVariantAdopted(true);
+            }
+
+            return $linked;
         });
     }
 

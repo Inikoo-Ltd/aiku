@@ -196,9 +196,13 @@ class FixShopifyPortfolios
             return;
         }
 
-        $portfolio->update([
-            'platform_product_id' => $shopifyProductId,
-        ]);
+        [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, $shopifyProductId);
+
+        if (!$linked) {
+            UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => $refusal]]);
+
+            return;
+        }
 
         $portfolio->refresh();
         StoreShopifyProductVariant::run($portfolio);

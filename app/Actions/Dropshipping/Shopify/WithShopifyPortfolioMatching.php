@@ -7,6 +7,7 @@
 
 namespace App\Actions\Dropshipping\Shopify;
 
+use App\Actions\Dropshipping\Shopify\Product\LinkShopifyPortfolio;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Str;
@@ -100,30 +101,11 @@ trait WithShopifyPortfolioMatching
 
     private function healPortfolioPlatformIds(Portfolio $portfolio, ?string $platformProductId, ?string $platformProductVariantId): void
     {
-        $healedIds = [];
+        $healedProductId = $platformProductId && $portfolio->platform_product_id !== $platformProductId ? $platformProductId : null;
+        $healedVariantId = $platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId ? $platformProductVariantId : null;
 
-        if ($platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId && $this->isVariantLinkedToAnotherPortfolio($portfolio, $platformProductVariantId)) {
-            return;
+        if ($healedProductId || $healedVariantId) {
+            LinkShopifyPortfolio::run($portfolio, $healedProductId, $healedVariantId);
         }
-
-        if ($platformProductId && $portfolio->platform_product_id !== $platformProductId) {
-            $healedIds['platform_product_id'] = $platformProductId;
-        }
-
-        if ($platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId) {
-            $healedIds['platform_product_variant_id'] = $platformProductVariantId;
-        }
-
-        if ($healedIds) {
-            $portfolio->update($healedIds);
-        }
-    }
-
-    private function isVariantLinkedToAnotherPortfolio(Portfolio $portfolio, string $platformProductVariantId): bool
-    {
-        return Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
-            ->whereIn('platform_product_variant_id', $this->shopifyPlatformIdCandidates($platformProductVariantId))
-            ->where('id', '!=', $portfolio->id)
-            ->exists();
     }
 }

@@ -300,9 +300,20 @@ class StoreShopifyProduct extends RetinaAction
             }
 
 
-            UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($createdProduct, 'id'),
-            ]);
+            [$linked, $refusal] = LinkShopifyPortfolio::run($portfolio, Arr::get($createdProduct, 'id'));
+
+            if (!$linked) {
+                UpdatePortfolio::run($portfolio, [
+                    'errors_response' => $this->portfolioErrorResponse($refusal)
+                ]);
+
+                UpdatePlatformPortfolioLog::dispatch($logs, [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $refusal
+                ]);
+
+                return [false, $refusal];
+            }
 
             return $this->storeVariant($portfolio, $logs, $createdProduct);
         } catch (Exception $e) {

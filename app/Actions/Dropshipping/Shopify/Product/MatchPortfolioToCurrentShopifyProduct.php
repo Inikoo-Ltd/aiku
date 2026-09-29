@@ -26,10 +26,15 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
         $shopifyProductId = Arr::get($modelData, 'shopify_product_id');
 
         if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId) === null) {
-            $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
+            $refusal = LinkShopifyPortfolio::refusal($portfolio->customerSalesChannel, $shopifyProductId, null, $portfolio);
 
-            if ($replacedVariantOwner !== null) {
-                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner, false)]]);
+            if ($refusal === null) {
+                $replacedVariantOwner = StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($portfolio, $shopifyProductId);
+                $refusal              = $replacedVariantOwner === null ? null : StoreShopifyProductVariant::replacedVariantMessage($replacedVariantOwner, false);
+            }
+
+            if ($refusal !== null) {
+                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => $refusal]]);
                 UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio->refresh());
 
                 return;
@@ -39,9 +44,7 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
                 UnlinkRetinaPortfolio::run($portfolio);
             }
 
-            $portfolio->update([
-                'platform_product_id' => $shopifyProductId,
-            ]);
+            LinkShopifyPortfolio::run($portfolio, $shopifyProductId);
 
             $portfolio->refresh();
             StoreShopifyProductVariant::run($portfolio, 0);
