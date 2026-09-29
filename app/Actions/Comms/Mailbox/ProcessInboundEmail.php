@@ -35,6 +35,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Throwable;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -138,6 +139,20 @@ class ProcessInboundEmail
             $client->fileAway($gmailMessageId, 'aiku/spam', Arr::get($raw, 'labelIds', []));
 
             return null;
+        }
+
+        // A known non-conversation sender (e.g. a booking tool's confirmations) is filed under
+        // its own label straight away: it is not spam and not a chat, just mail worth keeping.
+        $labeledSenders = Arr::get($shop->settings, 'gmail.labeled_senders', []);
+        if ($from['address'] && $labeledSenders) {
+            $senderLabel = Arr::get($labeledSenders, strtolower($from['address']))
+                ?? Arr::get($labeledSenders, '@'.strtolower(Str::after($from['address'], '@')));
+
+            if ($senderLabel) {
+                $client->fileAway($gmailMessageId, $senderLabel, Arr::get($raw, 'labelIds', []));
+
+                return null;
+            }
         }
 
         // Order, shipping and payout notices from the marketplaces are work for whoever runs those
