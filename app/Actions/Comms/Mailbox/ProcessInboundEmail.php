@@ -368,9 +368,9 @@ class ProcessInboundEmail
      * who have bought from us and replies to our own conversations always come in; anybody can
      * register, so a customer who never bought is asked about like a stranger. Newsletters and machines
      * never do. A stranger's email is shown to Jev once, which says what kind of email it is, and
-     * it comes in when a customer request or a prospect is likely enough; the kind comes back so
-     * the agent sees what Aiku thought it was. The rest stays in Gmail's spam, where Gmail deletes
-     * it, labelled so it is never read again. Null means there was no answer, and the question is
+     * it comes in when a customer request or a prospect is likely enough and its first pick is not
+     * a scam; the kind comes back so the agent sees what Aiku thought it was. The rest stays in
+     * Gmail's spam, where Gmail deletes it, labelled so it is never read again. Null means there was no answer, and the question is
      * asked again an hour later rather than on every sweep.
      *
      * @param  array{address: ?string, name: ?string}  $from
@@ -401,7 +401,7 @@ class ProcessInboundEmail
             ->filter(fn (ChatSpamRescueKindEnum $case) => $case->isWanted())
             ->sum(fn (ChatSpamRescueKindEnum $case) => (float) Arr::get($answer, "probabilities.$case->value", 0));
 
-        return $wanted >= config('chat.spam_rescue_min_probability') ? $kind : false;
+        return $wanted >= config('chat.spam_rescue_min_probability') && $kind !== ChatSpamRescueKindEnum::SCAM ? $kind : false;
     }
 
     private function claimKey(string $gmailMessageId): string

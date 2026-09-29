@@ -10292,8 +10292,8 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         'gmail.googleapis.com/gmail/v1/users/me/messages/sp4*' => $message('sp4', 'Prince <prince@scam.example.net>', 'Urgent transfer'),
         'openrouter.ai/api/alpha/decisions'                    => \Illuminate\Support\Facades\Http::sequence()
             ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'service_pitch', 'probabilities' => ['service_pitch' => 0.9, 'prospect' => 0.1]]]])
-            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'scam', 'probabilities' => ['scam' => 0.6, 'prospect' => 0.25, 'customer_request' => 0.15]]]])
-            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'scam', 'probabilities' => ['scam' => 0.8, 'prospect' => 0.2]]]]),
+            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'prospect', 'probabilities' => ['prospect' => 0.35, 'vague_buyer' => 0.3, 'customer_request' => 0.05]]]])
+            ->push(['answers' => ['answer' => ['type' => 'choice', 'choice' => 'scam', 'probabilities' => ['scam' => 0.6, 'customer_request' => 0.34]]]]),
         'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [
             ['id' => 'LI', 'name' => 'aiku/imported'],
             ['id' => 'LU', 'name' => 'aiku/unmatched'],
@@ -10319,7 +10319,7 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
         ->and(\App\Http\Resources\CRM\Livechat\ChatMessageResource::make($fromCustomer)->resolve()['spam_rescue_kind_label'])->toBeNull()
         ->and($inbound::run($this->shop, 'sp2'))->toBeNull()
         ->and($stranger = $inbound::run($this->shop, 'sp3'))->toBeInstanceOf(ChatMessage::class)
-        ->and($stranger->spam_rescue_kind)->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::SCAM)
+        ->and($stranger->spam_rescue_kind)->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::PROSPECT)
         ->and($fromCustomer->spam_rescue_kind)->toBeNull()
         ->and($inbound::run($this->shop, 'sp4'))->toBeNull();
 
