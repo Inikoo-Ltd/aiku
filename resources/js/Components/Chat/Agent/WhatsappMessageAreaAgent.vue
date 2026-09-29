@@ -931,7 +931,10 @@ const initSocket = () => {
     }
 
     onCall = (payload: any) => {
-        if (payload?.id) applyCallBroadcast(payload, props.organisationSlug)
+        if (!payload?.id) return
+        const isCustomerService = (layout.user?.customer_service_shops ?? []).includes(chatSession.value?.shop?.id)
+        if (payload.direction === "user_initiated" && !isCustomerService) return
+        applyCallBroadcast(payload, props.organisationSlug)
     }
 
     chatChannel.listen(".message", onMessage)

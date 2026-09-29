@@ -92,27 +92,9 @@ class StoreIncomingWhatsappMessage
             return;
         }
 
-        $digits      = preg_replace('/\D/', '', (string) Arr::get($message, 'from'));
-        $profileName = Arr::get($value, 'contacts.0.profile.name');
-
-        $metaChatSession = MetaChatSession::where('meta_channel_id', $metaChannel->id)
-            ->where('shop_id', $shop->id)
-            ->whereIn('phone_number', ['+'.$digits, $digits])
-            ->latest('id')
-            ->first();
-
-        if (!$metaChatSession) {
-            $customer = $this->findCustomer($shop, $digits);
-
-            $metaChatSession = StoreMetaChatSession::run([
-                'shop_id'      => $shop->id,
-                'customer_id'  => $customer?->id,
-                'phone_number' => '+'.$digits,
-                'name'         => $profileName,
-            ]);
-        } elseif ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {
-            $metaChatSession = ReopenMetaChatSession::make()->reopenToWaiting($metaChatSession);
-        }
+        $digits          = preg_replace('/\D/', '', (string) Arr::get($message, 'from'));
+        $profileName     = Arr::get($value, 'contacts.0.profile.name');
+        $metaChatSession = $this->resolveSession($shop, $metaChannel, $digits, $profileName);
 
         $type     = (string) Arr::get($message, 'type');
         $waNode   = Arr::get($message, $type);
@@ -170,6 +152,35 @@ class StoreIncomingWhatsappMessage
 
         BroadcastRealtimeMetaChat::dispatch($metaChatMessage);
         BroadcastMetaChatListEvent::dispatch($metaChatMessage, $metaChatSession->fresh());
+    }
+
+    /**
+     * Messages and calls from one number are one conversation, so both land here: the session
+     * the number already has, reopened if closed, or a new one when the number has never
+     * reached the shop before.
+     */
+    public function resolveSession(Shop $shop, MetaChannel $metaChannel, string $digits, ?string $profileName): MetaChatSession
+    {
+        $metaChatSession = MetaChatSession::where('meta_channel_id', $metaChannel->id)
+            ->where('shop_id', $shop->id)
+            ->whereIn('phone_number', ['+'.$digits, $digits])
+            ->latest('id')
+            ->first();
+
+        if (!$metaChatSession) {
+            return StoreMetaChatSession::run([
+                'shop_id'      => $shop->id,
+                'customer_id'  => $this->findCustomer($shop, $digits)?->id,
+                'phone_number' => '+'.$digits,
+                'name'         => $profileName,
+            ]);
+        }
+
+        if ($metaChatSession->status === ChatSessionStatusEnum::CLOSED) {
+            return ReopenMetaChatSession::make()->reopenToWaiting($metaChatSession);
+        }
+
+        return $metaChatSession;
     }
 
     protected function resolveQuotedMessageId(MetaChatSession $metaChatSession, string $quotedWaMessageId): ?int

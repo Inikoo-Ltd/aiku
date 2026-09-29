@@ -9,7 +9,6 @@ namespace App\Events;
 
 use App\Models\Chat\MetaChatCall;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -36,17 +35,17 @@ class BroadcastWhatsappCallEvent implements ShouldBroadcastNow
     }
 
     /**
-     * The shop's chat list is joined by every agent tab on every page, so a customer ringing
-     * reaches whoever works the shop's chat even when nobody has the conversation open.
+     * Every tab of the shop's customer service staff joins its call channel, so a customer
+     * ringing reaches them on any page, even when nobody has the conversation open.
      *
-     * @return array<int, PrivateChannel|PresenceChannel>
+     * @return array<int, PrivateChannel>
      */
     public function broadcastOn(): array
     {
         $channels = [new PrivateChannel("meta-chat-session.{$this->ulid}")];
 
         if ($this->shopId) {
-            $channels[] = new PresenceChannel("chat-list.{$this->shopId}");
+            $channels[] = new PrivateChannel("whatsapp-calls.{$this->shopId}");
         }
 
         return $channels;

@@ -10,10 +10,10 @@ namespace App\Actions\Chat\Whatsapp\Calls;
 use App\Enums\CRM\Livechat\MetaChatCallDirectionEnum;
 use App\Enums\CRM\Livechat\MetaChatCallStatusEnum;
 use App\Events\BroadcastWhatsappCallEvent;
-use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatCall;
 use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -24,6 +24,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class EndWhatsappCall
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     public function handle(MetaChatCall $metaChatCall): array
     {
@@ -57,8 +58,8 @@ class EndWhatsappCall
     {
         $user = Auth::user();
 
-        if (!$user || !ChatAgent::where('user_id', $user->id)->exists()) {
-            return ['ok' => false, 'message' => __('Only agents can end calls.'), 'code' => 403];
+        if (!$user || !$this->userIsCustomerServiceOnShop($user, $metaChatCall->shop_id)) {
+            return ['ok' => false, 'message' => __('You cannot end this call.'), 'code' => 403];
         }
 
         return $this->handle($metaChatCall);

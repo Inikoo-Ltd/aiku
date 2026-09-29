@@ -8,6 +8,7 @@
 namespace App\Actions\Chat;
 
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Chat\ChatAgent;
@@ -229,6 +230,40 @@ trait WithChatAgentAuthorisation
         }
 
         return array_values(array_unique($shopIds));
+    }
+
+    /**
+     * The shops where the user holds the customer service position, clerk or supervisor. A
+     * WhatsApp call rings only for them: other roles that may read or work chat, a shop admin
+     * among them, are not the ones expected to pick up the phone.
+     *
+     * @return array<int, int>
+     */
+    protected function customerServiceShopIdsFor(User $user): array
+    {
+        if (!$user->status) {
+            return [];
+        }
+
+        return DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_type', 'User')
+            ->where('model_has_roles.model_id', $user->id)
+            ->where(function ($query) {
+                $query->where('roles.name', 'like', RolesEnum::CUSTOMER_SERVICE_CLERK->value.'-%')
+                    ->orWhere('roles.name', 'like', RolesEnum::CUSTOMER_SERVICE_SUPERVISOR->value.'-%');
+            })
+            ->pluck('roles.name')
+            ->map(fn (string $name) => (int) substr($name, strrpos($name, '-') + 1))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected function userIsCustomerServiceOnShop(User $user, ?int $shopId): bool
+    {
+        return $shopId !== null && in_array($shopId, $this->customerServiceShopIdsFor($user), true);
     }
 
     /**

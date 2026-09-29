@@ -407,6 +407,34 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 	watch(titleCount, applyTitle, { immediate: true })
 	new MutationObserver(applyTitle).observe(document.head, { childList: true, subtree: true, characterData: true })
 
+	const { applyBroadcast: applyCallBroadcast } = useWhatsappCall()
+	const onCallEvent = (call: WhatsappCall) => {
+		if (!call?.id) return
+		applyCallBroadcast(call, call.organisation ?? undefined)
+
+		if (call.status !== "ringing" || call.direction !== "user_initiated") return
+		alertOnce({
+			key: `whatsapp-call:${call.id}`,
+			title: ctrans("Incoming WhatsApp call"),
+			body: call.phone_number ?? "",
+			tag: `whatsapp-call-${call.id}`,
+			sound: chosenAlertSound("whatsapp"),
+			spoken: ctrans("Incoming WhatsApp call"),
+			sticky: true,
+		})
+	}
+
+	const customerServiceShopIds: number[] = Array.isArray(layout.user?.customer_service_shops) ? layout.user.customer_service_shops : []
+	const whenEchoReady = (callback: () => void) => {
+		const echoReady = setInterval(() => {
+			if ((window as any).Echo?.connector?.pusher) {
+				clearInterval(echoReady)
+				callback()
+			}
+		}, 300)
+	}
+	whenEchoReady(() => customerServiceShopIds.forEach((shopId) => window.Echo.private(`whatsapp-calls.${shopId}`).listen(".call", onCallEvent)))
+
 	if (!layout.user?.is_agent || !myId) return
 
 	window.addEventListener("storage", (event) => {
@@ -444,38 +472,14 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 		})
 	}
 
-	const { applyBroadcast: applyCallBroadcast } = useWhatsappCall()
-	const onCallEvent = (call: WhatsappCall) => {
-		if (!call?.id) return
-		applyCallBroadcast(call, call.organisation ?? undefined)
-
-		if (call.status !== "ringing" || call.direction !== "user_initiated") return
-		alertOnce({
-			key: `whatsapp-call:${call.id}`,
-			title: ctrans("Incoming WhatsApp call"),
-			body: call.phone_number ?? "",
-			tag: `whatsapp-call-${call.id}`,
-			sound: chosenAlertSound("whatsapp"),
-			spoken: ctrans("Incoming WhatsApp call"),
-			sticky: true,
-		})
-	}
-
-	const subscribe = () => {
+	whenEchoReady(() => {
 		const shopIds: number[] = Array.isArray(layout.user?.agent_shops) ? layout.user.agent_shops : []
 		shopIds.forEach((shopId) => {
 			window.Echo.join(`chat-list.${shopId}`)
 				.listen(".chatlist", onChatListEvent)
 				.listen(".meta-chatlist", onChatListEvent)
-				.listen(".call", onCallEvent)
 		})
-	}
-	const echoReady = setInterval(() => {
-		if ((window as any).Echo?.connector?.pusher) {
-			clearInterval(echoReady)
-			subscribe()
-		}
-	}, 300)
+	})
 
 	/**
 	 * Email waits its turn. A website or WhatsApp customer who wrote in the last few minutes is

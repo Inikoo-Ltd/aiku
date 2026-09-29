@@ -10,16 +10,17 @@ namespace App\Actions\Chat\Whatsapp\Calls;
 use App\Enums\CRM\Livechat\MetaChatCallDirectionEnum;
 use App\Enums\CRM\Livechat\MetaChatCallStatusEnum;
 use App\Events\BroadcastWhatsappCallEvent;
-use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatCall;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Auth;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Chat\WithChatAgentAuthorisation;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AnswerWhatsappCall
 {
     use AsAction;
+    use WithChatAgentAuthorisation;
 
     /**
      * The agent's browser has the microphone, so it makes the SDP answer and this only
@@ -89,8 +90,8 @@ class AnswerWhatsappCall
     {
         $user = Auth::user();
 
-        if (!$user || !ChatAgent::where('user_id', $user->id)->exists()) {
-            return ['ok' => false, 'message' => __('Only agents can answer calls.'), 'code' => 403];
+        if (!$user || !$this->userIsCustomerServiceOnShop($user, $metaChatCall->shop_id)) {
+            return ['ok' => false, 'message' => __('You cannot answer this call.'), 'code' => 403];
         }
 
         return $this->handle($metaChatCall, $user, $request->validated()['sdp']);
