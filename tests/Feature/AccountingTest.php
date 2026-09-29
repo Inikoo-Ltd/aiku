@@ -3617,6 +3617,11 @@ test('dashboards show the backlog of orders not invoiced yet', function () {
     expect($table['header']['columns'])->toHaveKeys(['backlog', 'backlog_org_currency_external_minified'])
         ->and($bodyRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640);
 
+    $categoryTable = OrganisationDashboardSalesTableTabsEnum::INVOICE_CATEGORIES->table($this->organisation, $timeSeriesData);
+    $categoryRow   = collect($categoryTable['body'])->firstWhere('slug', $invoiceCategory->slug);
+
+    expect($categoryRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640);
+
     $invoiceCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
 });
 

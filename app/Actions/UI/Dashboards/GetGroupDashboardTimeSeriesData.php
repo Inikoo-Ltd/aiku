@@ -83,7 +83,7 @@ class GetGroupDashboardTimeSeriesData
         $backlog = GetOrderBacklog::run($group, $includePartners);
 
         $allShops = GetOrderBacklog::addTo(GetShopTimeSeriesStats::run($group, $fromDate, $toDate, null, $includePartners), $backlog['shops']);
-        $allInvoiceCategories = GetOrderBacklog::addTo(GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners), $backlog['invoiceCategories']);
+        $allInvoiceCategories = GetInvoiceCategoryTimeSeriesStats::run($group, $fromDate, $toDate, $includePartners, $backlog['invoiceCategories']);
 
         $shopsByType = [
             'all' => $allShops,

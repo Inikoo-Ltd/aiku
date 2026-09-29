@@ -81,7 +81,7 @@ class GetOrganisationDashboardTimeSeriesData
 
         return [
             'shops'             => GetOrderBacklog::addTo(GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate, null, $includePartners), $backlog['shops']),
-            'invoiceCategories' => GetOrderBacklog::addTo(GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['invoiceCategories']),
+            'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners, $backlog['invoiceCategories']),
             'platforms'         => GetOrderBacklog::addTo(GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['platforms']),
             'brands'            => GetOrderBacklog::addTo(GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['brands']),
         ];

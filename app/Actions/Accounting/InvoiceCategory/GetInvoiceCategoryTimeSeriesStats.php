@@ -14,7 +14,10 @@ class GetInvoiceCategoryTimeSeriesStats
 {
     use AsObject;
 
-    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null, bool $includePartners = false): array
+    /**
+     * @param array<int, array<string, float>> $backlog GetOrderBacklog values by invoice category id, so a category with only a backlog still gets its row
+     */
+    public function handle(Group|Organisation $parent, $from_date = null, $to_date = null, bool $includePartners = false, array $backlog = []): array
     {
         $query = InvoiceCategory::query()
             ->select(['invoice_categories.id', 'invoice_categories.slug', 'invoice_categories.name', 'invoice_categories.state', 'invoice_categories.colour', 'invoice_categories.organisation_id', 'invoice_categories.group_id', 'invoice_categories.currency_id'])
@@ -79,7 +82,7 @@ class GetInvoiceCategoryTimeSeriesStats
         $results = [];
         foreach ($invoiceCategories as $invoiceCategory) {
             $timeSeriesId = $invoiceCategoryToTimeSeriesMap[$invoiceCategory->id] ?? null;
-            $stats        = $allStats[$timeSeriesId] ?? [];
+            $stats        = array_merge($allStats[$timeSeriesId] ?? [], $backlog[$invoiceCategory->id] ?? []);
 
             if (empty($stats) || collect($stats)->every(fn ($value) => $value == 0)) {
                 continue;
