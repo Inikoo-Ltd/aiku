@@ -9,6 +9,7 @@
 namespace App\Actions\Comms\Mailbox;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\ChatMessage;
 use App\Models\Comms\EmailArchiveMessage;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
@@ -27,15 +28,16 @@ use Throwable;
 /**
  * Copies a shop mailbox's past correspondence into the email archive: what customers wrote and
  * what we answered, as text, linked to the customer by address. Machine mail, our own mailshots,
- * marketplaces, couriers and staff writing to each other are left out, as is the part of a mail
- * quoted from earlier ones. Already archived mails are skipped and the page reached is remembered,
+ * marketplaces, couriers, staff writing to each other and anything sent automatically (our own
+ * closed-now replies included) are left out, as are mails the chat inbox already holds and the
+ * part of a mail quoted from earlier ones. Already archived mails are skipped and the page reached is remembered,
  * so a run that stops is continued by running it again, and Gmail's rate limit is respected.
  */
 class ArchiveShopMailbox
 {
     use AsAction;
 
-    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read}';
+    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again}';
 
     private const int TEXT_LIMIT = 20000;
 
@@ -107,7 +109,8 @@ class ArchiveShopMailbox
             || ProcessInboundEmail::isAutomatedMail($other, $subject)
             || ProcessInboundEmail::isMarketplaceNotice($other)
             || ProcessInboundEmail::isCarrierAddress($other, $shop->group)
-            || (!$isOutbound && ProcessInboundEmail::isAutoReply($raw))
+            || ProcessInboundEmail::isAutoReply($raw)
+            || ChatMessage::where('metadata->gmail_message_id', (string) Arr::get($raw, 'id'))->exists()
             || GmailMessageParser::header($raw, 'List-Unsubscribe')) {
             return null;
         }
@@ -155,6 +158,11 @@ class ArchiveShopMailbox
         $shops = $slug ? Shop::where('slug', $slug)->get() : Shop::whereNotNull('settings->gmail->refresh_token')->get();
 
         foreach ($shops as $shop) {
+            if ($command->option('fresh')) {
+                EmailArchiveMessage::where('shop_id', $shop->id)->delete();
+                Cache::forget("mailbox-archive:{$shop->id}:".(int) $command->option('months'));
+            }
+
             $result = $this->handle($shop, (int) $command->option('months'), $command->option('limit') ? (int) $command->option('limit') : null);
             $command->info("{$shop->slug}: {$result['archived']} archived, {$result['skipped']} left out, {$result['failed']} failed of {$result['read']} read".($result['done'] ? '' : ' (run again to continue)'));
         }

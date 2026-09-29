@@ -53,7 +53,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use App\Actions\Chat\ChatSession\SummarizeChatSession;
 use App\Actions\Chat\ChatSession\SyncChatSessionByEmail;
 use App\Actions\Chat\ChatSession\TranslateChatMessage;
-use App\Actions\Helpers\Translations\DetectLanguageWithAI;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Helpers\Translations\Translate;
 use App\Models\Helpers\Language;
 use App\Actions\Chat\ChatSession\TranslateSessionMessages;
@@ -1706,7 +1706,7 @@ test('TranslateChatMessage leaves an agent reply alone when it is already in the
         'is_read'         => false,
     ]);
 
-    DetectLanguageWithAI::shouldRun()->andReturn($detectedLanguageCode ? Language::where('code', $detectedLanguageCode)->first() : null);
+    DetectLanguageWithJev::shouldRun()->andReturn($detectedLanguageCode ? Language::where('code', $detectedLanguageCode)->first() : null);
     Translate::shouldNotRun();
 
     TranslateChatMessage::make()->handle($chatMessage->id);
@@ -3715,7 +3715,7 @@ test('an agent email reply in another language goes out translated to the custom
         'sender_type'   => ChatSenderTypeEnum::AGENT,
     ]);
 
-    DetectLanguageWithAI::shouldRun()->andReturn($english);
+    DetectLanguageWithJev::shouldRun()->andReturn($english);
     Translate::shouldRun()->once()->andReturn('Enviado hoy');
 
     \App\Actions\Comms\Mailbox\SendChatMessageByGmail::run($reply);
@@ -7571,7 +7571,12 @@ test('the mailbox history is archived as text for the customer it was with, leav
         ->and($archive($mail('a3', 'no-reply@example.com', 'care@shop.test', 'Your report')))->toBeNull()
         ->and($archive($mail('a4', 'news@example.com', 'care@shop.test', 'Big sale', ['INBOX'], [['name' => 'List-Unsubscribe', 'value' => '<mailto:u@example.com>']])))->toBeNull()
         ->and($archive($mail('a5', 'away@example.com', 'care@shop.test', 'I am away', ['INBOX'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
+        ->and($archive($mail('a6', 'Care <care@shop.test>', $customer->email, 'We are closed at the moment', ['SENT'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
         ->and($archive($mail('a1-'.$customer->id, "Jo <{$customer->email}>", 'care@shop.test', 'My jar arrived broken'))->id)->toBe($question->id);
+
+    $inInbox = noiseTestEmailSession($this->shop, 'inbox.'.Str::lower(Str::random(6)).'@example.com', 'Already here', 'Came in through the inbox');
+    $inInbox->messages()->first()->update(['metadata' => ['gmail_message_id' => 'a7-inbox']]);
+    expect($archive($mail('a7-inbox', "Jo <{$customer->email}>", 'care@shop.test', 'Came in through the inbox')))->toBeNull();
 
     $thread = collect(\App\Actions\CRM\Customer\GetCustomerCommunications::run($customer)['threads'])->firstWhere('kind', 'email_archive');
     expect($thread['title'])->toBe('Broken jar')
@@ -7676,7 +7681,7 @@ test('a general question is answered from the knowledge base entry jev picks, an
             ? '{"objection": "", "send": true}'
             : json_encode(['answerable' => true, 'quote' => $quote, 'reply' => 'Hello! We cannot ship from the UK to Germany, as we have no LUCID registration.']);
     });
-    \App\Actions\Helpers\Translations\DetectLanguageWithAI::shouldRun()->andReturn(Language::where('code', 'en')->first());
+    \App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(Language::where('code', 'en')->first());
 
     $ask = function (string $text) {
         $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::WAITING, 'channel' => ChatChannelEnum::WEBSITE, 'shop_id' => $this->shop->id]);
