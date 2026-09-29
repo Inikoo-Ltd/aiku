@@ -97,26 +97,26 @@ const submit = (operation: string, data: Record<string, unknown> = {}) => {
         </div>
 
         <div v-if="pre_order.is_open" class="flex flex-wrap gap-2">
-            <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" size="xs" type="secondary" :label="ctrans('Supplier ordered')" :loading="isSubmitting" @click="submit('supplier_ordered')" />
-            <Button v-if="pre_order.state === 'waiting_for_goods'" size="xs" type="secondary" :label="ctrans('Goods arrived')" :loading="isSubmitting" @click="submit('goods_arrived')" />
-            <Button v-if="pre_order.has_pallet_delivery" size="xs" type="secondary" :label="ctrans('Pallet quote')" @click="openForm = 'pallet_quote'" />
-            <Button size="xs" type="secondary" :label="ctrans('Change dispatch dates')" @click="openForm = 'dispatch_dates'" />
-            <Button v-if="pre_order.balance_amount <= 0 && pre_order.state !== 'waiting_for_goods'" size="xs" type="positive" :label="ctrans('Send to warehouse')" :loading="isSubmitting" @click="submit('release')" />
-            <Button size="xs" type="negative" :label="ctrans('Cancel pre-order')" @click="openForm = 'cancel'" />
+            <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Mark the goods as ordered from the supplier. Make the deposit are no longer refundable')" size="xs" type="secondary" :label="ctrans('Supplier ordered')" :loading="isSubmitting" @click="submit('supplier_ordered')" />
+            <Button v-if="pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Record that the goods are in the warehouse and ask the customer to pay the balance. Trade pallet deliveries wait for the pallet quote first')" size="xs" type="secondary" :label="ctrans('Goods arrived')" :loading="isSubmitting" @click="submit('goods_arrived')" />
+            <Button v-if="pre_order.has_pallet_delivery" v-tooltip="ctrans('Enter the final pallet delivery cost. It replaces the shipping on the order and, if the goods have arrived, the balance is requested from the customer')" size="xs" type="secondary" :label="ctrans('Pallet quote')" @click="openForm = 'pallet_quote'" />
+            <Button v-tooltip="ctrans('Change the estimated dispatch window. The customer is emailed the new dates')" size="xs" type="secondary" :label="ctrans('Change dispatch dates')" @click="openForm = 'dispatch_dates'" />
+            <Button v-if="pre_order.balance_amount <= 0 && pre_order.state !== 'waiting_for_goods'" v-tooltip="ctrans('The pre-order is fully paid: close it and send the order to the warehouse to be picked and dispatched')" size="xs" type="positive" :label="ctrans('Send to warehouse')" :loading="isSubmitting" @click="submit('release')" />
+            <Button v-tooltip="ctrans('Choose a reason and cancel the pre-order. The refund follows the terms the customer accepted at checkout')" size="xs" type="negative" :label="ctrans('Cancel pre-order')" @click="openForm = 'cancel'" />
         </div>
 
         <div v-if="openForm === 'pallet_quote'" class="flex flex-wrap items-end gap-2">
             <label class="text-xs">{{ ctrans("Final pallet delivery cost") }}
                 <input v-model.number="palletQuote" type="number" step="0.01" min="0" class="block rounded border-gray-300 text-sm" />
             </label>
-            <Button size="xs" :label="ctrans('Save and request balance')" :loading="isSubmitting" @click="submit('pallet_quote', { amount: palletQuote })" />
+            <Button v-tooltip="ctrans('Save the pallet cost as the order shipping and, if the goods have arrived, ask the customer for the balance')" size="xs" :label="ctrans('Save and request balance')" :loading="isSubmitting" @click="submit('pallet_quote', { amount: palletQuote })" />
         </div>
 
         <div v-if="openForm === 'dispatch_dates'" class="flex flex-wrap items-end gap-2">
             <label class="text-xs">{{ ctrans("From") }} <input v-model="dispatchFrom" type="date" class="block rounded border-gray-300 text-sm" /></label>
             <label class="text-xs">{{ ctrans("To") }} <input v-model="dispatchTo" type="date" class="block rounded border-gray-300 text-sm" /></label>
             <label class="text-xs grow">{{ ctrans("Message to the customer (optional)") }} <input v-model="dispatchReason" type="text" class="block w-full rounded border-gray-300 text-sm" /></label>
-            <Button size="xs" :label="ctrans('Save and email the customer')" :loading="isSubmitting" @click="submit('dispatch_dates', { from: dispatchFrom, to: dispatchTo, reason: dispatchReason })" />
+            <Button v-tooltip="ctrans('Save the new dispatch dates and email them to the customer with your message')" size="xs" :label="ctrans('Save and email the customer')" :loading="isSubmitting" @click="submit('dispatch_dates', { from: dispatchFrom, to: dispatchTo, reason: dispatchReason })" />
         </div>
 
         <div v-if="openForm === 'cancel'" class="flex flex-wrap items-end gap-2">
@@ -126,7 +126,7 @@ const submit = (operation: string, data: Record<string, unknown> = {}) => {
                 </select>
             </label>
             <label class="text-xs grow">{{ ctrans("Notes") }} <input v-model="cancellationNotes" type="text" class="block w-full rounded border-gray-300 text-sm" /></label>
-            <Button size="xs" type="negative" :label="ctrans('Cancel and refund per the terms')" :loading="isSubmitting" @click="submit('cancel', { cancellation_reason: cancellationReason, notes: cancellationNotes })" />
+            <Button v-tooltip="ctrans('Cancel the order, refund what the terms allow for this reason and email the customer')" size="xs" type="negative" :label="ctrans('Cancel and refund per the terms')" :loading="isSubmitting" @click="submit('cancel', { cancellation_reason: cancellationReason, notes: cancellationNotes })" />
         </div>
     </div>
 </template>
