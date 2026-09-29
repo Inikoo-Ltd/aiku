@@ -72,6 +72,10 @@ const setQuantity = (product: ProductResource, value: number) => {
         return
     }
 
+    if (activeProduct.value?.id !== product.id) {
+        onSelectRow(product)
+    }
+
     if (quantity > maxQuantity(product)) {
         notify({
             title: ctrans('Stock limit reached'),
@@ -378,10 +382,11 @@ const onCancel = () => {
 
                     <div v-for="variant in variants" :key="variant.id"
                         class="variant-row cursor-pointer border-t border-gray-200 transition"
-                        :class="activeProduct?.id === variant.id ? 'bg-gray-50' : 'hover:bg-gray-50/60'"
+                        :class="activeProduct?.id === variant.id ? 'variant-row-active' : 'hover:bg-gray-50'"
+                        :aria-selected="activeProduct?.id === variant.id"
                         @click="onSelectRow(variant)">
                         <div class="min-w-0">
-                            <div class="text-base font-semibold text-gray-900">{{ variant.variant_label || variant.code }}</div>
+                            <div class="variant-row-label text-base font-semibold text-gray-900">{{ variant.variant_label || variant.code }}</div>
                             <div v-if="isLoggedIn && selectedQuantity(variant) > 0 && appliedDiscount(variant).percentageOff > 0"
                                 class="text-xs font-medium text-orange-500">
                                 -{{ percentageLabel(appliedDiscount(variant).percentageOff) }}
@@ -408,6 +413,7 @@ const onCancel = () => {
                                 <input type="number" min="0" :max="maxQuantity(variant)" inputmode="numeric"
                                     class="qty-stepper-input" :value="quantities[variant.id] ?? 0" :disabled="isSaving"
                                     :aria-label="ctrans('Quantity')"
+                                    @focus="activeProduct?.id !== variant.id && onSelectRow(variant)"
                                     @change="setQuantity(variant, Number(($event.target as HTMLInputElement).value))" />
                                 <button type="button" class="qty-stepper-button"
                                     :disabled="isSaving || (quantities[variant.id] ?? 0) >= maxQuantity(variant)"
@@ -521,6 +527,15 @@ const onCancel = () => {
         gap: 12px;
         padding: 10px 16px;
     }
+}
+
+.variant-row-active {
+    background-color: color-mix(in srgb, var(--theme-color-4) 8%, white);
+    box-shadow: inset 4px 0 0 var(--theme-color-4);
+}
+
+.variant-row-active .variant-row-label {
+    color: var(--theme-color-4);
 }
 
 .variant-row-head {
