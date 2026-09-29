@@ -434,6 +434,14 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
+        if ($masterAsset->is_indivisible != $oldMasterAsset->is_indivisible) {
+            foreach ($masterAsset->products()->whereNot('products.not_follow_master_trade_units', true)->get() as $product) {
+                UpdateProduct::make()->action($product, [
+                    'is_indivisible' => $masterAsset->is_indivisible,
+                ]);
+            }
+        }
+
         PropagateMasterContentToProducts::run($masterAsset, array_keys($masterAsset->getChanges()));
 
         if ($masterAsset->wasChanged('is_for_sale') && $masterAsset->is_for_sale) {
@@ -509,6 +517,7 @@ class UpdateMasterAsset extends OrgAction
             'master_rrps.*.value'           => ['sometimes', 'numeric', 'gt:0'],
             'master_rrps.*.independent'     => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
+            'is_indivisible'                => ['sometimes', 'boolean'],
             'barcode'                       => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
 

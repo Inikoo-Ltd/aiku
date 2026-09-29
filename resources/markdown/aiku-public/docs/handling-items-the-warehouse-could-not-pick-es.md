@@ -42,6 +42,12 @@ Cada línea muestra el SKO, cuántas unidades esperan, el producto con su precio
 
 Si el cliente debería saberlo, contacta con él antes de decidir, para que la decisión coincida con lo que quiere.
 
+### Cuando la línea es parte de un set
+
+Un producto formado por varias piezas, como una lámpara de sal con su bombilla y su cable, se reembolsa por el valor de la pieza que falta: si falta la lámpara, se reembolsa la lámpara, no un tercio del producto.
+
+Si el producto tiene activado **Sold only as a complete set** (se vende solo como set completo) en la página **Composition** (composición) de su maestro, o en la suya propia si no sigue las piezas del maestro, las demás piezas nunca se envían solas. Tras marcar <b>Don't pick</b> en una pieza, el pedido se queda en <b>Waiting</b> hasta que el almacén devuelve las demás piezas y pulsa <b>Parts put back</b> en el albarán. Entonces se reembolsa al cliente el producto completo.
+
 ## Qué muestra la página del pedido
 
 En la página del pedido, la caja de pago muestra dos líneas adicionales en cuanto al menos una línea se ha marcado <b>Don't pick</b> mientras el pedido sigue en el almacén:

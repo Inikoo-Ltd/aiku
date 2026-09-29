@@ -191,7 +191,8 @@ class EditMasterProductComposition extends OrgAction
         ];
 
         /* A bundle, or a 10ml bottle filled from a kg of oil, is not its trade unit, so its barcode is not either. */
-        $isNotOneTradeUnit = $masterProduct->tradeUnits->unique('id')->count() > 1
+        $hasSeveralTradeUnits = $masterProduct->tradeUnits->unique('id')->count() > 1;
+        $isNotOneTradeUnit    = $hasSeveralTradeUnits
             || ($masterProduct->tradeUnits->count() == 1 && (float)$masterProduct->tradeUnits->first()->pivot->quantity != 1.0);
 
         return array_values(array_filter([
@@ -247,6 +248,14 @@ class EditMasterProductComposition extends OrgAction
                         'value' => $tradeUnits,
                     ],
                     'units' => $this->getUnitsField($masterProduct, $this->getUnitsChangeConfirmation($masterProduct)),
+                    'is_indivisible' => $hasSeveralTradeUnits ? [
+                        'type'            => 'toggle',
+                        'label'           => __('Sold only as a complete set'),
+                        'value'           => $masterProduct->is_indivisible,
+                        'information'     => __('Turn on when a part is useless without the others, like a lamp with its bulb and cable. If one part can not be picked, the warehouse puts the other parts back and the customer is refunded the whole product. When off, the parts found are sent and the customer is refunded only the value of the missing ones.'),
+                        'noSaveButton'    => true,
+                        'submitOnConfirm' => true,
+                    ] : null,
                 ]),
             ],
             $isNotOneTradeUnit ? [

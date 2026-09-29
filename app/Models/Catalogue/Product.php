@@ -197,6 +197,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition
  * @property bool $not_follow_master_media
  * @property bool $is_golden_product
+ * @property bool $is_indivisible
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -329,6 +330,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_media'       => 'boolean',
         'independent_barcode'           => 'boolean',
         'is_golden_product'             => 'boolean',
+        'is_indivisible'                => 'boolean',
     ];
 
     protected $attributes = [
@@ -408,6 +410,7 @@ class Product extends Model implements Auditable, HasMedia
         'not_follow_master_media',
         'not_follow_master_trade_units',
         'is_golden_product',
+        'is_indivisible',
         'barcode',
         'independent_barcode',
         'is_for_sale',

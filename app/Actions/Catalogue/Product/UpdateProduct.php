@@ -540,6 +540,7 @@ class UpdateProduct extends OrgAction
             'not_follow_master_media'       => ['sometimes', 'boolean'],
             'independent_barcode'           => ['sometimes', 'boolean'],
             'is_golden_product'             => ['sometimes', 'boolean'],
+            'is_indivisible'                => ['sometimes', 'boolean'],
         ];
 
 

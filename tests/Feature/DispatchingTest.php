@@ -5192,3 +5192,57 @@ test('a second worker reaching picked with a stale note leaves the already picke
 
     expect($deliveryNote->fresh()->picked_at->equalTo($pickedAt))->toBeTrue();
 });
+
+test('a product made of parts counts complete sets when indivisible and each part by its value otherwise (HELP-3548)', function () {
+    $parts = collect([
+        (object)['quantity_required' => 1, 'quantity_picked' => 0, 'sku_commercial_value' => 10.95],
+        (object)['quantity_required' => 1, 'quantity_picked' => 1, 'sku_commercial_value' => 1.69],
+        (object)['quantity_required' => 1, 'quantity_picked' => 1, 'sku_commercial_value' => 5.29],
+    ]);
+    $generateInvoiceFromOrder = \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make();
+
+    expect($generateInvoiceFromOrder->getPickedFraction($parts, true))->toBe(0.0)
+        ->and(round($generateInvoiceFromOrder->getPickedFraction($parts, false), 4))->toBe(round(6.98 / 17.93, 4));
+
+    $parts[1]->sku_commercial_value = null;
+    expect(round($generateInvoiceFromOrder->getPickedFraction($parts, false), 4))->toBe(round(2 / 3, 4));
+});
+
+function deliveryNoteWithOnePartNotFound($ctx): array
+{
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
+    StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => makeOrgStock($ctx)->id,
+        'transaction_id'    => $item->transaction_id,
+        'quantity_required' => 10,
+    ]);
+    $deliveryNote->deliveryNoteItems()
+        ->whereKeyNot($item->id)
+        ->update(['is_handled' => true, 'is_dirty' => false, 'quantity_picked' => 0]);
+
+    return [$deliveryNote->refresh(), $item];
+}
+
+test('parts of a divisible set go out when another part is not found (HELP-3548)', function () {
+    [$deliveryNote] = deliveryNoteWithOnePartNotFound($this);
+
+    expect(UpdateDeliveryNoteStateToPicked::run($deliveryNote)->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
+test('a set sold only complete waits until its other parts are put back, then refunds the whole product (HELP-3548)', function () {
+    [$deliveryNote, $item] = deliveryNoteWithOnePartNotFound($this);
+    $item->transaction->model->update(['is_indivisible' => true]);
+
+    $deliveryNote = UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
+        ->and($deliveryNote->incompleteSetItems()->pluck('id')->all())->toBe([$item->id]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
+
+    $item->refresh();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED)
+        ->and((float)$item->quantity_picked)->toBe(0.0)
+        ->and($item->is_handled)->toBeTrue()
+        ->and((float)$item->transaction->refresh()->net_amount)->toBe(0.0);
+});

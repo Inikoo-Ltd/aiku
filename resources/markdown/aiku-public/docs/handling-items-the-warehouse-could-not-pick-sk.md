@@ -42,6 +42,12 @@ Každý riadok zobrazuje SKO, koľko kusov čaká, produkt s cenou bez a s DPH a
 
 Ak by sa to mal zákazník dozvedieť, kontaktujte ho pred rozhodnutím, aby rozhodnutie zodpovedalo tomu, čo chce.
 
+### Keď je riadok súčasťou súpravy
+
+Produkt zložený z viacerých dielov, napríklad soľná lampa so žiarovkou a káblom, sa vracia podľa hodnoty chýbajúceho dielu: chýbajúca lampa vráti hodnotu lampy, nie tretinu produktu.
+
+Ak má produkt zapnuté **Sold only as a complete set** (predáva sa len ako celá súprava) na stránke **Composition** (zloženie) svojho hlavného produktu, alebo na vlastnej, ak nenasleduje diely hlavného produktu, ostatné diely sa nikdy neodošlú samostatne. Po <b>Don't pick</b> na jednom diele zostáva objednávka <b>Waiting</b>, kým sklad nevráti ostatné diely na miesto a nestlačí <b>Parts put back</b> (diely vrátené na miesto) na dodacom liste. Zákazníkovi sa potom vráti hodnota celého produktu.
+
 ## Čo zobrazuje stránka objednávky
 
 Na stránke objednávky sa v platobnom rámčeku zobrazia dva ďalšie riadky, hneď ako je aspoň jeden riadok označený <b>Don't pick</b>, kým je objednávka ešte na sklade:

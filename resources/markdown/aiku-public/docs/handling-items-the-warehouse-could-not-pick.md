@@ -41,6 +41,12 @@ Each line shows the SKO, how many are waiting, the product with its net and VAT-
 
 If the customer should hear about it, contact them before you decide, so the decision matches what they want.
 
+### When the line is part of a set
+
+A product made of several parts, like a salt lamp with its bulb and cable, is refunded by the value of the part missing: a missing lamp refunds the lamp, not a third of the product.
+
+If the product has **Sold only as a complete set** switched on (on its master's **Composition** page, or its own when it does not follow the master's parts), the other parts are never sent alone. After <b>Don't pick</b> on one part, the order stays <b>Waiting</b> until the warehouse puts the other parts back and presses <b>Parts put back</b> on the delivery note. The customer is then refunded the whole product.
+
 ## What the order page shows
 
 On the order page, the payment box shows two extra lines once at least one line has been marked <b>Don't pick</b> while the order is still in the warehouse:

@@ -757,3 +757,21 @@ test('flags a product picking the discontinued twin of the right stock', functio
         ->toContain('discontinued SKU '.$deadOrgStock->code)
         ->toContain($activeOrgStock->code);
 });
+
+test('a product that does not follow its master parts keeps its own complete set flag and the master shows it (HELP-3548)', function () {
+    $follower = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
+    $rebel    = mismatchTestProduct($this->shop, $this->masterAsset, $this->tradeUnitId, 3, 10);
+    $rebel->updateQuietly(['not_follow_master_trade_units' => true]);
+
+    App\Actions\Masters\MasterAsset\UpdateMasterAsset::make()->action($this->masterAsset->refresh(), ['is_indivisible' => true]);
+
+    expect($follower->refresh()->is_indivisible)->toBeTrue()
+        ->and($rebel->refresh()->is_indivisible)->toBeFalse()
+        ->and(App\Actions\Masters\MasterAsset\GetMasterAssetAnomalies::run($this->masterAsset->refresh())[$rebel->id]['ignored_issues'])
+        ->toContain(__('Parts can be sent on their own, master is sold only as a complete set'));
+
+    $rebel->updateQuietly(['not_follow_master_trade_units' => false]);
+    App\Actions\Masters\MasterAsset\FixProductTradeUnitsFromMaster::run($this->masterAsset->refresh());
+
+    expect($rebel->refresh()->is_indivisible)->toBeTrue();
+});

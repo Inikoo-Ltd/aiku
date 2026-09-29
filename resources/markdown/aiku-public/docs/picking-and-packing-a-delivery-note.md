@@ -1,7 +1,7 @@
 ---
 title: Picking and packing a delivery note
 summary: Follow a delivery note from the moment it lands in the warehouse through picking, packing and dispatch, and see what each button on the note actually does.
-date: 2026-09-01
+date: 2026-09-29
 tags: dispatch, picking, packing
 category: dispatch
 help_routes: grp.org.warehouses.show.dispatching.delivery-notes, grp.org.warehouses.show.dispatching.picking_sessions
@@ -36,6 +36,14 @@ Pressing **Start picking** on a note moves it to **Handling** and records who is
 
 While a note is being picked, a line can turn out to need a decision the picker cannot make on the bench — for example a replacement or a release from the warehouse. When that happens the whole note moves to **Waiting** rather than letting picking continue around the problem. Once nothing is genuinely waiting any more, an **Auto Finish Waiting** button appears, and pressing it checks the note over and, if every line really is resolved, carries it on to **Picked**.
 
+## Sets sold only complete
+
+Some products are made of several parts that are useless apart, like a salt lamp with its bulb and cable. On the master product's **Composition** page these have **Sold only as a complete set** switched on. A shop product set not to follow its master's parts has the same switch on its own **Composition** page, and the master lists it among the shops that differ.
+
+If one part of such a set is not picked, the other parts of that set can not go out on their own. The note will not move to **Picked**: it goes to **Waiting**, and a **Parts put back** button appears on it. Its tooltip names the parts to take out of the tote. Put them back on their shelf, then press **Parts put back**. Their picks are reversed, so the stock returns to its location, the parts are marked not picked, and the note carries on to **Picked**. The customer is refunded the whole product.
+
+When the switch is off, the parts that were found are sent and the customer is refunded only the value of the missing part.
+
 ## From picked to packing
 
 Once every line on a note is picked, it sits in **Picked** with a **Start packing** button. For most shops this is a separate step: pressing it moves the note into **Packing**, records who is packing it, and unassigns any picking bay that was holding it. For dropshipping shops, packing is skipped — from **Picked** the button reads **Set as packed** instead, taking the note straight to **Packed** in one step.
@@ -60,6 +68,7 @@ A note can be cancelled from any stage before it is finalised or dispatched — 
 <ul>
 <li><b>See delivery notes by stage:</b> your warehouse → <b>Dispatching → Delivery notes</b>, then pick a stage tab — <b>To do</b>, <b>Queued</b>, <b>Handling</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packing</b>, <b>Packed</b>, <b>Finalised</b>, <b>Dispatched</b> or <b>All</b>.</li>
 <li><b>Work through picking sessions:</b> your warehouse → <b>Dispatching → Picking sessions</b> → stage tabs <b>In Process</b>, <b>Picking</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packed</b>.</li>
+<li><b>A part of a complete set is missing:</b> put the other parts named in the tooltip back on their shelf, then press <b>Parts put back</b> on the note.</li>
 <li><b>Move a note along:</b> open the note and use its stage button — <b>Start picking</b>, <b>Auto Finish Waiting</b>, <b>Start packing</b> / <b>Set as packed</b>, <b>Finalise and Dispatch</b>, <b>Dispatch</b>. Undo buttons (<b>Undo set as picked</b>, <b>Undo packing</b>, <b>Unpack</b>, <b>Undispatch</b>) step it back.</li>
 </ul>
 </aside>

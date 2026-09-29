@@ -61,6 +61,7 @@ class FixProductTradeUnitsFromMaster
 
         foreach ($products as $product) {
             SyncProductTradeUnits::run($product, $tradeUnitData);
+            $product->update(['is_indivisible' => $masterProduct->is_indivisible]);
 
             if ($product->webpage) {
                 $productWebpages = $cacheBreaker->getWebpages($product);
