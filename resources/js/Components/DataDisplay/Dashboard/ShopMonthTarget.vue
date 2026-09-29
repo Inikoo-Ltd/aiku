@@ -15,7 +15,7 @@ library.add(faPencil, faBullseyeArrow, faChartPie)
 
 const COLORS = { invoiced: "#1f845a", pipeline: "#f59e0b", needed: "#e5e7eb", thisYear: "#4f46e5", lastYear: "#9ca3af", target: "#1f845a" }
 
-interface MonthTarget {
+interface PeriodTarget {
     month: string
     month_label: string
     last_year_label: string
@@ -32,34 +32,39 @@ interface MonthTarget {
     needed_per_day: number | null
     remaining_days: number
     chart: { days: number[], this_year: number[], last_year: number[] }
+    granularity?: "month" | "year"
     can_edit: boolean
-    update_route: { name: string, parameters: Record<string, number> }
+    update_route: { name: string, parameters: Record<string, number> } | null
 }
 
 const props = defineProps<{
-    monthTarget: MonthTarget
+    monthTarget: PeriodTarget
+    yearTarget?: PeriodTarget
 }>()
 
+const activePeriod = ref<"month" | "year">("month")
+const periodData = computed(() => (activePeriod.value === "year" && props.yearTarget ? props.yearTarget : props.monthTarget))
+
 const money = (amount: number | null) =>
-    new Intl.NumberFormat(undefined, { style: "currency", currency: props.monthTarget.currency_code, maximumFractionDigits: 0 }).format(Math.round(amount ?? 0))
+    new Intl.NumberFormat(undefined, { style: "currency", currency: periodData.value.currency_code, maximumFractionDigits: 0 }).format(Math.round(amount ?? 0))
 
 const shortMoney = (amount: number) =>
-    new Intl.NumberFormat(undefined, { style: "currency", currency: props.monthTarget.currency_code, notation: "compact", maximumFractionDigits: 1 }).format(amount)
+    new Intl.NumberFormat(undefined, { style: "currency", currency: periodData.value.currency_code, notation: "compact", maximumFractionDigits: 1 }).format(amount)
 
 const percentOf = (part: number, whole: number | null) => (whole ? Math.min(100, (part / whole) * 100) : 0)
 
-const target = computed(() => props.monthTarget.target.amount)
+const target = computed(() => periodData.value.target.amount)
 
-const invoicedWidth = computed(() => percentOf(props.monthTarget.sales_so_far, target.value))
+const invoicedWidth = computed(() => percentOf(periodData.value.sales_so_far, target.value))
 
 const versusLastYear = computed(() => {
-    if (!props.monthTarget.last_year_so_far) {
+    if (!periodData.value.last_year_so_far) {
         return null
     }
-    return ((props.monthTarget.sales_so_far / props.monthTarget.last_year_so_far) - 1) * 100
+    return ((periodData.value.sales_so_far / periodData.value.last_year_so_far) - 1) * 100
 })
 
-const expectedVersusTarget = computed(() => (target.value ? (props.monthTarget.expected / target.value) * 100 : null))
+const expectedVersusTarget = computed(() => (target.value ? (periodData.value.expected / target.value) * 100 : null))
 
 const isEditing = ref(false)
 const isSaving = ref(false)
@@ -71,14 +76,14 @@ const startEditing = () => {
 }
 
 const saveTarget = async () => {
-    if (newTarget.value === null || newTarget.value < 0) {
+    if (newTarget.value === null || newTarget.value < 0 || !periodData.value.update_route) {
         return
     }
     isSaving.value = true
     try {
-        await axios.patch(route(props.monthTarget.update_route.name, props.monthTarget.update_route.parameters), {
+        await axios.patch(route(periodData.value.update_route.name, periodData.value.update_route.parameters), {
             target_org_currency: newTarget.value,
-            month: props.monthTarget.month,
+            month: periodData.value.month,
         })
         isEditing.value = false
         router.reload({ only: ["dashboard"] })
@@ -93,15 +98,19 @@ const saveTarget = async () => {
     }
 }
 
-const [year, month] = props.monthTarget.month.split("-").map(Number)
-const dayLabel = (day: number) => new Date(year, month - 1, day).toLocaleDateString(undefined, { day: "numeric", month: "short" })
+const dayLabel = (unit: number) => {
+    const [year, month] = periodData.value.month.split("-").map(Number)
+    return periodData.value.granularity === "year"
+        ? new Date(year, unit - 1, 1).toLocaleDateString(undefined, { month: "short" })
+        : new Date(year, month - 1, unit).toLocaleDateString(undefined, { day: "numeric", month: "short" })
+}
 
 const chartData = computed(() => ({
-    labels: props.monthTarget.chart.days.map(dayLabel),
+    labels: periodData.value.chart.days.map(dayLabel),
     datasets: [
-        { label: props.monthTarget.month_label, data: props.monthTarget.chart.this_year, borderColor: COLORS.thisYear, backgroundColor: COLORS.thisYear, tension: 0, borderWidth: 1.5, pointRadius: 2 },
-        { label: props.monthTarget.last_year_label, data: props.monthTarget.chart.last_year, borderColor: COLORS.lastYear, backgroundColor: COLORS.lastYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
-        ...(target.value ? [{ label: ctrans("Target"), data: props.monthTarget.chart.days.map(() => target.value), borderColor: COLORS.target, backgroundColor: COLORS.target, borderDash: [8, 4], borderWidth: 1.5, pointRadius: 0 }] : []),
+        { label: periodData.value.month_label, data: periodData.value.chart.this_year, borderColor: COLORS.thisYear, backgroundColor: COLORS.thisYear, tension: 0, borderWidth: 1.5, pointRadius: 2 },
+        { label: periodData.value.last_year_label, data: periodData.value.chart.last_year, borderColor: COLORS.lastYear, backgroundColor: COLORS.lastYear, borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
+        ...(target.value ? [{ label: ctrans("Target"), data: periodData.value.chart.days.map(() => target.value), borderColor: COLORS.target, backgroundColor: COLORS.target, borderDash: [8, 4], borderWidth: 1.5, pointRadius: 0 }] : []),
     ],
 }))
 
@@ -119,11 +128,11 @@ const chartOptions = computed(() => ({
     },
 }))
 
-const neededAfterPipeline = computed(() => Math.max(0, (target.value ?? 0) - props.monthTarget.sales_so_far - props.monthTarget.pipeline.amount))
+const neededAfterPipeline = computed(() => Math.max(0, (target.value ?? 0) - periodData.value.sales_so_far - periodData.value.pipeline.amount))
 
 const breakdown = computed(() => [
-    { key: "invoiced", label: ctrans("Invoiced"), amount: props.monthTarget.sales_so_far, color: COLORS.invoiced },
-    { key: "pipeline", label: ctrans("In the warehouse pipeline"), amount: props.monthTarget.pipeline.amount, color: COLORS.pipeline },
+    { key: "invoiced", label: ctrans("Invoiced"), amount: periodData.value.sales_so_far, color: COLORS.invoiced },
+    { key: "pipeline", label: ctrans("In the warehouse pipeline"), amount: periodData.value.pipeline.amount, color: COLORS.pipeline },
     { key: "needed", label: ctrans("Still needed"), amount: neededAfterPipeline.value, color: COLORS.needed },
 ])
 
@@ -148,11 +157,15 @@ const donutOptions = {
         <template #header>
             <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                 <FontAwesomeIcon icon="fal fa-bullseye-arrow" class="text-indigo-600" fixed-width aria-hidden="true" />
-                {{ ctrans(":month target", { month: monthTarget.month_label }) }}
+                {{ ctrans(":month target", { month: periodData.month_label }) }}
             </span>
             <span class="text-xs text-gray-400">
-                {{ ctrans(":invoiced invoiced · :pipeline in the pipeline · :days days left", { invoiced: money(monthTarget.sales_so_far), pipeline: money(monthTarget.pipeline.amount), days: String(monthTarget.remaining_days) }) }}
+                {{ ctrans(":invoiced invoiced · :pipeline in the pipeline · :days days left", { invoiced: money(periodData.sales_so_far), pipeline: money(periodData.pipeline.amount), days: String(periodData.remaining_days) }) }}
             </span>
+            <div v-if="yearTarget" class="ml-auto flex rounded-md border border-gray-200 text-xs">
+                <button type="button" class="rounded-l-md px-2.5 py-1" :class="activePeriod === 'month' ? 'bg-indigo-600 text-white' : 'text-gray-500'" @click="activePeriod = 'month'">{{ ctrans("This month") }}</button>
+                <button type="button" class="rounded-r-md px-2.5 py-1" :class="activePeriod === 'year' ? 'bg-indigo-600 text-white' : 'text-gray-500'" @click="activePeriod = 'year'">{{ ctrans("Year to date") }}</button>
+            </div>
         </template>
 
         <div class="grid gap-6 lg:grid-cols-5">
@@ -170,18 +183,18 @@ const donutOptions = {
                         </form>
                         <p v-else class="text-2xl font-bold tabular-nums">
                             {{ target ? money(target) : ctrans("No target") }}
-                            <button v-if="monthTarget.can_edit" type="button" class="ml-1 align-middle text-sm text-gray-400 hover:text-gray-700" :aria-label="ctrans('Edit target')" @click="startEditing">
+                            <button v-if="periodData.can_edit" type="button" class="ml-1 align-middle text-sm text-gray-400 hover:text-gray-700" :aria-label="ctrans('Edit target')" @click="startEditing">
                                 <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
                             </button>
                         </p>
                         <p class="text-xs text-gray-400">
-                            <template v-if="!monthTarget.target.is_default">{{ ctrans("Target set by :name", { name: monthTarget.target.set_by ?? ctrans("management") }) }}</template>
-                            <template v-else-if="target">{{ ctrans("Target: :last_year sales plus :growth%", { last_year: monthTarget.last_year_label, growth: String(Math.round(monthTarget.target.growth * 100)) }) }}</template>
+                            <template v-if="!periodData.target.is_default">{{ ctrans("Target set by :name", { name: periodData.target.set_by ?? ctrans("management") }) }}</template>
+                            <template v-else-if="target">{{ ctrans("Target: :last_year sales plus :growth%", { last_year: periodData.last_year_label, growth: String(Math.round(periodData.target.growth * 100)) }) }}</template>
                         </p>
                     </div>
                     <div class="text-right">
-                        <p class="text-xs text-gray-500">{{ ctrans("Expected by month end") }}</p>
-                        <p class="text-2xl font-bold tabular-nums" :class="expectedVersusTarget !== null && expectedVersusTarget < 100 ? 'text-red-600' : 'text-green-600'">{{ money(monthTarget.expected) }}</p>
+                        <p class="text-xs text-gray-500">{{ periodData.granularity === "year" ? ctrans("Expected by year end") : ctrans("Expected by month end") }}</p>
+                        <p class="text-2xl font-bold tabular-nums" :class="expectedVersusTarget !== null && expectedVersusTarget < 100 ? 'text-red-600' : 'text-green-600'">{{ money(periodData.expected) }}</p>
                         <p v-if="expectedVersusTarget !== null" class="text-xs text-gray-400">{{ ctrans(":percent% of target", { percent: String(Math.round(expectedVersusTarget)) }) }}</p>
                     </div>
                 </div>
@@ -212,8 +225,8 @@ const donutOptions = {
 
                 <p class="mt-3 text-xs text-gray-500">
                     <span v-if="versusLastYear !== null" :class="versusLastYear < 0 ? 'text-red-600' : 'text-green-600'">{{ ctrans(":change% vs same days last year", { change: (versusLastYear > 0 ? "+" : "") + versusLastYear.toFixed(1) }) }}</span>
-                    <template v-if="monthTarget.needed_per_day"> · {{ ctrans(":amount needed per day", { amount: money(monthTarget.needed_per_day) }) }}</template>
-                    · {{ ctrans(":orders orders in the pipeline", { orders: String(monthTarget.pipeline.orders) }) }}
+                    <template v-if="periodData.needed_per_day"> · {{ ctrans(":amount needed per day", { amount: money(periodData.needed_per_day) }) }}</template>
+                    · {{ ctrans(":orders orders in the pipeline", { orders: String(periodData.pipeline.orders) }) }}
                 </p>
             </div>
         </div>
