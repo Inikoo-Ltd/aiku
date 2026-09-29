@@ -559,8 +559,9 @@ class ShowGroupChatAutomation extends OrgAction
 
     /**
      * The latest answered messages side by side: what the customer wrote, what the inbox
-     * suggested, what staff used and what they actually wrote back. Reading these is how the
-     * questions, thresholds and queries get better.
+     * suggested (with the message's latest draft, so a redrafted message is one row), what staff
+     * used and what they actually wrote back. Reading these is how the questions, thresholds and
+     * queries get better.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -568,11 +569,18 @@ class ShowGroupChatAutomation extends OrgAction
     {
         return DB::table('chat_turn_readings as reading')
             ->join('shops', 'shops.id', '=', 'reading.shop_id')
-            ->leftJoin('chat_ai_drafts as draft', function ($join) {
-                $join->on('draft.trigger_message_id', '=', 'reading.customer_message_id')
+            ->leftJoinSub(
+                DB::table('chat_ai_drafts')
+                    ->selectRaw('distinct on (trigger_message_id, chat_session_id, meta_chat_session_id) text, status, trigger_message_id, chat_session_id, meta_chat_session_id')
+                    ->orderBy('trigger_message_id')
+                    ->orderBy('chat_session_id')
+                    ->orderBy('meta_chat_session_id')
+                    ->orderByDesc('id'),
+                'draft',
+                fn ($join) => $join->on('draft.trigger_message_id', '=', 'reading.customer_message_id')
                     ->where(fn ($query) => $query->whereColumn('draft.chat_session_id', 'reading.chat_session_id')
-                        ->orWhereColumn('draft.meta_chat_session_id', 'reading.meta_chat_session_id'));
-            })
+                        ->orWhereColumn('draft.meta_chat_session_id', 'reading.meta_chat_session_id'))
+            )
             ->where('reading.group_id', $group->id)
             ->whereNotNull('reading.replied_at')
             ->latest('reading.id')

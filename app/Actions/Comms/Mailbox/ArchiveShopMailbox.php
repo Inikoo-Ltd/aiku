@@ -28,14 +28,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
 /**
- * Copies a shop mailbox's past correspondence into the email archive: what customers wrote and
- * what we answered, as text, linked to the customer by address. Machine mail, our own mailshots,
- * marketplaces, couriers, staff writing to each other and anything sent automatically (our own
- * closed-now replies included) are left out, as are mails the chat inbox already holds and the
- * part of a mail quoted from earlier ones. Already archived mails are skipped and the page
- * reached is remembered, so a run that stops is continued by running it again. With --queue each
- * mailbox is read one page per job; each mailbox is read a few mails at a time, well inside
- * Gmail's limit per mailbox, and a page Gmail refuses is read again a minute later, giving up
+ * Copies a shop mailbox's past correspondence with its customers into the email archive: what
+ * they wrote and what we answered, as text, linked to the one customer the address belongs to;
+ * mail with anybody else is not kept. Machine mail, our own mailshots, marketplaces, couriers,
+ * staff writing to each other and anything sent automatically (our own closed-now replies
+ * included) are left out, as are mails the chat inbox already holds and the part of a mail quoted
+ * from earlier ones. Already archived mails are skipped and the page reached is remembered, so a
+ * run that stops is continued by running it again. With --queue each mailbox is read one page
+ * per job on the low-priority queue, one mailbox after another, a few mails at a time, well
+ * inside Gmail's limit per mailbox; a page Gmail refuses is read again a minute later, giving up
  * after MAX_RATE_LIMITED refusals in a row. Starting the command again replaces the chain of jobs
  * a mailbox already has, so two never read the same mailbox.
  */
@@ -228,9 +229,10 @@ class ArchiveShopMailbox
             return null;
         }
 
-        $text = trim(strip_tags(GmailMessageParser::body($raw)));
+        $text       = trim(strip_tags(GmailMessageParser::body($raw)));
+        $customerId = $text === '' ? null : $this->customerId($shop, $other);
 
-        if ($text === '') {
+        if (!$customerId) {
             return null;
         }
 
@@ -239,7 +241,7 @@ class ArchiveShopMailbox
             [
                 'group_id'            => $shop->group_id,
                 'organisation_id'     => $shop->organisation_id,
-                'customer_id'         => $this->customerId($shop, $other),
+                'customer_id'         => $customerId,
                 'gmail_thread_id'     => GmailMessageParser::threadId($raw),
                 'is_outbound'         => $isOutbound,
                 'from_address'        => $from ?: null,
@@ -252,10 +254,19 @@ class ArchiveShopMailbox
         );
     }
 
+    /**
+     * The one customer of the shop with this address, on their record or a web user of theirs.
+     * An address two customers share belongs to neither: their letters must never show on the
+     * wrong customer's page.
+     */
     private function customerId(Shop $shop, string $address): ?int
     {
-        return Customer::where('shop_id', $shop->id)->where('email', $address)->value('id')
-            ?? WebUser::where('shop_id', $shop->id)->where('email', $address)->value('customer_id');
+        $ids = Customer::where('shop_id', $shop->id)->where('email', $address)->pluck('id')
+            ->merge(WebUser::where('shop_id', $shop->id)->where('email', $address)->pluck('customer_id'))
+            ->filter()
+            ->unique();
+
+        return $ids->count() === 1 ? $ids->first() : null;
     }
 
     private function isRateLimit(Throwable $exception): bool

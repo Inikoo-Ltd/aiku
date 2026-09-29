@@ -17,6 +17,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
 use App\Models\Helpers\Ticket;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -36,6 +37,15 @@ class RaiseChatEngineerTicket
      * @return array{reference: string, url: string, added: bool}|null
      */
     public function handle(ChatSession|MetaChatSession $chatSession, ChatAgent $agent): ?array
+    {
+        return Cache::lock('chat-engineer-ticket:'.class_basename($chatSession).':'.$chatSession->id, 60)
+            ->get(fn () => $this->raise($chatSession->refresh(), $agent)) ?: null;
+    }
+
+    /**
+     * @return array{reference: string, url: string, added: bool}|null
+     */
+    private function raise(ChatSession|MetaChatSession $chatSession, ChatAgent $agent): ?array
     {
         $suggestions = ClassifyChatTurn::suggestions($chatSession);
         $engineer    = $suggestions['engineer'] ?? null;

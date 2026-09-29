@@ -131,10 +131,11 @@ class ClassifyChatTurn
      */
     public static function forSession(ChatSession|MetaChatSession $chatSession): ?array
     {
-        $latestId = $chatSession->messages()->whereIn('sender_type', [ChatSenderTypeEnum::USER, ChatSenderTypeEnum::GUEST])->max('id');
+        $latest   = $chatSession->messages()->whereIn('sender_type', [ChatSenderTypeEnum::USER, ChatSenderTypeEnum::GUEST])->latest('id')->first(['id', 'metadata']);
+        $latestId = $latest?->id;
         $text     = self::customerWrote($chatSession);
 
-        if (!$latestId || $text === '') {
+        if (!$latestId || $text === '' || data_get($latest->metadata, 'auto_reply')) {
             return null;
         }
 
@@ -224,15 +225,11 @@ class ClassifyChatTurn
 
         $ask      = (string) Arr::get($answers, 'ask.choice');
         $facts    = match (true) {
-            in_array($branch, ['order', 'stock', 'product', 'problem'], true)          => self::facts($chatSession, $customerWrote),
+            in_array($branch, ['order', 'stock', 'product', 'problem'], true)          => self::facts($chatSession, $customerWrote, $branch),
             $asking === 'ask' && self::sureOf($answers, 'ask', $ask, self::ASK_SURE) => GetChatShopFacts::run($chatSession, $ask, $customerWrote),
             default                                                                  => [],
         };
         $nextStep = self::nextStep($answers);
-
-        if (($nextStep['kind'] ?? null) === 'close') {
-            $nextStep['message'] = self::closingMessage($chatSession, $customerWrote, $weSaid);
-        }
 
         $turn = [
             'next_step' => $nextStep,
@@ -263,7 +260,7 @@ class ClassifyChatTurn
                     'guides'    => array_column($turn['guides'], 'title'),
                     'facts'     => $facts,
                     'engineer'  => $engineer ? trim(($engineer['platform_label'] ?? '').' · '.($engineer['symptom_label'] ?? '').' '.($engineer['ticket']['reference'] ?? ''), ' ·') : null,
-                    'next_step' => $nextStep ? trim($nextStep['kind'].': '.($nextStep['message'] ?? '')) : null,
+                    'next_step' => $nextStep['kind'] ?? null,
                 ]),
                 'branch'               => $branch,
                 'topic'                => $topic?->value,
@@ -274,8 +271,11 @@ class ClassifyChatTurn
             ])
             : null;
 
+        $messageAt = $customerMessageId ? $chatSession->messages()->whereKey($customerMessageId)->value('created_at') : null;
+
         SetChatSessionMetadata::run($chatSession, [self::KEY => [
             'at'         => now()->toISOString(),
+            'message_at' => $messageAt ? Carbon::parse($messageAt)->toISOString() : null,
             'reading_id' => $reading?->id,
             'branch'     => $branch,
             'topic'      => $topic?->value,
@@ -322,9 +322,9 @@ class ClassifyChatTurn
     }
 
     /**
-     * A short, warm goodbye for staff to send before ending the chat, in the customer's language,
-     * naming what we helped with when what we last said makes it clear. Checked like a draft:
-     * in any other language, or nothing back, and there is no message, only the button.
+     * A short, warm goodbye for staff to send before ending the chat, written when they ask for
+     * it, in the customer's language, naming what we helped with when what we last said makes it
+     * clear. Checked like a draft: in any other language, or nothing back, and there is no message.
      */
     public static function closingMessage(ChatSession|MetaChatSession $chatSession, string $customerWrote, string $weSaid): ?string
     {
@@ -396,15 +396,21 @@ class ClassifyChatTurn
 
     /**
      * What aiku holds about the orders and products the customer writes about, one line each,
-     * for the agent to read before answering: only this customer's orders, products by code.
+     * for the agent to read before answering: only this customer's orders, products by code. Their
+     * latest order only when the message is about an order; a product question gets an order
+     * only when they name it.
      *
      * @return array<int, string>
      */
-    public static function facts(ChatSession|MetaChatSession $chatSession, string $customerWrote): array
+    public static function facts(ChatSession|MetaChatSession $chatSession, string $customerWrote, ?string $branch = null): array
     {
         $shop     = $chatSession->shop;
         $customer = DraftChatReply::knownCustomer($chatSession);
         $orders   = $customer ? GetChatOrderFacts::run($customer, $customerWrote) : null;
+
+        if ($orders && !$orders['order_named_by_customer'] && !in_array($branch, ['order', 'problem'], true)) {
+            $orders = null;
+        }
 
         $orderLine = fn (array $order) => $order['reference'].': '.$order['status']
             .(isset($order['dispatched_on']) ? ', '.__('dispatched').' '.$order['dispatched_on'] : '')
@@ -509,7 +515,8 @@ class ClassifyChatTurn
     }
 
     /**
-     * The guides and the programmer ticket staff may use, while nobody has answered since.
+     * The guides and the programmer ticket staff may use, while nobody has answered the message
+     * they were read from: an answer sent while Jev was still reading counts too.
      *
      * @return array{reading_id: int|null, guides: array<int, array<string, mixed>>, engineer: array<string, mixed>|null, facts: array<int, string>, next_step: array<string, mixed>|null}|null
      */
@@ -524,7 +531,7 @@ class ClassifyChatTurn
         $answeredAt = $chatSession->last_agent_message_at;
         $raised     = empty($turn['engineer']) ? null : data_get($chatSession->metadata, self::RAISED_KEY);
 
-        if (!$raised && $answeredAt && Carbon::parse($answeredAt)->gte(Carbon::parse($turn['at']))) {
+        if (!$raised && $answeredAt && Carbon::parse($answeredAt)->gte(Carbon::parse($turn['message_at'] ?? $turn['at']))) {
             return null;
         }
 

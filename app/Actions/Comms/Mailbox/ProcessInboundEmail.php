@@ -286,10 +286,9 @@ class ProcessInboundEmail
             ClassifyChatSessionNoise::dispatch($session);
         }
 
-        SendOutOfHoursReply::dispatch($session, $message);
-        FlagUrgentChatRequest::dispatch($session);
-
         if (! $isAutoReply) {
+            SendOutOfHoursReply::dispatch($session, $message);
+            FlagUrgentChatRequest::dispatch($session);
             SummarizeLongEmail::dispatch($message);
         }
 

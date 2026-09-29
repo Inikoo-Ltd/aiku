@@ -56,6 +56,10 @@ class LearnChatKnowledge
             $result['replies']++;
             $rule = $this->extract($shop, $pair['question'], $pair['reply']);
 
+            if ($rule === false) {
+                break;
+            }
+
             if ($rule) {
                 $this->remember($shop, $rule, $pair);
                 $result['rules']++;
@@ -134,9 +138,12 @@ class LearnChatKnowledge
     }
 
     /**
-     * @return array{title: string, note: string, temporary: bool}|null
+     * False when the model gave no answer: the reply is left to be read the next night instead of
+     * being counted as read, and the shop's run stops there.
+     *
+     * @return array{title: string, note: string, temporary: bool}|false|null
      */
-    private function extract(Shop $shop, string $question, string $reply): ?array
+    private function extract(Shop $shop, string $question, string $reply): array|false|null
     {
         if (mb_strlen(trim($reply)) < 25) {
             return null;
@@ -172,7 +179,11 @@ class LearnChatKnowledge
         $response = AskToAi::run($prompt, config('chat.learning_model'));
         $data     = is_string($response) ? json_decode(trim(preg_replace('/^```(?:json)?|```$/m', '', trim($response))), true) : null;
 
-        if (!is_array($data) || Arr::get($data, 'general') !== true || trim((string) Arr::get($data, 'note')) === '') {
+        if (!is_array($data)) {
+            return false;
+        }
+
+        if (Arr::get($data, 'general') !== true || trim((string) Arr::get($data, 'note')) === '') {
             return null;
         }
 

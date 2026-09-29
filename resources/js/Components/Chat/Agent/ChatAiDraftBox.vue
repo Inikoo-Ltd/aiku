@@ -47,7 +47,7 @@ const draft = ref<Draft | null>(null)
 const guides = ref<Guide[]>([])
 const engineer = ref<Engineer | null>(null)
 const facts = ref<string[]>([])
-const nextStep = ref<{ kind: "close" | "wait" | "owed", probability: number, message?: string | null } | null>(null)
+const nextStep = ref<{ kind: "close" | "wait" | "owed", probability: number } | null>(null)
 const readingId = ref<number | null>(null)
 const raising = ref(false)
 const raised = ref<{ reference: string, url: string, added: boolean } | null>(null)
@@ -103,7 +103,7 @@ const useText = (text: string) => {
     emit("use", text)
 }
 
-const recordUse = (kind: "guide" | "close" | "closing_message" | "wait") => {
+const recordUse = (kind: "guide" | "close" | "wait") => {
     if (!props.sessionUlid) return
     const url = props.whatsapp
         ? route("grp.api.chats.meta.sessions.suggestion_used", [props.sessionUlid])
@@ -122,9 +122,26 @@ const takeNextStep = (action: "close" | "wait") => {
     emit("action", action)
 }
 
-const useGoodbye = (message: string) => {
-    recordUse("closing_message")
-    useText(message)
+const writingGoodbye = ref(false)
+const failure = ref<string | null>(null)
+
+const writeGoodbye = async () => {
+    if (!props.sessionUlid || writingGoodbye.value) return
+    writingGoodbye.value = true
+    failure.value = null
+    const sessionUlid = props.sessionUlid
+
+    try {
+        const url = props.whatsapp
+            ? route("grp.api.chats.meta.sessions.goodbye", [sessionUlid])
+            : route("grp.api.chats.sessions.goodbye", [sessionUlid])
+        const { data } = await axios.post(url)
+        if (sessionUlid === props.sessionUlid && data?.data?.message) useText(data.data.message)
+    } catch (error: any) {
+        if (sessionUlid === props.sessionUlid) failure.value = error?.response?.data?.message ?? ctrans("No goodbye could be written, please write your own")
+    } finally {
+        writingGoodbye.value = false
+    }
 }
 const alsoGuides = computed(() => main.value === "guide" ? shownGuides.value.slice(1) : shownGuides.value)
 const raisedReference = computed(() => raised.value?.reference ?? engineer.value?.raised ?? null)
@@ -140,8 +157,9 @@ const raise = async () => {
         const sessionUlid = props.sessionUlid
         const { data } = await axios.post(url)
         if (sessionUlid === props.sessionUlid) raised.value = data?.data ?? null
-    } catch {
+    } catch (error: any) {
         await load()
+        failure.value = error?.response?.data?.message ?? ctrans("The ticket could not be raised")
     } finally {
         raising.value = false
     }
@@ -187,6 +205,7 @@ watch(() => props.sessionUlid, () => {
     stopListening()
     usedKey.value = null
     raised.value = null
+    failure.value = null
     load()
     listen()
 }, { immediate: true })
@@ -195,7 +214,8 @@ onBeforeUnmount(stopListening)
 </script>
 
 <template>
-    <div v-if="main || (used && engineer) || facts.length" class="mb-1.5 text-xs">
+    <div v-if="main || (used && engineer) || facts.length || failure" class="mb-1.5 text-xs">
+        <p v-if="failure" class="mb-1 px-1 text-[11px] text-red-600">{{ failure }}</p>
         <div v-if="facts.length" class="mb-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 px-1 text-[11px] text-gray-500">
             <span class="flex items-center gap-1"><FontAwesomeIcon :icon="faDatabase" fixed-width class="text-sky-600" />{{ ctrans("In aiku:") }}</span>
             <span v-for="fact in facts" :key="fact" class="text-gray-700">{{ fact }}</span>
@@ -267,12 +287,11 @@ onBeforeUnmount(stopListening)
                 <FontAwesomeIcon :icon="faCommentCheck" fixed-width />
                 <span>{{ nextStep.kind === "close" ? ctrans("The customer seems to be done") : nextStep.kind === "wait" ? ctrans("The customer is sending us something") : ctrans("We still owe this customer something") }} · {{ ctrans(":percent% sure", { percent: Math.round(nextStep.probability * 100) }) }}</span>
             </div>
-            <p v-if="nextStep.kind === 'close' && nextStep.message" class="mt-1 whitespace-pre-line text-gray-800">{{ nextStep.message }}</p>
-            <p v-else-if="nextStep.kind === 'owed'" class="mt-1 text-gray-600">{{ ctrans("Check what we promised before closing.") }}</p>
+            <p v-if="nextStep.kind === 'owed'" class="mt-1 text-gray-600">{{ ctrans("Check what we promised before closing.") }}</p>
             <div v-if="!preview && nextStep.kind !== 'owed'" class="mt-2 flex gap-2">
-                <button v-if="nextStep.kind === 'close' && nextStep.message" type="button" @click="useGoodbye(nextStep.message)"
-                    class="rounded-md bg-gray-700 px-2.5 py-0.5 text-[11px] font-medium text-white hover:bg-gray-600">
-                    {{ ctrans("Use goodbye message") }}
+                <button v-if="nextStep.kind === 'close'" type="button" :disabled="writingGoodbye" @click="writeGoodbye"
+                    class="rounded-md bg-gray-700 px-2.5 py-0.5 text-[11px] font-medium text-white hover:bg-gray-600 disabled:opacity-50">
+                    {{ writingGoodbye ? ctrans("Writing…") : ctrans("Write a goodbye") }}
                 </button>
                 <button v-if="nextStep.kind === 'close'" type="button" @click="takeNextStep('close')"
                     class="rounded-md px-2.5 py-0.5 text-[11px] text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-white">

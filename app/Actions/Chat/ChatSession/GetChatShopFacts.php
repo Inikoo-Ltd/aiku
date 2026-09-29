@@ -49,7 +49,7 @@ class GetChatShopFacts
         }
 
         return array_values(array_filter(match ($ask) {
-            'ship_to_country'  => [$this->bannedCountries($shop), $this->shippingCost($shop, $customer), $this->page($shop, WebpageSubTypeEnum::SHIPPING, __('Delivery'))],
+            'ship_to_country'  => [$this->bannedCountries($shop), $this->page($shop, WebpageSubTypeEnum::SHIPPING, __('Delivery'))],
             'shipping_cost'    => [$this->shippingCost($shop, $customer), $this->freeShipping($shop), $this->page($shop, WebpageSubTypeEnum::SHIPPING, __('Delivery'))],
             'delivery_time'    => [$this->page($shop, WebpageSubTypeEnum::SHIPPING, __('Delivery'))],
             'returns_policy'   => [$this->page($shop, WebpageSubTypeEnum::RETURNS, __('Returns'))],
@@ -58,7 +58,7 @@ class GetChatShopFacts
             'refund_status'    => $customer ? $this->refunds($customer) : [],
             'balance'          => [$customer ? __('Balance').': '.$this->money($shop, (float) $customer->balance) : null],
             'payment_methods'  => [$this->paymentMethods($shop)],
-            'vat'              => [__('Prices on the website are without VAT; VAT is added at checkout by the delivery country and tax number')],
+            'vat'              => [],
             'discount_missing' => [$this->firstOrderBonus($shop, $customer), ...$this->customerOffers($customer)],
             'product_price'    => $this->prices($shop, $customerWrote),
             default            => [],
@@ -118,12 +118,13 @@ class GetChatShopFacts
     }
 
     /**
-     * The delivery price steps of the zone for the customer's delivery country, or the shop's own
-     * country when we do not know the customer, from the shipping zones the checkout uses.
+     * The delivery price steps of the zone for the customer's own delivery country, from the
+     * shipping zones the checkout uses. Nothing for somebody we do not know: the shop's own
+     * country is a guess, and a price for the wrong country reads as a fact.
      */
     private function shippingCost(Shop $shop, ?Customer $customer): ?string
     {
-        $country = $customer?->deliveryAddress?->country_code ?? $shop->country?->code;
+        $country = $customer?->deliveryAddress?->country_code;
         $zone    = $country ? $shop->currentShippingZoneSchema?->shippingZones()
             ->where('status', true)
             ->get()

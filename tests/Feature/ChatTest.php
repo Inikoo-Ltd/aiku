@@ -7576,7 +7576,15 @@ test('the mailbox history is archived as text for the customer it was with, leav
         ->and($archive($mail('a4', 'news@example.com', 'care@shop.test', 'Big sale', ['INBOX'], [['name' => 'List-Unsubscribe', 'value' => '<mailto:u@example.com>']])))->toBeNull()
         ->and($archive($mail('a5', 'away@example.com', 'care@shop.test', 'I am away', ['INBOX'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
         ->and($archive($mail('a6', 'Care <care@shop.test>', $customer->email, 'We are closed at the moment', ['SENT'], [['name' => 'Auto-Submitted', 'value' => 'auto-replied']])))->toBeNull()
-        ->and($archive($mail('a1-'.$customer->id, "Jo <{$customer->email}>", 'care@shop.test', 'My jar arrived broken'))->id)->toBe($question->id);
+        ->and($archive($mail('a1-'.$customer->id, "Jo <{$customer->email}>", 'care@shop.test', 'My jar arrived broken'))->id)->toBe($question->id)
+        ->and($archive($mail('a8', 'a.supplier@example.com', 'care@shop.test', 'Our new price list')))->toBeNull();
+
+    $shared  = 'shared.'.Str::lower(Str::random(6)).'@example.com';
+    $twoOfUs = [createOwnCustomer($this->shop, 'archive-shared-a-'.$customer->id), createOwnCustomer($this->shop, 'archive-shared-b-'.$customer->id)];
+    foreach ($twoOfUs as $one) {
+        $one->update(['email' => $shared]);
+    }
+    expect($archive($mail('a9', "Jo <$shared>", 'care@shop.test', 'Where is my order?')))->toBeNull();
 
     $inInbox = noiseTestEmailSession($this->shop, 'inbox.'.Str::lower(Str::random(6)).'@example.com', 'Already here', 'Came in through the inbox');
     $inInbox->messages()->first()->update(['metadata' => ['gmail_message_id' => 'a7-inbox']]);
@@ -7598,6 +7606,9 @@ test('the mailbox is archived a page per job, a few mails at a time, and a page 
     \Illuminate\Support\Carbon::setTestNow(now());
     \Illuminate\Support\Sleep::fake();
 
+    foreach (['p1', 'p2'] as $id) {
+        createOwnCustomer($this->shop, "archive-page-$id")->update(['email' => "page.$id@example.com"]);
+    }
     $raw = fn (string $id) => [
         'id' => $id, 'threadId' => 'th-page', 'labelIds' => ['INBOX'], 'internalDate' => '1780000000000',
         'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => "page.$id@example.com"], ['name' => 'To', 'value' => 'care@shop.test'], ['name' => 'Subject', 'value' => 'Hello']],
@@ -7730,6 +7741,11 @@ test('what agents keep telling different customers is learned and put to staff o
     expect($dispatch?->only(['status', 'customers_count', 'conflict']))->toBe(['status' => 'conflict', 'customers_count' => 3, 'conflict' => 'Dispatch times'])
         ->and(\App\Models\Chat\ChatKnowledgeEntry::forShop($shop)->where('source_type', 'learned')->count())->toBe(0);
 
+    $rule = null;
+    $thread('Do you ship to Spain?', 'Yes, we deliver to Spain within five working days of dispatch.', 'no-answer');
+    expect(\App\Actions\Chat\ChatSession\LearnChatKnowledge::run($shop)['rules'])->toBe(0)
+        ->and(\App\Models\Comms\EmailArchiveMessage::where('gmail_message_id', 'r-no-answer')->value('learned_at'))->toBeNull();
+
     \App\Models\Chat\ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
     \App\Models\Comms\EmailArchiveMessage::where('gmail_thread_id', 'like', 'th-learn-%')->delete();
 });
@@ -7780,8 +7796,11 @@ test('a general question is answered from the knowledge base entry jev picks, an
         ->and($draft->facts['knowledge'])->toBe($note->id)
         ->and($draft->facts['ask'])->toBe('ship_to_country');
 
-    $quote = 'We ship to Germany every day.';
+    $quote = 'We ship to Germany every single working day of the week.';
     expect($ask('Can you deliver to Germany please?'))->toBeNull();
+
+    $quote = 'have a LUCID registration.';
+    expect($ask('Do you have a LUCID registration for Germany?'))->toBeNull();
 
     $saved = \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, null, ['title' => 'Testers', 'body' => 'Diffuser testers are not available until the website variants are fixed.'], $this->user);
     \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, $saved, ['title' => 'Diffuser testers', 'body' => $saved->body]);
@@ -10776,6 +10795,32 @@ test('the jobs a customer message starts share one reading of it and never write
     \App\Actions\Chat\ChatSession\ClassifyChatTurn::markUsed($session, $reading->id + 1000, 'wait');
     \App\Actions\Chat\ChatSession\ClassifyChatTurn::markUsed($session, $reading->id, 'wait');
     expect($reading->refresh()->used)->toBe('wait');
+});
+
+test('a thanks gets the end chat card with no goodbye written until staff ask, an out of office is not read, and an answer sent while jev reads hides the card', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->never();
+    $jevCalls = 0;
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(function () use (&$jevCalls) {
+        $jevCalls++;
+
+        return ['wants_something' => ['type' => 'noul', 'noul' => 0.05], 'act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.8]]];
+    });
+
+    $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::WAITING, 'channel' => ChatChannelEnum::EMAIL, 'shop_id' => $this->shop->id]);
+    $session->messages()->create(['message_text' => 'Thank you so much, all sorted', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::USER, 'created_at' => now()->subMinutes(2)]);
+
+    $turn = \App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($session);
+    expect($turn['next_step'])->toBe(['kind' => 'close', 'probability' => 0.8])
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh())['next_step']['kind'])->toBe('close');
+
+    $session->update(['last_agent_message_at' => now()->subMinute()]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::suggestions($session->refresh()))->toBeNull();
+
+    $jevCalls = 0;
+    $session->messages()->create(['message_text' => 'I am out of the office until Monday', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::USER, 'metadata' => ['auto_reply' => true]]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::forSession($session->refresh()))->toBeNull()
+        ->and($jevCalls)->toBe(0);
 });
 
 test('jev works out what the customer wants in rounds, and only a clear single question can be drafted', function () {
