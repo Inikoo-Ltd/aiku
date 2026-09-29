@@ -3758,28 +3758,62 @@ test('inbound gmail from an unknown sender becomes a guest email session and a s
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g2/modify') && $request['addLabelIds'] === ['L2'] && $request['removeLabelIds'] === ['INBOX', 'UNREAD']);
 });
 
-test('inbound gmail from a sender on the labeled_senders list is filed under its own label without becoming a chat', function () {
+test('a showroom sender is filed unread under its label without becoming a chat, even when it was once marked as spam', function () {
     $settings = $this->shop->settings ?? [];
-    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
-    $settings['gmail']['labeled_senders'] = ['notifications@calendly.com' => 'aiku/showroom'];
+    $settings['gmail'] = [
+        'email'           => 'care@shop.test',
+        'refresh_token'   => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'      => '1',
+        'blocked_senders' => ['notifications@calendly.com'],
+    ];
     $this->shop->update(['settings' => $settings]);
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['gmail_showroom_senders' => ['@Calendly.com']]);
+
+    expect(Arr::get($this->shop->fresh()->settings, 'gmail.labeled_senders'))->toBe(['@calendly.com' => 'aiku/showroom']);
 
     \Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
-        'gmail.googleapis.com/gmail/v1/users/me/messages/g1*' => \Illuminate\Support\Facades\Http::response([
-            'id' => 'g1', 'threadId' => 't-g1',
-            'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => 'Calendly <notifications@calendly.com>'], ['name' => 'Subject', 'value' => 'New Event: Showroom Appointment'], ['name' => 'Message-ID', 'value' => '<g1@calendly.com>']], 'body' => ['data' => rtrim(strtr(base64_encode('Your appointment is confirmed'), '+/', '-_'), '=')]],
+        'gmail.googleapis.com/gmail/v1/users/me/messages/showroom1*' => \Illuminate\Support\Facades\Http::response([
+            'id' => 'showroom1', 'threadId' => 't-showroom1',
+            'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => 'Calendly <notifications@calendly.com>'], ['name' => 'Subject', 'value' => 'New Event: Showroom Appointment'], ['name' => 'Message-ID', 'value' => '<showroom1@calendly.com>']], 'body' => ['data' => rtrim(strtr(base64_encode('Your appointment is confirmed'), '+/', '-_'), '=')]],
         ]),
         'gmail.googleapis.com/gmail/v1/users/me/labels' => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LS', 'name' => 'aiku/showroom']]]),
         'gmail.googleapis.com/*'                        => \Illuminate\Support\Facades\Http::response([]),
     ]);
 
-    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop->fresh(), 'g1');
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop->fresh(), 'showroom1');
 
     expect($message)->toBeNull()
         ->and(\App\Models\Chat\ChatSession::where('shop_id', $this->shop->id)->where('metadata->email', 'notifications@calendly.com')->exists())->toBeFalse();
 
-    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g1/modify') && $request['addLabelIds'] === ['LS'] && $request['removeLabelIds'] === ['INBOX', 'UNREAD']);
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/showroom1/modify') && $request['addLabelIds'] === ['LS'] && $request['removeLabelIds'] === ['INBOX']);
+});
+
+test('showroom senders only accept email addresses or @domain', function () {
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop, ['gmail_showroom_senders' => ['calendly']]);
+})->throws(\Illuminate\Validation\ValidationException::class);
+
+test('un-marking an email chat as spam takes the sender off the blocked list', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::CLOSED,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+        'channel'          => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+        'metadata'         => ['email' => 'Notifications@Calendly.com'],
+    ]);
+
+    $agentUser = createAdminGuest($this->organisation->group)->getUser();
+    $agent     = ChatAgent::firstOrCreate(['user_id' => $agentUser->id], ['max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => false, 'is_available' => false, 'current_chat_count' => 0]);
+
+    \App\Actions\Chat\ChatSession\MarkChatSessionAsSpam::run($session, $agent);
+    expect(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders'))->toContain('notifications@calendly.com');
+
+    \App\Actions\Chat\ChatSession\UnmarkChatSessionAsSpam::run($session->fresh(), $agent);
+    expect(Arr::get($this->shop->fresh()->settings, 'gmail.blocked_senders'))->not->toContain('notifications@calendly.com');
+
+    $session->forceDelete();
 });
 
 test('a campaign send closes the promo-only session but leaves one an agent is handling open', function () {

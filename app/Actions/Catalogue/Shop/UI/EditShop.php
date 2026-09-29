@@ -816,8 +816,8 @@ class EditShop extends OrgAction
                         'gmail_showroom_senders' => [
                             'type'        => 'tags',
                             'label'       => __('Showroom booking senders'),
-                            'placeholder' => 'notifications@calendly.com',
-                            'information' => __('Emails from these addresses are filed under the Gmail "aiku/showroom" label and never become a chat. Press Enter to add each address.'),
+                            'placeholder' => '@calendly.com',
+                            'information' => __('Emails from these addresses, or from a whole domain written as @domain, are filed unread under the Gmail "aiku/showroom" label and never become a chat, even if the sender was once marked as spam. Press Enter to add each one.'),
                             'value'       => array_keys(array_filter(
                                 Arr::get($shop->settings, 'gmail.labeled_senders') ?? [],
                                 fn ($label) => $label === 'aiku/showroom'

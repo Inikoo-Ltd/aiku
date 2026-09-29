@@ -9,12 +9,14 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Events\BroadcastChatListEvent;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -39,6 +41,8 @@ class UnmarkChatSessionAsSpam
                 'spammed_by_agent_id' => null,
             ]);
 
+            $this->unblockSender($chatSession);
+
             ClassifyChatSessionNoise::humanDecided($chatSession, false);
 
 
@@ -59,6 +63,21 @@ class UnmarkChatSessionAsSpam
 
             return $chatSession->fresh();
         });
+    }
+
+    private function unblockSender(ChatSession $chatSession): void
+    {
+        $email = Arr::get($chatSession->metadata, 'email');
+        $shop  = $chatSession->shop;
+
+        if ($chatSession->channel !== ChatChannelEnum::EMAIL || ! $email || ! $shop) {
+            return;
+        }
+
+        $settings = $shop->settings ?? [];
+        $blocked  = Arr::get($settings, 'gmail.blocked_senders') ?? [];
+        Arr::set($settings, 'gmail.blocked_senders', array_values(array_diff($blocked, [strtolower($email)])));
+        $shop->update(['settings' => $settings]);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
