@@ -23,6 +23,8 @@ class AssignableSuppliersResource extends JsonResource
             'agent_slug' => $this->agent_slug,
             'agent_code' => $this->agent_code,
             'agent_name' => $this->agent_name,
+
+            'organisations_losing_supplier' => $this->organisations_losing_supplier,
         ];
     }
 }
