@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Events\UploadProductToShopifyProgressEvent;
@@ -25,6 +26,18 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
         $shopifyProductId = Arr::get($modelData, 'shopify_product_id');
 
         if (AdoptShopifyProductVariant::run($portfolio, $shopifyProductId) === null) {
+            $linkedCode = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+                ->where('platform_product_id', $shopifyProductId)
+                ->where('id', '!=', $portfolio->id)
+                ->value('item_code');
+
+            if ($linkedCode) {
+                UpdatePortfolio::run($portfolio, ['errors_response' => ['message' => 'This Shopify product is already linked to '.$linkedCode.' in this channel']]);
+                UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio->refresh());
+
+                return;
+            }
+
             if ($portfolio->isShopifyVariantAdopted()) {
                 UnlinkRetinaPortfolio::run($portfolio);
             }

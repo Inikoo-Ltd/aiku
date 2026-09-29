@@ -1807,3 +1807,50 @@ test('the stock push still sends stock to an archived listing but no longer show
         ->and($responses[$archived->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'Stock sent, but this product is archived in your Shopify store, so it is not for sale there'])
         ->and($responses[$deleted->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'This product is no longer in your Shopify store']);
 });
+
+test('two products linked to one shopify listing: orders go to the product whose code the line carries, only that product sends stock, and a match onto a taken listing is refused', function () {
+    Queue::fake();
+    $channel    = shopifyProductChannel($this, 'product-shared-listing')->customerSalesChannel;
+    $newProduct = fn () => tap(\App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50])), fn ($product) => $product->update(['available_quantity' => 7]));
+
+    $ownerProduct = $newProduct();
+    $owner        = StorePortfolio::make()->action($channel, $ownerProduct, []);
+    $sharer       = StorePortfolio::make()->action($channel, $newProduct(), []);
+    foreach ([$owner, $sharer] as $portfolio) {
+        $portfolio->update(['platform_product_id' => 'gid://shopify/Product/7600', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8600', 'platform_status' => true]);
+    }
+    $sharer->update(['sku' => Str::lower($ownerProduct->code)]);
+
+    $orderLines = new class () {
+        use WithShopifyPortfolioMatching;
+    };
+
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7600', 'gid://shopify/ProductVariant/8600', $ownerProduct->code)?->id)->toBe($owner->id)
+        ->and($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7600', 'gid://shopify/ProductVariant/8600', 'unknown-sku'))->toBeNull();
+
+    $bySku = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $third = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $bySku->update(['platform_product_variant_id' => 'gid://shopify/ProductVariant/8601']);
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, null, 'gid://shopify/ProductVariant/8600', $bySku->item_code)?->id)->toBe($bySku->id)
+        ->and($bySku->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8601');
+
+    ShopifyFake::fake([
+        'getProductsVariants'    => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => ['id' => $id, 'status' => 'ACTIVE', 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8600', 'sku' => strtoupper($ownerProduct->code), 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8600']]]]]], $variables['ids'])]),
+        'inventorySetQuantities' => ShopifyFake::graphql(['inventorySetQuantities' => ['userErrors' => []]]),
+    ]);
+    BulkUpdateShopifyPortfolio::run($channel->id);
+
+    $responses = [];
+    UpdatePlatformPortfolioLog::assertPushed(function ($action, $parameters) use (&$responses) {
+        $responses[$parameters[0]->portfolio_id] = $parameters[1]['response'] ?? null;
+
+        return true;
+    });
+    expect(ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'])->toHaveCount(1)
+        ->and($owner->refresh()->last_stock_value)->toBe(7)
+        ->and($responses[$sharer->id])->toBe('This Shopify listing is also linked to '.$ownerProduct->code.', so its stock is not sent');
+
+    MatchPortfolioToCurrentShopifyProduct::make()->handle($third, ['shopify_product_id' => 'gid://shopify/Product/7600']);
+    expect($third->refresh()->platform_product_id)->toBeNull()
+        ->and($third->errors_response)->toBe(['message' => 'This Shopify product is already linked to '.$owner->item_code.' in this channel']);
+});

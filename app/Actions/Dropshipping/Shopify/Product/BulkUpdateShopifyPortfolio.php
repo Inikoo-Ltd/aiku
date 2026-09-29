@@ -90,9 +90,16 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             ->get()
             ->keyBy('id');
 
+        $portfolioCodesByVariant = [];
+        foreach ($portfolios as $portfolio) {
+            if ($portfolio->platform_product_variant_id) {
+                $portfolioCodesByVariant[$portfolio->platform_product_variant_id][$portfolio->id] = $portfolio->item_code;
+            }
+        }
+
         foreach ($portfolios->chunk(50) as $portfolioChunk) {
             try {
-                $this->processChunk($shopifyUser, $customerSalesChannel, $portfolioChunk, $productMap, $command);
+                $this->processChunk($shopifyUser, $customerSalesChannel, $portfolioChunk, $productMap, $portfolioCodesByVariant, $command);
             } catch (\Throwable $e) {
                 Sentry::captureException($e);
             }
@@ -102,8 +109,9 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
     /**
      * @param  Collection<int, Portfolio>  $portfolios
      * @param  Collection<int, Product>  $productMap
+     * @param  array<string, array<int, string|null>>  $portfolioCodesByVariant
      */
-    private function processChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, ?Command $command = null): void
+    private function processChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, array $portfolioCodesByVariant, ?Command $command = null): void
     {
         $logs                   = [];
         $inventoryItems         = [];
@@ -137,6 +145,17 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
 
             $variantId       = $shopifyData['variantId'];
             $inventoryItemId = $shopifyData['inventoryItemId'];
+
+            $sharedWithCodes = array_diff_key($portfolioCodesByVariant[$variantId] ?? [], [$portfolio->id => true]);
+
+            if ($sharedWithCodes && Str::lower($shopifyData['sku']) !== Str::lower((string)$productData->code)) {
+                $portfolio->update(['stock_last_fail_updated_at' => now()]);
+                UpdatePlatformPortfolioLog::dispatch(StorePlatformPortfolioLog::run($portfolio, []), [
+                    'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => 'This Shopify listing is also linked to '.implode(', ', array_filter($sharedWithCodes)).', so its stock is not sent'
+                ]);
+                continue;
+            }
 
             if ($portfolio->platform_product_variant_id !== $variantId) {
                 $portfolio->update(['platform_product_variant_id' => $variantId]);

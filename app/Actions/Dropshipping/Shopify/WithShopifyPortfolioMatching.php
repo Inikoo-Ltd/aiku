@@ -45,10 +45,13 @@ trait WithShopifyPortfolioMatching
             return null;
         }
 
-        return $customerSalesChannel->portfolios()
+        $portfolios = $customerSalesChannel->portfolios()
             ->whereIn($column, $candidates)
             ->when($column === 'platform_product_id', fn ($query) => $query->whereRaw("coalesce(settings->>'shopify_variant_adopted', 'false') <> 'true'"))
-            ->first();
+            ->limit(2)
+            ->get();
+
+        return $portfolios->count() === 1 ? $portfolios->first() : null;
     }
 
     /**
@@ -103,12 +106,20 @@ trait WithShopifyPortfolioMatching
             $healedIds['platform_product_id'] = $platformProductId;
         }
 
-        if ($platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId) {
+        if ($platformProductVariantId && $portfolio->platform_product_variant_id !== $platformProductVariantId && !$this->isVariantLinkedToAnotherPortfolio($portfolio, $platformProductVariantId)) {
             $healedIds['platform_product_variant_id'] = $platformProductVariantId;
         }
 
         if ($healedIds) {
             $portfolio->update($healedIds);
         }
+    }
+
+    private function isVariantLinkedToAnotherPortfolio(Portfolio $portfolio, string $platformProductVariantId): bool
+    {
+        return Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+            ->whereIn('platform_product_variant_id', $this->shopifyPlatformIdCandidates($platformProductVariantId))
+            ->where('id', '!=', $portfolio->id)
+            ->exists();
     }
 }
