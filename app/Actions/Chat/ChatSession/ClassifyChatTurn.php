@@ -132,7 +132,10 @@ class ClassifyChatTurn
         $topic   = self::topic($branch, $answers);
         $picked  = (string) Arr::get($answers, 'guide.choice');
         $guide   = $guides[$picked] ?? null;
-        $hint    = $guide && self::sureOf($answers, 'guide', $picked) ? $guide + ['probability' => round((float) Arr::get($answers, "guide.probabilities.$picked"), 2)] : null;
+        $hint    = $guide && self::sureOf($answers, 'guide', $picked) ? $guide + [
+            'probability' => round((float) Arr::get($answers, "guide.probabilities.$picked"), 2),
+            'message'     => self::guideMessage($guide, $chatSession->shop?->language?->code),
+        ] : null;
 
         if ($topic === ChatTopicEnum::DROPSHIPPING_INTEGRATION && !$guide) {
             $topic = null;
@@ -167,6 +170,17 @@ class ClassifyChatTurn
         }
 
         return $turn;
+    }
+
+    /**
+     * What "Insert link" puts in the reply, in the shop's language like the guide itself.
+     *
+     * @param  array<string, string>  $guide
+     */
+    public static function guideMessage(array $guide, ?string $locale): string
+    {
+        return __('We have a guide that explains this step by step, I hope it helps:', [], $locale)."\n".$guide['title']."\n".$guide['url']."\n\n"
+            .__('If anything is still unclear, just let us know and we will be happy to help.', [], $locale);
     }
 
     /**

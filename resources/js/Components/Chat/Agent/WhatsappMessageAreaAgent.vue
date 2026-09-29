@@ -1138,6 +1138,7 @@ onUnmounted(() => {
 
         <!-- Footer: closed banner -->
         <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
                 <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
                 {{ ctrans("You are viewing this conversation in read-only mode") }}
@@ -1162,6 +1163,7 @@ onUnmounted(() => {
 
         <!-- Footer: Assign-to-me banner for waiting (unassigned) chats -->
         <footer v-else-if="isWaiting" class="px-3 py-3 bg-white border-t">
+            <ChatAiDraftBox whatsapp :session-ulid="chatSession?.ulid" preview />
             <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
                 <div class="text-xs text-gray-600">
                     {{ ctrans('Assign this chat to yourself to start the conversation') }}

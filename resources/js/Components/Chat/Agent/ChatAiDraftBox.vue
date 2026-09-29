@@ -15,6 +15,7 @@ const props = defineProps<{
     sessionUlid?: string | null
     whatsapp?: boolean
     readOnly?: boolean
+    preview?: boolean
 }>()
 
 const emit = defineEmits<{ (e: "use", text: string): void }>()
@@ -30,6 +31,7 @@ interface Hint {
     summary: string
     url: string
     probability: number
+    message?: string
 }
 
 const draft = ref<Draft | null>(null)
@@ -102,16 +104,23 @@ onBeforeUnmount(stopListening)
 
 <template>
     <div v-if="draft || hint">
-    <div v-if="hint" class="mb-1.5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-sm">
-        <FontAwesomeIcon :icon="faBookOpen" fixed-width class="text-emerald-700" />
-        <div class="min-w-0 flex-1">
-            <div class="text-xs text-emerald-700">{{ ctrans("Guide that may help") }} · {{ Math.round(hint.probability * 100) }}%</div>
-            <a :href="hint.url" target="_blank" rel="noopener" class="block truncate font-medium text-gray-800 hover:underline" :title="hint.summary">{{ hint.title }}</a>
+    <div v-if="hint" class="mb-1.5 rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-sm">
+        <div class="flex items-center gap-1.5 text-xs text-emerald-700">
+            <FontAwesomeIcon :icon="faBookOpen" fixed-width />
+            <span>{{ ctrans("The answer is probably in this guide") }} · {{ ctrans(":percent% sure", { percent: Math.round(hint.probability * 100) }) }}</span>
         </div>
-        <button type="button" @click="emit('use', `${hint.title}: ${hint.url}`)"
-            class="shrink-0 rounded-md px-3 py-1 text-xs text-emerald-800 ring-1 ring-inset ring-emerald-300 hover:bg-white">
-            {{ ctrans("Insert link") }}
-        </button>
+        <p class="mt-1 font-medium text-gray-800">{{ hint.title }}</p>
+        <p class="mt-0.5 text-gray-600">{{ hint.summary }}</p>
+        <div class="mt-2 flex gap-2">
+            <a :href="hint.url" target="_blank" rel="noopener"
+                class="rounded-md px-3 py-1 text-xs text-emerald-800 ring-1 ring-inset ring-emerald-300 hover:bg-white">
+                {{ ctrans("Read guide") }}
+            </a>
+            <button v-if="!preview" type="button" @click="emit('use', hint.message ?? `${hint.title}\n${hint.url}`)"
+                class="rounded-md bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500">
+                {{ ctrans("Suggest it to the customer") }}
+            </button>
+        </div>
     </div>
     <div v-if="draft" class="mb-1.5 rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-sm">
         <div class="flex items-center gap-1.5 text-xs text-indigo-700">
@@ -119,7 +128,7 @@ onBeforeUnmount(stopListening)
             <span>{{ ctrans("Draft written by AI from aiku data") }} · {{ draft.topic_label }}</span>
         </div>
         <p class="mt-1 whitespace-pre-line text-gray-800">{{ draft.text }}</p>
-        <div class="mt-2 flex gap-2">
+        <div v-if="!preview" class="mt-2 flex gap-2">
             <button type="button" :disabled="busy" @click="decide('take')"
                 class="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
                 {{ ctrans("Use") }}

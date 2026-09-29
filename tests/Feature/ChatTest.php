@@ -10466,6 +10466,7 @@ test('jev works out what the customer wants in rounds, and only a clear single q
     $hint = ['title' => 'Connecting WooCommerce', 'summary' => 'Install the plugin.', 'url' => 'https://shop.test/docs/connecting-woocommerce', 'probability' => 0.93];
     $session->update(['metadata' => ['ai_turn' => ['at' => now()->toISOString(), 'hint' => $hint]], 'last_agent_message_at' => now()->subMinute()]);
     expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::currentHint($session->refresh()))->toBe($hint);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::guideMessage($hint, 'en'))->toContain("helps:\nConnecting WooCommerce\nhttps://shop.test/docs/connecting-woocommerce\n");
     $session->update(['last_agent_message_at' => now()->addMinute()]);
     expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::currentHint($session->refresh()))->toBeNull();
 
