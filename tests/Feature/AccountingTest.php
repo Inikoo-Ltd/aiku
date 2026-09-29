@@ -3772,29 +3772,94 @@ test('money paid out to a refund by any route stops at what the refund still owe
 
     $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
     $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
-    $refund         = StoreInvoice::make()->action($customer, array_merge(Invoice::factory()->definition(), [
-        'type'         => InvoiceTypeEnum::REFUND,
-        'gross_amount' => -20,
-        'net_amount'   => -20,
-        'total_amount' => -20,
-        'in_process'   => false,
-    ]));
+    $order          = StoreOrder::make()->action($customer, []);
+    $invoice        = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 100]);
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -20, 'in_process' => false]);
+
     $refundPayment = fn (float $amount) => [
         'amount' => -$amount,
         'type'   => PaymentTypeEnum::REFUND->value,
         'status' => PaymentStatusEnum::SUCCESS->value,
         'state'  => PaymentStateEnum::COMPLETED->value,
     ];
-    $paymentsBefore = Payment::count();
 
-    PayInvoice::make()->action($refund, $paymentAccount, $refundPayment(12));
+    PayInvoice::make()->action($refund->refresh(), $paymentAccount, $refundPayment(12));
+
+    $paymentsBefore           = Payment::count();
+    $creditTransactionsBefore = CreditTransaction::count();
+    $balanceBefore            = (float) $customer->refresh()->balance;
 
     expect(fn () => PayInvoice::make()->action($refund->refresh(), $paymentAccount, $refundPayment(8.01)))->toThrow(ValidationException::class, 'left to pay on this refund')
-        ->and(Payment::count())->toBe($paymentsBefore + 1)
+        ->and(Payment::count())->toBe($paymentsBefore)
+        ->and(CreditTransaction::count())->toBe($creditTransactionsBefore)
+        ->and((float) $customer->refresh()->balance)->toBe($balanceBefore)
         ->and(round(abs((float) $refund->refresh()->payment_amount), 2))->toBe(12.0);
 
     PayInvoice::make()->action($refund->refresh(), $paymentAccount, $refundPayment(8));
 
     expect(round(abs((float) $refund->refresh()->payment_amount), 2))->toBe(20.0)
         ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID);
+});
+
+test('money coming in to a refund, and money going out on an ordinary invoice, are not held back by the refund limit', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $order          = StoreOrder::make()->action($customer, []);
+    $invoice        = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $invoice->update(['order_id' => $order->id, 'total_amount' => 100]);
+    $refund = StoreRefund::make()->action($invoice, []);
+    $refund->update(['order_id' => $order->id, 'total_amount' => -20, 'in_process' => false]);
+
+    $payment = fn (float $amount, PaymentTypeEnum $type) => [
+        'amount' => $amount,
+        'type'   => $type->value,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ];
+
+    PayInvoice::make()->action($refund->refresh(), $paymentAccount, $payment(-20, PaymentTypeEnum::REFUND));
+    PayInvoice::make()->action($refund->refresh(), $paymentAccount, $payment(5, PaymentTypeEnum::PAYMENT));
+    PayInvoice::make()->action($invoice->refresh(), $paymentAccount, $payment(-150, PaymentTypeEnum::REFUND));
+
+    expect(round((float) $refund->refresh()->payment_amount, 2))->toBe(-15.0)
+        ->and(round((float) $invoice->refresh()->payment_amount, 2))->toBe(-150.0);
+});
+
+test('the repair of unlinked refunds lists a payment bigger than the refund owes instead of stopping, and still links the others', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $accountsPaymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $unlinkedRefund         = function (float $refundTotal, float $paid) use ($accountsPaymentAccount) {
+        $customer = createCustomer($this->shop);
+        $order    = StoreOrder::make()->action($customer, []);
+        $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $invoice->update(['order_id' => $order->id, 'total_amount' => 500]);
+        $refund = StoreRefund::make()->action($invoice, []);
+        $refund->update(['order_id' => $order->id, 'total_amount' => -$refundTotal, 'in_process' => false]);
+
+        $payment = StorePayment::make()->action($customer, $accountsPaymentAccount, [
+            'amount'    => -$paid,
+            'reference' => 'ref-bal-'.Str::ulid(),
+            'status'    => PaymentStatusEnum::SUCCESS->value,
+            'state'     => PaymentStateEnum::COMPLETED->value,
+            'type'      => PaymentTypeEnum::REFUND,
+        ]);
+        AttachPaymentToOrder::make()->action($order, $payment, []);
+
+        return $refund;
+    };
+
+    $slightlyOverpaid = $unlinkedRefund(10.00, 10.04);
+    $exact            = $unlinkedRefund(30.00, 30.00);
+
+    $this->artisan('repair:excess_payment_refunds_not_attached_to_invoice --apply')
+        ->expectsOutputToContain('Needs a human')
+        ->assertOk();
+
+    expect((float) $slightlyOverpaid->refresh()->payment_amount)->toBe(0.0)
+        ->and((float) $exact->refresh()->payment_amount)->toBe(-30.0);
 });

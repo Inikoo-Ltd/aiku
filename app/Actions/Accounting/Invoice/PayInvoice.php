@@ -21,6 +21,7 @@ use App\Models\Accounting\PaymentAccount;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,7 +33,11 @@ class PayInvoice extends OrgAction
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Payment
     {
 
-        return DB::transaction(function () use ($invoice, $paymentAccount, $modelData) {
+        $payment = DB::transaction(function () use ($invoice, $paymentAccount, $modelData) {
+            if ((float) Arr::get($modelData, 'amount') < 0) {
+                AttachPaymentToInvoice::lockRefundToPay($invoice, (float) Arr::get($modelData, 'amount'));
+            }
+
             $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, $modelData);
 
             if ($paymentAccount->is_accounts) {
@@ -49,10 +54,12 @@ class PayInvoice extends OrgAction
                 AttachPaymentToOrder::make()->action($invoice->order, $payment, []);
             }
 
-            ProcessInvoicePaidNotification::dispatch($invoice->id);
-
             return $payment;
         });
+
+        ProcessInvoicePaidNotification::dispatch($invoice->id);
+
+        return $payment;
     }
 
     public function rules(): array

@@ -24,6 +24,7 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class IncreaseCreditTransactionCustomer extends OrgAction
@@ -51,29 +52,31 @@ class IncreaseCreditTransactionCustomer extends OrgAction
             data_set($modelData, 'data.applied_by', $appliedBy);
         }
 
-        if ($issueCreditNote) {
-            $creditNote = StoreStandaloneCreditNote::make()->action($customer, [
-                'amount' => Arr::get($modelData, 'amount'),
-                'reason' => CreditTransactionReasonEnum::getStaticLabel(Arr::get($modelData, 'reason')),
-            ], $this->hydratorsDelay);
+        return DB::transaction(function () use ($customer, $modelData, $issueCreditNote) {
+            if ($issueCreditNote) {
+                $creditNote = StoreStandaloneCreditNote::make()->action($customer, [
+                    'amount' => Arr::get($modelData, 'amount'),
+                    'reason' => CreditTransactionReasonEnum::getStaticLabel(Arr::get($modelData, 'reason')),
+                ], $this->hydratorsDelay);
 
-            $paymentAccount = $customer->shop->paymentAccountShops()
-                ->where('type', PaymentAccountTypeEnum::ACCOUNT)
-                ->firstOrFail()->paymentAccount;
+                $paymentAccount = $customer->shop->paymentAccountShops()
+                    ->where('type', PaymentAccountTypeEnum::ACCOUNT)
+                    ->firstOrFail()->paymentAccount;
 
-            $payment = StorePayment::make()->action($customer, $paymentAccount, [
-                'amount' => $creditNote->total_amount,
-                'status' => PaymentStatusEnum::SUCCESS->value,
-                'state'  => PaymentStateEnum::COMPLETED->value,
-                'type'   => PaymentTypeEnum::REFUND,
-            ], $this->hydratorsDelay);
+                $payment = StorePayment::make()->action($customer, $paymentAccount, [
+                    'amount' => $creditNote->total_amount,
+                    'status' => PaymentStatusEnum::SUCCESS->value,
+                    'state'  => PaymentStateEnum::COMPLETED->value,
+                    'type'   => PaymentTypeEnum::REFUND,
+                ], $this->hydratorsDelay);
 
-            AttachPaymentToInvoice::make()->action($creditNote, $payment, []);
+                AttachPaymentToInvoice::make()->action($creditNote, $payment, []);
 
-            data_set($modelData, 'payment_id', $payment->id);
-        }
+                data_set($modelData, 'payment_id', $payment->id);
+            }
 
-        return StoreCreditTransaction::make()->action($customer, $modelData, $this->hydratorsDelay, $this->strict);
+            return StoreCreditTransaction::make()->action($customer, $modelData, $this->hydratorsDelay, $this->strict);
+        });
     }
 
     public function rules(): array
