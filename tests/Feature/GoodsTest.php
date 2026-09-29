@@ -934,8 +934,25 @@ test('UI Show Trade Unit Family sales analysis tab', function () {
                 ->has('sales_analysis.stock_outs')
                 ->has('sales_analysis.events')
                 ->has('sales_analysis.filters.organisations')
+                ->has('sales_analysis.monthly_sales', 3)
+                ->where('sales_analysis.monthly_sales.0.month', '2026-01-01')
+                ->where('sales_analysis.monthly_sales.0.is_partial', false)
+                ->where('sales_analysis.monthly_sales.2.to', '2026-03-31')
+                ->where('sales_analysis.monthly_sales.2.previous_month', '2025-03-01')
             );
     });
+
+    $partial = GetSalesAnalysis::run(SalesAnalysisScope::forTradeUnitFamily($family), [
+        'from'        => '2021-09-27',
+        'to'          => '2021-11-15',
+        'compareFrom' => '2016-09-27',
+        'compareTo'   => '2016-11-15',
+    ])['monthly_sales'];
+
+    expect($partial)->toHaveCount(3)
+        ->and($partial[0])->toMatchArray(['month' => '2021-09-01', 'from' => '2021-09-27', 'is_partial' => true, 'previous_month' => '2016-09-01'])
+        ->and($partial[1]['is_partial'])->toBeFalse()
+        ->and($partial[2])->toMatchArray(['to' => '2021-11-15', 'is_partial' => true]);
 
     $teaser = GetSalesAnalysis::make()->teaser(SalesAnalysisScope::forTradeUnitFamily($family));
 

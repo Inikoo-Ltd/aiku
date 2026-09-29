@@ -91,6 +91,7 @@ const props = defineProps<{
 		currency: string
 		sales: Array<{ date: string; sales: number; orders: number }>
 		compare_sales: Array<{ date: string; sales: number; orders: number }>
+		monthly_sales?: Array<{ month: string; from: string; to: string; is_partial: boolean; sales: number; previous_month: string | null; previous_sales: number | null }>
 		totals: { current: Totals; previous: Totals }
 		shops: Array<{ shop_id: number; shop_code: string; shop_name: string; shop_state: string; organisation_id: number; node_state: string | null; sales: number; previous_sales: number; orders: number; previous_orders: number; stock_out_days: number }>
 		breakdown_label: string | null
@@ -462,6 +463,9 @@ const chartOptions = computed(() => ({
 	},
 }))
 
+const monthlySales = computed(() => [...(props.data.monthly_sales ?? [])].reverse())
+const formatMonth = (month: string) => useFormatTime(month, { formatTime: "MMM yyyy" })
+
 const totalChange = computed(() => current.value.sales - previous.value.sales)
 const shareOfChange = (delta: number) => (totalChange.value ? `${Math.round((delta / Math.abs(totalChange.value)) * 100)}%` : "—")
 
@@ -640,6 +644,46 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 					{{ style.label }}
 				</button>
 				<span v-if="!hasVisitors" class="ml-auto">{{ ctrans("Visitors are recorded from January 2026.") }}</span>
+			</div>
+		</div>
+
+		<div v-if="monthlySales.length" class="rounded-lg border border-gray-200 bg-white" data-monthly-sales>
+			<div class="border-b px-4 py-2 font-semibold">{{ ctrans("Sales per month") }}</div>
+			<div class="max-h-[32rem] overflow-y-auto">
+				<table class="w-full text-xs tabular-nums">
+					<thead class="sticky top-0 bg-white text-gray-600">
+						<tr class="border-b">
+							<th class="px-4 py-2 text-left font-normal">{{ ctrans("Month") }}</th>
+							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Now") }}</th>
+							<th class="px-2 py-2 text-left font-normal">{{ ctrans("Compared month") }}</th>
+							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Before") }}</th>
+							<th class="px-4 py-2 text-right font-normal">{{ ctrans("Change") }}</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y">
+						<tr v-for="row in monthlySales" :key="row.month" class="transition-colors hover:bg-gray-50">
+							<td class="px-4 py-1.5">
+								<span class="font-medium">{{ formatMonth(row.month) }}</span>
+								<span v-if="row.is_partial" class="ml-1 text-gray-400">({{ formatDate(row.from) }} – {{ formatDate(row.to) }})</span>
+							</td>
+							<td class="px-2 py-1.5 text-right">{{ money(row.sales) }}</td>
+							<td class="px-2 py-1.5 text-gray-500">{{ row.previous_month ? formatMonth(row.previous_month) : "—" }}</td>
+							<td class="px-2 py-1.5 text-right">{{ row.previous_sales === null ? "—" : money(row.previous_sales) }}</td>
+							<td class="px-4 py-1.5 text-right" :class="changeClass(row.sales - (row.previous_sales ?? 0))">
+								{{ formatChange(row.previous_sales === null ? null : change(row.sales, row.previous_sales)) }}
+							</td>
+						</tr>
+					</tbody>
+					<tfoot class="sticky bottom-0 border-t bg-gray-50 font-semibold">
+						<tr>
+							<td class="px-4 py-1.5">{{ ctrans("Total") }}</td>
+							<td class="px-2 py-1.5 text-right">{{ money(current.sales) }}</td>
+							<td class="px-2 py-1.5" />
+							<td class="px-2 py-1.5 text-right">{{ money(previous.sales) }}</td>
+							<td class="px-4 py-1.5 text-right" :class="changeClass(totalChange)">{{ formatChange(change(current.sales, previous.sales)) }}</td>
+						</tr>
+					</tfoot>
+				</table>
 			</div>
 		</div>
 

@@ -56,7 +56,7 @@ class GetSalesAnalysis
         }
 
         return Cache::remember(
-            'sales-analysis:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
+            'sales-analysis:v2:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
             now()->endOfDay(),
             fn () => $this->analyse($scope, $modelData)
         );
@@ -144,7 +144,8 @@ class GetSalesAnalysis
             'currency'        => $scope->currency,
             'sales'           => $this->salesSeries($frequency, $from, $to),
             'compare_sales'   => $this->salesSeries($frequency, $compareFrom, $compareTo),
-            'totals'          => [
+            'monthly_sales'   => $this->monthlySales($from, $to, $compareFrom, $compareTo),
+            'totals'        => [
                 'current'  => [
                     ...$this->salesTotals($from, $to),
                     ...$this->stockOutTotals($stockOuts),
@@ -274,6 +275,43 @@ class GetSalesAnalysis
         return $series;
     }
 
+    /**
+     * Every month of the period next to the month in the same position of the compared period;
+     * the first and last months only count the days inside the period.
+     *
+     * @return array<int, array{month: string, from: string, to: string, is_partial: bool, sales: float, previous_month: string|null, previous_sales: float|null}>
+     */
+    private function monthlySales(Carbon $from, Carbon $to, Carbon $compareFrom, Carbon $compareTo): array
+    {
+        $months         = $this->months($from, $to);
+        $previousMonths = $this->months($compareFrom, $compareTo);
+
+        return array_map(fn (array $month, int $index) => [
+            ...$month,
+            'previous_month' => $previousMonths[$index]['month'] ?? null,
+            'previous_sales' => $previousMonths[$index]['sales'] ?? null,
+        ], $months, array_keys($months));
+    }
+
+    private function months(Carbon $from, Carbon $to): array
+    {
+        $sales  = $this->periodSales($from, $to)['month'];
+        $months = [];
+        for ($month = $from->copy()->startOfMonth(); $month->lte($to); $month->addMonth()) {
+            $start    = $month->max($from);
+            $end      = $month->copy()->endOfMonth()->startOfDay()->min($to);
+            $months[] = [
+                'month'      => $month->toDateString(),
+                'from'       => $start->toDateString(),
+                'to'         => $end->toDateString(),
+                'is_partial' => !$start->isSameDay($month) || !$end->isLastOfMonth(),
+                'sales'      => round($sales[$month->toDateString()] ?? 0, 2),
+            ];
+        }
+
+        return $months;
+    }
+
     private function bucketUnit(TimeSeriesFrequencyEnum $frequency): string
     {
         return match ($frequency) {
@@ -287,7 +325,7 @@ class GetSalesAnalysis
      * One pass over the invoice lines of a period: the sales by time bucket, by shop and by asset,
      * which the chart, the websites and the breakdown are read from, and the totals.
      *
-     * @return array{bucket: array<string, float>, shop: array<int, float>, asset: array<int, float>, totals: object}
+     * @return array{bucket: array<string, float>, month: array<string, float>, shop: array<int, float>, asset: array<int, float>, totals: object}
      */
     private function periodSales(Carbon $from, Carbon $to): array
     {
@@ -297,7 +335,8 @@ class GetSalesAnalysis
         }
 
         $lines = $this->invoiceLines($from, $to)->selectRaw(
-            "date_trunc('{$this->unit}', invoice_transactions.date)::date::text as bucket, invoice_transactions.shop_id, invoice_transactions.asset_id,
+            "date_trunc('{$this->unit}', invoice_transactions.date)::date::text as bucket, date_trunc('month', invoice_transactions.date)::date::text as month,
+            invoice_transactions.shop_id, invoice_transactions.asset_id,
             invoice_transactions.{$this->scope->amountColumn} as amount, invoice_transactions.order_id, invoice_transactions.invoice_id,
             invoice_transactions.is_refund, invoice_transactions.customer_id"
         );
@@ -305,6 +344,8 @@ class GetSalesAnalysis
         $rows = DB::select(
             "with lines as materialized ({$lines->toSql()})
             select 'bucket' as dimension, bucket as key, sum(amount)::float as sales, null::bigint as orders, null::bigint as invoices, null::bigint as refunds, null::bigint as customers from lines group by bucket
+            union all
+            select 'month', month, sum(amount)::float, null, null, null, null from lines group by month
             union all
             select 'shop', shop_id::text, sum(amount)::float, null, null, null, null from lines group by shop_id
             union all
@@ -315,7 +356,7 @@ class GetSalesAnalysis
             $lines->getBindings()
         );
 
-        $sales = ['bucket' => [], 'shop' => [], 'asset' => [], 'totals' => null];
+        $sales = ['bucket' => [], 'month' => [], 'shop' => [], 'asset' => [], 'totals' => null];
         foreach ($rows as $row) {
             if ($row->dimension === 'totals') {
                 $sales['totals'] = $row;
