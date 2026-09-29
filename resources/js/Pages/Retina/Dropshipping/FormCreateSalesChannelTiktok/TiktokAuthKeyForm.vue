@@ -19,7 +19,7 @@ import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
 library.add(faInfoCircle);
 
 const goNext = inject("goNext");
-const closeCreateTiktokModal = inject("closeCreateTiktokModal");
+const cancelCreateTiktokModal = inject("cancelCreateTiktokModal");
 const tiktokUserId = inject("tiktokUserId");
 
 const isLoadingStep = ref(false)
@@ -74,7 +74,7 @@ const submitForm = async () => {
 			<p v-if="errors?.message?.[0]" class="text-red-500">{{errors?.message?.[0]}}</p>
 		<hr class="w-full border-t" />
 		<div class="flex md:justify-end gap-4">
-			<Button type="tertiary" size="sm" @click="closeCreateTiktokModal">{{
+			<Button type="tertiary" size="sm" @click="cancelCreateTiktokModal">{{
 				trans("Cancel")
 			}}</Button>
 			<Button size="sm" :loading="isLoadingStep" @click="submitForm">{{

@@ -813,3 +813,64 @@ test('iris product web block exposes the product family id so the member price c
     expect($product->family_id)->not->toBeNull()
         ->and(Arr::get($irisProduct, 'family_id'))->toBe($product->family_id);
 });
+
+test('iris variant products list leaves out the variant products that are not for sale', function () {
+    [, $forSaleProduct] = createProduct($this->shop);
+    $forSaleProduct->updateQuietly(['is_for_sale' => true]);
+
+    $notForSaleProduct = $forSaleProduct->replicate();
+    $notForSaleProduct->fill([
+        'code'        => $forSaleProduct->code.'-NFS',
+        'slug'        => $forSaleProduct->slug.'-nfs',
+        'is_for_sale' => false,
+    ])->saveQuietly();
+
+    $masterVariant = \App\Models\Masters\MasterVariant::create([
+        'group_id' => $forSaleProduct->group_id,
+        'code'     => $forSaleProduct->code,
+        'data'     => ['products' => []],
+    ]);
+
+    $variant = \App\Models\Catalogue\Variant::create([
+        'master_variant_id' => $masterVariant->id,
+        'group_id'        => $forSaleProduct->group_id,
+        'organisation_id' => $forSaleProduct->organisation_id,
+        'shop_id'         => $forSaleProduct->shop_id,
+        'family_id'       => $forSaleProduct->family_id,
+        'code'            => $forSaleProduct->code,
+        'leader_id'       => $forSaleProduct->id,
+        'data'            => ['products' => []],
+    ]);
+    $forSaleProduct->updateQuietly(['variant_id' => $variant->id]);
+    $notForSaleProduct->updateQuietly(['variant_id' => $variant->id]);
+
+    $variant->updateQuietly(['data' => ['products' => [
+        $forSaleProduct->id    => ['product' => ['id' => $forSaleProduct->id]],
+        $notForSaleProduct->id => ['product' => ['id' => $notForSaleProduct->id]],
+    ]]]);
+
+    $productIds = collect(\App\Actions\Catalogue\Product\Json\GetProductsOfVariant::run($variant)['products'])->pluck('id');
+
+    $variantAndProducts = \App\Actions\Catalogue\Product\Json\GetVariantAndProducts::run($variant);
+
+    expect($productIds->all())->toBe([$forSaleProduct->id])
+        ->and(collect($variantAndProducts['products'])->pluck('id')->all())->toBe([$forSaleProduct->id])
+        ->and(collect($variantAndProducts['variant_data']['products'])->keys()->all())->toBe([$forSaleProduct->id]);
+});
+
+test('iris basket endpoints send the quantity ordered as a number so the basket buttons can add to it', function () {
+    $customer = createCustomer($this->shop);
+    [, $product] = createProduct($this->shop);
+
+    $order       = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, \App\Models\Ordering\Order::factory()->definition());
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1]);
+    $customer->updateQuietly(['current_order_in_basket_id' => $order->id]);
+
+    $basketLine  = \App\Actions\Catalogue\Product\Json\GetIrisBasketTransactions::run($customer->refresh())[$product->id];
+    $productData = \App\Actions\Iris\Basket\GetIrisBasketTransactionProductData::run($transaction);
+
+    expect($basketLine['quantity_ordered'])->toBe(1.0)
+        ->and($basketLine['quantity_ordered_new'])->toBe(1.0)
+        ->and($productData['quantity_ordered'])->toBe(1.0)
+        ->and($productData['quantity_ordered_new'])->toBe(1.0);
+});

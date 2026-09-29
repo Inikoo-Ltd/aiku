@@ -1608,8 +1608,19 @@ test('UI show pallet return', function () {
                     ->where('title', $this->palletReturn->reference)
                     ->etc()
             )
-            ->has('tabs');
+            ->has('tabs')
+            ->missing('address_management.addresses.options.countriesAddressData')
+            ->missing('box_stats.fulfilment_customer.address.options.countriesAddressData')
+            ->missing('box_stats.fulfilment_customer.address.address_customer.options.countriesAddressData');
     });
+});
+
+test('UI json countries address data', function () {
+    $response = getJson(route('grp.json.countries_address_data'));
+    $response->assertStatus(200);
+
+    $country = collect($response->json())->first();
+    expect($country)->toHaveKeys(['label', 'code', 'fields']);
 });
 
 test('UI json get pallet return whole pallet', function () {

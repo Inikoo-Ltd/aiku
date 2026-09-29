@@ -42,6 +42,8 @@ interface MasterProductPricing {
     rrp: string | number | null
     currency_code: string
     units_review: string | null
+    price_review: string | null
+    price_outlier: { times: number, reason: string } | null
     master_prices: Record<string, CurrencyValue>
     master_rrps: Record<string, CurrencyValue>
     is_dropship?: boolean
@@ -425,6 +427,18 @@ const priceMarginPct = (masterProduct: MasterProductPricing, code: string): stri
     return Math.round(((price - cost) / price) * 100) + '%'
 }
 
+const priceWarning = (masterProduct: MasterProductPricing): string | null => {
+    const warnings = []
+    if (masterProduct.price_review) {
+        warnings.push(ctrans('The composition changed after this price was set, review the price and save it'))
+    }
+    if (masterProduct.price_outlier) {
+        warnings.push(masterProduct.price_outlier.reason)
+    }
+
+    return warnings.length ? warnings.join('. ') : null
+}
+
 const marginPct = (masterProduct: MasterProductPricing, code: string): string | null => {
     const price = Number(masterProduct.master_prices?.[code]?.value ?? 0)
     const rrp   = Number(masterProduct.master_rrps?.[code]?.value ?? 0)
@@ -536,6 +550,14 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                                 </template>
                                 <template v-else>✓</template>
                             </span>
+                            <FontAwesomeIcon
+                                v-if="priceWarning(masterProduct)"
+                                :icon="faExclamationTriangle"
+                                class="text-red-500"
+                                v-tooltip="priceWarning(masterProduct)"
+                                fixed-width
+                                aria-hidden="true"
+                            />
                             <button
                                 type="button"
                                 class="text-sm text-gray-400 hover:text-indigo-600"
@@ -547,7 +569,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                         </template>
                     </span>
                     <span class="tabular-nums text-right text-xs self-center text-gray-400" v-tooltip="ctrans('Margin vs effective cost')">{{ priceMarginPct(masterProduct, code) ?? '' }}</span>
-                    <span class="tabular-nums text-right">{{ formatMoney(masterProduct.master_prices?.[code]?.value ?? null, code) }}</span>
+                    <span class="tabular-nums text-right" :class="{ 'font-semibold text-red-600': priceWarning(masterProduct) }">{{ formatMoney(masterProduct.master_prices?.[code]?.value ?? null, code) }}</span>
                 </template>
                 <template v-for="code in independentMinors(masterProduct.master_prices)" :key="code">
                     <span />

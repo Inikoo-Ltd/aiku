@@ -397,7 +397,7 @@ onMounted(async () => {
 
                     
                     <!-- Section: Profit and the popover -->
-                    <div class="flex justify-between items-end">
+                    <div v-if="product.rrp_per_unit > 0" class="flex justify-between items-end">
                         <span @click="_popoverProfit?.toggle">{{ ctrans("Profit") }}</span>:
                         <span class="text-green-500 ml-1 font-bold">
                             {{( layout?.user?.gr_data?.customer_is_gr ||  layout?.user?.gr_data?.amnesty) ? fieldValue.product?.discounted_margin : fieldValue.product?.margin }}
@@ -642,7 +642,7 @@ onMounted(async () => {
                 </div>
 
                 <!-- PROFIT -->
-                <div class="flex items-end text-sm">
+                <div v-if="product.rrp_per_unit > 0" class="flex items-end text-sm">
                     <span @click="_popoverProfit?.toggle">
                         {{ ctrans("Profit") }}
                     </span>:

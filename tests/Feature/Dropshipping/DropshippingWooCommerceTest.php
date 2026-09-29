@@ -34,6 +34,7 @@ use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWoo
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkDispatchProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\RetryTimedOutWooUploads;
 use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreWooCommerceProduct;
@@ -817,6 +818,23 @@ test('an upload that collides with a listed sku adopts the listed product', func
         ->and($portfolio->errors_response)->toBeNull();
 });
 
+test('a sku collision whose lookup returns another product keeps the store error instead of adopting it', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, null, 'ghost-sku');
+
+    wooFake([
+        'POST products' => Http::response(['code' => 'product_invalid_sku', 'message' => 'Invalid or duplicated SKU.', 'data' => ['status' => 400]], 400),
+        'GET products'  => Http::response([wooProduct(36849, ['sku' => 'teak-board', 'description' => 'Crafted from Java teak'])]),
+    ]);
+
+    StoreNewProductToCurrentWooCommerce::run($wooCommerceUser, $portfolio);
+    $portfolio->refresh();
+
+    expect($portfolio->platform_product_id)->toBeNull()
+        ->and($portfolio->platform_status)->toBeFalse()
+        ->and($portfolio->errors_response['message'])->toBe('Invalid or duplicated SKU.');
+});
+
 test('a listing the store no longer has is reported missing and the sku match is offered in the table shape', function () {
     $wooCommerceUser = wooConnect(wooCustomer($this->shop));
     $portfolio       = wooPortfolio($wooCommerceUser->customerSalesChannel, $this->product, '794', 'gone-sku');
@@ -1034,6 +1052,31 @@ test('the inventory scheduler skips banned, closed and manual-stock channels', f
 
     UpdateWooCustomerSalesChannelPortfolio::assertPushed(fn ($job, array $arguments) => $arguments[0]->id === $open->id);
     UpdateWooCustomerSalesChannelPortfolio::assertNotPushed(fn ($job, array $arguments) => in_array($arguments[0]->id, [$banned->id, $manual->id]));
+});
+
+test('timed out uploads are reported and, with dispatch, queued again only on open channels that connect', function () {
+    Queue::fake();
+    $live   = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
+    $closed = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
+    $live->update(['can_connect_to_platform' => true]);
+    $closed->update(['can_connect_to_platform' => true, 'status' => 'closed']);
+
+    $timedOut = wooPortfolio($live, $this->product, null, 'slow-1');
+    $timedOut->update(['errors_response' => ['message' => 'WooCommerce API Connection Error: cURL error 28: Operation timed out']]);
+    $refused = wooPortfolio($live, wooSecondProduct($this->shop, $this->product), null, 'refused-1');
+    $refused->update(['errors_response' => ['message' => 'Sorry, you are not allowed to create resources.']]);
+    $onClosed = wooPortfolio($closed, $this->product, null, 'slow-2');
+    $onClosed->update(['errors_response' => ['message' => 'There has been a critical error on this website.']]);
+
+    expect(RetryTimedOutWooUploads::run($live)->pluck('id')->all())->toBe([$timedOut->id])
+        ->and(RetryTimedOutWooUploads::run($closed))->toBeEmpty();
+
+    $this->artisan('woo:retry-timed-out-uploads', ['customerSalesChannel' => $live->id])->assertSuccessful();
+    StoreNewProductToCurrentWooCommerce::assertNotPushed();
+
+    $this->artisan('woo:retry-timed-out-uploads', ['customerSalesChannel' => $live->id, '--dispatch' => true])->assertSuccessful();
+    StoreNewProductToCurrentWooCommerce::assertPushed(1);
+    StoreNewProductToCurrentWooCommerce::assertPushed(fn ($job, array $arguments) => $arguments[1]->id === $timedOut->id);
 });
 
 test('quantity to send follows the channel threshold and cap', function () {

@@ -55,8 +55,8 @@ Route::get('/ping', function () {
 })->name('ping');
 
 
-Route::post('/sessions', StoreChatSession::class)->name('sessions.store');
-Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store');
+Route::post('/sessions', StoreChatSession::class)->name('sessions.store')->middleware('throttle:chat-guest');
+Route::post('/offline-message', StoreOfflineMessage::class)->name('offline-message.store')->middleware('throttle:chat-guest');
 Route::post('/messages/{chatSession:ulid}/send', SendChatMessage::class)->name('messages.send');
 Route::put('/sessions/{chatSession:ulid}/update', UpdateChatSession::class)->name('sessions.update');
 Route::put('/sessions/{chatSession:ulid}/close', [CloseChatSession::class, 'asApiController'])->name('sessions.close');

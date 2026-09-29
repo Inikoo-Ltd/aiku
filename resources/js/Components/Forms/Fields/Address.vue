@@ -9,6 +9,8 @@ import Multiselect from '@vueform/multiselect'
 import "@vueform/multiselect/themes/default.css"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { picksAdministrativeAreaFromList } from '@/Composables/useAddressValidation'
+import { useCountriesAddressData } from '@/Composables/useCountriesAddressData'
+import { computed } from 'vue'
 
 const props = defineProps<{
     form: any
@@ -26,17 +28,23 @@ const emits = defineEmits<{
 }>()
 
 let addressValues = props.form[props.fieldName]
-const countries = {};
 
-for (const item in props.options.countriesAddressData) {
-    countries[item] = props.options.countriesAddressData[item]['label']
-}
+const fetchedCountriesAddressData = props.options?.countriesAddressData ? null : useCountriesAddressData()
+const countriesAddressData = computed(() => props.options?.countriesAddressData ?? fetchedCountriesAddressData?.value ?? {})
 
-const administrativeAreas = (countryID: number) => props.options.countriesAddressData[countryID]['administrativeAreas'] ?? []
+const countries = computed(() => {
+    const labels = {}
+    for (const item in countriesAddressData.value) {
+        labels[item] = countriesAddressData.value[item]['label']
+    }
+    return labels
+})
+
+const administrativeAreas = (countryID: number) => countriesAddressData.value[countryID]?.administrativeAreas ?? []
 const picksFromAdministrativeAreaList = (countryID: number, administrativeArea?: string | null) =>
     picksAdministrativeAreaFromList(administrativeAreas(countryID), administrativeArea)
 const addressFields = (countryID: number) => {
-    return props.options.countriesAddressData[countryID]['fields'];
+    return countriesAddressData.value[countryID]?.fields;
 }
 const handleChange = (fieldAddress?: string) => {
     emits('select', fieldAddress)
@@ -70,7 +78,7 @@ const handleChange = (fieldAddress?: string) => {
                     :canClear="false"
                     name="country_id"
                     id="country_id"
-                    @select="(e) => emits('select', options.countriesAddressData[e])"
+                    @select="(e) => emits('select', countriesAddressData[e])"
                 />
                 
                 <div v-if="form.errors[fieldName] || form.recentlySuccessful"

@@ -104,25 +104,20 @@ const toggleStatus = (status: ChatStatus) => {
 // The status capsules count exactly the squares that are on.
 const ZERO_TALLY = { waiting: 0, active: 0, closed: 0, mine: 0, colleagues: 0, closed_mine: 0, closed_colleagues: 0 }
 
-// Which shop's squares each capsule counts. One shop is the squares that are on; several shops
-// is every channel on each of them, which is what the list is showing.
+// The capsules count the squares that are on, on every shop that is on: the same pairs the
+// list is filtered by, so a capsule never promises a chat the list cannot show.
 const countedTallies = computed(() => {
-    if (selectedShopIds.value.length > 1) {
-        return selectedShopIds.value.flatMap((shopId) => {
-            const inbox = props.inboxes?.find((i) => i.id === shopId)
+    const inboxes = selectedShopIds.value.length > 1
+        ? selectedShopIds.value.map((shopId) => props.inboxes?.find((i) => i.id === shopId))
+        : [selectedInbox.value]
 
-            return liveChannels(inbox).flatMap((channel) => [
-                inbox?.channels?.find((c) => c.key === channel.key)?.customer,
-                inbox?.channels?.find((c) => c.key === channel.key)?.guest,
-            ])
+    return inboxes.flatMap((inbox) =>
+        selectedCells.value.map((cell) => {
+            const [channelKey, kind] = cell.split(":") as [string, ChatKind]
+
+            return inbox?.channels?.find((c) => c.key === channelKey && c.available !== false)?.[kind]
         })
-    }
-
-    return selectedCells.value.map((cell) => {
-        const [channelKey, kind] = cell.split(":") as [string, ChatKind]
-
-        return selectedInbox.value?.channels?.find((c) => c.key === channelKey)?.[kind]
-    })
+    )
 })
 
 const selectedChannelCounts = computed(() =>

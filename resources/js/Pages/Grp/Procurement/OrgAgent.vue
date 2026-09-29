@@ -14,7 +14,7 @@ import {
     faTerminal,
     faPeopleArrows,
     faClipboard, faTruck, faCameraRetro,
-    faPersonDolly,faAddressBook, faInbox
+    faPersonDolly,faAddressBook, faInbox, faPaperclip
 } from '@fal';
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {computed, defineAsyncComponent, ref} from "vue";
@@ -28,6 +28,11 @@ import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePu
 import {useForm} from "@inertiajs/vue3";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import TableSupplierMessages from "@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue";
+import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { ctrans } from "@/Composables/useTrans"
+import { routeType } from "@/types/route"
 
 const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
@@ -45,6 +50,9 @@ const props = defineProps<{
     errors?: object,
     history?: object
     inbox?: object
+    attachments?: object
+    attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
+    attachmentScopes: { name: string; code: string }[]
 }>()
 
 
@@ -59,10 +67,12 @@ library.add(
     faClipboard,
     faPeopleArrows,
     faAddressBook,
-    faInbox
+    faInbox,
+    faPaperclip
 );
 
 let currentTab = ref(props.tabs.current);
+const isModalUploadAttachmentOpen = ref(false)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
@@ -74,6 +84,7 @@ const component = computed(() => {
         purchase_orders: TablePurchaseOrders,
         details: ModelDetails,
         inbox: TableSupplierMessages,
+        attachments: TableAttachments,
         history: TableHistories
     };
     return components[currentTab.value];
@@ -101,9 +112,23 @@ const getErrors = () => {
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+        <template #other>
+            <Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
+        </template>
+    </PageHeading>
     <div v-if="props.errors.purchase_order">{{ getErrors() }}</div>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute"></component>
+
+    <UploadAttachment
+        v-model="isModalUploadAttachmentOpen"
+        scope="attachment"
+        :title="{ label: ctrans('Upload your file'), information: '' }"
+        :progressDescription="ctrans('Adding agent attachments')"
+        :attachmentRoutes="attachmentRoutes"
+        :options="attachmentScopes"
+        withCaption
+    />
 </template>
 

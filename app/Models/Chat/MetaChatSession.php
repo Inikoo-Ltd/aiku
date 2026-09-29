@@ -131,6 +131,8 @@ class MetaChatSession extends Model
             ? $this->lastVisitorMessage->first()?->created_at
             : $this->lastVisitorMessage()->latest()->first()?->created_at;
 
+        $lastInboundAt = collect([$lastInboundAt, $this->last_visitor_message_at])->filter()->max();
+
         return $lastInboundAt !== null && $lastInboundAt->gt(now()->subDay());
     }
 

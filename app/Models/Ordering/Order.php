@@ -38,6 +38,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Actions\Traits\WithLineTaxCategories;
 use App\Models\Helpers\TaxCategory;
+use App\Models\Helpers\TaxNumber;
 use App\Models\Reviews\OrderReviewStat;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Group;
@@ -526,6 +527,20 @@ class Order extends Model implements HasMedia, Auditable
     public function billingAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class);
+    }
+
+    /**
+     * A collection order is handed over at the shop's premises, so its tax follows that address, not the customer's (HELP-3494).
+     * A customer with a valid tax number keeps being taxed where they are based: a business collecting to take the goods
+     * abroad stays zero-rated
+     */
+    public function taxableDeliveryAddress(?TaxNumber $taxNumber): ?Address
+    {
+        if ($this->collection_address_id && !$taxNumber?->valid && $this->shop->collectionAddress) {
+            return $this->shop->collectionAddress;
+        }
+
+        return $this->deliveryAddress;
     }
 
     public function deliveryAddress(): BelongsTo

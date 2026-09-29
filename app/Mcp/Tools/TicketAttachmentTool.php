@@ -18,11 +18,12 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Smalot\PdfParser\Parser as PdfParser;
 use Throwable;
 use ZipArchive;
 
-#[Description('Reads one attachment of a ticket. Pass the ticket reference and the attachment name or id as tickets-tool lists them. PDF, Word (docx), CSV and text files come back as extracted text; images come back as the image. Spreadsheets, archives and videos are not readable here. Same visibility rules as tickets-tool.')]
+#[Description('Reads one attachment of a ticket. Pass the ticket reference and the attachment name or id as tickets-tool lists them. PDF, Word (docx), CSV and text files come back as extracted text; spreadsheets (xlsx, xls, ods) come back as one tab-separated block per sheet, each line prefixed with its Excel row number, showing values as they display in Excel; images come back as the image. Archives and videos are not readable here. Same visibility rules as tickets-tool.')]
 #[IsReadOnly]
 class TicketAttachmentTool extends Tool
 {
@@ -83,6 +84,7 @@ class TicketAttachmentTool extends Tool
             'pdf'        => $this->pdfText($content),
             'docx'       => $this->docxText($content),
             'csv', 'txt' => $content,
+            'xlsx', 'xls', 'ods' => $this->spreadsheetText($content, $extension),
             default      => null,
         };
 
@@ -130,6 +132,40 @@ class TicketAttachmentTool extends Tool
         } finally {
             @unlink($temporaryPath);
         }
+    }
+
+    private function spreadsheetText(string $content, string $extension): string
+    {
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'ticket_sheet_').'.'.$extension;
+        file_put_contents($temporaryPath, $content);
+
+        try {
+            $spreadsheet = IOFactory::load($temporaryPath);
+        } catch (Throwable) {
+            return '';
+        } finally {
+            @unlink($temporaryPath);
+        }
+
+        $sheets = [];
+        foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
+            try {
+                $rows = $worksheet->toArray('', true, true, true);
+            } catch (Throwable) {
+                $rows = $worksheet->toArray('', false, true, true);
+            }
+
+            $lines = ['## Sheet: '.$worksheet->getTitle()];
+            foreach ($rows as $rowNumber => $cells) {
+                $line = rtrim(implode("\t", array_map(fn ($cell) => str_replace(["\t", "\r\n", "\n"], ' ', (string) $cell), $cells)));
+                if ($line !== '') {
+                    $lines[] = $rowNumber."\t".$line;
+                }
+            }
+            $sheets[] = implode("\n", $lines);
+        }
+
+        return implode("\n\n", $sheets);
     }
 
     /**

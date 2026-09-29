@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp\Layout;
 
 use App\Models\Helpers\Ticket;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
@@ -74,7 +75,7 @@ class GetOrganisationNavigation
             $shops_navigation[$shop->slug] = [
                 'type'          => $shop->type,
                 'state'         => $shop->state,
-                'subNavigation' => GetShopNavigation::run($shop, $user)
+                'subNavigation' => $shop->state === ShopStateEnum::CLOSED ? [] : GetShopNavigation::run($shop, $user)
             ];
         }
 
@@ -120,13 +121,12 @@ class GetOrganisationNavigation
             ]
         ];
 
+        $navigation = $this->getWarehouseNavs($user, $organisation, $navigation);
+
         $navigation['productions_navigation'] = [];
         foreach ($user->authorisedProductions->where('organisation_id', $organisation->id) as $production) {
             $navigation['productions_navigation'][$production->slug] = GetProductionNavigation::run($production, $user);
         }
-
-
-        $navigation = $this->getWarehouseNavs($user, $organisation, $navigation);
 
 
 

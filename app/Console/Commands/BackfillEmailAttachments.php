@@ -99,12 +99,14 @@ class BackfillEmailAttachments extends Command
                 $gmailMessageId = Arr::get($message->metadata, 'gmail_message_id');
 
                 try {
-                    $raw   = $client->getMessage($gmailMessageId);
-                    $files = ImportPendingGmailAttachments::make()->download(
+                    $raw        = $client->getMessage($gmailMessageId);
+                    $contentIds = [];
+                    $files      = ImportPendingGmailAttachments::make()->download(
                         $client,
                         $gmailMessageId,
                         $raw,
-                        trusted: (bool) $session->web_user_id
+                        trusted: (bool) $session->web_user_id,
+                        contentIds: $contentIds
                     );
                 } catch (Throwable $e) {
                     // Deleted from the mailbox, or the mailbox disconnected. Leave it alone.
@@ -134,7 +136,7 @@ class BackfillEmailAttachments extends Command
                 $imported += count($files);
 
                 if (!$dryRun) {
-                    SendChatMessage::make()->processMessageAttachments($message, $files);
+                    SendChatMessage::make()->processMessageAttachments($message, $files, $contentIds);
                 }
 
                 foreach ($files as $file) {

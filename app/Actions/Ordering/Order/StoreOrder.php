@@ -161,7 +161,7 @@ class StoreOrder extends OrgAction
                     country: $this->organisation->country,
                     taxNumber: $taxNumber,
                     billingAddress: $billingAddress,
-                    deliveryAddress: $deliveryAddress,
+                    deliveryAddress: $this->isCollection($modelData) && !$taxNumber?->valid && $shop->collectionAddress ? $shop->collectionAddress : $deliveryAddress,
                     isRe: $isRe,
                 )->id
             );
@@ -277,6 +277,13 @@ class StoreOrder extends OrgAction
         }
 
         return $order->fresh();
+    }
+
+    private function isCollection(array $modelData): bool
+    {
+        $handingType = Arr::get($modelData, 'handing_type');
+
+        return ($handingType instanceof OrderHandingTypeEnum ? $handingType : OrderHandingTypeEnum::tryFrom((string)$handingType)) === OrderHandingTypeEnum::COLLECTION;
     }
 
     public function rules(): array

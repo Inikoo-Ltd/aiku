@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import axios from "axios"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -28,11 +28,11 @@ const props = defineProps<{
     fieldData: {
         routes: {
             status: RouteType
-            request_code: RouteType
-            verify_code: RouteType
-            register: RouteType
+            request_code?: RouteType
+            verify_code?: RouteType
+            register?: RouteType
             subscribed_apps: RouteType
-            subscribe_app: RouteType
+            subscribe_app?: RouteType
         }
         value?: { at: string; status: PhoneStatus } | null
     }
@@ -68,23 +68,23 @@ const isVerified = computed(() => status.value?.code_verification_status === "VE
 
 const badge = computed(() => {
     if (!status.value) {
-        return { label: trans("Not checked yet"), class: "bg-gray-100 text-gray-600 ring-gray-300" }
+        return { label: ctrans("Not checked yet"), class: "bg-gray-100 text-gray-600 ring-gray-300" }
     }
     if (isConnected.value) {
         return { label: status.value.status, class: "bg-lime-100 text-lime-700 ring-lime-300" }
     }
-    return { label: status.value.status || trans("Offline"), class: "bg-amber-100 text-amber-700 ring-amber-300" }
+    return { label: status.value.status || ctrans("Offline"), class: "bg-amber-100 text-amber-700 ring-amber-300" }
 })
 
 const subscriptionBadge = computed(() => {
     if (isSubscribed.value) {
-        return { label: trans("App subscribed"), class: "bg-lime-100 text-lime-700 ring-lime-300" }
+        return { label: ctrans("App subscribed"), class: "bg-lime-100 text-lime-700 ring-lime-300" }
     }
-    return { label: trans("App not subscribed"), class: "bg-amber-100 text-amber-700 ring-amber-300" }
+    return { label: ctrans("App not subscribed"), class: "bg-amber-100 text-amber-700 ring-amber-300" }
 })
 
-const post = async (routeTarget: RouteType, data: Record<string, unknown> = {}) => {
-    const response = await axios.post(route(routeTarget.name, routeTarget.parameters), data)
+const post = async (routeTarget: RouteType | undefined, data: Record<string, unknown> = {}) => {
+    const response = await axios.post(route(routeTarget!.name, routeTarget!.parameters), data)
     return response.data
 }
 
@@ -104,8 +104,8 @@ const checkStatus = async () => {
         checkedAt.value = null
         isSubscribed.value = null
         notify({
-            title: trans("Something went wrong."),
-            text: error.response?.data?.message ?? trans("Could not read the status of this number."),
+            title: ctrans("Something went wrong."),
+            text: error.response?.data?.message ?? ctrans("Could not read the status of this number."),
             type: "error",
         })
     }
@@ -119,15 +119,15 @@ const subscribeApp = async () => {
     try {
         await post(props.fieldData.routes.subscribe_app)
         notify({
-            title: trans("App subscribed"),
-            text: trans("Meta will now deliver messages for this account to Aiku."),
+            title: ctrans("App subscribed"),
+            text: ctrans("Meta will now deliver messages for this account to Aiku."),
             type: "success",
         })
         await checkStatus()
     } catch (error: any) {
         notify({
-            title: trans("Something went wrong."),
-            text: error.response?.data?.message ?? trans("Could not subscribe the app to this account."),
+            title: ctrans("Something went wrong."),
+            text: error.response?.data?.message ?? ctrans("Could not subscribe the app to this account."),
             type: "error",
         })
     }
@@ -150,14 +150,14 @@ const closeModal = () => {
     stepError.value = ""
 }
 
-const runStep = async (routeTarget: RouteType, data: Record<string, unknown>, onDone: () => void) => {
+const runStep = async (routeTarget: RouteType | undefined, data: Record<string, unknown>, onDone: () => void) => {
     isProcessing.value = true
     stepError.value = ""
     try {
         await post(routeTarget, data)
         onDone()
     } catch (error: any) {
-        stepError.value = error.response?.data?.message ?? trans("Something went wrong.")
+        stepError.value = error.response?.data?.message ?? ctrans("Something went wrong.")
     }
     isProcessing.value = false
 }
@@ -180,8 +180,8 @@ const register = () =>
     runStep(props.fieldData.routes.register, { pin: pin.value }, () => {
         closeModal()
         notify({
-            title: trans("Number registered"),
-            text: trans("This number can now send and receive WhatsApp messages."),
+            title: ctrans("Number registered"),
+            text: ctrans("This number can now send and receive WhatsApp messages."),
             type: "success",
         })
         checkStatus()
@@ -208,28 +208,28 @@ const register = () =>
                 v-if="checkedAt"
                 v-tooltip="useFormatTime(checkedAt, { formatTime: 'hms' })"
                 class="text-xs text-gray-500">
-                {{ trans("checked :ago ago", { ago: useRangeFromNow(checkedAt) }) }}
+                {{ ctrans("checked :ago ago", { ago: useRangeFromNow(checkedAt) }) }}
             </span>
 
             <Button
                 :style="'tertiary'"
                 size="xs"
-                :label="trans('Check status')"
+                :label="ctrans('Check status')"
                 :loading="isChecking"
                 @click="checkStatus" />
 
             <Button
-                v-if="status && !isConnected"
+                v-if="status && !isConnected && fieldData.routes.register"
                 :style="'save'"
                 size="xs"
-                :label="trans('Verify number')"
+                :label="ctrans('Verify number')"
                 @click="openModal" />
 
             <Button
-                v-if="isSubscribed === false"
+                v-if="isSubscribed === false && fieldData.routes.subscribe_app"
                 :style="'save'"
                 size="xs"
-                :label="trans('Subscribe app')"
+                :label="ctrans('Subscribe app')"
                 :loading="isSubscribing"
                 @click="subscribeApp" />
         </div>
@@ -243,15 +243,15 @@ const register = () =>
 
         <Modal :isOpen="isOpen" @onClose="closeModal" width="w-full max-w-lg">
             <div class="text-left">
-                <h3 class="text-base font-semibold text-gray-900">{{ trans("Verify WhatsApp number") }}</h3>
+                <h3 class="text-base font-semibold text-gray-900">{{ ctrans("Verify WhatsApp number") }}</h3>
 
                 <ol v-if="!isVerified" class="mt-3 flex gap-4 text-xs">
-                    <li v-for="(stepLabel, index) in [trans('Send code'), trans('Verify'), trans('Register')]" :key="stepLabel"
+                    <li v-for="(stepLabel, index) in [ctrans('Send code'), ctrans('Verify'), ctrans('Register')]" :key="stepLabel"
                         :class="step === index + 1 ? 'font-semibold text-gray-900' : 'text-gray-400'">
                         {{ index + 1 }}. {{ stepLabel }}
                     </li>
                 </ol>
-                <p v-else class="mt-3 text-xs font-semibold text-gray-900">{{ trans("Register") }}</p>
+                <p v-else class="mt-3 text-xs font-semibold text-gray-900">{{ ctrans("Register") }}</p>
 
                 <div v-if="stepError" class="mt-3 rounded-sm border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />
@@ -260,48 +260,48 @@ const register = () =>
 
                 <div v-if="step === 1" class="mt-4 space-y-3">
                     <p class="text-xs text-gray-500">
-                        {{ trans("Meta sends a one time code to this number to confirm you control it.") }}
+                        {{ ctrans("Meta sends a one time code to this number to confirm you control it.") }}
                     </p>
                     <div class="flex gap-4 text-sm">
                         <label v-for="method in ['SMS', 'VOICE']" :key="method" class="flex items-center gap-1">
                             <input v-model="codeMethod" type="radio" :value="method" />
-                            {{ method === "SMS" ? trans("SMS") : trans("Voice call") }}
+                            {{ method === "SMS" ? ctrans("SMS") : ctrans("Voice call") }}
                         </label>
                     </div>
                     <label class="block text-sm">
-                        <span class="text-gray-500">{{ trans("Language") }}</span>
+                        <span class="text-gray-500">{{ ctrans("Language") }}</span>
                         <input v-model="language" type="text" class="mt-1 block w-24 rounded-md border-gray-300 text-sm" />
                     </label>
                     <div class="flex justify-end">
-                        <Button :style="'save'" :label="trans('Send code')" :loading="isProcessing" @click="requestCode" />
+                        <Button :style="'save'" :label="ctrans('Send code')" :loading="isProcessing" @click="requestCode" />
                     </div>
                 </div>
 
                 <div v-else-if="step === 2" class="mt-4 space-y-3">
                     <label class="block text-sm">
-                        <span class="text-gray-500">{{ trans("Verification code") }}</span>
+                        <span class="text-gray-500">{{ ctrans("Verification code") }}</span>
                         <input v-model="code" type="text" inputmode="numeric" autocomplete="one-time-code"
                             class="mt-1 block w-32 rounded-md border-gray-300 tracking-widest" />
                     </label>
                     <div class="flex justify-between">
-                        <Button :style="'tertiary'" :label="trans('Back')" @click="step = 1" />
-                        <Button :style="'save'" :label="trans('Verify')" :loading="isProcessing" @click="verifyCode" />
+                        <Button :style="'tertiary'" :label="ctrans('Back')" @click="step = 1" />
+                        <Button :style="'save'" :label="ctrans('Verify')" :loading="isProcessing" @click="verifyCode" />
                     </div>
                 </div>
 
                 <div v-else class="mt-4 space-y-3">
                     <label class="block text-sm">
-                        <span class="text-gray-500">{{ trans("Two step verification PIN") }}</span>
+                        <span class="text-gray-500">{{ ctrans("Two step verification PIN") }}</span>
                         <input v-model="pin" type="text" inputmode="numeric" maxlength="6"
                             class="mt-1 block w-32 rounded-md border-gray-300 tracking-widest" />
                     </label>
                     <p class="text-xs text-amber-700">
                         <FontAwesomeIcon icon="fal fa-info-circle" class="mr-1" fixed-width aria-hidden="true" />
-                        {{ trans("This PIN is not stored by Aiku. Meta asks for it again if the number is ever registered anew, so keep a record of it.") }}
+                        {{ ctrans("This PIN is not stored by Aiku. Meta asks for it again if the number is ever registered anew, so keep a record of it.") }}
                     </p>
                     <div class="flex" :class="isVerified ? 'justify-end' : 'justify-between'">
-                        <Button v-if="!isVerified" :style="'tertiary'" :label="trans('Back')" @click="step = 2" />
-                        <Button :style="'save'" :label="trans('Register')" :loading="isProcessing" @click="register" />
+                        <Button v-if="!isVerified" :style="'tertiary'" :label="ctrans('Back')" @click="step = 2" />
+                        <Button :style="'save'" :label="ctrans('Register')" :loading="isProcessing" @click="register" />
                     </div>
                 </div>
             </div>

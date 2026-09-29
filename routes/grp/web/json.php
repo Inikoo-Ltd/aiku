@@ -167,6 +167,7 @@ use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\Announcement\UI\GetIrisAnnouncements;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
+use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Web\WebLayoutTemplate\FetchWebLayoutTemplateDetail;
 use App\Actions\Web\WebLayoutTemplate\IndexWebLayoutTemplates;
 use App\Actions\Web\Webpage\Json\GetBlogWebpages;
@@ -177,6 +178,7 @@ use App\Actions\Web\Website\UI\Json\FetchFamilyDescriptionBlockLayout;
 use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
+Route::get('countries-address-data', GetAddressData::class)->name('countries_address_data');
 Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
 Route::get('{website}/active-announcements', GetActiveAnnouncement::class)->name('announcement_active.index');
 Route::get('{website}/iris-announcements', GetIrisAnnouncements::class)->name('announcement_simulation.index');

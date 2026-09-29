@@ -8,12 +8,9 @@
 
 namespace App\Actions\Chat\ChatSession;
 
-use App\Actions\Chat\MetaChatSession\CloseMetaChatSession;
-use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
+use App\Actions\Chat\UpdateShopChatClosing;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\CRM\Livechat\ChatActorTypeEnum;
-use App\Enums\CRM\Livechat\ChatAutomationKindEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -77,7 +74,7 @@ class FlagUrgentChatRequest
         $request    = $assessment['request'];
 
         if ($assessment['only_thanks'] && $this->mayCloseAfterThanks($chatSession, $text, $weSaid) && $this->assess($text, $weSaid)['only_thanks']) {
-            $this->closeAfterThanks($chatSession);
+            CloseChatAfterThanks::closeNowOrLater($chatSession);
 
             return null;
         }
@@ -113,6 +110,7 @@ class FlagUrgentChatRequest
     private function mayCloseAfterThanks(ChatSession|MetaChatSession $chatSession, string $text, string $weSaid): bool
     {
         return config('chat.close_after_thanks')
+            && $chatSession->shop && UpdateShopChatClosing::isOn($chatSession->shop)
             && preg_match('/[\p{L}\p{N}]/u', $text)
             && !str_contains($text, '?')
             && !preg_match(self::OPEN_PROMISE_WORDS, $weSaid)
@@ -125,33 +123,6 @@ class FlagUrgentChatRequest
                     ->orHas('attachment')
                     ->when($chatSession instanceof MetaChatSession, fn ($query) => $query->orWhereRaw("coalesce(metadata->>'wa_type', 'text') <> 'text'")))
                 ->exists();
-    }
-
-    /**
-     * Only stored, never sent: on WhatsApp nothing goes to the customer unless it is posted
-     * to Meta, which neither the close nor this note does.
-     */
-    private function closeAfterThanks(ChatSession|MetaChatSession $chatSession): void
-    {
-        $note = [
-            'message_text' => 'Closed automatically: the customer only thanked us. Anything they write next reopens it.',
-            'message_type' => ChatMessageTypeEnum::TEXT->value,
-            'sender_type'  => ChatSenderTypeEnum::SYSTEM->value,
-            'is_read'      => true,
-            'read_at'      => now(),
-            'delivered_at' => now(),
-            'metadata'     => ['automated' => ChatAutomationKindEnum::THANKS_CLOSED->value],
-        ];
-
-        if ($chatSession instanceof MetaChatSession) {
-            CloseMetaChatSession::run($chatSession, null, ChatActorTypeEnum::SYSTEM, ['reason' => 'only_thanks']);
-            StoreMetaChatMessage::run($chatSession, $note);
-
-            return;
-        }
-
-        CloseChatSession::run($chatSession, null, ChatActorTypeEnum::SYSTEM, ['reason' => 'only_thanks']);
-        $chatSession->messages()->create($note);
     }
 
     /**

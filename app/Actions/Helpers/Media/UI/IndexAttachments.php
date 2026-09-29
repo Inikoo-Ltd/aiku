@@ -22,6 +22,7 @@ use App\Models\Helpers\Media;
 use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Services\QueryBuilder;
 use Closure;
@@ -31,9 +32,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexAttachments extends OrgAction
 {
-    protected Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|PalletReturn|PalletDelivery|Order|Invoice $parent;
+    protected Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|PalletReturn|PalletDelivery|Order|Invoice $parent;
 
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn $parent, $prefix = null, $bucket = null): LengthAwarePaginator
+    public function handle(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

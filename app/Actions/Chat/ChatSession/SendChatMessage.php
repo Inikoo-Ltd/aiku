@@ -91,7 +91,7 @@ class SendChatMessage
             $this->processMessageFile($chatMessage, $modelData['file']);
         }
         if (! empty($modelData['attachments'])) {
-            $this->processMessageAttachments($chatMessage, $modelData['attachments']);
+            $this->processMessageAttachments($chatMessage, $modelData['attachments'], $modelData['attachment_content_ids'] ?? []);
         }
 
         ProcessChatMessageSideEffects::dispatch(
@@ -177,12 +177,16 @@ class SendChatMessage
     /**
      * @param  array<int, UploadedFile>  $files
      */
-    public function processMessageAttachments(ChatMessage $chatMessage, array $files): void
+    /**
+     * @param  array<int, UploadedFile>  $files
+     * @param  array<int, string|null>  $contentIds  the Content-ID an email's markup addresses each file by, at the same position
+     */
+    public function processMessageAttachments(ChatMessage $chatMessage, array $files, array $contentIds = []): void
     {
         $firstMediaId = $chatMessage->media_id;
         $allImages    = true;
 
-        foreach ($files as $file) {
+        foreach ($files as $index => $file) {
             $isImage   = str_starts_with((string) $file->getMimeType(), 'image/');
             $allImages = $allImages && $isImage;
 
@@ -192,6 +196,10 @@ class SendChatMessage
                 'extension'    => $file->getClientOriginalExtension(),
                 'checksum'     => md5_file($file->getPathName()),
             ], $isImage ? 'chat_images' : 'chat_attachments', $isImage ? 'image' : 'file');
+
+            if ($contentIds[$index] ?? null) {
+                $media->setCustomProperty('content_id', $contentIds[$index])->save();
+            }
 
             $firstMediaId ??= $media->id;
         }

@@ -51,18 +51,23 @@ class ImportPendingGmailAttachments
         $gmailMessageId = Arr::get($message->metadata, 'gmail_message_id');
 
         // The pictures came in when the mail did. Downloading everything again would attach
-        // them a second time, so what is already here is left alone.
-        $already = $message->attachedFiles()->pluck('name')->all();
+        // them a second time, so what is already here is left alone. Outlook names every picture
+        // image001.png, so a file the markup addresses is recognised by its Content-ID instead.
+        $already = $message->attachedFiles()
+            ->map(fn ($media) => $media->getCustomProperty('content_id') ?: $media->name)
+            ->all();
 
-        $files = $this->download(
+        $contentIds = [];
+        $files      = $this->download(
             $client,
             $gmailMessageId,
             $client->getMessage($gmailMessageId),
-            skip: $already
+            skip: $already,
+            contentIds: $contentIds
         );
 
         if ($files) {
-            SendChatMessage::make()->processMessageAttachments($message, $files);
+            SendChatMessage::make()->processMessageAttachments($message, $files, $contentIds);
         }
 
         foreach ($files as $file) {
@@ -141,7 +146,7 @@ class ImportPendingGmailAttachments
                 continue;
             }
 
-            if (in_array(basename((string) $attachment['filename']), $skip, true)) {
+            if (in_array($attachment['contentId'], $skip, true) || in_array(basename((string) $attachment['filename']), $skip, true)) {
                 continue;
             }
 
@@ -249,6 +254,19 @@ class ImportPendingGmailAttachments
         return collect($this->candidates($client, $raw))
             ->filter(fn (array $attachment) => $this->isWorthImporting($attachment, true)
                 && ! $this->isWorthImporting($attachment, false))
+            ->count();
+    }
+
+    /**
+     * What "Show attachments" would bring in for a mail already in the mailbox. Drive links are
+     * left out: counting them means asking Drive about every one.
+     *
+     * @param  array<string, mixed>  $raw
+     */
+    public function countImportable(array $raw): int
+    {
+        return collect(GmailMessageParser::attachments(Arr::get($raw, 'payload', [])))
+            ->filter(fn (array $attachment) => $this->isWorthImporting($attachment, true))
             ->count();
     }
 

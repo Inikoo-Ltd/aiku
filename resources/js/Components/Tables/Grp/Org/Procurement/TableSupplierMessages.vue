@@ -17,7 +17,7 @@ const props = defineProps<{
     data: {
         compose?: {
             email: { route: routeType; to: string[]; counterpart: string | null } | null
-            whatsapp: { route: routeType; phone: string | null; counterpart: string | null; window_open: boolean; has_template: boolean } | null
+            whatsapp: { route: routeType; phone: string | null; counterpart: string | null; window_open: boolean; has_template: boolean; template: { name: string; language: string | null; status: string | null; body: string | null } | null } | null
         } | null
     }
     tab?: string
@@ -79,6 +79,6 @@ interface SupplierEmailRow {
         </div>
         <SupplierEmailComposer v-if="composeChannel === 'email' && data.compose.email" :route="data.compose.email.route" :to="data.compose.email.to" :counterpart="data.compose.email.counterpart" @sent="isComposing = false" />
         <SupplierWhatsappComposer v-else-if="data.compose.whatsapp" :route="data.compose.whatsapp.route" :phone="data.compose.whatsapp.phone" :counterpart="data.compose.whatsapp.counterpart"
-            :window-open="data.compose.whatsapp.window_open" :has-template="data.compose.whatsapp.has_template" @sent="isComposing = false" />
+            :window-open="data.compose.whatsapp.window_open" :has-template="data.compose.whatsapp.has_template" :template="data.compose.whatsapp.template" @sent="isComposing = false" />
     </Dialog>
 </template>

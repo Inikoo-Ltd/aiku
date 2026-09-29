@@ -63,6 +63,7 @@ interface GetMessagesParams {
 }
 
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
 import { faGlobe } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -636,6 +637,12 @@ const canLoadMore = ref(false)
 const nextCursor = ref<string | null>(null)
 
 const chatSession = computed(() => props.session)
+
+const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
+    chatSession.value?.ulid
+        ? route("grp.org.chat.agents.sessions.keep_open", [(route().params as Record<string, any>)?.organisation ?? "aw", chatSession.value.ulid])
+        : null
+)
 const isTrashed = computed(() => !!(chatSession.value as any)?.is_trashed)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => chatSession.value?.status === "waiting")
@@ -1049,6 +1056,7 @@ let onMessagesRead: ((payload: any) => void) | null = null
 let onTyping: ((payload: any) => void) | null = null
 let onTranslation: ((payload: any) => void) | null = null
 let onRetracted: ((payload: any) => void) | null = null
+let onClosing: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
@@ -1057,6 +1065,8 @@ const stopSocket = () => {
     if (onTyping) chatChannel?.stopListening(".typing", onTyping)
     if (onTranslation) chatChannel?.stopListening(".translation", onTranslation)
     if (onRetracted) chatChannel?.stopListening(".message.retracted", onRetracted)
+    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
+    onClosing = null
     onMessage = null
     onReaction = null
     onMessagesRead = null
@@ -1075,8 +1085,12 @@ const initSocket = () => {
 
     chatChannel = window.Echo.channel(`chat-session.${chatSession.value.ulid}`)
 
+    onClosing = onClosingEvent
+    chatChannel.listen(".closing", onClosing)
+
     // Message
     onMessage = ({ message }: any) => {
+        closingAt.value = null
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
         )
@@ -1257,6 +1271,8 @@ const sendTypingStatus = async (status: boolean) => {
 }
 
 const handleTyping = () => {
+    keepOpen()
+
     if (!isTyping.value) {
         isTyping.value = true
         sendTypingStatus(true)
@@ -1339,6 +1355,11 @@ const handleClickOutside = (e: MouseEvent) => {
                         v-tooltip="ctrans('Last message') + ': ' + lastMessageStamp.time">
                         <span class="hidden xl:inline">{{ lastMessageStamp.time }} </span>
                         <span class="text-gray-300">{{ lastMessageStamp.age }}</span>
+                    </span>
+                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
+                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
+                        👍 {{ closingIn }}
+                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
                     </span>
                     <span v-if="showShop && session?.shop?.name" class="text-[11px] text-gray-400 truncate">
                         {{ session.shop.name }}

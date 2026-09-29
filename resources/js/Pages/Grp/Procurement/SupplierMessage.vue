@@ -58,7 +58,7 @@ const props = defineProps<{
     attach: { targets: { value: string; label: string }[]; scopes: { name: string; code: string }[] } | null
     reply:
         | { channel: "email"; route: routeType; to: string[]; cc: string[]; subject: string | null }
-        | { channel: "whatsapp"; route: routeType; phone: string; counterpart: string | null; window_open: boolean; has_template: boolean }
+        | { channel: "whatsapp"; route: routeType; phone: string; counterpart: string | null; window_open: boolean; has_template: boolean; template: { name: string; language: string | null; status: string | null; body: string | null } | null }
         | null
     messages: ThreadMessage[]
 }>()
@@ -197,7 +197,7 @@ const assignSupplier = () => {
 
         <section v-if="reply" class="rounded-md border border-gray-200 bg-white px-4 py-3">
             <SupplierWhatsappComposer v-if="reply.channel === 'whatsapp'" :route="reply.route" :phone="reply.phone" :counterpart="reply.counterpart"
-                :window-open="reply.window_open" :has-template="reply.has_template" fixed-phone />
+                :window-open="reply.window_open" :has-template="reply.has_template" :template="reply.template" fixed-phone />
             <SupplierEmailComposer v-else :route="reply.route" :to="reply.to" :cc="reply.cc" :subject="reply.subject" is-reply />
         </section>
     </div>

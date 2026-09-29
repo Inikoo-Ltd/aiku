@@ -308,7 +308,7 @@ const updateTab = (value: string) => {
 
 			<div class="mt-1 text-right text-[10px] text-gray-400">
 				<template v-if="settings.partners_type">
-					{{ settings.partners_type.value === settings.partners_type.options[1]?.value ? ctrans('Includes partners') : ctrans('Excludes partners') }}
+					{{ settings.partners_type.value === settings.partners_type.options[1]?.value ? ctrans('Sales to our own companies are included') : ctrans('Sales to our own companies are not included') }}
 					(<button type="button" class="underline hover:text-gray-600" @click="openDashboardSettings">{{ ctrans('change') }}</button>) ·
 				</template>
 				{{ ctrans('Periods run from midnight UTC') }}<template v-if="utcDayStartInUserTime">

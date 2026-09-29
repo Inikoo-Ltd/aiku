@@ -225,6 +225,7 @@ class IndexSupplierMessages extends OrgAction
                 'counterpart'  => $summary['key'] ?? null,
                 'window_open'  => filled($summary['phone'] ?? null) && SendSupplierWhatsappMessage::isWindowOpen($organisation, (string) $summary['phone']),
                 'has_template' => filled(Arr::get($organisation->settings, 'procurement.whatsapp.message_template')),
+                'template'     => SendSupplierWhatsappMessage::messageTemplate($organisation),
             ] : null,
         ];
 

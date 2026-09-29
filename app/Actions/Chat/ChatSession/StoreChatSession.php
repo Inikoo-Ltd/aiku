@@ -32,11 +32,11 @@ class StoreChatSession
     public function rules(): array
     {
         return [
-            'web_user_id'      => ['nullable', 'exists:web_users,id'],
-            'language_id'      => ['required', 'exists:languages,id'],
+            'web_user_id'      => ['nullable', 'integer', 'exists:web_users,id'],
+            'language_id'      => ['required', 'integer', 'exists:languages,id'],
             'guest_identifier' => ['nullable', 'string', 'max:255'],
             'ai_model_version' => ['nullable', 'string', 'max:50'],
-            'shop_id'          => ['required', 'exists:shops,id'],
+            'shop_id'          => ['required', 'integer', 'exists:shops,id'],
             'priority'         => ['required', Rule::enum(ChatPriorityEnum::class)],
             'channel'          => ['sometimes', Rule::enum(ChatChannelEnum::class)],
             'ulid'             => ['sometimes', 'string', 'size:26', 'unique:chat_sessions,ulid'],

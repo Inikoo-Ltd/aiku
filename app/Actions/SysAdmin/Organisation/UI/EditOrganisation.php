@@ -9,7 +9,6 @@
 namespace App\Actions\SysAdmin\Organisation\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -110,7 +109,6 @@ class EditOrganisation extends OrgAction
                                 'label'   => __('Address'),
                                 'value'   => AddressFormFieldsResource::make($organisation->address)->getArray(),
                                 'options' => [
-                                    'countriesAddressData' => GetAddressData::run()
                                 ]
                             ],
                             "image" => [

@@ -1700,11 +1700,12 @@ test('Delete Refund', function (Invoice $refund) {
     $this->withoutExceptionHandling();
     $customer = $refund->customer;
     $refundsBefore = $customer->stats->number_invoices_type_refund;
-    expect($refundsBefore)->toBeGreaterThanOrEqual(1);
+    expect($refund->in_process)->toBeTrue();
 
     ForceDeleteRefund::make()->handle($refund);
     $customer->refresh();
-    expect($customer->stats->number_invoices_type_refund)->toBe($refundsBefore - 1);
+    expect($customer->stats->number_invoices_type_refund)->toBe($refundsBefore)
+        ->and(Invoice::withTrashed()->find($refund->id))->toBeNull();
 })->depends('Store invoice refund');
 
 test('UI index customer balances', function () {

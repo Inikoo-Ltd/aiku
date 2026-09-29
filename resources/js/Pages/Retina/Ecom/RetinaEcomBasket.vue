@@ -746,15 +746,6 @@ const onChangeInsurance = async (val: boolean) => {
                 :data="transactions"
                 :updateRoute="routes.update_route"
             >
-                <template #tableHeaderActions>
-                    <Button
-                        @click="() => isModalProductListOpen = true"
-                        :label="ctrans('Add products')"
-                        type="tertiary"
-                        icon="fas fa-plus"
-                        size="s"
-                    />
-                </template>
                 <template #gridHeaderActions>
                     <Button
                         v-if="screenType === 'mobile'"
@@ -1062,6 +1053,14 @@ const onChangeInsurance = async (val: boolean) => {
                 title: ctrans('Basket is empty')
             }"
         />
+        <div class="mb-6 sm:hidden">
+            <Button
+                @click="() => isModalProductListOpen = true"
+                :label="ctrans('Add products')"
+                type="tertiary"
+                icon="fas fa-plus"
+            />
+        </div>
     </div>
 
     <!-- Section: Recommendations -->

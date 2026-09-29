@@ -25,7 +25,7 @@ import { ctrans } from "@/Composables/useTrans"
 
     library.add(faInfoCircle);
 
-    const closeCreateEbayModal = inject("closeCreateEbayModal");
+    const cancelCreateEbayModal = inject("cancelCreateEbayModal");
     const ebayName = inject("ebayName");
     const ebayId = inject("ebayId");
     const customerSalesChannelId = inject("customerSalesChannelId");
@@ -354,7 +354,7 @@ import { ctrans } from "@/Composables/useTrans"
         <hr class="w-full border-t" />
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ trans("Cancel") }}</Button>
             <Button size="sm" :loading="isLoadingStep" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>

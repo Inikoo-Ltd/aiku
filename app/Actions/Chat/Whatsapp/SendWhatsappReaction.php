@@ -37,7 +37,7 @@ class SendWhatsappReaction
      * message, then records it locally. Clicking the same emoji again removes it, which
      * Meta expects as a reaction with an empty emoji.
      */
-    public function handle(MetaChatMessage $metaChatMessage, ChatAgent $agent, string $emoji): array
+    public function handle(MetaChatMessage $metaChatMessage, ?ChatAgent $agent, string $emoji): array
     {
         $metaChatSession = $metaChatMessage->metaChatSession;
 
