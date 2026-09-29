@@ -69,6 +69,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property bool $can_connect_to_platform
+ * @property bool $is_blocked WooCommerce only: true when the store refuses the connection (unreachable/refused/timeout), false when it answers but rejects the credentials
  * @property bool $exist_in_platform
  * @property bool $platform_status
  * @property int $number_portfolio_broken

@@ -26,7 +26,8 @@ class CheckWooChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
-        $connection = $wooCommerceUser->checkConnection();
+        $checkResult = $wooCommerceUser->checkConnectionWithError();
+        $connection  = $checkResult['success'];
 
         if ($connection) {
             $platformStatus       = true;
@@ -60,7 +61,8 @@ class CheckWooChannel
             'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
-            'exist_in_platform'       => $existInPlatform
+            'exist_in_platform'       => $existInPlatform,
+            'is_blocked'              => !$platformStatus && str_contains((string) $checkResult['message'], 'WooCommerce API Connection Error'),
         ];
         if ($platformStatus) {
             $data['state']                 = CustomerSalesChannelStateEnum::AUTHENTICATED;

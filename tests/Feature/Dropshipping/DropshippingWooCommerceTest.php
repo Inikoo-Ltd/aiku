@@ -424,7 +424,8 @@ test('checking a channel marks it not ready while the store is down and authenti
     $channel = CheckWooChannel::run($wooCommerceUser);
 
     expect($channel->platform_status)->toBeFalse()
-        ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::NOT_READY);
+        ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::NOT_READY)
+        ->and($channel->is_blocked)->toBeFalse();
 
     $channel->update(['ban_stock_update_util' => now()->addMinute()]);
 
@@ -434,7 +435,23 @@ test('checking a channel marks it not ready while the store is down and authenti
     expect($channel->platform_status)->toBeTrue()
         ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED)
         ->and($channel->ban_stock_update_util)->toBeNull()
+        ->and($channel->is_blocked)->toBeFalse()
         ->and(wooSent('POST', 'webhooks'))->toHaveCount(0);
+});
+
+test('a channel is marked blocked only when the store refuses the connection itself, not when it merely rejects the keys', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+
+    $connectionRefused = Http::failedConnection("cURL error 7: Failed to connect to shop.example.test port 443 after 98 ms: Couldn't connect to server for ".WOO_STORE_URL.'/wp-json/wc/v3');
+    wooFake(['GET settings' => $connectionRefused, 'GET orders' => $connectionRefused]);
+    $channel = CheckWooChannel::run($wooCommerceUser);
+    expect($channel->platform_status)->toBeFalse()
+        ->and($channel->is_blocked)->toBeTrue();
+
+    wooFake(wooDown(wooError('woocommerce_rest_cannot_view', 'Sorry, you cannot list resources.', 401)));
+    $channel = CheckWooChannel::run($wooCommerceUser->refresh());
+    expect($channel->platform_status)->toBeFalse()
+        ->and($channel->is_blocked)->toBeFalse();
 });
 
 test('connecting the same store again reuses the channel and, after a close, brings it back with its portfolio', function () {
