@@ -37,6 +37,8 @@ class StoreShopifyProduct extends RetinaAction
     use WithPortfolioErrorResponse;
     use HasBucketAttachment;
 
+    private const int SKU_LOOKUP_PAGES = 5;
+
     public function handle(Portfolio $portfolio, array $productData = []): array
     {
         if ($portfolio->isShopifyVariantAdopted()) {
@@ -50,7 +52,7 @@ class StoreShopifyProduct extends RetinaAction
         }
 
         try {
-            return $this->upload($portfolio, $productData);
+            return $this->upload($portfolio->refresh(), $productData);
         } finally {
             $lock->release();
         }
@@ -109,7 +111,20 @@ class StoreShopifyProduct extends RetinaAction
             return $this->storeVariant($portfolio, $logs, ['id' => $portfolio->platform_product_id]);
         }
 
-        $listedWithSku = $this->listedProductCarryingSku($client, (string)$portfolio->sku);
+        if (blank($portfolio->sku)) {
+            $errorMessage = 'This product has no sku, so it can not be uploaded to Shopify';
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($errorMessage)
+            ]);
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $errorMessage
+            ]);
+
+            return [false, $errorMessage];
+        }
+
+        $listedWithSku = $this->unlinkedListingCarryingSku($client, $portfolio);
 
         if ($listedWithSku === false) {
             return $this->refuseUnverifiedUpload($portfolio, $logs);
@@ -307,23 +322,29 @@ class StoreShopifyProduct extends RetinaAction
 
 
     /**
+     * A listing of the shop carrying the sku of the portfolio that no portfolio of the channel is linked to:
+     * uploading would create a second listing with that sku. Listings of other portfolios of the channel
+     * sharing the sku (a bundle carrying the code of its only stock) do not count.
+     *
      * @return array{handle: string, status: string}|false|null  false when the shop could not be asked
      */
-    private function listedProductCarryingSku($client, string $sku): array|false|null
+    private function unlinkedListingCarryingSku($client, Portfolio $portfolio): array|false|null
     {
-        $sku = trim($sku);
-
-        if ($sku === '') {
-            return null;
-        }
+        $sku = Str::lower(trim((string)$portfolio->sku));
 
         $query = <<<'QUERY'
-        query productVariantsWithSku($query: String!) {
-          productVariants(first: 20, query: $query) {
+        query productVariantsWithSku($query: String!, $cursor: String) {
+          productVariants(first: 50, after: $cursor, query: $query) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
             edges {
               node {
+                id
                 sku
                 product {
+                  id
                   handle
                   status
                 }
@@ -333,28 +354,61 @@ class StoreShopifyProduct extends RetinaAction
         }
         QUERY;
 
-        try {
-            $response = $client->request($query, ['query' => 'sku:'.json_encode($sku)]);
-        } catch (Exception) {
-            return false;
+        $variables = ['query' => 'sku:'.json_encode(trim((string)$portfolio->sku), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'cursor' => null];
+        $listings  = [];
+
+        for ($page = 0; ; $page++) {
+            if ($page === self::SKU_LOOKUP_PAGES) {
+                return false;
+            }
+
+            try {
+                $response = $client->request($query, $variables);
+            } catch (Exception) {
+                return false;
+            }
+
+            if (!empty($response['errors']) || !isset($response['body'])) {
+                return false;
+            }
+
+            $body = $response['body']->toArray();
+
+            if (Arr::has($body, 'errors')) {
+                return false;
+            }
+
+            foreach (Arr::get($body, 'data.productVariants.edges', []) as $edge) {
+                if (Str::lower(trim((string)Arr::get($edge, 'node.sku'))) === $sku) {
+                    $listings[] = [
+                        'variant_id' => (string)Arr::get($edge, 'node.id'),
+                        'product_id' => (string)Arr::get($edge, 'node.product.id'),
+                        'handle'     => (string)Arr::get($edge, 'node.product.handle'),
+                        'status'     => (string)Arr::get($edge, 'node.product.status'),
+                    ];
+                }
+            }
+
+            if (!Arr::get($body, 'data.productVariants.pageInfo.hasNextPage')) {
+                break;
+            }
+
+            $variables['cursor'] = Arr::get($body, 'data.productVariants.pageInfo.endCursor');
         }
 
-        if (!empty($response['errors']) || !isset($response['body'])) {
-            return false;
-        }
+        $otherPortfolios = Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+            ->where('id', '!=', $portfolio->id)
+            ->where(fn ($query) => $query->whereIn('platform_product_variant_id', array_column($listings, 'variant_id'))->orWhereIn('platform_product_id', array_column($listings, 'product_id')))
+            ->get(['platform_product_id', 'platform_product_variant_id', 'sku']);
 
-        $body = $response['body']->toArray();
+        foreach ($listings as $listing) {
+            $heldByAnotherPortfolio = $otherPortfolios->contains(
+                fn (Portfolio $other) => $other->platform_product_variant_id === $listing['variant_id']
+                    || ($other->platform_product_id === $listing['product_id'] && Str::lower(trim((string)$other->sku)) === $sku)
+            );
 
-        if (Arr::has($body, 'errors')) {
-            return false;
-        }
-
-        foreach (Arr::get($body, 'data.productVariants.edges', []) as $edge) {
-            if (Str::lower(trim((string)Arr::get($edge, 'node.sku'))) === Str::lower($sku)) {
-                return [
-                    'handle' => (string)Arr::get($edge, 'node.product.handle'),
-                    'status' => (string)Arr::get($edge, 'node.product.status'),
-                ];
+            if (!$heldByAnotherPortfolio) {
+                return ['handle' => $listing['handle'], 'status' => $listing['status']];
             }
         }
 

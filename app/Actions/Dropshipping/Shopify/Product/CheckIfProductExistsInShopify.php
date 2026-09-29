@@ -21,9 +21,8 @@ class CheckIfProductExistsInShopify
     public function handle(ShopifyUser $shopifyUser, ?string $productId): array
     {
         $result = [
-            'exist'  => false,
-            'error'  => false,
-            'status' => null
+            'exist' => false,
+            'error' => false
         ];
 
         if (!$productId) {
@@ -49,7 +48,6 @@ class CheckIfProductExistsInShopify
               product(id: $id) {
                 id
                 title
-                status
               }
             }
             QUERY;
@@ -78,7 +76,6 @@ class CheckIfProductExistsInShopify
 
                 if (Arr::get($body, 'data.product.id') == $productId) {
                     data_set($result, 'exist', true);
-                    data_set($result, 'status', Arr::get($body, 'data.product.status'));
                 }
             }
 
