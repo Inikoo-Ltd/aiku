@@ -11,6 +11,7 @@
 use App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Catalogue\Shop\External\Shopify\StoreCustomerFromShopify;
+use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
@@ -30,6 +31,7 @@ use App\Actions\CRM\Customer\HydrateCustomers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\CRM\Customer\SyncCustomersToGoogleAds;
 use App\Actions\CRM\Customer\UpdateCustomer;
@@ -2069,4 +2071,17 @@ test('due to reorder outbox emails a due customer once per order cycle and gives
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('showcase.customer.email_subscriptions.subscriptions.reorder_reminder.field', 'is_subscribed_to_reorder_reminder')
             ->etc());
+});
+
+test('customer page opens for normal and dropshipping customers, reorders tab only for normal ones', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $this->shop->slug, $customer->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('tabs.navigation.reorders')->etc());
+
+    $dropshippingShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::DROPSHIPPING]));
+    $dropshippingCustomer = StoreCustomer::make()->action($dropshippingShop, Customer::factory()->definition());
+    get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $dropshippingShop->slug, $dropshippingCustomer->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.reorders')->etc());
 });
