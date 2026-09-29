@@ -291,6 +291,10 @@ const setNewMarkerDate = (newVal: Date) => {
                     v-tooltip="ctrans('Partner order: raised from the partner shopping list, not placed by an outside customer')"
                     class="rounded bg-sky-100 border border-sky-300 px-1 text-xs font-semibold text-sky-700 leading-tight">Partner</span>
 
+                <span v-if="order.is_pre_order"
+                    v-tooltip="ctrans('Pre-order: held until its goods arrive, then sent')"
+                    class="rounded bg-amber-100 border border-amber-300 px-1 text-xs font-semibold text-amber-700 leading-tight">{{ ctrans("Pre-order") }}</span>
+
                 <span v-if="order.is_dropshipping"
                     v-tooltip="ctrans('Dropshipping order, came in through a customer sales channel')"
                     class="rounded bg-fuchsia-100 border border-fuchsia-300 px-1 text-xs font-semibold text-fuchsia-700 leading-tight">DS</span>

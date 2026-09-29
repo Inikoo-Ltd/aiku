@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
@@ -41,6 +42,17 @@ class PayRetinaOrderWithBalance extends RetinaAction
 
         if ($warning) {
             return $warning;
+        }
+
+        if ($order->shop->hasPreOrders() && !$order->preOrder) {
+            $basketPreOrders = GetBasketPreOrders::run($order);
+            if ($basketPreOrders['has_pre_orders'] && !$basketPreOrders['is_accepted']) {
+                return [
+                    'success' => false,
+                    'reason'  => __('Please accept the pre-order terms before placing your order.'),
+                    'order'   => $order,
+                ];
+            }
         }
 
         if ($order->payment_amount == $order->total_amount) {

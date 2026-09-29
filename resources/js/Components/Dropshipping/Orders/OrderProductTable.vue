@@ -55,6 +55,7 @@ const props = defineProps<{
     updateRoute: routeType
     state?: string
     readonly?: boolean
+    locked?: boolean
     modifyRoute?: routeType
     fetchRoute?: routeType
     routesProductsListModification?: routeType
@@ -568,7 +569,7 @@ const isOffersData = (offersData: any): boolean => {
                     </div>
 
                     <!-- Editable when creating and not in edit mode -->
-                    <div v-else-if="(state === 'creating' || (state === 'submitted' && layout?.app?.name !== 'retina')) && !editingIds.has(item.id) && !is_shop_external"
+                    <div v-else-if="(state === 'creating' || (state === 'submitted' && layout?.app?.name !== 'retina')) && !editingIds.has(item.id) && !is_shop_external && !locked"
                         class="w-fit flex gap-x-2">
                        <!--  <NumberWithButtonSave
                             :modelValue="Number(item.quantity_ordered)"
@@ -798,7 +799,7 @@ const isOffersData = (offersData: any): boolean => {
                                   class="text-gray-500 line-through mr-1 opacity-70">{{
                                     locale.currencyFormat(item.currency_code, item.gross_amount) }}</span>
                             <span>{{ locale.currencyFormat(item.currency_code || "", item.net_amount) }}</span>
-                            <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift">
+                            <span v-if="!(['finalised', 'dispatched', 'cancelled'].includes(state)) && !is_shop_external && !item.is_gift && !locked">
                                 <Button
                                     @click="() => (selectedItemToEditNetAmount = item, isOpenModalEditNetAmount = true)"
                                     v-tooltip="ctrans('Edit discretionary discount')" type="transparent" size="xs" key="1"
@@ -849,7 +850,7 @@ const isOffersData = (offersData: any): boolean => {
                     </Link>
 
                     <!-- Edit / Cancel -->
-                    <div v-if="state !== 'creating' && allow_order_modification" class="flex gap-2 items-center">
+                    <div v-if="state !== 'creating' && allow_order_modification && !locked" class="flex gap-2 items-center">
                         <button v-if="!editingIds.has(item.id)"
                             class="h-9 align-bottom text-center" 
                             aria-label="Edit Product Order" 

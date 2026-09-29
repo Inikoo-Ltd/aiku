@@ -10,6 +10,7 @@ use App\Actions\Ordering\PreOrder\UpdatePreOrder;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
 use App\Http\Middleware\EnsureNotHandledInAurora;
+use App\Http\Middleware\EnsurePreOrderIsUnlocked;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateFaireOrder;
 use App\Actions\CRM\Customer\PayOrderWithCustomerBalance;
 use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
@@ -64,7 +65,7 @@ use App\Actions\Ordering\Order\UpdateState\UpdateOrderDiscretionaryDiscount;
 use App\Actions\Ordering\Transaction\UpdateTransactionProductQuantityOrdered;
 use App\Actions\Ordering\Transaction\RemoveTransactionDiscount;
 
-Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
+Route::name('transaction.')->prefix('transaction/{transaction:id}')->middleware(EnsurePreOrderIsUnlocked::class)->group(function () {
     Route::delete('', DeleteTransaction::class)->name('delete');
     Route::patch('', UpdateTransaction::class)->name('update')->withTrashed();
     Route::patch('update-quantity-ordered', UpdateTransactionProductQuantityOrdered::class)->name('update_quantity_ordered');
@@ -74,7 +75,7 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
     Route::patch('update-charge-amount', UpdateTransactionChargeAmount::class)->name('update_charge_amount');
 });
 
-Route::name('order.')->prefix('order/{order:id}')->middleware(EnsureNotHandledInAurora::class)->group(function () {
+Route::name('order.')->prefix('order/{order:id}')->middleware([EnsureNotHandledInAurora::class, EnsurePreOrderIsUnlocked::class])->group(function () {
     Route::post('discretionary-charge-transaction', StoreDiscretionaryChargeTransaction::class)->name('discretionary_charge_transaction');
 
 

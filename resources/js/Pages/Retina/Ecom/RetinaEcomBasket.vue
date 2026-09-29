@@ -649,6 +649,7 @@ const giftMessagePanel = ref<InstanceType<typeof GiftMessagePanel> | null>(null)
 const isGiftMessageMissing = computed(() =>
     !!(props.order as any)?.has_gift_message && !!giftMessagePanel.value?.isMissing
 )
+const isPreOrderTermsPending = computed(() => !!props.pre_orders?.has_pre_orders && !props.pre_orders.is_accepted)
 
 
 // Section: Charge Insurance
@@ -992,7 +993,7 @@ const onChangeInsurance = async (val: boolean) => {
             </div>
 
             <div v-if="pre_orders?.has_pre_orders" class="px-4 md:px-8 pb-4">
-                <BasketPreOrders :pre_orders :currencyCode="order?.currency_code" />
+                <BasketPreOrders :pre_orders :orderId="order?.id" :currencyCode="order?.currency_code" />
             </div>
 
             <div class="border-t flex justify-end py-5 px-4 md:px-8">
@@ -1008,9 +1009,16 @@ const onChangeInsurance = async (val: boolean) => {
                             :size="screenType === 'mobile' ? 'xl' : undefined"
                             :key="screenType + 'pay_with_balance'"
                             :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
-                                || isGiftMessageMissing"
+                                || isGiftMessageMissing
+                                || isPreOrderTermsPending"
                         >
                         </ButtonWithLink>
+                        <div v-if="isPreOrderTermsPending" class="text-xs text-amber-700 mt-2 flex items-start gap-x-1">
+                            <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
+                            <div class="leading-5">
+                                {{ ctrans("Accept the pre-order terms above to place your order.") }}
+                            </div>
+                        </div>
                         <div class="text-xs text-gray-600 mt-2 italic flex items-start gap-x-1">
                             <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
                             <div class="leading-5">

@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\PreOrder;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -28,9 +29,11 @@ class UpdatePreOrder extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(PreOrder $preOrder, array $modelData): PreOrder
+    public function handle(PreOrder $preOrder, array $modelData, ?User $user = null): PreOrder
     {
         return match ($modelData['operation']) {
+            'unlock' => UnlockPreOrder::run($preOrder, $user),
+            'lock' => UnlockPreOrder::run($preOrder, $user, unlock: false),
             'supplier_ordered' => tap($preOrder, fn () => MarkPreOrdersSupplierOrdered::run([$preOrder->id]))->refresh(),
             'goods_arrived' => ArrivePreOrder::run($preOrder),
             'pallet_quote' => SetPreOrderPalletQuote::run($preOrder, (float) $modelData['amount']),
@@ -43,7 +46,7 @@ class UpdatePreOrder extends OrgAction
     public function rules(): array
     {
         return [
-            'operation'           => ['required', Rule::in(['supplier_ordered', 'goods_arrived', 'pallet_quote', 'dispatch_dates', 'release', 'cancel'])],
+            'operation'           => ['required', Rule::in(['unlock', 'lock', 'supplier_ordered', 'goods_arrived', 'pallet_quote', 'dispatch_dates', 'release', 'cancel'])],
             'amount'              => ['required_if:operation,pallet_quote', 'nullable', 'numeric', 'min:0'],
             'from'                => ['required_if:operation,dispatch_dates', 'nullable', 'date'],
             'to'                  => ['required_if:operation,dispatch_dates', 'nullable', 'date', 'after_or_equal:from'],
@@ -66,6 +69,6 @@ class UpdatePreOrder extends OrgAction
         abort_unless($order->preOrder, 404);
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order->preOrder, $this->validatedData);
+        return $this->handle($order->preOrder, $this->validatedData, $request->user());
     }
 }

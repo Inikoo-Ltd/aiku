@@ -37,6 +37,7 @@ use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -167,6 +168,7 @@ class IndexOrders extends OrgAction
                 'sales_channels.type as sales_channel_type',
                 'sales_channels.name as sales_channel_name',
                 'sales_channels.code as sales_channel_code',
+                DB::raw('exists(select 1 from pre_orders where pre_orders.order_id = orders.id) as is_pre_order'),
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status', 'submitted_at', 'updated_by_customer_at']) // Ensure `id` is the first sort column

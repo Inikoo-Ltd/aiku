@@ -83,12 +83,6 @@ const submit = () => {
             </li>
         </ul>
 
-        <div v-if="pre_orders.has_in_stock_lines && !isInCheckout" class="text-xs">
-            {{ pre_orders.hold_together
-                ? ctrans("Everything will be sent together when the pre-order items arrive.")
-                : ctrans("In-stock items are sent now; pre-order items are sent separately when they arrive, with their own delivery charge.") }}
-        </div>
-
         <div v-if="pre_orders.pallet_estimate_label" class="text-xs font-medium">
             {{ pre_orders.pallet_estimate_label }}. {{ ctrans("The final pallet cost is confirmed when the goods arrive.") }}
         </div>
@@ -101,7 +95,7 @@ const submit = () => {
             <li v-for="term in pre_orders.terms" :key="term">{{ term }}</li>
         </ul>
 
-        <template v-if="isInCheckout && !pre_orders.is_accepted">
+        <template v-if="!pre_orders.is_accepted">
             <label v-if="pre_orders.has_in_stock_lines" class="flex items-start gap-2 cursor-pointer">
                 <input v-model="holdTogether" type="checkbox" class="mt-0.5 rounded border-gray-400" />
                 <span>
@@ -120,16 +114,18 @@ const submit = () => {
             <p v-if="errorMessage" class="text-red-600 text-xs">{{ errorMessage }}</p>
 
             <Button
-                :label="ctrans('Accept and continue to payment')"
+                :label="isInCheckout ? ctrans('Accept and continue to payment') : ctrans('Accept pre-order terms')"
                 :disabled="!acceptTerms"
                 :loading="isSubmitting"
                 @click="submit" />
         </template>
 
-        <div v-else-if="isInCheckout" class="text-xs font-medium">
-            {{ pre_orders.hold_together
-                ? ctrans("Accepted. Everything will be sent together when the pre-order items arrive.")
-                : ctrans("Accepted.") }}
+        <div v-else class="text-xs font-medium">
+            {{ !pre_orders.has_in_stock_lines
+                ? ctrans("Accepted.")
+                : pre_orders.hold_together
+                    ? ctrans("Accepted. Everything will be sent together when the pre-order items arrive.")
+                    : ctrans("Accepted. In-stock items are sent now; pre-order items are sent separately when they arrive, with their own delivery charge.") }}
         </div>
     </div>
 </template>

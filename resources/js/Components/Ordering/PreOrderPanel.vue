@@ -5,6 +5,8 @@ import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faLock, faLockOpen } from "@far"
 
 const props = defineProps<{
     pre_order: {
@@ -37,11 +39,17 @@ const props = defineProps<{
         terms: string[]
         update_route: routeType
         cancellation_reasons: { value: string, label: string }[]
+        lock?: {
+            is_locked: boolean
+            is_locked_for_me: boolean
+            unlocked_until: string | null
+        }
     }
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
 const formatDate = (date: string | null) => date ? new Date(date).toLocaleDateString() : "—"
+const formatTime = (date: string | null) => date ? new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""
 
 const openForm = ref<null | "pallet_quote" | "dispatch_dates" | "cancel">(null)
 const palletQuote = ref<number | null>(props.pre_order.pallet_quote_amount ?? props.pre_order.pallet_estimate_amount)
@@ -76,6 +84,21 @@ const submit = (operation: string, data: Record<string, unknown> = {}) => {
             <span v-if="pre_order.has_pallet_delivery" class="text-xs">{{ ctrans("Pallet delivery") }}</span>
             <span v-if="pre_order.is_late" class="text-xs font-semibold text-red-700">{{ ctrans("Late: the customer may cancel for a full refund") }}</span>
             <span v-if="pre_order.parent_order_reference" class="text-xs">{{ ctrans("Split from :reference", { reference: pre_order.parent_order_reference }) }}</span>
+
+            <button v-if="pre_order.lock?.is_locked"
+                type="button"
+                class="ml-auto flex items-center gap-x-1.5 rounded border px-2 py-0.5 text-xs font-semibold disabled:opacity-50"
+                :class="pre_order.lock.is_locked_for_me ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100' : 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'"
+                v-tooltip="pre_order.lock.is_locked_for_me
+                    ? ctrans('The customer paid a deposit for these lines and amounts. Click to unlock the order for you for 15 minutes')
+                    : ctrans('Unlocked for you. Click to lock it again now')"
+                :disabled="isSubmitting"
+                @click="submit(pre_order.lock.is_locked_for_me ? 'unlock' : 'lock')">
+                <FontAwesomeIcon :icon="pre_order.lock.is_locked_for_me ? faLock : faLockOpen" fixed-width aria-hidden="true" />
+                {{ pre_order.lock.is_locked_for_me
+                    ? ctrans("Locked")
+                    : ctrans("Unlocked until :time", { time: formatTime(pre_order.lock.unlocked_until) }) }}
+            </button>
         </div>
 
         <div class="grid grid-cols-2 gap-x-6 gap-y-1 md:grid-cols-4 text-xs">
@@ -97,12 +120,21 @@ const submit = (operation: string, data: Record<string, unknown> = {}) => {
         </div>
 
         <div v-if="pre_order.is_open" class="flex flex-wrap gap-2">
+<<<<<<< Updated upstream
             <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Mark the goods as ordered from the supplier. Make the deposit are no longer refundable')" size="xs" type="secondary" :label="ctrans('Supplier ordered')" :loading="isSubmitting" @click="submit('supplier_ordered')" />
             <Button v-if="pre_order.state === 'waiting_for_goods'" v-tooltip="ctrans('Record that the goods are in the warehouse and ask the customer to pay the balance. Trade pallet deliveries wait for the pallet quote first')" size="xs" type="secondary" :label="ctrans('Goods arrived')" :loading="isSubmitting" @click="submit('goods_arrived')" />
             <Button v-if="pre_order.has_pallet_delivery" v-tooltip="ctrans('Enter the final pallet delivery cost. It replaces the shipping on the order and, if the goods have arrived, the balance is requested from the customer')" size="xs" type="secondary" :label="ctrans('Pallet quote')" @click="openForm = 'pallet_quote'" />
             <Button v-tooltip="ctrans('Change the estimated dispatch window. The customer is emailed the new dates')" size="xs" type="secondary" :label="ctrans('Change dispatch dates')" @click="openForm = 'dispatch_dates'" />
             <Button v-if="pre_order.balance_amount <= 0 && pre_order.state !== 'waiting_for_goods'" v-tooltip="ctrans('The pre-order is fully paid: close it and send the order to the warehouse to be picked and dispatched')" size="xs" type="positive" :label="ctrans('Send to warehouse')" :loading="isSubmitting" @click="submit('release')" />
             <Button v-tooltip="ctrans('Choose a reason and cancel the pre-order. The refund follows the terms the customer accepted at checkout')" size="xs" type="negative" :label="ctrans('Cancel pre-order')" @click="openForm = 'cancel'" />
+=======
+            <Button v-if="!pre_order.supplier_ordered_at && pre_order.state === 'waiting_for_goods'" size="xs" type="secondary" :label="ctrans('Mark as ordered from supplier')" :loading="isSubmitting" @click="submit('supplier_ordered')" />
+            <Button v-if="pre_order.state === 'waiting_for_goods'" size="xs" type="secondary" :label="ctrans('Mark goods as arrived')" :loading="isSubmitting" @click="submit('goods_arrived')" />
+            <Button v-if="pre_order.has_pallet_delivery" size="xs" type="secondary" :label="ctrans('Pallet quote')" @click="openForm = 'pallet_quote'" />
+            <Button size="xs" type="secondary" :label="ctrans('Change dispatch dates')" @click="openForm = 'dispatch_dates'" />
+            <Button v-if="pre_order.balance_amount <= 0 && pre_order.state !== 'waiting_for_goods'" size="xs" type="positive" :label="ctrans('Send to warehouse')" :loading="isSubmitting" @click="submit('release')" />
+            <Button size="xs" type="negative" :label="ctrans('Cancel pre-order')" @click="openForm = 'cancel'" />
+>>>>>>> Stashed changes
         </div>
 
         <div v-if="openForm === 'pallet_quote'" class="flex flex-wrap items-end gap-2">

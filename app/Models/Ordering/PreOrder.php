@@ -11,9 +11,12 @@ namespace App\Models\Ordering;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 
 /**
  * HELP-3432. The order a customer pre-ordered, held out of the warehouse until its goods are
@@ -122,5 +125,43 @@ class PreOrder extends Model
     public function isWithinFreeCancellation(): bool
     {
         return !$this->supplier_ordered_at && $this->free_cancellation_until && now()->lte($this->free_cancellation_until);
+    }
+
+    /**
+     * The customer paid a deposit for these lines and amounts, so while the pre-order is open its
+     * order is locked: money-related changes need a member of staff to unlock it for themselves first.
+     */
+    public function isLocked(): bool
+    {
+        return in_array($this->state, PreOrderStateEnum::open(), true);
+    }
+
+    public function unlockedUntil(): ?Carbon
+    {
+        $until = Arr::get($this->data, 'unlock.until');
+
+        return $until ? Carbon::parse($until) : null;
+    }
+
+    public function unlockedByUserId(): ?int
+    {
+        return Arr::get($this->data, 'unlock.user_id');
+    }
+
+    public function isUnlockedFor(?User $user): bool
+    {
+        return $user
+            && $this->unlockedByUserId() === $user->id
+            && $this->unlockedUntil()?->isFuture();
+    }
+
+    public function canBeEditedBy(?User $user): bool
+    {
+        return !$this->isLocked() || $this->isUnlockedFor($user);
+    }
+
+    public function lockMessage(): string
+    {
+        return __('🔒 This is a pre-order the customer has paid a deposit for. Unlock it from the pre-order panel before changing it.');
     }
 }
