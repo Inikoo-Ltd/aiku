@@ -318,6 +318,20 @@ class IndexArtefacts extends OrgAction
         ];
     }
 
+    public function getSetRecipeProps(Production $production, bool $canEdit): ?array
+    {
+        if (!$canEdit) {
+            return null;
+        }
+
+        return [
+            'set_route'            => ['name' => 'grp.models.production.artefacts.set_recipe', 'parameters' => [$production->id]],
+            'task_options'         => ['name' => 'grp.json.production.manufacture_tasks.index', 'parameters' => ['production' => $production->id]],
+            'raw_material_options' => ['name' => 'grp.json.production.raw_materials.index', 'parameters' => ['production' => $production->id]],
+            'create_task_route'    => ['name' => 'grp.org.productions.show.operations.manufacture_tasks.create', 'parameters' => [$production->organisation->slug, $production->slug]],
+        ];
+    }
+
     public function getSetStateProps(Production $production, bool $canEdit): ?array
     {
         if (!$canEdit) {
@@ -522,6 +536,7 @@ class IndexArtefacts extends OrgAction
                 'set_batch_size'     => $this->parent instanceof Production ? $this->getSetBatchSizeProps($this->parent, $this->canEdit) : null,
                 'set_shelf_life'     => $this->parent instanceof Production ? $this->getSetShelfLifeProps($this->parent, $this->canEdit) : null,
                 'set_state'          => $this->parent instanceof Production ? $this->getSetStateProps($this->parent, $this->canEdit) : null,
+                'set_recipe'         => $this->parent instanceof Production ? $this->getSetRecipeProps($this->parent, $this->canEdit) : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ArtefactsTabsEnum::navigation(), [ArtefactsTabsEnum::ARTEFACTS_HISTORIES->value]) : ArtefactsTabsEnum::navigation(),
