@@ -3541,6 +3541,69 @@ test('a paid refund can not be paid again to balance or by a manual refund', fun
         ->and((float) $payment->refresh()->total_refund)->toBe($totalRefund);
 })->depends('refund to credit balance');
 
+test('a refund paid by hand in parts is paid up to what it owes, not beyond', function (array $data) {
+    /** @var Payment $payment */
+    [$payment] = $data;
+    $invoice = $payment->invoices()->where('type', InvoiceTypeEnum::INVOICE)->first();
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($refund, $invoice->invoiceTransactions()->first(), ['net_amount' => round($invoice->invoiceTransactions()->first()->net_amount * 0.1, 2)]);
+    $refund      = FinaliseRefund::make()->action($refund->refresh(), [])->refresh();
+    $refundTotal = abs((float) $refund->total_amount);
+    $firstPart   = round($refundTotal / 3, 2);
+
+    RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => $firstPart, 'reference' => 'manual-part-1', 'invoice_id' => $refund->id]);
+    expect($refund->refresh()->pay_status)->not->toBe(InvoicePayStatusEnum::PAID)
+        ->and(round(abs((float) $refund->payment_amount), 2))->toBe($firstPart)
+        ->and(fn () => RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => round($refundTotal - $firstPart + 0.01, 2), 'reference' => 'manual-over', 'invoice_id' => $refund->id]))->toThrow(ValidationException::class, 'left to pay on this refund');
+
+    RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => round($refundTotal - $firstPart, 2), 'reference' => 'manual-part-2', 'invoice_id' => $refund->id]);
+    expect($refund->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and(round(abs((float) $refund->payment_amount), 2))->toBe(round($refundTotal, 2));
+})->depends('refund to credit balance');
+
+test('refunds of one payment count every refund made, even from a copy of the payment read before the others', function (array $data) {
+    /** @var Payment $payment */
+    [$payment] = $data;
+    $staleCopy   = Payment::find($payment->id);
+    $totalBefore = (float) $staleCopy->total_refund;
+    $leftBefore  = round((float) $staleCopy->amount - $totalBefore, 2);
+
+    $invoiceId   = $payment->invoices()->where('type', InvoiceTypeEnum::INVOICE)->value('invoices.id');
+
+    expect($leftBefore)->toBeGreaterThan(2.0);
+
+    RefundPaymentToBalance::make()->handle($payment->refresh(), ['amount' => 1.00, 'invoice_id' => $invoiceId]);
+    RefundPaymentManual::make()->handle($staleCopy, ['amount' => 1.00, 'reference' => 'manual-stale', 'invoice_id' => $invoiceId]);
+
+    expect(round((float) $payment->refresh()->total_refund, 2))->toBe(round($totalBefore + 2, 2))
+        ->and(fn () => RefundPaymentToBalance::make()->handle($staleCopy, ['amount' => round($leftBefore - 2 + 0.01, 2), 'invoice_id' => $invoiceId]))->toThrow(ValidationException::class, 'left to refund on this payment')
+        ->and(round((float) $payment->refresh()->total_refund, 2))->toBe(round($totalBefore + 2, 2));
+})->depends('refund to credit balance');
+
+test('a payment can be refunded without naming an invoice', function (array $data) {
+    /** @var Payment $payment */
+    [$payment] = $data;
+    $totalBefore = (float) $payment->refresh()->total_refund;
+
+    $toBalance = RefundPaymentToBalance::make()->handle($payment, ['amount' => 0.50]);
+    $byHand    = RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => 0.50, 'reference' => 'manual-no-invoice']);
+
+    expect($toBalance->invoices()->count())->toBe(0)
+        ->and($byHand->invoices()->count())->toBe(0)
+        ->and(round((float) $payment->refresh()->total_refund, 2))->toBe(round($totalBefore + 1, 2));
+})->depends('refund to credit balance');
+
+test('a payment can not be refunded against another customer\'s invoice', function (array $data) {
+    /** @var Payment $payment */
+    [$payment] = $data;
+    $otherInvoice = Invoice::where('customer_id', '!=', $payment->customer_id)->firstOrFail();
+    $totalRefund  = (float) $payment->refresh()->total_refund;
+
+    expect(fn () => RefundPaymentToBalance::make()->handle($payment, ['amount' => 0.01, 'invoice_id' => $otherInvoice->id]))->toThrow(ValidationException::class, 'another customer')
+        ->and((float) $payment->refresh()->total_refund)->toBe($totalRefund);
+})->depends('refund to credit balance');
+
 
 test('store audit for pallet 6th customer', function () {
     $fulfilmentCustomer = FulfilmentCustomer::find(6);

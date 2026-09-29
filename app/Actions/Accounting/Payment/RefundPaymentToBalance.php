@@ -63,7 +63,7 @@ class RefundPaymentToBalance extends OrgAction
         }
 
         return DB::transaction(function () use ($refundAmount, $payment, $paymentAccountShop, $invoice) {
-            self::ensureRefundIsNotOverPaid($invoice, $refundAmount);
+            $payment = self::lockForRefund($payment, $invoice, $refundAmount);
 
             $refundPayment = StorePayment::make()->action($payment->customer, $paymentAccountShop->paymentAccount, [
                 'amount'              => $refundAmount,
@@ -87,9 +87,11 @@ class RefundPaymentToBalance extends OrgAction
                 'with_refund'  => true
             ]);
 
-            AttachPaymentToInvoice::make()->action($invoice, $refundPayment, []);
-            if ($invoice->order) {
-                AttachPaymentToOrder::make()->action($invoice->order, $refundPayment, []);
+            if ($invoice) {
+                AttachPaymentToInvoice::make()->action($invoice, $refundPayment, []);
+                if ($invoice->order) {
+                    AttachPaymentToOrder::make()->action($invoice->order, $refundPayment, []);
+                }
             }
 
             return $refundPayment;
@@ -99,18 +101,31 @@ class RefundPaymentToBalance extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public static function ensureRefundIsNotOverPaid(?Invoice $invoice, float $amount): void
+    public static function lockForRefund(Payment $payment, ?Invoice $invoice, float $amount): Payment
     {
-        if ($invoice?->type !== InvoiceTypeEnum::REFUND) {
-            return;
+        $amount  = round(abs($amount), 2);
+        $payment = Payment::lockForUpdate()->findOrFail($payment->id);
+
+        if ($amount > round((float) $payment->amount - (float) $payment->total_refund, 2)) {
+            throw ValidationException::withMessages(['amount' => __('The amount is more than is left to refund on this payment')]);
         }
 
-        $refund    = Invoice::lockForUpdate()->findOrFail($invoice->id);
-        $leftToPay = round(abs((float) $refund->total_amount) - abs((float) $refund->payment_amount), 2);
-
-        if (round(abs($amount), 2) > $leftToPay) {
-            throw ValidationException::withMessages(['amount' => __('The amount is more than is left to pay on this refund')]);
+        if (!$invoice) {
+            return $payment;
         }
+
+        if ((int) $invoice->customer_id !== (int) $payment->customer_id) {
+            throw ValidationException::withMessages(['invoice_id' => __('The invoice belongs to another customer')]);
+        }
+
+        if ($invoice->type === InvoiceTypeEnum::REFUND) {
+            $refund = Invoice::lockForUpdate()->findOrFail($invoice->id);
+            if ($amount > round(abs((float) $refund->total_amount) - abs((float) $refund->payment_amount), 2)) {
+                throw ValidationException::withMessages(['amount' => __('The amount is more than is left to pay on this refund')]);
+            }
+        }
+
+        return $payment;
     }
 
     public function rules(): array

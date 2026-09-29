@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from "@/Composables/useTrans"
 import { inject, computed, watch, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
@@ -86,8 +86,12 @@ const maxRefund = (data) => {
     }
 
     const maxPossible = data.amount - data.refunded
-    return Math.min(maxPossible, -props.invoice_pay.total_need_to_refund_in_payment_method || data.amount)
+    return Math.min(maxPossible, leftToPayOnRefund.value)
 }
+
+const leftToPayOnRefund = computed(() => Math.max(0, -Number(props.invoice_pay.total_need_to_pay)))
+
+const errorText = (errors: Record<string, string>, fallback: string) => Object.values(errors ?? {}).join(", ") || fallback
 
 const onClickRefundPayments = () => {
     isOpenModalRefund.value = true
@@ -114,18 +118,17 @@ const onClickManual = (paymentMethod, form) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit manual refund"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully submit manual refund"),
                     type: "success"
                 })
                 props.handleTabUpdate('payments')
                 _PureTable.value?.fetchData()
             },
             onError: errors => {
-                console.error('errors on manual', errors)
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit manual refund"),
+                    title: ctrans("Something went wrong"),
+                    text: errorText(errors, ctrans("Failed to submit manual refund")),
                     type: "error"
                 })
             },
@@ -156,8 +159,8 @@ const onClickBalance = (paymentMethod, form) => {
             },
             onSuccess: () => {
                 notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
+                    title: ctrans("Success"),
+                    text: ctrans("Successfully submit the data"),
                     type: "success"
                 })
                 props.handleTabUpdate('payments')
@@ -165,8 +168,8 @@ const onClickBalance = (paymentMethod, form) => {
             },
             onError: errors => {
                 notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to submit refund balance"),
+                    title: ctrans("Something went wrong"),
+                    text: errorText(errors, ctrans("Failed to submit refund balance")),
                     type: "error"
                 })
             },
@@ -191,15 +194,15 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
     //         },
     //         onSuccess: () => {
     //             notify({
-    //                 title: trans("Success"),
-    //                 text: trans("Successfully submit the data"),
+    //                 title: ctrans("Success"),
+    //                 text: ctrans("Successfully submit the data"),
     //                 type: "success"
     //             })
     //         },
     //         onError: errors => {
     //             notify({
-    //                 title: trans("Something went wrong"),
-    //                 text: trans("Failed to set location"),
+    //                 title: ctrans("Something went wrong"),
+    //                 text: ctrans("Failed to set location"),
     //                 type: "error"
     //             })
     //         },
@@ -213,11 +216,11 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
 
 const compToolTip = computed(() => {
     if (Number(props.invoice_pay.total_need_to_pay).toFixed(2) > 0) {
-        return trans('Over refunded. Customer need to pay :amount', { amount: locale.currencyFormat(props.invoice_pay.currency_code, Number(props.invoice_pay.total_need_to_pay).toFixed(2)) })
+        return ctrans('Over refunded. Customer need to pay :amount', { amount: locale.currencyFormat(props.invoice_pay.currency_code, Number(props.invoice_pay.total_need_to_pay).toFixed(2)) })
     }
 
     if (Number(props.invoice_pay.total_need_to_pay).toFixed(2) < 0) {
-        return trans('Need to refund :amount to customer', { amount: locale.currencyFormat(props.invoice_pay.currency_code, Math.abs(Number(props.invoice_pay.total_need_to_pay)).toFixed(2)) })
+        return ctrans('Need to refund :amount to customer', { amount: locale.currencyFormat(props.invoice_pay.currency_code, Math.abs(Number(props.invoice_pay.total_need_to_pay)).toFixed(2)) })
 
     }
 
@@ -232,8 +235,8 @@ const compToolTip = computed(() => {
             <!-- Field: Excess payment -->
             <div v-if="Number(invoice_pay.total_excess_payment) > 0" class="border-b border-gray-300">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium" v-tooltip="trans('Auto add to customer balance')">
-                        {{ trans("Excess Payment") }}
+                    <dt class="text-sm/6 font-medium" v-tooltip="ctrans('Auto add to customer balance')">
+                        {{ ctrans("Excess Payment") }}
                     </dt>
                     <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-gray-700">
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_excess_payment)) }}
@@ -247,7 +250,7 @@ const compToolTip = computed(() => {
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium" :style="{ padding: 0 }"
                         @click="() => handleTabUpdate('payments')">
-                        {{ trans("Expected to refund") }}
+                        {{ ctrans("Expected to refund") }}
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
@@ -261,9 +264,9 @@ const compToolTip = computed(() => {
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium underline cursor-pointer" :style="{ padding: 0 }"
                         @click="() => handleTabUpdate('payments')">
-                        {{ trans("Payments") }}
+                        {{ ctrans("Payments") }}
                     </dt>
-                    <dd v-tooltip="trans('Amount refunded to customer')" class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
+                    <dd v-tooltip="ctrans('Amount refunded to customer')" class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{ locale.currencyFormat(invoice_pay.currency_code, Math.abs(Number(invoice_pay.total_paid_in))) }}
                     </dd>
                 </div>
@@ -274,18 +277,18 @@ const compToolTip = computed(() => {
             <div v-if="Number(invoice_pay.total_need_to_pay) != 0"
                 class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
-                    {{ trans("Total to refund") }}
+                    {{ ctrans("Total to refund") }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                     <!-- <div xv-if="layout.app.environment === 'local'"> -->
                         <button v-if="Number(invoice_pay.total_need_to_pay) < 0" @click="onClickRefundPayments"
                             size="xxs" class="secondaryLink text-indigo-500">
-                            {{ trans("Refund payment") }}
+                            {{ ctrans("Refund payment") }}
                         </button>
                     <!-- </div> -->
 
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
-                        v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
+                        v-tooltip="ctrans('No need to pay anything')" icon="far fa-check" class="text-green-500"
                         fixed-width aria-hidden="true" />
                     <span v-tooltip="compToolTip" class="ml-2 whitespace-nowrap" xclass="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay).toFixed(2)) }}
@@ -297,9 +300,9 @@ const compToolTip = computed(() => {
             <!-- Field: Paid -->
             <div v-else class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
-                    {{ trans("Paid") }}
+                    {{ ctrans("Paid") }}
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
-                        v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
+                        v-tooltip="ctrans('No need to pay anything')" icon="far fa-check" class="text-green-500"
                         fixed-width aria-hidden="true" />
                 </dt>
             </div>
@@ -311,7 +314,7 @@ const compToolTip = computed(() => {
                         <div>
                             <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-sm" fixed-width aria-hidden="true"/>
                             <div class="ml-1 inline items-center gap-x-2">
-                                {{ trans("Sorry, the refund payment is not available until Wednesday, October 1st 2025") }}
+                                {{ ctrans("Sorry, the refund payment is not available until Wednesday, October 1st 2025") }}
                             </div>
                         </div>
                     </div>
@@ -324,7 +327,7 @@ const compToolTip = computed(() => {
             maximizable modal :draggable="false" :dismissableMask="screenType === 'desktop'">
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
-                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Refund Payment") }}</h2>
+                    <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ ctrans("Refund Payment") }}</h2>
                 </div>
             </template>
 
@@ -349,10 +352,10 @@ const compToolTip = computed(() => {
                                     <!-- Text: available refund -->
                                     <div v-if="data.refunded > 0">
                                         <div class="text-gray-500 text-xs">
-                                            {{ trans("Refunded") }}: {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
+                                            {{ ctrans("Refunded") }}: {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
                                         </div>
-                                        <div @click="() => set(_formCell, [index, 'form', 'refund_amount'], data.amount-data.refunded)" v-tooltip="trans('Click to fill the input')" class="cursor-pointer text-gray-500 hover:text-gray-700 w-fit text-xs">
-                                            {{ trans("Available to refund") }}: {{ useLocaleStore().currencyFormat(data.currency_code, is_tax_only ? -(invoice_pay.total_need_to_pay) : (data.amount-data.refunded).toFixed(2)) }}
+                                        <div @click="() => set(_formCell, [index, 'form', 'refund_amount'], data.amount-data.refunded)" v-tooltip="ctrans('Click to fill the input')" class="cursor-pointer text-gray-500 hover:text-gray-700 w-fit text-xs">
+                                            {{ ctrans("Available to refund") }}: {{ useLocaleStore().currencyFormat(data.currency_code, is_tax_only ? -(invoice_pay.total_need_to_pay) : (data.amount-data.refunded).toFixed(2)) }}
                                         </div>
                                     </div>
                                 </template>
@@ -379,21 +382,21 @@ const compToolTip = computed(() => {
                                     <div class="min-w-72 w-fit">
                                         <div xv-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2 border-b border-gray-300 pb-1 mb-2.5">
                                             <div>
-                                                {{ trans("Select method") }}:
+                                                {{ ctrans("Select method") }}:
                                             </div>
-                                            <div v-if="data.can_manual_refund" @click="() => set(data, 'selected_action', 'manual')" v-tooltip="trans('Manual Refund (you will need to process refund externally and provide a transaction id)')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
+                                            <div v-if="data.can_manual_refund" @click="() => set(data, 'selected_action', 'manual')" v-tooltip="ctrans('Manual Refund (you will need to process refund externally and provide a transaction id)')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'manual' ? 'fas fa-digging' : 'fal fa-digging'" class="" fixed-width aria-hidden="true" />
                                             </div>
-                                            <div @click="() => set(data, 'selected_action', 'balance')" v-tooltip="trans('Refund to customer balance')" aclick="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-blue-700' : ''">
+                                            <div @click="() => set(data, 'selected_action', 'balance')" v-tooltip="ctrans('Refund to customer balance')" aclick="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'balance' ? 'fas fa-piggy-bank' : 'fal fa-piggy-bank'" class="" fixed-width aria-hidden="true" />
                                             </div>
-                                            <div v-if="data.can_api_refund" @click="() => set(data, 'selected_action', 'automatic')" v-tooltip="trans('Refund by API')" aclick="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-blue-700' : ''">
+                                            <div v-if="data.can_api_refund" @click="() => set(data, 'selected_action', 'automatic')" v-tooltip="ctrans('Refund by API')" aclick="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'automatic' ? 'fas fa-robot' : 'fal fa-robot'" class="" fixed-width aria-hidden="true" />
                                             </div>
                                         </div>
 
                                         <div v-if="!get(data, 'selected_action', null)" class="text-center text-gray-400 text-sm italic mb-2">
-                                            {{ trans("No method selected") }}
+                                            {{ ctrans("No method selected") }}
                                         </div>
 
                                         <div v-if="data.selected_action === 'manual'" class="mb-2">
@@ -403,7 +406,7 @@ const compToolTip = computed(() => {
                                                     @input="(e) => set(data, 'manual_refund_reference', e.target?.value)"
                                                     @update:modelValue="() => set(usePage().props, ['errors', 'reference'], null)"
                                                     size="small"
-                                                    :placeholder="trans('Transaction ID')"
+                                                    :placeholder="ctrans('Transaction ID')"
                                                     :invalid="!!usePage().props.errors?.reference"
                                                 />
                                             </div>
@@ -413,7 +416,7 @@ const compToolTip = computed(() => {
                                         </div>
                                         <div v-if="data.selected_action">
                                             <ActionCell
-                                                v-if="(data.amount - data.refunded) > 0 && props.invoice_pay.total_need_to_refund_in_payment_method !== 0"
+                                                v-if="(data.amount - data.refunded) > 0 && (props.is_tax_only || leftToPayOnRefund > 0)"
                                                 :ref="(e) => _formCell[index] = e"
                                                 v-model="data.refund"
                                                 @input="(e) => data.amount = e.value"
@@ -425,7 +428,7 @@ const compToolTip = computed(() => {
                                                 @refund="(form) => onSubmitRefundToPaymentsMethod(data, form)"
                                             />
                                             <span v-else class="text-gray-400 font-medium italic">
-                                                {{ trans("Refund Complete") }}
+                                                {{ ctrans("Refund Complete") }}
                                             </span>
                                         </div>
                                     </div>

@@ -56,7 +56,7 @@ class RefundPaymentManual extends OrgAction
         $reference = Arr::get($modelData, 'reference');
 
         return DB::transaction(function () use ($refundAmount, $reference, $payment, $invoice) {
-            RefundPaymentToBalance::ensureRefundIsNotOverPaid($invoice, $refundAmount);
+            $payment = RefundPaymentToBalance::lockForRefund($payment, $invoice, $refundAmount);
 
             $refundPayment = StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
                 'amount'              => $refundAmount,
@@ -73,9 +73,11 @@ class RefundPaymentManual extends OrgAction
                 'with_refund'  => true
             ]);
 
-            AttachPaymentToInvoice::make()->action($invoice, $refundPayment, []);
-            if ($invoice->order) {
-                AttachPaymentToOrder::make()->action($invoice->order, $refundPayment, []);
+            if ($invoice) {
+                AttachPaymentToInvoice::make()->action($invoice, $refundPayment, []);
+                if ($invoice->order) {
+                    AttachPaymentToOrder::make()->action($invoice->order, $refundPayment, []);
+                }
             }
 
             return $refundPayment;
