@@ -129,12 +129,14 @@ class ProcessInboundEmail
 
         $isRescuedFromSpam = in_array('SPAM', Arr::get($raw, 'labelIds', []), true);
         $spamRescueKind    = null;
+        $isPossibleScam    = false;
 
         if ($isRescuedFromSpam) {
             $rescue = $this->rescueFromSpam($shop, $raw, $from, $subject, $body, $threadId);
 
-            if ($rescue instanceof ChatSpamRescueKindEnum) {
-                $spamRescueKind = $rescue;
+            if (is_array($rescue)) {
+                $spamRescueKind = $rescue['kind'];
+                $isPossibleScam = $rescue['is_possible_scam'];
             } elseif ($rescue === false) {
                 $client->fileAway($gmailMessageId, self::SPAM_CHECKED_LABEL, markRead: false);
 
@@ -243,6 +245,7 @@ class ProcessInboundEmail
         $message->update([
             'is_rescued_from_spam' => $isRescuedFromSpam,
             'spam_rescue_kind'     => $spamRescueKind,
+            'is_possible_scam'     => $isPossibleScam,
             'metadata' => array_merge(
                 $message->metadata ?? [],
                 [
@@ -364,34 +367,44 @@ class ProcessInboundEmail
     }
 
     /**
-     * Gmail's spam folder holds the odd customer or prospect among hundreds of junk mails. Customers
-     * who have bought from us and replies to our own conversations always come in; anybody can
-     * register, so a customer who never bought is asked about like a stranger. Newsletters and machines
-     * never do. A stranger's email is shown to Jev once, which says what kind of email it is, and
-     * it comes in when a customer request or a prospect is likely enough and its first pick is not
-     * a scam; the kind comes back so the agent sees what Aiku thought it was. The rest stays in
-     * Gmail's spam, where Gmail deletes it, labelled so it is never read again. Null means there was no answer, and the question is
-     * asked again an hour later rather than on every sweep.
+     * Gmail's spam folder holds the odd customer or prospect among hundreds of junk mails.
+     * Customers who have bought from us and replies to our own conversations always come in;
+     * anybody can register, so a customer who never bought is asked about like a stranger.
+     * Newsletters and machines never do. A stranger's email is shown to Jev once, which says what
+     * kind of email it is and whether it takes a common scam form, and it comes in when a customer
+     * request or a prospect is likely enough and neither answer takes it for a scam. Whatever comes
+     * in, customers included, is tagged when a scam form is probable. The rest stays in Gmail's
+     * spam, where Gmail deletes it, labelled so it is never read again. Null means there was no
+     * answer, and the question is asked again an hour later rather than on every sweep.
      *
      * @param  array{address: ?string, name: ?string}  $from
+     * @return array{kind: ?ChatSpamRescueKindEnum, is_possible_scam: bool}|false|null
      */
-    private function rescueFromSpam(Shop $shop, array $raw, array $from, ?string $subject, ?string $body, string $threadId): ChatSpamRescueKindEnum|bool|null
+    private function rescueFromSpam(Shop $shop, array $raw, array $from, ?string $subject, ?string $body, string $threadId): array|false|null
     {
+        $state   = "From: {$from['name']} <{$from['address']}>\nSubject: $subject\n\n".mb_substr(trim(strip_tags((string) $body)), 0, 4000);
+        $scamForm = ['type' => 'choice', 'instructions' => 'Is this email one of these common scam forms?', 'criteria' => ChatSpamRescueKindEnum::scamForms()];
+
         if ($this->matchWebUser($shop, $from['address'])?->customer?->stats?->number_invoices_type_invoice || $this->findSessionByThread($shop, $threadId)) {
-            return true;
+            $answers = AskJev::run($state, ['scam_form' => $scamForm]);
+
+            return ['kind' => null, 'is_possible_scam' => $this->isProbablyScam($answers)];
         }
 
         if (GmailMessageParser::header($raw, 'List-Unsubscribe') || self::isAutomatedMail($from['address'], $subject)) {
             return false;
         }
 
-        $answer = AskJev::make()->choice(
-            "From: {$from['name']} <{$from['address']}>\nSubject: $subject\n\n".mb_substr(trim(strip_tags((string) $body)), 0, 4000),
-            'This email reached the customer service mailbox of a wholesale giftware supplier that sells to shops, including dropshipping. What kind of email is it?',
-            ChatSpamRescueKindEnum::definitions()
-        );
+        $answers = AskJev::run($state, [
+            'kind'      => [
+                'type'         => 'choice',
+                'instructions' => 'This email reached the customer service mailbox of a wholesale giftware supplier that sells to shops, including dropshipping. What kind of email is it?',
+                'criteria'     => ChatSpamRescueKindEnum::definitions(),
+            ],
+            'scam_form' => $scamForm,
+        ]);
 
-        $kind = ChatSpamRescueKindEnum::tryFrom((string) Arr::get($answer, 'choice'));
+        $kind = ChatSpamRescueKindEnum::tryFrom((string) Arr::get($answers, 'kind.choice'));
 
         if (! $kind) {
             return null;
@@ -399,9 +412,28 @@ class ProcessInboundEmail
 
         $wanted = collect(ChatSpamRescueKindEnum::cases())
             ->filter(fn (ChatSpamRescueKindEnum $case) => $case->isWanted())
-            ->sum(fn (ChatSpamRescueKindEnum $case) => (float) Arr::get($answer, "probabilities.$case->value", 0));
+            ->sum(fn (ChatSpamRescueKindEnum $case) => (float) Arr::get($answers, "kind.probabilities.$case->value", 0));
 
-        return $wanted >= config('chat.spam_rescue_min_probability') && $kind !== ChatSpamRescueKindEnum::SCAM ? $kind : false;
+        $looksLikeScam = $kind === ChatSpamRescueKindEnum::SCAM || Arr::get($answers, 'scam_form.choice', 'none') !== 'none';
+
+        if ($wanted < config('chat.spam_rescue_min_probability') || $looksLikeScam) {
+            return false;
+        }
+
+        return ['kind' => $kind, 'is_possible_scam' => $this->isProbablyScam($answers)];
+    }
+
+    /**
+     * Only when a scam is probable, not merely possible: a warning on every email would soon be
+     * read by nobody.
+     *
+     * @param  array<string, mixed>|null  $answers
+     */
+    private function isProbablyScam(?array $answers): bool
+    {
+        $none = Arr::get($answers, 'scam_form.probabilities.none');
+
+        return $none !== null && 1 - (float) $none >= config('chat.spam_rescue_scam_tag_probability');
     }
 
     private function claimKey(string $gmailMessageId): string

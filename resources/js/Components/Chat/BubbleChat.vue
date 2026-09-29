@@ -66,6 +66,7 @@ interface Message {
     is_read?: boolean
     is_rescued_from_spam?: boolean
     spam_rescue_kind_label?: string | null
+    is_possible_scam?: boolean
     metadata?: Record<string, any> | null
     replied_to?: {
         id: number
@@ -1029,6 +1030,7 @@ watch(selectedLanguage, async (val) => {
             <div v-if="message.is_rescued_from_spam" class="mb-1 flex items-start gap-1.5 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800">
                 <FontAwesomeIcon :icon="faShieldCheck" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
                 <span>
+                    <span v-if="message.is_possible_scam" class="mr-1 rounded bg-red-600 px-1.5 py-0.5 font-semibold text-white">{{ ctrans("Possible scam") }}</span>
                     <span v-if="message.spam_rescue_kind_label" class="font-semibold">{{ message.spam_rescue_kind_label }}.</span>
                     {{ ctrans("Gmail put this email in its spam folder. Aiku brought it in because it looks like a real customer, but its attachments are kept in Gmail for your safety: files in spam can carry viruses or fake invoices. Only open them if you were expecting them.") }}
                 </span>

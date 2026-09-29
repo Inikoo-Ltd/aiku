@@ -14305,5 +14305,6 @@
     "— that is :time for you": "— that is :time for you",
     "🔒 This page is protected. Changes require approval from :owner.": "🔒 This page is protected. Changes require approval from :owner.",
     "Gmail put this email in its spam folder. Aiku brought it in because it looks like a real customer, but its attachments are kept in Gmail for your safety: files in spam can carry viruses or fake invoices. Only open them if you were expecting them.": "Gmail put this email in its spam folder. Aiku brought it in because it looks like a real customer, but its attachments are kept in Gmail for your safety: files in spam can carry viruses or fake invoices. Only open them if you were expecting them.",
-    ":count attachment(s) kept in Gmail for safety": ":count attachment(s) kept in Gmail for safety"
+    ":count attachment(s) kept in Gmail for safety": ":count attachment(s) kept in Gmail for safety",
+    "Possible scam": "Possible scam"
 }

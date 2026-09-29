@@ -46,6 +46,7 @@ use App\Models\Traits\HasSearch;
  * @property bool|null $is_validated
  * @property bool $is_rescued_from_spam
  * @property ChatSpamRescueKindEnum|null $spam_rescue_kind
+ * @property bool $is_possible_scam
  * @property-read Media|null $attachment
  * @property-read \App\Models\Chat\ChatSession|null $chatSession
  * @property-read Media|null $image
@@ -84,6 +85,7 @@ class ChatMessage extends Model implements HasMedia
         'is_read' => 'boolean',
         'is_rescued_from_spam' => 'boolean',
         'spam_rescue_kind' => ChatSpamRescueKindEnum::class,
+        'is_possible_scam' => 'boolean',
         'delivered_at' => 'datetime',
         'read_at' => 'datetime',
         'edited_at' => 'datetime',

@@ -73,6 +73,7 @@ class ChatMessageResource extends JsonResource
             'is_read' => $chatMessage->is_read,
             'is_rescued_from_spam' => $chatMessage->is_rescued_from_spam,
             'spam_rescue_kind_label' => $chatMessage->spam_rescue_kind?->label(),
+            'is_possible_scam' => $chatMessage->is_possible_scam,
             'is_redacted' => isset($chatMessage->metadata['redacted_at']),
             'is_attachment_redacted' => isset($chatMessage->metadata['attachment_redacted_at']),
             'is_retracted' => $chatMessage->trashed(),
