@@ -5,13 +5,14 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy } from "@fal"
+import { faRedoAlt, faShoppingBasket, faGift, faBell, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy } from "@fal"
+import { faBell as fasBell } from "@fas"
 import Image from "@common/Components/Image.vue"
 import Select from "primevue/select"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-library.add(faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy)
+library.add(faRedoAlt, faShoppingBasket, faGift, faBell, fasBell, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy)
 
 type StockStatus = "in_stock" | "low" | "out_of_stock" | "unavailable"
 
@@ -25,8 +26,10 @@ interface Regular {
     unit: string | null
     units: number
     available_quantity: number
+    is_on_demand: boolean
     stock_status: StockStatus
     eta: string | null
+    has_reminder: boolean
     is_purchasable: boolean
     orders: number
     quantity: number
@@ -70,6 +73,7 @@ interface Voucher {
     percentage_off: number | null
     amount_off: number | null
     is_free_shipping: boolean
+    is_gift: boolean
     is_whole_order: boolean
     min_amount: number | null
     expires_at: string | null
@@ -113,12 +117,24 @@ const money = (amount: number | null | undefined) => locale.currencyFormat(props
 
 const languageCode = computed(() => locale.language?.code || undefined)
 
-const shortDate = (iso: string | null) => {
-    if (!iso) return ""
-    return new Intl.DateTimeFormat(languageCode.value, { day: "numeric", month: "short" }).format(new Date(iso))
+const todayIso = new Date().toISOString().slice(0, 10)
+const currentYear = new Date().getUTCFullYear()
+
+const formatDate = (iso: string | null, options: Intl.DateTimeFormatOptions) => {
+    const date = iso ? new Date(iso) : null
+    if (!date || isNaN(date.getTime())) return ""
+    return new Intl.DateTimeFormat(languageCode.value, { timeZone: "UTC", ...options }).format(date)
 }
 
-const longDate = (iso: string) => new Intl.DateTimeFormat(languageCode.value, { day: "numeric", month: "long", year: "numeric" }).format(new Date(iso))
+const shortDate = (iso: string | null) => formatDate(iso, {
+    day: "numeric",
+    month: "short",
+    ...(iso && new Date(iso).getUTCFullYear() !== currentYear ? { year: "numeric" } : {}),
+})
+
+const longDate = (iso: string) => formatDate(iso, { day: "numeric", month: "long", year: "numeric" })
+
+const percent = (fraction: number) => new Intl.NumberFormat(languageCode.value, { style: "percent", maximumFractionDigits: 1 }).format(fraction)
 
 const hasHistory = computed(() => props.insights.kpis.total_orders > 0)
 const isLapsed = computed(() => props.insights.kpis.is_lapsed)
@@ -195,14 +211,17 @@ const stepQuantity = (id: number, fallback: number, step: number, max?: number) 
     quantities[id] = max && max > 0 ? Math.min(next, max) : next
 }
 
-const setQuantity = (id: number, value: string, max?: number) => {
-    const parsed = Math.max(1, Math.floor(Number(value) || 1))
+const setQuantity = (id: number, input: HTMLInputElement, max?: number) => {
+    const parsed = Math.max(1, Math.floor(Number(input.value) || 1))
     quantities[id] = max && max > 0 ? Math.min(parsed, max) : parsed
+    input.value = String(quantities[id])
 }
+
+const maxQuantity = (regular: Regular) => regular.is_on_demand ? undefined : regular.available_quantity
 
 const rowHint = (regular: Regular) => {
     if (regular.stock_status === "out_of_stock") {
-        return regular.eta ? ctrans("Back :date", { date: shortDate(regular.eta) }) : ctrans("Arrival date to be confirmed")
+        return regular.eta && regular.eta >= todayIso ? ctrans("Back :date", { date: shortDate(regular.eta) }) : ctrans("Arrival date to be confirmed")
     }
     if (regular.stock_status === "low") {
         return ctrans("Only :count left, order before it runs out", { count: String(regular.available_quantity) })
@@ -215,6 +234,9 @@ const rowHint = (regular: Regular) => {
     }
     if (regular.days_until_due === 0) {
         return ctrans("Due today · usually :count", { count: String(regular.average_quantity) })
+    }
+    if (regular.days_until_due === 1) {
+        return ctrans("Due tomorrow · usually :count", { count: String(regular.average_quantity) })
     }
     if (regular.days_until_due <= 7) {
         return ctrans("Due in :days days · usually :quantity", { days: String(regular.days_until_due), quantity: String(regular.average_quantity) })
@@ -235,19 +257,26 @@ const stockChip = (status: StockStatus) => {
     }
 }
 
+type BasketItem = { id: number, quantity_in_basket?: number }
+
+const basketQuantities = reactive<Record<number, number>>({})
+
+const inBasket = (item: BasketItem) => basketQuantities[item.id] ?? item.quantity_in_basket ?? 0
+
 const addingProductIds = ref<number[]>([])
 
-const addToBasket = async (productId: number, quantityInBasket: number, quantity: number) => {
-    if (props.readOnly) return
-    addingProductIds.value.push(productId)
+const addToBasket = async (item: BasketItem, quantity: number) => {
+    if (props.readOnly || addingProductIds.value.includes(item.id)) return
+    addingProductIds.value.push(item.id)
+    const newQuantity = inBasket(item) + quantity
     try {
-        await axios.post(route("retina.models.product.add-to-basket", { product: productId }), {
-            quantity: quantityInBasket + quantity,
+        const { data } = await axios.post(route("retina.models.product.add-to-basket", { product: item.id }), {
+            quantity: newQuantity,
         })
+        basketQuantities[item.id] = data?.quantity_ordered ?? newQuantity
         notify({ title: ctrans("Added to basket"), type: "success" })
-        delete quantities[productId]
+        delete quantities[item.id]
         layout?.reload_handle?.()
-        router.reload({ only: ["insights"] })
     } catch (error: any) {
         notify({
             title: ctrans("Could not add to basket"),
@@ -255,13 +284,13 @@ const addToBasket = async (productId: number, quantityInBasket: number, quantity
             type: "error",
         })
     } finally {
-        addingProductIds.value = addingProductIds.value.filter((id) => id !== productId)
+        addingProductIds.value = addingProductIds.value.filter((id) => id !== item.id)
     }
 }
 
 const togglingReminderIds = ref<number[]>([])
 
-const toggleReminder = async (favourite: Favourite) => {
+const toggleReminder = async (favourite: { id: number, has_reminder: boolean }) => {
     if (props.readOnly) return
     togglingReminderIds.value.push(favourite.id)
     try {
@@ -291,7 +320,7 @@ const repeatOrder = async (order: RecentOrder) => {
     try {
         const { data } = await axios.post(route("retina.models.order.repeat", { order: order.id }))
         notify({
-            title: ctrans(":count products added to your basket", { count: String(data.added) }),
+            title: data.added === 1 ? ctrans("1 product added to your basket") : ctrans(":count products added to your basket", { count: String(data.added) }),
             text: data.skipped.length
                 ? ctrans("Not available right now: :products", { products: data.skipped.map((p: { code: string }) => p.code).join(", ") })
                 : undefined,
@@ -312,24 +341,27 @@ const repeatOrder = async (order: RecentOrder) => {
 }
 
 const voucherBenefit = (voucher: Voucher) => {
-    const parts: string[] = []
-    if (voucher.percentage_off) {
-        parts.push(ctrans(":percentage off", { percentage: `${Math.round(voucher.percentage_off * 100)}%` }))
-    } else if (voucher.amount_off) {
-        parts.push(ctrans(":amount off", { amount: money(voucher.amount_off) }))
-    } else if (voucher.is_free_shipping) {
-        parts.push(ctrans("Free shipping"))
+    const amount = voucher.min_amount ? money(voucher.min_amount) : null
+    if (voucher.is_free_shipping) {
+        return amount ? ctrans("Free shipping on orders over :amount", { amount }) : ctrans("Free shipping on your order")
     }
-    if (!voucher.is_whole_order && !voucher.is_free_shipping) {
-        parts.push(ctrans("on selected products"))
+    if (voucher.is_gift) {
+        return amount ? ctrans("A free gift with orders over :amount", { amount }) : ctrans("A free gift with your order")
     }
-    if (voucher.min_amount) {
-        parts.push(ctrans("on orders over :amount", { amount: money(voucher.min_amount) }))
+    const discount = voucher.percentage_off ? percent(voucher.percentage_off) : (voucher.amount_off ? money(voucher.amount_off) : null)
+    if (!discount) {
+        return amount ? ctrans("For orders over :amount", { amount }) : ""
     }
-    if (voucher.expires_at) {
-        parts.push(ctrans("until :date", { date: shortDate(voucher.expires_at) }))
+    if (voucher.is_whole_order) {
+        return amount ? ctrans(":discount off orders over :amount", { discount, amount }) : ctrans(":discount off your order", { discount })
     }
-    return parts.join(" · ")
+    return amount ? ctrans(":discount off selected products on orders over :amount", { discount, amount }) : ctrans(":discount off selected products", { discount })
+}
+
+const goldRewardDaysLeft = (daysLeft: number) => {
+    if (daysLeft <= 0) return ctrans("Last day today")
+    if (daysLeft === 1) return ctrans("1 day left")
+    return ctrans(":count days left", { count: String(daysLeft) })
 }
 
 const copiedVoucherCode = ref<string | null>(null)
@@ -364,7 +396,7 @@ const overview = computed(() => {
     return [
         {
             label: isLapsed.value ? ctrans("Previous order frequency") : ctrans("Order frequency"),
-            value: k.order_every_days ? ctrans("Every :count days", { count: String(k.order_every_days) }) : "—",
+            value: k.order_every_days ? (k.order_every_days === 1 ? ctrans("Every day") : ctrans("Every :count days", { count: String(k.order_every_days) })) : "—",
             hint: k.order_every_days ? ctrans("Average gap between orders") : (hasHistory.value ? ctrans("Shown after a few more orders") : ""),
         },
         {
@@ -382,7 +414,7 @@ const overview = computed(() => {
 </script>
 
 <template>
-    <div class="space-y-8 font-['Raleway',_ui-sans-serif,_system-ui,_sans-serif] text-stone-800">
+    <div class="b2b-dashboard space-y-8 font-['Raleway',_ui-sans-serif,_system-ui,_sans-serif] text-stone-800">
         <header>
             <h2 class="text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl">{{ heading.title }}</h2>
             <p class="mt-1 text-stone-600">{{ heading.subtitle }}</p>
@@ -409,7 +441,7 @@ const overview = computed(() => {
                 {{ insights.gold_reward.label }}
             </p>
             <p class="text-[#7a4f33] sm:before:mr-3 sm:before:content-['·']">
-                {{ ctrans(":count days left", { count: String(insights.gold_reward.days_left) }) }} · {{ ctrans("Expires :date", { date: longDate(insights.gold_reward.expires_at) }) }}
+                {{ goldRewardDaysLeft(insights.gold_reward.days_left) }} · {{ ctrans("Expires :date", { date: longDate(insights.gold_reward.expires_at) }) }}
             </p>
         </div>
 
@@ -418,7 +450,8 @@ const overview = computed(() => {
                 <FontAwesomeIcon :icon="faTicketAlt" class="text-[#a0694a]" fixed-width aria-hidden="true" />
                 <div class="min-w-0 flex-1">
                     <p class="font-semibold text-[#7a4f33]">{{ voucher.name }}</p>
-                    <p class="text-sm text-stone-600">{{ voucherBenefit(voucher) }}</p>
+                    <p v-if="voucherBenefit(voucher)" class="text-sm text-stone-600">{{ voucherBenefit(voucher) }}</p>
+                    <p v-if="voucher.expires_at" class="text-xs text-stone-500">{{ ctrans("Ends :date", { date: shortDate(voucher.expires_at) }) }}</p>
                 </div>
                 <button
                     type="button"
@@ -429,6 +462,7 @@ const overview = computed(() => {
                     {{ voucher.code }}
                     <FontAwesomeIcon :icon="copiedVoucherCode === voucher.code ? faCheck : faCopy" fixed-width aria-hidden="true" />
                 </button>
+                <span class="sr-only" aria-live="polite">{{ copiedVoucherCode === voucher.code ? ctrans("Copied") : "" }}</span>
             </li>
         </ul>
 
@@ -473,37 +507,37 @@ const overview = computed(() => {
                             {{ stockChip(regular.stock_status).label }}
                         </span>
 
-                        <div v-if="regular.quantity_in_basket" class="flex w-full items-center justify-end gap-1 whitespace-nowrap text-sm font-medium text-emerald-800 sm:w-auto">
+                        <div v-if="inBasket(regular)" class="flex w-full items-center justify-end gap-1 whitespace-nowrap text-sm font-medium text-emerald-800 sm:w-auto">
                             <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
-                            {{ ctrans(":count in basket", { count: String(regular.quantity_in_basket) }) }}
+                            {{ ctrans(":count in basket", { count: String(inBasket(regular)) }) }}
                         </div>
                         <div v-else-if="canAdd(regular)" class="flex w-full items-center justify-end gap-2 sm:w-auto">
-                            <div class="flex items-center rounded-md border border-stone-300">
+                            <div class="flex items-center rounded-md border border-stone-300 focus-within:ring-2 focus-within:ring-[#a0694a]">
                                 <button
                                     type="button"
                                     class="px-2 py-1.5 text-stone-600 hover:text-stone-900 disabled:opacity-40"
                                     :aria-label="ctrans('Decrease quantity')"
                                     :disabled="readOnly"
-                                    @click="stepQuantity(regular.id, suggestedQuantity(regular), -1, regular.available_quantity)"
+                                    @click="stepQuantity(regular.id, suggestedQuantity(regular), -1, maxQuantity(regular))"
                                 >
                                     <FontAwesomeIcon :icon="faMinus" fixed-width aria-hidden="true" />
                                 </button>
                                 <input
                                     type="number"
                                     min="1"
-                                    :max="regular.available_quantity || undefined"
+                                    :max="maxQuantity(regular) || undefined"
                                     :value="quantityFor(regular.id, suggestedQuantity(regular))"
                                     :aria-label="ctrans('Quantity for :product', { product: regular.name })"
                                     :disabled="readOnly"
                                     class="w-12 border-0 p-0 text-center text-sm tabular-nums focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-                                    @change="setQuantity(regular.id, ($event.target as HTMLInputElement).value, regular.available_quantity)"
+                                    @change="setQuantity(regular.id, $event.target as HTMLInputElement, maxQuantity(regular))"
                                 />
                                 <button
                                     type="button"
                                     class="px-2 py-1.5 text-stone-600 hover:text-stone-900 disabled:opacity-40"
                                     :aria-label="ctrans('Increase quantity')"
                                     :disabled="readOnly"
-                                    @click="stepQuantity(regular.id, suggestedQuantity(regular), 1, regular.available_quantity)"
+                                    @click="stepQuantity(regular.id, suggestedQuantity(regular), 1, maxQuantity(regular))"
                                 >
                                     <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
                                 </button>
@@ -512,12 +546,24 @@ const overview = computed(() => {
                                 type="button"
                                 class="inline-flex items-center gap-2 rounded-md bg-[#a0694a] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
                                 :disabled="readOnly || addingProductIds.includes(regular.id)"
-                                @click="addToBasket(regular.id, 0, quantityFor(regular.id, suggestedQuantity(regular)))"
+                                @click="addToBasket(regular, quantityFor(regular.id, suggestedQuantity(regular)))"
                             >
                                 <FontAwesomeIcon :icon="faShoppingBasket" fixed-width aria-hidden="true" />
                                 {{ ctrans("Add") }}
                             </button>
                         </div>
+                        <button
+                            v-else-if="regular.stock_status === 'out_of_stock'"
+                            type="button"
+                            class="inline-flex flex-none items-center gap-1.5 rounded-md border border-[#a0694a] px-2.5 py-1.5 text-xs font-semibold text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
+                            :aria-pressed="regular.has_reminder"
+                            :disabled="readOnly || togglingReminderIds.includes(regular.id)"
+                            @click="toggleReminder(regular)"
+                        >
+                            <FontAwesomeIcon :icon="regular.has_reminder ? fasBell : faBell" fixed-width aria-hidden="true" />
+                            {{ regular.has_reminder ? ctrans("Notifying you") : ctrans("Notify me") }}
+                        </button>
+                        <span v-else class="w-full text-right text-xs text-stone-500 sm:w-auto">{{ ctrans("Not available to order") }}</span>
                     </li>
                 </ul>
 
@@ -543,9 +589,9 @@ const overview = computed(() => {
                                     {{ stockChip(favourite.stock_status).label }}
                                 </span>
                             </div>
-                            <span v-if="favourite.quantity_in_basket" class="flex-none text-emerald-800" v-tooltip="ctrans(':count in basket', { count: String(favourite.quantity_in_basket) })">
+                            <span v-if="inBasket(favourite)" class="flex flex-none items-center gap-1 whitespace-nowrap text-xs font-medium text-emerald-800">
                                 <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
-                                <span class="sr-only">{{ ctrans(":count in basket", { count: String(favourite.quantity_in_basket) }) }}</span>
+                                {{ ctrans(":count in basket", { count: String(inBasket(favourite)) }) }}
                             </span>
                             <button
                                 v-else-if="canAdd(favourite)"
@@ -553,7 +599,7 @@ const overview = computed(() => {
                                 class="flex-none rounded-md bg-[#a0694a] px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-[#8a5a3e] disabled:opacity-50"
                                 :aria-label="ctrans('Add to basket')"
                                 :disabled="readOnly || addingProductIds.includes(favourite.id)"
-                                @click="addToBasket(favourite.id, 0, 1)"
+                                @click="addToBasket(favourite, 1)"
                             >
                                 <FontAwesomeIcon :icon="faShoppingBasket" fixed-width aria-hidden="true" />
                             </button>
@@ -561,11 +607,12 @@ const overview = computed(() => {
                                 v-else-if="favourite.stock_status === 'out_of_stock'"
                                 type="button"
                                 class="inline-flex flex-none items-center gap-1.5 rounded-md border border-[#a0694a] px-2.5 py-1.5 text-xs font-semibold text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
+                                :aria-pressed="favourite.has_reminder"
                                 :disabled="readOnly || togglingReminderIds.includes(favourite.id)"
                                 @click="toggleReminder(favourite)"
                             >
-                                <FontAwesomeIcon :icon="favourite.has_reminder ? faBellSlash : faBell" fixed-width aria-hidden="true" />
-                                {{ favourite.has_reminder ? ctrans("Notifying") : ctrans("Notify me") }}
+                                <FontAwesomeIcon :icon="favourite.has_reminder ? fasBell : faBell" fixed-width aria-hidden="true" />
+                                {{ favourite.has_reminder ? ctrans("Notifying you") : ctrans("Notify me") }}
                             </button>
                         </li>
                     </ul>
@@ -606,7 +653,7 @@ const overview = computed(() => {
                         </Link>
                         <button
                             type="button"
-                            class="inline-flex items-center gap-1.5 text-[#8a5a3e] underline-offset-4 hover:underline disabled:opacity-50"
+                            class="inline-flex items-center gap-1.5 text-[#8a5a3e] underline-offset-4 hover:underline disabled:opacity-50 disabled:no-underline"
                             :disabled="readOnly || repeatingOrderId === order.id"
                             @click="repeatOrder(order)"
                         >
@@ -622,7 +669,7 @@ const overview = computed(() => {
             <h3 class="text-xl font-bold text-stone-900">{{ recommendationsTitle }}</h3>
             <p class="text-sm text-stone-500">{{ recommendationsSubtitle }}</p>
             <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
-                <div v-for="product in insights.recommendations.slice(0, 6)" :key="product.id" class="group flex flex-col">
+                <div v-for="product in insights.recommendations.slice(0, 6)" :key="product.id" class="group flex flex-col" :class="{ 'pointer-events-none': readOnly }">
                     <a :href="readOnly ? undefined : product.url" class="flex h-28 items-center justify-center overflow-hidden rounded-md bg-stone-50">
                         <Image
                             v-if="product.web_images?.main"
@@ -635,13 +682,17 @@ const overview = computed(() => {
                     <p class="text-xs text-stone-500">{{ product.code }}</p>
                     <div class="mt-auto flex items-center justify-between gap-2 pt-1">
                         <p class="text-xs tabular-nums text-stone-700">{{ packLine(product.discounted_price ?? product.price, product.units, product.unit) }}</p>
+                        <span v-if="inBasket(product)" class="flex flex-none items-center gap-1 whitespace-nowrap text-xs font-medium text-emerald-800">
+                            <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+                            {{ ctrans(":count in basket", { count: String(inBasket(product)) }) }}
+                        </span>
                         <button
+                            v-else
                             type="button"
                             class="rounded-md p-1.5 text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"
                             :disabled="readOnly || addingProductIds.includes(product.id)"
-                            :aria-label="ctrans('Add to basket')"
-                            v-tooltip="ctrans('Add to basket')"
-                            @click="addToBasket(product.id, 0, 1)"
+                            :aria-label="ctrans('Add :product to basket', { product: product.name })"
+                            @click="addToBasket(product, 1)"
                         >
                             <FontAwesomeIcon :icon="faShoppingBasket" fixed-width aria-hidden="true" />
                         </button>
@@ -663,3 +714,10 @@ const overview = computed(() => {
         </section>
     </div>
 </template>
+
+<style scoped>
+.b2b-dashboard :is(a, button):focus-visible {
+    outline: 2px solid #a0694a;
+    outline-offset: 2px;
+}
+</style>

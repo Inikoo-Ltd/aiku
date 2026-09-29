@@ -4922,7 +4922,11 @@ test('b2b dashboard insights show the customer order overview, their regular pro
         ->and($regular['reorder_every_days'])->toBe(20)
         ->and($regular['days_until_due'])->toBe(10)
         ->and($regular['stock_status'])->toBe('in_stock')
-        ->and($regular['is_purchasable'])->toBeTrue();
+        ->and($regular['is_purchasable'])->toBeTrue()
+        ->and($regular['is_on_demand'])->toBeFalse()
+        ->and($regular['has_reminder'])->toBeFalse()
+        ->and($insights['recent_orders'][0]['date'])->toBe(now()->subDays(10)->toDateString())
+        ->and(collect($insights['recommendations'])->every(fn ($product) => array_key_exists('quantity_in_basket', $product)))->toBeTrue();
 });
 
 test('b2b dashboard insights work for a customer who never ordered and for one who stopped ordering', function () {
