@@ -20,7 +20,8 @@ import { debounce } from "lodash-es"
 import { faSearch, faSpinner } from "@fal"
 import { faExclamationTriangle, faMinus, faPlus } from "@fas"
 import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
+import { ctrans as trans } from "@/Composables/useTrans"
+import { useLocaleStore } from "@/Stores/locale"
 import Image from "@common/Components/Image.vue"
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -39,6 +40,8 @@ const isLoading = ref(false)
 const isRowLoading = ref<number | null>(null)
 const searchQuery = ref("")
 const overBudgetMessage = ref<string | null>(null)
+const currency = ref<string>("")
+const locale = useLocaleStore()
 
 const closeModal = () => {
     model.value = false
@@ -59,6 +62,7 @@ const fetchRows = async (url?: string, append = false) => {
         const response = await axios.get(urlToFetch)
         rows.value = append ? [...rows.value, ...response.data.data] : response.data.data
         overBudgetMessage.value = response.data.over_budget_message ?? null
+        currency.value = response.data.currency ?? currency.value
         optionsLinks.value = { next: response.data.links?.next ?? response.data.next_page_url }
     } catch (error) {
         console.error("Error fetching partner stock list:", error)
@@ -109,6 +113,13 @@ const onSubmitRow = async (row: any) => {
 }
 
 const debSubmitRow = debounce(onSubmitRow, 500)
+
+const lineValue = (row: any): number | null => {
+    const quantity = Number(row.quantity_ordered) || 0
+    if (!quantity || row.price_per_sko === null || row.price_per_sko === undefined) return null
+
+    return Math.round(quantity * Number(row.price_per_sko) * 100) / 100
+}
 
 const nextBatchMultiple = (row: any): number | null => {
     const quantum = Number(row.order_quantum) || 0
@@ -284,6 +295,13 @@ watch(() => model.value, async (newValue) => {
                                         noUndoButton
                                         noSaveButton
                                     />
+                                    <div v-if="lineValue(slotProps.data) !== null" class="mt-1 text-right text-sm font-medium tabular-nums"
+                                        :title="`${locale.currencyFormat(currency, slotProps.data.price_per_sko)} / ${trans('SKO')}`">
+                                        {{ locale.currencyFormat(currency, lineValue(slotProps.data)) }}
+                                    </div>
+                                    <div v-else-if="slotProps.data.price_per_sko" class="mt-1 text-right text-xs text-gray-400 tabular-nums">
+                                        {{ locale.currencyFormat(currency, slotProps.data.price_per_sko) }} / {{ trans("SKO") }}
+                                    </div>
                                 </template>
                             </Column>
 

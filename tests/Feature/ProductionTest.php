@@ -3846,3 +3846,75 @@ test('a job carried to another day is one row on the board, with the amount the 
         ->and($rows[0]['quantity_total'])->toEqual($skos(40))
         ->and($rows[0]['in_progress'])->toBeFalse();
 });
+
+test('organisation navigation shows the warehouse section above production', function () {
+    $sections = array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationNavigation::run($this->guest->getUser(), $this->organisation));
+
+    expect(array_search('warehouses_navigation', $sections))->toBeLessThan(array_search('productions_navigation', $sections));
+});
+
+test('surplus made beyond its lines is flagged on the backlog and booking it in fulfils the oldest lines', function () {
+    $stock = \App\Actions\Goods\Stock\StoreStock::make()->action(
+        $this->group,
+        array_merge(\App\Models\Goods\Stock::factory()->definition(), [
+            'state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE
+        ])
+    );
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $orgStock->update(['packed_in' => 10, 'quantity_in_locations' => 0, 'quantity_available' => 0]);
+
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'code'         => 'SURPLUS1',
+        'name'         => 'Surplus artefact',
+        'org_stock_id' => $orgStock->id,
+    ]);
+    $artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $area = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action(
+        \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-SUR', 'name' => 'Surplus warehouse']),
+        ['code' => 'A-SUR', 'name' => 'Surplus area']
+    );
+    $location = \App\Actions\Inventory\Location\StoreLocation::make()->action(
+        $area,
+        ['code' => 'L-SUR', 'name' => 'Surplus location'] + \App\Models\Inventory\Location::factory()->definition()
+    );
+
+    $line = fn (float $quantity, array $extra = []) => \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stock->id,
+        'org_stock_id'    => $orgStock->id,
+        'quantity'        => $quantity,
+    ] + $extra);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 100]);
+    $line(1, ['job_order_id' => $jobOrder->id, 'quantity_to_produce' => 10, 'state' => \App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::ORDERED]);
+    $older = $line(1, ['created_at' => now()->subDay()]);
+    $newer = $line(12);
+
+    ConfirmJobOrder::make()->action($jobOrder);
+
+    actingAs($this->guest->getUser());
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $backlog = fn (array $query = []) => collect(get(route('grp.org.productions.show.to_produce.index', $routeParameters + $query))
+        ->assertOk()->viewData('page')['props']['groups'])->firstWhere('label', 'Backlog')['items'];
+
+    expect(collect($backlog())->firstWhere('id', $older->id)['pipeline'] ?? null)->toBe(['pending_booking' => 0.0, 'in_production' => 1.0, 'job_orders' => [$jobOrder->reference]]);
+
+    $session = StartManufactureTaskSession::make()->action($this->guest->getUser(), $jobOrderItem->tasks()->first());
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 100]);
+
+    $items = collect($backlog())->keyBy('id');
+    expect($items[$older->id]['pipeline']['pending_booking'])->toBe(1.0)
+        ->and($items[$newer->id]['pipeline']['pending_booking'])->toBe(8.0)
+        ->and(collect($backlog(['ignore_pipeline' => 1]))->pluck('pipeline')->filter()->all())->toBe([]);
+
+    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), ['location_id' => $location->id]);
+
+    expect($older->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
+        ->and($newer->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN)
+        ->and((float) $newer->quantity)->toBe(4.0);
+});

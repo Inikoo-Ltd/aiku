@@ -165,7 +165,7 @@ class UpdateInvoice extends OrgAction
                 country: $invoice->organisation->country,
                 taxNumber: $taxNumber,
                 billingAddress: $invoice->billingAddress,
-                deliveryAddress: $invoice->deliveryAddress,
+                deliveryAddress: $invoice->order?->collection_address_id ? $invoice->order->taxableDeliveryAddress($taxNumber) : $invoice->deliveryAddress,
                 isRe: $invoice->is_re,
             );
 

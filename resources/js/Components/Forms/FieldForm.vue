@@ -109,6 +109,14 @@ const save = () => {
                 }
                 isModalConfirmation.value = false
             },
+            onError: (errors) => {
+                const modelError = errors.error_in_models
+                if (modelError && !errors[props.field]) {
+                    form.setError(props.field, modelError.startsWith('500')
+                        ? ctrans('Not saved, something went wrong. The team has been notified.')
+                        : modelError)
+                }
+            },
         }
     )
 }

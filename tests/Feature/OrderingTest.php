@@ -69,6 +69,7 @@ use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Ordering\Order\UpdateOrderBillingAddress;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderGiftMessage;
@@ -4046,6 +4047,42 @@ test('a collection invoice stores the collection address it was issued with', fu
     $collectionAddress->update(['address_line_1' => 'Somewhere else entirely']);
 
     expect($invoice->deliveryAddress?->address_line_1)->toBe('Affinity Park');
+});
+
+test('an order switched to collection is taxed where it is collected, not where the customer lives', function () {
+    $addressIn = fn (string $code, string $postalCode) => \App\Models\Helpers\Address::create(array_merge(
+        \App\Models\Helpers\Address::factory()->definition(),
+        ['group_id' => $this->shop->group_id, 'country_code' => $code, 'country_id' => Country::where('code', $code)->value('id'), 'postal_code' => $postalCode]
+    ));
+
+    $customer = createCustomer($this->shop);
+    $order    = StoreOrder::make()->action($customer, Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->currentHistoricProduct, Transaction::factory()->definition());
+
+    $ceuta = $addressIn('ES', '51001');
+    $order->update(['billing_address_id' => $ceuta->id, 'delivery_address_id' => $ceuta->id]);
+    $showroom = $addressIn('ES', '29004');
+    $order->shop->update(['collection_address_id' => $showroom->id]);
+    $order->shop->unsetRelation('collectionAddress');
+    $order->updateQuietly(['tax_category_id' => 2]);
+
+    UpdateOrder::make()->action($order->refresh(), ['collection_address_id' => $ceuta->id]);
+    $order->refresh();
+
+    $spain = Country::where('code', 'ES')->first();
+    expect($order->taxableDeliveryAddress(null)->id)->toBe($showroom->id)
+        ->and($order->tax_category_id)->toBe(GetTaxCategory::run($order->organisation->country, null, $ceuta, $showroom)->id)
+        ->and(GetTaxCategory::run($spain, null, $ceuta, $ceuta)->id)->toBe(1)
+        ->and(GetTaxCategory::run($spain, null, $ceuta, $order->taxableDeliveryAddress(null))->rate)->toBeGreaterThan(0)
+        ->and($order->taxableDeliveryAddress(new \App\Models\Helpers\TaxNumber(['valid' => true]))->id)->toBe($ceuta->id);
+
+    UpdateOrder::make()->action($order, ['collection_address_id' => null]);
+    expect($order->refresh()->taxableDeliveryAddress(null)->id)->toBe($ceuta->id);
+
+    $order->updateQuietly(['state' => OrderStateEnum::FINALISED, 'tax_category_id' => 2]);
+    UpdateOrder::make()->action($order->refresh(), ['collection_address_id' => $showroom->id]);
+    expect($order->refresh()->tax_category_id)->toBe(2);
+    $order->updateQuietly(['state' => OrderStateEnum::CREATING]);
 });
 
 test('a held order goes to the warehouse once its address is put on it', function () {

@@ -35,6 +35,7 @@ use App\Actions\Traits\WithMasterAssetTradeUnits;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\TaxCategory;
@@ -43,6 +44,7 @@ use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -62,6 +64,16 @@ class UpdateMasterAsset extends OrgAction
 
     /** Only a human editing in the UI is guarded against overlapping sweeps; the seeder sequences itself. */
     private bool $guardTaxSweep = false;
+
+    /**
+     * @param Collection<int, TradeUnit> $tradeUnits
+     *
+     * @return array<int, float>
+     */
+    private function compositionSignature(Collection $tradeUnits): array
+    {
+        return $tradeUnits->mapWithKeys(fn (TradeUnit $tradeUnit) => [$tradeUnit->id => (float) $tradeUnit->pivot->quantity])->sortKeys()->all();
+    }
 
     /**
      * @throws \Throwable
@@ -210,6 +222,12 @@ class UpdateMasterAsset extends OrgAction
 
             $this->update($masterAsset, $modelData);
             $masterAsset->refresh();
+
+            if (Arr::has($modelData, 'master_prices')) {
+                $masterAsset->updateQuietly(['price_review' => null]);
+            } elseif ($this->compositionSignature($oldTradeUnitData) !== $this->compositionSignature($masterAsset->tradeUnits)) {
+                $masterAsset->updateQuietly(['price_review' => 'composition_changed']);
+            }
 
             $this->dispatchCustomAuditTradeUnit($masterAsset, $oldTradeUnitData);
 

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Inventory\Warehouse\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseManagementEditAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -57,7 +56,6 @@ class EditWarehouse extends OrgAction
                     'label'   => __('Address'),
                     'value'   => AddressFormFieldsResource::make($warehouse->address)->getArray(),
                     'options' => [
-                        'countriesAddressData' => GetAddressData::run()
                     ]
                 ],
             ]

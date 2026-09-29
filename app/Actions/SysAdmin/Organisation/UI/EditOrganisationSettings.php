@@ -8,7 +8,6 @@
 
 namespace App\Actions\SysAdmin\Organisation\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
@@ -183,7 +182,6 @@ class EditOrganisationSettings extends OrgAction
                                     'label' => __('Address'),
                                     'value' => AddressFormFieldsResource::make($organisation->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                             ],

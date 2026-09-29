@@ -26,6 +26,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
+import { useChatClosingCountdown } from "@/Composables/useChatClosingCountdown"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
@@ -145,6 +146,10 @@ const onTaskCreated = (task: any) => {
 }
 
 const chatSession = computed(() => props.session)
+
+const { closingAt, closingIn, onClosing: onClosingEvent, keepOpen } = useChatClosingCountdown(chatSession, () =>
+    chatSession.value?.ulid ? route("grp.org.chat.agents.whatsapp.sessions.keep_open", [props.organisationSlug, chatSession.value.ulid]) : null
+)
 const isClosed = computed(() => chatSession.value?.status === "closed")
 const isWaiting = computed(() => !chatSession.value?.assigned_agent)
 const isMyChat = computed(() => {
@@ -232,6 +237,10 @@ const templateOnly = computed(() => canSendNonTemplate.value === false)
 const messagesLocal = ref<LocalChatMessage[]>([])
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
+
+watch(newMessage, (text) => {
+    if (text) keepOpen()
+})
 useComposerDraft(() => props.session?.ulid, newMessage)
 
 const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
@@ -813,11 +822,14 @@ let chatChannel: any = null
 let onMessage: ((payload: any) => void) | null = null
 let onReaction: ((payload: any) => void) | null = null
 let onStatus: ((payload: any) => void) | null = null
+let onClosing: ((payload: any) => void) | null = null
 
 const stopSocket = () => {
     if (onMessage) chatChannel?.stopListening(".message", onMessage)
     if (onReaction) chatChannel?.stopListening(".reaction", onReaction)
     if (onStatus) chatChannel?.stopListening(".status", onStatus)
+    if (onClosing) chatChannel?.stopListening(".closing", onClosing)
+    onClosing = null
     onMessage = null
     onReaction = null
     onStatus = null
@@ -855,6 +867,8 @@ const initSocket = () => {
             canSendNonTemplate.value = can_send_non_template_message
         }
 
+        closingAt.value = null
+
         // Our own optimistic bubble is superseded by the broadcast that follows the send.
         messagesLocal.value = messagesLocal.value.filter(
             (m) => !(m._status === "sending" && m.sender_type === "agent")
@@ -875,8 +889,12 @@ const initSocket = () => {
         scrollBottom()
     }
 
-    onReaction = ({ message }: any) => {
+    onReaction = ({ message, can_send_non_template_message }: any) => {
         if (!message?.id) return
+
+        if (can_send_non_template_message !== undefined) {
+            canSendNonTemplate.value = can_send_non_template_message
+        }
 
         const index = messagesLocal.value.findIndex((m) => m.id === message.id)
 
@@ -908,6 +926,8 @@ const initSocket = () => {
     chatChannel.listen(".message", onMessage)
     chatChannel.listen(".reaction", onReaction)
     chatChannel.listen(".status", onStatus)
+    onClosing = onClosingEvent
+    chatChannel.listen(".closing", onClosing)
 }
 
 watch(
@@ -981,6 +1001,11 @@ onUnmounted(() => {
                     <FontAwesomeIcon :icon="faWhatsapp" class="shrink-0 text-[11px] text-green-600" fixed-width />
                     <span v-if="lastMessageStamp" class="text-[11px] text-gray-400 shrink-0">
                         {{ lastMessageStamp.time }} <span class="text-gray-300">({{ lastMessageStamp.age }})</span>
+                    </span>
+                    <span v-if="closingIn" class="shrink-0 text-[11px] text-gray-400"
+                        v-tooltip="ctrans('The customer only thanked us: it gets a 👍 and closes unless somebody writes. Typing keeps it open.')">
+                        👍 {{ closingIn }}
+                        <button type="button" class="ml-1 underline hover:text-gray-600" @click="keepOpen">{{ ctrans("Keep open") }}</button>
                     </span>
                 </div>
             </div>

@@ -716,7 +716,8 @@ class EditProduct extends OrgAction
                                 'information' => __('In product page, this will be displayed in specifications as Net Weight'),
                                 'value'       => $product->marketing_weight,
                                 'bind'        => [
-                                    'suffix' => 'g'
+                                    'suffix'            => 'g',
+                                    'maxFractionDigits' => 0
                                 ]
                             ],
                             'gross_weight'         => [
@@ -725,7 +726,8 @@ class EditProduct extends OrgAction
                                 'information' => __('In product page, this will be displayed in specifications as Shipping Weight'),
                                 'value'       => $product->gross_weight,
                                 'bind'        => [
-                                    'suffix' => 'g'
+                                    'suffix'            => 'g',
+                                    'maxFractionDigits' => 0
                                 ]
                             ],
                             'marketing_dimensions' => [

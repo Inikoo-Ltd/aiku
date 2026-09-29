@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\Fulfilment\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
@@ -168,7 +167,6 @@ class EditFulfilment extends OrgAction
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($fulfilment->shop->address)->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
                                 'registration_number' => [

@@ -21,6 +21,7 @@ use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PartnerShoppingListItem\ReopenPartnerShoppingListItemsOfTransactions;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
@@ -97,6 +98,8 @@ class CancelOrder extends OrgAction
 
             $transaction->update($transactionData);
         }
+
+        ReopenPartnerShoppingListItemsOfTransactions::run($order->transactions()->pluck('id')->all());
 
         if ($order->payment_amount > 0) {
             StoreCreditTransaction::make()->action($order->customer, [

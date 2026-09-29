@@ -47,8 +47,8 @@ class GetIrisBasketTransactions extends IrisAction
             ->map(function ($data) {
                 return [
                     'transaction_id' => $data->transaction_id,
-                    'quantity_ordered' => $data->quantity_ordered,
-                    'quantity_ordered_new' => $data->quantity_ordered,
+                    'quantity_ordered' => (float) $data->quantity_ordered,
+                    'quantity_ordered_new' => (float) $data->quantity_ordered,
                     'department_id'         => $data->department_id,
                     'sub_department_id'     => $data->sub_department_id,
                     'family_id'             => $data->family_id,

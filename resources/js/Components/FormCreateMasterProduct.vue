@@ -93,6 +93,9 @@ const currencies_data = ref({})
 const org_data = ref(null)
 const avg_org_cost = ref(0)
 const rrp_price_ratio = ref(2.4)
+const base_currency_code = ref<string | null>(null)
+const family_unit_price_median = ref<number | null>(null)
+const price_outlier_factor = ref(3)
 
 // Inertia form
 const form = useForm({
@@ -203,6 +206,9 @@ const getTableData = (data) => {
             rrp_price_ratio.value = response.data.rrp_price_ratio
             org_data.value = response.data.org_data
             avg_org_cost.value = response.data.avg_org_cost
+            base_currency_code.value = response.data.base_currency_code
+            family_unit_price_median.value = response.data.family_unit_price_median
+            price_outlier_factor.value = response.data.price_outlier_factor
             
         } catch (error: any) {
             if (!(axios.isCancel(error) || error.name === "CanceledError")) {
@@ -248,7 +254,33 @@ const priceByCurrency = computed(() => {
     }, {} as Record<string, number | null>)
 })
 
+const priceOutlierWarning = computed(() => {
+    const price = Number(form.master_prices?.[base_currency_code.value ?? '']?.value ?? 0)
+    const median = Number(family_unit_price_median.value ?? 0)
+
+    if (!price || !median) {
+        return null
+    }
+
+    const times = price / unitsPerOuter.value / median
+    const usual = `${median.toFixed(2)} ${base_currency_code.value}`
+
+    if (times >= price_outlier_factor.value) {
+        return ctrans('This price per unit is :times times the usual price in this family (:usual). Check the price and the trade units before saving.', { times: times.toFixed(1), usual })
+    }
+
+    if (times <= 1 / price_outlier_factor.value) {
+        return ctrans('This price per unit is only :pct% of the usual price in this family (:usual). Check the price and the trade units before saving.', { pct: `${Math.round(times * 100)}`, usual })
+    }
+
+    return null
+})
+
 const submitForm = async (redirect = true) => {
+    if (priceOutlierWarning.value && !window.confirm(`${priceOutlierWarning.value}\n\n${ctrans('Save anyway?')}`)) {
+        return
+    }
+
     form.processing = true
     form.errors = {}
     errorSummary.value = []
@@ -710,6 +742,11 @@ const successEditTradeUnit = (data) => {
                                 :org_data="org_data"
                                 :avg_org_cost="avg_org_cost"
                             />
+                            <div v-if="priceOutlierWarning"
+                                class="mt-1 flex items-start gap-1 rounded border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700">
+                                <FontAwesomeIcon :icon="faCircleExclamation" fixed-width class="mt-0.5" />
+                                {{ priceOutlierWarning }}
+                            </div>
                             <small v-if="form.errors.master_prices"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" fixed-width />

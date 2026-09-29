@@ -5,6 +5,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Masters\MasterAsset\GetMasterAssetPriceOutlier;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPriceTips;
 
 test('overstocked product selling less than last year gets a markdown sized by cover', function () {
@@ -32,4 +33,13 @@ test('product running out everywhere with growing sales gets a markup', function
 test('products without sales a year ago never get a tip', function () {
     expect(GetMasterProductsPriceTips::tip(730, 730, 0, 0, 10, 2))->toBeNull()
         ->and(GetMasterProductsPriceTips::tip(5, 10, 50, 0, 10, 2))->toBeNull();
+});
+
+test('price per unit far from the family median is an outlier, HELP-3496', function () {
+    expect(GetMasterAssetPriceOutlier::run(157.19, 1, 9.5)['times'])->toBe(16.5)
+        ->and(GetMasterAssetPriceOutlier::run(3, 1, 10)['times'])->toBe(0.3)
+        ->and(GetMasterAssetPriceOutlier::run(10.8, 1, 9.5))->toBeNull()
+        ->and(GetMasterAssetPriceOutlier::run(60, 6, 10))->toBeNull()
+        ->and(GetMasterAssetPriceOutlier::run(157.19, 1, null))->toBeNull()
+        ->and(GetMasterAssetPriceOutlier::run(0, 1, 10))->toBeNull();
 });

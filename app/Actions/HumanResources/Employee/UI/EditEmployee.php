@@ -8,7 +8,6 @@
 
 namespace App\Actions\HumanResources\Employee\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\HumanResources\Employee\GetEmployeeJobPositionsData;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
@@ -314,7 +313,6 @@ class EditEmployee extends OrgAction
                     'label' => __('Address'),
                     'value' => AddressFormFieldsResource::make($employee->address)->getArray(),
                     'options' => [
-                        'countriesAddressData' => GetAddressData::run()
                     ]
                 ],
                 'insurance_number' => [

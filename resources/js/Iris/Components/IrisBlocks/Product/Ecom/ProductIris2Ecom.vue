@@ -462,8 +462,8 @@ onMounted(async () => {
                             </p>
                         </template>
 
-                        <p class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
-                        <div class="flex items-baseline justify-end gap-1 text-black">
+                        <p v-if="product.rrp_per_unit > 0" class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
+                        <div v-if="product.rrp_per_unit > 0" class="flex items-baseline justify-end gap-1 text-black">
                             <span class="text-xs font-semibold">
                                 {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                             </span>
@@ -776,8 +776,8 @@ onMounted(async () => {
                         </p>
                     </template>
 
-                    <p class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
-                    <div class="flex items-baseline justify-end gap-1 text-black">
+                    <p v-if="product.rrp_per_unit > 0" class="mt-2 text-xs text-black leading-tight">{{ ctrans("Profit") }}:</p>
+                    <div v-if="product.rrp_per_unit > 0" class="flex items-baseline justify-end gap-1 text-black">
                         <span class="text-xs font-semibold">
                             {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }}
                         </span>

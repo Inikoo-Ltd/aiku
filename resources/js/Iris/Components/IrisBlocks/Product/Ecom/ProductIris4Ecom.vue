@@ -551,7 +551,7 @@ onMounted(async () => {
                             template="max_discount" :offers_data="offersData" />
                     </div>
 
-                    <div class="mt-1 flex justify-end">
+                    <div v-if="product.rrp_per_unit > 0" class="mt-1 flex justify-end">
                         <div class="flex items-end">
                             <span @click="_popoverProfit?.toggle">{{ ctrans("Profit") }}</span>:
                             <span class="ml-1 font-bold text-green-500">
@@ -796,7 +796,7 @@ onMounted(async () => {
                             template="max_discount" :offers_data="offersData" />
                     </div>
 
-                    <div class="ml-auto flex items-end text-sm">
+                    <div v-if="product.rrp_per_unit > 0" class="ml-auto flex items-end text-sm">
                         <span @click="_popoverProfitMobile?.toggle">{{ ctrans("Profit") }}</span>:
                         <span class="ml-1 font-bold text-green-500">
                             {{ locale.currencyFormat(currency?.code, displayedProfit || 0) }} ({{ displayedMargin }})

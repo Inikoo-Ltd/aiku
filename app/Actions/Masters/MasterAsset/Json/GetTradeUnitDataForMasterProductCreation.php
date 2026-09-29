@@ -10,8 +10,10 @@ namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\MasterAsset\GetMasterAssetPriceOutlier;
 use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\Traits\HasBucketImages;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
@@ -146,6 +148,15 @@ class GetTradeUnitDataForMasterProductCreation extends OrgAction
         data_set($finalData, 'rrp_price_ratio', $rrpPriceRatio);
         data_set($finalData, 'org_data', $organisationData);
         data_set($finalData, 'avg_org_cost', $avgCost);
+        data_set($finalData, 'base_currency_code', $baseCurrency->code);
+        data_set($finalData, 'price_outlier_factor', GetMasterAssetPriceOutlier::FACTOR);
+        data_set(
+            $finalData,
+            'family_unit_price_median',
+            $masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY
+                ? GetMasterAssetPriceOutlier::familyUnitPriceMedian($masterProductCategory->id)
+                : null
+        );
 
         return $finalData;
     }

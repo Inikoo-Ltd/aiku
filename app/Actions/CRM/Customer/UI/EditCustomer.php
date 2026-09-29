@@ -11,7 +11,6 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
@@ -112,7 +111,6 @@ class EditCustomer extends OrgAction
                     'label'   => __('Address'),
                     'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
                     'options' => [
-                        'countriesAddressData' => GetAddressData::run()
                     ]
                 ],
                 'delivery_address'         => [
@@ -126,7 +124,6 @@ class EditCustomer extends OrgAction
                             'key_payload' => 'delivery_address_id',
                             'payload'     => $customer->address_id
                         ],
-                        'countriesAddressData' => GetAddressData::run()
                     ],
                     'value'        => [
                         'is_same_as_contact' => $customer->delivery_address_id == $customer->address_id,
@@ -143,7 +140,6 @@ class EditCustomer extends OrgAction
                     ],
                     'country'               => $customer->address->country_code,
                     'options'               => [
-                        'countriesAddressData' => GetAddressData::run()
                     ],
                 ],
                 'is_re'                    => [

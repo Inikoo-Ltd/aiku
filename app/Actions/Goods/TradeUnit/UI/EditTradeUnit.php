@@ -214,7 +214,8 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Weight').' ('.__('Shipping').')',
                                     'value' => $tradeUnit->gross_weight,
                                     'bind'  => [
-                                        'suffix' => 'g'
+                                        'suffix'            => 'g',
+                                        'maxFractionDigits' => 0
                                     ]
                                 ],
 //                                'net_weight' => [
@@ -230,7 +231,8 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Weight').' ('.__('Marketing').')',
                                     'value' => $tradeUnit->marketing_weight,
                                     'bind'  => [
-                                        'suffix' => 'g'
+                                        'suffix'            => 'g',
+                                        'maxFractionDigits' => 0
                                     ]
                                 ],
                                 'marketing_dimensions' => [

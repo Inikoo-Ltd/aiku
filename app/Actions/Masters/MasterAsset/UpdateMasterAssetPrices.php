@@ -85,6 +85,10 @@ class UpdateMasterAssetPrices extends OrgAction
                 data_set($modelData, 'rrp', $baseRRP);
             }
 
+            if (Arr::has($modelData, 'master_prices')) {
+                data_set($modelData, 'price_review', null);
+            }
+
             return $this->update($lockedMasterAsset, $modelData);
         });
 

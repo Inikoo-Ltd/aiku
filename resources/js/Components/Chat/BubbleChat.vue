@@ -25,6 +25,7 @@ type ViewerType = "user" | "agent"
 interface ChatAttachment {
     id: number
     is_image: boolean
+    is_inline?: boolean
     media_url: {
         original: string
         webp?: string
@@ -46,6 +47,7 @@ interface Message {
     sender_type: SenderType
     message_text: string
     html_body?: string | null
+    has_embedded_pictures?: boolean
     created_at: string
     media_url?: {
         original: string
@@ -353,13 +355,10 @@ const fileMime = computed(() => props.message.file_mime ?? props.message.media_u
 
 const attachmentList = computed<ChatAttachment[]>(() => {
     // A picture the email already shows in its own body is not listed again underneath it,
-    // where it would read as a second, separate photograph.
+    // where it would read as a second, separate photograph. With the body folded away behind a
+    // summary, the list is the only place left to see it.
     if (props.message.attachments?.length) {
-        const body = props.message.html_body ?? ""
-
-        return props.message.attachments.filter(
-            (attachment) => !attachment.original_url || !body.includes(attachment.original_url)
-        )
+        return props.message.attachments.filter((attachment) => !(attachment.is_inline && isShowingEmailBody.value))
     }
 
     if (!props.message.media_url && !props.message.download_route) return []
@@ -382,7 +381,7 @@ const isAttachmentRedactable = computed(() =>
     !!props.message.id &&
     !isRetracted.value &&
     props.message.is_attachment_redacted !== true &&
-    attachmentList.value.length > 0
+    (attachmentList.value.length > 0 || !!props.message.attachments?.length || props.message.has_embedded_pictures === true)
 )
 
 const attachmentMime = (attachment: ChatAttachment) => attachment.file_mime ?? attachment.media_url?.mime ?? ""
