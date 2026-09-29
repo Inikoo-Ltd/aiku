@@ -53,6 +53,7 @@ Whoever oversees chat sees the agents down the side: who is there, who is on a p
 - <b>Possible noise</b> - it might be automatic mail, but it was not certain enough to move. It stays in the queue for a person to decide.
 - <b>Put aside automatically</b> - moved to Ignored or Spam by the system, with the reason. One click brings it back.
 - <b>Priority</b> - <b>Urgent</b>, <b>High</b>, <b>Normal</b> or <b>Low</b>, set from the conversation's menu. Normal unless somebody changes it.
+- <b>Offline message</b> - a website chat opened outside working hours, where the shop has <b>Answer offline messages by email</b> turned on in its chat settings. The conversation is genuinely in the email channel, so it counts and sits with everything else there; the tag is just there to say why.
 - A number on the right - unread messages in that conversation.
 
 ## Your own state
