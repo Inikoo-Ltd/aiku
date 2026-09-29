@@ -15,6 +15,7 @@ export type WhatsappCall = {
     direction: "user_initiated" | "business_initiated"
     phone_number: string | null
     user_id: number | null
+    user_name?: string | null
     duration_seconds: number | null
     answered_at: string | null
     ended_at: string | null
@@ -186,6 +187,24 @@ export const useWhatsappCall = () => {
         }
 
         if (state.call && state.call.id !== payload.id && state.call.status === "in_progress") {
+            return
+        }
+
+        // Only the tab that answered holds the media. Everywhere else the ringing stops and
+        // the agent is told who picked it up, instead of being shown a line they are not on.
+        if (payload.status === "in_progress" && payload.direction === "user_initiated" && !peer) {
+            if (state.call?.id === payload.id) {
+                state.call = null
+                notify({
+                    title: ctrans("WhatsApp call answered"),
+                    text: ctrans(":name is handling the call from :phone", {
+                        name: payload.user_name ?? ctrans("Another customer service"),
+                        phone: payload.phone_number ?? "",
+                    }),
+                    type: "info",
+                })
+            }
+
             return
         }
 

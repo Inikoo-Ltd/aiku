@@ -412,7 +412,23 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 		if (!call?.id) return
 		applyCallBroadcast(call, call.organisation ?? undefined)
 
-		if (call.status !== "ringing" || call.direction !== "user_initiated") return
+		if (call.direction !== "user_initiated") return
+
+		if (call.status === "in_progress" && call.user_id !== myId) {
+			alertOnce({
+				key: `whatsapp-call-answered:${call.id}`,
+				title: ctrans("WhatsApp call answered"),
+				body: ctrans(":name is handling the call from :phone", {
+					name: call.user_name ?? ctrans("Another customer service"),
+					phone: call.phone_number ?? "",
+				}),
+				tag: `whatsapp-call-${call.id}`,
+				sound: "silent",
+			})
+			return
+		}
+
+		if (call.status !== "ringing") return
 		alertOnce({
 			key: `whatsapp-call:${call.id}`,
 			title: ctrans("Incoming WhatsApp call"),

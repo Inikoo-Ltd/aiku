@@ -71,6 +71,7 @@ class BroadcastWhatsappCallEvent implements ShouldBroadcastNow
             'direction'        => $this->metaChatCall->direction->value,
             'phone_number'     => $this->metaChatCall->phone_number,
             'user_id'          => $this->metaChatCall->user_id,
+            'user_name'        => $this->metaChatCall->user?->contact_name,
             'duration_seconds' => $this->metaChatCall->duration_seconds,
             'answered_at'      => $this->metaChatCall->answered_at?->toIso8601String(),
             'ended_at'         => $this->metaChatCall->ended_at?->toIso8601String(),
