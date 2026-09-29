@@ -224,6 +224,19 @@ class GetGroupNavigation
             ],
         ];
 
+        $groupNavigation['ai'] = [
+            'label'   => __('AI'),
+            'tooltip' => __('AI spend and usage'),
+            'icon'    => ['fal', 'fa-robot'],
+            'root'    => 'grp.ai.',
+            'route'   => [
+                'name' => 'grp.ai.dashboard',
+            ],
+            'topMenu' => [
+                'subSections' => [],
+            ],
+        ];
+
         $groupNavigation['devops'] = [
             'label'   => __('Devops'),
             'tooltip' => __('Application Performance Monitoring'),

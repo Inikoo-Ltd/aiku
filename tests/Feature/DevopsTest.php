@@ -380,3 +380,63 @@ test('every horizon supervisor reserves jobs for longer than any job it runs can
 
     expect($offenders)->toBe([]);
 });
+
+it('records each ai call under its feature, rolls it into the ai time series and shows it on the ai dashboard', function () {
+    Config::set('services.openrouter.api_key', 'or-key');
+    Config::set('inertia.testing.page_paths', [resource_path('js/Pages/Grp')]);
+    Cache::forget('ai:openrouter_balance');
+    DB::table('ai_usages')->delete();
+
+    Http::fake([
+        'openrouter.ai/api/v1/chat/completions' => Http::response([
+            'model'   => 'openai/gpt-4o-mini',
+            'choices' => [['message' => ['content' => 'es']]],
+            'usage'   => ['prompt_tokens' => 50, 'completion_tokens' => 1, 'cost' => 0.0001, 'is_byok' => true, 'cost_details' => ['upstream_inference_cost' => 0.002]],
+        ]),
+        'openrouter.ai/api/v1/key'     => Http::response(['data' => ['limit' => 10, 'limit_remaining' => 9.5, 'limit_reset' => 'monthly', 'usage_daily' => 0.5, 'usage_weekly' => 0.5, 'usage_monthly' => 0.5]]),
+        'openrouter.ai/api/v1/credits' => Http::response(['data' => ['total_credits' => 20, 'total_usage' => 2]]),
+    ]);
+
+    App\Actions\Helpers\Translations\DetectLanguageWithAI::run('Hola, ¿dónde está mi pedido?');
+    App\Actions\Helpers\Translations\DetectLanguageWithAI::run('¿Tienen stock?');
+
+    $usages = DB::table('ai_usages')->get();
+    expect($usages)->toHaveCount(2)
+        ->and($usages->pluck('feature')->unique()->all())->toBe(['DetectLanguageWithAI'])
+        ->and($usages->first()->model)->toBe('openai/gpt-4o-mini')
+        ->and((float) $usages->first()->cost)->toBe(0.0021);
+
+    $monthly = App\Models\Helpers\AiTimeSeries::where('feature', 'DetectLanguageWithAI')->where('frequency', 'monthly')->first()->records()->first();
+    expect($monthly->number_calls)->toBe(2)
+        ->and((float) $monthly->cost)->toBe(0.0042)
+        ->and($monthly->prompt_tokens)->toBe(100);
+
+    $this->actingAs(createAdminGuest(createGroup())->getUser())
+        ->get(route('grp.ai.dashboard'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Ai/Dashboard')
+            ->where('balance.left', 9.5)
+            ->where('balance.is_low', false)
+            ->where('features.0.feature', 'DetectLanguageWithAI')
+            ->where('features.0.calls_month', 2)
+            ->has('daily', 1));
+});
+
+it('alerts discord once when the ai credit left drops below the threshold', function () {
+    Config::set('services.openrouter.api_key', 'or-key');
+    Config::set('services.openrouter.low_credit_alert', 5);
+    Cache::forget('monitor:ai_credit:alerted');
+
+    Http::fake([
+        'openrouter.ai/api/v1/key'             => Http::response(['data' => ['limit' => null, 'usage_daily' => 1]]),
+        'openrouter.ai/api/v1/credits'         => Http::response(['data' => ['total_credits' => 20, 'total_usage' => 17.5]]),
+        'https://discord.com/api/webhooks/1/A' => Http::response('OK'),
+    ]);
+
+    $this->artisan('monitor:ai_credit')->assertSuccessful();
+    $this->artisan('monitor:ai_credit')->assertSuccessful();
+
+    $alerts = Http::recorded(fn ($request) => str_contains($request->url(), 'discord.com'));
+    expect($alerts)->toHaveCount(1)
+        ->and($alerts->first()[0]['content'])->toContain('$2.50');
+});

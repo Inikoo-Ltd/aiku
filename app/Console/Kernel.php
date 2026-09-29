@@ -42,6 +42,7 @@ use App\Actions\CRM\Customer\PruneRetinaApiRequests;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotScheduled;
 use App\Actions\CRM\Prospect\Mailshots\RunProspectMailshotSecondWave;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
+use App\Actions\DevOps\MonitorAICredit;
 use App\Actions\DevOps\MonitorNightowlIngest;
 use App\Actions\Comms\Email\RemindChannelOrdersOnHold;
 use App\Actions\DevOps\MonitorOrdersInLimbo;
@@ -260,6 +261,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MonitorNightowlIngest',
                 ),
                 name: 'MonitorNightowlIngest',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorAICredit::makeJob())->hourly()->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorAICredit',
+                ),
+                name: 'MonitorAICredit',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
@@ -924,6 +934,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'ProcessUserTimeSeriesRecords',
                 ),
                 name: 'ProcessUserTimeSeriesRecords',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('ai:process_time_series --from='.now()->subDay()->toDateString())->dailyAt('22:40')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'ProcessAiTimeSeriesRecords',
+                ),
+                name: 'ProcessAiTimeSeriesRecords',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
