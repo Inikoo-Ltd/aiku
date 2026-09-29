@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
+use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
@@ -26,10 +27,9 @@ class CheckWooChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
-        $checkResult = $wooCommerceUser->checkConnectionWithError();
-        $connection  = $checkResult['success'];
+        $probe = $wooCommerceUser->probeConnection();
 
-        if ($connection) {
+        if ($probe['success']) {
             $platformStatus       = true;
             $canConnectToPlatform = true;
             $existInPlatform      = true;
@@ -57,19 +57,12 @@ class CheckWooChannel
             }
         }
 
-        $isBlocked = !$platformStatus && str_contains((string) $checkResult['message'], 'WooCommerce API Connection Error');
-
-        $data = [
+        $data = array_merge([
             'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
-            'is_blocked'              => $isBlocked,
-        ];
-
-        $settings = $wooCommerceUser->customerSalesChannel->settings ?? [];
-        data_set($settings, 'woocommerce.not_ready_reason', $platformStatus ? null : $this->notReadyReason($isBlocked));
-        $data['settings'] = $settings;
+        ], self::connectionFailureData($probe['failure']));
 
         if ($platformStatus) {
             $data['state']                 = CustomerSalesChannelStateEnum::AUTHENTICATED;
@@ -82,11 +75,18 @@ class CheckWooChannel
         return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, $data);
     }
 
-    private function notReadyReason(bool $isBlocked): string
+    /**
+     * The reason also feeds the not-connected banner the customer sees on the channel.
+     *
+     * @return array{is_blocked: bool, connection_failure: WooCommerceConnectionFailureEnum|null, settings: array<string, mixed>}
+     */
+    public static function connectionFailureData(?WooCommerceConnectionFailureEnum $failure): array
     {
-        return $isBlocked
-            ? __('Your store did not answer - it may be down or blocking connections from our servers. Ask your hosting provider to allow our requests, then try again.')
-            : __('Your store rejected our connection details. Generate a fresh WooCommerce REST API key (Settings > Advanced > REST API) and reconnect the channel.');
+        return [
+            'is_blocked'         => (bool) $failure?->isBlocked(),
+            'connection_failure' => $failure,
+            'settings'           => ['woocommerce' => ['not_ready_reason' => $failure?->customerMessage()]],
+        ];
     }
 
 

@@ -12,6 +12,7 @@ use App\Actions\Utils\Abbreviate;
 use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Ordering\Order;
@@ -69,7 +70,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property bool $can_connect_to_platform
- * @property bool $is_blocked WooCommerce only: true when the store refuses the connection (unreachable/refused/timeout), false when it answers but rejects the credentials
+ * @property bool $is_blocked
+ * @property WooCommerceConnectionFailureEnum|null $connection_failure
  * @property bool $exist_in_platform
  * @property bool $platform_status
  * @property int $number_portfolio_broken
@@ -134,6 +136,7 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
         'status'                => CustomerSalesChannelStatusEnum::class,
         'state'                 => CustomerSalesChannelStateEnum::class,
         'connection_status'     => CustomerSalesChannelConnectionStatusEnum::class,
+        'connection_failure'    => WooCommerceConnectionFailureEnum::class,
         'closed_at'             => 'datetime',
         'ban_stock_update_util' => 'datetime',
     ];

@@ -10,6 +10,7 @@ namespace App\Http\Resources\CRM;
 
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\Traits\WithPlatformStatusCheck;
+use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -33,6 +34,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $exist_in_platform
  * @property mixed $platform_status
  * @property mixed $is_blocked
+ * @property WooCommerceConnectionFailureEnum|null $connection_failure
  * @property mixed $number_clients
  */
 class CustomerSalesChannelsResource extends JsonResource
@@ -62,6 +64,7 @@ class CustomerSalesChannelsResource extends JsonResource
             'exist_in_platform'       => $this->exist_in_platform,
             'platform_status'         => $this->platform_status,
             'is_blocked'              => $this->is_blocked,
+            'connection_failure'      => $this->connection_failure ? WooCommerceConnectionFailureEnum::labels()[$this->connection_failure->value] : null,
             'customer_company_name'   => $this->customer_company_name ?? $this->customer_contact_name,
             'customer_slug'           => $this->customer_slug,
             'customer_id'             => $this->customer_id,

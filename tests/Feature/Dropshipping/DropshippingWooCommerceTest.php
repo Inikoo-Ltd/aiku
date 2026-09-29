@@ -47,6 +47,7 @@ use Illuminate\Http\Client\ConnectionException;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\StoreWooCommerceUser;
+use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Maintenance\Dropshipping\RepairWooChannelReconnects;
 use App\Actions\Maintenance\Dropshipping\RepairWooParkedButLiveChannels;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -56,6 +57,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Dropshipping\OrderImportRetryStatusEnum;
+use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
 use App\Models\Catalogue\Product;
@@ -425,9 +427,10 @@ test('checking a channel marks it not ready while the store is down and authenti
 
     expect($channel->platform_status)->toBeFalse()
         ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::NOT_READY)
+        ->and($channel->connection_failure)->toBe(WooCommerceConnectionFailureEnum::STORE_ERROR)
         ->and($channel->is_blocked)->toBeFalse();
 
-    $channel->update(['ban_stock_update_util' => now()->addMinute()]);
+    $channel->update(['ban_stock_update_util' => now()->addMinute(), 'settings' => ['pricing' => ['type' => 'percent']]]);
 
     wooFake();
     $channel = CheckWooChannel::run($wooCommerceUser->refresh());
@@ -435,25 +438,70 @@ test('checking a channel marks it not ready while the store is down and authenti
     expect($channel->platform_status)->toBeTrue()
         ->and($channel->state)->toBe(CustomerSalesChannelStateEnum::AUTHENTICATED)
         ->and($channel->ban_stock_update_util)->toBeNull()
+        ->and($channel->connection_failure)->toBeNull()
         ->and($channel->is_blocked)->toBeFalse()
+        ->and(Arr::get($channel->fresh()->settings, 'woocommerce.not_ready_reason'))->toBeNull()
+        ->and(Arr::get($channel->fresh()->settings, 'pricing.type'))->toBe('percent')
         ->and(wooSent('POST', 'webhooks'))->toHaveCount(0);
 });
 
-test('a channel is marked blocked only when the store refuses the connection itself, not when it merely rejects the keys', function () {
+test('checking a channel records why its store cannot be reached and only counts a refusal or a firewall as blocked', function ($reply, WooCommerceConnectionFailureEnum $failure, bool $isBlocked) {
     $wooCommerceUser = wooConnect(wooCustomer($this->shop));
 
-    $connectionRefused = Http::failedConnection("cURL error 7: Failed to connect to shop.example.test port 443 after 98 ms: Couldn't connect to server for ".WOO_STORE_URL.'/wp-json/wc/v3');
-    wooFake(['GET settings' => $connectionRefused, 'GET orders' => $connectionRefused]);
-    $channel = CheckWooChannel::run($wooCommerceUser);
+    wooFake(['GET settings' => $reply, 'GET orders' => $reply]);
+    $channel = CheckWooChannel::run($wooCommerceUser)->fresh();
+
     expect($channel->platform_status)->toBeFalse()
-        ->and($channel->is_blocked)->toBeTrue()
-        ->and(Arr::get($channel->settings, 'woocommerce.not_ready_reason'))->toContain('blocking connections');
+        ->and($channel->connection_failure)->toBe($failure)
+        ->and($channel->is_blocked)->toBe($isBlocked)
+        ->and(Arr::get($channel->settings, 'woocommerce.not_ready_reason'))->toBe($failure->customerMessage());
+})->with([
+    'connection refused'        => [fn () => Http::failedConnection("cURL error 7: Failed to connect to shop.example.test port 443 after 98 ms: Couldn't connect to server"), WooCommerceConnectionFailureEnum::REFUSED, true],
+    'cloudflare challenge'      => [fn () => Http::response('<!DOCTYPE html><html><head><title>Just a moment...</title></head><body><div id="cf-chl-widget"></div></body></html>', 403, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::FIREWALL, true],
+    'under attack interstitial' => [fn () => Http::response('<html><head><title>Checking your browser before accessing the store</title></head><body>DDoS protection by Cloudflare</body></html>', 503, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::FIREWALL, true],
+    'store 404 page wording'    => [fn () => Http::response('<html><head><title>Page not found</title></head><body>Access denied to members area? Log in.</body></html>', 404, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::NOT_WOOCOMMERCE, false],
+    'rate limited'              => [fn () => Http::response('Too Many Requests', 429), WooCommerceConnectionFailureEnum::FIREWALL, true],
+    'rest api disabled'         => [fn () => Http::response(['code' => 'rest_cannot_access', 'message' => 'Only authenticated users can access the REST API.', 'data' => ['status' => 401]], 401), WooCommerceConnectionFailureEnum::FIREWALL, true],
+    'timeout'                   => [fn () => Http::failedConnection('cURL error 28: Operation timed out after 30001 milliseconds with 0 bytes received'), WooCommerceConnectionFailureEnum::TIMEOUT, false],
+    'domain gone'               => [fn () => Http::failedConnection('cURL error 6: Could not resolve host: shop.example.test'), WooCommerceConnectionFailureEnum::DNS, false],
+    'expired certificate'       => [fn () => Http::failedConnection('cURL error 60: SSL certificate problem: certificate has expired'), WooCommerceConnectionFailureEnum::TLS, false],
+    'key cannot read'           => [fn () => wooError('woocommerce_rest_cannot_view', 'Sorry, you cannot list resources.', 401), WooCommerceConnectionFailureEnum::CREDENTIALS, false],
+    'key invalid'               => [fn () => wooError('woocommerce_rest_authentication_error', 'Consumer key is invalid.', 401), WooCommerceConnectionFailureEnum::CREDENTIALS, false],
+    'woocommerce removed'       => [fn () => Http::response(['code' => 'rest_no_route', 'message' => 'No route was found matching the URL and request method.', 'data' => ['status' => 404]], 404), WooCommerceConnectionFailureEnum::NOT_WOOCOMMERCE, false],
+    'moved to another platform' => [fn () => Http::response('Bad Request', 400, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::NOT_WOOCOMMERCE, false],
+    'site page instead of api'  => [fn () => Http::response('<!DOCTYPE html><html><head><title>My shop</title></head><body>Welcome</body></html>', 200, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::NOT_WOOCOMMERCE, false],
+    'redirected to www'         => [fn () => fn (Request $request) => str_contains($request->url(), '://www.')
+        ? wooError('woocommerce_rest_cannot_view', 'Sorry, you cannot list resources.', 401)
+        : Http::response('', 301, ['Location' => str_replace('://', '://www.', $request->url())]), WooCommerceConnectionFailureEnum::REDIRECTED, false],
+    'gateway timeout page'      => [fn () => Http::response("<html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body><center><h1>504 Gateway Time-out</h1></center><hr><center>nginx</center></body>\r\n</html>", 504, ['Content-Type' => 'text/html']), WooCommerceConnectionFailureEnum::STORE_ERROR, false],
+]);
+
+test('a parked channel records why its store still fails on the first run of the day without being revived', function () {
+    $parked = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
+    $parked->update(['ping_error_count' => PingActiveWooChannel::PARKED_AFTER_FAILURES, 'platform_status' => false, 'state' => CustomerSalesChannelStateEnum::NOT_READY]);
+
+    wooFakeForPing(wooDown(Http::response('<html><head><title>Just a moment...</title></head></html>', 403, ['Content-Type' => 'text/html'])));
+
+    Carbon::setTestNow(Carbon::parse('2026-09-07 00:10:00'));
+    Artisan::call('woo:ping_active_channel');
+    Carbon::setTestNow();
+
+    $parked->refresh();
+    expect($parked->connection_failure)->toBe(WooCommerceConnectionFailureEnum::FIREWALL)
+        ->and($parked->is_blocked)->toBeTrue()
+        ->and(Arr::get($parked->settings, 'woocommerce.not_ready_reason'))->toBe(WooCommerceConnectionFailureEnum::FIREWALL->customerMessage())
+        ->and($parked->ping_error_count)->toBe(PingActiveWooChannel::PARKED_AFTER_FAILURES)
+        ->and($parked->platform_status)->toBeFalse()
+        ->and($parked->state)->toBe(CustomerSalesChannelStateEnum::NOT_READY);
+});
+
+test('the test connection button explains why the store failed', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
 
     wooFake(wooDown(wooError('woocommerce_rest_cannot_view', 'Sorry, you cannot list resources.', 401)));
-    $channel = CheckWooChannel::run($wooCommerceUser->refresh());
-    expect($channel->platform_status)->toBeFalse()
-        ->and($channel->is_blocked)->toBeFalse()
-        ->and(Arr::get($channel->settings, 'woocommerce.not_ready_reason'))->toContain('fresh WooCommerce REST API key');
+
+    expect(fn () => TestConnectionWooCommerceUser::make()->handle($wooCommerceUser->customerSalesChannel))
+        ->toThrow(ValidationException::class, WooCommerceConnectionFailureEnum::CREDENTIALS->customerMessage());
 });
 
 test('connecting the same store again reuses the channel and, after a close, brings it back with its portfolio', function () {

@@ -3,6 +3,8 @@
 namespace App\Actions\Dropshipping\WooCommerce\Traits;
 
 use App\Actions\Dropshipping\PlatformOutboundGuard;
+use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
@@ -159,17 +161,7 @@ trait WithWooCommerceApiRequest
         $cacheKey = 'woocommerce_'.md5($method.$url.serialize($params));
 
         try {
-            $response = Http::timeout($this->timeOut)
-                ->withHeaders([
-                    'Accept'       => 'application/json',
-                    'Content-Type' => 'application/json',
-                    'User-Agent'   => 'WooCommerce AW Connect API Client-PHP/1.0',
-                ])
-                ->connectTimeout(min($this->timeOut, 30))
-                ->withBasicAuth(
-                    $this->woocommerceConsumerKey,
-                    $this->woocommerceConsumerSecret
-                );
+            $response = $this->wooCommerceHttp();
 
             // Handle different HTTP methods
             $response = match ($method) {
@@ -211,6 +203,25 @@ trait WithWooCommerceApiRequest
                 ['message' => 'WooCommerce API Connection Error: '.$e->getMessage()],
             ];
         }
+    }
+
+    protected function wooCommerceHttp(): PendingRequest
+    {
+        if (!$this->woocommerceConsumerKey) {
+            $this->initWooCommerceApi();
+        }
+
+        return Http::timeout($this->timeOut)
+            ->withHeaders([
+                'Accept'       => 'application/json',
+                'Content-Type' => 'application/json',
+                'User-Agent'   => 'WooCommerce AW Connect API Client-PHP/1.0',
+            ])
+            ->connectTimeout(min($this->timeOut, 30))
+            ->withBasicAuth(
+                $this->woocommerceConsumerKey,
+                $this->woocommerceConsumerSecret
+            );
     }
 
     /**
@@ -631,29 +642,58 @@ trait WithWooCommerceApiRequest
      */
     public function checkConnectionWithError(): array
     {
-        try {
-            if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
-                $this->initWooCommerceApi();
-            }
+        $probe = $this->probeConnection();
 
-            $settings = $this->makeWooCommerceRequest('GET', 'settings');
-            if ($this->isSettingsGroupList($settings)) {
-                return ['success' => true, 'message' => null];
-            }
+        return ['success' => $probe['success'], 'message' => $probe['failure']?->customerMessage()];
+    }
 
-            $orders = $this->makeWooCommerceRequest('GET', 'orders', ['per_page' => 1]);
-            if (is_array($orders) && array_is_list($orders) && ($orders === [] || Arr::has($orders, '0.id'))) {
-                return ['success' => true, 'message' => null];
-            }
-
-            $message = Arr::get($orders, '0.message') ?? Arr::get($settings, '0.message');
-
-            return ['success' => false, 'message' => $message];
-        } catch (\Exception $e) {
-            \Sentry::captureMessage($e->getMessage());
-
-            return ['success' => false, 'message' => $e->getMessage()];
+    /**
+     * Same probe, keeping why a store failed. The raw reply is read here because the general
+     * request helper reduces a failure to its body and loses the status and the curl error.
+     *
+     * @return array{success: bool, failure: WooCommerceConnectionFailureEnum|null}
+     */
+    public function probeConnection(): array
+    {
+        if (PlatformOutboundGuard::blocks('WooCommerce', 'GET settings')) {
+            return ['success' => false, 'failure' => null];
         }
+
+        $failure = null;
+
+        foreach (['settings' => [], 'orders' => ['per_page' => 1]] as $endpoint => $query) {
+            $url = $this->getWooCommerceApiUrl().'/'.$endpoint;
+
+            try {
+                $response = $this->wooCommerceHttp()
+                    ->withOptions(['allow_redirects' => ['track_redirects' => true]])
+                    ->get($url, $query);
+            } catch (\Exception $e) {
+                if (!$e instanceof ConnectionException) {
+                    \Sentry::captureException($e);
+                }
+
+                $failure = WooCommerceConnectionFailureEnum::fromThrowable($e);
+
+                continue;
+            }
+
+            $reply = $response->json() ?? json_decode(preg_replace('/^\xEF\xBB\xBF/', '', $response->body()), true);
+            $reply = is_array($reply) ? $reply : null;
+
+            if ($response->successful() && ($endpoint === 'settings' ? $this->isSettingsGroupList($reply) : $this->isOrderList($reply))) {
+                return ['success' => true, 'failure' => null];
+            }
+
+            $failure = WooCommerceConnectionFailureEnum::fromResponse($response, $url);
+        }
+
+        return ['success' => false, 'failure' => $failure];
+    }
+
+    protected function isOrderList(?array $result): bool
+    {
+        return is_array($result) && array_is_list($result) && ($result === [] || Arr::has($result, '0.id'));
     }
 
     /**
