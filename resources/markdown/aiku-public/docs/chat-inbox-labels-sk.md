@@ -1,8 +1,8 @@
 ---
 title: Čo znamenajú označenia v schránke chatu
 summary: Každý zoznam, počet, farba a značka v zákazníckej schránke jednoducho vysvetlené - Unclaimed, Waiting, Active, My Chats, Colleagues' Chats, Spam, Ignored, Trash, Highlighted, Probably, Possible noise a priečinky aiku v Gmaile obchodu.
-date: 2026-09-23
-source_date: 2026-09-23
+date: 2026-09-29
+source_date: 2026-09-29
 tags: crm, chat
 category: crm
 ---
@@ -56,6 +56,10 @@ Kto dohliada na chat, vidí agentov po strane: kto je prítomný, kto telefonuje
 - <b>Priority</b> (priorita) - <b>Urgent</b> (naliehavé), <b>High</b> (vysoká), <b>Normal</b> (bežná) alebo <b>Low</b> (nízka), nastavená z menu konverzácie. Bežná, kým ju niekto nezmení.
 - Číslo vpravo - neprečítané správy v danej konverzácii.
 
+## Značky na správe
+
+- <b>Offline message</b> (offline správa) - zákazník ju napísal vo widgete na webe mimo pracovnej doby. Keď má obchod zapnuté <b>Answer offline messages by email</b> (odpovedať na offline správy e-mailom), celá konverzácia sa presunie na e-mailový kanál, aby sa k nej odpoveď dostala, a preto sa návštevník webu môže objaviť v e-mailovom zozname. Značka je len na správe; riadok v zozname nemá žiadne označenie. Pozrite si <a href="/docs/live-chat-on-the-website-sk">Živý chat na webe</a>.
+
 ## Váš vlastný stav
 
 - <b>You are on a phone call</b> (telefonujete) - hovor prebieha, takže vám sa nepridelí žiadna nová konverzácia, kým neskončí.
@@ -85,4 +89,3 @@ aiku číta iba Gmail schránku. Pošta, ktorú Gmail umiestni do vlastného pri
 </aside>
 
 Celý návod k schránke je <a href="/docs/customer-chat-sk">Rozhovor so zákazníkmi v Chate</a>.
-</content>

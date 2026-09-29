@@ -14,9 +14,7 @@ A WhatsApp conversation works like any other in <b>Customer Inbox</b> - see <a h
 
 ## Answering
 
-Nothing about taking, answering or closing a WhatsApp conversation is different from the website or email - the same <b>Waiting</b>/<b>Active</b>/<b>Closed</b> lists, the same side panel, the same tickets. Our own promotional messages do not fill the <b>Waiting</b> list; only a customer writing in does.
-
-Guests are checked the same way as on the website: an unmatched WhatsApp number can be asked once, automatically, for the email or order number that confirms who they are.
+Taking, answering and closing a WhatsApp conversation works exactly as on the website or by email: the same <b>Waiting</b>, <b>Active</b> and <b>Closed</b> lists, the same side panel, the same tickets. Our own promotions do not fill the <b>Waiting</b> list; only a customer writing in does.
 
 ## The 24-hour window
 

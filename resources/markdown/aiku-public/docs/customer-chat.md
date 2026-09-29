@@ -1,7 +1,7 @@
 ---
 title: Talking to customers in Chat
 summary: One inbox for the website chat, WhatsApp and the shop's email - take a conversation, answer with the customer's orders at your side, log a phone call, raise a ticket, and see how the desk is doing.
-date: 2026-09-21
+date: 2026-09-29
 tags: crm, chat
 category: crm
 help_routes: grp.org.shops.show.chat
