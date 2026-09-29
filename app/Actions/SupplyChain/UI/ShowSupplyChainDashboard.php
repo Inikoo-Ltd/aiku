@@ -9,6 +9,8 @@
 namespace App\Actions\SupplyChain\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
+use App\Actions\Procurement\GetStockOutsHistory;
 use App\Actions\Search\GetSearchDemandOpportunities;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
@@ -16,6 +18,9 @@ use App\Actions\UI\WithInertia;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,9 +33,25 @@ class ShowSupplyChainDashboard extends OrgAction
     use AsAction;
     use WithInertia;
 
+    private const array CACHE_FRESH_AND_STALE_SECONDS = [7200, 21600];
+
     public function asController(ActionRequest $request): void
     {
         $this->initialisationFromGroup(app('group'), $request);
+    }
+
+    private function getStockLevels(): array
+    {
+        return GetStockOutsHistory::make()->organisations($this->group)
+            ->flatMap(fn (Organisation $organisation) => GetOrganisationStockCoverBuckets::run($organisation))
+            ->groupBy('bucket')
+            ->map(fn (Collection $buckets) => [
+                'bucket' => $buckets->first()['bucket'],
+                'label'  => $buckets->first()['label'],
+                'tone'   => $buckets->first()['tone'],
+                'count'  => $buckets->sum('count'),
+                'route'  => null,
+            ])->values()->all();
     }
 
     private function getPurchaseOrderJourneySummary(ActionRequest $request): array
@@ -283,7 +304,9 @@ class ShowSupplyChainDashboard extends OrgAction
                     'title' => __('Overview'),
                 ],
                 'dashboardCards' => $this->getDashboardCards(),
-                'poJourney'      => Inertia::defer(fn () => $this->getPurchaseOrderJourneySummary($request)),
+                'stockOuts'      => Inertia::defer(fn () => GetStockOutsHistory::run($this->group, GetStockOutsHistory::make()->period($request->input('period')))),
+                'stockLevels'    => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:stock-levels:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevels())),
+                'poJourney'      => Inertia::defer(fn () => Cache::flexible("supply-chain-overview:po-journey:{$this->group->id}", self::CACHE_FRESH_AND_STALE_SECONDS, fn () => $this->getPurchaseOrderJourneySummary($request))),
                 'shoppingLists'  => Inertia::defer(fn () => $this->getShoppingLists()),
                 'search_demand'  => Inertia::defer(fn () => GetSearchDemandOpportunities::run($this->group)),
             ]

@@ -12,6 +12,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import ProcurementOverviewPill from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewPill.vue"
 import PartnerMiniShoppingList from "@/Components/Procurement/PartnerMiniShoppingList.vue"
+import StockOutsWidget from "@/Components/Procurement/StockOutsWidget.vue"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import SearchDemandOpportunities from "@/Components/DataDisplay/Dashboard/Widget/SearchDemandOpportunities.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -54,6 +55,8 @@ const props = defineProps<{
     dashboardCards: any[]
     search_demand?: any
     shoppingLists?: any
+    stockOuts?: any
+    stockLevels?: any[]
     poJourney?: {
         currency: string
         summary: {
@@ -105,6 +108,13 @@ const shoppingListTotalItems = computed(() =>
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
+    <Deferred :data="['stockOuts', 'stockLevels']">
+        <template #fallback>
+            <div class="mx-4 mt-3 h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
+        </template>
+
+        <StockOutsWidget v-if="stockOuts" :stockOuts="stockOuts" :stockLevels="stockLevels ?? []" storageKey="supply-chain-overview-stock-outs" class="mx-4 mt-3" />
+    </Deferred>
     <div class="mx-4 mt-3 flex flex-wrap gap-3">
         <ProcurementOverviewPill v-for="card in dashboardCards" :key="card.label" :card="card" />
     </div>
