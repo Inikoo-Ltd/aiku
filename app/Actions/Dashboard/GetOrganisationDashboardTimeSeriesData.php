@@ -8,6 +8,7 @@
 namespace App\Actions\Dashboard;
 
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryTimeSeriesStats;
+use App\Actions\Ordering\Order\GetOrderBacklog;
 use App\Actions\Catalogue\Shop\GetShopTimeSeriesStats;
 use App\Actions\Dropshipping\Platform\GetPlatformTimeSeriesStats;
 use App\Actions\Helpers\Brand\GetBrandTimeSeriesStats;
@@ -76,11 +77,13 @@ class GetOrganisationDashboardTimeSeriesData
 
     protected function fetchData(Organisation $organisation, $fromDate, $toDate, bool $includePartners): array
     {
+        $backlog = GetOrderBacklog::run($organisation, $includePartners);
+
         return [
-            'shops'             => GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate, null, $includePartners),
-            'invoiceCategories' => GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners),
-            'platforms'         => GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners),
-            'brands'            => GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners),
+            'shops'             => GetOrderBacklog::addTo(GetShopTimeSeriesStats::run($organisation, $fromDate, $toDate, null, $includePartners), $backlog['shops']),
+            'invoiceCategories' => GetOrderBacklog::addTo(GetInvoiceCategoryTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['invoiceCategories']),
+            'platforms'         => GetOrderBacklog::addTo(GetPlatformTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['platforms']),
+            'brands'            => GetOrderBacklog::addTo(GetBrandTimeSeriesStats::run($organisation, $fromDate, $toDate, $includePartners), $backlog['brands']),
         ];
     }
 

@@ -268,7 +268,7 @@ const updateTab = (value: string) => {
 						:style="columnHeader.type === 'icon' ? { width: '1px', whiteSpace: 'nowrap' } : {}"
 					>
 						<template #header>
-							<div class="px-2 text-xs md:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
+							<div class="px-2 text-xs md:text-sm 2xl:text-base flex items-center w-full gap-x-2 font-semibold text-gray-600"
 								:class="columnHeader.align === 'left' ? '' : 'justify-end text-right'"
 								v-tooltip="columnHeader.tooltip"
 							>

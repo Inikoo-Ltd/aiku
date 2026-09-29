@@ -59,10 +59,14 @@ use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Support\Str;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\GetOrderBacklog;
+use App\Actions\Dashboard\GetOrganisationDashboardTimeSeriesData;
+use App\Enums\Dashboards\OrganisationDashboardSalesTableTabsEnum;
 use App\Actions\SysAdmin\Organisation\RedoOrganisationTimeSeries;
 use Illuminate\Support\Facades\DB;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -3567,6 +3571,53 @@ test('invoice category time series keep partner invoices and refunds apart and t
     expect((int)$groupCategory(false)['invoices_tdy'])->toBe(1)
         ->and((int)$groupCategory(true)['invoices_tdy'])->toBe(3)
         ->and((int)$groupCategory(true)['refunds_tdy'])->toBe(1);
+});
+
+test('dashboards show the backlog of orders not invoiced yet', function () {
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Backlog category',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SHOP_FALLBACK,
+        'currency_id' => $this->organisation->currency_id,
+        'settings'    => ['shop_id' => $this->shop->id],
+        'priority'    => 30000
+    ]);
+
+    $customer    = createCustomer($this->shop);
+    $orderSpecs  = [
+        ['state' => OrderStateEnum::IN_WAREHOUSE, 'pay_status' => OrderPayStatusEnum::PAID, 'amount' => 100, 'partner' => false],
+        ['state' => OrderStateEnum::PACKED, 'pay_status' => OrderPayStatusEnum::PAID, 'amount' => 40, 'partner' => false],
+        ['state' => OrderStateEnum::PICKED, 'pay_status' => OrderPayStatusEnum::PAID, 'amount' => 25, 'partner' => true],
+        ['state' => OrderStateEnum::SUBMITTED, 'pay_status' => OrderPayStatusEnum::UNPAID, 'amount' => 500, 'partner' => false],
+        ['state' => OrderStateEnum::FINALISED, 'pay_status' => OrderPayStatusEnum::PAID, 'amount' => 700, 'partner' => false],
+    ];
+
+    foreach ($orderSpecs as $spec) {
+        $order = StoreOrder::make()->action($customer, []);
+        DB::table('orders')->where('id', $order->id)->update([
+            'state'              => $spec['state']->value,
+            'pay_status'         => $spec['pay_status']->value,
+            'net_amount'         => $spec['amount'],
+            'org_net_amount'     => $spec['amount'],
+            'grp_net_amount'     => $spec['amount'],
+            'as_organisation_id' => $spec['partner'] ? $this->organisation->id : null,
+        ]);
+    }
+
+    $backlogFor = fn (bool $includePartners) => GetOrderBacklog::run($this->organisation, $includePartners);
+
+    expect((float)$backlogFor(false)['invoiceCategories'][$invoiceCategory->id]['backlog_org_currency_external_all'])->toBe(640.0)
+        ->and((float)$backlogFor(false)['shops'][$this->shop->id]['backlog_tdy'])->toBe(640.0)
+        ->and((float)$backlogFor(true)['invoiceCategories'][$invoiceCategory->id]['backlog_org_currency_external_mtd'])->toBe(665.0);
+
+    $timeSeriesData = GetOrganisationDashboardTimeSeriesData::run($this->organisation, null, null, false);
+    $table          = OrganisationDashboardSalesTableTabsEnum::SHOPS->table($this->organisation, $timeSeriesData);
+    $bodyRow        = collect($table['body'])->firstWhere('slug', $this->shop->slug);
+
+    expect($table['header']['columns'])->toHaveKeys(['backlog', 'backlog_org_currency_external_minified'])
+        ->and($bodyRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640);
+
+    $invoiceCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
 });
 
 test('sales analysis follows the saved include partners setting unless the page asks otherwise', function () {
