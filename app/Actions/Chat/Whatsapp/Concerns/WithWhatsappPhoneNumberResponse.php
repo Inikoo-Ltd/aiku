@@ -7,6 +7,8 @@
 
 namespace App\Actions\Chat\Whatsapp\Concerns;
 
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
@@ -21,11 +23,13 @@ trait WithWhatsappPhoneNumberResponse
     /**
      * @return array{ok: bool, message?: string, data?: array<string, mixed>, code?: int}
      */
-    protected function notConfigured(): array
+    protected function notConfigured(Shop|Organisation|null $parent = null): array
     {
         return [
             'ok'      => false,
-            'message' => __('WhatsApp is not configured for this shop.'),
+            'message' => $parent instanceof Organisation
+                ? __('Set the procurement WhatsApp phone number ID, WhatsApp Business Account ID and the organisation Meta access key first.')
+                : __('WhatsApp is not configured for this shop.'),
             'code'    => 422,
         ];
     }
