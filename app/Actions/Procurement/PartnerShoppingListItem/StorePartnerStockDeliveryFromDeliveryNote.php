@@ -51,7 +51,7 @@ class StorePartnerStockDeliveryFromDeliveryNote
             strict: false
         );
 
-        $deliveryNoteItems          = $deliveryNote->deliveryNoteItems()->with('transaction')->get();
+        $deliveryNoteItems          = $deliveryNote->deliveryNoteItems()->with(['transaction', 'orgStock'])->get();
         $unitsRequiredByTransaction = $deliveryNoteItems->groupBy('transaction_id')->map->sum('quantity_required');
 
         foreach ($deliveryNoteItems as $deliveryNoteItem) {
@@ -67,10 +67,10 @@ class StorePartnerStockDeliveryFromDeliveryNote
                 continue;
             }
 
-            $unitQuantity     = (float) $deliveryNoteItem->quantity_required;
+            $unitQuantity     = (float) $deliveryNoteItem->quantity_required * (float) ($deliveryNoteItem->orgStock?->packed_in ?: 1);
             $transactionUnits = (float) $unitsRequiredByTransaction->get($deliveryNoteItem->transaction_id, 0);
             $netAmount        = $transactionUnits > 0
-                ? round((float) $deliveryNoteItem->transaction?->net_amount * $unitQuantity / $transactionUnits, 2)
+                ? round((float) $deliveryNoteItem->transaction?->net_amount * (float) $deliveryNoteItem->quantity_required / $transactionUnits, 2)
                 : 0;
 
             StoreStockDeliveryItem::make()->action(

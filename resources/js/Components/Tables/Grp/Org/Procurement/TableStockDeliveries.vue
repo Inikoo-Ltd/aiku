@@ -51,6 +51,10 @@ function stockDeliveryRoute(stockDelivery: { slug: string, organisation_slug?: s
             {{ useFormatTime(item.date, { formatTime: "EEE, do MMM yy, HH:mm" }) }}
         </template>
 
+        <template #cell(estimated_receiving_date)="{ item }">
+            {{ item.estimated_receiving_date ? useFormatTime(item.estimated_receiving_date, { formatTime: "EEE, do MMM yy" }) : '-' }}
+        </template>
+
         <template #cell(items)="{ item }">
             {{ item.items ?? '-' }}
         </template>

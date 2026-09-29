@@ -49,8 +49,8 @@ class SendSupplierWhatsappMessage extends OrgAction
 
         $mediaId = $document ? $this->uploadDocument($credentials, $document) : null;
 
-        $payload = self::isWindowOpen($organisation, $phone)
-            ? $this->freeFormPayload($text, $mediaId, $document)
+        [$payload, $sentText] = self::isWindowOpen($organisation, $phone)
+            ? [$this->freeFormPayload($text, $mediaId, $document), $text]
             : $this->templatePayload($organisation, $text, $mediaId, $document, $purchaseOrder);
 
         $response = Http::withToken($credentials['access_token'])
@@ -80,8 +80,8 @@ class SendSupplierWhatsappMessage extends OrgAction
             'routed_by'           => $counterpart ? ($purchaseOrder ? SupplierMessageRoutedByEnum::PURCHASE_ORDER : SupplierMessageRoutedByEnum::MANUAL) : null,
             'from_name'           => $user?->contact_name ?? $organisation->name,
             'to'                  => [['name' => null, 'address' => '+'.$phone]],
-            'snippet'             => mb_substr($text, 0, 200),
-            'body_text'           => $text,
+            'snippet'             => mb_substr($sentText, 0, 200),
+            'body_text'           => $sentText,
             'attachments'         => $mediaId ? [['media_id' => $mediaId, 'name' => $document['filename'], 'mime_type' => 'application/pdf', 'size' => strlen($document['content'])]] : [],
             'sent_at'             => now(),
         ]);
@@ -95,6 +95,28 @@ class SendSupplierWhatsappMessage extends OrgAction
             ->where('phone_number', RouteSupplierMessage::phoneDigits($phone))
             ->where('sent_at', '>=', now()->subHours(24))
             ->exists();
+    }
+
+    /**
+     * @return array{name: string, language: string|null, status: string|null, body: string|null}|null
+     */
+    public static function messageTemplate(Organisation $organisation): ?array
+    {
+        $whatsapp = Arr::get($organisation->settings, 'procurement.whatsapp', []);
+        $name     = Arr::get($whatsapp, 'message_template');
+
+        if (blank($name)) {
+            return null;
+        }
+
+        $template = Arr::get($whatsapp, 'message_template_meta.template');
+
+        return [
+            'name'     => $name,
+            'language' => Arr::get($template, 'language', Arr::get($whatsapp, 'template_language')),
+            'status'   => Arr::get($template, 'status'),
+            'body'     => Arr::get(collect(Arr::get($template, 'components', []))->firstWhere('type', 'BODY'), 'text'),
+        ];
     }
 
     public static function isConnected(Organisation $organisation): bool
@@ -111,29 +133,48 @@ class SendSupplierWhatsappMessage extends OrgAction
         return ['type' => 'text', 'text' => ['body' => $text, 'preview_url' => false]];
     }
 
+    /**
+     * @return array{0: array<string, mixed>, 1: string}
+     */
     private function templatePayload(Organisation $organisation, string $text, ?string $mediaId, ?array $document, ?PurchaseOrder $purchaseOrder): array
     {
         $settings = Arr::get($organisation->settings, 'procurement.whatsapp', []);
-        $name     = $mediaId ? Arr::get($settings, 'purchase_order_template') : Arr::get($settings, 'message_template');
+        $key      = $mediaId ? 'purchase_order_template' : 'message_template';
+        $name     = Arr::get($settings, $key);
 
         if (blank($name)) {
             throw ValidationException::withMessages(['body' => __('The supplier has not written in the last 24 hours, so WhatsApp only accepts an approved template. Set one in Procurement settings.')]);
         }
 
+        $parameter  = $purchaseOrder ? $purchaseOrder->reference : mb_substr(preg_replace('/\s+/', ' ', $text), 0, 1000);
         $components = [[
             'type'       => 'body',
-            'parameters' => [['type' => 'text', 'text' => $purchaseOrder ? $purchaseOrder->reference : mb_substr(preg_replace('/\s+/', ' ', $text), 0, 1000)]],
+            'parameters' => [['type' => 'text', 'text' => $parameter]],
         ]];
 
         if ($mediaId) {
             array_unshift($components, ['type' => 'header', 'parameters' => [['type' => 'document', 'document' => ['id' => $mediaId, 'filename' => $document['filename']]]]]);
         }
 
-        return ['type' => 'template', 'template' => [
+        $payload = ['type' => 'template', 'template' => [
             'name'       => $name,
-            'language'   => ['code' => Arr::get($settings, 'template_language', 'en')],
+            'language'   => ['code' => Arr::get($settings, "{$key}_meta.template.language") ?? Arr::get($settings, 'template_language') ?? 'en'],
             'components' => $components,
         ]];
+
+        return [$payload, self::renderTemplateText(Arr::get($settings, "{$key}_meta.template.components", []), $parameter) ?? $text];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $templateComponents
+     */
+    public static function renderTemplateText(array $templateComponents, string $parameter): ?string
+    {
+        $parts = collect($templateComponents)
+            ->filter(fn (array $component) => in_array($component['type'] ?? null, ['HEADER', 'BODY', 'FOOTER']) && filled($component['text'] ?? null))
+            ->map(fn (array $component) => str_replace('{{1}}', $parameter, $component['text']));
+
+        return $parts->isEmpty() ? null : $parts->implode("\n\n");
     }
 
     /**

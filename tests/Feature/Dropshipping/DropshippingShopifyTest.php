@@ -49,6 +49,7 @@ use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\RepairShopifyPortfolioConnections;
+use App\Actions\Dropshipping\Shopify\Product\GetShopifyCatalogueSnapshot;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyInventory;
 use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
@@ -907,6 +908,7 @@ test('editing only the price of a shopify portfolio does not overwrite the title
     ShopifyFake::fake([
         'ProductVariantsList' => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8402', 'title' => 'Default', 'price' => '9.00', 'updatedAt' => 'x', 'inventoryQuantity' => 1, 'product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas']]]]]]),
         'ProductVariantsBulkUpdate' => ShopifyFake::graphql(['productVariantsBulkUpdate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8402', 'price' => '12.00', 'compareAtPrice' => '12.00']], 'userErrors' => []]]),
+        'getProduct'                => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7400', 'gid://shopify/ProductVariant/8402', 'crbask-05a', '12.00')]),
     ]);
 
     \App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel::run($portfolio, [
@@ -1727,4 +1729,38 @@ test('a sync of a channel whose portfolios were never uploaded reports it has no
 
     $portfolio->update(['status' => false]);
     expect(SyncCustomerSalesChannelPortfolios::hasNothingToSend($channel))->toBeTrue();
+});
+
+test('repair re-links a portfolio from an archived duplicate to the one active product with the same sku, and leaves two active ones alone', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'archived-duplicate-repair')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $portfolio->update(['platform_product_id' => 'gid://shopify/Product/9002', 'platform_status' => true]);
+    $sku = Str::lower($this->product->code);
+
+    $snapshot = fn (string $secondStatus) => [
+        'complete'           => true,
+        'reason'             => null,
+        'variants_read'      => 2,
+        'products'           => [
+            'gid://shopify/Product/9001' => ['status' => $secondStatus, 'variants' => [['id' => 'gid://shopify/ProductVariant/8001', 'sku' => $sku, 'at_location' => false]]],
+            'gid://shopify/Product/9002' => ['status' => 'ARCHIVED', 'variants' => [['id' => 'gid://shopify/ProductVariant/8002', 'sku' => $sku, 'at_location' => true]]],
+            'gid://shopify/Product/9003' => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8003', 'sku' => $sku, 'at_location' => false]]],
+        ],
+        'product_ids_by_sku' => [$sku => [
+            'gid://shopify/Product/9001' => $secondStatus === 'ACTIVE',
+            'gid://shopify/Product/9002' => false,
+            'gid://shopify/Product/9003' => true,
+        ]],
+    ];
+
+    GetShopifyCatalogueSnapshot::shouldRun()->andReturn($snapshot('ACTIVE'), $snapshot('DRAFT'));
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(0)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9002');
+
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(1)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9003')
+        ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8003')
+        ->and($portfolio->platform_status)->toBeFalse()
+        ->and($portfolio->isShopifyVariantAdopted())->toBeTrue();
 });

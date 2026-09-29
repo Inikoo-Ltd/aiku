@@ -122,7 +122,7 @@ const locale = inject("locale", aikuLocaleStructure)
             <BasketStockIssues :stock_issues="{ ...stock_issues, low_stock: [] }" />
         </div>
 
-        <div v-if="pre_orders?.has_pre_orders && pre_orders.is_accepted" class="md:px-4 mb-4">
+        <div v-if="pre_orders?.has_pre_orders && pre_orders.is_accepted" class="md:px-4 mb-4 mt-4">
             <BasketPreOrders :pre_orders :orderId="(order as any)?.id" :currencyCode="currency_code" isInCheckout />
         </div>
 

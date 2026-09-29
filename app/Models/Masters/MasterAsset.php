@@ -156,6 +156,7 @@ use App\Models\Traits\HasSearch;
  * @property array<array-key, mixed> $master_prices
  * @property array<array-key, mixed> $master_rrps
  * @property string|null $units_review
+ * @property string|null $price_review Set when the composition changed and the prices were not saved since
  * @property numeric|null $effective_cost stock-weighted avg cost across organisations, group currency, per outer
  * @property string|null $tax_preset Named tax preset this master follows (standard, food, ...); null is a custom map; tax_category holds the expansion the money path reads
  * @property bool $has_independent_units Units are set by hand instead of being read off the trade unit composition

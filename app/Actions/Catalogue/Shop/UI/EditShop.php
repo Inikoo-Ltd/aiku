@@ -10,7 +10,6 @@ namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\CRM\Customer\GoogleAds\ConnectShopGoogleAds;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -198,7 +197,6 @@ class EditShop extends OrgAction
                             'label'   => __('Address'),
                             'value'   => AddressFormFieldsResource::make($shop->address)->getArray(),
                             'options' => [
-                                'countriesAddressData' => GetAddressData::run()
                             ]
                         ],
                         'collection_address'  => [
@@ -206,7 +204,6 @@ class EditShop extends OrgAction
                             'label'   => __('Collection address'),
                             'value'   => AddressFormFieldsResource::make($shop->collectionAddress)->getArray(),
                             'options' => [
-                                'countriesAddressData' => GetAddressData::run()
                             ]
                         ],
                         'registration_number' => [

@@ -892,7 +892,7 @@ test('slack ticket reaction raises a ticket from the message and mirrors replies
     ]);
     Auth::logout();
 
-    $post = function (array $payload, string $signature = null) {
+    $post = function (array $payload, ?string $signature = null) {
         $body      = json_encode($payload);
         $timestamp = (string) time();
         $headers   = [
@@ -3251,6 +3251,9 @@ test('assistant reads ticket attachments through MCP, within the ticket visibili
     $docx->addFromString('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Customer &amp; wants</w:t></w:r></w:p><w:p><w:r><w:t>a refund</w:t></w:r></w:p></w:body></w:document>');
     $docx->close();
     $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $spreadsheet->getActiveSheet()->setTitle('Products')->fromArray([['Code', 'Cost'], ['TROUSER-01', 4.5]]);
+    $spreadsheet->getActiveSheet()->setCellValue('B3', '=B2*2');
+    $spreadsheet->createSheet()->setTitle('Order')->setCellValue('A4', 'ES');
     (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save("$directory/stock.xlsx");
 
     $ticket  = StoreTicket::make()->action($this->group, ['subject' => 'Read my files', 'images' => [UploadedFile::fake()->createWithContent('invoice.pdf', $pdf->OutputBinaryData())]]);
@@ -3264,7 +3267,7 @@ test('assistant reads ticket attachments through MCP, within the ticket visibili
     $tool($this->user, $ticket->getMedia('ticket_attachments')->first()->ulid)->assertOk()->assertSee('invoice.pdf');
     $tool($this->user, 'notes.docx')->assertOk()->assertSee(json_encode("Customer & wants\na refund"));
     $tool($this->user, 'shot.png')->assertOk()->assertSee(base64_encode(Storage::disk($comment->getMedia('ticket_images')->first()->disk)->get($comment->getMedia('ticket_images')->first()->getPathRelativeToRoot())));
-    $tool($this->user, 'stock.xlsx')->assertHasErrors(['Cannot extract text from .xlsx files.']);
+    $tool($this->user, 'stock.xlsx')->assertOk()->assertSee(json_encode("## Sheet: Products\n1\tCode\tCost\n2\tTROUSER-01\t4.5\n3\t\t9\n\n## Sheet: Order\n4\tES"));
     $tool($this->user, 'missing.pdf')->assertHasErrors(['Attachment not found on this ticket.']);
 
     $qa = User::factory()->create(['group_id' => $this->group->id]);

@@ -9,6 +9,7 @@ namespace App\Actions\Chat\UI;
 
 use App\Actions\Chat\Agent\UI\IndexAgent;
 use App\Actions\Chat\ChatSession\SendOutOfHoursReply;
+use App\Actions\Chat\UpdateShopChatClosing;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatScopeNavigation;
 use App\Actions\Comms\Mailbox\ProcessInboundEmail;
@@ -101,11 +102,20 @@ class ShowChatSettings extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::COURIERS]) : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::POLICIES]),
+                    'navigation' => $isShop ? ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::COURIERS]) : ChatSettingsTabsEnum::navigationExcept([ChatSettingsTabsEnum::OUT_OF_HOURS, ChatSettingsTabsEnum::CLOSING, ChatSettingsTabsEnum::POLICIES]),
                 ],
                 'settingsRoute'  => $this->chatRoute('settings'),
                 'templatesTable' => $isShop ? $this->getShopTemplatesTableProps() : null,
                 'outOfHours'     => $isShop ? $this->getOutOfHoursProps($parent) : null,
+                'closing'        => $isShop ? [
+                    'close_after_thanks'         => UpdateShopChatClosing::isOn($parent),
+                    'close_after_thanks_minutes' => UpdateShopChatClosing::minutes($parent),
+                    'can_edit'                   => $this->userSupervisesChatOnShop($request->user(), $parent),
+                    'update_route'               => [
+                        'name'       => 'grp.org.shops.show.chat.settings.closing.update',
+                        'parameters' => ['organisation' => $this->organisation->slug, 'shop' => $parent->slug],
+                    ],
+                ] : null,
                 'policies'       => $isShop ? [
                     'text'         => data_get($parent->settings, 'chat.policies', ''),
                     'update_route' => [
@@ -143,7 +153,7 @@ class ShowChatSettings extends OrgAction
             ];
         }
 
-        if (!$isShop || $this->tab == ChatSettingsTabsEnum::OUT_OF_HOURS->value) {
+        if (!$isShop || in_array($this->tab, [ChatSettingsTabsEnum::OUT_OF_HOURS->value, ChatSettingsTabsEnum::CLOSING->value, ChatSettingsTabsEnum::POLICIES->value], true)) {
             return [];
         }
 

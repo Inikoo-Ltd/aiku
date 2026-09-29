@@ -106,7 +106,13 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 ]
             );
 
-            if ($remainder > 0) {
+            $openSibling = $remainder > 0 && !$item->pre_picked_at
+                ? PartnerShoppingListItem::openPartnerLineFor($item->org_partner_id, $item->org_stock_id)->where('id', '!=', $item->id)->first()
+                : null;
+
+            if ($openSibling) {
+                $openSibling->increment('quantity', $remainder);
+            } elseif ($remainder > 0) {
                 PartnerShoppingListItem::create([
                     ...$item->only([
                         'group_id',

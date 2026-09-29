@@ -15,6 +15,7 @@ use App\Actions\Ordering\Order\LogBasketEvent;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PartnerShoppingListItem\ReopenPartnerShoppingListItemsOfTransactions;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderChargesEngineEnum;
@@ -44,6 +45,8 @@ class DeleteTransaction extends OrgAction
             }
 
             $transaction->delete();
+
+            ReopenPartnerShoppingListItemsOfTransactions::run([$transaction->id]);
 
             return $transaction;
         });

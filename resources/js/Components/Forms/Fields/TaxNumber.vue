@@ -9,9 +9,10 @@ import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy, faCheck } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
+import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
+import { useCountriesAddressData } from '@/Composables/useCountriesAddressData'
 import { taxNumberStatus } from '@/Composables/useTaxNumberValidation'
 import { Tooltip } from 'floating-vue'
 import Modal from "@/Components/Utils/Modal.vue"
@@ -147,16 +148,19 @@ const getStatusColor = (status: string, valid: boolean) => {
 
 const getStatusText = (status: string, valid: boolean) => {
     if (status === 'invalid' || !valid) {
-        return trans('Invalid')
+        return ctrans('Invalid')
     }
     if (status === 'valid' || valid) {
-        return trans('Valid')
+        return ctrans('Valid')
     }
-    return trans('Pending')
+    return ctrans('Pending')
 }
 
+const providedCountriesAddressData = props.options?.countriesAddressData ?? props.fieldData?.options?.countriesAddressData
+const fetchedCountriesAddressData = providedCountriesAddressData ? null : useCountriesAddressData()
+
 const countryOptions = computed(() => {
-    const countriesAddressData = props.options?.countriesAddressData ?? props.fieldData?.options?.countriesAddressData ?? {}
+    const countriesAddressData = providedCountriesAddressData ?? fetchedCountriesAddressData?.value ?? {}
 
     return Object.values(countriesAddressData).map((country: any) => ({
         value: country.code,
@@ -216,10 +220,10 @@ const validateTaxNumber = () => {
         return
     }
 
-    vatValidationResult.value = status === 'valid' ? trans("Valid tax number") : trans("Invalid tax number")
+    vatValidationResult.value = status === 'valid' ? ctrans("Valid tax number") : ctrans("Invalid tax number")
 
     setTaxNumberWarning(
-        status === 'valid' ? null : '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
+        status === 'valid' ? null : '🤔 ' + ctrans('Tax number looks invalid. Are you sure you want to save it?')
     )
 }
 
@@ -313,7 +317,7 @@ const markAsValid = () => {
                     :options="countryOptions"
                     :model-value="countryCode"
                     @update:model-value="updateCountry"
-                    :placeholder="trans('Country')"
+                    :placeholder="ctrans('Country')"
                     :canDeselect="false"
                     :canClear="false"
                     name="tax_number_country_code"
@@ -327,10 +331,10 @@ const markAsValid = () => {
                 />
             </div>
             <p v-if="isCountryMissing" class="mt-1 text-sm text-red-600">
-                {{ trans('Tax number needs its country') }}
+                {{ ctrans('Tax number needs its country') }}
             </p>
             <span class="italic text-xs" v-if="fieldData?.europeanUnion">
-                <span style="color: red">*</span> {{ trans("This will affect your VAT Rate") }}
+                <span style="color: red">*</span> {{ ctrans("This will affect your VAT Rate") }}
                 <FontAwesomeIcon v-on:click="isModalOpen = true" v-tooltip="ctrans('Click to view detailed explanation')" icon='fal fa-info-circle' class="opacity-60 hover:opacity-100 cursor-pointer" fixed-width aria-hidden='true' />
             </span>
         </div>
@@ -359,8 +363,8 @@ const markAsValid = () => {
                                     <div class="p-1 max-w-xs">
                                         <div class="space-y-2">
                                             <div class="text-sm space-y-1">
-                                                <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country?.data?.name }}</p>
-                                                <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ validationStatus.country?.data?.code }}</p>
+                                                <p><span class="font-medium">{{ ctrans('Country') }}:</span> {{ validationStatus.country?.data?.name }}</p>
+                                                <p><span class="font-medium">{{ ctrans('Country Code') }}:</span> {{ validationStatus.country?.data?.code }}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -369,7 +373,7 @@ const markAsValid = () => {
 
                             <!-- Last checked date -->
                             <span
-                                v-tooltip="trans('Last checked :date', { date: formatDate(validationStatus?.checked_at) || '-' })"
+                                v-tooltip="ctrans('Last checked :date', { date: formatDate(validationStatus?.checked_at) || '-' })"
                                 class="ml-1 cursor-default hover:underline">
                                 {{ formatDate(validationStatus.checked_at) }}
                             </span>
@@ -388,7 +392,7 @@ const markAsValid = () => {
                     </template>
                     <template #btn-yes="{ closeModal }">
                         <Button
-                            :label="trans('Confirm')"
+                            :label="ctrans('Confirm')"
                             @click="
                                 () => {
                                     markAsValid()
@@ -406,18 +410,18 @@ const markAsValid = () => {
     <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
         <slot name="modal" :closeModal="() => isModalOpen = false" >
             <div class="font-bold">
-                <FontAwesomeIcon icon='fal fa-info-circle' class="opacity-100 text-red-500" fixed-width aria-hidden='true'/> {{ trans("VAT Information") }}
+                <FontAwesomeIcon icon='fal fa-info-circle' class="opacity-100 text-red-500" fixed-width aria-hidden='true'/> {{ ctrans("VAT Information") }}
             </div>
             <div class="text-sm mt-3">
-                {{ trans('In order to benefit from VAT-Free purchases, you are required to enter a VALID Tax Number, using certain country code (Matching with the Country that issued your Tax Number) as prefix.') }}
+                {{ ctrans('In order to benefit from VAT-Free purchases, you are required to enter a VALID Tax Number, using certain country code (Matching with the Country that issued your Tax Number) as prefix.') }}
                 <br>
                 <br>
-                {{ trans('Example') }}:
-                <br>- BG12345678 <FontAwesomeIcon icon='fas fa-check-circle' v-tooltip="trans('Benefit from VAT-Free purchase')" class="opacity-100 text-green-500" fixed-width aria-hidden='true'/>
-                <br>- UK12345678 <FontAwesomeIcon icon='fas fa-times-circle' v-tooltip="trans('Did not benefit from VAT-Free purchase')" class="opacity-100 text-red-500" fixed-width aria-hidden='true'/>
+                {{ ctrans('Example') }}:
+                <br>- BG12345678 <FontAwesomeIcon icon='fas fa-check-circle' v-tooltip="ctrans('Benefit from VAT-Free purchase')" class="opacity-100 text-green-500" fixed-width aria-hidden='true'/>
+                <br>- UK12345678 <FontAwesomeIcon icon='fas fa-times-circle' v-tooltip="ctrans('Did not benefit from VAT-Free purchase')" class="opacity-100 text-red-500" fixed-width aria-hidden='true'/>
                 <br>
                 <br>
-                    {{ trans('List of Valid Country Codes') }}:
+                    {{ ctrans('List of Valid Country Codes') }}:
                 <br>
                 <span class="font-semibold">
                     {{fieldData?.europeanUnion}}

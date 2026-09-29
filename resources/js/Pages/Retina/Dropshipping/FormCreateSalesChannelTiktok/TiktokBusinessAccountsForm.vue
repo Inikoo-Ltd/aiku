@@ -15,7 +15,7 @@ import axios from "axios"
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
 
 const goNext = inject("goNext")
-const closeCreateTiktokModal = inject("closeCreateTiktokModal")
+const cancelCreateTiktokModal = inject("cancelCreateTiktokModal")
 const tiktokUserId = inject("tiktokUserId")
 
 const tiktokShopData = ref([])
@@ -98,7 +98,7 @@ const submitForm = async () => {
 		</div>
 
 		<div class="flex md:justify-end gap-4">
-			<Button type="secondary" size="sm" @click="closeCreateTiktokModal">{{
+			<Button type="secondary" size="sm" @click="cancelCreateTiktokModal">{{
 				trans("Cancel")
 			}}</Button>
 			<Button size="sm" :loading="isLoadingStep" @click="submitForm">{{

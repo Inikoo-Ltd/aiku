@@ -8,6 +8,7 @@ import { Head, Link, useForm } from "@inertiajs/vue3"
 import { computed } from "vue"
 import Textarea from "primevue/textarea"
 import Checkbox from "primevue/checkbox"
+import InputNumber from "primevue/inputnumber"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -18,10 +19,10 @@ import WhatsappTemplatesTable from "@/Components/Chat/WhatsappTemplatesTable.vue
 import { useCurrentTab, useTabChange } from "@/Composables/tab-change"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExternalLink, faHeadset, faMoon, faSlidersH, faTruck } from "@fal"
+import { faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faTruck, faWhatsapp)
+library.add(faExternalLink, faHeadset, faMoon, faSlidersH, faThumbsUp, faTruck, faWhatsapp)
 
 const props = defineProps<{
     title: string
@@ -44,6 +45,12 @@ const props = defineProps<{
         message: string
         opening_line: string
         show_opening_line: boolean
+        update_route: { name: string; parameters: Record<string, any> }
+    } | null
+    closing: {
+        close_after_thanks: boolean
+        close_after_thanks_minutes: number
+        can_edit: boolean
         update_route: { name: string; parameters: Record<string, any> }
     } | null
     policies: {
@@ -85,6 +92,22 @@ const saveOutOfHours = () => {
     outOfHoursForm.patch(route(props.outOfHours.update_route.name, props.outOfHours.update_route.parameters), {
         preserveScroll: true,
         onSuccess: () => outOfHoursForm.defaults(),
+    })
+}
+
+const closingForm = useForm({
+    close_after_thanks: props.closing?.close_after_thanks ?? true,
+    close_after_thanks_minutes: props.closing?.close_after_thanks_minutes ?? 2,
+})
+
+const saveClosing = () => {
+    if (!props.closing) {
+        return
+    }
+
+    closingForm.patch(route(props.closing.update_route.name, props.closing.update_route.parameters), {
+        preserveScroll: true,
+        onSuccess: () => closingForm.defaults(),
     })
 }
 
@@ -164,6 +187,39 @@ const saveCouriers = () => {
             :loading="outOfHoursForm.processing"
             :disabled="!outOfHoursForm.isDirty"
             @click="saveOutOfHours" />
+    </div>
+
+    <div v-else-if="currentTab === 'closing' && closing" class="max-w-3xl space-y-5 p-6">
+        <p class="text-sm text-gray-500">
+            {{ ctrans("When a customer on website chat or WhatsApp only thanks us after we answered, we react with a 👍 and close the conversation. If an agent has the chat open, it waits first and closes only if nobody writes. Anything the customer writes next reopens it. An email that only thanks us is closed without a reply.") }}
+        </p>
+
+        <div class="flex items-center gap-2">
+            <Checkbox v-model="closingForm.close_after_thanks" inputId="close-after-thanks" binary :disabled="!closing.can_edit" />
+            <label for="close-after-thanks" class="text-sm text-gray-700">{{ ctrans("React with a 👍 and close when the customer only thanks us") }}</label>
+        </div>
+
+        <div>
+            <label for="close-after-thanks-minutes" class="block text-sm font-medium text-gray-700">{{ ctrans("Minutes to wait when an agent has the chat open") }}</label>
+            <InputNumber
+                v-model="closingForm.close_after_thanks_minutes"
+                inputId="close-after-thanks-minutes"
+                :min="1"
+                :max="60"
+                showButtons
+                :disabled="!closing.can_edit || !closingForm.close_after_thanks"
+                class="mt-1" />
+            <p v-if="closingForm.errors.close_after_thanks_minutes" class="mt-1 text-sm text-red-600">{{ closingForm.errors.close_after_thanks_minutes }}</p>
+        </div>
+
+        <p v-if="!closing.can_edit" class="text-sm text-gray-500">{{ ctrans("Only a chat supervisor can change this.") }}</p>
+
+        <Button
+            v-if="closing.can_edit"
+            :label="ctrans('Save')"
+            :loading="closingForm.processing"
+            :disabled="!closingForm.isDirty"
+            @click="saveClosing" />
     </div>
 
     <div v-else-if="currentTab === 'policies' && policies" class="max-w-3xl space-y-5 p-6">

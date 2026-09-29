@@ -5,6 +5,7 @@ namespace App\Actions\GoodsIn\StockDeliveryItem;
 use App\Actions\Traits\Authorisations\WithProcurementEditAuthorisation;
 use App\Actions\GoodsIn\Sowing\StoreSowing;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
+use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersDeliveryStateFromStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryStateFromGoodsIn;
@@ -31,6 +32,7 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
             'quantity'              => ['required', 'numeric', 'gt:0'],
             'location_org_stock_id' => ['required_without:location_id', Rule::Exists('location_org_stocks', 'id')->where('org_stock_id', $this->stockDeliveryItem->org_stock_id)],
             'location_id'           => ['required_without:location_org_stock_id', Rule::Exists('locations', 'id')->where('organisation_id', $this->organisation->id)],
+            'set_as_picking_location' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -49,9 +51,21 @@ class UpsertStockDeliveryItemPlaced extends OrgAction
             $user = auth()->user();
             data_set($modelData, 'sower_user_id', $user?->id);
 
+            $setAsPickingLocation = (bool) Arr::pull($modelData, 'set_as_picking_location', false);
+
             $locationId = Arr::pull($modelData, 'location_id');
             if ($locationId && !Arr::get($modelData, 'location_org_stock_id')) {
                 data_set($modelData, 'location_org_stock_id', $this->findOrAssociateLocation($stockDeliveryItem, $locationId)->id);
+            }
+
+            if ($setAsPickingLocation) {
+                UpdateLocationOrgStock::make()->action(
+                    LocationOrgStock::findOrFail($modelData['location_org_stock_id']),
+                    [
+                        'set_as_priority_wholesale'    => true,
+                        'set_as_priority_dropshipping' => true,
+                    ]
+                );
             }
 
             StoreSowing::make()->action($stockDeliveryItem, $user, $modelData);

@@ -8,7 +8,6 @@
 
 namespace App\Actions\HumanResources\Employee\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -107,7 +106,6 @@ class CreateEmployee extends OrgAction
                                         )
                                     )->getArray(),
                                     'options' => [
-                                        'countriesAddressData' => GetAddressData::run()
 
                                     ]
                                 ],

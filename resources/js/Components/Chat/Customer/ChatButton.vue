@@ -1056,7 +1056,7 @@ if (isClient) {
 
                     <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat"
                         :messages="messagesLocal" :session="chatSession" :loading="loading" :isRating="isRating"
-                        :rating="rating" :isUser="isUser" :isLoggedIn="isLoggedIn" @send-message="sendMessage"
+                        :rating="rating" :isUser="isUser" :isLoggedIn="isLoggedIn" :fullHeight="isFullHeight" @send-message="sendMessage"
                         @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
                         @new-session="startNewSession" :assignedAgent="assignedAgent" />
 

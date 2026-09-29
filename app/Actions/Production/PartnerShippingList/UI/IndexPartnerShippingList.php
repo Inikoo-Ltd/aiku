@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
+use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -45,6 +46,10 @@ class IndexPartnerShippingList extends OrgAction
 
     private int $hitchhikerCount = 0;
 
+    private bool $ignorePipeline = false;
+
+    private int $pipelineCount = 0;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user()->authTo([
@@ -60,6 +65,7 @@ class IndexPartnerShippingList extends OrgAction
     public function handle(Organisation $seller): LengthAwarePaginator
     {
         $this->showHitchhikers = request()->boolean('hitchhikers');
+        $this->ignorePipeline  = request()->boolean('ignore_pipeline');
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -166,6 +172,7 @@ class IndexPartnerShippingList extends OrgAction
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
                 'artefacts.recommended_batch_size as batch_size',
+                'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
                 DB::raw('coalesce(open_demand.quantity, 0) as open_demand_quantity'),
@@ -364,6 +371,8 @@ class IndexPartnerShippingList extends OrgAction
             $preparingItems->concat($backlogItems)->pluck('artefact_id')->filter()->unique()->values()->all()
         );
 
+        $this->markSurplusInPipeline($backlogItems);
+
         $backlogItems->each(function ($item) use ($publishedLabels) {
             $item->published_labels   = $publishedLabels->get($item->artefact_id, collect())->values()->all();
             $item->batch_code         = $item->run_batch_code;
@@ -382,6 +391,43 @@ class IndexPartnerShippingList extends OrgAction
             ->map(fn ($label, $key) => ['label' => $label, 'items' => $byLane->get($key, collect())->values()->all()])
             ->values()
             ->all();
+    }
+
+    /**
+     * Oldest backlog lines claim the surplus first, the same order booking in fulfils them.
+     */
+    private function markSurplusInPipeline(Collection $backlogItems): void
+    {
+        if ($this->ignorePipeline) {
+            return;
+        }
+
+        $surplus = GetProductionSurplusInPipeline::run($backlogItems->pluck('org_stock_id')->filter()->unique()->values()->all());
+
+        $backlogItems->sortBy(fn ($item) => [$item->created_at, $item->id])->each(function ($item) use (&$surplus) {
+            $row = $surplus[$item->org_stock_id] ?? null;
+            if (!$row) {
+                return;
+            }
+
+            $needed         = (float) $item->quantity;
+            $pendingBooking = min($needed, $row['pending_booking']);
+            $inProduction   = min($needed - $pendingBooking, $row['in_production']);
+
+            if ($pendingBooking + $inProduction <= 0) {
+                return;
+            }
+
+            $surplus[$item->org_stock_id]['pending_booking'] -= $pendingBooking;
+            $surplus[$item->org_stock_id]['in_production']   -= $inProduction;
+
+            $item->pipeline = [
+                'pending_booking' => round($pendingBooking, 3),
+                'in_production'   => round($inProduction, 3),
+                'job_orders'      => $row['job_orders'],
+            ];
+            $this->pipelineCount++;
+        });
     }
 
     /**
@@ -523,6 +569,7 @@ class IndexPartnerShippingList extends OrgAction
                 'artisanWorkload' => in_array($this->groupBy, ['maker', 'board', 'mixes']) ? $this->getArtisanWorkload() : null,
                 'groups'       => $this->groupBy && $this->groupBy !== 'mixes' ? $this->getGroups($items) : null,
                 'hitchhikers'  => ['count' => $this->hitchhikerCount, 'showing' => $this->showHitchhikers],
+                'pipeline'     => ['count' => $this->pipelineCount, 'ignoring' => $this->ignorePipeline],
                 'mixes'        => $this->groupBy === 'mixes' ? GetMixesToPrepare::run($this->production) : null,
                 'mixJobOrders' => $this->groupBy === 'mixes' ? GetMixJobOrders::run($this->production) : null,
                 'data'         => $items,

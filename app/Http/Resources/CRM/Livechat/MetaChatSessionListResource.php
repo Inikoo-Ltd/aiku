@@ -177,6 +177,7 @@ class MetaChatSessionListResource extends JsonResource
             'claim'          => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'promise'        => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
             'urgent'         => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
+            'closing_at' => \App\Actions\Chat\ChatSession\CloseChatAfterThanks::pendingAt($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
 
             'unread_count' => (int) ($this->unread_count ?? 0),

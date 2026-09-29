@@ -24,7 +24,7 @@ class PrepareMailshotSecondWaveRecipients
 {
     use AsAction;
 
-    public string $jobQueue = 'ses';
+    public string $jobQueue = 'ses-low';
     protected int $countRecipients = 0;
 
     public function tags(): array
@@ -89,7 +89,7 @@ class PrepareMailshotSecondWaveRecipients
             }
 
             if (!empty($customerIds)) {
-                ProcessSendMailshot::dispatch($mailshotId, $customerIds);
+                ProcessSendMailshot::dispatch($mailshotId, $customerIds)->onQueue('ses-low');
                 $this->countRecipients += $numValidEmails;
             }
         });

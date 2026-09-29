@@ -112,9 +112,8 @@ class ProcessInboundEmail
         $body    = GmailMessageParser::body($raw);
 
         // Kept beside the text, never instead of it: the text is what search, previews and
-        // translation read, and what is shown if the markup is ever refused. It is purified
-        // once the pictures it points at have been stored, because the purifier refuses the
-        // cid scheme they arrive under and there is no second chance to resolve them.
+        // translation read, and what is shown if the markup is ever refused. Pictures keep the
+        // cid address they arrive under; ChatMessageResource points them at the stored file.
         $rawHtml = GmailMessageParser::htmlBody($raw);
         $threadId = GmailMessageParser::threadId($raw);
         $headerMessageId = GmailMessageParser::header($raw, 'Message-ID');
@@ -189,15 +188,14 @@ class ProcessInboundEmail
             'message_text' => $body,
             'message_type' => ChatMessageTypeEnum::TEXT->value,
             'attachments'  => $attachments,
+            'attachment_content_ids' => $contentIds,
             'sender_type'  => $webUser ? ChatSenderTypeEnum::USER->value : ChatSenderTypeEnum::GUEST->value,
             'sender_id'    => $webUser?->id,
         ]);
 
         $html = app(HTMLSanitizer::class)->cleanEmail(
-            $this->resolveInlineImages(
+            $this->embedSmallInlineImages(
                 $rawHtml,
-                $message,
-                $contentIds,
                 ImportPendingGmailAttachments::make()->smallInlineImages($client, $gmailMessageId, $raw)
             )
         );
@@ -263,35 +261,17 @@ class ProcessInboundEmail
     }
 
     /**
-     * A picture inside an email is addressed as src="cid:something", which means nothing outside
-     * the mail itself: left alone the purifier drops the src and the message reads as "see the
-     * photo below" with nothing below it, while the file sits detached above the text. Each one
-     * is pointed at the copy we stored instead, so the mail shows the way it was written.
+     * A picture too small to be stored as a file is written into the body itself.
      *
-     * The stored files are in the order they were downloaded, so position is what matches them.
-     *
-     * @param  array<int, string|null>  $contentIds
-     * @param  array<string, string>  $smallInlineImages
+     * @param  array<string, string>  $smallInlineImages  Content-ID => data uri
      */
-    private function resolveInlineImages(?string $html, ChatMessage $message, array $contentIds, array $smallInlineImages): ?string
+    private function embedSmallInlineImages(?string $html, array $smallInlineImages): ?string
     {
         if (! $html) {
             return $html;
         }
 
-        $sources = $smallInlineImages;
-
-        if (array_filter($contentIds)) {
-            $files = $message->attachedFiles();
-
-            foreach ($contentIds as $index => $contentId) {
-                if ($contentId && isset($files[$index])) {
-                    $sources[$contentId] = $files[$index]->getUrl();
-                }
-            }
-        }
-
-        foreach ($sources as $contentId => $source) {
+        foreach ($smallInlineImages as $contentId => $source) {
             $html = str_ireplace(['cid:'.$contentId, 'cid:'.rawurlencode($contentId)], $source, $html);
         }
 
@@ -398,6 +378,9 @@ class ProcessInboundEmail
             $sentAt = Carbon::createFromTimestampMs((int) Arr::get($raw, 'internalDate'));
             $html   = app(HTMLSanitizer::class)->cleanEmail(GmailMessageParser::htmlBody($raw));
             $text   = trim(strip_tags(GmailMessageParser::body($raw)));
+            // Files of earlier mails are fetched only when an agent asks, so a long thread does
+            // not download everything it ever carried.
+            $pending = ImportPendingGmailAttachments::make()->countImportable($raw);
 
             ChatMessage::create([
                 'chat_session_id' => $session->id,
@@ -419,7 +402,7 @@ class ProcessInboundEmail
                     'gmail_header_message_id' => GmailMessageParser::header($raw, 'Message-ID'),
                     'email_subject'           => GmailMessageParser::header($raw, 'Subject'),
                     'gmail_thread_history'    => true,
-                ],
+                ] + ($pending ? ['gmail_pending_attachments' => $pending] : []),
             ]);
 
             $imported++;

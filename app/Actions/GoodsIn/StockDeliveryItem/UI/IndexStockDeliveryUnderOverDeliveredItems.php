@@ -55,9 +55,10 @@ class IndexStockDeliveryUnderOverDeliveredItems extends OrgAction
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.packed_in as org_stock_packed_in',
             ])
             ->selectRaw('stock_delivery_items.unit_quantity_checked - stock_delivery_items.unit_quantity as difference_units')
-            ->selectRaw('round((stock_delivery_items.unit_quantity_checked - stock_delivery_items.unit_quantity) / nullif(sp.units_per_pack, 0), 3) as difference_skos')
+            ->selectRaw('round((stock_delivery_items.unit_quantity_checked - stock_delivery_items.unit_quantity) / nullif(coalesce(sp.units_per_pack, org_stocks.packed_in), 0), 3) as difference_skos')
             ->selectRaw('round((stock_delivery_items.unit_quantity_checked - stock_delivery_items.unit_quantity) * 100 / nullif(stock_delivery_items.unit_quantity, 0), 1) as difference_percentage')
             ->allowedSorts([
                 AllowedSort::field('part', 'org_stocks.code'),

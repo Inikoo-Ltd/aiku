@@ -135,7 +135,7 @@ class StoreInvoice extends OrgAction
          * the address it was shipped to, which is what its tax category follows (HELP-3433) */
         if (!$deliveryAddressData && $parent instanceof Order) {
             $deliveryAddressData = $parent->collection_address_id
-                ? collect([$parent->collectionAddress, $parent->shop->collectionAddress])->first(fn ($address) => $address?->hasAnyLine())
+                ? collect([$parent->shop->collectionAddress, $parent->collectionAddress])->first(fn ($address) => $address?->hasAnyLine())
                 : ($parent->deliveryAddress?->country_id ? $parent->deliveryAddress : null);
         }
 

@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $parent_name
  * @property mixed $state
  * @property mixed $date
+ * @property mixed $estimated_receiving_date
  * @property mixed $organisation_name
  * @property mixed $number_stock_delivery_items_except_cancelled
  * @property mixed $number_stock_delivery_items
@@ -44,6 +45,7 @@ class StockDeliveryResource extends JsonResource
             'state_icon'         => $this->state->stateIcon()[$this->state->value],
             'state_label'        => StockDeliveryStateEnum::labels()[$this->state->value],
             'date'               => $this->date,
+            'estimated_receiving_date' => $this->estimated_receiving_date,
             'organisation_name'  => $this->organisation_name,
             'organisation_slug'  => $this->organisation_slug,
         ];

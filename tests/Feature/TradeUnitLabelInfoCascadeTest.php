@@ -378,6 +378,33 @@ test('the product web block label info carries the product data in label, show a
         ->and(collect($labelInfo['clp_ghs_pictograms']['value'])->pluck('key')->all())->toBe(['toxic', 'flammable']);
 });
 
+test('net quantity is hidden from the product page when a trade unit turns it off', function () {
+    $this->product->updateQuietly(['marketing_weight' => 500]);
+
+    $labelInfoBuilder = new class () {
+        use HasWebBlockProductLabelInfo;
+
+        public function build($product): array
+        {
+            return $this->getProductLabelInfo($product);
+        }
+    };
+
+    expect($labelInfoBuilder->build($this->product->refresh())['net_quantity']['show'])->toBeTrue();
+
+    UpdateTradeUnit::make()->action($this->bottle, ['show_net_quantity' => false]);
+
+    expect($this->bottle->refresh()->label_info['show_net_quantity'])->toBeFalse()
+        ->and($this->masterAsset->refresh()->label_info['show_net_quantity'])->toBeFalse()
+        ->and($this->product->refresh()->label_info['show_net_quantity'])->toBeFalse()
+        ->and($labelInfoBuilder->build($this->product)['net_quantity'])->toBe(['show' => false, 'label' => 'Net Quantity', 'value' => null]);
+
+    UpdateTradeUnit::make()->action($this->bottle, ['show_net_quantity' => true]);
+
+    expect($this->product->refresh()->label_info['show_net_quantity'])->toBeTrue()
+        ->and($labelInfoBuilder->build($this->product)['net_quantity']['show'])->toBeTrue();
+});
+
 test('packaging material codes and their visibility are saved into the trade unit label info', function () {
     UpdateTradeUnit::make()->action($this->bottle, [
         'packaging_material_codes'      => ['pap_20', 'gl_70'],

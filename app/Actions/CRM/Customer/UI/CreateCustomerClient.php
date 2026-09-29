@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
@@ -89,7 +88,6 @@ class CreateCustomerClient extends OrgAction
                                             )
                                         )->getArray(),
                                         'options' => [
-                                            'countriesAddressData' => GetAddressData::run()
 
                                         ]
                                     ]

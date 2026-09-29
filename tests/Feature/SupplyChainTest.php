@@ -20,6 +20,7 @@ use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Agent\UpdateAgent;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Models\Procurement\PurchaseOrder;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Actions\SupplyChain\Supplier\DeleteSupplier;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
@@ -39,6 +40,8 @@ use Illuminate\Support\Str;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Helpers\Import\UploadRecordStatusEnum;
+use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Imports\SupplyChain\SupplierProductImport;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\StockFamily;
@@ -339,7 +342,83 @@ test('import supplier product row creates trade unit and stock family', function
 
     expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-001')->count())->toBe(1)
         ->and(StockFamily::where('group_id', $this->group->id)->where('code', 'IMP-FAM')->count())->toBe(1)
-        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->count())->toBe(1);
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'IMP-SUP-001')->count())->toBe(1)
+        ->and($tradeUnit->barcode)->toBe('5000000000001');
+
+    $autoBarcodeRow = $row->merge(['suppliers_product_code' => 'IMP-SUP-002', 'part_reference' => 'IMP-TU-002', 'unit_barcode_ean_13_for_website' => 'auto']);
+    $import->storeModel($autoBarcodeRow, $upload->records()->create(['values' => $autoBarcodeRow->all(), 'row_number' => 4]));
+
+    expect(TradeUnit::where('group_id', $this->group->id)->where('code', 'IMP-TU-002')->value('barcode'))->toBeNull();
+})->depends('create supplier in agent');
+
+test('supplier product sheet with mistakes creates nothing and lists every mistake by row', function ($supplier) {
+    $dressFamily = StoreStockFamily::make()->action($this->group, ['code' => 'CHK-DRESS', 'name' => 'Dresses'], strict: false);
+    StoreStock::make()->action($dressFamily, ['code' => 'CHKD-01', 'name' => 'Dress'], strict: false);
+
+    $headings = ['Id: Supplier Part Key', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'Unit cost', 'Unit label', 'Unit barcode (EAN-13, for website)', 'Units per SKO', 'SKOs per carton'];
+    $sheetFile = function (array $rows) use ($headings) {
+        $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->getActiveSheet()->fromArray([$headings, ...$rows]);
+        $spreadsheet->getActiveSheet()->setCellValue('A20', null);
+        $spreadsheet->createSheet()->setTitle('Country codes')->fromArray([['Nepal', 'NPL'], ['Spain', 'ESP']]);
+        $path = sys_get_temp_dir().'/supplier_products_'.uniqid().'.xlsx';
+        (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+        return $path;
+    };
+    $import = function (string $path) use ($supplier) {
+        $upload = Upload::create([
+            'group_id'          => $this->group->id,
+            'organisation_id'   => $this->organisation->id,
+            'model'             => 'SupplierProduct',
+            'parent_type'       => $supplier->getMorphClass(),
+            'parent_id'         => $supplier->id,
+            'original_filename' => 'trousers.xlsx',
+            'filename'          => 'trousers.xlsx',
+            'filesize'          => 0,
+        ]);
+        Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
+
+        return $upload->refresh();
+    };
+
+    $upload = $import($sheetFile([
+        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
+        ['new', 'CHK-DRESS', 'CHKT-02', 'CHKT-02', 'Trousers L/XL', 825, 'Trousers', 'auto', 1, 30],
+        ['new', 'CHK-DRESS', 'CHKT-03', 'CHKT-02', 'Trousers S/M', 'Rs', 'Trousers', '12345', 1, 30],
+    ]));
+
+    $errors = $upload->records()->whereNotNull('row_number')->orderBy('row_number')->get()->mapWithKeys(fn ($record) => [$record->row_number => $record->errors]);
+    expect($upload->number_rows)->toBe(3)
+        ->and($upload->number_fails)->toBe(3)
+        ->and($upload->number_success)->toBe(0)
+        ->and($errors->keys()->all())->toBe([2, 3, 4])
+        ->and($errors[2])->toBe(['CHKT products have different families in this sheet: CHK-TROUSER (rows 2), CHK-DRESS (rows 3-4). Use one family.'])
+        ->and($errors[4])->toContain('Unit cost must be a number above zero, found "Rs".')
+        ->and($errors[4])->toContain('Unit barcode "12345" is not a barcode (8 to 14 digits).')
+        ->and($errors[4])->toContain("Supplier's product code CHKT-02 appears in rows 3-4.")
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'like', 'CHKT-%')->exists())->toBeFalse()
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'like', 'CHKT-%')->exists())->toBeFalse();
+
+    $upload = $import($sheetFile([
+        ['new', 'CHK-DRESS', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
+    ]));
+    expect($upload->records()->first()->errors)->toBe(['Family CHK-DRESS holds CHKD products, CHKT does not look like it belongs there.'])
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'CHKT-01')->exists())->toBeFalse();
+
+    $upload = $import($sheetFile([
+        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
+        ['new', 'CHK-TROUSER', 'CHKT-02', 'CHKT-02', 'Trousers L/XL', 825, 'Trousers', 'auto', 1, 30],
+    ]));
+    expect($upload->number_success)->toBe(2)
+        ->and($upload->number_fails)->toBe(0)
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'like', 'CHKT-%')->count())->toBe(2)
+        ->and(TradeUnit::where('group_id', $this->group->id)->where('code', 'CHKT-01')->value('barcode'))->toBeNull();
+
+    $upload = $import($sheetFile([
+        ['new', 'CHK-TROUSER', 'CHKT-01', 'CHKT-01', 'Trousers S/M', 825, 'Trousers', 'auto', 1, 30],
+    ]));
+    expect($upload->records()->first()->errors)->toBe(['CHKT-01 already exists for this supplier, use its Id instead of "new".']);
 })->depends('create supplier in agent');
 
 
@@ -1043,4 +1122,168 @@ test('housekeep purchase orders flags legacy open orders and undo removes the fl
     $response = $this->get(route('grp.supply-chain.dashboard'));
     $response->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplyChainPurchaseOrderJourney'));
     expect(\App\Actions\Procurement\PurchaseOrder\HousekeepPurchaseOrders::run(0, true))->toBe($flagged);
+});
+
+test('agents and suppliers keep documents in an attachments tab', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+
+    $this->post(route('grp.models.agent.attachment.attach', ['agent' => $agent->id]), [
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('agent-contract.pdf', 10, 'application/pdf')],
+        'scope'       => 'Contract',
+    ])->assertSessionHasNoErrors();
+
+    $this->post(route('grp.models.supplier.attachment.attach', ['supplier' => $supplier->id]), [
+        'attachments' => [\Illuminate\Http\UploadedFile::fake()->create('scan-0042.pdf', 12, 'application/pdf')],
+        'scope'       => 'Other',
+        'caption'     => 'Factory audit 2026',
+    ])->assertSessionHasNoErrors();
+
+    expect($agent->attachments()->wherePivot('scope', 'Contract')->first()->pivot->caption)->toBe('agent-contract')
+        ->and($supplier->attachments()->wherePivot('scope', 'Other')->first()->pivot->caption)->toBe('Factory audit 2026');
+
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Agent')
+            ->has('attachments.data', 1)
+            ->where('attachmentRoutes.attachRoute.name', 'grp.models.agent.attachment.attach')
+            ->has('attachmentScopes', 8));
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Supplier')
+            ->has('attachments.data', 1));
+
+    $orgAgent    = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+
+    $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $orgAgent->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/OrgAgent')
+            ->has('attachments.data', 1)
+            ->where('attachmentRoutes.detachRoute.parameters.agent', $agent->id));
+
+    $this->get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug, 'tab' => 'attachments']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Procurement/OrgSupplier')
+            ->has('attachments.data', 1));
+
+    $this->delete(route('grp.models.agent.attachment.detach', ['agent' => $agent->id, 'attachment' => $agent->attachments()->first()->id]));
+
+    expect($agent->attachments()->count())->toBe(0);
+});
+
+test('UI edit independent supplier shows the agent field', function () {
+    $supplier = Supplier::whereNull('agent_id')->first();
+    $this->withoutExceptionHandling();
+    $this->get(route('grp.supply-chain.suppliers.show', $supplier->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions.0.route.name', 'grp.supply-chain.suppliers.edit'));
+    $blueprint = $this->get(route('grp.supply-chain.suppliers.edit', $supplier->slug))->viewData('page')['props']['formData']['blueprint'];
+    expect(collect($blueprint)->pluck('fields.agent_id.type')->filter()->values()->all())->toBe(['select']);
+});
+
+test('move independent supplier to an agent and free it again', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+
+    $supplier = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplierProductData = SupplierProduct::factory()->definition();
+    data_set($supplierProductData, 'stock_id', $this->stocks[0]->id);
+    $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+
+    $supplier = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
+
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    expect($supplier->agent_id)->toBe($agent->id)
+        ->and($supplierProduct->refresh()->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->agent_id)->toBe($agent->id)
+        ->and($orgSupplier->org_agent_id)->toBe($orgAgent->id)
+        ->and($orgSupplier->orgSupplierProducts()->whereNull('org_agent_id')->count())->toBe(0)
+        ->and($supplier->orgSuppliers()->whereNull('org_agent_id')->where('status', true)->count())->toBe(0);
+
+    $supplier    = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => null]);
+    $orgSupplier->refresh();
+
+    expect($supplier->agent_id)->toBeNull()
+        ->and($supplierProduct->refresh()->agent_id)->toBeNull()
+        ->and($orgSupplier->agent_id)->toBeNull()
+        ->and($orgSupplier->org_agent_id)->toBeNull()
+        ->and($orgSupplier->status)->toBeTrue()
+        ->and($orgSupplier->orgSupplierProducts()->whereNotNull('org_agent_id')->count())->toBe(0);
+});
+
+test('supplier product sheet with an ORDER tab creates the products and a draft purchase order, or nothing when the order has mistakes', function () {
+    $supplier     = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $organisation = $this->organisation->code;
+
+    $sheetFile = function (array $products, array $order) {
+        $spreadsheet = new PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->getActiveSheet()->fromArray([['Id: Supplier Part Key', 'Family', 'Part reference', "Supplier's product code", "Supplier's unit description", 'Unit cost', 'Unit label', 'Units per SKO', 'SKOs per carton'], ...$products]);
+        $spreadsheet->createSheet()->setTitle('ORDER')->fromArray($order);
+        $path = sys_get_temp_dir().'/opening_order_'.uniqid().'.xlsx';
+        (new PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+        return $path;
+    };
+    $import = function (string $path) use ($supplier) {
+        $upload = Upload::create([
+            'group_id'          => $this->group->id,
+            'organisation_id'   => $this->organisation->id,
+            'model'             => 'SupplierProduct',
+            'parent_type'       => $supplier->getMorphClass(),
+            'parent_id'         => $supplier->id,
+            'original_filename' => 'opening_order.xlsx',
+            'filename'          => 'opening_order.xlsx',
+            'filesize'          => 0,
+        ]);
+        Maatwebsite\Excel\Facades\Excel::import(new SupplierProductImport($supplier, $upload), $path);
+
+        return $upload->refresh();
+    };
+
+    $upload = $import($sheetFile(
+        [
+            ['new', 'OPN-FAM', 'OPN-01', 'OPN-01', 'Trousers S/M', 825, 'Trousers', 1, 30],
+            ['new', 'OPN-FAM', 'OPN-02', 'OPN-02', 'Trousers L/XL', 825, 'Trousers', 1, 30],
+        ],
+        [
+            ['Product Code', 'Description', 'Unit Cost', 'Carton', $organisation, 'ZZ', 'Total value', $organisation],
+            ['=Worksheet!D2', 'Trousers S/M', 825, 30, 5, 1, '=C2*D2*E2', 999999],
+            ['=Worksheet!D3', 'Trousers L/XL', 825, 30, 2, null, '=C3*D3*E3', 999999],
+            [],
+            [null, 'Total', null, null, '=SUM(E2:E3)'],
+        ]
+    ));
+
+    $purchaseOrder = PurchaseOrder::where('organisation_id', $this->organisation->id)
+        ->where('parent_type', 'OrgSupplier')
+        ->where('parent_id', $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->value('id'))
+        ->firstOrFail();
+    $quantities = $purchaseOrder->purchaseOrderTransactions()->with('supplierProduct')->get()->mapWithKeys(fn ($transaction) => [$transaction->supplierProduct->code => (float)$transaction->quantity_ordered]);
+
+    expect($upload->number_fails)->toBe(0)
+        ->and($upload->number_success)->toBe(3)
+        ->and($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($purchaseOrder->currency_id)->toBe($supplier->currency_id)
+        ->and($quantities->all())->toBe(['OPN-01' => 150.0, 'OPN-02' => 60.0])
+        ->and($upload->records()->whereNull('row_number')->first()->values)->toMatchArray(['purchase_order' => $purchaseOrder->reference, 'lines' => 2]);
+
+    $upload = $import($sheetFile(
+        [
+            ['new', 'OPN-FAM', 'OPN-03', 'OPN-03', 'Trousers XXL', 825, 'Trousers', 1, 30],
+        ],
+        [
+            ['Product Code', 'Unit Cost', 'Carton', $organisation],
+            ['OPN-03', 900, 24, 4],
+            ['OPN-99', 825, 30, 'five'],
+            [null, 'Total', null, 30],
+        ]
+    ));
+
+    expect($upload->number_success)->toBe(0)
+        ->and($upload->records()->whereNull('row_number')->pluck('errors')->flatten()->all())->toBe([
+            'ORDER tab row 2: unit cost is 900, but products tab row 2 says 825.',
+            'ORDER tab row 2: 24 pieces per carton, but products tab row 2 says 30.',
+            'ORDER tab row 3: OPN-99 is not in the products tab and is not a product of this supplier.',
+            'ORDER tab row 4: the '.$organisation.' total is 30 cartons, but the lines add up to 4.',
+        ])
+        ->and(SupplierProduct::where('supplier_id', $supplier->id)->where('code', 'OPN-03')->exists())->toBeFalse()
+        ->and($purchaseOrder->purchaseOrderTransactions()->count())->toBe(2);
 });

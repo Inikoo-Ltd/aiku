@@ -31,6 +31,7 @@ class SetStockDeliveryItemAsPlaced extends OrgAction
         return [
             'location_org_stock_id' => ['required_without:location_id', Rule::Exists('location_org_stocks', 'id')],
             'location_id'           => ['required_without:location_org_stock_id', Rule::Exists('locations', 'id')],
+            'set_as_picking_location' => ['sometimes', 'boolean'],
         ];
     }
 

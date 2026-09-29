@@ -75,6 +75,11 @@ class ClassifyChatSessionNoise
     ];
 
     /** Addresses reserved by the mail standards for machines. Never a person with a question. */
+    /** Reserved for documentation and testing (RFC 2606, RFC 6761), plus the one scanners use. */
+    private const array TEST_TLDS = ['test', 'tst', 'example', 'invalid', 'localhost'];
+
+    private const array TEST_DOMAINS = ['example.com', 'example.net', 'example.org'];
+
     private const array MACHINE_LOCAL_PARTS = ['postmaster', 'abuse', 'emailabuse', 'mailerdaemon'];
 
     public function handle(ChatSession|MetaChatSession $chatSession): ChatSession|MetaChatSession
@@ -264,9 +269,42 @@ class ClassifyChatSessionNoise
      */
     public function verdictByRules(ChatSession|MetaChatSession $chatSession): ?array
     {
-        return $chatSession instanceof MetaChatSession
-            ? $this->whatsappRules($chatSession)
-            : $this->emailRules($chatSession);
+        if ($chatSession instanceof MetaChatSession) {
+            return $this->whatsappRules($chatSession);
+        }
+
+        return $this->testAddressRule($chatSession) ?? (self::isWebsite($chatSession) ? null : $this->emailRules($chatSession));
+    }
+
+    /**
+     * An address on a domain reserved for testing typed into the offline form is nobody we can
+     * answer, whether the form's conversation stays on the website or is answered by email: it
+     * is what vulnerability scanners type, 318 conversations saying "e" in one night (HELP-3467).
+     *
+     * @return array{verdict: ChatNoiseVerdictEnum, note: string}|null
+     */
+    private function testAddressRule(ChatSession $chatSession): ?array
+    {
+        $email = Str::lower(trim((string) data_get($chatSession->metadata, 'email')));
+
+        if (!Str::contains($email, '@')) {
+            return null;
+        }
+
+        $domain = Str::afterLast($email, '@');
+
+        if (!in_array($domain, self::TEST_DOMAINS, true) && !in_array(Str::afterLast($domain, '.'), self::TEST_TLDS, true)) {
+            return null;
+        }
+
+        $typedIntoOfflineForm = $chatSession->messages()
+            ->where('sender_type', ChatSenderTypeEnum::GUEST)
+            ->whereRaw("(metadata->>'is_offline_message')::boolean")
+            ->exists();
+
+        return $typedIntoOfflineForm
+            ? ['verdict' => ChatNoiseVerdictEnum::SPAM, 'note' => 'Test address typed into the offline form: '.$email]
+            : null;
     }
 
     /**

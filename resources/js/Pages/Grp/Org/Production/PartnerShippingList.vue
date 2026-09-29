@@ -109,6 +109,7 @@ const props = defineProps<{
     artisanWorkload: { id: number, name: string, open_job_orders: number, hidden: boolean }[] | null
     mixJobOrders: { id: number, artefact_id: number, code: string, name: string, quantity: number, job_order_id: number, job_order_reference: string, job_order_slug: string, job_order_state: string, job_order_artisan: string | null }[] | null
     hitchhikers?: { count: number, showing: boolean }
+    pipeline?: { count: number, ignoring: boolean }
     groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
 }>()
 
@@ -139,7 +140,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null }
+type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, stock_available?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function isReassignable(item: BoardItem): boolean {
     return !!item.job_order_id && ["in_process", "submitted"].includes(item.job_order_state ?? "")
@@ -215,8 +216,23 @@ function setPreparing(lines: PreparingLine[], preparing: boolean) {
     )
 }
 
+function pipelineWarning(items: BoardItem[]) {
+    const covered = items.filter(item => item.pipeline)
+    if (!covered.length) return null
+
+    return ctrans(":codes already made or being made in :job_orders, waiting to be booked in. Make it again anyway?", {
+        codes: covered.map(item => item.stock_code).join(", "),
+        job_orders: [...new Set(covered.flatMap(item => item.pipeline!.job_orders))].join(", "),
+    })
+}
+
 function onDrop(laneIndex: number, event: DragEvent) {
     if (!dropTarget(laneIndex)) return
+    const warning = !dragging.value[0].job_order_id && (laneIndex === LANE_ASSIGNED || laneIndex === LANE_PREPARING) ? pipelineWarning(dragging.value) : null
+    if (warning && !window.confirm(warning)) {
+        dragging.value = []
+        return
+    }
     if (dragging.value[0].job_order_id) {
         unassign(dragging.value)
         dragging.value = []
@@ -726,6 +742,16 @@ function jobOrderHref(item: { job_order_slug: string }) {
         </Link>
     </div>
 
+    <div v-if="groupBy === 'board' && pipeline && (pipeline.count || pipeline.ignoring)" class="mx-4 mt-1 text-xs text-gray-500">
+        <Link
+            :href="route(route().current() as string, { ...route().params, ignore_pipeline: pipeline.ignoring ? undefined : 1 })"
+            preserve-scroll
+            class="hover:text-indigo-600">
+            <template v-if="pipeline.ignoring">{{ ctrans("Ignoring stock waiting to be booked in") }} · {{ ctrans("show") }}</template>
+            <template v-else>{{ pipeline.count }} {{ ctrans("backlog lines are covered by stock waiting to be booked in") }} · {{ ctrans("ignore") }}</template>
+        </Link>
+    </div>
+
     <div v-if="groupBy === 'board' && groups" class="mx-4 mt-3 flex gap-3">
         <template v-for="(lane, laneIndex) in filteredGroups" :key="lane.label">
         <div
@@ -758,6 +784,16 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             class="rounded bg-gray-100 px-1 font-normal text-gray-500 dark:bg-gray-800"
                             :title="ctrans('Under a batch of :batch units, waiting for another order to ride with', { batch: item.batch_size ?? 0 })">
                             {{ ctrans("hitchhiking") }}
+                        </span>
+                        <span
+                            v-if="item.pipeline"
+                            class="rounded px-1 font-normal"
+                            :class="item.pipeline.pending_booking ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-700'"
+                            :title="ctrans('Surplus from :job_orders covers this line', { job_orders: item.pipeline.job_orders.join(', ') })">
+                            <template v-if="item.pipeline.pending_booking">{{ ctrans("Pending booking") }}: {{ useLocaleStore().number(item.pipeline.pending_booking) }}</template>
+                            <template v-if="item.pipeline.pending_booking && item.pipeline.in_production"> · </template>
+                            <template v-if="item.pipeline.in_production">{{ ctrans("In production") }}: {{ useLocaleStore().number(item.pipeline.in_production) }}</template>
+                            {{ ctrans("SKO") }}
                         </span>
                         <span class="ml-auto flex items-center gap-1 tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
                             ×{{ useLocaleStore().number(Number(item.quantity)) }} {{ ctrans("SKO") }}

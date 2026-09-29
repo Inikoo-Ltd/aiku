@@ -77,7 +77,7 @@ class EditSupplier extends OrgAction
                 ],
 
                 'formData'    => [
-                    'blueprint' => $this->supplierEditSections($supplier),
+                    'blueprint' => [...$this->supplierEditSections($supplier), $this->supplierAgentSection($supplier)],
                     'args' => [
                         'updateRoute' => [
                             'name'      => 'grp.models.supplier.update',

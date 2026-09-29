@@ -16,7 +16,7 @@
     library.add(faInfoCircle);
 
     const goNext = inject("goNext");
-    const closeCreateEbayModal = inject("closeCreateEbayModal");
+    const cancelCreateEbayModal = inject("cancelCreateEbayModal");
 
     const form = useForm({
         profileName: ""
@@ -46,7 +46,7 @@
         <hr class="w-full border-t" />
 
         <div class="flex md:justify-end gap-4">
-            <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
+            <Button type="secondary" size="sm" @click="cancelCreateEbayModal">{{ trans("Cancel") }}</Button>
             <Button size="sm" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
     </form>
