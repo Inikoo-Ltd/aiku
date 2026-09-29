@@ -286,10 +286,7 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
                 } elseif ($log) {
                     UpdatePlatformPortfolioLog::dispatch($log, $listingStatus === self::ACTIVE_STATUS
                         ? ['status' => PlatformPortfolioLogsStatusEnum::OK]
-                        : [
-                            'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                            'response' => 'Stock sent, but this product is '.Str::lower((string)$listingStatus).' in your Shopify store, so it is not for sale there'
-                        ]);
+                        : ['status' => PlatformPortfolioLogsStatusEnum::OK, 'response' => 'Stock sent, but this product is '.Str::lower((string)$listingStatus).' in your Shopify store, so it is not for sale there']);
                 }
             }
         }

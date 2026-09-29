@@ -1814,7 +1814,7 @@ test('the stock push still sends stock to an archived listing and logs that it i
         ->and($deleted->refresh()->platform_status)->toBeTrue()
         ->and($archived->last_stock_value)->toBe(10)
         ->and($responses[$active->id])->toBe([PlatformPortfolioLogsStatusEnum::OK, null])
-        ->and($responses[$archived->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'Stock sent, but this product is archived in your Shopify store, so it is not for sale there'])
+        ->and($responses[$archived->id])->toBe([PlatformPortfolioLogsStatusEnum::OK, 'Stock sent, but this product is archived in your Shopify store, so it is not for sale there'])
         ->and($responses[$deleted->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'This product is no longer in your Shopify store']);
 });
 
