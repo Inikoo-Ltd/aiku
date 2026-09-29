@@ -25,6 +25,21 @@ Ich odhadovaný **Next order** je dátum poslednej faktúry plus tento zvyčajn�
 
 Zákazník je **due to reorder** (na dokúpenie), keď tento dátum pripadá na najbližších 7 dní, alebo už uplynul, ale o menej než jeden ich zvyčajný odstup. Zákazník, ktorému uplynulo viac, sa skôr vzďaľuje, než že by bol na dokúpenie. Zákazník, ktorý už má podanú objednávku na ceste skladom, sa už dokúpil, takže na dokúpenie nie je. Filter **Due to Reorder** v zozname zákazníkov zobrazí tých na dokúpenie, zoradenie podľa **Next order** ukáže, kto je na rade prvý, a ten istý filter môžete použiť aj na výber príjemcov mailshotu.
 
+## Pripomienkové e-maily na dokúpenie
+
+Obchod môže zákazníkom automaticky posielať e-mail aj vtedy, keď sú na dokúpenie. V sekcii **Comms** obchodu otvorte **Push** a potom outbox **Due to reorder reminder**. Tam e-mail navrhnite a nastavte ho ako aktívny. Odosiela sa raz denne, popoludní.
+
+V e-maile **[Products]** zobrazuje až päť vlastných opakovane kupovaných produktov zákazníka, tých, ktoré má na dokúpenie ako prvé. Každý má obrázok, odkaz na svoju stránku na webe, množstvo, ktoré zákazník zvyčajne objednáva, a cenu. **[Last Invoice Date]** je dátum jeho poslednej faktúry. **Days before the expected next order** určuje, o koľko skôr sa e-mail odošle. Ak sa ponechá prázdne, odošle sa 7 dní pred odhadovaným **Next order** zákazníka.
+
+Aby sa tomu istému zákazníkovi neposielalo viacero podobných e-mailov:
+
+- Zákazník dostane tento e-mail len raz medzi dvoma svojimi faktúrami. Keď si znova objedná a je mu vystavená faktúra, ďalšia pripomienka počká, kým opäť nebude na dokúpenie.
+- Zákazník, ktorý už má objednávku na ceste skladom, nie je na dokúpenie, takže sa mu e-mail neposiela.
+- E-maily **Gold reward reminder** sa zákazníkom posielajú tiež po ich poslednej objednávke. Zákazník, ktorý dostal jeden z nich za posledných 7 dní, alebo má jeden naplánovaný na najbližších 7 dní, sa zatiaľ preskočí. Ak si ani po skončení Gold reward reminderov znova neobjedná, dostane vtedy pripomienku na dokúpenie.
+- Zákazníkom, ktorí sa z e-mailu odhlásia, alebo ktorým je vypnutý odber **Reorder Reminders** v **Subscriptions** na ich **Overview**, sa už znova neposiela. Zákazníci si ho môžu vypnúť aj sami vo svojom účte na webe.
+
+Outbox zobrazuje každý beh — koľko e-mailov bolo odoslaných, otvorených a preklikaných. Objednávky zadané po tom, čo zákazník klikne na odkaz v e-maile, sa v marketingových reportoch pripíšu tomuto e-mailu.
+
 ## Pridanie zákazníka
 
 Stlačte **Create Customer** v zozname. Formulár je krátky a nachádza sa v jednej sekcii, **Contact**:

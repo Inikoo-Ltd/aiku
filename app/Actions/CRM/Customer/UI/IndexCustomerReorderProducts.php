@@ -19,6 +19,7 @@ use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -44,26 +45,8 @@ class IndexCustomerReorderProducts extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $purchaseDays = DB::table('invoice_transactions')
-            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
-            ->where('invoice_transactions.customer_id', $parent->id)
-            ->where('invoice_transactions.model_type', 'Product')
-            ->where('invoice_transactions.quantity', '>', 0)
-            ->whereNull('invoice_transactions.deleted_at')
-            ->where('invoices.type', InvoiceTypeEnum::INVOICE->value)
-            ->whereNull('invoices.deleted_at')
-            ->selectRaw('invoice_transactions.model_id as product_id, invoice_transactions.date::date as ordered_on, sum(invoice_transactions.quantity) as quantity')
-            ->groupByRaw('1, 2');
-
-        $reorders = DB::query()
-            ->fromSub($purchaseDays, 'purchase_days')
-            ->selectRaw('product_id, count(*) as times_ordered, max(ordered_on) as last_ordered_on, avg(quantity) as average_quantity')
-            ->selectRaw('round((max(ordered_on) - min(ordered_on))::numeric / (count(*) - 1)) as average_days_between')
-            ->groupBy('product_id')
-            ->havingRaw('count(*) >= 2');
-
         return QueryBuilder::for(Product::class)
-            ->joinSub($reorders, 'reorders', 'reorders.product_id', '=', 'products.id')
+            ->joinSub(self::reordersQuery($parent->id), 'reorders', 'reorders.product_id', '=', 'products.id')
             ->select([
                 'products.id',
                 'products.slug',
@@ -76,12 +59,35 @@ class IndexCustomerReorderProducts extends OrgAction
                 'reorders.average_days_between',
             ])
             ->selectRaw('reorders.last_ordered_on + reorders.average_days_between::int as next_order_on')
-            ->selectRaw('reorders.last_ordered_on + reorders.average_days_between::int between current_date - reorders.average_days_between::int and current_date + '.FilterDueToReorder::DAYS_AHEAD.' as is_due')
+            ->selectRaw(self::IS_DUE_SQL.' as is_due')
             ->defaultSort('-times_ordered')
             ->allowedSorts(['code', 'name', 'times_ordered', 'last_ordered_on', 'average_days_between', 'next_order_on'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    public const string IS_DUE_SQL = 'reorders.last_ordered_on + reorders.average_days_between::int between current_date - reorders.average_days_between::int and current_date + '.FilterDueToReorder::DAYS_AHEAD;
+
+    public static function reordersQuery(int $customerId): Builder
+    {
+        $purchaseDays = DB::table('invoice_transactions')
+            ->join('invoices', 'invoices.id', '=', 'invoice_transactions.invoice_id')
+            ->where('invoice_transactions.customer_id', $customerId)
+            ->where('invoice_transactions.model_type', 'Product')
+            ->where('invoice_transactions.quantity', '>', 0)
+            ->whereNull('invoice_transactions.deleted_at')
+            ->where('invoices.type', InvoiceTypeEnum::INVOICE->value)
+            ->whereNull('invoices.deleted_at')
+            ->selectRaw('invoice_transactions.model_id as product_id, invoice_transactions.date::date as ordered_on, sum(invoice_transactions.quantity) as quantity')
+            ->groupByRaw('1, 2');
+
+        return DB::query()
+            ->fromSub($purchaseDays, 'purchase_days')
+            ->selectRaw('product_id, count(*) as times_ordered, max(ordered_on) as last_ordered_on, avg(quantity) as average_quantity')
+            ->selectRaw('round((max(ordered_on) - min(ordered_on))::numeric / (count(*) - 1)) as average_days_between')
+            ->groupBy('product_id')
+            ->havingRaw('count(*) >= 2');
     }
 
     public function tableStructure($prefix = null): Closure

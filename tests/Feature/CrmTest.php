@@ -15,6 +15,9 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\Comms\BackInStockReminder\StoreBackInStockReminder;
 use App\Actions\Comms\Mailshot\StoreMailshot;
+use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
+use App\Actions\Comms\Outbox\DueToReorder\ProcessDueToReorderPerOutbox;
+use App\Actions\Comms\Outbox\DueToReorder\ProcessDueToReorderRecipients;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\Accounting\Invoice\StoreInvoice;
@@ -70,6 +73,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
@@ -2006,4 +2010,63 @@ test('reorder estimates skip refunds and flag customers and products due to reor
     DB::table('orders')->where('id', $order->id)->update(['state' => OrderStateEnum::SUBMITTED->value]);
 
     expect($dueCustomerIds())->not->toContain($customer->id);
+});
+
+test('due to reorder outbox emails a due customer once per order cycle and gives way to gold reward reminders', function () {
+    Queue::fake();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    [, $product] = createProduct($this->shop);
+
+    foreach ([90, 60, 30] as $daysAgo) {
+        $invoice = StoreInvoice::make()->action($customer, array_merge(Invoice::factory()->definition(), ['in_process' => false]));
+        StoreInvoiceTransaction::make()->action($invoice, $product->historicAsset, [
+            'date'            => now()->subDays($daysAgo),
+            'tax_category_id' => $invoice->tax_category_id,
+            'quantity'        => 2,
+            'gross_amount'    => 10,
+            'net_amount'      => 10,
+        ]);
+        DB::table('invoices')->where('id', $invoice->id)->update(['created_at' => now()->subDays($daysAgo)]);
+    }
+    CustomerHydrateClv::run($customer->id);
+    DB::table('customers')->where('id', $customer->id)->update(['last_invoiced_at' => now()->subDays(30)]);
+
+    $outbox = Outbox::where('shop_id', $this->shop->id)->where('code', OutboxCodeEnum::DUE_TO_REORDER)->firstOrFail();
+    $outbox->update(['state' => OutboxStateEnum::ACTIVE]);
+    $goldRewardReminder = Outbox::where('shop_id', $this->shop->id)->where('code', OutboxCodeEnum::GOLD_REWARD_REMINDER_1)->firstOrFail();
+    $goldRewardReminder->update(['state' => OutboxStateEnum::ACTIVE, 'days_after' => 33]);
+
+    $isRecipient = fn () => ProcessDueToReorderPerOutbox::make()->recipientsQuery($outbox->fresh())->pluck('customers.id')->contains($customer->id);
+    $emailsSent  = fn () => $customer->dispatchedEmails()->where('outbox_id', $outbox->id)->count();
+
+    expect($isRecipient())->toBeFalse();
+
+    $goldRewardReminder->update(['days_after' => 20]);
+    $goldRewardEmail = StoreDispatchedEmail::run($goldRewardReminder->emailOngoingRun, $customer, ['email_address' => $customer->email]);
+
+    expect($isRecipient())->toBeFalse();
+
+    DB::table('dispatched_emails')->where('id', $goldRewardEmail->id)->update(['created_at' => now()->subDays(ProcessDueToReorderPerOutbox::QUIET_DAYS + 1)]);
+
+    expect($isRecipient())->toBeTrue();
+
+    ProcessDueToReorderPerOutbox::run($outbox);
+    Queue::assertPushed(JobDecorator::class, fn ($job) => $job->displayName() === ProcessDueToReorderRecipients::class);
+
+    $emailBulkRunId = $outbox->emailBulkRuns()->latest('id')->value('id');
+    ProcessDueToReorderRecipients::run($emailBulkRunId, [$customer->id]);
+    ProcessDueToReorderRecipients::run($emailBulkRunId, [$customer->id]);
+
+    expect($emailsSent())->toBe(1)
+        ->and($isRecipient())->toBeFalse();
+
+    DB::table('customers')->where('id', $customer->id)->update(['last_invoiced_at' => now()->addMinute()]);
+
+    expect($isRecipient())->toBeTrue();
+
+    get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $this->shop->slug, $customer->slug, 'tab' => 'showcase']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('showcase.customer.email_subscriptions.subscriptions.reorder_reminder.field', 'is_subscribed_to_reorder_reminder')
+            ->etc());
 });

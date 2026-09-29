@@ -97,7 +97,7 @@ class UnsubscribeMailshot
                         OutboxCodeEnum::BASKET_LOW_STOCK => [
                             'is_subscribed_to_basket_low_stock' => false,
                         ],
-                        OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD => [
+                        OutboxCodeEnum::REORDER_REMINDER, OutboxCodeEnum::REORDER_REMINDER_2ND, OutboxCodeEnum::REORDER_REMINDER_3RD, OutboxCodeEnum::DUE_TO_REORDER => [
                             'is_subscribed_to_reorder_reminder' => false,
                         ],
                         OutboxCodeEnum::GOLD_REWARD_REMINDER_1, OutboxCodeEnum::GOLD_REWARD_REMINDER_2, OutboxCodeEnum::GOLD_REWARD_REMINDER_3 => [

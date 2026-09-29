@@ -25,6 +25,21 @@ Their estimated **Next order** is the date of their last invoice plus that usual
 
 A customer is **due to reorder** when that date falls in the next 7 days, or has passed by less than one of their usual gaps. A customer who is later than that is slipping away rather than due. A customer with an order already submitted and on its way through the warehouse has reordered, so they are not due. Add the **Due to Reorder** filter on the customer list to see them, sort by **Next order** to see who is first, or use the same filter to choose the recipients of a mailshot.
 
+## Reorder reminder emails
+
+A shop can also email customers automatically when they are due to reorder. In the shop's **Comms** section open **Push** and then the **Due to reorder reminder** outbox. Design the email there and set it to active. It goes out once a day, in the afternoon.
+
+In the email, **[Products]** shows up to five of the customer's own repeat products, the ones they are due to reorder first. Each has a picture, a link to its page on the website, the quantity they usually order and the price. **[Last Invoice Date]** is the date of their last invoice. **Days before the expected next order** sets how early the email is sent. Left empty, it is sent 7 days before the customer's estimated **Next order**.
+
+To avoid sending the same customer several similar emails:
+
+- A customer gets this email only once between two of their invoices. When they order again and are invoiced, the next reminder waits until they are due again.
+- A customer with an order already on its way through the warehouse is not due, so they are not emailed.
+- The **Gold reward reminder** emails also go to customers after their last order. A customer who got one of them in the last 7 days, or is due one in the next 7 days, is skipped for now. If they still have not reordered once the Gold reward reminders are over, they get the reorder reminder then.
+- Customers who unsubscribe from the email, or whose **Reorder Reminders** subscription is switched off in **Subscriptions** on their **Overview**, are not sent it again. Customers can switch it off themselves in their account on the website too.
+
+The outbox shows every run, with the emails sent, opened and clicked. Orders placed after a customer clicks a link in the email are credited to it in the marketing reports.
+
 ## Adding a customer
 
 Press **Create Customer** on the list. The form is short and sits under one section, **Contact**:

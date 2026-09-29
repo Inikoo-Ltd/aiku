@@ -61,6 +61,12 @@ class CustomerResource extends JsonResource
                 'is_subscribed'   => $comms->is_subscribed_to_whatsapp_newsletter,
                 'unsubscribed_at' => $comms->whatsapp_newsletter_unsubscribed_at
             ];
+            $subscriptions['reorder_reminder'] = [
+                'label'           => __('Reorder Reminders'),
+                'field'           => 'is_subscribed_to_reorder_reminder',
+                'is_subscribed'   => $comms->is_subscribed_to_reorder_reminder,
+                'unsubscribed_at' => $comms->reorder_reminder_unsubscribed_at
+            ];
         }
         if ($shop?->type == ShopTypeEnum::DROPSHIPPING) {
             $subscriptions['price_change_notification'] = [

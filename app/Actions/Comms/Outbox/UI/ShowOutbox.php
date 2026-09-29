@@ -137,6 +137,7 @@ class ShowOutbox extends OrgAction
             OutboxCodeEnum::GOLD_REWARD_REMINDER_1,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_2,
             OutboxCodeEnum::GOLD_REWARD_REMINDER_3,
+            OutboxCodeEnum::DUE_TO_REORDER,
             OutboxCodeEnum::PRICE_CHANGE,
             OutboxCodeEnum::PROSPECT_CONVERTION_1,
             OutboxCodeEnum::PROSPECT_CONVERTION_2,

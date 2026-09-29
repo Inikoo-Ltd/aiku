@@ -25,6 +25,21 @@ Su **Next order** estimado es la fecha de su última factura más ese intervalo 
 
 Un cliente está **pendiente de reponer** cuando esa fecha cae dentro de los próximos 7 días, o ya ha pasado por menos de uno de sus intervalos habituales. Un cliente que se ha retrasado más que eso se está alejando, no está pendiente de reponer. Un cliente con un pedido ya enviado y en camino por el almacén ya ha repuesto, así que no está pendiente. Añade el filtro **Due to Reorder** en la lista de clientes para verlos, ordena por **Next order** para ver quién es el primero, o usa el mismo filtro para elegir los destinatarios de un mailshot.
 
+## Correos de recordatorio de reposición
+
+Una tienda también puede enviar automáticamente un correo a los clientes cuando están pendientes de reponer. En la sección **Comms** de la tienda, abre **Push** y luego el outbox **Due to reorder reminder**. Diseña el correo ahí y actívalo. Se envía una vez al día, por la tarde.
+
+En el correo, **[Products]** muestra hasta cinco de los propios productos recurrentes del cliente, los que está pendiente de reponer antes. Cada uno tiene una imagen, un enlace a su página en la web, la cantidad que suele pedir y el precio. **[Last Invoice Date]** es la fecha de su última factura. **Days before the expected next order** determina con cuánta antelación se envía el correo. Si se deja vacío, se envía 7 días antes del **Next order** estimado del cliente.
+
+Para evitar enviar al mismo cliente varios correos parecidos:
+
+- Un cliente recibe este correo solo una vez entre dos de sus facturas. Cuando vuelve a pedir y se le factura, el siguiente recordatorio espera hasta que vuelva a estar pendiente.
+- Un cliente con un pedido ya en camino por el almacén no está pendiente, así que no se le envía.
+- Los correos de **Gold reward reminder** también se envían a los clientes después de su último pedido. Un cliente que ha recibido uno de ellos en los últimos 7 días, o que tiene uno pendiente en los próximos 7 días, se omite por ahora. Si sigue sin haber repuesto cuando terminan los Gold reward reminders, entonces recibe el recordatorio de reposición.
+- Los clientes que se dan de baja del correo, o cuya suscripción **Reorder Reminders** está desactivada en **Subscriptions** dentro de su **Overview**, no lo vuelven a recibir. Los clientes también pueden desactivarla ellos mismos en su cuenta en la web.
+
+El outbox muestra cada envío, con los correos enviados, abiertos y clicados. Los pedidos realizados después de que un cliente haga clic en un enlace del correo se atribuyen a él en los informes de marketing.
+
 ## Añadir un cliente
 
 Pulsa **Create Customer** en la lista. El formulario es breve y va en una sola sección, **Contact**:

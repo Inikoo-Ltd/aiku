@@ -32,12 +32,17 @@ class FilterDueToReorder
             return $query;
         }
 
+        return $this->whereDue($query);
+    }
+
+    public function whereDue(Builder $query, int $daysAhead = self::DAYS_AHEAD): Builder
+    {
         return $query
-            ->whereExists(function (Builder $query) {
+            ->whereExists(function (Builder $query) use ($daysAhead) {
                 $query->select(DB::raw(1))
                     ->from('customer_stats')
                     ->whereColumn('customer_stats.customer_id', 'customers.id')
-                    ->where('customer_stats.expected_date_of_next_order', '<=', now()->addDays(self::DAYS_AHEAD))
+                    ->where('customer_stats.expected_date_of_next_order', '<=', now()->addDays($daysAhead))
                     ->whereRaw("customer_stats.expected_date_of_next_order >= now() - customer_stats.average_time_between_orders * interval '1 day'");
             })
             ->whereNotExists(function (Builder $query) {
