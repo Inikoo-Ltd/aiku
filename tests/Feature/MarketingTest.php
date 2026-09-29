@@ -2117,10 +2117,12 @@ describe('traffic source costs', function () {
         ]);
 
         $testRequest = \Illuminate\Http\Request::create('/'.$this->organisation->slug.'/'.$this->shop->slug.'/'.$campaign->slug);
+        $adminUser   = createAdminGuest($this->organisation->group)->getUser();
         $route = (new Route('GET', '/{organisation}/{shop}/{trafficSourceCampaign}', []))->name('test.traffic_sources.show');
         $route->bind($testRequest);
         $testRequest->setRouteResolver(fn () => $route);
         $actionRequest = \Lorisleiva\Actions\ActionRequest::createFrom($testRequest);
+        request()->setUserResolver(fn () => $adminUser);
 
         $action          = ShowGoogleAdsCampaign::make();
         $model           = $action->asController($this->organisation, $this->shop, $campaign, $actionRequest);

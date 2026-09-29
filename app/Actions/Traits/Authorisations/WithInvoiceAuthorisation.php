@@ -56,7 +56,9 @@ trait WithInvoiceAuthorisation
         }
 
         if ($level === 'view') {
-            $permissions[] = "dispatching.$invoice->organisation_id.view";
+            foreach ($invoice->organisation->warehouses()->pluck('id') as $warehouseId) {
+                $permissions[] = "dispatching.$warehouseId.view";
+            }
             if ($buyerOrganisationId = $invoice->customer?->as_organisation_id) {
                 $permissions[] = "procurement.$buyerOrganisationId.view";
             }
