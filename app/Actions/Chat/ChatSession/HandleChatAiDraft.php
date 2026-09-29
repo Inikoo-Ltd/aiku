@@ -63,7 +63,7 @@ class HandleChatAiDraft
             'text'        => $draft->text,
             'topic'       => $draft->topic->value,
             'topic_label' => $draft->topic->label(),
-        ] : null]);
+        ] : null, 'hint' => ClassifyChatTurn::currentHint($chatSession)]);
     }
 
     private function decide(ChatAiDraft $chatAiDraft, callable $change): JsonResponse

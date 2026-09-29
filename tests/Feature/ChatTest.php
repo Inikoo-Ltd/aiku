@@ -5936,6 +5936,29 @@ test('a request to cancel or change the delivery address goes first in the queue
         ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($urgent->refresh()))->toBeNull();
 });
 
+test('with jev the urgent flag and the dropshipping queue come from the cascade, and no chat model is asked', function () {
+    \Illuminate\Support\Facades\Http::fake();
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->never();
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(fn (array $state, array $questions) => isset($questions['request']) ? [
+            'request' => ['type' => 'choice', 'choice' => 'cancel_order', 'probabilities' => ['cancel_order' => 0.93, 'none' => 0.07]],
+            'ds_kind' => ['type' => 'choice', 'choice' => 'documents', 'probabilities' => ['documents' => 0.9]],
+        ] : null);
+
+        $cancel = noiseTestEmailSession($this->shop->fresh(), 'jev-cancel@example.com', 'Order 1234', 'Tem como cancelar uma encomenda feita HOJE ?');
+
+        expect(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($cancel))->toBe('cancel_order')
+            ->and(\App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($cancel->refresh()))->toBe('cancel_order')
+            ->and(data_get($cancel->metadata, 'ds_kind'))->toBe('documents')
+            ->and(data_get($cancel->metadata, 'ai_turn.urgent'))->toBe('cancel_order');
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
 test('a dropshipping conversation is labelled integration or documents from the same check, and can be listed by that kind', function () {
     \Illuminate\Support\Facades\Http::fake();
 
@@ -6182,7 +6205,7 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
-    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->andReturn(['choice' => 'closing', 'probabilities' => ['closing' => 0.97]]);
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
 
     $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Order', 'Perfect, thank you!'), function (ChatSession $session) {
         $session->update(['last_agent_message_at' => now()->subHour()]);
@@ -6221,16 +6244,20 @@ test('a new email after a closed thanks is judged on its own, and jev must be su
     \Illuminate\Support\Facades\Http::fake();
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \Illuminate\Support\Facades\Queue::fake();
-    $modelFooledByOldThanks = true;
-    $jevSays                = ['choice' => 'closing', 'probabilities' => ['closing' => 0.99]];
-    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function (string $prompt) use (&$modelFooledByOldThanks) {
-        return !$modelFooledByOldThanks || str_contains($prompt, 'Thanks for sharing the return label')
-            ? '{"request": "none", "only_thanks": true}'
-            : '{"request": "none", "only_thanks": false}';
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    $jevSays = ['choice' => 'asking', 'probabilities' => ['asking' => 0.64, 'pending' => 0.3, 'closing' => 0.06]];
+    $jevRead = [];
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(function (array $state) use (&$jevSays, &$jevRead) {
+        $jevRead[] = $state['customer_wrote'];
+
+        return $jevSays ? ['act' => ['type' => 'choice'] + $jevSays] : null;
     });
-    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->andReturnUsing(function () use (&$jevSays) {
-        return $jevSays;
-    });
+    $judge = function (ChatSession $session) {
+        \Illuminate\Support\Facades\Cache::flush();
+        \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
+
+        return \App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh());
+    };
 
     $refund  = 'Can you please refund the full cost of the order to my AW wallet. Please let me know once the credit has been posted.';
     $session = noiseTestEmailSession($this->shop, 'root@example.com', 'Re: AWD191595', 'Thanks for sharing the return label.');
@@ -6238,21 +6265,14 @@ test('a new email after a closed thanks is judged on its own, and jev must be su
     $session->messages()->create(['message_text' => 'Chat session has been closed by agent', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::SYSTEM]);
     $session->messages()->create(['message_text' => $refund, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST]);
 
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
-    expect(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh()))->toBeNull();
-
-    $modelFooledByOldThanks = false;
-    $jevSays                = ['choice' => 'asking', 'probabilities' => ['asking' => 0.64, 'pending' => 0.3, 'closing' => 0.06]];
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
-    expect(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh()))->toBeNull();
+    expect($judge($session))->toBeNull()
+        ->and($jevRead[0])->toBe($refund);
 
     $jevSays = null;
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
-    expect(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh()))->toBeNull();
+    expect($judge($session))->toBeNull();
 
     $jevSays = ['choice' => 'closing', 'probabilities' => ['closing' => 0.99]];
-    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
-    expect(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh()))->not->toBeNull();
+    expect($judge($session))->not->toBeNull();
 });
 
 test('a whatsapp thanks after we answered gets a thumbs up and closes, but never a sticker, voice note, location, emoji, question or open promise of ours', function () {
@@ -6260,7 +6280,7 @@ test('a whatsapp thanks after we answered gets a thumbs up and closes, but never
     \Illuminate\Support\Facades\Http::fake();
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
-    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->andReturn(['choice' => 'closing', 'probabilities' => ['closing' => 0.97]]);
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
     \App\Actions\Chat\Whatsapp\SendWhatsappReaction::shouldRun()->once()
         ->withArgs(fn ($message, $agent, $emoji) => $message->message_text === 'Thank you so much!' && $agent === null && $emoji === '👍')
         ->andReturn(['ok' => true]);
@@ -6309,7 +6329,7 @@ test('a website chat thanks gets a thumbs up and closes, but with an agent in th
     config(['chat.close_after_thanks' => true, 'chat.close_after_thanks_minutes' => 2]);
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
-    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->andReturn(['choice' => 'closing', 'probabilities' => ['closing' => 0.97]]);
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturn(['act' => ['type' => 'choice', 'choice' => 'closing', 'probabilities' => ['closing' => 0.97]]]);
 
     $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Chat', 'Great, thanks'), function (ChatSession $session) {
         $session->update(['channel' => ChatChannelEnum::WEBSITE, 'last_agent_message_at' => now()->subMinute()]);
@@ -7089,6 +7109,26 @@ test('a question about an order gets a draft written from that customer\'s order
     \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $mine);
 
     expect($second->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED);
+
+    // An agent who copies the draft word for word without pressing Use still sent it as written.
+    $session->update(['last_agent_message_at' => now()]);
+    $this->travel(1)->minutes();
+    $ask($session, 'Sorry, where is my order again?');
+    $copied = \App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session);
+    $pasted = $ask($session, $copied->text, ChatSenderTypeEnum::AGENT);
+    $pasted->update(['sender_id' => $agent->id]);
+    \App\Actions\Chat\ChatSession\SettleChatAiDraft::run($session, $pasted);
+
+    expect($copied->refresh()->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED);
+
+    // Answering a question we asked them ("yes", "please") gets no draft: what they want is in our question.
+    $this->travel(1)->minutes();
+    $ourQuestion = $ask($session, 'Do you mean the orders still with us?', ChatSenderTypeEnum::AGENT);
+    $ourQuestion->update(['sender_id' => $agent->id]);
+    $session->update(['last_agent_message_at' => now()]);
+    $ask($session, 'yes please');
+    expect(\App\Actions\Chat\ChatSession\DraftChatReply::make()->handle($session))->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\DraftChatReply::answersOurQuestion('Do you mean the orders still with us?', 'yes, where is it?'))->toBeFalse();
 
     // When the facts do not answer the question the model says so, and there is no draft.
     $modelAnswer = ['answerable' => false];
@@ -10362,6 +10402,78 @@ test('gmail spam from customers who bought, replies and genuine strangers comes 
 
     expect($asked['questions']['kind']['criteria'])->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::definitions())
         ->and($asked['questions']['scam_form']['criteria'])->toBe(\App\Enums\CRM\Livechat\ChatSpamRescueKindEnum::scamForms());
+});
+
+test('jev works out what the customer wants in rounds, and only a clear single question can be drafted', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+
+    $noul   = fn (float $p) => ['type' => 'noul', 'noul' => $p];
+    $choice = fn (string $picked, float $p) => ['type' => 'choice', 'choice' => $picked, 'probabilities' => [$picked => $p]];
+    $clear  = ['wants_something' => $noul(0.97), 'answers_us' => $noul(0.05), 'about_existing_order' => $noul(0.1), 'problem' => $noul(0.05), 'one_question' => $noul(0.9), 'still_waiting' => $noul(0.02)];
+
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::sequence()
+            ->push(['answers' => $clear + ['subject' => $choice('stock', 0.95)]])
+            ->push(['answers' => ['stock_ask' => $choice('when_back', 0.9), 'names_product_code' => $noul(0.96)]])
+            ->push(['answers' => $clear + ['subject' => $choice('stock', 0.95)]])
+            ->push(['answers' => ['stock_ask' => $choice('bulk', 0.8), 'names_product_code' => $noul(0.96)]])
+            ->push(['answers' => array_merge($clear, ['problem' => $noul(0.9), 'about_existing_order' => $noul(0.9), 'subject' => $choice('order', 0.9)])])
+            ->push(['answers' => ['problem_kind' => $choice('damaged', 0.9), 'names_order' => $noul(0.2)]])
+            ->push([], 500),
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'    => (string) Str::ulid(),
+        'status'  => ChatSessionStatusEnum::WAITING,
+        'channel' => ChatChannelEnum::WEBSITE,
+        'shop_id' => $this->shop->id,
+    ]);
+    $classify = fn (string $text) => \App\Actions\Chat\ChatSession\ClassifyChatTurn::run($session, $text, '(nothing yet)');
+
+    $whenBack = $classify('When is NSBag-09 back in stock?');
+    expect($whenBack['branch'])->toBe('stock')
+        ->and($whenBack['topic'])->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::STOCK_AVAILABILITY)
+        ->and($session->refresh()->metadata['ai_turn']['answers']['stock_ask'])->toBe(['choice' => 'when_back', 'probability' => 0.9]);
+
+    expect($classify('Can you get me 400 red FPGB-12?')['topic'])->toBeNull();
+
+    $damaged = $classify('Two candles arrived broken');
+    expect($damaged['branch'])->toBe('problem')
+        ->and($damaged['topic'])->toBeNull()
+        ->and($session->refresh()->metadata['ai_turn']['answers']['problem_kind']['choice'])->toBe('damaged');
+
+    expect($classify('Anything'))->toBeNull();
+
+    $guides = ['connecting-woocommerce' => ['title' => 'Connecting WooCommerce', 'summary' => 'Install the plugin and connect.', 'url' => 'https://shop.test/docs/connecting-woocommerce']];
+    $asked  = \App\Actions\Chat\ChatSession\ClassifyChatTurn::secondRound('integration', $guides);
+    expect($asked['guide']['criteria'])->toBe(['connecting-woocommerce' => 'Connecting WooCommerce: Install the plugin and connect.', 'none' => 'None of these guides answers it'])
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::secondRound('integration'))->toBe([]);
+
+    $integration = $clear + ['subject' => $choice('integration', 0.95)];
+    $howTo       = fn (float $howTo, string $guide, float $p) => \App\Actions\Chat\ChatSession\ClassifyChatTurn::topic('integration', $integration + ['how_to' => $noul($howTo), 'guide' => $choice($guide, $p)]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::branch($integration))->toBe('integration')
+        ->and($howTo(0.95, 'connecting-woocommerce', 0.9))->toBe(\App\Enums\CRM\Livechat\ChatTopicEnum::DROPSHIPPING_INTEGRATION)
+        ->and($howTo(0.05, 'connecting-woocommerce', 0.98))->toBeNull()
+        ->and($howTo(0.95, 'none', 0.9))->toBeNull()
+        ->and($howTo(0.95, 'connecting-woocommerce', 0.5))->toBeNull();
+
+    expect($damaged['claim'])->toBeTrue()
+        ->and($whenBack['claim'])->toBeFalse()
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.45, 'change_address' => 0.1]]]))->toBe('cancel_order')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.02, 'change_address' => 0.92]]]))->toBe('change_address')
+        ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::urgent(['request' => ['probabilities' => ['cancel_order' => 0.2, 'none' => 0.8]]]))->toBeNull();
+
+    $hint = ['title' => 'Connecting WooCommerce', 'summary' => 'Install the plugin.', 'url' => 'https://shop.test/docs/connecting-woocommerce', 'probability' => 0.93];
+    $session->update(['metadata' => ['ai_turn' => ['at' => now()->toISOString(), 'hint' => $hint]], 'last_agent_message_at' => now()->subMinute()]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::currentHint($session->refresh()))->toBe($hint);
+    $session->update(['last_agent_message_at' => now()->addMinute()]);
+    expect(\App\Actions\Chat\ChatSession\ClassifyChatTurn::currentHint($session->refresh()))->toBeNull();
+
+    $firstRound = \Illuminate\Support\Facades\Http::recorded()->first()[0]->data();
+    expect(array_keys($firstRound['questions']))->toContain('wants_something', 'subject')
+        ->and($firstRound['state']['customer_wrote'])->toBe('When is NSBag-09 back in stock?');
+
+    $session->forceDelete();
 });
 
 test('jev answers yes/no, choice and score questions through openrouter, and nothing without a key', function () {

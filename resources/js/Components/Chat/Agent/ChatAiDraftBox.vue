@@ -8,7 +8,7 @@
 import { ref, watch, onBeforeUnmount } from "vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faRobot } from "@fal"
+import { faRobot, faBookOpen } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
@@ -25,13 +25,22 @@ interface Draft {
     topic_label: string
 }
 
+interface Hint {
+    title: string
+    summary: string
+    url: string
+    probability: number
+}
+
 const draft = ref<Draft | null>(null)
+const hint = ref<Hint | null>(null)
 const busy = ref(false)
 let channel: any = null
 let channelName: string | null = null
 
 const load = async () => {
     draft.value = null
+    hint.value = null
     if (!props.sessionUlid || props.readOnly) return
 
     try {
@@ -40,8 +49,10 @@ const load = async () => {
             : route("grp.api.chats.sessions.ai_draft.show", [props.sessionUlid])
         const { data } = await axios.get(url)
         draft.value = data?.data ?? null
+        hint.value = data?.hint ?? null
     } catch {
         draft.value = null
+        hint.value = null
     }
 }
 
@@ -90,6 +101,18 @@ onBeforeUnmount(stopListening)
 </script>
 
 <template>
+    <div v-if="draft || hint">
+    <div v-if="hint" class="mb-1.5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-sm">
+        <FontAwesomeIcon :icon="faBookOpen" fixed-width class="text-emerald-700" />
+        <div class="min-w-0 flex-1">
+            <div class="text-xs text-emerald-700">{{ ctrans("Guide that may help") }} · {{ Math.round(hint.probability * 100) }}%</div>
+            <a :href="hint.url" target="_blank" rel="noopener" class="block truncate font-medium text-gray-800 hover:underline" :title="hint.summary">{{ hint.title }}</a>
+        </div>
+        <button type="button" @click="emit('use', `${hint.title}: ${hint.url}`)"
+            class="shrink-0 rounded-md px-3 py-1 text-xs text-emerald-800 ring-1 ring-inset ring-emerald-300 hover:bg-white">
+            {{ ctrans("Insert link") }}
+        </button>
+    </div>
     <div v-if="draft" class="mb-1.5 rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-sm">
         <div class="flex items-center gap-1.5 text-xs text-indigo-700">
             <FontAwesomeIcon :icon="faRobot" fixed-width />
@@ -106,5 +129,6 @@ onBeforeUnmount(stopListening)
                 {{ ctrans("Discard") }}
             </button>
         </div>
+    </div>
     </div>
 </template>

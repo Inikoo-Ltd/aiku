@@ -32,8 +32,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Writes a reply for staff to send, change or throw away, when what the customer asks can be
  * answered from what aiku holds: where their order is, or whether a product is in stock.
  *
- * The facts are looked up by code, never by the model: the customer's own orders with their
- * shipments and tracking, and the products they name by code. The model only puts those facts
+ * Whether to draft at all is decided first by ClassifyChatTurn, Jev's cascade of yes/no and
+ * option questions, and the planning model must agree with it; without Jev the planning model
+ * decides alone. The facts are looked up by code, never by the model: the customer's own
+ * orders with their shipments and tracking, and the products they name by code. The model only puts those facts
  * into words, and says so when they do not answer the question, which leaves no draft rather
  * than a guess. Nothing is sent: a person decides, and what they decide is counted.
  */
@@ -41,7 +43,7 @@ class DraftChatReply implements ShouldBeUnique
 {
     use AsAction;
 
-    private const array DRAFTED_TOPICS = [ChatTopicEnum::ORDER_STATUS, ChatTopicEnum::STOCK_AVAILABILITY, ChatTopicEnum::PRODUCT_QUERY, ChatTopicEnum::OTHER];
+    private const array DRAFTED_TOPICS = [ChatTopicEnum::ORDER_STATUS, ChatTopicEnum::STOCK_AVAILABILITY, ChatTopicEnum::PRODUCT_QUERY, ChatTopicEnum::DROPSHIPPING_INTEGRATION, ChatTopicEnum::OTHER];
 
     public int $jobTimeout = 120;
     public int $jobTries = 1;
@@ -72,20 +74,39 @@ class DraftChatReply implements ShouldBeUnique
             return null;
         }
 
+        $weSaid = $this->lastAgentMessage($chatSession);
+
+        if (self::answersOurQuestion($weSaid, $text)) {
+            return null;
+        }
+
+        $turn = ClassifyChatTurn::forSession($chatSession);
+
+        if ($turn && !$turn['topic']) {
+            return null;
+        }
+
         $customer = $this->customer($chatSession);
         $facts    = array_filter([
             'order_facts'   => $customer ? GetChatOrderFacts::run($customer, $text) : null,
             'product_facts' => GetChatProductFacts::run($shop, $text) ?: null,
         ]);
 
+        if ($turn['guide'] ?? null) {
+            $facts['guide'] = $turn['guide'];
+        }
+
         if (!$facts && trim((string) data_get($shop->settings, 'chat.policies', '')) === '') {
             return null;
         }
 
         $language = self::replyLanguage($chatSession, $trigger, $text);
-        $weSaid   = $this->lastAgentMessage($chatSession);
         $plan     = $this->plan($text, $weSaid, array_keys($facts));
         $asked    = $plan['topic'] ?? null;
+
+        if ($turn && $turn['topic'] !== $asked) {
+            return null;
+        }
 
         foreach ($plan['drawers'] ?? [] as $drawer) {
             $contents = OpenChatFactDrawer::run($drawer, $shop, $customer, $facts);
@@ -150,9 +171,19 @@ class DraftChatReply implements ShouldBeUnique
             ChatTopicEnum::ORDER_STATUS       => $names($facts['order_facts']['order']['reference'] ?? null)
                 || collect($facts['replacements'] ?? [])->contains(fn (array $replacement) => $names($replacement['for_order'] ?? null)),
             ChatTopicEnum::PRODUCT_QUERY      => collect(array_keys($facts['product_details'] ?? []))->contains(fn ($code) => $names((string) $code)),
+            ChatTopicEnum::DROPSHIPPING_INTEGRATION => $names($facts['guide']['url'] ?? null),
             ChatTopicEnum::OTHER              => !empty($facts['shop_policies']) || !empty($facts['subscriptions']),
             default                           => false,
         };
+    }
+
+    /**
+     * We asked them something and they answered without asking anything back ("yes", "please"):
+     * what they want is in what we asked, which the model answers wrongly from the facts alone.
+     */
+    public static function answersOurQuestion(string $weSaid, string $text): bool
+    {
+        return str_ends_with(rtrim($weSaid), '?') && !str_contains($text, '?');
     }
 
     public static function pendingDraft(ChatSession|MetaChatSession $chatSession): ?ChatAiDraft
@@ -226,6 +257,8 @@ class DraftChatReply implements ShouldBeUnique
           many we have, whether more is coming, or an in-stock alternative to one that is out.
         - "product_query" if what they ask now is a product's size, weight, origin or what it
           is, naming the product or its code.
+        - "dropshipping_integration" if what they ask now is how to connect their store or
+          marketplace to us, or how to do something with it, not an error they see.
         - "shop_info" if what they ask now is about the shop itself: minimum order, countries we
           ship to, dispatch or delivery times, opening an account, how to order, samples.
         - "subscription" if what they ask now is to stop receiving our newsletters or marketing,
@@ -235,7 +268,8 @@ class DraftChatReply implements ShouldBeUnique
           tracking numbers do not answer it. Also "other" when something looks wrong to them: an
           order shown unpaid, a charge, an invoice or a status they question.
         - "other" when the writer is not our customer (a courier, carrier, warehouse, supplier
-          or marketplace), when they report missing, damaged or wrong items (the claim checklist
+          or marketplace), when they answer a question we asked them, when they ask us to hurry
+          an order or meet a date, when they report missing, damaged or wrong items (the claim checklist
           handles those), or for anything else, or when they also ask for something else: a
           price, quote or discount, a swap or change to an order, sourcing more than we can have, a website or
           search problem, a complaint, a decision they tell us, thanks, a bare link, an
@@ -252,7 +286,7 @@ class DraftChatReply implements ShouldBeUnique
         $excerpt
 
         Output JSON only, no code fence:
-        {"asks": "order_status/stock_availability/product_query/shop_info/subscription/other", "drawers": []}
+        {"asks": "order_status/stock_availability/product_query/dropshipping_integration/shop_info/subscription/other", "drawers": []}
         EOT;
 
         $response = AskToAi::run($prompt, config('chat.summary_model'));
@@ -356,6 +390,8 @@ class DraftChatReply implements ShouldBeUnique
         - Use only the facts. Never invent or estimate a date, a quantity, a delivery time or a
           reason. If the facts do not answer what they asked: "answerable": false.
         - Copy order numbers, product codes, tracking numbers and tracking links exactly.
+        - Asked how to do something that the "guide" in the facts covers, say in one sentence
+          what the guide explains and give its link exactly. Never explain steps yourself.
         - Write in $language, friendly and short: at most 80 words.
           Greet them by name when a name is given. No signature, no promises, no apology for delays.
         - Say "more is on order" only when the facts say so, never when it will arrive.
@@ -376,7 +412,8 @@ class DraftChatReply implements ShouldBeUnique
         $factsJson
 
         Output JSON only, no code fence. "topic" is exactly "order_status" for an order,
-        "stock_availability" for stock, "product_query" for a product's details, or "other" for
+        "stock_availability" for stock, "product_query" for a product's details,
+        "dropshipping_integration" for a guide, or "other" for
         the shop's own facts in "shop_policies":
         {"question": "what they ask now", "answerable": true, "topic": "stock_availability", "reply": "the reply"}
         EOT;
