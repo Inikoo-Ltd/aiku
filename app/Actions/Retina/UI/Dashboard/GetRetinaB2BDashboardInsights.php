@@ -25,6 +25,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\CRM\Customer;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -102,7 +103,7 @@ class GetRetinaB2BDashboardInsights
         }
 
         [$recommendationsSource, $recommendations] = Cache::remember(
-            "retina_b2b_recommendations:$customer->id",
+            "retina_b2b_recommendations:v2:$customer->id",
             now()->addHours(self::RECOMMENDATIONS_CACHE_HOURS),
             fn () => $this->getRecommendations($customer, $productSales)
         );
@@ -272,11 +273,12 @@ class GetRetinaB2BDashboardInsights
         $etas               = GetProductIncomingStock::make()->earliestEtaByProduct(
             $products->filter(fn (Product $product) => $product->available_quantity <= 0)->keys()->all()
         );
-        $remindedProductIds = $this->getRemindedProductIds($customer, $products->keys()->all());
+        $remindedProductIds          = $this->getRemindedProductIds($customer, $products->keys()->all());
+        $customerExclusiveProductIds = $this->getCustomerExclusiveProductIds($customer);
 
         return $productSales
             ->filter(fn ($sale) => $products->has($sale->product_id))
-            ->map(function ($sale) use ($products, $customer, $basketTransactions, $etas, $remindedProductIds, $today) {
+            ->map(function ($sale) use ($products, $customer, $basketTransactions, $etas, $remindedProductIds, $customerExclusiveProductIds, $today) {
                 /** @var Product $product */
                 $product = $products->get($sale->product_id);
 
@@ -292,7 +294,7 @@ class GetRetinaB2BDashboardInsights
                     'id'                 => $product->id,
                     'code'               => $product->code,
                     'name'               => $product->name,
-                    'image'              => data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original'),
+                    'image'              => $this->slimImage(data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original')),
                     'url'                => $this->productUrl($product->canonical_url),
                     'price'              => (float) $product->price,
                     'unit'               => $product->unit,
@@ -302,7 +304,7 @@ class GetRetinaB2BDashboardInsights
                     'stock_status'       => $this->stockStatus($product, $averageQuantity),
                     'eta'                => isset($etas[$product->id]) ? Carbon::parse($etas[$product->id])->toDateString() : null,
                     'has_reminder'       => $remindedProductIds->has($product->id),
-                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer),
+                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer, $customerExclusiveProductIds),
                     'orders'             => $orders,
                     'quantity'           => (float) $sale->quantity,
                     'spend'              => round((float) $sale->spend, 2),
@@ -361,11 +363,12 @@ class GetRetinaB2BDashboardInsights
             ->get()
             ->keyBy('id');
 
-        $remindedProductIds = $this->getRemindedProductIds($customer, $products->keys()->all());
+        $remindedProductIds          = $this->getRemindedProductIds($customer, $products->keys()->all());
+        $customerExclusiveProductIds = $this->getCustomerExclusiveProductIds($customer);
 
         return $favouriteProductIds
             ->filter(fn ($productId) => $products->has($productId))
-            ->map(function ($productId) use ($products, $customer, $basketTransactions, $remindedProductIds) {
+            ->map(function ($productId) use ($products, $customer, $basketTransactions, $remindedProductIds, $customerExclusiveProductIds) {
                 /** @var Product $product */
                 $product = $products->get($productId);
 
@@ -373,17 +376,25 @@ class GetRetinaB2BDashboardInsights
                     'id'                 => $product->id,
                     'code'               => $product->code,
                     'name'               => $product->name,
-                    'image'              => data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original'),
+                    'image'              => $this->slimImage(data_get($product->web_images, 'main.thumbnail') ?? data_get($product->web_images, 'main.original')),
                     'url'                => $this->productUrl($product->canonical_url),
                     'available_quantity' => (int) $product->available_quantity,
                     'stock_status'       => $this->stockStatus($product, 1),
-                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer),
+                    'is_purchasable'     => $this->isProductPurchasableByCustomer($product, $customer, $customerExclusiveProductIds),
                     'has_reminder'       => $remindedProductIds->has($product->id),
                     'quantity_in_basket' => $basketTransactions[$product->id]['quantity_ordered'] ?? 0,
                 ];
             })
             ->values()
             ->all();
+    }
+
+    private function getCustomerExclusiveProductIds(Customer $customer): Collection
+    {
+        return DB::table('product_has_exclusive_customers')
+            ->where('customer_id', $customer->id)
+            ->pluck('product_id')
+            ->flip();
     }
 
     private function getRemindedProductIds(Customer $customer, array $productIds): Collection
@@ -436,7 +447,7 @@ class GetRetinaB2BDashboardInsights
     private function getRecommendations(Customer $customer, Collection $productSales): array
     {
         if ($productSales->isEmpty()) {
-            return ['shop_best_sellers', IrisProductBasketRecommendationResource::collection($this->getShopBestSellers($customer))->resolve()];
+            return ['shop_best_sellers', $this->slimRecommendations(IrisProductBasketRecommendationResource::collection($this->getShopBestSellers($customer))->resolve())];
         }
 
         $products = GetRetinaProductBasketRecommendations::make()->handle(
@@ -448,7 +459,7 @@ class GetRetinaB2BDashboardInsights
             ]
         );
 
-        return ['bought_together', IrisProductBasketRecommendationResource::collection($products)->resolve()];
+        return ['bought_together', $this->slimRecommendations(IrisProductBasketRecommendationResource::collection($products)->resolve())];
     }
 
     /**
@@ -513,6 +524,24 @@ class GetRetinaB2BDashboardInsights
         $gaps = $days->sliding(2)->map(fn ($pair) => $pair->first()->diffInDays($pair->last()));
 
         return max(1, (int) round($gaps->median()));
+    }
+
+    /**
+     * ponytail: a product image carries ten sizes and formats; the dashboard shows small thumbnails, one of each format is enough.
+     */
+    private function slimImage(?array $image): ?array
+    {
+        return $image ? Arr::only($image, ['avif', 'webp', 'original']) : null;
+    }
+
+    private function slimRecommendations(array $products): array
+    {
+        return array_map(function (array $product) {
+            $product['web_images'] = ['main' => ['gallery' => $this->slimImage(data_get($product, 'web_images.main.gallery') ?? data_get($product, 'web_images.main.thumbnail'))]];
+            unset($product['offers_data'], $product['product_offers_data']);
+
+            return $product;
+        }, $products);
     }
 
     private function productUrl(?string $canonicalUrl): ?string

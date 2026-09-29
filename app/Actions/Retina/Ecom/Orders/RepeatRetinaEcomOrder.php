@@ -8,6 +8,11 @@
 
 namespace App\Actions\Retina\Ecom\Orders;
 
+use App\Actions\Iris\Basket\StoreEcomOrder;
+use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
+use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
+use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\InteractsWithOrderInBasket;
@@ -17,6 +22,7 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -25,6 +31,9 @@ use Lorisleiva\Actions\ActionRequest;
  * A product already in the basket is raised to the old quantity, never added on top, so pressing the
  * button twice does not double the order. Products no longer for sale, or out of stock, are skipped
  * and reported back; a quantity above what is in stock is lowered to the stock.
+ *
+ * New lines are added without recalculating the basket each time and the basket is recalculated once
+ * at the end, all in one database transaction: recalculating per line made a 60 line order take 40s.
  */
 class RepeatRetinaEcomOrder extends RetinaAction
 {
@@ -38,13 +47,23 @@ class RepeatRetinaEcomOrder extends RetinaAction
      */
     public function handle(Customer $customer, Order $order): array
     {
+        return DB::transaction(fn () => $this->repeat($customer, $order));
+    }
+
+    /**
+     * @return array{added: int, skipped: array<int, array{code: string, name: string}>}
+     * @throws \Throwable
+     */
+    private function repeat(Customer $customer, Order $order): array
+    {
         $basket         = $this->getOrderInBasket($customer);
         $basketQuantity = $basket
             ? $basket->transactions()->where('model_type', 'Product')->where('is_gift', false)->pluck('quantity_ordered', 'model_id')
             : collect();
 
-        $added   = 0;
-        $skipped = [];
+        $added    = 0;
+        $skipped  = [];
+        $newLines = [];
 
         $order->transactions()
             ->where('model_type', 'Product')
@@ -52,7 +71,7 @@ class RepeatRetinaEcomOrder extends RetinaAction
             ->with('model')
             ->get()
             ->groupBy('model_id')
-            ->each(function ($lines) use ($customer, $basketQuantity, &$added, &$skipped) {
+            ->each(function ($lines) use ($customer, $basketQuantity, &$added, &$skipped, &$newLines) {
                 /** @var Transaction $line */
                 $line    = $lines->first();
                 $product = $line->model;
@@ -78,10 +97,27 @@ class RepeatRetinaEcomOrder extends RetinaAction
                     return;
                 }
 
-                StoreRetinaEcomBasketTransaction::make()->handle($customer, $product, ['quantity' => $quantity]);
-                $customer->refresh();
+                if ($basketQuantity->has($product->id)) {
+                    StoreRetinaEcomBasketTransaction::make()->handle($customer, $product, ['quantity' => $quantity]);
+                } else {
+                    $newLines[] = [$product, $quantity];
+                }
                 $added++;
             });
+
+        if ($newLines) {
+            $basket ??= StoreEcomOrder::make()->action($customer->refresh());
+            $basket->update(['updated_by_customer_at' => now()]);
+
+            foreach ($newLines as [$product, $quantity]) {
+                StoreTransaction::make()->action($basket, $product->currentHistoricProduct, ['quantity_ordered' => $quantity], strict: false);
+            }
+
+            $basket->refresh();
+            OrderHydrateCategoriesData::run($basket);
+            CalculateOrderTotalAmounts::run($basket);
+            OrderHydrateTransactions::dispatch($basket);
+        }
 
         return [
             'added'   => $added,

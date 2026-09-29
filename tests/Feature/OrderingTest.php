@@ -5021,7 +5021,9 @@ test('ordering a past order again fills the basket once, however many times it i
         ->and($second['added'])->toBe(1)
         ->and($pastOrder->fresh()->state)->toBe(OrderStateEnum::DISPATCHED)
         ->and($basket->id)->not->toBe($pastOrder->id)
-        ->and((float) $line->quantity_ordered)->toEqual(6.0);
+        ->and((float) $line->quantity_ordered)->toEqual(6.0)
+        ->and((float) $line->net_amount)->toBeGreaterThan(0.0)
+        ->and((float) $basket->goods_amount)->toEqual((float) $line->net_amount);
 
     $product->update(['status' => ProductStatusEnum::DISCONTINUED]);
     expect(\App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder)['skipped'])
