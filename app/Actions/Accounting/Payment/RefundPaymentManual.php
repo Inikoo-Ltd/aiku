@@ -56,6 +56,7 @@ class RefundPaymentManual extends OrgAction
         $reference = Arr::get($modelData, 'reference');
 
         return DB::transaction(function () use ($refundAmount, $reference, $payment, $invoice) {
+            RefundPaymentToBalance::ensureRefundIsNotOverPaid($invoice, $refundAmount);
 
             $refundPayment = StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
                 'amount'              => $refundAmount,

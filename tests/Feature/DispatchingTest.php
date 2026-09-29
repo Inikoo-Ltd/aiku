@@ -10,6 +10,13 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
+use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum;
+use App\Models\Accounting\PaymentServiceProvider;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Dispatching\BatchCode\DeleteBatchCode;
@@ -2958,6 +2965,17 @@ test('a claim is refunded to the customer balance in one call, the claimed share
         'quantity'        => (float) $item->quantity_required,
         'gross_amount'    => 60,
         'net_amount'      => 60,
+    ]);
+    $invoice = CalculateInvoiceTotals::run($invoice->refresh());
+    $cashAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CLM'.mt_rand(1000, 9999), 'name' => 'Claim cash account']
+    );
+    PayInvoice::make()->action($invoice, $cashAccount, [
+        'amount' => $invoice->total_amount,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
     ]);
     $balanceBefore = (float) $customer->fresh()->balance;
 

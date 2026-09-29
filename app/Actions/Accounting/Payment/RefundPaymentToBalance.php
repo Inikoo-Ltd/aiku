@@ -15,6 +15,7 @@ use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -62,6 +63,8 @@ class RefundPaymentToBalance extends OrgAction
         }
 
         return DB::transaction(function () use ($refundAmount, $payment, $paymentAccountShop, $invoice) {
+            self::ensureRefundIsNotOverPaid($invoice, $refundAmount);
+
             $refundPayment = StorePayment::make()->action($payment->customer, $paymentAccountShop->paymentAccount, [
                 'amount'              => $refundAmount,
                 'reference'           => 'ref-bal-'.Str::ulid(),
@@ -93,6 +96,22 @@ class RefundPaymentToBalance extends OrgAction
         });
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public static function ensureRefundIsNotOverPaid(?Invoice $invoice, float $amount): void
+    {
+        if ($invoice?->type !== InvoiceTypeEnum::REFUND) {
+            return;
+        }
+
+        $refund    = Invoice::lockForUpdate()->findOrFail($invoice->id);
+        $leftToPay = round(abs((float) $refund->total_amount) - abs((float) $refund->payment_amount), 2);
+
+        if (round(abs($amount), 2) > $leftToPay) {
+            throw ValidationException::withMessages(['amount' => __('The amount is more than is left to pay on this refund')]);
+        }
+    }
 
     public function rules(): array
     {
