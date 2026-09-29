@@ -4671,6 +4671,22 @@ test('a product that is not for sale cannot be added to a basket', function () {
     }
 });
 
+test('products added from a stale customer after the basket was deleted all land in one new basket', function () {
+    $this->customer->update(['current_order_in_basket_id' => null]);
+    $staleCustomer = $this->customer->fresh();
+    [, $bulk] = createProduct($this->shop);
+    [$firstProduct, $secondProduct] = collect([1, 2])->map(fn () => tap(StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    )))->update(['status' => ProductStatusEnum::FOR_SALE]))->all();
+
+    $firstLine  = StoreEcomBasketTransaction::make()->handle($this->customer->fresh(), $firstProduct->fresh(), ['quantity' => 1]);
+    $secondLine = StoreEcomBasketTransaction::make()->handle($staleCustomer, $secondProduct->fresh(), ['quantity' => 1]);
+
+    expect($secondLine->order_id)->toBe($firstLine->order_id)
+        ->and($this->customer->fresh()->current_order_in_basket_id)->toBe($firstLine->order_id);
+});
+
 test('an exclusive product can be added only by its own customer, and only while in stock', function () {
     $owner = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
     $other = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());

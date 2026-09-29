@@ -47,4 +47,19 @@ export interface ProductResource {
 	quantity_ordered: number
 	quantity_ordered_new: number
 	transaction_id: number | null
+	family_id?: number | null
+	price_per_unit?: number
+	currency_code?: string
+	offers_data?: any
+	step_discount?: {
+		label?: string | null
+		steps: {
+			min_quantity: number
+			percentage_off: number
+			percentage_off_label: string
+			price: number
+			price_per_unit: number
+			is_popular?: boolean
+		}[]
+	} | null
 }
