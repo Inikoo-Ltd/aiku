@@ -34,7 +34,7 @@ Gmail niekedy zaradí e-mail skutočného zákazníka do priečinka spam. aiku k
 
 Niekto, kto sa zaregistroval na webe, ale nikdy nenakúpil, sa považuje za kohokoľvek iného, pretože registrovať sa môže ktokoľvek.
 
-E-mail, ktorý sa dostal zo spamu, má hore oranžovú poznámku. Začína tým, za čo ho aiku považoval, napríklad <b>New customer enquiry</b> (nová otázka od zákazníka), <b>Customer request</b> (žiadosť zákazníka) alebo <b>Possible scam</b> (možný podvod), takže ho čítajte s týmto na pamäti.
+E-mail, ktorý sa dostal zo spamu, má hore oranžovú poznámku. Začína tým, za čo ho aiku považoval, napríklad <b>New customer enquiry</b> (nová otázka od zákazníka) alebo <b>Customer request</b> (žiadosť zákazníka), takže ho čítajte s týmto na pamäti. Keď e-mail vyzerá ako bežný podvod - kópia platby na stiahnutie, faktúra alebo objednávka skrytá za odkazom, upozornenie na heslo alebo účet - pridá sa červený štítok <b>Possible scam</b> (možný podvod), aj keď prichádza od zákazníka. S takými zaobchádzajte mimoriadne opatrne: schránku zákazníka mohol niekto prevziať.
 
 Jeho prílohy zostávajú pre vašu bezpečnosť v Gmaile: súbory v spame môžu obsahovať vírusy alebo falošné faktúry. E-mail ukazuje <b>attachment(s) kept in Gmail for safety</b> (prílohy uchované v Gmaile pre bezpečnosť) a do konverzácie sa dostanú, až keď kliknete na <b>Show attachments</b> (Zobraziť prílohy). Odpovedanie ich nepridá. Otvárajte ich, len ak ste ich čakali. Ak sa e-mail ukáže ako nevyžiadaná pošta, <b>Report spam</b> (nahlásiť spam) zablokuje odosielateľa.
 

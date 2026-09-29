@@ -58,7 +58,7 @@ Whoever oversees chat sees the agents down the side: who is there, who is on a p
 ## Labels on a message
 
 - <b>Offline message</b> - the customer wrote it in the website widget outside working hours. When the shop has <b>Answer offline messages by email</b> switched on, the whole conversation is moved to the email channel so the answer reaches them, which is why a website visitor can turn up in the email list. The label is on the message only; the row in the list has no mark. See <a href="/docs/live-chat-on-the-website">Live chat on the website</a>.
-- <b>Amber note: Gmail put this email in its spam folder</b> - aiku took this email out of Gmail's spam because it looks like a real customer. The note starts with what aiku took it for, such as <b>New customer enquiry</b> or <b>Possible scam</b>. Its attachments stay in Gmail for safety until you click <b>Show attachments</b>. See <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a>.
+- <b>Amber note: Gmail put this email in its spam folder</b> - aiku took this email out of Gmail's spam because it looks like a real customer. The note starts with what aiku took it for, such as <b>New customer enquiry</b>, and a red <b>Possible scam</b> tag when the email looks like a common scam. Its attachments stay in Gmail for safety until you click <b>Show attachments</b>. See <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a>.
 
 ## Your own state
 

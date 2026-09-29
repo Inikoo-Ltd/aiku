@@ -33,7 +33,7 @@ Gmail sometimes puts a real customer's email in its spam folder. aiku checks tha
 
 Somebody who registered on the website but has never bought is treated like anybody else, because anybody can register.
 
-An email that came out of spam has an amber note at the top. It starts with what aiku took the email for, such as <b>New customer enquiry</b>, <b>Customer request</b> or <b>Possible scam</b>, so read it with that in mind.
+An email that came out of spam has an amber note at the top. It starts with what aiku took the email for, such as <b>New customer enquiry</b> or <b>Customer request</b>, so read it with that in mind. When the email looks like a common scam - a payment copy to download, an invoice or order behind a link, a password or account warning - a red <b>Possible scam</b> tag is added, even if it comes from a customer. Treat those with extra care: a customer's mailbox can be taken over.
 
 Its attachments stay in Gmail for your safety: files in spam can carry viruses or fake invoices. The email shows <b>attachment(s) kept in Gmail for safety</b>, and they come into the conversation only when you click <b>Show attachments</b>. Replying does not bring them in. Only open them if you were expecting them. If the email turns out to be junk, <b>Report spam</b> blocks the sender.
 

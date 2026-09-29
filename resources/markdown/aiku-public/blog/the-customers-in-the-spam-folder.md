@@ -95,7 +95,7 @@ On the 292 emails that reach the model, with the 30 genuine ones marked by hand:
 | Sharper kinds | 30/30 | 1 |
 | Sharper kinds plus a second check | 17/30 | 0 |
 
-One rule went on top: when the model's first pick is a scam, the email stays out, whatever the other scores say. It lost no genuine email in the test and catches the fake "SWIFT payment copy" that had a customer request score just over the line. Re-run on everything the first wording let in on production, the new one keeps all 11 genuine emails and would have left out all 16 junk ones. The longer descriptions cost about one cent a month more.
+One rule went on top: when the model's first pick is a scam, the email stays out, whatever the other scores say. The same call now also asks which common scam form the email takes, if any: a payment copy to download, an invoice or order behind a link, an account warning, a policy violation, a money offer. A first pick other than none keeps it out too, and an email that comes in anyway, a paying customer's included, gets a red "Possible scam" tag when a scam form is at least 50% likely. On the genuine emails the scam forms never added up to more than 0.14, so the tag stays rare enough to mean something. It lost no genuine email in the test and catches the fake "SWIFT payment copy" that had a customer request score just over the line. Re-run on everything the first wording let in on production, the new one keeps all 11 genuine emails and would have left out all 16 junk ones. The longer descriptions cost about one cent a month more.
 
 The descriptions were written looking at these same emails, so real traffic will do a little worse than 30 out of 30 and 1 junk. They describe what a buyer writes, not who sent it, which is why we expect them to hold.
 

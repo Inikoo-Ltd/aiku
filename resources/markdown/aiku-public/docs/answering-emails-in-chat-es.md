@@ -34,7 +34,7 @@ Gmail a veces pone el correo real de un cliente en su carpeta de spam. aiku tamb
 
 Alguien que se registró en la web pero nunca ha comprado se trata como cualquier otra persona, porque cualquiera puede registrarse.
 
-Un correo que salió del spam tiene una nota ámbar en la parte superior. Empieza con lo que aiku pensó que era el correo, como <b>New customer enquiry</b> (Nueva consulta de cliente), <b>Customer request</b> (Solicitud de cliente) o <b>Possible scam</b> (Posible estafa), así que léelo teniendo eso en cuenta.
+Un correo que salió del spam tiene una nota ámbar en la parte superior. Empieza con lo que aiku pensó que era el correo, como <b>New customer enquiry</b> (Nueva consulta de cliente) o <b>Customer request</b> (Solicitud de cliente), así que léelo teniendo eso en cuenta. Cuando el correo parece una estafa habitual - una copia de un pago para descargar, una factura o un pedido detrás de un enlace, un aviso de contraseña o de cuenta - se añade una etiqueta roja <b>Possible scam</b> (Posible estafa), aunque venga de un cliente. Trata esos casos con especial cuidado: el buzón de un cliente puede estar comprometido.
 
 Sus adjuntos se quedan en Gmail por tu seguridad: los archivos en spam pueden llevar virus o facturas falsas. El correo muestra <b>archivo(s) guardado(s) en Gmail por seguridad</b>, y solo se incorporan a la conversación cuando haces clic en <b>Show attachments</b> (Mostrar adjuntos). Responder no los trae. Ábrelos solo si los esperabas. Si el correo resulta ser basura, <b>Report spam</b> (Denunciar spam) bloquea al remitente.
 
