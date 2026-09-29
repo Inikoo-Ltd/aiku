@@ -8,6 +8,9 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Accounting\Payment\RefundPaymentManual;
+use App\Actions\Accounting\Payment\RefundPaymentToBalance;
+use Illuminate\Validation\ValidationException;
 use App\Actions\Accounting\Reports\Intrastat\ExportIntrastatAeat;
 use App\Actions\Accounting\CreditTransaction\DeleteCreditTransaction;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
@@ -3683,7 +3686,17 @@ test('only staff who can edit the customer or the accounts can refund a payment'
 
     post(route('grp.models.payment.refund_to_balance', $payment->id), ['amount' => 5])->assertForbidden();
     post(route('grp.models.payment.refund_manual', $payment->id), ['amount' => 5, 'reference' => 'no-permission'])->assertForbidden();
+
+    $otherShop = StoreShop::run($this->organisation, Shop::factory()->definition());
+    $wrongScopeUser = $newStaffUser();
+    $wrongScopeUser->givePermissionTo(["crm.{$otherShop->id}.edit", "accounting.{$this->organisation->id}.view"]);
+    actingAs($wrongScopeUser->refresh());
+    post(route('grp.models.payment.refund_to_balance', $payment->id), ['amount' => 5])->assertForbidden();
+    post(route('grp.models.payment.refund_manual', $payment->id), ['amount' => 5, 'reference' => 'wrong-scope'])->assertForbidden();
+
     expect((float) $payment->refresh()->total_refund)->toBe(0.0);
+
+    actingAs($user);
 
     $user->givePermissionTo("crm.{$this->shop->id}.edit");
     actingAs($user->refresh());
@@ -3695,4 +3708,60 @@ test('only staff who can edit the customer or the accounts can refund a payment'
     post(route('grp.models.payment.refund_manual', $payment->id), ['amount' => 5, 'reference' => 'accounting-edit'])->assertSessionHasNoErrors()->assertRedirect();
 
     expect((float) $payment->refresh()->total_refund)->toBe(10.0);
+});
+
+test('a payment refund counts every refund already made, even from a copy of the payment read before them', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $payment        = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]));
+    $staleCopy = Payment::find($payment->id);
+
+    $toBalance = RefundPaymentToBalance::make()->handle($payment, ['amount' => 10]);
+    $byHand    = RefundPaymentManual::make()->handle($staleCopy, ['amount' => 15, 'reference' => 'stale-copy']);
+
+    expect($toBalance->invoices()->count())->toBe(0)
+        ->and($byHand->invoices()->count())->toBe(0)
+        ->and((float) $payment->refresh()->total_refund)->toBe(25.0)
+        ->and(fn () => RefundPaymentToBalance::make()->handle($staleCopy, ['amount' => 25.01]))->toThrow(ValidationException::class, 'left to refund on this payment')
+        ->and(fn () => RefundPaymentManual::make()->handle($staleCopy, ['amount' => 25.01, 'reference' => 'over']))->toThrow(ValidationException::class, 'left to refund on this payment');
+
+    RefundPaymentToBalance::make()->handle($staleCopy, ['amount' => 25]);
+    expect((float) $payment->refresh()->total_refund)->toBe(50.0);
+});
+
+test('a payment can not be refunded against another customer\'s invoice, when it did not succeed, or when it is itself a refund', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $otherCustomer  = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $newPayment     = fn (array $data) => StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ], $data));
+
+    $payment      = $newPayment([]);
+    $otherInvoice = StoreInvoice::make()->action($otherCustomer, Invoice::factory()->definition());
+    $pending      = $newPayment(['status' => PaymentStatusEnum::IN_PROCESS->value, 'state' => PaymentStateEnum::IN_PROCESS->value]);
+    $refund       = RefundPaymentToBalance::make()->handle($payment, ['amount' => 5]);
+
+    expect(fn () => RefundPaymentToBalance::make()->handle($payment->refresh(), ['amount' => 1, 'invoice_id' => $otherInvoice->id]))->toThrow(ValidationException::class, 'another customer')
+        ->and(fn () => RefundPaymentManual::make()->handle($payment->refresh(), ['amount' => 1, 'reference' => 'other', 'invoice_id' => $otherInvoice->id]))->toThrow(ValidationException::class, 'another customer')
+        ->and(fn () => RefundPaymentToBalance::make()->handle($pending, ['amount' => 1]))->toThrow(ValidationException::class, 'Only a successful payment can be refunded, this one is In Process')
+        ->and(fn () => RefundPaymentManual::make()->handle($refund, ['amount' => 1, 'reference' => 'refund-of-refund']))->toThrow(ValidationException::class, 'not a refund')
+        ->and((float) $payment->refresh()->total_refund)->toBe(5.0)
+        ->and((float) $pending->refresh()->total_refund)->toBe(0.0);
+
+    try {
+        RefundPaymentToBalance::make()->handle($pending, ['amount' => 1]);
+    } catch (ValidationException $e) {
+        expect($e->errors())->toBe(['amount' => ['Only a successful payment can be refunded, this one is In Process']]);
+    }
 });

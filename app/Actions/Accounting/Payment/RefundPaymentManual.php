@@ -20,7 +20,6 @@ use App\Models\Accounting\Payment;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class RefundPaymentManual extends OrgAction
@@ -37,15 +36,6 @@ class RefundPaymentManual extends OrgAction
      */
     public function handle(Payment $payment, array $modelData): Payment|array
     {
-        if ($payment->status !== PaymentStatusEnum::SUCCESS) {
-            throw ValidationException::withMessages([
-                'error'   => true,
-                'message' => __('Payment can not be refunded.').'; '.__('Invalid state'),
-                ' '.$payment->state->labels()[$payment->state->value]
-            ]);
-        }
-
-
         $refundAmount = -Arr::get($modelData, 'amount');
 
         $invoice = null;

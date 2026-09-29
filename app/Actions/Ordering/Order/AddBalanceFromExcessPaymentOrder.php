@@ -35,7 +35,7 @@ class AddBalanceFromExcessPaymentOrder extends OrgAction
     {
         DB::transaction(function () use ($order) {
             $order = Order::lockForUpdate()->findOrFail($order->id);
-            $refunds = Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->lockForUpdate()->get();
+            $refunds = Invoice::where('order_id', $order->id)->where('type', InvoiceTypeEnum::REFUND)->where('in_process', false)->orderBy('id')->lockForUpdate()->get();
 
             $totalAmount = $order->total_amount + $refunds->sum('total_amount');
 

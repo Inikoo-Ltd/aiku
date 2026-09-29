@@ -52,7 +52,6 @@ const props = defineProps<{
     is_tax_only?: boolean
     handleTabUpdate: Function
 }>()
-console.log('popop', props.refund)
 
 
 const layout = inject('layout', layoutStructure)
@@ -99,7 +98,6 @@ const onClickRefundPayments = () => {
 
 const listLoadingIconActions = ref<string[]>([])
 const onClickManual = (paymentMethod, form) => {
-    console.log('Manual clicked', paymentMethod)
 
     form
     .transform((data) => ({
@@ -140,8 +138,6 @@ const onClickManual = (paymentMethod, form) => {
 }
 
 const onClickBalance = (paymentMethod, form) => {
-    console.log('Balance clicked', paymentMethod)
-    console.log('zzzz', paymentMethod.balance_refund_route.name)
 
     form
     .transform((data) => ({
@@ -211,7 +207,6 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
     //         },
     //     }
     // )
-    console.log('Manual clicked', paymentMethod)
 }
 
 const compToolTip = computed(() => {
