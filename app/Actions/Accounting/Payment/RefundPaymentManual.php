@@ -88,6 +88,14 @@ class RefundPaymentManual extends OrgAction
     }
 
 
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo([
+            "crm.{$this->payment->shop_id}.edit",
+            "accounting.{$this->payment->organisation_id}.edit",
+        ]);
+    }
+
     public function rules(): array
     {
         return [

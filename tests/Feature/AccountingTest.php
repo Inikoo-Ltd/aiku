@@ -105,6 +105,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
+use function Pest\Laravel\post;
 
 uses()->group('base');
 
@@ -3603,4 +3604,39 @@ test('UI invoice pages are only open to staff who can see the invoice', function
 
     get($route)->assertOk();
     get(route('grp.org.accounting.invoices.edit', [$this->organisation->slug, $invoice->slug]))->assertForbidden();
+});
+
+test('only staff who can edit the customer or the accounts can refund a payment', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccount = $this->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first()->paymentAccount;
+    $customer       = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $payment        = StorePayment::make()->action($customer, $paymentAccount, array_merge(Payment::factory()->definition(), [
+        'amount' => 50,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]));
+
+    setPermissionsTeamId($this->group->id);
+    $newStaffUser = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $user = $newStaffUser();
+    actingAs($user);
+
+    post(route('grp.models.payment.refund_to_balance', $payment->id), ['amount' => 5])->assertForbidden();
+    post(route('grp.models.payment.refund_manual', $payment->id), ['amount' => 5, 'reference' => 'no-permission'])->assertForbidden();
+    expect((float) $payment->refresh()->total_refund)->toBe(0.0);
+
+    $user->givePermissionTo("crm.{$this->shop->id}.edit");
+    actingAs($user->refresh());
+    post(route('grp.models.payment.refund_to_balance', $payment->id), ['amount' => 5])->assertSessionHasNoErrors()->assertRedirect();
+
+    $accountsUser = $newStaffUser();
+    $accountsUser->givePermissionTo("accounting.{$this->organisation->id}.edit");
+    actingAs($accountsUser->refresh());
+    post(route('grp.models.payment.refund_manual', $payment->id), ['amount' => 5, 'reference' => 'accounting-edit'])->assertSessionHasNoErrors()->assertRedirect();
+
+    expect((float) $payment->refresh()->total_refund)->toBe(10.0);
 });
