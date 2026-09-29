@@ -46,6 +46,16 @@ enum ShopDashboardSalesTableTabsEnum: string
         };
     }
 
+    public function dataKey(): string
+    {
+        return match ($this) {
+            ShopDashboardSalesTableTabsEnum::DS_PLATFORMS    => 'platforms',
+            ShopDashboardSalesTableTabsEnum::DEPARTMENTS     => 'departments',
+            ShopDashboardSalesTableTabsEnum::SUB_DEPARTMENTS => 'sub_departments',
+            ShopDashboardSalesTableTabsEnum::BRANDS          => 'brands',
+        };
+    }
+
     public function table(Shop $shop, array $timeSeriesData = []): array
     {
         $brandTimeSeriesStats         = $timeSeriesData['brands'] ?? [];
@@ -135,19 +145,6 @@ enum ShopDashboardSalesTableTabsEnum: string
                 ],
             ]
         );
-    }
-
-    public static function tables(Shop $shop, array $timeSeriesData = []): array
-    {
-        return collect(self::cases())
-            ->filter(function ($case) use ($shop) {
-                if ($case === self::DS_PLATFORMS) {
-                    return $shop->type->value === 'dropshipping';
-                }
-                return !self::isBuriedBrands($case, $shop);
-            })
-            ->mapWithKeys(fn ($case) => [$case->value => $case->table($shop, $timeSeriesData)])
-            ->all();
     }
 
     public static function tablesForTabs(Shop $shop, array $timeSeriesData, array $tabs): array

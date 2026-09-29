@@ -50,6 +50,9 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
+use App\Models\Catalogue\ShopTimeSeries;
+use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use Illuminate\Support\Carbon;
 use App\Models\SysAdmin\Guest;
 use Inertia\Testing\AssertableInertia;
 
@@ -1213,26 +1216,50 @@ test('shop month sales target defaults to last year plus growth until management
         ->and($block['gap'])->toBe(round(max(0, 123456.78 - $block['sales_so_far'] - $block['pipeline']['amount']), 2));
 });
 
-test('shop year sales target sums the calendar year, months without an explicit target defaulting to last year plus growth', function () {
+test('shop year sales target compares the same days last year, January included, and sums monthly targets', function () {
     $shop  = $this->shop;
-    $today = now('UTC')->startOfDay();
+    $today = Carbon::parse('2031-03-10', 'UTC');
 
-    ShopSalesTarget::where('shop_id', $shop->id)
-        ->whereBetween('month', [$today->copy()->startOfYear()->toDateString(), $today->copy()->endOfYear()->toDateString()])
-        ->delete();
+    $seed = function (TimeSeriesFrequencyEnum $frequency, array $salesByPeriod) use ($shop) {
+        $timeSeries = ShopTimeSeries::firstOrCreate(['shop_id' => $shop->id, 'frequency' => $frequency]);
+        foreach ($salesByPeriod as $period => $sales) {
+            $timeSeries->records()->updateOrCreate(
+                ['period' => $period, 'frequency' => $frequency->singleLetter()],
+                ['sales_org_currency_external' => $sales]
+            );
+        }
+    };
 
-    $block = GetShopYearSalesTarget::run($shop, null, $today);
+    $seed(TimeSeriesFrequencyEnum::MONTHLY, ['2030-01' => 1000, '2030-02' => 2000, '2030-03' => 3000, '2030-12' => 4000, '2031-01' => 1100, '2031-02' => 2100, '2031-03' => 9999]);
+    $seed(TimeSeriesFrequencyEnum::DAILY, ['2030-03-05' => 500, '2030-03-20' => 900, '2031-03-02' => 600, '2031-03-15' => 700]);
 
-    expect($block['target']['is_default'])->toBeTrue()
-        ->and($block['can_edit'])->toBeFalse()
-        ->and($block['chart']['this_year'])->toHaveCount($today->month);
+    $growth = (float) config('marketing.default_sales_target_growth');
+    $block  = GetShopYearSalesTarget::run($shop, null, $today);
 
-    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 5000, 'month' => $today->format('Y-m')]);
+    expect($block['sales_so_far'])->toBe(3800.0)
+        ->and($block['last_year_so_far'])->toBe(3500.0)
+        ->and($block['last_year_total'])->toBe(10000.0)
+        ->and($block['remaining_days'])->toBe(296)
+        ->and($block['chart']['this_year'])->toBe([1100.0, 3200.0, 3800.0])
+        ->and($block['expected'])->toBe(round(3800 + 6500 * (3800 / 3500), 2))
+        ->and($block['target']['amount'])->toEqualWithDelta(10000 * (1 + $growth), 0.05)
+        ->and($block['target']['is_default'])->toBeTrue()
+        ->and($block['can_edit'])->toBeFalse();
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 5000, 'month' => '2031-02']);
 
     $block = GetShopYearSalesTarget::run($shop, $this->user, $today);
 
-    expect($block['target']['is_default'])->toBeFalse()
-        ->and($block['target']['amount'])->toBeGreaterThanOrEqual(5000);
+    expect($block['target']['amount'])->toEqualWithDelta(8000 * (1 + $growth) + 5000, 0.05)
+        ->and($block['target']['is_default'])->toBeFalse()
+        ->and($block['target']['months_set'])->toBe(1);
+});
+
+test('shop dashboard tab data serves the sub-departments table', function () {
+    getJson(route('grp.org.shops.show.dashboard.tab-data', [$this->organisation->slug, $this->shop->slug, 'tab' => 'sub_departments']))
+        ->assertOk()
+        ->assertJsonPath('tab', 'sub_departments')
+        ->assertJsonPath('table.header.columns.label.formatted_value', 'Sub-department');
 });
 
 test('only organisation or group admins can change the shop sales target', function () {

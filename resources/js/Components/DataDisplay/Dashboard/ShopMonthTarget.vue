@@ -27,7 +27,7 @@ interface PeriodTarget {
     last_year_total: number
     expected: number
     pipeline: { amount: number, orders: number, submitted_amount: number, in_warehouse_amount: number }
-    target: { amount: number | null, is_default: boolean, growth: number, set_by: string | null }
+    target: { amount: number | null, is_default: boolean, months_set?: number, growth: number, set_by: string | null }
     gap: number | null
     needed_per_day: number | null
     remaining_days: number
@@ -69,6 +69,11 @@ const expectedVersusTarget = computed(() => (target.value ? (periodData.value.ex
 const isEditing = ref(false)
 const isSaving = ref(false)
 const newTarget = ref<number | null>(null)
+
+const selectPeriod = (period: "month" | "year") => {
+    isEditing.value = false
+    activePeriod.value = period
+}
 
 const startEditing = () => {
     newTarget.value = target.value ? Math.round(target.value) : null
@@ -163,8 +168,8 @@ const donutOptions = {
                 {{ ctrans(":invoiced invoiced · :pipeline in the pipeline · :days days left", { invoiced: money(periodData.sales_so_far), pipeline: money(periodData.pipeline.amount), days: String(periodData.remaining_days) }) }}
             </span>
             <div v-if="yearTarget" class="ml-auto flex rounded-md border border-gray-200 text-xs">
-                <button type="button" class="rounded-l-md px-2.5 py-1" :class="activePeriod === 'month' ? 'bg-indigo-600 text-white' : 'text-gray-500'" @click="activePeriod = 'month'">{{ ctrans("This month") }}</button>
-                <button type="button" class="rounded-r-md px-2.5 py-1" :class="activePeriod === 'year' ? 'bg-indigo-600 text-white' : 'text-gray-500'" @click="activePeriod = 'year'">{{ ctrans("Year to date") }}</button>
+                <button type="button" class="rounded-l-md px-2.5 py-1" :class="activePeriod === 'month' ? 'bg-indigo-600 text-white' : 'text-gray-500'" @click="selectPeriod('month')">{{ ctrans("This month") }}</button>
+                <button type="button" class="rounded-r-md px-2.5 py-1" :class="activePeriod === 'year' ? 'bg-indigo-600 text-white' : 'text-gray-500'" @click="selectPeriod('year')">{{ ctrans("Year to date") }}</button>
             </div>
         </template>
 
@@ -188,7 +193,8 @@ const donutOptions = {
                             </button>
                         </p>
                         <p class="text-xs text-gray-400">
-                            <template v-if="!periodData.target.is_default">{{ ctrans("Target set by :name", { name: periodData.target.set_by ?? ctrans("management") }) }}</template>
+                            <template v-if="periodData.target.months_set && periodData.target.months_set < 12">{{ ctrans(":count of 12 months set by management, the rest :last_year sales plus :growth%", { count: String(periodData.target.months_set), last_year: periodData.last_year_label, growth: String(Math.round(periodData.target.growth * 100)) }) }}</template>
+                            <template v-else-if="!periodData.target.is_default">{{ ctrans("Target set by :name", { name: periodData.target.set_by ?? ctrans("management") }) }}</template>
                             <template v-else-if="target">{{ ctrans("Target: :last_year sales plus :growth%", { last_year: periodData.last_year_label, growth: String(Math.round(periodData.target.growth * 100)) }) }}</template>
                         </p>
                     </div>

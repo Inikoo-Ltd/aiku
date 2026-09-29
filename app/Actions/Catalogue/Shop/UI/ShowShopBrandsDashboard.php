@@ -45,7 +45,7 @@ class ShowShopBrandsDashboard extends OrgAction
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate, null, $this->dashboardIncludesPartners($userSettings));
+        $timeSeriesData = GetShopDashboardTimeSeriesData::run($shop, [ShopDashboardSalesTableTabsEnum::BRANDS->dataKey()], $fromDate, $toDate, null, $this->dashboardIncludesPartners($userSettings));
 
         $tab       = ShopDashboardSalesTableTabsEnum::BRANDS;
         $dashboard = [

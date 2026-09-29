@@ -58,12 +58,13 @@ class ShowShop extends OrgAction
 
         $tabsNavigation = ShopDashboardSalesTableTabsEnum::navigation($shop);
         $validTabs  = array_keys(array_filter($tabsNavigation, fn ($tab) => !isset($tab['route'])));
-        $currentTab = $this->resolveDashboardTableTab($validTabs, $userSettings, 'shop_dashboard_tab');
+        $currentTab     = $this->resolveDashboardTableTab($validTabs, $userSettings, 'shop_dashboard_tab');
+        $currentTabEnum = ShopDashboardSalesTableTabsEnum::from($currentTab);
 
         $savedInterval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
         [$fromDate, $toDate] = $this->resolvePerformanceDates($savedInterval, $userSettings);
 
-        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, $fromDate, $toDate, null, $this->dashboardIncludesPartners($userSettings));
+        $timeSeriesData      = GetShopDashboardTimeSeriesData::run($shop, ['shops', $currentTabEnum->dataKey()], $fromDate, $toDate, null, $this->dashboardIncludesPartners($userSettings));
         $shopTimeSeriesStats = $timeSeriesData['shops'];
 
         $waitingItemsData = $this->buildWaitingItemsData($shop, $request);
@@ -113,7 +114,6 @@ class ShowShop extends OrgAction
             $dashboard['super_blocks'][0]['brands_link']    = ShopDashboardSalesTableTabsEnum::brandsLink($shop);
         }
 
-        $currentTabEnum = ShopDashboardSalesTableTabsEnum::from($currentTab);
         $primaryTables  = ShopDashboardSalesTableTabsEnum::tablesForTabs($shop, $timeSeriesData, [$currentTabEnum]);
 
         $dashboard['super_blocks'][0]['blocks'] = [
