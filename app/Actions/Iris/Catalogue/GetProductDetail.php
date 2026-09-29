@@ -10,6 +10,7 @@
 namespace App\Actions\Iris\Catalogue;
 
 use App\Actions\IrisAction;
+use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductAttachments;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Http\Resources\Traits\HasPriceMetrics;
@@ -24,6 +25,7 @@ use App\Http\Resources\Catalogue\TagResource;
 class GetProductDetail extends IrisAction
 {
     use HasPriceMetrics;
+    use HasWebBlockProductAttachments;
 
     public function handle(Product $product): Product
     {
@@ -123,8 +125,8 @@ class GetProductDetail extends IrisAction
             'offers_data'                => $product->offers_data,
             'step_discount'              => $this->getStepDiscount($product),
             'tags'                       => TagResource::collection($product->tags)->toArray($request),
-            'specifications'             => $specifications
-
+            'specifications'             => $specifications,
+            'attachments'                => $this->getProductAttachments($product->id),
         ];
 
     }
