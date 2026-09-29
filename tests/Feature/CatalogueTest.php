@@ -1155,6 +1155,22 @@ test('a bundle spec block says which component each ingredient and size belongs 
         ->toContain($lamp->code.' (');
 });
 
+test('product detail carries the public documents of the selected variant', function () {
+    $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    createProduct($shop);
+    $product = $shop->products()->orderBy('id')->first();
+
+    $publicDocument = createAttachedMedia('Product', $product->id, 'doc');
+    createAttachedMedia('Product', $product->id, 'doc_private');
+
+    $attachments = \App\Actions\Iris\Catalogue\GetProductDetail::make()
+        ->jsonResponse(Product::find($product->id), \Lorisleiva\Actions\ActionRequest::createFrom(request()))['attachments'];
+
+    expect($attachments)->toHaveCount(1)
+        ->and($attachments[0]['media_ulid'])->toBe($publicDocument->ulid)
+        ->and($attachments[0]['scope'])->toBe('doc');
+});
+
 test('bulk update product unit is scoped to shop', function () {
     $shop = Shop::first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
     createProduct($shop);
