@@ -94,9 +94,18 @@ class StoreShopifyProductVariant extends RetinaAction
         if ($replacedVariantOwner !== null) {
             $errorMessage = self::replacedVariantMessage($replacedVariantOwner);
 
+            $sharesItsVariantWithAnotherPortfolio = $portfolio->platform_product_variant_id && Portfolio::where('customer_sales_channel_id', $portfolio->customer_sales_channel_id)
+                ->where('id', '!=', $portfolio->id)
+                ->where('platform_product_variant_id', $portfolio->platform_product_variant_id)
+                ->exists();
+
+            if ($sharesItsVariantWithAnotherPortfolio) {
+                $errorMessage = self::replacedVariantMessage($replacedVariantOwner, false);
+            }
+
             UpdatePortfolio::run($portfolio, array_merge(
                 ['errors_response' => $this->portfolioErrorResponse($errorMessage)],
-                $replacedVariantOwner === false ? [] : [
+                $replacedVariantOwner === false || $sharesItsVariantWithAnotherPortfolio ? [] : [
                     'platform_product_id'         => null,
                     'platform_product_variant_id' => null,
                     'platform_status'             => false,
@@ -266,7 +275,8 @@ class StoreShopifyProductVariant extends RetinaAction
      * portfolio's when it carries its product code, or when it is its stored variant or carries its sku and
      * no other portfolio holds that variant or has that sku as its code. Otherwise it is another product's
      * listing: adding this one would silently take it away, so the caller refuses and unlinks this portfolio
-     * from that product, giving it back its own sku so it can get a listing of its own.
+     * from that product, giving it back its own sku so it can get a listing of its own. When this portfolio
+     * holds the same variant as another one it can not be told whose it is, so it is refused but left linked.
      *
      * @return string|false|null  the product code of the portfolio the variant belongs to, false when it could not be checked
      */

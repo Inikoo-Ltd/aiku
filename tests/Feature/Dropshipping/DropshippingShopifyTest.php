@@ -2085,6 +2085,11 @@ test('a product is never added to a shopify product whose only variant belongs t
     $uploaded->update(['sku' => 'UPLOAD-1', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8900']);
     ShopifyFake::fake(['productOnlyVariant' => $single('8900', '')]);
     expect(StoreShopifyProductVariant::ownerOfStandaloneVariantThatWouldBeReplaced($uploaded->refresh(), 'gid://shopify/Product/7900'))->toBe($holder->item_code);
+    [$stored] = StoreShopifyProductVariant::run($uploaded->refresh());
+    expect($stored)->toBeFalse()
+        ->and($uploaded->refresh()->platform_product_id)->toBe('gid://shopify/Product/7900')
+        ->and($uploaded->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8900')
+        ->and(ShopifyFake::calls('ProductVariantsCreate'))->toBe([]);
     $uploaded->update(['platform_product_variant_id' => null]);
 
     ShopifyFake::fake(['productOnlyVariant' => $variants(['8900', '8901'])]);
