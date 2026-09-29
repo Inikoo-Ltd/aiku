@@ -30,64 +30,139 @@ use Throwable;
  * what we answered, as text, linked to the customer by address. Machine mail, our own mailshots,
  * marketplaces, couriers, staff writing to each other and anything sent automatically (our own
  * closed-now replies included) are left out, as are mails the chat inbox already holds and the
- * part of a mail quoted from earlier ones. Already archived mails are skipped and the page reached is remembered,
- * so a run that stops is continued by running it again, and Gmail's rate limit is respected.
+ * part of a mail quoted from earlier ones. Already archived mails are skipped and the page
+ * reached is remembered, so a run that stops is continued by running it again. With --queue every
+ * mailbox runs side by side on Horizon, one page per job; each mailbox is read a few mails at a
+ * time, well inside Gmail's limit per mailbox, and a page Gmail refuses is read again a minute
+ * later.
  */
 class ArchiveShopMailbox
 {
     use AsAction;
 
-    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again}';
+    public string $commandSignature = 'mailbox:archive {shop? : shop slug} {--m|months=12} {--l|limit= : Stop after this many mails read} {--fresh : Forget what was archived and start again} {--q|queue : Run every mailbox side by side on the queue}';
 
     private const int TEXT_LIMIT = 20000;
 
+    private const int CONCURRENCY = 5;
+
+    private const int RATE_LIMIT_PAUSE = 60;
+
+    public string $jobQueue = 'low-priority';
+
+    public int $jobTimeout = 1800;
+
+    public int $jobTries = 3;
+
     /**
+     * The whole mailbox in one go, page after page, for running from the command line.
+     *
      * @return array{read: int, archived: int, skipped: int, failed: int, done: bool}
      */
     public function handle(Shop $shop, int $months = 12, ?int $limit = null): array
     {
-        $result  = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false];
+        $total = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false];
+
+        do {
+            $page = $this->archivePage($shop, $months);
+
+            foreach (['read', 'archived', 'skipped', 'failed'] as $key) {
+                $total[$key] += $page[$key];
+            }
+            $total['done'] = $page['done'];
+
+            if ($page['rate_limited']) {
+                Sleep::for(self::RATE_LIMIT_PAUSE)->seconds();
+            }
+        } while (!$page['done'] && !$page['stopped'] && (!$limit || $total['read'] < $limit));
+
+        return $total;
+    }
+
+    /**
+     * On the queue each job reads one page of the listing and queues the next, so every mailbox
+     * runs side by side, no job runs for long and a restarted worker carries on from the page
+     * reached.
+     */
+    public function asJob(Shop $shop, int $months = 12): void
+    {
+        $page = $this->archivePage($shop, $months);
+
+        if ($page['rate_limited']) {
+            static::dispatch($shop, $months)->delay(now()->addSeconds(self::RATE_LIMIT_PAUSE));
+        } elseif (!$page['done'] && !$page['stopped']) {
+            static::dispatch($shop, $months);
+        }
+    }
+
+    /**
+     * One page of the listing (up to 500 mails), newest first, fetched CONCURRENCY at a time.
+     *
+     * Gmail still refusing after a pause leaves the page where it was, to be read again later.
+     *
+     * @return array{read: int, archived: int, skipped: int, failed: int, done: bool, stopped: bool, rate_limited: bool}
+     */
+    public function archivePage(Shop $shop, int $months): array
+    {
+        $result  = ['read' => 0, 'archived' => 0, 'skipped' => 0, 'failed' => 0, 'done' => false, 'stopped' => false, 'rate_limited' => false];
         $client  = GmailClient::forShop($shop);
         $mailbox = mb_strtolower((string) Arr::get($shop->settings, 'gmail.email'));
 
         if (!$client || $mailbox === '') {
+            $result['stopped'] = true;
+
             return $result;
         }
 
-        $query     = "newer_than:{$months}m -in:spam -in:trash -in:drafts -in:chats";
-        $cursorKey = "mailbox-archive:{$shop->id}:{$months}";
-        $pageToken = Cache::get($cursorKey);
+        $cursorKey = self::cursorKey($shop, $months);
+        $page      = retry(4, fn () => $client->listMessageIds("newer_than:{$months}m -in:spam -in:trash -in:drafts -in:chats", Cache::get($cursorKey)), 30000, fn (Throwable $exception) => $this->isRateLimit($exception));
+        $new       = array_values(array_diff($page['ids'], EmailArchiveMessage::where('shop_id', $shop->id)->whereIn('gmail_message_id', $page['ids'])->pluck('gmail_message_id')->all()));
 
-        do {
-            $page = retry(4, fn () => $client->listMessageIds($query, $pageToken), 30000, fn (Throwable $exception) => $this->isRateLimit($exception));
-            $new  = array_diff($page['ids'], EmailArchiveMessage::where('shop_id', $shop->id)->whereIn('gmail_message_id', $page['ids'])->pluck('gmail_message_id')->all());
+        foreach (array_chunk($new, self::CONCURRENCY) as $ids) {
+            $messages = $client->getMessages($ids);
 
-            foreach ($new as $messageId) {
+            if (in_array('rate_limited', $messages, true)) {
+                Sleep::for(20)->seconds();
+                $messages = array_merge($messages, $client->getMessages(array_keys(array_filter($messages, fn ($raw) => $raw === 'rate_limited'))));
+            }
+
+            if (in_array('rate_limited', $messages, true)) {
+                $result['rate_limited'] = true;
+
+                return $result;
+            }
+
+            foreach ($messages as $raw) {
                 $result['read']++;
 
+                if (!is_array($raw)) {
+                    $result['failed']++;
+
+                    continue;
+                }
+
                 try {
-                    $raw = retry(4, fn () => $client->getMessage($messageId), 30000, fn (Throwable $exception) => $this->isRateLimit($exception));
                     $this->archive($shop, $mailbox, $raw) ? $result['archived']++ : $result['skipped']++;
                 } catch (Throwable $exception) {
                     report($exception);
                     $result['failed']++;
                 }
-
-                Sleep::for(50)->milliseconds();
-
-                if ($limit && $result['read'] >= $limit) {
-                    return $result;
-                }
             }
+        }
 
-            $pageToken = $page['next'];
-            Cache::put($cursorKey, $pageToken, now()->addDays(7));
-        } while ($pageToken);
-
-        Cache::forget($cursorKey);
-        $result['done'] = true;
+        if ($page['next']) {
+            Cache::put($cursorKey, $page['next'], now()->addDays(7));
+        } else {
+            Cache::forget($cursorKey);
+            $result['done'] = true;
+        }
 
         return $result;
+    }
+
+    public static function cursorKey(Shop $shop, int $months): string
+    {
+        return "mailbox-archive:{$shop->id}:{$months}";
     }
 
     /**
@@ -160,7 +235,14 @@ class ArchiveShopMailbox
         foreach ($shops as $shop) {
             if ($command->option('fresh')) {
                 EmailArchiveMessage::where('shop_id', $shop->id)->delete();
-                Cache::forget("mailbox-archive:{$shop->id}:".(int) $command->option('months'));
+                Cache::forget(self::cursorKey($shop, (int) $command->option('months')));
+            }
+
+            if ($command->option('queue')) {
+                static::dispatch($shop, (int) $command->option('months'));
+                $command->info("{$shop->slug}: queued");
+
+                continue;
             }
 
             $result = $this->handle($shop, (int) $command->option('months'), $command->option('limit') ? (int) $command->option('limit') : null);

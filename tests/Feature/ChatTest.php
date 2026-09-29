@@ -6245,6 +6245,7 @@ test('a new email after a closed thanks is judged on its own, and jev must be su
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    DetectLanguageWithJev::shouldRun()->andReturn(null);
     $jevSays = ['choice' => 'asking', 'probabilities' => ['asking' => 0.64, 'pending' => 0.3, 'closing' => 0.06]];
     $jevRead = [];
     \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(function (array $state) use (&$jevSays, &$jevRead) {
@@ -6752,15 +6753,12 @@ test('a stranger who only says hello on WhatsApp is asked once what they want', 
 });
 
 /**
- * The model behind the chat drafts: the language detector reads Spanish from "Hola" and English
- * from anything else, every other request gets the given answer.
+ * The model behind the chat drafts: every request gets the given answer.
  */
 function aiDraftTestModel(\Illuminate\Http\Client\Request $request, string $answer): \GuzzleHttp\Promise\PromiseInterface
 {
-    $isLanguageDetection = str_contains((string) data_get($request->data(), 'messages.0.content'), 'language detector');
-    $detected            = str_contains((string) data_get($request->data(), 'messages.1.content'), 'Hola') ? 'es' : 'en';
-    $isQuestionCheck     = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"asks":');
-    $isReview            = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"objection":');
+    $isQuestionCheck = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"asks":');
+    $isReview        = str_contains((string) data_get($request->data(), 'messages.1.content'), '{"objection":');
 
     if ($isReview) {
         return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['objection' => '', 'send' => true])]]]]);
@@ -6770,8 +6768,15 @@ function aiDraftTestModel(\Illuminate\Http\Client\Request $request, string $answ
         return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['asks' => data_get(json_decode($answer, true), 'topic', 'other')])]]]]);
     }
 
+    return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $answer]]]]);
+}
 
-    return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $isLanguageDetection ? $detected : $answer]]]]);
+/**
+ * The language detector of the chat draft tests reads Spanish from "Hola" and English from anything else.
+ */
+function fakeDraftLanguageDetection(): void
+{
+    DetectLanguageWithJev::shouldRun()->andReturnUsing(fn (?string $text) => Language::firstWhere('code', str_contains((string) $text, 'Hola') ? 'es' : 'en'));
 }
 
 function outOfHoursTestSchedule(\App\Models\Catalogue\Shop $shop): \App\Models\HumanResources\WorkSchedule
@@ -7028,6 +7033,7 @@ test('a question about an order gets a draft written from that customer\'s order
     $asks        = null;
     $objection   = null;
     $modelAnswer = ['answerable' => true, 'topic' => 'order_status', 'reply' => "Hi, your order $reference was dispatched on 22 September."];
+    fakeDraftLanguageDetection();
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*' => function ($request) use (&$modelAnswer, &$asks, &$objection) {
             if ($objection !== null && str_contains((string) data_get($request->data(), 'messages.1.content'), '{"objection":')) {
@@ -7233,6 +7239,7 @@ test('a draft goes to the customer without staff only out of hours, only once ea
         'updated_at'      => '2026-09-24',
     ]);
 
+    fakeDraftLanguageDetection();
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*' => fn ($request) => aiDraftTestModel($request, json_encode([
             'answerable' => true, 'topic' => 'order_status', 'reply' => "Your order $reference is packed and waiting for the courier.",
@@ -7340,6 +7347,7 @@ test('an email out of hours gets one automatic reply, the AI answer or the close
         'updated_at'      => '2026-09-24',
     ]);
 
+    fakeDraftLanguageDetection();
     \Illuminate\Support\Facades\Http::fake([
         'api.openai.com/*' => fn ($request) => aiDraftTestModel($request, json_encode([
             'answerable' => true, 'topic' => 'order_status', 'reply' => "Your order $reference is packed and waiting for the courier.",
@@ -7583,6 +7591,47 @@ test('the mailbox history is archived as text for the customer it was with, leav
         ->and(array_column($thread['messages'], 'from_us'))->toBe([false, true]);
 
     \App\Models\Comms\EmailArchiveMessage::where('customer_id', $customer->id)->delete();
+});
+
+test('the mailbox is archived a page per job, a few mails at a time, and a page gmail refuses is kept to read again', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    $this->shop->update(['settings' => $settings]);
+    \Illuminate\Support\Facades\Cache::forget(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12));
+    \Illuminate\Support\Carbon::setTestNow(now());
+    \Illuminate\Support\Sleep::fake();
+
+    $raw = fn (string $id) => [
+        'id' => $id, 'threadId' => 'th-page', 'labelIds' => ['INBOX'], 'internalDate' => '1780000000000',
+        'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => "page.$id@example.com"], ['name' => 'To', 'value' => 'care@shop.test'], ['name' => 'Subject', 'value' => 'Hello']],
+            'body' => ['data' => rtrim(strtr(base64_encode("Question $id"), '+/', '-_'), '=')]],
+    ];
+    $refuse = true;
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*'                       => \Illuminate\Support\Facades\Http::response(['access_token' => 'at', 'expires_in' => 3600]),
+        'gmail.googleapis.com/gmail/v1/users/me/messages?*' => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'p1'], ['id' => 'p2']], 'nextPageToken' => 'page-2']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/*' => function ($request) use ($raw, &$refuse) {
+            $id = basename(parse_url($request->url(), PHP_URL_PATH));
+
+            return $refuse && $id === 'p2' ? \Illuminate\Support\Facades\Http::response([], 429) : \Illuminate\Support\Facades\Http::response($raw($id));
+        },
+    ]);
+
+    $action  = \App\Actions\Comms\Mailbox\ArchiveShopMailbox::make();
+    $refused = $action->archivePage($this->shop, 12);
+    expect($refused['rate_limited'])->toBeTrue()
+        ->and(\Illuminate\Support\Facades\Cache::get(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12)))->toBeNull();
+
+    $refuse = false;
+    $action->asJob($this->shop, 12);
+    expect(\App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2'])->count())->toBe(2)
+        ->and(\Illuminate\Support\Facades\Cache::get(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12)))->toBe('page-2');
+    \App\Actions\Comms\Mailbox\ArchiveShopMailbox::assertPushed(1);
+
+    \App\Models\Comms\EmailArchiveMessage::where('shop_id', $this->shop->id)->whereIn('gmail_message_id', ['p1', 'p2'])->delete();
+    \Illuminate\Support\Facades\Cache::forget(\App\Actions\Comms\Mailbox\ArchiveShopMailbox::cursorKey($this->shop, 12));
+    \Illuminate\Support\Carbon::setTestNow();
 });
 
 test('what agents keep telling different customers is learned, but only once enough customers heard it and nothing we hold says otherwise', function () {
