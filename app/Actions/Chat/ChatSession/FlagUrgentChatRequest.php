@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\UpdateShopChatClosing;
+use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -75,7 +76,7 @@ class FlagUrgentChatRequest
         $assessment = $this->assess($text, $weSaid, $isDropship);
         $request    = $assessment['request'];
 
-        if ($assessment['only_thanks'] && $this->mayCloseAfterThanks($chatSession, $text, $weSaid) && $this->assess($text, $weSaid)['only_thanks']) {
+        if ($assessment['only_thanks'] && $this->mayCloseAfterThanks($chatSession, $text, $weSaid) && $this->jevSaysClosing($text, $weSaid)) {
             CloseChatAfterThanks::closeNowOrLater($chatSession);
 
             return null;
@@ -106,8 +107,8 @@ class FlagUrgentChatRequest
      * sticker, voice note, location, contact or button tap, although those arrive as text.
      * A question mark, or our last message promising something or asking them to wait, keeps
      * it open whatever the model says: on real WhatsApp replies it missed both now and then.
-     * A new message reopens the conversation. The model is asked twice and both must agree:
-     * on real replies one answer was not steady enough on the few that mattered.
+     * A new message reopens the conversation. Jev must also be sure the customer is ending the
+     * conversation: our model read a refund request as thanks when an older thanks came first.
      */
     private function mayCloseAfterThanks(ChatSession|MetaChatSession $chatSession, string $text, string $weSaid): bool
     {
@@ -207,14 +208,41 @@ class FlagUrgentChatRequest
 
     private function unansweredText(ChatSession|MetaChatSession $chatSession): string
     {
+        $lastClosedId = $chatSession->messages()
+            ->where('sender_type', ChatSenderTypeEnum::SYSTEM->value)
+            ->where('message_text', 'like', 'Chat session has been closed by %')
+            ->max('id');
+
         return $chatSession->messages()
             ->whereIn('sender_type', array_map(fn (ChatSenderTypeEnum $sender) => $sender->value, self::CUSTOMER_SENDERS))
             ->when($chatSession->last_agent_message_at, fn ($query, $answeredAt) => $query->where('created_at', '>', $answeredAt))
+            ->when($lastClosedId, fn ($query, $closedId) => $query->where('id', '>', $closedId))
             ->orderBy('created_at')
             ->get()
             ->map(fn ($message) => trim((string) ($message->original_text ?? $message->message_text ?? '')))
             ->filter()
             ->join("\n\n");
+    }
+
+    /**
+     * What the customer's latest message does, weighed over every option: only a clear
+     * "closing" lets it close, and no answer from Jev keeps it open.
+     */
+    private function jevSaysClosing(string $text, string $weSaid): bool
+    {
+        $answer = AskJev::make()->choice(
+            ['we_said' => mb_substr($weSaid, 0, 1500), 'customer_wrote' => mb_substr($text, 0, 4000)],
+            "Customer service conversation of a wholesale giftware supplier. What is the customer's latest message doing?",
+            [
+                'closing'   => 'Only thanks, a goodbye or confirming they received something; they want nothing more from us',
+                'asking'    => 'They ask a question, make a request, report a problem or complain',
+                'pending'   => 'We still owe them something (a refund, a check, a reply we promised) or they are waiting on us',
+                'answering' => 'They reply to something we asked or offered, a decision an agent must act on',
+                'informing' => 'They give new details, say they paid, sent or will send something, or attach something',
+            ]
+        );
+
+        return (float) Arr::get($answer, 'probabilities.closing', 0) >= 0.9;
     }
 
     private function prompt(string $text, string $weSaid, bool $isDropship = false): string

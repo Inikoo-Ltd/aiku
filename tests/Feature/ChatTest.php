@@ -6182,6 +6182,7 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \Illuminate\Support\Facades\Queue::fake();
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->andReturn(['choice' => 'closing', 'probabilities' => ['closing' => 0.97]]);
 
     $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Order', 'Perfect, thank you!'), function (ChatSession $session) {
         $session->update(['last_agent_message_at' => now()->subHour()]);
@@ -6191,7 +6192,7 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($thanks);
 
     expect($thanks->refresh()->status)->not->toBe(ChatSessionStatusEnum::CLOSED)
-        ->and(\Illuminate\Support\Carbon::parse(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($thanks))->diffInMinutes(now()->addHours(72), true))->toBeLessThan(1)
+        ->and(\Illuminate\Support\Carbon::parse(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($thanks))->diffInMinutes(now()->addWeekdays(3), true))->toBeLessThan(1)
         ->and(data_get($thanks->metadata, 'waiting_for_customer.reason'))->toBe('thanks');
     \App\Actions\Chat\ChatSession\WaitForCustomerReply::assertPushed(1);
 
@@ -6215,11 +6216,51 @@ test('a thanks after we answered closes the conversation quietly, but never a fi
     expect($switchedOff->refresh()->status)->toBe(ChatSessionStatusEnum::WAITING);
 });
 
+test('a new email after a closed thanks is judged on its own, and jev must be sure the customer is closing', function () {
+    config(['chat.close_after_thanks' => true]);
+    \Illuminate\Support\Facades\Http::fake();
+    Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
+    \Illuminate\Support\Facades\Queue::fake();
+    $modelFooledByOldThanks = true;
+    $jevSays                = ['choice' => 'closing', 'probabilities' => ['closing' => 0.99]];
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturnUsing(function (string $prompt) use (&$modelFooledByOldThanks) {
+        return !$modelFooledByOldThanks || str_contains($prompt, 'Thanks for sharing the return label')
+            ? '{"request": "none", "only_thanks": true}'
+            : '{"request": "none", "only_thanks": false}';
+    });
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->andReturnUsing(function () use (&$jevSays) {
+        return $jevSays;
+    });
+
+    $refund  = 'Can you please refund the full cost of the order to my AW wallet. Please let me know once the credit has been posted.';
+    $session = noiseTestEmailSession($this->shop, 'root@example.com', 'Re: AWD191595', 'Thanks for sharing the return label.');
+    $session->update(['last_agent_message_at' => now()->subDays(6)]);
+    $session->messages()->create(['message_text' => 'Chat session has been closed by agent', 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::SYSTEM]);
+    $session->messages()->create(['message_text' => $refund, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST]);
+
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
+    expect(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh()))->toBeNull();
+
+    $modelFooledByOldThanks = false;
+    $jevSays                = ['choice' => 'asking', 'probabilities' => ['asking' => 0.64, 'pending' => 0.3, 'closing' => 0.06]];
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
+    expect(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh()))->toBeNull();
+
+    $jevSays = null;
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
+    expect(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh()))->toBeNull();
+
+    $jevSays = ['choice' => 'closing', 'probabilities' => ['closing' => 0.99]];
+    \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::run($session);
+    expect(\App\Actions\Chat\ChatSession\WaitForCustomerReply::until($session->refresh()))->not->toBeNull();
+});
+
 test('a whatsapp thanks after we answered gets a thumbs up and closes, but never a sticker, voice note, location, emoji, question or open promise of ours', function () {
     config(['chat.close_after_thanks' => true]);
     \Illuminate\Support\Facades\Http::fake();
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->andReturn(['choice' => 'closing', 'probabilities' => ['closing' => 0.97]]);
     \App\Actions\Chat\Whatsapp\SendWhatsappReaction::shouldRun()->once()
         ->withArgs(fn ($message, $agent, $emoji) => $message->message_text === 'Thank you so much!' && $agent === null && $emoji === '👍')
         ->andReturn(['ok' => true]);
@@ -6268,6 +6309,7 @@ test('a website chat thanks gets a thumbs up and closes, but with an agent in th
     config(['chat.close_after_thanks' => true, 'chat.close_after_thanks_minutes' => 2]);
     Bus::fake([\App\Actions\Chat\ChatSession\SummarizeChatSession::class]);
     \App\Actions\Helpers\AI\AskToAi::shouldRun()->andReturn('{"request": "none", "only_thanks": true}');
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->andReturn(['choice' => 'closing', 'probabilities' => ['closing' => 0.97]]);
 
     $answered = fn (string $from) => tap(noiseTestEmailSession($this->shop, $from, 'Chat', 'Great, thanks'), function (ChatSession $session) {
         $session->update(['channel' => ChatChannelEnum::WEBSITE, 'last_agent_message_at' => now()->subMinute()]);

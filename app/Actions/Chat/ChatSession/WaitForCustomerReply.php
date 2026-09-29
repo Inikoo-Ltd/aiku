@@ -26,7 +26,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Like a ticket waiting on its reporter: the conversation stays open and in the agent's list
  * with the time it closes, anything the customer writes ends the wait, and if they write
  * nothing it closes then. An agent sets it, and an email that only thanks us gets it instead
- * of closing on the spot, so nobody loses sight of it.
+ * of closing on the spot, so nobody loses sight of it. Days are working days, Monday to
+ * Friday, so a wait never runs out over a weekend.
  */
 class WaitForCustomerReply
 {
@@ -43,7 +44,7 @@ class WaitForCustomerReply
     public function handle(ChatSession|MetaChatSession $chatSession, int $hours, string $reason = 'agent'): void
     {
         $lastMessageId = (int) $chatSession->messages()->max('id');
-        $until         = now()->addHours($hours);
+        $until         = now()->addWeekdays(intdiv($hours, 24))->addHours($hours % 24);
 
         $chatSession->update(['metadata' => [
             ...($chatSession->metadata ?? []),
