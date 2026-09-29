@@ -26,6 +26,7 @@ use App\Models\Helpers\Media;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Sentry;
@@ -41,6 +42,22 @@ class StoreShopifyProduct extends RetinaAction
         if ($portfolio->isShopifyVariantAdopted()) {
             return [false, 'This portfolio is linked to a variant the merchant already had, a product is never created for it'];
         }
+
+        $lock = Cache::lock('shopify-product-upload:'.$portfolio->id, 300);
+
+        if (!$lock->get()) {
+            return [false, 'This product is already being uploaded to Shopify'];
+        }
+
+        try {
+            return $this->upload($portfolio, $productData);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function upload(Portfolio $portfolio, array $productData): array
+    {
 
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel->user;
@@ -90,6 +107,25 @@ class StoreShopifyProduct extends RetinaAction
             }
 
             return $this->storeVariant($portfolio, $logs, ['id' => $portfolio->platform_product_id]);
+        }
+
+        $listedWithSku = $this->listedProductCarryingSku($client, (string)$portfolio->sku);
+
+        if ($listedWithSku === false) {
+            return $this->refuseUnverifiedUpload($portfolio, $logs);
+        }
+
+        if ($listedWithSku) {
+            $errorMessage = 'Your Shopify store already has a product with the sku '.$portfolio->sku.' ('.Str::lower($listedWithSku['status']).', '.$listedWithSku['handle'].'). Match this product to it instead of uploading a new one';
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => $this->portfolioErrorResponse($errorMessage)
+            ]);
+            UpdatePlatformPortfolioLog::dispatch($logs, [
+                'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
+                'response' => $errorMessage
+            ]);
+
+            return [false, $errorMessage];
         }
 
         /** @var Product $product */
@@ -269,6 +305,61 @@ class StoreShopifyProduct extends RetinaAction
         }
     }
 
+
+    /**
+     * @return array{handle: string, status: string}|false|null  false when the shop could not be asked
+     */
+    private function listedProductCarryingSku($client, string $sku): array|false|null
+    {
+        $sku = trim($sku);
+
+        if ($sku === '') {
+            return null;
+        }
+
+        $query = <<<'QUERY'
+        query productVariantsWithSku($query: String!) {
+          productVariants(first: 20, query: $query) {
+            edges {
+              node {
+                sku
+                product {
+                  handle
+                  status
+                }
+              }
+            }
+          }
+        }
+        QUERY;
+
+        try {
+            $response = $client->request($query, ['query' => 'sku:'.json_encode($sku)]);
+        } catch (Exception) {
+            return false;
+        }
+
+        if (!empty($response['errors']) || !isset($response['body'])) {
+            return false;
+        }
+
+        $body = $response['body']->toArray();
+
+        if (Arr::has($body, 'errors')) {
+            return false;
+        }
+
+        foreach (Arr::get($body, 'data.productVariants.edges', []) as $edge) {
+            if (Str::lower(trim((string)Arr::get($edge, 'node.sku'))) === Str::lower($sku)) {
+                return [
+                    'handle' => (string)Arr::get($edge, 'node.product.handle'),
+                    'status' => (string)Arr::get($edge, 'node.product.status'),
+                ];
+            }
+        }
+
+        return null;
+    }
 
     private function refuseUnverifiedUpload(Portfolio $portfolio, PlatformPortfolioLogs $logs): array
     {

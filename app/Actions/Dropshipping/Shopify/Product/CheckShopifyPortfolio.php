@@ -38,11 +38,13 @@ class CheckShopifyPortfolio
         $hasVariantAtLocation        = false;
         $productExistsInShopifyError = false;
         $hasVariantAtLocationError   = false;
+        $isActiveInShopify           = false;
         if ($hasValidProductId) {
             $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
 
             $productExistsInShopify      = $productExistsInShopifyResult['exist'];
             $productExistsInShopifyError = $productExistsInShopifyResult['error'];
+            $isActiveInShopify           = $productExistsInShopifyResult['status'] === 'ACTIVE';
 
 
             $hasVariantAtLocationResult = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id, $portfolio->isShopifyVariantAdopted() ? $portfolio->platform_product_variant_id : null);
@@ -80,7 +82,7 @@ class CheckShopifyPortfolio
         $portfolio->update([
             'has_valid_platform_product_id'    => $hasValidProductId,
             'exist_in_platform'                => $productExistsInShopify,
-            'platform_status'                  => $hasVariantAtLocation,
+            'platform_status'                  => $hasVariantAtLocation && $isActiveInShopify,
             'platform_possible_matches'        => $matchData,
             'number_platform_possible_matches' => $numberMatches
 

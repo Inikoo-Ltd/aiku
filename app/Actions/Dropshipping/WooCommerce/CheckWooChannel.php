@@ -26,7 +26,8 @@ class CheckWooChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
-        $connection = $wooCommerceUser->checkConnection();
+        $checkResult = $wooCommerceUser->checkConnectionWithError();
+        $connection  = $checkResult['success'];
 
         if ($connection) {
             $platformStatus       = true;
@@ -56,12 +57,20 @@ class CheckWooChannel
             }
         }
 
+        $isBlocked = !$platformStatus && str_contains((string) $checkResult['message'], 'WooCommerce API Connection Error');
+
         $data = [
             'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
-            'exist_in_platform'       => $existInPlatform
+            'exist_in_platform'       => $existInPlatform,
+            'is_blocked'              => $isBlocked,
         ];
+
+        $settings = $wooCommerceUser->customerSalesChannel->settings ?? [];
+        data_set($settings, 'woocommerce.not_ready_reason', $platformStatus ? null : $this->notReadyReason($isBlocked));
+        $data['settings'] = $settings;
+
         if ($platformStatus) {
             $data['state']                 = CustomerSalesChannelStateEnum::AUTHENTICATED;
             $data['ban_stock_update_util'] = null;
@@ -71,6 +80,13 @@ class CheckWooChannel
         }
 
         return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, $data);
+    }
+
+    private function notReadyReason(bool $isBlocked): string
+    {
+        return $isBlocked
+            ? __('Your store did not answer - it may be down or blocking connections from our servers. Ask your hosting provider to allow our requests, then try again.')
+            : __('Your store rejected our connection details. Generate a fresh WooCommerce REST API key (Settings > Advanced > REST API) and reconnect the channel.');
     }
 
 

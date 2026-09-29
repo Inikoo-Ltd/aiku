@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\CRM\Customer\GetShopCustomersDashboard;
 use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
@@ -88,6 +89,7 @@ class ShowShop extends OrgAction
                         'current'    => ShopDashboardSectionsEnum::current($shop, $userSettings, $request->query('section')),
                     ],
                     'month_target' => GetShopMonthSalesTarget::run($shop, $request->user()),
+                    'year_target' => GetShopYearSalesTarget::run($shop, $request->user()),
                     'shop_blocks' => [
                         'interval_data'        => $shopTimeSeriesStats,
                         'currency_code'        => $shop->currency->code,

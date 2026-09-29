@@ -15,7 +15,9 @@ use App\Actions\Catalogue\ProductCategory\GetDepartmentTimeSeriesStats;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetSalesAnalysis;
 use App\Actions\Catalogue\SalesAnalysis\SalesAnalysisScope;
+use App\Actions\Catalogue\ProductCategory\GetSubDepartmentTimeSeriesStats;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
+use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\CRM\Customer\GetShopCustomersDashboard;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\Catalogue\Shop\SalesTarget\UpdateShopSalesTarget;
@@ -1162,7 +1164,9 @@ test('shop dashboard sales table shows departments, with brands as an icon on th
     $response->assertInertia(function (AssertableInertia $page) {
         $page->component('Org/Catalogue/Shop')
             ->where('dashboard.super_blocks.0.blocks.0.tabs.departments.title', 'Departments')
+            ->where('dashboard.super_blocks.0.blocks.0.tabs.sub_departments.title', 'Sub-departments')
             ->has('dashboard.super_blocks.0.month_target.target')
+            ->has('dashboard.super_blocks.0.year_target.target')
             ->where('dashboard.super_blocks.0.sections.current', 'target')
             ->where('dashboard.super_blocks.0.sections.navigation', fn ($navigation) => array_keys($navigation->all()) === array_map(
                 fn (ShopDashboardSectionsEnum $section) => $section->value,
@@ -1178,6 +1182,14 @@ test('shop dashboard sales table shows departments, with brands as an icon on th
     expect($departmentsTable['header']['columns']['label']['formatted_value'])->toBe('Department')
         ->and($departmentsTable)->toHaveKeys(['body', 'totals'])
         ->and(ShopDashboardSalesTableTabsEnum::BRANDS->blueprint())->toMatchArray(['type' => 'icon', 'align' => 'right']);
+
+    $subDepartmentsTable = ShopDashboardSalesTableTabsEnum::SUB_DEPARTMENTS->table(
+        $this->shop,
+        ['sub_departments' => GetSubDepartmentTimeSeriesStats::run($this->shop)]
+    );
+
+    expect($subDepartmentsTable['header']['columns']['label']['formatted_value'])->toBe('Sub-department')
+        ->and($subDepartmentsTable)->toHaveKeys(['body', 'totals']);
 });
 
 test('shop month sales target defaults to last year plus growth until management sets it', function () {
@@ -1199,6 +1211,28 @@ test('shop month sales target defaults to last year plus growth until management
     expect($block['target']['is_default'])->toBeFalse()
         ->and($block['target']['amount'])->toBe(123456.78)
         ->and($block['gap'])->toBe(round(max(0, 123456.78 - $block['sales_so_far'] - $block['pipeline']['amount']), 2));
+});
+
+test('shop year sales target sums the calendar year, months without an explicit target defaulting to last year plus growth', function () {
+    $shop  = $this->shop;
+    $today = now('UTC')->startOfDay();
+
+    ShopSalesTarget::where('shop_id', $shop->id)
+        ->whereBetween('month', [$today->copy()->startOfYear()->toDateString(), $today->copy()->endOfYear()->toDateString()])
+        ->delete();
+
+    $block = GetShopYearSalesTarget::run($shop, null, $today);
+
+    expect($block['target']['is_default'])->toBeTrue()
+        ->and($block['can_edit'])->toBeFalse()
+        ->and($block['chart']['this_year'])->toHaveCount($today->month);
+
+    UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 5000, 'month' => $today->format('Y-m')]);
+
+    $block = GetShopYearSalesTarget::run($shop, $this->user, $today);
+
+    expect($block['target']['is_default'])->toBeFalse()
+        ->and($block['target']['amount'])->toBeGreaterThanOrEqual(5000);
 });
 
 test('only organisation or group admins can change the shop sales target', function () {

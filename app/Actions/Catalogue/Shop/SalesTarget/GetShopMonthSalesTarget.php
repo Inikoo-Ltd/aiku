@@ -8,8 +8,8 @@
 
 namespace App\Actions\Catalogue\Shop\SalesTarget;
 
+use App\Actions\Catalogue\Shop\SalesTarget\Concerns\HasOrdersPipeline;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
 use App\Models\SysAdmin\User;
@@ -25,16 +25,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetShopMonthSalesTarget
 {
     use AsObject;
-
-    public const array PIPELINE_STATES = [
-        OrderStateEnum::SUBMITTED,
-        OrderStateEnum::IN_WAREHOUSE,
-        OrderStateEnum::HANDLING,
-        OrderStateEnum::HANDLING_BLOCKED,
-        OrderStateEnum::PICKED,
-        OrderStateEnum::PACKING,
-        OrderStateEnum::PACKED,
-    ];
+    use HasOrdersPipeline;
 
     public function handle(Shop $shop, ?User $user = null, ?Carbon $today = null): array
     {
@@ -140,30 +131,5 @@ class GetShopMonthSalesTarget
         $lastYearRest = array_sum(array_filter($lastYearDaily, fn ($day) => $day > $dayOfMonth, ARRAY_FILTER_USE_KEY));
 
         return $salesSoFar + $lastYearRest * ($salesSoFar / $lastYearSoFar);
-    }
-
-    /**
-     * @return array{amount: float, orders: int, submitted_amount: float, in_warehouse_amount: float}
-     */
-    private function pipeline(Shop $shop): array
-    {
-        $rows = DB::table('orders')
-            ->where('orders.shop_id', $shop->id)
-            ->whereIn('orders.state', array_map(fn (OrderStateEnum $state) => $state->value, self::PIPELINE_STATES))
-            ->whereNull('orders.deleted_at')
-            ->whereNotExists(fn ($query) => $query->from('org_partners')->whereColumn('org_partners.customer_id', 'orders.customer_id'))
-            ->selectRaw('orders.state = ? as is_submitted, count(*) as orders, coalesce(sum(orders.org_net_amount), 0) as amount', [OrderStateEnum::SUBMITTED->value])
-            ->groupByRaw('1')
-            ->get();
-
-        $submitted   = (float) ($rows->firstWhere('is_submitted', true)->amount ?? 0);
-        $inWarehouse = (float) ($rows->firstWhere('is_submitted', false)->amount ?? 0);
-
-        return [
-            'amount'              => round($submitted + $inWarehouse, 2),
-            'orders'              => (int) $rows->sum('orders'),
-            'submitted_amount'    => round($submitted, 2),
-            'in_warehouse_amount' => round($inWarehouse, 2),
-        ];
     }
 }

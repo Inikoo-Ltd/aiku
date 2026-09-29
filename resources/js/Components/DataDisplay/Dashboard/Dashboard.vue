@@ -143,6 +143,7 @@ onMounted(() => {
         <ShopMonthTarget
             v-if="inSection('target') && props.dashboard?.super_blocks?.[0]?.month_target"
             :month-target="props.dashboard.super_blocks[0].month_target"
+            :year-target="props.dashboard.super_blocks[0].year_target"
         />
 
         <KeepAlive v-if="inSection('target') && props.dashboard?.super_blocks?.[0]?.tabs_box">

@@ -3758,6 +3758,30 @@ test('inbound gmail from an unknown sender becomes a guest email session and a s
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g2/modify') && $request['addLabelIds'] === ['L2'] && $request['removeLabelIds'] === ['INBOX', 'UNREAD']);
 });
 
+test('inbound gmail from a sender on the labeled_senders list is filed under its own label without becoming a chat', function () {
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $settings['gmail']['labeled_senders'] = ['notifications@calendly.com' => 'aiku/showroom'];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/g1*' => \Illuminate\Support\Facades\Http::response([
+            'id' => 'g1', 'threadId' => 't-g1',
+            'payload' => ['mimeType' => 'text/plain', 'headers' => [['name' => 'From', 'value' => 'Calendly <notifications@calendly.com>'], ['name' => 'Subject', 'value' => 'New Event: Showroom Appointment'], ['name' => 'Message-ID', 'value' => '<g1@calendly.com>']], 'body' => ['data' => rtrim(strtr(base64_encode('Your appointment is confirmed'), '+/', '-_'), '=')]],
+        ]),
+        'gmail.googleapis.com/gmail/v1/users/me/labels' => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LS', 'name' => 'aiku/showroom']]]),
+        'gmail.googleapis.com/*'                        => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $message = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop->fresh(), 'g1');
+
+    expect($message)->toBeNull()
+        ->and(\App\Models\Chat\ChatSession::where('shop_id', $this->shop->id)->where('metadata->email', 'notifications@calendly.com')->exists())->toBeFalse();
+
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/g1/modify') && $request['addLabelIds'] === ['LS'] && $request['removeLabelIds'] === ['INBOX', 'UNREAD']);
+});
+
 test('a campaign send closes the promo-only session but leaves one an agent is handling open', function () {
     $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
     $agent   = ChatAgent::where('user_id', $this->user->id)->first()

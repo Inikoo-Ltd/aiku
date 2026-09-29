@@ -32,6 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $can_connect_to_platform
  * @property mixed $exist_in_platform
  * @property mixed $platform_status
+ * @property mixed $is_blocked
  * @property mixed $number_clients
  */
 class CustomerSalesChannelsResource extends JsonResource
@@ -60,6 +61,7 @@ class CustomerSalesChannelsResource extends JsonResource
             'can_connect_to_platform' => $this->can_connect_to_platform,
             'exist_in_platform'       => $this->exist_in_platform,
             'platform_status'         => $this->platform_status,
+            'is_blocked'              => $this->is_blocked,
             'customer_company_name'   => $this->customer_company_name ?? $this->customer_contact_name,
             'customer_slug'           => $this->customer_slug,
             'customer_id'             => $this->customer_id,

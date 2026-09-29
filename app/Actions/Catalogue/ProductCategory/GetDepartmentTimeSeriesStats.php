@@ -20,12 +20,17 @@ class GetDepartmentTimeSeriesStats
 {
     use AsObject;
 
+    protected function categoryType(): ProductCategoryTypeEnum
+    {
+        return ProductCategoryTypeEnum::DEPARTMENT;
+    }
+
     public function handle(Shop $shop, $fromDate = null, $toDate = null): array
     {
         $departments = ProductCategory::query()
             ->select(['id', 'slug', 'code', 'name'])
             ->where('shop_id', $shop->id)
-            ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+            ->where('type', $this->categoryType())
             ->where('state', '!=', ProductCategoryStateEnum::DISCONTINUED)
             ->with(['timeSeries' => fn ($query) => $query->select(['id', 'product_category_id'])->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)])
             ->get();

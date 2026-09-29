@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ticketRoute } from "@/Composables/useTicketsRoute"
-import { ref, computed } from "vue"
+import { ref, computed, onMounted, onBeforeUnmount } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
@@ -29,6 +29,14 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus, faPlusCircle, faExchange, faHourglassHalf, faVial, faShieldCheck, faForward, faShield, faRocket, faUsers, faLink, faLifeRing, faToolbox, faUserHeadset, faBooks, faDatabase, faTasks, faChevronDown, faComment, faComments, faEnvelope, faCommentDots } from "@fal"
 
 library.add(faWhatsapp, faComment, faComments, faEnvelope, faBooks, faDatabase, faTasks, faChevronDown, faLifeRing, faToolbox, faUserHeadset, faLink, faUsers, faRocket, faVial, faShieldCheck, faForward, faShield, faHourglassHalf, faPlusCircle, faExchange, faEllipsisV, faTrashAlt, faUser, faPencil, faTimes, faPlus,faPaperclip, faCircle, faUserCheck, faSpinner, faClock, faCheckCircle, faBan, faPlay, faPause, faStop, faCheck, faUndo, faBug, faLightbulb, faLevelUp, faCube, faQuestionCircle, faCommentDots)
+
+const desktopQuery = window.matchMedia("(min-width: 1024px)")
+const isDesktop = ref(desktopQuery.matches)
+const onBreakpointChange = (event: MediaQueryListEvent) => {
+    isDesktop.value = event.matches
+}
+onMounted(() => desktopQuery.addEventListener("change", onBreakpointChange))
+onBeforeUnmount(() => desktopQuery.removeEventListener("change", onBreakpointChange))
 
 const isLinkCopied = ref(false)
 const copyTicketLink = async () => {
@@ -149,18 +157,22 @@ const update = (field: string, value: unknown) => {
             </div>
         </template>
     </PageHeading>
-    <div class="p-4 grid gap-4 lg:grid-cols-3">
-        <div class="lg:col-span-2 space-y-4">
+    <div class="p-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div class="min-w-0 lg:col-span-2 space-y-4">
             <TicketRating :rating="ticket.rating" :rating-comment="ticket.rating_comment" :can-rate="can_rate" :rate-route="routes.rate" />
-            <TicketThread :ticket="ticket" :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+            <TicketThread :ticket="ticket" label-reporter-on-mobile :comments="comments" :comment-route="routes.comment" :translate-routes="{ ticket: 'grp.models.ticket.translate', comment: 'grp.models.ticket.comment.translate' }" :can-comment-internally="can_comment_internally" :mentionable="options.mentionable" :comments-newest-first="comments_newest_first" @update:comments-newest-first="saveTicketOrderSetting('ticket_comments_newest_first', $event)">
+                <template #card-header-footer>
+                    <div id="ticket-card-controls" />
+                </template>
                 <template #after-description>
                     <TicketChatDropdown v-if="ticket.source?.has_conversation" :ticketId="ticket.id" :source="ticket.source" />
                     <TicketAttachmentList :files="attachment_gallery" :preview-blocked="can_preview_attachments === false" />
                 </template>
             </TicketThread>
         </div>
-        <div class="space-y-4 self-start lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto">
-        <TicketControlPanel :ticket="ticket" storage-key="ticket_controls_open">
+        <div class="min-w-0 space-y-4 self-start lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-60px-2rem)] lg:overflow-y-auto">
+        <Teleport defer to="#ticket-card-controls" :disabled="isDesktop">
+        <TicketControlPanel :ticket="ticket" :storage-key="isDesktop ? 'ticket_controls_open' : 'ticket_controls_open_mobile'" :default-open="isDesktop" :embedded="!isDesktop">
             <TicketControls :ticket="ticket" :options="options" :can_manage="can_manage" :can_assign="can_assign" :can_flag_confidential="can_flag_confidential" :can_qa="can_qa" :can_request_qa="can_request_qa" :is_reporter="is_reporter" :can_cancel_as_reporter="can_cancel_as_reporter" :can_reopen_as_reporter="can_reopen_as_reporter" :can_change_kind_module="can_change_kind_module" :can_update="can_update" :can_contribute="can_contribute" :can_manage_collaborators="can_manage_collaborators" :routes="routes" hide-confidential />
             <div v-if="ticket.commits?.length">
                 <p class="text-xs text-gray-500 mb-1">{{ ctrans("Commits") }}</p>
@@ -180,6 +192,7 @@ const update = (field: string, value: unknown) => {
                 <div v-if="ticket.shop" class="flex justify-between"><dt>{{ ctrans("Shop") }}</dt><dd>{{ ticket.shop }}</dd></div>
             </dl>
         </TicketControlPanel>
+        </Teleport>
         <div class="bg-white rounded-lg border border-gray-300 text-sm">
             <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left text-xs text-gray-500 transition duration-200 hover:bg-gray-50" @click="toggleHistory">
                 <span class="font-medium uppercase tracking-wide text-gray-400">{{ ctrans("History") }}</span>

@@ -604,12 +604,13 @@ test('uploading a product creates it, creates one variant with the right stock a
     $created = shopifyProductNode('gid://shopify/Product/7100', 'gid://shopify/ProductVariant/8100', '');
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate'               => ShopifyFake::graphql(['productCreate' => ['product' => $created, 'userErrors' => []]]),
         'ProductVariantsList'         => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8100', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7100', 'title' => 'Listed Product']]]]]]),
         'ProductVariantsCreate'       => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8101', 'title' => 'Default Title']], 'userErrors' => []]]),
         'getProduct'                  => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7100', 'gid://shopify/ProductVariant/8101', $portfolio->sku)]),
         'GET shop.json'               => ['shop' => ['id' => 1]],
-        'getProductExistence'         => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7100', 'title' => 'Listed Product']]),
+        'getProductExistence'         => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7100', 'title' => 'Listed Product', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8101', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/1']]]]]]]]),
     ]);
 
@@ -641,6 +642,7 @@ test('a rejected product upload keeps the portfolio unpublished with a readable 
     $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate' => ShopifyFake::graphql(['productCreate' => ['product' => null, 'userErrors' => [['field' => ['title'], 'message' => 'Title cannot be blank']]]]),
     ]);
 
@@ -653,6 +655,7 @@ test('a rejected product upload keeps the portfolio unpublished with a readable 
         ->and($portfolio->errors_response['message'])->toBe('Title cannot be blank');
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate' => Http::response(['errors' => [['message' => 'Throttled', 'extensions' => ['code' => 'THROTTLED']]]]),
     ]);
     StoreNewProductToCurrentShopify::make()->handle($portfolio, []);
@@ -680,6 +683,7 @@ test('an upload records a portfolio log that ends ok when shopify accepts the pr
     $portfolio->update(['sku' => 'LOG-1']);
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate' => ShopifyFake::graphql(['productCreate' => ['product' => null, 'userErrors' => [['field' => ['title'], 'message' => 'Title cannot be blank']]]]),
     ]);
 
@@ -694,12 +698,13 @@ test('an upload records a portfolio log that ends ok when shopify accepts the pr
     $created = shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8300', $portfolio->sku);
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate'                 => ShopifyFake::graphql(['productCreate' => ['product' => $created, 'userErrors' => []]]),
         'ProductVariantsList'           => ShopifyFake::graphql(['productVariants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8300', 'title' => 'Default Title', 'price' => '0.00', 'updatedAt' => 'x', 'inventoryQuantity' => 0, 'product' => ['id' => 'gid://shopify/Product/7300', 'title' => 'Listed Product']]]]]]),
         'ProductVariantsCreate'         => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8301', 'title' => 'Default Title']], 'userErrors' => []]]),
         'getProduct'                    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7300', 'gid://shopify/ProductVariant/8301', $portfolio->sku)]),
         'GET shop.json'                 => ['shop' => ['id' => 1]],
-        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7300', 'title' => 'Listed Product']]),
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7300', 'title' => 'Listed Product', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8301', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/1']]]]]]]]),
     ]);
 
@@ -754,7 +759,7 @@ test('matching a portfolio to an existing shopify product keeps the price the me
         'ProductVariantsCreate'         => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8201', 'title' => 'Default Title']], 'userErrors' => []]]),
         'getProduct'                    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7200', 'gid://shopify/ProductVariant/8201', 'match-me', '9.00')]),
         'GET shop.json'                 => ['shop' => ['id' => 1]],
-        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7200', 'title' => 'Already Listed']]),
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7200', 'title' => 'Already Listed', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8201', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/2']]]]]]]]),
     ]);
 
@@ -785,7 +790,7 @@ test('matching to a product sold as several variants links the variant that carr
         'InventoryActivate'             => ShopifyFake::graphql(['inventoryActivate' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/3'], 'userErrors' => []]]),
         'getProduct'                    => ShopifyFake::graphql(['product' => shopifyProductWithSiblingVariant('gid://shopify/Product/7400', 'gid://shopify/ProductVariant/8402', 'CRBASK-05A')]),
         'GET shop.json'                 => ['shop' => ['id' => 1]],
-        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas']]),
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
             ['node' => ['id' => 'gid://shopify/ProductVariant/8401', 'inventoryItem' => ['inventoryLevel' => null]]],
             ['node' => ['id' => 'gid://shopify/ProductVariant/8402', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/3']]]],
@@ -828,7 +833,7 @@ test('a linked variant whose stock could not be activated is not shown as connec
         'GetVariantInventoryItem'       => ShopifyFake::graphql(['productVariant' => ['inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8402']]]),
         'InventoryActivate'             => ShopifyFake::graphql(['inventoryActivate' => ['inventoryLevel' => null, 'userErrors' => [['field' => ['locationId'], 'message' => 'Location can not stock this item']]]]),
         'GET shop.json'                 => ['shop' => ['id' => 1]],
-        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas']]),
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [
             ['node' => ['id' => 'gid://shopify/ProductVariant/8401', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/1']]]],
             ['node' => ['id' => 'gid://shopify/ProductVariant/8402', 'inventoryItem' => ['inventoryLevel' => null]]],
@@ -855,7 +860,7 @@ test('a channel that was not switched on keeps creating its own variant even on 
         'ProductVariantsCreate'         => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8403', 'title' => 'Default Title']], 'userErrors' => []]]),
         'getProduct'                    => ShopifyFake::graphql(['product' => shopifyProductNode('gid://shopify/Product/7400', 'gid://shopify/ProductVariant/8403', 'crbask-05a', '9.00')]),
         'GET shop.json'                 => ['shop' => ['id' => 1]],
-        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas']]),
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7400', 'title' => 'Juego de 3 cestas', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8403', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/4']]]]]]]]),
     ]);
 
@@ -1167,6 +1172,7 @@ test('an upload throwing a non-Exception error records it on the portfolio inste
     $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
 
     ShopifyFake::fake([
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate' => fn () => throw new Error('Call to a member function on null'),
     ]);
 
@@ -1551,7 +1557,7 @@ test('an upload never creates a second product for a portfolio whose product is 
     $portfolio->update(['sku' => 'THERE-1', 'customer_price' => 12, 'platform_product_id' => 'gid://shopify/Product/7500']);
 
     ShopifyFake::fake([
-        'getProductExistence'   => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7500', 'title' => 'Listed Product']]),
+        'getProductExistence'   => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7500', 'title' => 'Listed Product', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => []]]]),
         'ProductVariantsList'   => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'ProductVariantsCreate' => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8500', 'title' => 'Default Title']], 'userErrors' => []]]),
@@ -1570,7 +1576,7 @@ test('an upload never creates a second product for a portfolio whose product is 
         ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8500');
 
     ShopifyFake::fake([
-        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7500', 'title' => 'Listed Product']]),
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7500', 'title' => 'Listed Product', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8500', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/1']]]]]]]]),
     ]);
     [$stored] = StoreShopifyProduct::run($portfolio);
@@ -1582,7 +1588,7 @@ test('an upload never creates a second product for a portfolio whose product is 
         ->and($portfolio->errors_response)->toBeNull();
 
     ShopifyFake::fake([
-        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7500', 'title' => 'Listed Product']]),
+        'getProductExistence'           => ShopifyFake::graphql(['product' => ['id' => 'gid://shopify/Product/7500', 'title' => 'Listed Product', 'status' => 'ACTIVE']]),
         'getProductInventoryAtLocation' => ShopifyFake::graphql(['product' => ['variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/9999', 'inventoryItem' => ['inventoryLevel' => ['id' => 'gid://shopify/InventoryLevel/2']]]]]]]]),
         'ProductVariantsList'           => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'ProductVariantsCreate'         => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8501', 'title' => 'Default Title']], 'userErrors' => []]]),
@@ -1612,6 +1618,7 @@ test('an upload creates the product again when the one the portfolio points to i
 
     ShopifyFake::fake([
         'getProductExistence'   => ShopifyFake::graphql(['product' => null]),
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'productCreate'         => ShopifyFake::graphql(['productCreate' => ['product' => shopifyProductNode('gid://shopify/Product/7601', 'gid://shopify/ProductVariant/8600', ''), 'userErrors' => []]]),
         'ProductVariantsList'   => ShopifyFake::graphql(['productVariants' => ['edges' => []]]),
         'ProductVariantsCreate' => ShopifyFake::graphql(['productVariantsBulkCreate' => ['productVariants' => [['id' => 'gid://shopify/ProductVariant/8601', 'title' => 'Default Title']], 'userErrors' => []]]),
@@ -1763,4 +1770,143 @@ test('repair re-links a portfolio from an archived duplicate to the one active p
         ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8003')
         ->and($portfolio->platform_status)->toBeFalse()
         ->and($portfolio->isShopifyVariantAdopted())->toBeTrue();
+});
+
+test('the stock push still sends stock to an archived listing but no longer shows it as connected, and says when the listing is gone', function () {
+    Queue::fake();
+    $channel = shopifyProductChannel($this, 'product-stock-archived')->customerSalesChannel;
+    $channel->update(['max_quantity_advertise' => 10, 'stock_threshold' => 0]);
+    $newProduct = fn () => tap(\App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50])), fn ($product) => $product->update(['available_quantity' => 25]));
+
+    $listing = fn (string $productId) => tap(StorePortfolio::make()->action($channel, $newProduct(), []), fn (Portfolio $portfolio) => $portfolio->update([
+        'platform_product_id'         => "gid://shopify/Product/$productId",
+        'platform_product_variant_id' => "gid://shopify/ProductVariant/$productId",
+        'platform_status'             => $productId !== '7500',
+        'sku'                         => "sku-$productId",
+    ]));
+    $active   = $listing('7500');
+    $archived = $listing('7501');
+    $deleted  = $listing('7502');
+
+    ShopifyFake::fake([
+        'getProductsVariants'    => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => match ($id) {
+            'gid://shopify/Product/7500' => ['id' => $id, 'status' => 'ACTIVE', 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/7500', 'sku' => 'sku-7500', 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/7500']]]]]],
+            'gid://shopify/Product/7501' => ['id' => $id, 'status' => 'ARCHIVED', 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/7501', 'sku' => 'sku-7501', 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/7501']]]]]],
+            default                      => null,
+        }, $variables['ids'])]),
+        'inventorySetQuantities' => ShopifyFake::graphql(['inventorySetQuantities' => ['userErrors' => []]]),
+    ]);
+
+    BulkUpdateShopifyPortfolio::run($channel->id);
+
+    $responses = [];
+    UpdatePlatformPortfolioLog::assertPushed(function ($action, $parameters) use (&$responses) {
+        $responses[$parameters[0]->portfolio_id] = [$parameters[1]['status'], $parameters[1]['response'] ?? null];
+
+        return true;
+    });
+
+    expect(array_column(ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'], 'inventoryItemId'))->toBe(['gid://shopify/InventoryItem/7500', 'gid://shopify/InventoryItem/7501'])
+        ->and($active->refresh()->platform_status)->toBeTrue()
+        ->and($archived->refresh()->platform_status)->toBeFalse()
+        ->and($archived->last_stock_value)->toBe(10)
+        ->and($responses[$active->id])->toBe([PlatformPortfolioLogsStatusEnum::OK, null])
+        ->and($responses[$archived->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'Stock sent, but this product is archived in your Shopify store, so it is not for sale there'])
+        ->and($responses[$deleted->id])->toBe([PlatformPortfolioLogsStatusEnum::FAIL, 'This product is no longer in your Shopify store']);
+});
+
+test('two products linked to one shopify listing: orders go to the product whose code the line carries, only that product sends stock, and a match onto a taken listing is refused', function () {
+    Queue::fake();
+    $channel    = shopifyProductChannel($this, 'product-shared-listing')->customerSalesChannel;
+    $newProduct = fn () => tap(\App\Actions\Catalogue\Product\StoreProduct::make()->action($this->product->family, array_merge(\App\Models\Catalogue\Product::factory()->definition(), ['trade_units' => [['id' => $this->product->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 50])), fn ($product) => $product->update(['available_quantity' => 7]));
+
+    $ownerProduct = $newProduct();
+    $owner        = StorePortfolio::make()->action($channel, $ownerProduct, []);
+    $sharer       = StorePortfolio::make()->action($channel, $newProduct(), []);
+    foreach ([$owner, $sharer] as $portfolio) {
+        $portfolio->update(['platform_product_id' => 'gid://shopify/Product/7600', 'platform_product_variant_id' => 'gid://shopify/ProductVariant/8600', 'platform_status' => true]);
+    }
+    $sharer->update(['sku' => Str::lower($ownerProduct->code)]);
+
+    $orderLines = new class () {
+        use WithShopifyPortfolioMatching;
+    };
+
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7600', 'gid://shopify/ProductVariant/8600', $ownerProduct->code)?->id)->toBe($owner->id)
+        ->and($orderLines->matchShopifyLineItemToPortfolio($channel, 'gid://shopify/Product/7600', 'gid://shopify/ProductVariant/8600', 'unknown-sku'))->toBeNull();
+
+    $bySku = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $third = StorePortfolio::make()->action($channel, $newProduct(), []);
+    $bySku->update(['platform_product_variant_id' => 'gid://shopify/ProductVariant/8601']);
+    expect($orderLines->matchShopifyLineItemToPortfolio($channel, null, 'gid://shopify/ProductVariant/8600', $bySku->item_code)?->id)->toBe($bySku->id)
+        ->and($bySku->refresh()->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8601');
+
+    ShopifyFake::fake([
+        'getProductsVariants'    => fn (array $variables) => ShopifyFake::graphql(['nodes' => array_map(fn (string $id) => ['id' => $id, 'status' => 'ACTIVE', 'variants' => ['edges' => [['node' => ['id' => 'gid://shopify/ProductVariant/8600', 'sku' => strtoupper($ownerProduct->code), 'inventoryItem' => ['id' => 'gid://shopify/InventoryItem/8600']]]]]], $variables['ids'])]),
+        'inventorySetQuantities' => ShopifyFake::graphql(['inventorySetQuantities' => ['userErrors' => []]]),
+    ]);
+    BulkUpdateShopifyPortfolio::run($channel->id);
+
+    $responses = [];
+    UpdatePlatformPortfolioLog::assertPushed(function ($action, $parameters) use (&$responses) {
+        $responses[$parameters[0]->portfolio_id] = $parameters[1]['response'] ?? null;
+
+        return true;
+    });
+    expect(ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'])->toHaveCount(1)
+        ->and($owner->refresh()->last_stock_value)->toBe(7)
+        ->and($responses[$sharer->id])->toBe('This Shopify listing is also linked to '.$ownerProduct->code.', so its stock is not sent');
+
+    MatchPortfolioToCurrentShopifyProduct::make()->handle($third, ['shopify_product_id' => 'gid://shopify/Product/7600']);
+    expect($third->refresh()->platform_product_id)->toBeNull()
+        ->and($third->errors_response)->toBe(['message' => 'This Shopify product is already linked to '.$owner->item_code.' in this channel']);
+});
+
+test('repair tries the product code when the sku a portfolio carries only matches an archived copy', function () {
+    Queue::fake();
+    $channel   = shopifyProductChannel($this, 'bundle-sku-repair')->customerSalesChannel;
+    $portfolio = StorePortfolio::make()->action($channel, $this->product->refresh(), []);
+    $portfolio->update(['sku' => 'bundle-a-b-c', 'platform_product_id' => 'gid://shopify/Product/9102', 'platform_status' => true]);
+    $code = Str::lower($this->product->code);
+
+    GetShopifyCatalogueSnapshot::shouldRun()->andReturn([
+        'complete'           => true,
+        'reason'             => null,
+        'variants_read'      => 2,
+        'products'           => [
+            'gid://shopify/Product/9101' => ['status' => 'ACTIVE', 'variants' => [['id' => 'gid://shopify/ProductVariant/8101', 'sku' => $code, 'at_location' => true]]],
+            'gid://shopify/Product/9102' => ['status' => 'ARCHIVED', 'variants' => [['id' => 'gid://shopify/ProductVariant/8102', 'sku' => 'bundle-a-b-c', 'at_location' => true]]],
+        ],
+        'product_ids_by_sku' => [
+            $code          => ['gid://shopify/Product/9101' => true],
+            'bundle-a-b-c' => ['gid://shopify/Product/9102' => false],
+        ],
+    ]);
+
+    expect(RepairShopifyPortfolioConnections::run($channel)['repaired'])->toBe(1)
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/9101')
+        ->and($portfolio->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/8101');
+});
+
+test('an upload is refused when the shopify store already has a product with the same sku, whatever its status', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-sku-taken');
+    $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'TAKEN-1', 'platform_product_id' => 'gid://shopify/Product/7800']);
+
+    ShopifyFake::fake([
+        'getProductExistence'    => ShopifyFake::graphql(['product' => null]),
+        'productVariantsWithSku' => ShopifyFake::graphql(['productVariants' => ['edges' => [
+            ['node' => ['sku' => 'TAKEN-10', 'product' => ['handle' => 'other', 'status' => 'ACTIVE']]],
+            ['node' => ['sku' => 'taken-1', 'product' => ['handle' => 'reed-diffuser', 'status' => 'ARCHIVED']]],
+        ]]]),
+    ]);
+
+    [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+
+    expect($stored)->toBeFalse()
+        ->and($message)->toBe('Your Shopify store already has a product with the sku TAKEN-1 (archived, reed-diffuser). Match this product to it instead of uploading a new one')
+        ->and(ShopifyFake::calls('productCreate'))->toBe([])
+        ->and(ShopifyFake::calls('productVariantsWithSku')[0]['variables']['query'])->toBe('sku:"TAKEN-1"')
+        ->and($portfolio->refresh()->platform_product_id)->toBe('gid://shopify/Product/7800');
 });

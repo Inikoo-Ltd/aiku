@@ -5,6 +5,8 @@ date: 2026-09-21
 tags: crm, chat
 category: crm
 help_routes: grp.org.shops.show.chat
+series: Chat
+order: 1
 ---
 
 <aside class="tldr">
@@ -16,7 +18,7 @@ help_routes: grp.org.shops.show.chat
 Open <b>Chat</b> in the menu of your shop or your organisation. What you see depends on your job position, not on a list somebody keeps by hand:
 
 - <b>Customer Inbox</b> - the working screen. You have it if your position is customer service on that shop; that makes you an agent on its website chat, WhatsApp and email at once.
-- <b>Supervision</b> - the same screen for whoever oversees chat: every conversation on the shops they run, whoever is holding it, and the agents down the side with whether they are there and how much they hold. Supervisors and administrators can take over, write in and close any conversation without being routed one.
+- <b>Supervision</b> - the same screen for whoever oversees chat, with the power to take over, write in and close any conversation without being routed one. See <a href="/docs/overseeing-chat">Overseeing chat</a>.
 - <b>Phone calls</b> - the notes of every call logged on the shops you work.
 - <b>Reports</b> - the figures, for a shop, an organisation or the whole group.
 - <b>Settings</b> - working hours, the mailbox and the channels.
@@ -27,9 +29,9 @@ When somebody changes position or leaves, their access follows on its own and th
 
 The rail on the left lists your shops with what is <b>waiting</b> and <b>active</b> on each channel. Whoever oversees chat can switch several shops on at once and read them as one list.
 
-- <b>Website</b> - the customer types into the bubble on the site. Outside working hours the widget says when you are back and takes a name, an email and a message instead.
-- <b>WhatsApp</b> - messages to the shop's number. See <a href="/docs/connecting-whatsapp-to-your-shop">Connecting WhatsApp to your shop</a>. Our own promotions do not fill the Waiting list.
-- <b>Email</b> - the shop's Gmail mailbox, connected once in the shop's settings; see <a href="/docs/connecting-an-email-mailbox-to-your-shop">Connecting an email mailbox to your shop</a>. An incoming mail opens a conversation and brings the rest of its thread with it, so you read the whole exchange. Your reply leaves from that mailbox, in the same thread, with your signature and your attachments.
+- <b>Website</b> - the customer types into the bubble on the site, or leaves a message outside working hours. See <a href="/docs/live-chat-on-the-website">Live chat on the website</a>.
+- <b>WhatsApp</b> - messages to the shop's number. See <a href="/docs/whatsapp-in-chat">WhatsApp in Chat</a>.
+- <b>Email</b> - the shop's Gmail mailbox, connected once in the shop's settings. See <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a>.
 
 ## Taking a conversation
 
@@ -38,8 +40,6 @@ The inbox has two lists, each with its count: <b>My Chats</b> and <b>Colleagues'
 Then it works like any messenger: type and send, add an emoji, attach as many images or documents as you need. <b>Translate</b> lets you read the customer in your language and answer in theirs.
 
 A sent message cannot be edited, because the customer already has it. <b>Take back</b> removes it on every channel and tells the customer. <b>Redact</b> strikes selected text - a card number, a password - out of a message for good.
-
-<b>&#8942;</b> &rarr; <b>Email notification</b> says <b>On</b> or <b>Off</b>. On, what you send also goes to the customer by email, for the customer who asked a question on the website and closed the tab. It is offered only in a conversation you are holding, where there is an address to write to, and never on an email conversation, which is already an email.
 
 ## The customer at your side
 
