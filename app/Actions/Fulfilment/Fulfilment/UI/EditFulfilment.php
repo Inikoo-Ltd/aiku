@@ -20,10 +20,12 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditFulfilment extends OrgAction
 {
+    use WithFulfilmentShopEditAuthorisation;
     public function handle(Fulfilment $fulfilment): Fulfilment
     {
         return $fulfilment;

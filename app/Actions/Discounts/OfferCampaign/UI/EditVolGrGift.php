@@ -22,6 +22,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditVolGrGift extends OrgAction
 {
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(["discounts.{$this->shop->id}.edit", "supervisor-discounts.{$this->shop->id}"]);
+    }
+
     public function handle(Offer $offer): Response
     {
 

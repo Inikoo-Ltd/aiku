@@ -21,10 +21,12 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowPurge extends OrgAction
 {
+    use WithOrderingAuthorisation;
     public function handle(Purge $purge): Purge
     {
         return $purge;

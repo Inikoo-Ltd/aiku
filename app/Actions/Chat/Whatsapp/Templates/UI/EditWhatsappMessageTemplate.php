@@ -20,6 +20,11 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditWhatsappMessageTemplate extends OrgAction
 {
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo(["chat-m.{$this->shop->id}", "crm.{$this->shop->id}.edit", "org-admin.{$this->organisation->id}"]);
+    }
+
     public function handle(Shop $shop, MetaMessageTemplate $metaMessageTemplate, ActionRequest $request): Response
     {
         $components = collect(Arr::get($metaMessageTemplate->data, 'components', []));
