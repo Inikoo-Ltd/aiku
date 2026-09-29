@@ -17,6 +17,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TicketForm from "@/Components/Tickets/TicketForm.vue"
 import TicketMiniList from "@/Components/Tickets/TicketMiniList.vue"
 import TicketQaQueue from "@/Components/Tickets/TicketQaQueue.vue"
+import TicketQaChecking from "@/Components/Tickets/TicketQaChecking.vue"
 import TicketTabsCard from "@/Components/Tickets/TicketTabsCard.vue"
 import TicketRecentUpdates from "@/Components/Tickets/TicketRecentUpdates.vue"
 import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
@@ -37,6 +38,7 @@ const props = defineProps<{
     stats: { open: number; created_week: number; done_week: number; median_hours: number | null }
     queue?: any[]
     qa_queue?: any[]
+    qa_checking?: any[]
     assigned?: any[]
     collaborating?: any[]
     waiting_due?: any[]
@@ -46,7 +48,7 @@ const props = defineProps<{
 
 library.add(faCircle, faShieldCheck, faShield, faVial)
 
-const liveProps = ["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "assigned", "collaborating", "waiting_due", "by_status", "qa_stats"]
+const liveProps = ["can_manage", "can_qa", "mine", "recently_closed", "stats", "queue", "qa_queue", "qa_checking", "assigned", "collaborating", "waiting_due", "by_status", "qa_stats"]
 
 const openStatuses = "open,assigned,in_progress,waiting,answered,pending_deploy"
 
@@ -137,7 +139,10 @@ const hours = (value: number | null) => (value === null ? "-" : value >= 48 ? `$
                 </div>
             </template>
             <template #qa>
-                <TicketQaQueue flat :title="ctrans('QA queue')" :tickets="qa_queue ?? []" />
+                <div class="grid divide-y divide-gray-200 lg:grid-cols-2 lg:divide-x lg:divide-y-0 [&>*]:min-w-0">
+                    <TicketQaQueue flat :title="ctrans('QA queue')" :tickets="qa_queue ?? []" />
+                    <TicketQaChecking flat :title="ctrans('Currently checking')" :tickets="qa_checking ?? []" />
+                </div>
             </template>
         </TicketTabsCard>
 

@@ -4958,6 +4958,46 @@ test('b2b dashboard insights work for a customer who never ordered and for one w
         ->and($lostInsights['recommendations_source'])->toBe('bought_together');
 });
 
+test('b2b dashboard shows a voucher only once staff opt it in, and hides it after the customer used it', function () {
+    if (!$this->shop->offerCampaigns()->where('type', \App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum::VOUCHERS)->exists()) {
+        \App\Actions\Discounts\OfferCampaign\SeedShopOfferCampaigns::run($this->shop);
+    }
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $code     = 'DASH'.strtoupper(\Illuminate\Support\Str::random(6));
+
+    $voucher = \App\Actions\Discounts\Offer\StoreVoucherOffers::make()->handle($this->shop, [
+        'voucher'            => $code,
+        'name'               => '15% off over 200',
+        'offer_amount'       => 200,
+        'can_customer_reuse' => false,
+        'start_at'           => now()->subDay()->toDateTimeString(),
+        'end_at'             => now()->addDays(10)->toDateTimeString(),
+        'percentage_off'     => 15,
+        'allowance_type'     => 'percentage_off',
+        'target_type'        => 'shop',
+        'target_id'          => $this->shop->id,
+    ]);
+    $voucher->update(['status' => true]);
+
+    $dashboardVoucherCodes = fn () => collect(\App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh())['vouchers'])->pluck('code')->all();
+
+    expect($dashboardVoucherCodes())->not->toContain($code);
+
+    \App\Actions\Discounts\Offer\UpdateOffer::make()->action($voucher, ['show_on_customer_dashboard' => true]);
+    $shown = collect(\App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights::run($customer->fresh())['vouchers'])->firstWhere('code', $code);
+
+    expect($voucher->fresh()->settings)->toMatchArray(['can_customer_reuse' => false, 'show_on_customer_dashboard' => true])
+        ->and($shown['percentage_off'])->toEqual(0.15)
+        ->and($shown['min_amount'])->toEqual(200)
+        ->and($shown['is_whole_order'])->toBeTrue()
+        ->and($shown['expires_at'])->toBe(now()->addDays(10)->toDateString());
+
+    $order = StoreOrder::make()->action($customer, Order::factory()->definition());
+    $order->update(['state' => OrderStateEnum::DISPATCHED, 'offer_voucher_id' => $voucher->id]);
+
+    expect($dashboardVoucherCodes())->not->toContain($code);
+});
+
 test('ordering a past order again fills the basket once, however many times it is pressed', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     [, $product] = createProduct($this->shop);

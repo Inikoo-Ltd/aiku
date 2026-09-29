@@ -3,6 +3,8 @@ import { computed, ref } from "vue"
 import axios from "axios"
 import DashboardSettingToggle from "@/Components/DataDisplay/Dashboard/DashboardSettingToggle.vue"
 import Chart from "primevue/chart"
+import DatePicker from "primevue/datepicker"
+import Select from "primevue/select"
 import { Link, router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -101,6 +103,8 @@ const props = defineProps<{
 		events: ChangeEvent[]
 	}
 	breakdownRoute?: (row: { id: number; slug: string | null }) => string | null
+	reloadWith?: (params: Record<string, string | number | undefined>) => Promise<unknown>
+	compact?: boolean
 }>()
 
 const moneyFormatter = computed(() => new Intl.NumberFormat(undefined, { style: "currency", currency: props.data.currency, maximumFractionDigits: 0 }))
@@ -146,21 +150,30 @@ const updateIncludePartners = (isOn: boolean) => {
 }
 
 const reload = () => {
+	const params = {
+		from: range.value.from,
+		to: range.value.to,
+		compareFrom: compareRange.value.from,
+		compareTo: compareRange.value.to,
+		organisations: selectedOrganisations.value.join(",") || undefined,
+		shops: selectedShops.value.join(",") || undefined,
+		partners: includePartners.value ? 1 : 0,
+	}
+	const finish = () => {
+		isLoading.value = false
+		isPartnersLoading.value = false
+	}
+
+	if (props.reloadWith) {
+		isLoading.value = true
+		props.reloadWith(params).finally(finish)
+		return
+	}
+
 	router.reload({
 		onStart: () => (isLoading.value = true),
-		onFinish: () => {
-			isLoading.value = false
-			isPartnersLoading.value = false
-		},
-		data: {
-			from: range.value.from,
-			to: range.value.to,
-			compareFrom: compareRange.value.from,
-			compareTo: compareRange.value.to,
-			organisations: selectedOrganisations.value.join(",") || undefined,
-			shops: selectedShops.value.join(",") || undefined,
-			partners: includePartners.value ? 1 : 0,
-		},
+		onFinish: finish,
+		data: params,
 		only: ["sales_analysis"],
 	})
 }
@@ -210,6 +223,35 @@ const applyPreset = (preset: (typeof presets)[number] | undefined) => {
 	compareRange.value = { from: shiftYears(isoDate(from), years), to: shiftYears(to, years) }
 	reload()
 }
+
+const fromIsoDate = (iso: string): Date => {
+	const [year, month, day] = iso.split("-").map(Number)
+	return new Date(year, month - 1, day)
+}
+const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+const dateModel = (target: typeof range, key: "from" | "to") =>
+	computed<Date | null>({
+		get: () => (target.value[key] ? fromIsoDate(target.value[key]) : null),
+		set: (value) => {
+			if (!value) return
+			target.value = { ...target.value, [key]: toLocalIsoDate(value) }
+			reload()
+		},
+	})
+const rangeFrom = dateModel(range, "from")
+const rangeTo = dateModel(range, "to")
+const compareFrom = dateModel(compareRange, "from")
+const compareTo = dateModel(compareRange, "to")
+
+const presetOptions = presets.map((preset, index) => ({ label: preset.label, value: index }))
+const onQuickPeriod = (index: number | null) => {
+	if (index === null) return
+	applyPreset(presets[index])
+}
+
+const datePickerPt = { pcInputText: { root: { class: "!w-32 !py-1 !text-xs" } } }
+const filterSelectPt = { label: { class: "!py-1 !text-xs" } }
+const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
 
 const current = computed(() => props.data.totals.current)
 const previous = computed(() => props.data.totals.previous)
@@ -436,7 +478,7 @@ const causeCounts = computed(() => {
 })
 
 const eventTypeFilter = ref<EventType | null>(null)
-const eventShopFilter = ref<string>("")
+const eventShopFilter = ref<string | null>(null)
 const eventShops = computed(() => [...new Set(props.data.events.flatMap((event) => event.shops))].sort())
 const visibleEvents = computed(() =>
 	props.data.events.filter((event) => (!eventTypeFilter.value || event.type === eventTypeFilter.value) && (!eventShopFilter.value || event.shops.includes(eventShopFilter.value)))
@@ -456,13 +498,13 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 
 <template>
 	<div class="relative space-y-4 px-4 py-4 text-sm text-gray-700">
-		<div class="flex flex-wrap items-center gap-2">
+		<div class="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
 			<div v-if="data.filters.organisations.length > 1" class="flex items-center gap-1" data-organisation-capsules>
 				<FontAwesomeIcon :icon="faBuilding" class="text-gray-400" fixed-width aria-hidden="true" />
 				<button
 					type="button"
-					class="rounded-full border px-2.5 py-0.5 text-xs"
-					:class="!selectedOrganisations.length ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+					class="rounded-full border px-2.5 py-0.5 text-xs transition-colors"
+					:class="!selectedOrganisations.length ? 'border-gray-700 bg-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-600 hover:border-gray-500 hover:bg-gray-100 hover:text-gray-900'"
 					@click="toggleOrganisation(null)">
 					{{ ctrans("All") }}
 				</button>
@@ -471,8 +513,8 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 					:key="organisation.slug"
 					type="button"
 					v-tooltip="organisation.name"
-					class="rounded-full border px-2.5 py-0.5 text-xs"
-					:class="selectedOrganisations.includes(organisation.slug) ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+					class="rounded-full border px-2.5 py-0.5 text-xs transition-colors"
+					:class="selectedOrganisations.includes(organisation.slug) ? 'border-gray-700 bg-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-600 hover:border-gray-500 hover:bg-gray-100 hover:text-gray-900'"
 					@click="toggleOrganisation(organisation.slug)">
 					{{ organisation.code }}
 				</button>
@@ -481,8 +523,8 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 			<div v-if="hasManyShops" class="relative" data-shop-capsule>
 				<button
 					type="button"
-					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs"
-					:class="selectedShops.length ? 'border-gray-700 bg-gray-700 text-white' : 'border-gray-300 text-gray-600 hover:bg-gray-50'"
+					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors"
+					:class="selectedShops.length ? 'border-gray-700 bg-gray-700 text-white hover:bg-gray-800' : 'border-gray-300 text-gray-600 hover:border-gray-500 hover:bg-gray-100 hover:text-gray-900'"
 					@click="isShopMenuOpen = !isShopMenuOpen">
 					<FontAwesomeIcon :icon="faStore" fixed-width aria-hidden="true" />
 					{{ shopCapsuleLabel }}
@@ -510,35 +552,57 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 				:isLoading="isPartnersLoading"
 				@change="updateIncludePartners" />
 
-			<div class="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
-				<input v-model="range.from" type="date" :max="range.to" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
+			<div class="flex w-full flex-wrap items-center gap-1.5 border-t border-gray-200 pt-2 text-xs">
+				<DatePicker v-model="rangeFrom" :maxDate="rangeTo ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('From')" />
 				<span class="text-gray-400">–</span>
-				<input v-model="range.to" type="date" :min="range.from" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
+				<DatePicker v-model="rangeTo" :minDate="rangeFrom ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('To')" />
 				<span class="text-gray-500">{{ ctrans("vs") }}</span>
-				<input v-model="compareRange.from" type="date" :max="compareRange.to" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
+				<DatePicker v-model="compareFrom" :maxDate="compareTo ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('Compare from')" />
 				<span class="text-gray-400">–</span>
-				<input v-model="compareRange.to" type="date" :min="compareRange.from" class="rounded border-gray-300 py-1 text-xs" @change="reload" />
-				<FontAwesomeIcon v-if="isLoading" :icon="faSpinnerThird" spin class="text-indigo-500" fixed-width :aria-label="ctrans('Loading')" />
-				<select class="rounded border-gray-300 py-1 text-xs text-gray-600" @change="applyPreset(presets[Number(($event.target as HTMLSelectElement).value)]); ($event.target as HTMLSelectElement).value = ''">
-					<option value="">{{ ctrans("Quick periods") }}</option>
-					<option v-for="(preset, index) in presets" :key="preset.label" :value="index">{{ preset.label }}</option>
-				</select>
+				<DatePicker v-model="compareTo" :minDate="compareFrom ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('Compare to')" />
+				<FontAwesomeIcon v-if="isLoading" :icon="faSpinnerThird" spin class="text-[--app-accent]" fixed-width :aria-label="ctrans('Loading')" />
+				<Select
+					:modelValue="null"
+					:options="presetOptions"
+					optionLabel="label"
+					optionValue="value"
+					:placeholder="ctrans('Quick periods')"
+					class="w-56"
+					:class="[fieldFocusClass, 'ml-auto']"
+					:pt="filterSelectPt"
+					@update:modelValue="onQuickPeriod" />
 			</div>
 		</div>
 
 		<div v-if="isLoading" class="absolute inset-x-0 top-28 z-10 flex justify-center">
 			<div class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 shadow">
-				<FontAwesomeIcon :icon="faSpinnerThird" spin class="text-indigo-500" fixed-width aria-hidden="true" />
+				<FontAwesomeIcon :icon="faSpinnerThird" spin class="text-[--app-accent]" fixed-width aria-hidden="true" />
 				{{ ctrans("Loading") }}…
 			</div>
 		</div>
 		<div class="space-y-4 transition-opacity" :class="isLoading ? 'pointer-events-none opacity-40' : ''" :aria-busy="isLoading">
-		<div class="flex flex-wrap gap-2">
+		<div v-if="compact" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
 			<div
 				v-for="tile in tiles"
 				:key="tile.key"
 				v-tooltip="`${tile.label} · ${ctrans('was')} ${tile.previous}`"
-				class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm shadow-sm tabular-nums">
+				class="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm tabular-nums transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
+				<div class="flex items-center gap-1.5 text-xs text-gray-500">
+					<FontAwesomeIcon :icon="tile.icon" class="text-gray-400" fixed-width aria-hidden="true" />
+					<span class="truncate">{{ tile.label }}</span>
+				</div>
+				<div class="mt-1 flex items-baseline gap-1.5">
+					<span class="text-base font-semibold text-gray-900">{{ tile.value }}</span>
+					<span class="text-xs" :class="tileChangeClass(tile)">{{ formatChange(tile.change) }}</span>
+				</div>
+			</div>
+		</div>
+		<div v-else class="flex flex-wrap gap-2">
+			<div
+				v-for="tile in tiles"
+				:key="tile.key"
+				v-tooltip="`${tile.label} · ${ctrans('was')} ${tile.previous}`"
+				class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm shadow-sm tabular-nums transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md">
 				<FontAwesomeIcon :icon="tile.icon" class="text-gray-400" fixed-width aria-hidden="true" />
 				<span class="text-xs text-gray-500">{{ tile.label }}</span>
 				<span class="font-semibold text-gray-900">{{ tile.value }}</span>
@@ -557,8 +621,8 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 						v-for="view in (['line', 'background'] as const)"
 						:key="view"
 						type="button"
-						class="px-2 py-0.5"
-						:class="stockOutView === view ? 'bg-gray-700 text-white' : 'text-gray-600 hover:bg-gray-50'"
+						class="px-2 py-0.5 transition-colors"
+						:class="stockOutView === view ? 'bg-gray-700 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'"
 						@click="setStockOutView(view)">
 						{{ view === "line" ? ctrans("Line") : ctrans("Background") }}
 					</button>
@@ -568,8 +632,9 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 					v-for="(style, type) in eventStyle"
 					:key="type"
 					type="button"
-					class="flex items-center gap-1 rounded-full border px-2 py-0.5"
-					:class="markers[type] ? 'border-gray-500 bg-gray-50 text-gray-800' : 'border-gray-200 text-gray-500'"
+					class="flex items-center gap-1 rounded-full border px-2 py-0.5 transition-colors hover:border-[--event-color] hover:bg-[color-mix(in_srgb,var(--event-color)_10%,white)] hover:text-gray-900"
+					:class="markers[type] ? 'border-[--event-color] bg-[color-mix(in_srgb,var(--event-color)_10%,white)] text-gray-900' : 'border-gray-200 text-gray-500'"
+					:style="{ '--event-color': style.color }"
 					@click="markers[type] = !markers[type]">
 					<span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: style.color }" />
 					{{ style.label }}
@@ -593,7 +658,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 						</tr>
 					</thead>
 					<tbody class="divide-y">
-						<tr v-for="shop in data.shops" :key="shop.shop_id">
+						<tr v-for="shop in data.shops" :key="shop.shop_id" class="transition-colors hover:bg-gray-50">
 							<td class="px-4 py-1.5">
 								<span class="font-medium">{{ shop.shop_code }}</span>
 								<span class="ml-1 text-gray-500">{{ shop.shop_name }}</span>
@@ -626,9 +691,9 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 							</tr>
 						</thead>
 						<tbody class="divide-y">
-							<tr v-for="product in data.breakdown" :key="product.id">
+							<tr v-for="product in data.breakdown" :key="product.id" class="transition-colors hover:bg-gray-50">
 								<td class="px-4 py-1.5">
-									<Link v-if="breakdownLink(product)" :href="breakdownLink(product)" class="font-medium hover:underline">{{ product.code }}</Link>
+									<Link v-if="breakdownLink(product)" :href="breakdownLink(product)" class="font-medium transition-colors hover:text-[--app-accent] hover:underline">{{ product.code }}</Link>
 									<span v-else class="font-medium">{{ product.code }}</span>
 									<span v-if="product.discontinued_at || !product.status" class="ml-1 rounded bg-gray-100 px-1 text-gray-500">{{ ctrans("discontinued") }}</span>
 									<span v-else-if="!product.is_for_sale" class="ml-1 rounded bg-gray-100 px-1 text-gray-500">{{ ctrans("not for sale") }}</span>
@@ -662,7 +727,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 				<span class="mr-2 font-semibold">{{ ctrans("Stock outs") }}</span>
 				<button
 					type="button"
-					class="rounded-full border px-2 py-0.5 text-xs"
+					class="rounded-full border px-2 py-0.5 text-xs transition-colors hover:border-gray-400 hover:bg-gray-50"
 					:class="causeFilter === null ? 'border-gray-400 text-gray-700' : 'border-gray-200 text-gray-500'"
 					@click="causeFilter = null">
 					{{ ctrans("All") }} {{ data.stock_outs.length }}
@@ -671,7 +736,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 					v-for="(count, cause) in causeCounts"
 					:key="cause"
 					type="button"
-					class="rounded-full px-2 py-0.5 text-xs"
+					class="rounded-full px-2 py-0.5 text-xs transition hover:ring-1 hover:ring-gray-300"
 					:class="[causeStyle[cause].class, causeFilter === cause ? 'ring-1 ring-gray-500' : '']"
 					v-tooltip="causeStyle[cause].explanation"
 					@click="causeFilter = causeFilter === cause ? null : cause">
@@ -695,7 +760,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 						</tr>
 					</thead>
 					<tbody class="divide-y">
-						<tr v-for="stockOut in visibleStockOuts.slice(0, stockOutRows)" :key="`${stockOut.org_stock_id}-${stockOut.started_on}`">
+						<tr v-for="stockOut in visibleStockOuts.slice(0, stockOutRows)" :key="`${stockOut.org_stock_id}-${stockOut.started_on}`" class="transition-colors hover:bg-gray-50">
 							<td class="px-4 py-1.5 font-medium">{{ stockOut.code }}</td>
 							<td class="px-2 py-1.5">{{ stockOut.organisation }}</td>
 							<td class="px-2 py-1.5">{{ formatDate(stockOut.started_on) }}</td>
@@ -714,7 +779,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 							</td>
 							<td class="px-2 py-1.5">
 								<template v-if="stockOut.order">
-									<Link :href="orderRoute(stockOut)" class="hover:underline">{{ stockOut.order.reference }}</Link>
+									<Link :href="orderRoute(stockOut)" class="transition-colors hover:text-[--app-accent] hover:underline">{{ stockOut.order.reference }}</Link>
 									<div class="text-gray-500">
 										{{ stockOut.order.kind === "purchase_order" ? ctrans("ordered") : ctrans("dispatched") }} {{ formatDate(stockOut.order.ordered_on) }}
 										<span v-if="stockOut.order.expected_on" v-tooltip="stockOut.order.expected_is_estimate ? ctrans('No expected date was recorded; assumed from a usual delivery time') : undefined">· {{ ctrans("expected") }} {{ stockOut.order.expected_is_estimate ? "~" : "" }}{{ formatDate(stockOut.order.expected_on) }}</span>
@@ -727,7 +792,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 						</tr>
 					</tbody>
 				</table>
-				<button v-if="visibleStockOuts.length > stockOutRows" type="button" class="w-full border-t px-4 py-2 text-xs text-indigo-600 hover:bg-gray-50" @click="stockOutRows += ROWS_PER_PAGE">
+				<button v-if="visibleStockOuts.length > stockOutRows" type="button" class="w-full border-t px-4 py-2 text-xs text-[--app-accent] transition-colors hover:bg-[--app-accent-soft]" @click="stockOutRows += ROWS_PER_PAGE">
 					{{ ctrans("Show more") }} ({{ (visibleStockOuts.length - stockOutRows).toLocaleString() }})
 				</button>
 			</div>
@@ -741,7 +806,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 				<span class="mr-2 font-semibold">{{ ctrans("Changes") }}</span>
 				<button
 					type="button"
-					class="rounded-full border px-2 py-0.5 text-xs"
+					class="rounded-full border px-2 py-0.5 text-xs transition-colors hover:border-gray-400 hover:bg-gray-50"
 					:class="eventTypeFilter === null ? 'border-gray-400 text-gray-700' : 'border-gray-200 text-gray-500'"
 					@click="eventTypeFilter = null">
 					{{ ctrans("All") }}
@@ -750,22 +815,27 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 					v-for="(style, type) in eventStyle"
 					:key="type"
 					type="button"
-					class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
-					:class="eventTypeFilter === type ? 'border-gray-400 text-gray-700' : 'border-gray-200 text-gray-500'"
+					class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors hover:border-[--event-color] hover:bg-[color-mix(in_srgb,var(--event-color)_10%,white)] hover:text-gray-900"
+					:class="eventTypeFilter === type ? 'border-[--event-color] bg-[color-mix(in_srgb,var(--event-color)_10%,white)] text-gray-900' : 'border-gray-200 text-gray-500'"
+					:style="{ '--event-color': style.color }"
 					@click="eventTypeFilter = eventTypeFilter === type ? null : type">
 					<FontAwesomeIcon :icon="style.icon" :style="{ color: style.color }" fixed-width aria-hidden="true" />
 					{{ style.label }}
 				</button>
-				<select v-model="eventShopFilter" class="ml-auto rounded border-gray-300 py-0.5 text-xs">
-					<option value="">{{ ctrans("All websites") }}</option>
-					<option v-for="shop in eventShops" :key="shop" :value="shop">{{ shop }}</option>
-				</select>
+				<Select
+					v-model="eventShopFilter"
+					:options="eventShops"
+					showClear
+					:placeholder="ctrans('All websites')"
+					class="ml-auto w-44"
+					:class="fieldFocusClass"
+					:pt="filterSelectPt" />
 			</div>
 			<div v-if="!visibleEvents.length" class="px-4 py-6 text-gray-500">{{ ctrans("No changes in this period") }}</div>
 			<ul v-else class="max-h-[32rem] divide-y overflow-y-auto">
-				<li v-for="event in visibleEvents.slice(0, eventRows)" :key="`${event.datetime}-${event.type}-${event.field}-${event.subjects.join()}`" class="px-4 py-1.5">
+				<li v-for="event in visibleEvents.slice(0, eventRows)" :key="`${event.datetime}-${event.type}-${event.field}-${event.subjects.join()}`" class="px-4 py-1.5 transition-colors hover:bg-gray-50">
 					<button type="button" class="flex w-full items-center gap-3 text-left" @click="expandedEvents[event.datetime + event.field] = !expandedEvents[event.datetime + event.field]">
-						<FontAwesomeIcon :icon="eventStyle[event.type].icon" :style="{ color: eventStyle[event.type].color }" fixed-width aria-hidden="true" />
+						<FontAwesomeIcon v-tooltip="eventStyle[event.type].label" :icon="eventStyle[event.type].icon" :style="{ color: eventStyle[event.type].color }" fixed-width :aria-label="eventStyle[event.type].label" />
 						<span class="w-40 shrink-0 text-xs text-gray-500">{{ useFormatTime(event.datetime, { formatTime: "PPp" }) }}</span>
 						<span class="flex-1">{{ eventLabel(event) }}</span>
 						<span class="text-xs text-gray-500">{{ shopsLabel(event) }}</span>
@@ -782,7 +852,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 					</ul>
 				</li>
 				<li v-if="visibleEvents.length > eventRows">
-					<button type="button" class="w-full px-4 py-2 text-xs text-indigo-600 hover:bg-gray-50" @click="eventRows += ROWS_PER_PAGE">
+					<button type="button" class="w-full px-4 py-2 text-xs text-[--app-accent] transition-colors hover:bg-[--app-accent-soft]" @click="eventRows += ROWS_PER_PAGE">
 						{{ ctrans("Show more") }} ({{ (visibleEvents.length - eventRows).toLocaleString() }})
 					</button>
 				</li>

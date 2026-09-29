@@ -26,10 +26,12 @@ use App\Models\CRM\TrafficSource;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowTrafficSource extends OrgAction
 {
+    use WithMarketingAuthorisation;
     use WithCustomersSubNavigation;
 
     private Organisation|Shop $parent;

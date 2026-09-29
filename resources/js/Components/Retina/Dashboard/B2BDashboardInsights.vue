@@ -5,12 +5,13 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus } from "@fal"
+import { faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy } from "@fal"
 import Image from "@common/Components/Image.vue"
+import Select from "primevue/select"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-library.add(faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus)
+library.add(faRedoAlt, faShoppingBasket, faGift, faBell, faBellSlash, faHeart, faFileInvoice, faArrowRight, faCheck, faMinus, faPlus, faTicketAlt, faCopy)
 
 type StockStatus = "in_stock" | "low" | "out_of_stock" | "unavailable"
 
@@ -22,6 +23,7 @@ interface Regular {
     url: string | null
     price: number
     unit: string | null
+    units: number
     available_quantity: number
     stock_status: StockStatus
     eta: string | null
@@ -62,6 +64,17 @@ interface RecentOrder {
     invoice: string | null
 }
 
+interface Voucher {
+    code: string
+    name: string
+    percentage_off: number | null
+    amount_off: number | null
+    is_free_shipping: boolean
+    is_whole_order: boolean
+    min_amount: number | null
+    expires_at: string | null
+}
+
 interface Insights {
     currency_code: string
     kpis: {
@@ -75,6 +88,7 @@ interface Insights {
         is_lapsed: boolean
     }
     gold_reward: { label: string, days_left: number, expires_at: string } | null
+    vouchers: Voucher[]
     regulars: Regular[]
     favourites: Favourite[]
     recent_orders: RecentOrder[]
@@ -127,15 +141,44 @@ const orderAgainSortRank = (regular: Regular) => {
     return 1
 }
 
+const orderableRegulars = computed(() => props.insights.regulars.filter((regular) => regular.stock_status !== "unavailable"))
+
+const pickedIds = ref<number[]>([])
+
 const orderAgainRows = computed(() => {
     const limit = props.insights.kpis.orders >= HEAVY_BUYER_ORDERS ? 10 : 5
-    return props.insights.regulars
-        .filter((regular) => regular.stock_status !== "unavailable")
+    const picked = pickedIds.value
+        .map((id) => orderableRegulars.value.find((regular) => regular.id === id))
+        .filter((regular): regular is Regular => !!regular)
+    const suggested = orderableRegulars.value
+        .filter((regular) => !pickedIds.value.includes(regular.id))
         .map((regular, index) => ({ regular, index }))
         .sort((a, b) => orderAgainSortRank(a.regular) - orderAgainSortRank(b.regular) || a.index - b.index)
-        .slice(0, limit)
+        .slice(0, Math.max(0, limit - picked.length))
         .map(({ regular }) => regular)
+    return [...picked, ...suggested]
 })
+
+const pickerOptions = computed(() => orderableRegulars.value.filter((regular) => !orderAgainRows.value.some((row) => row.id === regular.id)))
+
+const pickProduct = (id: number | null) => {
+    if (id && !pickedIds.value.includes(id)) {
+        pickedIds.value = [id, ...pickedIds.value]
+    }
+}
+
+const packLine = (price: number, units: number | null | undefined, unit: string | null | undefined) => {
+    const unitLabel = unit || ctrans("unit")
+    if (!units || units <= 1) {
+        return ctrans(":price per :unit", { price: money(price), unit: unitLabel })
+    }
+    return ctrans(":price for :count · :unit_price per :unit", {
+        price: money(price),
+        count: String(Number(units.toFixed(3))),
+        unit_price: money(price / units),
+        unit: unitLabel,
+    })
+}
 
 const canAdd = (item: { is_purchasable: boolean, stock_status: StockStatus }) => item.is_purchasable && (item.stock_status === "in_stock" || item.stock_status === "low")
 
@@ -268,6 +311,39 @@ const repeatOrder = async (order: RecentOrder) => {
     }
 }
 
+const voucherBenefit = (voucher: Voucher) => {
+    const parts: string[] = []
+    if (voucher.percentage_off) {
+        parts.push(ctrans(":percentage off", { percentage: `${Math.round(voucher.percentage_off * 100)}%` }))
+    } else if (voucher.amount_off) {
+        parts.push(ctrans(":amount off", { amount: money(voucher.amount_off) }))
+    } else if (voucher.is_free_shipping) {
+        parts.push(ctrans("Free shipping"))
+    }
+    if (!voucher.is_whole_order && !voucher.is_free_shipping) {
+        parts.push(ctrans("on selected products"))
+    }
+    if (voucher.min_amount) {
+        parts.push(ctrans("on orders over :amount", { amount: money(voucher.min_amount) }))
+    }
+    if (voucher.expires_at) {
+        parts.push(ctrans("until :date", { date: shortDate(voucher.expires_at) }))
+    }
+    return parts.join(" · ")
+}
+
+const copiedVoucherCode = ref<string | null>(null)
+
+const copyVoucherCode = async (code: string) => {
+    try {
+        await navigator.clipboard.writeText(code)
+        copiedVoucherCode.value = code
+        setTimeout(() => { if (copiedVoucherCode.value === code) copiedVoucherCode.value = null }, 2000)
+    } catch {
+        notify({ title: ctrans("Could not copy, the code is :code", { code }), type: "warning" })
+    }
+}
+
 const orderStateChip = (state: string) => {
     if (["dispatched", "finalised"].includes(state)) return "bg-emerald-50 text-emerald-800 ring-emerald-600/20"
     if (state === "cancelled") return "bg-stone-100 text-stone-600 ring-stone-500/20"
@@ -337,10 +413,48 @@ const overview = computed(() => {
             </p>
         </div>
 
+        <ul v-if="insights.vouchers?.length" class="divide-y divide-[#a0694a]/15 rounded-lg border border-dashed border-[#a0694a]/40">
+            <li v-for="voucher in insights.vouchers" :key="voucher.code" class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                <FontAwesomeIcon :icon="faTicketAlt" class="text-[#a0694a]" fixed-width aria-hidden="true" />
+                <div class="min-w-0 flex-1">
+                    <p class="font-semibold text-[#7a4f33]">{{ voucher.name }}</p>
+                    <p class="text-sm text-stone-600">{{ voucherBenefit(voucher) }}</p>
+                </div>
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-md bg-[#f8efe4] px-3 py-1.5 font-mono text-sm font-semibold tracking-wide text-[#7a4f33] hover:bg-[#f1e2cf]"
+                    :aria-label="ctrans('Copy voucher code :code', { code: voucher.code })"
+                    @click="copyVoucherCode(voucher.code)"
+                >
+                    {{ voucher.code }}
+                    <FontAwesomeIcon :icon="copiedVoucherCode === voucher.code ? faCheck : faCopy" fixed-width aria-hidden="true" />
+                </button>
+            </li>
+        </ul>
+
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:divide-x lg:divide-stone-200">
             <section v-if="orderAgainRows.length" class="lg:col-span-2">
                 <h3 class="text-xl font-bold text-stone-900">{{ isLapsed ? ctrans("Review and order again") : ctrans("Order again") }}</h3>
                 <p class="text-sm text-stone-500">{{ ctrans("Your most ordered products. Check the quantity and add them to your basket.") }}</p>
+
+                <Select
+                    v-if="pickerOptions.length"
+                    :modelValue="null"
+                    :options="pickerOptions"
+                    optionValue="id"
+                    optionLabel="name"
+                    filter
+                    :filterFields="['code', 'name']"
+                    :placeholder="ctrans('Find a product you have ordered before')"
+                    :disabled="readOnly"
+                    class="mt-3 w-full"
+                    @update:modelValue="pickProduct"
+                >
+                    <template #option="{ option }">
+                        <span class="truncate">{{ option.name }}</span>
+                        <span class="ml-2 flex-none text-xs text-stone-500">{{ option.code }}</span>
+                    </template>
+                </Select>
 
                 <ul class="mt-3 divide-y divide-stone-200">
                     <li v-for="regular in orderAgainRows" :key="regular.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 sm:flex-nowrap">
@@ -351,7 +465,7 @@ const overview = computed(() => {
                             <a v-if="regular.url && !readOnly" :href="regular.url" class="block truncate font-medium text-stone-900 hover:underline">{{ regular.name }}</a>
                             <span v-else class="block truncate font-medium text-stone-900">{{ regular.name }}</span>
                             <p class="text-xs text-stone-500">
-                                {{ regular.code }} · {{ money(regular.price) }}
+                                {{ regular.code }} · {{ packLine(regular.price, regular.units, regular.unit) }}
                             </p>
                             <p class="text-xs" :class="regular.stock_status === 'low' ? 'font-medium text-amber-800' : 'text-stone-500'">{{ rowHint(regular) }}</p>
                         </div>
@@ -518,8 +632,9 @@ const overview = computed(() => {
                         />
                     </a>
                     <a :href="readOnly ? undefined : product.url" class="mt-2 line-clamp-2 text-sm font-medium text-stone-900 hover:underline">{{ product.name }}</a>
-                    <div class="mt-auto flex items-center justify-between pt-1">
-                        <p class="text-sm tabular-nums text-stone-700">{{ money(product.discounted_price ?? product.price) }}</p>
+                    <p class="text-xs text-stone-500">{{ product.code }}</p>
+                    <div class="mt-auto flex items-center justify-between gap-2 pt-1">
+                        <p class="text-xs tabular-nums text-stone-700">{{ packLine(product.discounted_price ?? product.price, product.units, product.unit) }}</p>
                         <button
                             type="button"
                             class="rounded-md p-1.5 text-[#8a5a3e] hover:bg-[#f8efe4] disabled:opacity-50"

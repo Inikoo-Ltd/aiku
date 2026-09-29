@@ -27,7 +27,7 @@ class IndexQaTickets extends IndexTickets
     {
         return [
             'qa_checker' => $this->qaAssigneeElementGroup($group),
-            ...Arr::except(parent::getElementGroups($group), 'mine'),
+            ...Arr::except(parent::getElementGroups($group), ['mine', 'status']),
         ];
     }
 
@@ -70,6 +70,10 @@ class IndexQaTickets extends IndexTickets
        the QA assignee filter is the one way to see the whole team's work. */
     protected function restrictRows($queryBuilder, ?string $prefix): void
     {
+        $queryBuilder->where(fn ($query) => $query
+            ->whereIn('tickets.status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY])
+            ->orWhere('tickets.qa_status', TicketQaStatusEnum::CHECKING));
+
         $checkerFilter = explode(',', (string) request()->input(($prefix ? $prefix.'_' : '').'elements.qa_checker', ''));
 
         if (in_array('everyone', $checkerFilter, true)) {
@@ -102,14 +106,13 @@ class IndexQaTickets extends IndexTickets
     {
         return match ($key) {
             'qa_status' => 'none',
-            'status'    => TicketStatusEnum::RESOLVED->value.','.TicketStatusEnum::PENDING_DEPLOY->value,
             default     => parent::elementGroupDefault($key),
         };
     }
 
     protected function listTip(): ?string
     {
-        return __("By default, we're only showing Done and Waiting for deployment tickets that have no QA verdict. Use the filters to check everything.");
+        return __("We show Done and Waiting for deployment tickets, plus every ticket being QA checked whatever its status. By default only those with no QA verdict are listed; use the filters to see the rest.");
     }
 
     protected function listTipTitle(): ?string

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import Chart from "primevue/chart"
+import DatePicker from "primevue/datepicker"
 import { router } from "@inertiajs/vue3"
 import { debounce } from "lodash-es"
 import { ctrans } from "@/Composables/useTrans"
@@ -9,6 +10,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faRocketLaunch, faTag, faInfoCircle } from "@fal"
 import RealUserSpeed from "@/Components/DataDisplay/RealUserSpeed.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 
 type EventType = "publish" | "price"
 
@@ -219,32 +221,47 @@ const reload = debounce(() => {
 	router.reload({ data: { startDate: range.value.startDate, endDate: range.value.endDate }, only: ["analytics"] })
 }, 400)
 
+const fromIsoDate = (iso: string): Date => {
+	const [year, month, day] = iso.split("-").map(Number)
+	return new Date(year, month - 1, day)
+}
+const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+const dateModel = (key: "startDate" | "endDate") =>
+	computed<Date | null>({
+		get: () => (range.value[key] ? fromIsoDate(range.value[key]) : null),
+		set: (value) => {
+			if (!value) return
+			range.value = { ...range.value, [key]: toLocalIsoDate(value) }
+			reload()
+		},
+	})
+const rangeFrom = dateModel("startDate")
+const rangeTo = dateModel("endDate")
+
+const granularityOptions = [
+	{ label: ctrans("Daily"), value: "day" },
+	{ label: ctrans("Weekly"), value: "week" },
+]
+
+const datePickerPt = { pcInputText: { root: { class: "!w-40 !py-1.5 !text-sm" } } }
+const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent] [&_input:hover]:!border-gray-400"
+
 const formatTotal = (key: keyof typeof series) =>
 	key === "sales" ? locale.currencyFormat(props.data.currency, totals.value.sales) : totals.value[key].toLocaleString()
 </script>
 
 <template>
-	<div class="py-6 space-y-6" >
+	<div class="px-4 py-6 space-y-6 sm:px-6">
 		<div class="flex flex-wrap items-center gap-3 text-sm">
 			<label class="flex items-center gap-2">
 				<span class="text-gray-500">{{ ctrans("From") }}</span>
-				<input type="date" v-model="range.startDate" :max="range.endDate" class="rounded border-gray-300 text-sm" @change="reload" />
+				<DatePicker v-model="rangeFrom" :maxDate="rangeTo ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('From')" />
 			</label>
 			<label class="flex items-center gap-2">
 				<span class="text-gray-500">{{ ctrans("To") }}</span>
-				<input type="date" v-model="range.endDate" :min="range.startDate" class="rounded border-gray-300 text-sm" @change="reload" />
+				<DatePicker v-model="rangeTo" :minDate="rangeFrom ?? undefined" dateFormat="d M yy" :manualInput="false" showIcon iconDisplay="input" :class="fieldFocusClass" :pt="datePickerPt" :aria-label="ctrans('To')" />
 			</label>
-			<div class="flex rounded border border-gray-300 text-xs">
-				<button
-					v-for="option in ['day', 'week']"
-					:key="option"
-					type="button"
-					class="px-3 py-1.5"
-					:class="granularity === option ? 'bg-gray-800 text-white' : 'text-gray-600'"
-					@click="granularity = option">
-					{{ option === "day" ? ctrans("Daily") : ctrans("Weekly") }}
-				</button>
-			</div>
+			<SegmentedToggle v-model="granularity" :options="granularityOptions" :aria-label="ctrans('Granularity')" />
 			<div class="ml-auto flex items-center gap-4 text-xs text-gray-500" data-chart-event-legend>
 				<span v-for="type in chartEventTypes" :key="type" class="flex items-center gap-1">
 					<span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: eventStyle[type].color }" />
@@ -259,9 +276,10 @@ const formatTotal = (key: keyof typeof series) =>
 					v-for="(meta, key) in series"
 					:key="key"
 					type="button"
-					class="rounded-lg border p-4 text-left transition-colors"
-					:class="visible[key] ? 'text-white' : 'bg-white'"
-					:style="visible[key] ? { backgroundColor: meta.color, borderColor: meta.color } : { color: meta.color, borderColor: meta.color }"
+					class="series-toggle rounded-lg border p-4 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+					:class="visible[key] ? 'is-on text-white' : 'bg-white'"
+					:style="{ '--series-color': meta.color, color: visible[key] ? undefined : meta.color }"
+					:aria-pressed="visible[key]"
 					@click="visible[key] = !visible[key]">
 					<div class="text-xs">
 						{{ meta.label }}
@@ -294,3 +312,27 @@ const formatTotal = (key: keyof typeof series) =>
 		</div>
 	</div>
 </template>
+
+<style scoped>
+.series-toggle {
+	border-color: var(--series-color);
+	--tw-ring-color: var(--series-color);
+}
+.series-toggle:hover {
+	background-color: color-mix(in srgb, var(--series-color) 8%, white);
+	box-shadow: 0 2px 6px color-mix(in srgb, var(--series-color) 25%, transparent);
+}
+.series-toggle:active {
+	background-color: color-mix(in srgb, var(--series-color) 16%, white);
+	transform: scale(0.99);
+}
+.series-toggle.is-on {
+	background-color: var(--series-color);
+}
+.series-toggle.is-on:hover {
+	background-color: color-mix(in srgb, var(--series-color) 88%, black);
+}
+.series-toggle.is-on:active {
+	background-color: color-mix(in srgb, var(--series-color) 76%, black);
+}
+</style>

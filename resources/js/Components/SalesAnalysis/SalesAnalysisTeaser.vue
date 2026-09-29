@@ -32,6 +32,8 @@ const props = defineProps<{
 		stock_level?: "organisation"
 	}
 	analysisHref?: string
+	compact?: boolean
+	onOpenAnalysis?: () => void
 }>()
 
 const money = (value: number) =>
@@ -45,6 +47,8 @@ const analysisUrl = computed(() => {
 	url.search = "?tab=sales_analysis"
 	return url.pathname + url.search
 })
+
+const comparisonLabel = computed(() => (props.teaser && props.teaser.shop_count > 1 ? ctrans("vs year before, all websites") : ctrans("vs year before")))
 
 const hasNoSales = computed(() => !!props.teaser && ![...props.teaser.sales, ...props.teaser.compare_sales].some((row) => row.sales))
 
@@ -83,14 +87,24 @@ const chartOptions = {
 	<div class="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700" :class="{ 'h-fit': !isOpen }">
 		<div class="flex cursor-pointer select-none items-center gap-2" :class="{ 'mb-2': isOpen }" @click="isOpenByUser = !isOpen">
 			<FontAwesomeIcon :icon="faChartLine" class="text-gray-400" fixed-width aria-hidden="true" />
-			<span class="whitespace-nowrap font-semibold">{{ ctrans("Last 12 months") }}</span>
-			<span class="text-xs text-gray-500">{{ teaser && teaser.shop_count > 1 ? ctrans("vs year before, all websites") : ctrans("vs year before") }}</span>
-			<span v-if="hasNoSales" class="text-xs text-gray-400">· {{ ctrans("No data available") }}</span>
-			<span class="ml-auto" @click.stop>
-				<Link :href="analysisUrl" class="group flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-[var(--app-accent)] transition-colors hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent-strong)]">
+			<span class="whitespace-nowrap font-semibold" :class="{ 'text-xs': compact }">{{ ctrans("Last 12 months") }}</span>
+			<span
+				class="text-xs text-gray-500"
+				:class="{ 'min-w-0 truncate !text-[11px]': compact }"
+				:title="compact ? comparisonLabel : undefined">
+				{{ comparisonLabel }}
+			</span>
+			<span v-if="hasNoSales" class="text-xs text-gray-400" :class="{ 'whitespace-nowrap !text-[11px]': compact }">· {{ ctrans("No data available") }}</span>
+			<span class="ml-auto" :class="{ 'shrink-0': compact }" @click.stop>
+				<component
+					:is="onOpenAnalysis ? 'button' : Link"
+					v-bind="onOpenAnalysis ? { type: 'button' } : { href: analysisUrl }"
+					class="group flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-[var(--app-accent)] transition-colors hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent-strong)]"
+					:class="{ 'whitespace-nowrap !text-[11px]': compact }"
+					@click="onOpenAnalysis?.()">
 					{{ ctrans("Sales analysis") }}
 					<FontAwesomeIcon :icon="faArrowRight" class="transition-transform group-hover:translate-x-0.5" fixed-width aria-hidden="true" />
-				</Link>
+				</component>
 			</span>
 			<button
 				type="button"
@@ -107,7 +121,7 @@ const chartOptions = {
 					<span class="font-semibold text-gray-900">{{ money(teaser.totals.current.sales) }}</span>
 					<span class="ml-1 text-xs" :class="(salesChange ?? 0) < 0 ? 'text-red-600' : 'text-green-600'">{{ formatChange(salesChange) }}</span>
 				</span>
-				<span class="text-xs text-gray-500">{{ teaser.totals.current.orders.toLocaleString() }} {{ ctrans("orders") }} · {{ teaser.totals.current.customers.toLocaleString() }} {{ ctrans("customers") }}</span>
+				<span class="text-xs text-gray-500" :class="{ '!text-[11px]': compact }">{{ teaser.totals.current.orders.toLocaleString() }} {{ ctrans("orders") }} · {{ teaser.totals.current.customers.toLocaleString() }} {{ ctrans("customers") }}</span>
 			</div>
 
 			<div class="relative mt-2 h-40">

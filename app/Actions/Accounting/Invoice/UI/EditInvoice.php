@@ -18,10 +18,12 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithInvoiceAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditInvoice extends OrgAction
 {
+    use WithInvoiceAuthorisation;
     public function handle(Invoice $invoice): Invoice
     {
         return $invoice;

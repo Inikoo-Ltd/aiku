@@ -17,7 +17,7 @@ import {
     faCube,
     faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faChartLine
 } from '@fal';
-import { computed, defineAsyncComponent, ref } from "vue";
+import { computed, ref } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -28,6 +28,8 @@ import { Tabs as TSTabs } from "@/types/Tabs"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue"
 import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategoryTimeSeriesTable.vue"
 library.add(
     faInventory,
     faBox,
@@ -44,8 +46,6 @@ library.add(
 
 );
 
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
-
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
@@ -55,6 +55,8 @@ const props = defineProps<{
     sales_analysis_teaser?: object
     org_stocks?: object
     trade_units?: object
+    sales?: object
+    history?: object
 
 }>()
 
@@ -67,10 +69,11 @@ const component = computed(() => {
     const components = {
         showcase: StockShowcase,
         sales_analysis: SalesAnalysis,
+        sales: ProductCategoryTimeSeriesTable,
         supplier_products: TableSupplierProducts,
         org_stocks: TableOrgStocks,
         trade_units: TableTradeUnits,
-        history: ModelChangelog,
+        history: TableHistories,
     };
     return components[currentTab.value];
 

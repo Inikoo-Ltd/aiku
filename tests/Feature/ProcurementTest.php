@@ -75,6 +75,7 @@ use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
@@ -838,6 +839,25 @@ test('add more items to purchase order', function (PurchaseOrder $purchaseOrder)
 
     return $purchaseOrder;
 })->depends('add item to purchase order');
+
+test('all supplier products list shows the other open purchase orders each product is on', function (PurchaseOrder $purchaseOrder) {
+    /** @var OrgSupplier $orgSupplier */
+    $orgSupplier = $purchaseOrder->parent;
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+
+    $newPurchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+
+    $rows = collect(IndexPurchaseOrderOrgSupplierProducts::make()->handle($orgSupplier, $newPurchaseOrder)->items())->keyBy('id');
+
+    $orgSupplierProductId = $purchaseOrder->purchaseOrderTransactions()->first()->org_supplier_product_id;
+    expect($rows->get($orgSupplierProductId)->other_open_purchase_orders->pluck('reference')->all())->toBe([$purchaseOrder->reference]);
+
+    $ownRows = collect(IndexPurchaseOrderOrgSupplierProducts::make()->handle($orgSupplier, $purchaseOrder)->items())->keyBy('id');
+    expect($ownRows->get($orgSupplierProductId)->other_open_purchase_orders)->toBeEmpty();
+
+    $newPurchaseOrder->forceDelete();
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS]);
+})->depends('add more items to purchase order');
 
 
 test('adding a product to a purchase order creates the missing org stock', function () {
@@ -1852,6 +1872,7 @@ test('UI show org supplier', function () {
             ->where('pageHead.subNavigation.1.number', 86)
             ->where('pageHead.actions.0.label', __('Purchase Order'))
             ->where('pageHead.actions.0.route.name', 'grp.models.org-supplier.purchase-order.store')
+            ->where('pageHead.actions.1.route.name', 'grp.org.procurement.org_suppliers.edit')
             ->where('showcase.stats.0.count', 86)
             ->where('showcase.stats.0.route.name', 'grp.org.procurement.org_suppliers.show.supplier_products.index')
             ->where('showcase.stats.1.route.name', 'grp.org.procurement.org_suppliers.show.purchase_orders.index')

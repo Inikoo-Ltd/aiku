@@ -3582,3 +3582,25 @@ test('sales analysis follows the saved include partners setting unless the page 
     expect(GetShopSalesAnalysis::run($this->shop, [])['include_partners'])->toBeFalse()
         ->and(GetShopSalesAnalysis::run($this->shop, ['partners' => '1'])['include_partners'])->toBeTrue();
 });
+
+test('UI invoice pages are only open to staff who can see the invoice', function () {
+    $customer = createCustomer($this->shop);
+    $invoice  = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+    $route    = route('grp.org.accounting.invoices.show', [$this->organisation->slug, $invoice->slug]);
+
+    setPermissionsTeamId($this->group->id);
+    $user = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    actingAs($user);
+
+    get($route)->assertForbidden();
+
+    $customer->update(['as_organisation_id' => $this->organisation->id]);
+    $user->givePermissionTo("procurement.{$this->organisation->id}.view");
+    actingAs($user->fresh());
+
+    get($route)->assertOk();
+    get(route('grp.org.accounting.invoices.edit', [$this->organisation->slug, $invoice->slug]))->assertForbidden();
+});

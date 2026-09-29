@@ -23,11 +23,13 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ShowGoogleAdsCampaignReview extends OrgAction
 {
+    use WithMarketingAuthorisation;
     use WithGoogleAdsCampaignJourney;
 
     private const array IMAGE_ROLES = ['marketing_images', 'square_marketing_images', 'logos'];

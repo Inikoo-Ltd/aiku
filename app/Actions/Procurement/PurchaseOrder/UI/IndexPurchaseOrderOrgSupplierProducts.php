@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\OrgAction;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderOrgSupplierProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
@@ -106,10 +107,11 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             ->selectRaw(($purchaseOrder->org_exchange ?: 1).' as po_org_exchange')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
 
         $this->attachOrgStockData($paginator);
+        $this->attachOtherOpenPurchaseOrders($paginator, $purchaseOrder);
 
         return $paginator;
     }
@@ -173,6 +175,52 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             $row->image_sources      = $tradeUnit?->imageSources(64, 64);
             $row->stock_in_locations = $orgStock?->quantity_in_locations;
             $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
+
+            return $row;
+        });
+    }
+
+    private function attachOtherOpenPurchaseOrders(LengthAwarePaginator $paginator, PurchaseOrder $purchaseOrder): void
+    {
+        $orgSupplierProductIds = $paginator->getCollection()->pluck('id');
+
+        if ($orgSupplierProductIds->isEmpty()) {
+            return;
+        }
+
+        $openPurchaseOrders = DB::table('purchase_order_transactions')
+            ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
+            ->whereIn('purchase_order_transactions.org_supplier_product_id', $orgSupplierProductIds)
+            ->where('purchase_orders.organisation_id', $purchaseOrder->organisation_id)
+            ->where('purchase_orders.id', '!=', $purchaseOrder->id)
+            ->whereIn('purchase_orders.state', [
+                PurchaseOrderStateEnum::IN_PROCESS->value,
+                PurchaseOrderStateEnum::SUBMITTED->value,
+                PurchaseOrderStateEnum::CONFIRMED->value,
+            ])
+            ->whereNull('purchase_orders.deleted_at')
+            ->whereNull('purchase_order_transactions.deleted_at')
+            ->groupBy('purchase_order_transactions.org_supplier_product_id', 'purchase_orders.id', 'purchase_orders.slug', 'purchase_orders.reference', 'purchase_orders.state')
+            ->orderBy('purchase_orders.id')
+            ->select([
+                'purchase_order_transactions.org_supplier_product_id',
+                'purchase_orders.slug',
+                'purchase_orders.reference',
+                'purchase_orders.state',
+                DB::raw('sum(purchase_order_transactions.quantity_ordered) as quantity_ordered'),
+            ])
+            ->get()
+            ->groupBy('org_supplier_product_id');
+
+        $paginator->getCollection()->transform(function ($row) use ($openPurchaseOrders) {
+            $row->other_open_purchase_orders = ($openPurchaseOrders->get($row->id) ?? collect())
+                ->map(fn ($openPurchaseOrder) => [
+                    'slug'             => $openPurchaseOrder->slug,
+                    'reference'        => $openPurchaseOrder->reference,
+                    'state'            => $openPurchaseOrder->state,
+                    'quantity_ordered' => (float) $openPurchaseOrder->quantity_ordered,
+                ])
+                ->values();
 
             return $row;
         });
