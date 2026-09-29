@@ -46,10 +46,7 @@ class WaitForCustomerReply
         $lastMessageId = (int) $chatSession->messages()->max('id');
         $until         = now()->addWeekdays(intdiv($hours, 24))->addHours($hours % 24);
 
-        $chatSession->update(['metadata' => [
-            ...($chatSession->metadata ?? []),
-            self::KEY => ['message_id' => $lastMessageId, 'until' => $until->toISOString(), 'reason' => $reason],
-        ]]);
+        SetChatSessionMetadata::run($chatSession, [self::KEY => ['message_id' => $lastMessageId, 'until' => $until->toISOString(), 'reason' => $reason]]);
 
         // ponytail: a delayed job per wait; a sweep over the metadata key if jobs days out ever get lost.
         static::dispatch($chatSession, $lastMessageId)->delay($until);
@@ -97,14 +94,11 @@ class WaitForCustomerReply
 
     public static function stop(ChatSession|MetaChatSession $chatSession): void
     {
-        $metadata = $chatSession->metadata ?? [];
-
-        if (!array_key_exists(self::KEY, $metadata)) {
+        if (!array_key_exists(self::KEY, $chatSession->metadata ?? [])) {
             return;
         }
 
-        unset($metadata[self::KEY]);
-        $chatSession->update(['metadata' => $metadata]);
+        SetChatSessionMetadata::run($chatSession, [self::KEY => null]);
     }
 
     private function customerWroteSince(ChatSession|MetaChatSession $chatSession, int $lastMessageId): bool

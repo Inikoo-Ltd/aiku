@@ -23,10 +23,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Learns what customer service keeps telling customers, from what agents actually wrote back:
  * the mailbox history and every answered chat. Agents get things wrong, so a reply is evidence,
  * never the truth. A cheap model rewrites a reply as a general rule only when it is one, Jev
- * groups the rules that say the same, and a rule is used only once at least MIN_CUSTOMERS
- * different customers were told it lately and Jev finds nothing we hold (pages, settings, staff
- * notes, other rules) that says otherwise; a rule that contradicts is kept aside for a person to
- * settle, and a passing situation expires.
+ * groups the rules that say the same, and once at least MIN_CUSTOMERS different customers (by
+ * their customer record: a chat or an address is not a customer) were told it lately it is put to
+ * staff in the shop's AI knowledge tab, marked when Jev finds something we hold (pages,
+ * settings, staff notes, other rules) that says otherwise. Nothing learned is used until a
+ * person says so, and a passing situation expires.
  */
 class LearnChatKnowledge
 {
@@ -64,7 +65,7 @@ class LearnChatKnowledge
         }
 
         foreach (ChatKnowledgeEntry::where('shop_id', $shop->id)->where('source_type', 'learned')->where('status', 'candidate')->where('customers_count', '>=', self::MIN_CUSTOMERS)->where('last_seen_at', '>=', now()->subDays(self::RECENT_DAYS))->get() as $candidate) {
-            $this->promote($shop, $candidate) ? $result['promoted']++ : $result['conflicts']++;
+            $this->propose($shop, $candidate) ? $result['promoted']++ : $result['conflicts']++;
         }
 
         return $result;
@@ -95,8 +96,8 @@ class LearnChatKnowledge
                 ->latest('sent_at')
                 ->first();
 
-            if ($question) {
-                yield ['question' => (string) $question->text, 'reply' => (string) $reply->text, 'customer' => (string) ($question->customer_id ?? $question->counterpart_address), 'source' => $reply, 'key' => 'email:'.$reply->id, 'at' => $reply->sent_at->toIso8601String()];
+            if ($question?->customer_id) {
+                yield ['question' => (string) $question->text, 'reply' => (string) $reply->text, 'customer' => 'customer:'.$question->customer_id, 'source' => $reply, 'key' => 'email:'.$reply->id, 'at' => $reply->sent_at->toIso8601String()];
             } else {
                 $reply->update(['learned_at' => now()]);
             }
@@ -110,11 +111,21 @@ class LearnChatKnowledge
             ->whereNotNull('reply')
             ->whereNull('learned_at')
             ->where('created_at', '>=', now()->subDays($days))
+            ->with(['chatSession.webUser.customer', 'metaChatSession.customer'])
             ->orderBy('id')
             ->lazyById(200);
 
         foreach ($readings as $reading) {
-            yield ['question' => (string) $reading->customer_wrote, 'reply' => (string) $reading->reply, 'customer' => ($reading->chat_session_id ? 'chat:' : 'wa:').($reading->chat_session_id ?? $reading->meta_chat_session_id), 'source' => $reading, 'key' => 'chat:'.$reading->id, 'at' => $reading->replied_at?->toIso8601String() ?? now()->toIso8601String()];
+            $session  = $reading->chatSession ?? $reading->metaChatSession;
+            $customer = $session ? DraftChatReply::knownCustomer($session) : null;
+
+            if (!$customer) {
+                $reading->update(['learned_at' => now()]);
+
+                continue;
+            }
+
+            yield ['question' => (string) $reading->customer_wrote, 'reply' => (string) $reading->reply, 'customer' => 'customer:'.$customer->id, 'source' => $reading, 'key' => 'chat:'.$reading->id, 'at' => $reading->replied_at?->toIso8601String() ?? now()->toIso8601String()];
 
             if ($limit && ++$count >= $limit) {
                 return;
@@ -221,9 +232,11 @@ class LearnChatKnowledge
     }
 
     /**
-     * A confirmed rule is used once nothing we hold says otherwise; else it waits for a person.
+     * A rule enough customers were told is put to staff: as proposed when nothing we hold says
+     * otherwise, as a conflict naming what it differs from when something does. Only a person
+     * turns it on.
      */
-    private function promote(Shop $shop, ChatKnowledgeEntry $candidate): bool
+    private function propose(Shop $shop, ChatKnowledgeEntry $candidate): bool
     {
         $related = collect(PickChatKnowledge::run($shop, $candidate->body, '(nothing yet)'))->reject(fn (array $entry) => $entry['id'] === $candidate->id)->values();
         $answer  = $related->isEmpty() ? null : AskJev::make()->noul(
@@ -240,7 +253,7 @@ class LearnChatKnowledge
         }
 
         $candidate->update([
-            'status'     => 'active',
+            'status'     => 'proposed',
             'expires_at' => Arr::get($candidate->evidence, 'temporary') ? now()->addDays(self::TEMPORARY_DAYS) : null,
         ]);
 
@@ -257,7 +270,7 @@ class LearnChatKnowledge
 
         foreach ($shops as $shop) {
             $result = $this->handle($shop, (int) $command->option('days'), $command->option('limit') ? (int) $command->option('limit') : null);
-            $command->info("{$shop->slug}: {$result['replies']} replies read, {$result['rules']} rules seen, {$result['promoted']} now used, {$result['conflicts']} set aside as contradicting");
+            $command->info("{$shop->slug}: {$result['replies']} replies read, {$result['rules']} rules seen, {$result['promoted']} proposed to staff, {$result['conflicts']} proposed as contradicting");
         }
 
         return 0;

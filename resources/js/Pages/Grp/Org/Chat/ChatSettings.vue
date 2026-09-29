@@ -58,7 +58,7 @@ const props = defineProps<{
         text: string
         notes: { id: number; title: string; body: string; updated_at: string }[]
         copied: { kind: string; total: number; at: string | null }[]
-        learned: { id: number; title: string; body: string; status: "active" | "conflict"; conflict: string | null; customers_count: number; last_seen_at: string | null; expires_at: string | null }[]
+        learned: { id: number; title: string; body: string; status: "active" | "proposed" | "conflict"; conflict: string | null; customers_count: number; last_seen_at: string | null; expires_at: string | null }[]
         knowledge_route: Record<string, any>
         update_route: { name: string; parameters: Record<string, any> }
     } | null
@@ -159,6 +159,7 @@ const decideLearned = (id: number, status: "active" | "removed") => {
 
 const learnedInUse = computed(() => props.policies?.learned.filter((entry) => entry.status === "active") ?? [])
 const learnedInConflict = computed(() => props.policies?.learned.filter((entry) => entry.status === "conflict") ?? [])
+const learnedProposed = computed(() => props.policies?.learned.filter((entry) => entry.status === "proposed") ?? [])
 
 const COPIED_LABELS: Record<string, string> = {
     policy: ctrans("sections of the returns, delivery and terms pages"),
@@ -302,6 +303,19 @@ const saveCouriers = () => {
                 </div>
                 <button type="button" class="text-xs text-indigo-700 underline" @click="editNote(note)">{{ ctrans("Edit") }}</button>
                 <button type="button" class="text-xs text-red-600 underline" @click="deleteNote(note.id)">{{ ctrans("Remove") }}</button>
+            </div>
+        </div>
+
+        <div v-if="learnedProposed.length" class="rounded-lg border border-indigo-200 bg-indigo-50/60">
+            <div class="px-4 pt-3 text-sm font-medium text-indigo-900">{{ ctrans("Agents' answers the AI could use") }}</div>
+            <p class="px-4 text-xs text-indigo-800">{{ ctrans("Several customers were told this and nothing we hold says otherwise. Check it is right before the AI uses it.") }}</p>
+            <div v-for="entry in learnedProposed" :key="entry.id" class="flex items-start gap-3 border-t border-indigo-100 px-4 py-3">
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-gray-800">{{ entry.title }} <span class="text-xs font-normal text-gray-500">· {{ ctrans(":count customers", { count: entry.customers_count }) }}</span></div>
+                    <p class="text-sm text-gray-600">{{ entry.body }}</p>
+                </div>
+                <button type="button" class="text-xs text-emerald-700 underline" @click="decideLearned(entry.id, 'active')">{{ ctrans("Use it") }}</button>
+                <button type="button" class="text-xs text-red-600 underline" @click="decideLearned(entry.id, 'removed')">{{ ctrans("Remove") }}</button>
             </div>
         </div>
 

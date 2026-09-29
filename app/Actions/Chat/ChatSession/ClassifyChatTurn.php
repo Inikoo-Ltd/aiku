@@ -24,6 +24,7 @@ use App\Models\Chat\ChatSession;
 use App\Models\Chat\ChatTurnReading;
 use App\Models\Chat\MetaChatMessage;
 use App\Models\Chat\MetaChatSession;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -50,6 +51,8 @@ class ClassifyChatTurn
 
     public const string KEY = 'ai_turn';
 
+    public const string RAISED_KEY = 'ai_engineer_raised';
+
     private const string CONTEXT = 'Customer service of a wholesale giftware supplier. "customer_wrote" is what the customer wrote since our last message "we_said"; emails can quote older messages below the new text, judge only the new text.';
 
     private const float SURE = 0.85;
@@ -65,6 +68,10 @@ class ClassifyChatTurn
     private const float SECOND_GUIDE = 0.25;
 
     private const float ASK_SURE = 0.6;
+
+    private const int LOCK_SECONDS = 150;
+
+    private const int WAIT_SECONDS = 40;
 
     /**
      * What a general question is after, each answered by its own fixed query in GetChatShopFacts.
@@ -134,15 +141,27 @@ class ClassifyChatTurn
         $key  = 'chat-turn:'.class_basename($chatSession).':'.$chatSession->id.':'.$latestId;
         $turn = Cache::get($key);
 
-        if ($turn === null) {
-            $turn = self::run($chatSession, $text, self::weSaid($chatSession), $latestId);
-
-            if ($turn !== null) {
-                Cache::put($key, $turn, now()->addMinutes(30));
-            }
+        if ($turn !== null) {
+            return $turn;
         }
 
-        return $turn;
+        try {
+            return Cache::lock($key.':lock', self::LOCK_SECONDS)->block(self::WAIT_SECONDS, function () use ($chatSession, $key, $text, $latestId) {
+                $turn = Cache::get($key);
+
+                if ($turn === null) {
+                    $turn = self::run($chatSession, $text, self::weSaid($chatSession), $latestId);
+
+                    if ($turn !== null) {
+                        Cache::put($key, $turn, now()->addMinutes(30));
+                    }
+                }
+
+                return $turn;
+            });
+        } catch (LockTimeoutException) {
+            return Cache::get($key);
+        }
     }
 
     /**
@@ -230,29 +249,15 @@ class ClassifyChatTurn
             'ds_kind'  => $isDropship ? self::dsKind($answers) : null,
         ];
 
-        $metadata            = $chatSession->metadata ?? [];
-        $metadata[self::KEY] = [
-            'at'       => now()->toISOString(),
-            'branch'   => $branch,
-            'topic'    => $topic?->value,
-            'urgent'   => $turn['urgent'],
-            'claim'    => $turn['claim'],
-            'guides'   => $turn['guides'],
-            'engineer' => $engineer,
-            'facts'    => $facts,
-            'next_step' => $nextStep,
-            'answers'  => self::compact($answers),
-        ];
-        $chatSession->update(['metadata' => $metadata]);
-
-        if ($chatSession->shop) {
-            ChatTurnReading::create([
-                'group_id'             => $chatSession->shop->group_id,
-                'organisation_id'      => $chatSession->shop->organisation_id,
-                'shop_id'              => $chatSession->shop_id,
+        $reading = $chatSession->shop
+            ? ChatTurnReading::createOrFirst([
                 'chat_session_id'      => $chatSession instanceof ChatSession ? $chatSession->id : null,
                 'meta_chat_session_id' => $chatSession instanceof MetaChatSession ? $chatSession->id : null,
                 'customer_message_id'  => $customerMessageId,
+            ], [
+                'group_id'             => $chatSession->shop->group_id,
+                'organisation_id'      => $chatSession->shop->organisation_id,
+                'shop_id'              => $chatSession->shop_id,
                 'customer_wrote'       => mb_substr($customerWrote, 0, 2000),
                 'suggested'            => array_filter([
                     'guides'    => array_column($turn['guides'], 'title'),
@@ -266,8 +271,22 @@ class ClassifyChatTurn
                 'facts'                => $facts !== [],
                 'engineer'             => $engineer !== null,
                 'next_step'            => $nextStep['kind'] ?? null,
-            ]);
-        }
+            ])
+            : null;
+
+        SetChatSessionMetadata::run($chatSession, [self::KEY => [
+            'at'         => now()->toISOString(),
+            'reading_id' => $reading?->id,
+            'branch'     => $branch,
+            'topic'      => $topic?->value,
+            'urgent'     => $turn['urgent'],
+            'claim'      => $turn['claim'],
+            'guides'     => $turn['guides'],
+            'engineer'   => $engineer,
+            'facts'      => $facts,
+            'next_step'  => $nextStep,
+            'answers'    => self::compact($answers),
+        ]]);
 
         if ($turn['guides'] || $engineer || $facts || $nextStep) {
             BroadcastChatAiDraft::dispatch($chatSession, null);
@@ -360,12 +379,17 @@ class ClassifyChatTurn
     }
 
     /**
-     * What staff did with the latest reading of this conversation, for the AI tab.
+     * What staff did with the reading they were shown, for the AI tab: the one the inbox names,
+     * since a newer message may have been read in the meantime.
      */
-    public static function markUsed(ChatSession|MetaChatSession $chatSession, string $used, ?string $ticket = null): void
+    public static function markUsed(ChatSession|MetaChatSession $chatSession, ?int $readingId, string $used, ?string $ticket = null): void
     {
+        if (!$readingId) {
+            return;
+        }
+
         ChatTurnReading::where($chatSession instanceof ChatSession ? 'chat_session_id' : 'meta_chat_session_id', $chatSession->id)
-            ->latest('id')
+            ->whereKey($readingId)
             ->first()
             ?->update(array_filter(['used' => $used, 'used_at' => now(), 'engineer_ticket' => $ticket]));
     }
@@ -470,7 +494,7 @@ class ClassifyChatTurn
     public static function hasOpenTicket(ChatSession|MetaChatSession $chatSession): bool
     {
         return $chatSession->tickets()->whereNotIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::CANCELLED])->exists()
-            || (bool) data_get($chatSession->metadata, self::KEY.'.engineer.raised');
+            || (bool) data_get($chatSession->metadata, self::RAISED_KEY);
     }
 
     /**
@@ -487,7 +511,7 @@ class ClassifyChatTurn
     /**
      * The guides and the programmer ticket staff may use, while nobody has answered since.
      *
-     * @return array{guides: array<int, array<string, mixed>>, engineer: array<string, mixed>|null, facts: array<int, string>, next_step: array<string, mixed>|null}|null
+     * @return array{reading_id: int|null, guides: array<int, array<string, mixed>>, engineer: array<string, mixed>|null, facts: array<int, string>, next_step: array<string, mixed>|null}|null
      */
     public static function suggestions(ChatSession|MetaChatSession $chatSession): ?array
     {
@@ -498,13 +522,19 @@ class ClassifyChatTurn
         }
 
         $answeredAt = $chatSession->last_agent_message_at;
-        $raised     = data_get($turn, 'engineer.raised');
+        $raised     = empty($turn['engineer']) ? null : data_get($chatSession->metadata, self::RAISED_KEY);
 
         if (!$raised && $answeredAt && Carbon::parse($answeredAt)->gte(Carbon::parse($turn['at']))) {
             return null;
         }
 
-        return ['guides' => $turn['guides'] ?? [], 'engineer' => $turn['engineer'] ?? null, 'facts' => $turn['facts'] ?? [], 'next_step' => $turn['next_step'] ?? null];
+        return [
+            'reading_id' => $turn['reading_id'] ?? null,
+            'guides'     => $turn['guides'] ?? [],
+            'engineer'   => empty($turn['engineer']) ? null : $turn['engineer'] + ['raised' => $raised],
+            'facts'      => $turn['facts'] ?? [],
+            'next_step'  => $turn['next_step'] ?? null,
+        ];
     }
 
     /**

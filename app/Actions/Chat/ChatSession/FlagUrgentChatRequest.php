@@ -86,19 +86,19 @@ class FlagUrgentChatRequest
             return null;
         }
 
-        $metadata = $chatSession->metadata ?? [];
+        $changes = [];
 
-        if ($assessment['kind']) {
-            $metadata[self::KIND_KEY] = $assessment['kind'];
+        if ($assessment['kind'] && $assessment['kind'] !== data_get($chatSession->metadata, self::KIND_KEY)) {
+            $changes[self::KIND_KEY] = $assessment['kind'];
         }
 
         if ($request && !self::current($chatSession)) {
-            $metadata[self::KEY]    = $request;
-            $metadata[self::AT_KEY] = now()->toISOString();
+            $changes[self::KEY]    = $request;
+            $changes[self::AT_KEY] = now()->toISOString();
         }
 
-        if ($metadata !== ($chatSession->metadata ?? [])) {
-            $chatSession->update(['metadata' => $metadata]);
+        if ($changes) {
+            SetChatSessionMetadata::run($chatSession, $changes);
         }
 
         return $request;

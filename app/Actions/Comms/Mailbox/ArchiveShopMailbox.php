@@ -20,7 +20,9 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Sleep;
+use Illuminate\Support\Str;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -31,10 +33,11 @@ use Throwable;
  * marketplaces, couriers, staff writing to each other and anything sent automatically (our own
  * closed-now replies included) are left out, as are mails the chat inbox already holds and the
  * part of a mail quoted from earlier ones. Already archived mails are skipped and the page
- * reached is remembered, so a run that stops is continued by running it again. With --queue every
- * mailbox runs side by side on Horizon, one page per job; each mailbox is read a few mails at a
- * time, well inside Gmail's limit per mailbox, and a page Gmail refuses is read again a minute
- * later.
+ * reached is remembered, so a run that stops is continued by running it again. With --queue each
+ * mailbox is read one page per job; each mailbox is read a few mails at a time, well inside
+ * Gmail's limit per mailbox, and a page Gmail refuses is read again a minute later, giving up
+ * after MAX_RATE_LIMITED refusals in a row. Starting the command again replaces the chain of jobs
+ * a mailbox already has, so two never read the same mailbox.
  */
 class ArchiveShopMailbox
 {
@@ -47,6 +50,8 @@ class ArchiveShopMailbox
     private const int CONCURRENCY = 5;
 
     private const int RATE_LIMIT_PAUSE = 60;
+
+    private const int MAX_RATE_LIMITED = 10;
 
     public string $jobQueue = 'low-priority';
 
@@ -71,7 +76,7 @@ class ArchiveShopMailbox
             }
             $total['done'] = $page['done'];
 
-            if ($page['rate_limited']) {
+            if ($page['rate_limited'] && !$page['stopped']) {
                 Sleep::for(self::RATE_LIMIT_PAUSE)->seconds();
             }
         } while (!$page['done'] && !$page['stopped'] && (!$limit || $total['read'] < $limit));
@@ -80,19 +85,25 @@ class ArchiveShopMailbox
     }
 
     /**
-     * On the queue each job reads one page of the listing and queues the next, so every mailbox
-     * runs side by side, no job runs for long and a restarted worker carries on from the page
-     * reached.
+     * On the queue each job reads one page of the listing and queues the next, so no job runs for
+     * long and a restarted worker carries on from the page reached. A job of a chain the command
+     * has since replaced does nothing.
      */
-    public function asJob(Shop $shop, int $months = 12): void
+    public function asJob(Shop $shop, int $months = 12, ?string $run = null): void
     {
+        if (Cache::get(self::runKey($shop)) !== $run) {
+            return;
+        }
+
         $page = $this->archivePage($shop, $months);
 
-        if ($page['rate_limited']) {
-            static::dispatch($shop, $months)->delay(now()->addSeconds(self::RATE_LIMIT_PAUSE));
-        } elseif (!$page['done'] && !$page['stopped']) {
-            static::dispatch($shop, $months);
+        if ($page['done'] || $page['stopped']) {
+            return;
         }
+
+        $page['rate_limited']
+            ? static::dispatch($shop, $months, $run)->delay(now()->addSeconds(self::RATE_LIMIT_PAUSE))
+            : static::dispatch($shop, $months, $run);
     }
 
     /**
@@ -128,6 +139,7 @@ class ArchiveShopMailbox
 
             if (in_array('rate_limited', $messages, true)) {
                 $result['rate_limited'] = true;
+                $result['stopped']      = $this->refusedTooOften($shop);
 
                 return $result;
             }
@@ -150,6 +162,8 @@ class ArchiveShopMailbox
             }
         }
 
+        Cache::forget(self::rateLimitedKey($shop));
+
         if ($page['next']) {
             Cache::put($cursorKey, $page['next'], now()->addDays(7));
         } else {
@@ -163,6 +177,30 @@ class ArchiveShopMailbox
     public static function cursorKey(Shop $shop, int $months): string
     {
         return "mailbox-archive:{$shop->id}:{$months}";
+    }
+
+    public static function runKey(Shop $shop): string
+    {
+        return "mailbox-archive-run:{$shop->id}";
+    }
+
+    private static function rateLimitedKey(Shop $shop): string
+    {
+        return "mailbox-archive-rate-limited:{$shop->id}";
+    }
+
+    private function refusedTooOften(Shop $shop): bool
+    {
+        $refusals = Cache::increment(self::rateLimitedKey($shop));
+
+        if ($refusals < self::MAX_RATE_LIMITED) {
+            return false;
+        }
+
+        Cache::forget(self::rateLimitedKey($shop));
+        Log::warning("mailbox:archive {$shop->slug}: Gmail refused ".self::MAX_RATE_LIMITED.' times in a row, stopped; run it again to continue');
+
+        return true;
     }
 
     /**
@@ -222,7 +260,7 @@ class ArchiveShopMailbox
 
     private function isRateLimit(Throwable $exception): bool
     {
-        return $exception instanceof RequestException && in_array($exception->response->status(), [403, 429, 500, 503], true);
+        return $exception instanceof RequestException && GmailClient::isRateLimited($exception->response);
     }
 
     public function asCommand(Command $command): int
@@ -233,13 +271,16 @@ class ArchiveShopMailbox
         $shops = $slug ? Shop::where('slug', $slug)->get() : Shop::whereNotNull('settings->gmail->refresh_token')->get();
 
         foreach ($shops as $shop) {
+            $run = (string) Str::uuid();
+            Cache::put(self::runKey($shop), $run, now()->addDays(7));
+
             if ($command->option('fresh')) {
                 EmailArchiveMessage::where('shop_id', $shop->id)->delete();
                 Cache::forget(self::cursorKey($shop, (int) $command->option('months')));
             }
 
             if ($command->option('queue')) {
-                static::dispatch($shop, (int) $command->option('months'));
+                static::dispatch($shop, (int) $command->option('months'), $run);
                 $command->info("{$shop->slug}: queued");
 
                 continue;

@@ -53,7 +53,12 @@ class HandleChatAiDraft
             return response()->json(['success' => false], 403);
         }
 
-        ClassifyChatTurn::markUsed($chatSession, $request->validate(['kind' => ['required', 'in:guide,close,closing_message,wait']])['kind']);
+        $validated = $request->validate([
+            'kind'       => ['required', 'in:guide,close,closing_message,wait'],
+            'reading_id' => ['nullable', 'integer'],
+        ]);
+
+        ClassifyChatTurn::markUsed($chatSession, $validated['reading_id'] ?? null, $validated['kind']);
 
         return response()->json(['success' => true]);
     }

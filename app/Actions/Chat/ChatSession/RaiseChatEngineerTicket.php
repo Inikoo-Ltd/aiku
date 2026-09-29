@@ -37,7 +37,8 @@ class RaiseChatEngineerTicket
      */
     public function handle(ChatSession|MetaChatSession $chatSession, ChatAgent $agent): ?array
     {
-        $engineer = ClassifyChatTurn::suggestions($chatSession)['engineer'] ?? null;
+        $suggestions = ClassifyChatTurn::suggestions($chatSession);
+        $engineer    = $suggestions['engineer'] ?? null;
 
         if (!$engineer || !empty($engineer['raised']) || $chatSession->tickets()->whereNotIn('status', ['resolved', 'cancelled'])->exists()) {
             return null;
@@ -58,10 +59,8 @@ class RaiseChatEngineerTicket
             ]);
         }
 
-        $metadata = $chatSession->metadata ?? [];
-        data_set($metadata, ClassifyChatTurn::KEY.'.engineer.raised', $ticket->reference);
-        $chatSession->update(['metadata' => $metadata]);
-        ClassifyChatTurn::markUsed($chatSession, 'engineer', $ticket->reference);
+        SetChatSessionMetadata::run($chatSession, [ClassifyChatTurn::RAISED_KEY => $ticket->reference]);
+        ClassifyChatTurn::markUsed($chatSession, $suggestions['reading_id'] ?? null, 'engineer', $ticket->reference);
 
         return ['reference' => $ticket->reference, 'url' => route('grp.tickets.show', $ticket->reference), 'added' => (bool) $known];
     }

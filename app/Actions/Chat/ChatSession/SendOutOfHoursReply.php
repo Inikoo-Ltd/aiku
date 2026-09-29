@@ -112,12 +112,10 @@ class SendOutOfHoursReply implements ShouldBeUnique
         $kind = $claimLines === null ? ChatAutomationKindEnum::OUT_OF_HOURS : ChatAutomationKindEnum::CLAIM_DETAILS;
         $text = $this->text($shop, !$replied, $claimLines, $this->hasSaidWhatTheyNeed($chatSession, $details['text']), $byEmail);
 
-        $chatSession->update([
-            'metadata' => array_merge($chatSession->metadata ?? [], array_filter([
-                self::SENT_KEY  => now()->toISOString(),
-                self::CLAIM_KEY => $claimLines === null ? null : now()->toISOString(),
-            ])),
-        ]);
+        SetChatSessionMetadata::run($chatSession, array_filter([
+            self::SENT_KEY  => now()->toISOString(),
+            self::CLAIM_KEY => $claimLines === null ? null : now()->toISOString(),
+        ]));
 
         if ($chatSession instanceof MetaChatSession) {
             return SendMetaChatGreeting::run($chatSession, $text, $claimLines === null ? self::SENT_KEY : self::CLAIM_KEY, false);

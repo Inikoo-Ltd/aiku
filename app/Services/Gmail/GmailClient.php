@@ -208,9 +208,22 @@ final class GmailClient
 
         return collect($responses)->map(fn ($response) => match (true) {
             $response instanceof Response && $response->successful()                            => $response->json(),
-            $response instanceof Response && in_array($response->status(), [403, 429, 503], true) => 'rate_limited',
+            $response instanceof Response && self::isRateLimited($response)                     => 'rate_limited',
             default                                                                            => null,
         })->all();
+    }
+
+    /**
+     * Gmail asking us to slow down: a 429, a 403 whose reason is a rate limit (a 403 for anything
+     * else, like a missing scope, never gets better by waiting), or its backend briefly failing.
+     */
+    public static function isRateLimited(Response $response): bool
+    {
+        return match ($response->status()) {
+            429, 500, 503 => true,
+            403           => in_array($response->json('error.errors.0.reason'), ['rateLimitExceeded', 'userRateLimitExceeded'], true),
+            default       => false,
+        };
     }
 
     public function getMessage(string $messageId): array

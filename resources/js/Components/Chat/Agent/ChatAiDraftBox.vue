@@ -48,39 +48,49 @@ const guides = ref<Guide[]>([])
 const engineer = ref<Engineer | null>(null)
 const facts = ref<string[]>([])
 const nextStep = ref<{ kind: "close" | "wait" | "owed", probability: number, message?: string | null } | null>(null)
+const readingId = ref<number | null>(null)
 const raising = ref(false)
 const raised = ref<{ reference: string, url: string, added: boolean } | null>(null)
 const busy = ref(false)
 let channel: any = null
 let channelName: string | null = null
+let latestLoad = 0
 
-const load = async () => {
+const clear = () => {
     draft.value = null
     guides.value = []
     engineer.value = null
     facts.value = []
     nextStep.value = null
-    if (!props.sessionUlid || props.readOnly) return
+    readingId.value = null
+}
+
+const load = async () => {
+    const thisLoad = ++latestLoad
+    const sessionUlid = props.sessionUlid
+    clear()
+    if (!sessionUlid || props.readOnly) return
 
     try {
         const url = props.whatsapp
-            ? route("grp.api.chats.meta.sessions.ai_draft.show", [props.sessionUlid])
-            : route("grp.api.chats.sessions.ai_draft.show", [props.sessionUlid])
+            ? route("grp.api.chats.meta.sessions.ai_draft.show", [sessionUlid])
+            : route("grp.api.chats.sessions.ai_draft.show", [sessionUlid])
         const { data } = await axios.get(url)
+        if (thisLoad !== latestLoad) return
+
         draft.value = data?.data ?? null
         guides.value = data?.suggestions?.guides ?? []
         engineer.value = data?.suggestions?.engineer ?? null
         facts.value = data?.suggestions?.facts ?? []
         nextStep.value = data?.suggestions?.next_step ?? null
+        readingId.value = data?.suggestions?.reading_id ?? null
     } catch {
-        draft.value = null
-        guides.value = []
-        engineer.value = null
+        if (thisLoad === latestLoad) clear()
     }
 }
 
 const usedKey = ref<string | null>(null)
-const suggestionsKey = computed(() => [draft.value?.id ?? "", ...guides.value.map((guide) => guide.url)].join("|"))
+const suggestionsKey = computed(() => [props.sessionUlid ?? "", readingId.value ?? "", draft.value?.id ?? "", ...guides.value.map((guide) => guide.url)].join("|"))
 const used = computed(() => usedKey.value !== null && usedKey.value === suggestionsKey.value)
 const shownGuides = computed(() => used.value ? [] : guides.value.filter((guide) => !draft.value?.text.includes(guide.url)))
 const main = computed<"draft" | "guide" | "engineer" | "next" | null>(() => {
@@ -98,7 +108,7 @@ const recordUse = (kind: "guide" | "close" | "closing_message" | "wait") => {
     const url = props.whatsapp
         ? route("grp.api.chats.meta.sessions.suggestion_used", [props.sessionUlid])
         : route("grp.api.chats.sessions.suggestion_used", [props.sessionUlid])
-    axios.post(url, { kind }).catch(() => null)
+    axios.post(url, { kind, reading_id: readingId.value }).catch(() => null)
 }
 
 const suggestGuide = (guide: Guide) => {
@@ -127,8 +137,9 @@ const raise = async () => {
         const url = props.whatsapp
             ? route("grp.api.chats.meta.sessions.engineer_ticket", [props.sessionUlid])
             : route("grp.api.chats.sessions.engineer_ticket", [props.sessionUlid])
+        const sessionUlid = props.sessionUlid
         const { data } = await axios.post(url)
-        raised.value = data?.data ?? null
+        if (sessionUlid === props.sessionUlid) raised.value = data?.data ?? null
     } catch {
         await load()
     } finally {
@@ -174,6 +185,8 @@ const stopListening = () => {
 
 watch(() => props.sessionUlid, () => {
     stopListening()
+    usedKey.value = null
+    raised.value = null
     load()
     listen()
 }, { immediate: true })
