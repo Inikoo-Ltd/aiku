@@ -3795,6 +3795,12 @@ test('lines waiting for customer service carry the product order line net and ta
         ->and((float) $line['net_amount_with_tax'])->toBe(round(10 * (1 + $rate), 2))
         ->and($line['product_code'])->toBe($transaction->historicAsset->code)
         ->and($line['number_skos_in_product'])->toBeGreaterThanOrEqual(1);
+
+    if ((int) $line['number_skos_in_product'] === 1) {
+        $waitingNet = round(10 / (float) $item->quantity_required, 2);
+        expect((float) $line['waiting_net_amount'])->toBe($waitingNet)
+            ->and((float) $line['waiting_net_amount_with_tax'])->toBe(round($waitingNet * (1 + $rate), 2));
+    }
 });
 
 test('a redefined pack does not change what an already sold box means', function () {

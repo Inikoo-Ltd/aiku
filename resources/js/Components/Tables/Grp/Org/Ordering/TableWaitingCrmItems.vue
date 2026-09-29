@@ -525,11 +525,16 @@ const submitSendBackWarehouse = () => {
                             />
                             <template v-else>{{ Number(subItem.quantity_waiting_crm) }}</template>
                             {{ ctrans("SKO") }}
+                            <template v-if="subItem.waiting_net_amount !== null && subItem.waiting_net_amount !== undefined">
+                                {{ ctrans("of :count", { count: String(Number(subItem.quantity_required)) }) }}
+                                · {{ locale.currencyFormat(subItem.currency_code, subItem.waiting_net_amount) }} {{ ctrans("net") }}
+                                · <span class="font-semibold text-gray-700">{{ locale.currencyFormat(subItem.currency_code, subItem.waiting_net_amount_with_tax) }}</span> {{ ctrans("inc. VAT") }}
+                            </template>
                         </div>
-                        <div v-if="subItem.net_amount !== null && subItem.net_amount !== undefined" class="tabular-nums text-sm text-gray-500">
-                            {{ ctrans("Product") }} <span class="font-semibold">{{ subItem.product_code }}</span>: {{ Number(subItem.quantity_ordered) }} ×
-                            {{ locale.currencyFormat(subItem.currency_code, subItem.net_amount) }} {{ ctrans("net") }}
-                            · <span class="font-semibold">{{ locale.currencyFormat(subItem.currency_code, subItem.net_amount_with_tax) }}</span> {{ ctrans("inc. VAT") }}
+                        <div v-if="subItem.net_amount !== null && subItem.net_amount !== undefined" class="tabular-nums text-xs text-gray-400">
+                            {{ ctrans("Whole order line") }} <span class="font-semibold">{{ subItem.product_code }}</span>: {{ ctrans(":count ordered", { count: String(Number(subItem.quantity_ordered)) }) }}
+                            · {{ locale.currencyFormat(subItem.currency_code, subItem.net_amount) }} {{ ctrans("net") }}
+                            · {{ locale.currencyFormat(subItem.currency_code, subItem.net_amount_with_tax) }} {{ ctrans("inc. VAT") }}
                             <span v-if="subItem.number_skos_in_product > 1" class="italic">({{ ctrans("whole product, made of :count SKOs", { count: String(subItem.number_skos_in_product) }) }})</span>
                         </div>
                         <div v-if="subItem.notes" class="text-left border border-gray-300 bg-gray-100 px-2 py-1 rounded text-xs w-fit">
@@ -647,9 +652,9 @@ const submitSendBackWarehouse = () => {
                                 />
                                 <span class="ml-1">{{ ctrans("SKO") }}</span>
                             </div>
-                            <div v-if="selectedItem?.net_amount" class="tabular-nums text-xs opacity-70 mt-0.5">
-                                {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount) }} {{ ctrans("net") }}
-                                · {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.net_amount_with_tax) }} {{ ctrans("inc. VAT") }}
+                            <div v-if="selectedItem?.waiting_net_amount != null" class="tabular-nums text-xs opacity-70 mt-0.5">
+                                {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.waiting_net_amount) }} {{ ctrans("net") }}
+                                · {{ locale.currencyFormat(selectedItem?.currency_code, selectedItem?.waiting_net_amount_with_tax) }} {{ ctrans("inc. VAT") }}
                             </div>
                         </div>
                     </div>
@@ -968,9 +973,6 @@ const submitSendBackWarehouse = () => {
                                 :fractionData="toFractionData(successContext.replacedQuantity, Number(successContext.replacedItem.packed_in) || 1)"
                             />
                             {{ ctrans('SKO') }}
-                        </div>
-                        <div v-if="successContext.replacedItem.net_amount" class="text-xs opacity-70 mt-0.5">
-                            {{ locale.currencyFormat(successContext.replacedItem.currency_code, successContext.replacedItem.net_amount) }}
                         </div>
                     </div>
                 </div>
