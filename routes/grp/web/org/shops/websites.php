@@ -117,7 +117,7 @@ Route::name('redirect')->prefix('{website}/redirect')->group(function () {
     Route::get('/', IndexRedirects::class)->name('.index');
     Route::get('/export', ExportRedirects::class)->name('.export');
     Route::get('/{redirect}', [ShowRedirect::class, 'inWebsite'])->name('.show');
-    Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
+    Route::get('/{redirect}/edit', [EditRedirect::class, 'inWebsite'])->name('.edit');
 });
 
 

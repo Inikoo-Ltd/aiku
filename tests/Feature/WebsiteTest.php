@@ -1276,6 +1276,9 @@ test('UI smoke shop web GET routes', function (Website $website, Webpage $webpag
     }
 
     expect($failures)->toBe([]);
+
+    get(route('grp.org.shops.show.web.redirect.edit', [$org, $shop, $w, $redirect->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel'));
 })->depends('launch website', 'create webpage', 'store redirect', 'UI store announcement');
 
 test('UI smoke fulfilment web GET routes', function (Website $website) {
