@@ -1018,6 +1018,48 @@ test('UI edit supplier', function () {
     });
 });
 
+test('UI index assignable suppliers for agent', function () {
+    $this->withoutExceptionHandling();
+
+    $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
+
+    $free = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ASSIGNFREE', 'name' => 'Assign Free'])
+    );
+
+    $response = $this->get(route('grp.supply-chain.agents.show.suppliers.assignable', [$agent->slug]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($agent, $free) {
+        $page
+            ->component('SupplyChain/AssignableSuppliers')
+            ->has('title')
+            ->has('pageHead')
+            ->has('agent', fn (AssertableInertia $page) => $page->where('id', $agent->id)->etc())
+            ->has('data');
+    });
+
+    $codes = collect($response->viewData('page')['props']['data']['data'])->pluck('code');
+    expect($codes)->toContain('ASSIGNFREE');
+    expect($agent->suppliers()->pluck('code'))->not->toContain('ASSIGNFREE');
+});
+
+test('UI attach free supplier to agent', function () {
+    $this->withoutExceptionHandling();
+
+    $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
+
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: array_merge(Supplier::factory()->definition(), ['code' => 'ATTACHME', 'name' => 'Attach Me'])
+    );
+
+    $this->patch(route('grp.models.supplier.update', $supplier->id), ['agent_id' => $agent->id])
+        ->assertSessionHasNoErrors();
+
+    expect($supplier->refresh()->agent_id)->toBe($agent->id);
+});
+
 test('UI edit supplier product', function () {
     $supplierProduct = SupplierProduct::first();
     $this->withoutExceptionHandling();

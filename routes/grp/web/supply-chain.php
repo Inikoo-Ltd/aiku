@@ -19,6 +19,7 @@ use App\Actions\SupplyChain\Supplier\ExportSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\SupplyChain\Supplier\UI\EditSupplier;
 use App\Actions\SupplyChain\Supplier\UI\IndexAgentSuppliers;
+use App\Actions\SupplyChain\Supplier\UI\IndexAssignableSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\IndexSuppliers;
 use App\Actions\SupplyChain\Supplier\UI\ShowSupplier;
 use App\Actions\SupplyChain\SupplierProduct\DownloadSupplierProductsTemplate;
@@ -53,6 +54,7 @@ Route::prefix("agents")->name("agents.")->group(
             Route::prefix('suppliers')->as('.suppliers')->group(function () {
                 Route::get('', [IndexSuppliers::class, 'inAgent'])->name('.index');
                 Route::get('create', [CreateSupplier::class, 'inAgent'])->name('.create');
+                Route::get('assignable', IndexAssignableSuppliers::class)->name('.assignable');
 
                 Route::prefix('{supplier}')->group(function () {
                     Route::get('', [ShowSupplier::class, 'inAgent'])->name('.show');

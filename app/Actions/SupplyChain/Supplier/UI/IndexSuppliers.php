@@ -321,6 +321,16 @@ class IndexSuppliers extends OrgAction
             $actions       = [
                 [
                     'type'  => 'button',
+                    'style' => 'secondary',
+                    'icon'  => 'fal fa-people-arrows',
+                    'label' => __('Add Supplier'),
+                    'route' => [
+                        'name'       => 'grp.supply-chain.agents.show.suppliers.assignable',
+                        'parameters' => array_values($request->route()->originalParameters()),
+                    ],
+                ],
+                [
+                    'type'  => 'button',
                     'style' => 'primary',
                     'icon'  => 'fal fa-plus',
                     'label' => __('Create Supplier'),
