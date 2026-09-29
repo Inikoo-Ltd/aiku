@@ -263,7 +263,7 @@ const onUpdateProductQuantity = (product: Record<string, any>, value: number | n
 }
 
 const isProductOverStock = (product: Record<string, any>): boolean => (
-    (productQuantities[product.id]?.quantity ?? 0) > (Number(product?.stock) || 0)
+    !product?.is_on_demand && (productQuantities[product.id]?.quantity ?? 0) > (Number(product?.stock) || 0)
 )
 
 // Outside cut view the quantity was typed in whole packs, so it reads as a plain count.
@@ -747,7 +747,7 @@ const submitSendBackWarehouse = () => {
                             v-for="product in modalProducts"
                             :key="product.id"
                             :class="productQuantities[product.id]?.quantity > 0 ? 'bg-green-100'
-                            : product.stock > 0
+                            : product.is_on_demand || product.stock > 0
                                 ? ''
                                 : 'bg-gray-100 opacity-60'
                             "
@@ -769,8 +769,9 @@ const submitSendBackWarehouse = () => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap" :class="!product.stock ? 'text-red-500' : 'text-gray-600'">
-                                <template v-if="product.stock > 0">
+                            <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap" :class="!product.is_on_demand && !product.stock ? 'text-red-500' : 'text-gray-600'">
+                                <template v-if="product.is_on_demand">{{ ctrans('Always available') }}</template>
+                                <template v-else-if="product.stock > 0">
                                     <FractionDisplay
                                         v-if="isProductCutView(product)"
                                         :fractionData="toMixedFractionData(Number(product.stock), productPackedIn(product))"

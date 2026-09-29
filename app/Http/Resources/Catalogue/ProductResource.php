@@ -72,6 +72,7 @@ class ProductResource extends JsonResource
             'images'                        => ImageResource::collection($product->images),
             'image_thumbnail'               => $product->imageSources(720, 480),
             'stock'                         => $product->available_quantity,
+            'is_on_demand'                  => $product->is_on_demand,
             'marketing_dimensions'          => NaturalLanguage::make()->dimensions($product->marketing_dimensions),
             'marketing_ingredients'         => $product->marketing_ingredients,
             'marketing_weight'              => NaturalLanguage::make()->weight($product->marketing_weight),

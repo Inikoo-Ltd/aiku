@@ -19,6 +19,7 @@ use Illuminate\Support\Arr;
  * @property mixed $code
  * @property mixed $name
  * @property mixed $available_quantity
+ * @property mixed $is_on_demand
  * @property mixed $price
  * @property mixed $state
  * @property mixed $created_at
@@ -60,6 +61,7 @@ class ProductsWebpageResource extends JsonResource
             'code'                          => $this->code,
             'name'                          => $this->name,
             'stock'                         => $this->available_quantity,
+            'is_on_demand'                  => $this->is_on_demand,
             'slug'                         => $this->slug,
             'price'                         => $this->price,
             'price_per_unit'                => $pricePerUnit,
