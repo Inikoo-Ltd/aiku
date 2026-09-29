@@ -8,6 +8,10 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Models\Inventory\OrgStock;
+use App\Actions\Accounting\Invoice\RefundClaimToBalance;
+use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
@@ -5044,4 +5048,53 @@ test('ordering a past order again fills the basket once, however many times it i
     $product->update(['status' => ProductStatusEnum::DISCONTINUED]);
     expect(\App\Actions\Retina\Ecom\Orders\RepeatRetinaEcomOrder::make()->handle($customer->fresh(), $pastOrder)['skipped'])
         ->toBe([['code' => $product->code, 'name' => $product->name]]);
+});
+
+test('a claim refunded to balance is paid out of the card payment and leaves nothing due on the order', function () {
+    $order = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+
+    $attachedOrgStock = null;
+    if (!$this->product->orgStocks()->count()) {
+        $attachedOrgStock = OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($attachedOrgStock->id, ['quantity' => 1]);
+    }
+    $this->product->orgStocks()->update(['quantity_available' => 100000]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), []);
+    $item         = $deliveryNote->deliveryNoteItems()->firstOrFail();
+    $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+    $invoice      = GenerateInvoiceFromOrder::make()->action($order->refresh());
+    $claimed      = [['id' => $item->id, 'quantity' => 1]];
+
+    expect((float) $invoice->total_amount)->toBeGreaterThan(0.0)
+        ->and(fn () => RefundClaimToBalance::make()->handle($order->refresh(), $claimed))->toThrow(ValidationException::class, 'no payment left')
+        ->and($order->invoices()->where('type', InvoiceTypeEnum::REFUND)->count())->toBe(0);
+
+    $cardAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CLM'.mt_rand(1000, 9999), 'name' => 'Claim card account']
+    );
+    $payment = PayInvoice::make()->action($invoice->refresh(), $cardAccount, [
+        'amount' => $invoice->total_amount,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]);
+
+    $refund = RefundClaimToBalance::make()->handle($order->refresh(), $claimed);
+
+    $credit = CreditTransaction::where('customer_id', $order->customer_id)->latest('id')->first();
+    expect($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and((float) $refund->total_amount)->toBeLessThan(0.0)
+        ->and((float) $order->customer->refresh()->balance)->toBe(abs((float) $refund->total_amount))
+        ->and($credit->type)->toBe(CreditTransactionTypeEnum::PAY_RETURN)
+        ->and($credit->payment->original_payment_id)->toBe($payment->id)
+        ->and($credit->payment->paymentAccount->type)->toBe(PaymentAccountTypeEnum::ACCOUNT)
+        ->and(StoreOrderPaymentLink::amountDue($order->refresh()))->toBe(0.0);
+
+    if ($attachedOrgStock) {
+        $this->product->orgStocks()->detach($attachedOrgStock->id);
+    }
 });

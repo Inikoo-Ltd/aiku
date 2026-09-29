@@ -23,7 +23,7 @@ class RefundToCredit extends OrgAction
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
 
-        $paymentAccount = $invoice->shop->paymentAccountShops->first()->paymentAccount;
+        $paymentAccount = $invoice->shop->getPaymentAccountTypeAccount();
 
         return RefundToInvoice::make()->action($invoice, $paymentAccount, [
             'amount' => Arr::get($modelData, 'amount'),

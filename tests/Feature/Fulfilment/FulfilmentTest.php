@@ -3509,6 +3509,7 @@ test('refund to credit balance', function (array $data) {
         ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
         ->and($refund->payments->count())->toBe(1)
         ->and($refundPayment->amount)->toBe($refund->total_amount)
+        ->and($refundPayment->payment_account_id)->toBe($invoice->shop->getPaymentAccountTypeAccount()->id)
         ->and($refundPayment->type)->toBe(PaymentTypeEnum::REFUND)
         ->and($refundPayment->status)->toBe(PaymentStatusEnum::SUCCESS)
         ->and($refundPayment->state)->toBe(PaymentStateEnum::COMPLETED);

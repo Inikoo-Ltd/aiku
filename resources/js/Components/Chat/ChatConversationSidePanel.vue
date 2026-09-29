@@ -420,11 +420,26 @@ const claimRefundAmount = computed(() => {
     return Math.round(net * claim.tax_ratio * 100) / 100
 })
 
+const pendingConfirmation = ref<{ text: string, answer: (confirmed: boolean) => void } | null>(null)
+const isConfirmationOpen = ref(false)
+
+const askConfirm = (text: string): Promise<boolean> => new Promise(resolve => {
+    pendingConfirmation.value?.answer(false)
+    pendingConfirmation.value = { text, answer: resolve }
+    isConfirmationOpen.value = true
+})
+
+const answerConfirmation = (confirmed: boolean) => {
+    if (!isConfirmationOpen.value) return
+    isConfirmationOpen.value = false
+    pendingConfirmation.value?.answer(confirmed)
+}
+
 const refundClaimToBalance = async () => {
     const claim = customerProfile.value.claim
     const items = Object.entries(claimPicked.value).filter(([, quantity]) => Number(quantity) > 0)
     if (!claim?.refund || !items.length || isRefunding.value || !claimRefundAmount.value) return
-    if (!window.confirm(ctrans("Refund about :amount :currency to the customer's balance for :count lines of :order? A refund invoice is made and paid out as credit.", { amount: claimRefundAmount.value.toFixed(2), currency: claim.currency ?? "", count: String(items.length), order: claim.order.reference }))) return
+    if (!await askConfirm(ctrans("Refund about :amount :currency to the customer's balance for :count lines of :order? A refund invoice is made and paid out as credit.", { amount: claimRefundAmount.value.toFixed(2), currency: claim.currency ?? "", count: String(items.length), order: claim.order.reference }))) return
     isRefunding.value = true
     try {
         const res = await axios.post(route(claim.refund.name, claim.refund.parameters), {
@@ -444,7 +459,7 @@ const createReplacement = async () => {
     const claim = customerProfile.value.claim
     const items = Object.entries(claimPicked.value).filter(([, quantity]) => Number(quantity) > 0)
     if (!claim || !items.length || isReplacing.value) return
-    if (!window.confirm(ctrans("Send :count lines again to the customer as a replacement of :order?", { count: String(items.length), order: claim.order.reference }))) return
+    if (!await askConfirm(ctrans("Send :count lines again to the customer as a replacement of :order?", { count: String(items.length), order: claim.order.reference }))) return
     isReplacing.value = true
     try {
         const res = await axios.post(route(claim.replacement.name, claim.replacement.parameters), {
@@ -495,7 +510,7 @@ const isUnsubscribing = ref(false)
 const unsubscribeFromMarketing = async () => {
     const unsubscribe = customerProfile.value.subscriptions?.unsubscribe
     if (!unsubscribe || isUnsubscribing.value) return
-    if (!window.confirm(ctrans("Unsubscribe this customer from every newsletter, marketing email and reminder? Emails about their orders keep coming."))) return
+    if (!await askConfirm(ctrans("Unsubscribe this customer from every newsletter, marketing email and reminder? Emails about their orders keep coming."))) return
     isUnsubscribing.value = true
     try {
         const res = await axios.post(route(unsubscribe.name, unsubscribe.parameters))
@@ -741,11 +756,12 @@ const searchCustomerCandidates = (query: string) => {
 
 const unlinkCustomer = async () => {
     if (isSyncing.value) return
-    if (!window.confirm(ctrans('Unlink this customer from the conversation?'))) return
+    const sessionUlid = props.session.ulid
+    if (!await askConfirm(ctrans('Unlink this customer from the conversation?'))) return
     isSyncing.value = true
     syncError.value = null
     try {
-        await axios.delete(`${baseUrl}/app/api/chats/sessions/${props.session.ulid}/customer`, { withCredentials: true })
+        await axios.delete(`${baseUrl}/app/api/chats/sessions/${sessionUlid}/customer`, { withCredentials: true })
         emit('unlinked')
     } catch (e: any) {
         syncError.value = e?.response?.data?.message ?? ctrans('Could not unlink this customer')
@@ -1338,5 +1354,16 @@ const copyChatId = async () => {
             </div>
         </div>
         <TicketQuickLook v-model:ticket="quickLookTicket" @closed="quickLookTicket = null" />
+        <Modal :isOpen="isConfirmationOpen" @onClose="answerConfirmation(false)" width="w-full max-w-md" :zIndex="40">
+            <p class="text-sm text-gray-700">{{ pendingConfirmation?.text }}</p>
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50" @click="answerConfirmation(false)">
+                    {{ ctrans("Cancel") }}
+                </button>
+                <button type="button" class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500" @click="answerConfirmation(true)">
+                    {{ ctrans("Confirm") }}
+                </button>
+            </div>
+        </Modal>
 </div>
 </template>
