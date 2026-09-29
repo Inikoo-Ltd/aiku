@@ -2205,11 +2205,6 @@ test('UI Show inventory dashboard', function () {
         ->assertStatus(200);
 })->depends('create warehouse');
 
-test('UI Index org stock movements (overview)', function () {
-    get(route('grp.overview.inventory.org-stock-movements.index'))
-        ->assertStatus(200);
-});
-
 test('UI Index and Show OrganisationStockHistory', function () {
     $warehouse = Warehouse::first();
 

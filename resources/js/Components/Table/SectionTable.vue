@@ -15,7 +15,7 @@ const props = defineProps<{
 		string,
 		{
 			section: string
-			data: Array<{ name: string; icon: string; route: string; count: number }>
+			data: Array<{ name: string; icon: string; route: string | null; count: number }>
 		}
 	>
 }>()
@@ -109,9 +109,10 @@ const filteredData = computed(() => {
 							</div>
 
 							<div class="flex-grow text-gray-800">
-								<Link :href="item.route">
+								<Link v-if="item.route" :href="item.route">
 									<span class="primaryLink">{{ item.name }}</span>
 								</Link>
+								<span v-else>{{ item.name }}</span>
 							</div>
 
 							<div class="text-right text-gray-700">

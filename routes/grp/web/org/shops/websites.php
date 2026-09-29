@@ -106,7 +106,6 @@ Route::name('websites.')->group(function () {
                             Route::get('footer', [IndexSnapshots::class, 'inFooterWorkshop'])->name('.footer');
                             Route::get('header', [IndexSnapshots::class, 'inHeaderWorkshop'])->name('.header');
                             Route::get('menu', [IndexSnapshots::class, 'inMenuWorkshop'])->name('.menu');
-                            Route::get('sidebar', [IndexSnapshots::class, 'inSidebarWorkshop'])->name('.sidebar');
                         });
                 });
         });

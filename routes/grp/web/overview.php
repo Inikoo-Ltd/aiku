@@ -41,14 +41,12 @@ use App\Actions\Fulfilment\Pallet\UI\IndexPallets;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexPalletDeliveries;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItems;
 use App\Actions\Fulfilment\UI\Catalogue\Rentals\IndexFulfilmentRentals;
-use App\Actions\Fulfilment\UI\Catalogue\Services\IndexFulfilmentServices;
 use App\Actions\HumanResources\ClockingMachine\UI\IndexClockingMachines;
 use App\Actions\HumanResources\Employee\UI\IndexEmployees;
 use App\Actions\HumanResources\JobPosition\UI\IndexJobPositions;
 use App\Actions\HumanResources\Timesheet\UI\IndexTimesheets;
 use App\Actions\HumanResources\Workplace\UI\IndexWorkplaces;
 use App\Actions\Inventory\Location\UI\IndexLocations;
-use App\Actions\Inventory\OrgStockMovement\UI\IndexOrgStockMovements;
 use App\Actions\Inventory\Warehouse\UI\IndexWarehouses;
 use App\Actions\Inventory\WarehouseArea\UI\IndexWarehouseAreas;
 use App\Actions\Ordering\CheckoutAbandonment\UI\IndexCheckoutAbandonments;
@@ -98,7 +96,6 @@ Route::name('catalogue.')->prefix('catalogue')->group(function () {
 Route::name('billables.')->prefix('billables')->group(function () {
     Route::get('/rentals', [IndexFulfilmentRentals::class, 'inGroup'])->name('rentals.index');
     Route::get('/charges', [IndexCharges::class, 'inGroup'])->name('charges.index');
-    Route::get('/services', [IndexFulfilmentServices::class, 'inGroup'])->name('services.index');
 });
 
 Route::name('offer.')->prefix('offer')->group(function () {
@@ -132,7 +129,6 @@ Route::name('ordering.')->prefix('ordering')->group(function () {
 });
 
 Route::name('inventory.')->prefix('inventory')->group(function () {
-    Route::get('/org-stock-movements', [IndexOrgStockMovements::class, 'inGroup'])->name('org-stock-movements.index');
     Route::get('/warehouses', [IndexWarehouses::class, 'inGroup'])->name('warehouses.index');
     Route::get('/warehouses-areas', [IndexWarehouseAreas::class, 'inGroup'])->name('warehouses-areas.index');
     Route::get('/locations', [IndexLocations::class, 'inGroup'])->name('locations.index');

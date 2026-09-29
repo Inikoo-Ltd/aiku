@@ -917,7 +917,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/shop/{shop:id}/customer', StoreCustomer::class)->name('shop.customer.store');
 
     Route::post('/shop/{shop:id}/product/', [StoreProduct::class, 'inShop'])->name('show.product.store');
-    Route::delete('/shop/{shop:id}/product/{product:id}', [DeleteProduct::class, 'inShop'])->name('shop.product.delete');
 
     Route::post('product/{product:id}/images/attach', AttachImagesToProduct::class)->name('product.images.attach')->withoutScopedBindings();
     Route::delete('product/{product:id}/images/{media:id}/media', DeleteImagesFromProduct::class)->name('product.images.delete')->withoutScopedBindings();

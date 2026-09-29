@@ -109,7 +109,6 @@ Route::prefix('families')->as('stock-families.')->group(function () {
 
         Route::prefix('stocks')->as('show.stocks.')->group(function () {
             Route::get('/', [IndexStocks::class, 'inStockFamily'])->name('index');
-            Route::get('/export', [ExportStocks::class, 'inStockFamily'])->name('export');
             Route::get('/create', [CreateStock::class, 'inStockFamily'])->name('create');
 
             Route::prefix('{stock}')->group(function () {

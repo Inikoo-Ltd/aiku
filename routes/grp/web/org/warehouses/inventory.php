@@ -230,7 +230,6 @@ Route::prefix('families')->as('org_stock_families.')->group(function () {
 
                 Route::prefix('{orgStock}')->group(function () {
                     Route::get('', [ShowOrgStock::class, 'inStockFamily'])->name('show');
-                    Route::get('/edit', [EditOrgStock::class, 'inStockFamily'])->name('edit');
                     Route::get('/stock-history', [ShowOrgStockStockHistory::class, 'inStockFamily'])->name('show.stock_history');
                     Route::get('/procurement', [ShowOrgStockProcurement::class, 'inStockFamily'])->name('show.procurement');
                     Route::get('/labels', [ShowOrgStockLabels::class, 'inStockFamily'])->name('show.labels');

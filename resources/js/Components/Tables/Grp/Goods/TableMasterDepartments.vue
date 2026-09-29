@@ -67,17 +67,9 @@ function subdepartmentRoute(masterDepartment: MasterDepartment) {
 
 
 function CollectionsRoute(masterDepartment: MasterDepartment) {
-  if (route().current()=='grp.masters.master_departments.index') {
-    return route('grp.masters.master_departments.show.master_collections.index',
-      {
-        masterDepartment: masterDepartment.slug,
-      }
-    )
-  }
-
   return route('grp.masters.master_shops.show.master_departments.show.master_collections.index',
     {
-      masterShop: (route().params as RouteParams).masterShop,
+      masterShop: (route().params as RouteParams).masterShop ?? masterDepartment.master_shop_slug,
       masterDepartment: masterDepartment.slug }
   )
 }
@@ -99,17 +91,9 @@ function familiesRoute(masterDepartment: MasterDepartment) {
 }
 
 function ProductRoute(masterDepartment: MasterDepartment) {
-  if (route().current()=='grp.masters.master_departments.index') {
-    return route('grp.masters.master_departments.show.master_products.index',
-      {
-        masterDepartment: masterDepartment.slug,
-    }
-    )
-  }
-
   return route('grp.masters.master_shops.show.master_departments.show.master_products.index',
     {
-      masterShop: (route().params as RouteParams).masterShop,
+      masterShop: (route().params as RouteParams).masterShop ?? masterDepartment.master_shop_slug,
       masterDepartment: masterDepartment.slug }
   )
 }

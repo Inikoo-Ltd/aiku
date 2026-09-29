@@ -13,14 +13,12 @@ use App\Actions\GoodsIn\Return\UI\ShowReturn;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
-use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\UI\Incoming\ShowIncomingHub;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowIncomingHub::class)->name('backlog');
 
 Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inWarehouse'])->name('stock_deliveries.index');
-Route::get('stock-deliveries/{palletDelivery}', [ShowStockDelivery::class, 'inWarehouse'])->name('stock_deliveries.show');
 
 
 Route::get('fulfilment-deliveries', IndexWarehousePalletDeliveries::class)->name('pallet_deliveries.index');
