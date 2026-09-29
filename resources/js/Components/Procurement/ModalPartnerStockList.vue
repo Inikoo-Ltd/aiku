@@ -45,6 +45,7 @@ const overBudgetMessage = ref<string | null>(null)
 const currency = ref<string>("")
 const locale = useLocaleStore()
 const contentRef = ref<HTMLElement | null>(null)
+const isTableReady = ref(false)
 
 const getUrlFetch = (additionalParams: {}) => {
     return route(props.fetchRoute.name, {
@@ -192,10 +193,21 @@ onUnmounted(() => {
     detachScrollListener()
 })
 
-watch(() => model.value, async (newValue) => {
-    if (newValue === true) {
+const onDialogShow = () => {
+    requestAnimationFrame(async () => {
+        isTableReady.value = true
         await nextTick()
         attachScrollListener()
+    })
+}
+
+const onDialogHide = () => {
+    detachScrollListener()
+    isTableReady.value = false
+}
+
+watch(() => model.value, async (newValue) => {
+    if (newValue === true) {
         await fetchRows(getUrlFetch({ "filter[global]": searchQuery.value.trim() || undefined }))
         await nextTick()
         attachScrollListener()
@@ -211,7 +223,8 @@ watch(() => model.value, async (newValue) => {
         :header="trans('Partner stocks')"
         :style="{ width: '90vw', maxWidth: '1024px' }"
         :breakpoints="{ '768px': '95vw' }"
-        @hide="detachScrollListener">
+        @show="onDialogShow"
+        @hide="onDialogHide">
         <div ref="contentRef" class="flex flex-col justify-between h-[600px] overflow-y-auto pb-4">
             <div>
                 <div v-if="overBudgetMessage" class="mb-3 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
@@ -222,7 +235,10 @@ watch(() => model.value, async (newValue) => {
                     </div>
                 </div>
 
-                <div class="card w-full">
+                <div v-if="!isTableReady" class="flex h-[400px] items-center justify-center text-3xl text-gray-400">
+                    <LoadingIcon />
+                </div>
+                <div v-else class="card w-full">
                     <DataTable :value="rows" scrollable scrollHeight="400px">
                         <template #header>
                             <div class="flex items-center justify-end gap-3">

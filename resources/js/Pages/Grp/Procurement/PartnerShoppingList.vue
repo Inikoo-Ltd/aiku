@@ -19,6 +19,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import ConfirmDialog from "primevue/confirmdialog"
+import ProgressBar from "primevue/progressbar"
 import { useConfirm } from "primevue/useconfirm"
 
 const props = defineProps<{
@@ -31,6 +32,11 @@ const props = defineProps<{
 
 const isModalOpen = ref(false)
 const isAutoFillOpen = ref(false)
+const isTableLoading = ref(false)
+const tableLoadingEvents = {
+    onStart: () => (isTableLoading.value = true),
+    onFinish: () => (isTableLoading.value = false),
+}
 const confirm = useConfirm()
 const routeParams = route().params
 
@@ -44,7 +50,7 @@ function confirmDeleteAll() {
         accept: () => {
             router.delete(
                 route("grp.org.procurement.org_partners.show.shopping_list.destroy_open", [routeParams["organisation"], props.orgPartner.id]),
-                { preserveScroll: true }
+                { preserveScroll: true, ...tableLoadingEvents }
             )
         },
     })
@@ -52,7 +58,7 @@ function confirmDeleteAll() {
 
 watch(isModalOpen, (isOpen, wasOpen) => {
     if (wasOpen && !isOpen) {
-        router.reload({ only: ["data"] })
+        router.reload({ only: ["data"], ...tableLoadingEvents })
     }
 })
 
@@ -69,7 +75,7 @@ function updateItem(item: { id: number }, data: Record<string, string | null>) {
             item.id,
         ]),
         data,
-        { preserveScroll: true }
+        { preserveScroll: true, ...tableLoadingEvents }
     )
 }
 
@@ -80,7 +86,7 @@ function deleteItem(item: { id: number }) {
             props.orgPartner.id,
             item.id,
         ]),
-        { preserveScroll: true }
+        { preserveScroll: true, ...tableLoadingEvents }
     )
 }
 </script>
@@ -99,7 +105,10 @@ function deleteItem(item: { id: number }) {
     <ModalPartnerStockList v-model="isModalOpen" :fetchRoute="orgStockFetchRoute" />
     <ModalAutoFillShoppingList v-model="isAutoFillOpen" :orgPartnerId="orgPartner.id" :currency="orgPartner.currency" />
 
-    <Table :resource="data" class="mt-5">
+    <div class="mt-5 h-[3px]">
+        <ProgressBar v-if="isTableLoading" mode="indeterminate" style="height: 3px" />
+    </div>
+    <Table :resource="data">
         <template #cell(info)="{ item }">
             <div class="flex items-start gap-3">
                 <div class="h-12 w-12 shrink-0 rounded">
