@@ -560,6 +560,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('woo:retry-timed-out-uploads --dispatch --days=3 --max-attempts=3')->dailyAt('01:15')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'RetryTimedOutWooUploads',
+                ),
+                name: 'RetryTimedOutWooUploads',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('woo:update-inventory')->everyThreeHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateWooStockInventories',
                 ),

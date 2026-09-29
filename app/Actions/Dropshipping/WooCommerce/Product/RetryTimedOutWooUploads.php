@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -23,23 +24,38 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * host's gateway giving up with a 504) are queued again, only on open channels that still connect;
  * a product the store created anyway is linked by its sku instead of duplicated. The per-store funnel in
  * StoreNewProductToCurrentWooCommerce keeps each host at a few creates at once.
+ *
+ * The nightly run only takes uploads tried in the last few days and gives up after a few attempts:
+ * an upload the customer asked for months ago must not suddenly appear in their store, and a store
+ * that times out every time is left alone with the timeout message on the product.
  */
 class RetryTimedOutWooUploads
 {
     use AsAction;
 
-    public string $commandSignature = 'woo:retry-timed-out-uploads {customerSalesChannel? : Slug or id of one channel} {--dispatch : Queue the retries, otherwise only report}';
+    public string $commandSignature = 'woo:retry-timed-out-uploads {customerSalesChannel? : Slug or id of one channel} {--dispatch : Queue the retries, otherwise only report} {--days= : Only uploads last tried within this many days} {--max-attempts= : Skip uploads already tried this many times}';
 
     public string $commandDescription = 'Queue again the WooCommerce uploads that failed because the store timed out';
 
     /**
      * @return Collection<int, Portfolio>
      */
-    public function handle(?CustomerSalesChannel $customerSalesChannel = null): Collection
+    public function handle(?CustomerSalesChannel $customerSalesChannel = null, ?int $withinDays = null, ?int $maxAttempts = null): Collection
     {
         return Portfolio::query()
             ->where('status', true)
             ->whereNull('platform_product_id')
+            ->when($withinDays, fn (Builder $query) => $query->whereExists(
+                fn ($logs) => $logs->selectRaw('1')
+                    ->from('platform_portfolio_logs')
+                    ->whereColumn('platform_portfolio_logs.portfolio_id', 'portfolios.id')
+                    ->where('platform_portfolio_logs.type', PlatformPortfolioLogsTypeEnum::UPLOAD->value)
+                    ->where('platform_portfolio_logs.created_at', '>=', now()->subDays($withinDays))
+            ))
+            ->when($maxAttempts, fn (Builder $query) => $query->whereRaw(
+                '(select count(*) from platform_portfolio_logs where platform_portfolio_logs.portfolio_id = portfolios.id and platform_portfolio_logs.type = ?) < ?',
+                [PlatformPortfolioLogsTypeEnum::UPLOAD->value, $maxAttempts]
+            ))
             ->where(function (Builder $query) {
                 $query->where('errors_response->message', 'ilike', '%timed out%')
                     ->orWhere('errors_response->message', 'ilike', '%critical error%')
@@ -73,7 +89,11 @@ class RetryTimedOutWooUploads
             }
         }
 
-        $portfolios = $this->handle($customerSalesChannel);
+        $portfolios = $this->handle(
+            $customerSalesChannel,
+            $command->option('days') !== null ? (int) $command->option('days') : null,
+            $command->option('max-attempts') !== null ? (int) $command->option('max-attempts') : null
+        );
 
         $command->table(
             ['Channel', 'Store', 'Stuck uploads'],

@@ -18,6 +18,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel;
 use App\Actions\Dropshipping\Order\RetryOrderImport;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
@@ -61,6 +62,7 @@ use App\Enums\Dropshipping\OrderImportRetryStatusEnum;
 use App\Enums\Dropshipping\WooCommerceConnectionFailureEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -1165,6 +1167,38 @@ test('timed out uploads are reported and, with dispatch, queued again only on op
     $this->artisan('woo:retry-timed-out-uploads', ['customerSalesChannel' => $live->id, '--dispatch' => true])->assertSuccessful();
     StoreNewProductToCurrentWooCommerce::assertPushed(1);
     StoreNewProductToCurrentWooCommerce::assertPushed(fn ($job, array $arguments) => $arguments[1]->id === $timedOut->id);
+});
+
+test('the nightly retry only takes uploads tried in the last days and gives up after a few attempts', function () {
+    Queue::fake();
+    $timedOut   = ['message' => 'The store timed out before answering (gateway timeout), it may be busy or too slow. Try again in a few minutes.'];
+    $portfolios = [];
+
+    foreach (['recent' => [1, 1], 'old' => [1, 10], 'tried_often' => [3, 1]] as $name => [$attempts, $daysAgo]) {
+        $channel = wooConnect(wooCustomer($this->shop))->customerSalesChannel;
+        $channel->update(['can_connect_to_platform' => true]);
+        $portfolio = wooPortfolio($channel, $this->product, null, 'nightly-'.$name);
+        $portfolio->update(['errors_response' => $timedOut]);
+
+        for ($attempt = 0; $attempt < $attempts; $attempt++) {
+            StorePlatformPortfolioLog::run($portfolio, ['type' => PlatformPortfolioLogsTypeEnum::UPLOAD, 'status' => PlatformPortfolioLogsStatusEnum::FAIL])
+                ->forceFill(['created_at' => now()->subDays($daysAgo)])->save();
+        }
+        StorePlatformPortfolioLog::run($portfolio, ['type' => PlatformPortfolioLogsTypeEnum::UPDATE_STOCK]);
+
+        $portfolios[$name] = $portfolio;
+    }
+
+    expect(RetryTimedOutWooUploads::run(withinDays: 3, maxAttempts: 3)->pluck('id'))
+        ->toContain($portfolios['recent']->id)
+        ->not->toContain($portfolios['old']->id)
+        ->not->toContain($portfolios['tried_often']->id)
+        ->and(RetryTimedOutWooUploads::run()->pluck('id'))->toContain($portfolios['old']->id, $portfolios['tried_often']->id);
+
+    $this->artisan('woo:retry-timed-out-uploads', ['--dispatch' => true, '--days' => 3, '--max-attempts' => 3])->assertSuccessful();
+
+    StoreNewProductToCurrentWooCommerce::assertPushed(fn ($job, array $arguments) => $arguments[1]->id === $portfolios['recent']->id);
+    StoreNewProductToCurrentWooCommerce::assertNotPushed(fn ($job, array $arguments) => in_array($arguments[1]->id, [$portfolios['old']->id, $portfolios['tried_often']->id], true));
 });
 
 test('quantity to send follows the channel threshold and cap', function () {
