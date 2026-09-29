@@ -949,6 +949,7 @@ onMounted(async () => {
         :screenType
         :indexBlock
         :isWorkshop
+        hideAppointment
     />
 </template>
 

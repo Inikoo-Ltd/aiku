@@ -10,18 +10,25 @@ import Storage from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/Stora
 import LabelingGuide from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/LabelingGuide.vue"
 import RegulatoryLabelInformation from "@/Iris/Components/BlocksUtils/ProductDescription/RegulatoryLabelInformation.vue"
 import {
+	hasProductAppointment,
 	isProductTabVisible,
 	type FamilyExtraDescriptionTabKey,
 } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
 import { productMarketingMaterialRoute } from "@/Iris/Components/BlocksUtils/ProductDescription/marketingMaterialRoute"
 import { buildFaqPageJsonLd } from "@/Iris/Composables/useFaqStructuredData"
 
-const props = defineProps<{
-	fieldValue: any
-	screenType: "mobile" | "tablet" | "desktop"
-	indexBlock: number
-	isWorkshop?: boolean
-}>()
+const props = withDefaults(
+	defineProps<{
+		fieldValue: any
+		screenType: "mobile" | "tablet" | "desktop"
+		indexBlock: number
+		isWorkshop?: boolean
+		hideAppointment?: boolean
+	}>(),
+	{
+		hideAppointment: false,
+	}
+)
 
 const layout = inject("layout", {}) as any
 const webpageData = inject<any>("webpage_data", null)
@@ -33,6 +40,10 @@ const tabsStyle = computed(() => props.fieldValue?.tabs_style ?? {})
 const productData = computed(() => props.fieldValue?.product ?? {})
 
 const isLoggedIn = computed(() => layout?.iris?.is_logged_in ?? true)
+
+const hasAppointment = computed(
+	() => !props.hideAppointment && hasProductAppointment(props.fieldValue, isLoggedIn.value)
+)
 
 const tabs = computed(() =>
 	[
@@ -49,7 +60,8 @@ const tabs = computed(() =>
 			tabsData.value,
 			productData.value,
 			isLoggedIn.value,
-			props.isWorkshop
+			props.isWorkshop,
+			hasAppointment.value
 		)
 	)
 )
@@ -179,7 +191,8 @@ const faqJsonLd = computed(() =>
 					:field-value="childFieldValue"
 					:screen-type="screenType"
 					:is-workshop="isWorkshop"
-					:faqs="tabsData?.faq" />
+					:faqs="tabsData?.faq"
+					v-bind="tab.key === 'about' ? { hideAppointment } : {}" />
 				</div>
 
 				<component v-if="faqJsonLd" :is="'script'" type="application/ld+json" :innerHTML="faqJsonLd" />
